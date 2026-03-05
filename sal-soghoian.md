@@ -153,13 +153,32 @@ This repo exists at that intersection — we probe both layers. The `sdef` dicti
 
 | Resource | URL |
 |----------|-----|
-| macOS X Automation | macosxautomation.com |
-| iWork Automation | iworkautomation.com |
-| Dictation Commands | dictationcommands.com |
-| Omni Automation | omni-automation.com |
-| CMD-D Conference | cmddconf.com |
-| Twitter/X | @macautomation |
+| macOS X Automation | [macosxautomation.com](http://macosxautomation.com) |
+| About / FAQ (Nov 2016) | [macosxautomation.com/about.html](http://macosxautomation.com/about.html) |
+| iWork Automation | [iworkautomation.com](http://iworkautomation.com) |
+| Dictation Commands | [dictationcommands.com](http://dictationcommands.com) |
+| Omni Automation | [omni-automation.com](http://omni-automation.com) |
+| CMD-D Conference | [cmddconf.com](http://cmddconf.com) |
+| Twitter/X | [@macautomation](https://x.com/macautomation) |
 | Book | *AppleScript 1-2-3* (Apple Pro Training Series, with Bill Cheeseman) |
+
+### Twitter/X Archive: @macautomation
+
+**Status: TO BE SCRAPED** — Sal's [@macautomation](https://x.com/macautomation) feed contains years of automation tips, opinions, script examples, responses to Apple changes, and community interactions. This is a primary source of Sal's evolving thinking that hasn't been captured yet.
+
+**What we expect to find:**
+- Real-time reactions to macOS releases and automation changes
+- Script tips and one-liner automation patterns
+- Responses to community questions about AppleScript, Shortcuts, Automator
+- Links to macosxautomation.com resources and tutorials
+- Commentary on Apple's automation decisions post-departure
+- Omni Automation announcements and examples
+
+**Scraping approach (TODO):**
+- Use a Twitter/X archival tool to pull the full @macautomation timeline
+- Extract tweets with automation keywords, code snippets, and links
+- Categorize by topic: AppleScript, Shortcuts, Omni Automation, philosophy, community
+- Store as `sal-tweets.md` or structured YAML for the knowledge base
 
 ### Patent
 
