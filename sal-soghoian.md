@@ -36,7 +36,11 @@ Apple **eliminated his position entirely** — didn't replace him, dissolved the
 >
 > **A.** Correct. I joined Apple in January of 1997, almost twenty years ago, because of my profound belief that "the power of the computer should reside in the hands of the one using it." That credo remains my truth to this day. Recently, I was informed that my position as Product Manager of Automation Technologies was eliminated for business reasons. Consequently, I am no longer employed by Apple Inc. But, I still believe my credo to be as true today as ever.
 
-> "If user automation technologies are important to you, then now is the time for all good men and women to reach out, speak up and ask questions."
+> Seriously, if you have any questions or concerns about the future of user automation, ask Apple. If user automation technologies are important to you, then now is the time for all good men and women to reach out, speak up and ask questions. The macOS user automation technologies include: UNIX CLI (shell, python, ruby, perl), System Services, Apple Events (JavaScript, AppleScript, AppleScriptObj-C, Scripting Bridge), Automator, Apple Configurator (AppleScript, Automator), and Application scripting support in Photos, iWork, Finder, Mail, and other Apple applications.
+>
+> […]
+>
+> The need for user automation is a constant. I've seen the benefits and power of individuals being able to automate critical and repetitive tasks. Solution apps are great, emojis are fun, but there's nothing like really great automation tools.
 
 **Community reaction was seismic**: John Gruber called it "ominous" and "profoundly worrisome." Brent Simmons, MacSparky, Six Colors, 9to5Mac, MacRumors — the entire Apple press mourned.
 
