@@ -44,6 +44,22 @@ Apple **eliminated his position entirely** — didn't replace him, dissolved the
 
 **Community reaction was seismic**: John Gruber called it "ominous" and "profoundly worrisome." Brent Simmons, MacSparky, Six Colors, 9to5Mac, MacRumors — the entire Apple press mourned.
 
+**Jason Snell:**
+
+> Sal has been a champion for power users and other professionals who use the Mac for years. AppleScript was one of the few reasons major publishing companies stayed on the Mac during its darker days.
+>
+> […]
+>
+> But lately it's hard not to see that Apple's interest in automation technologies appears lukewarm. iOS has no systemwide automation features; apps like Workflow and enterprising users and developers have provided ways for users to connect apps together, but it seems like they succeed despite — not because of — Apple.
+
+**Gabe Weatherhead:**
+
+> I can honestly say that Sal's videos about automation are part of what made me the Mac-lover I am. His work made the Mac seem like a computer from the distant future.
+>
+> […]
+>
+> From this year's Mac announcements it looks like the Mac road map is going down a dead-end for me. […] 2016 has been a year of disappointment and acceptance.
+
 ### Post-Apple Work
 
 - **MacStories guest series** (Jan 2017) — argued the case for continued user automation
