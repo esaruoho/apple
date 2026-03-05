@@ -1,0 +1,108 @@
+# Script Editor — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Script Editor.app
+
+app: Script Editor
+slug: script-editor
+path: /System/Applications/Utilities/Script Editor.app
+layers_found: 7
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 5
+  commands: 16
+  classes: 16
+  command_names:
+    - close
+    - count
+    - delete
+    - duplicate
+    - exists
+    - get
+    - make
+    - move
+    - open
+    - print
+    - quit
+    - save
+    - set
+    - check syntax
+    - compile
+    - save
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: applescript
+    name: AppleScript
+
+# ─── Layer 3: Document Types ───
+document_types_count: 10
+document_types:
+  - name: script
+    extensions: ["scpt"]
+    role: Editor
+  - name: application
+    extensions: ["app"]
+    role: Viewer
+  - name: script bundle
+    extensions: ["scptd"]
+    role: Editor
+  - name: application bundle
+    extensions: ["app"]
+    role: Editor
+  - name: text
+    extensions: ["applescript"]
+    role: Editor
+  - name: plain text
+    extensions: ["txt", "text"]
+    role: Viewer
+  - name: dictionary document
+    extensions: ["sdef"]
+    role: Viewer
+  - name: scripting addition
+    extensions: ["osax"]
+    role: Viewer
+  - name: "(unnamed)"
+    extensions: ["*"]
+    role: Viewer
+  - name: plugin
+    extensions: ["seplugin"]
+    role: None
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Script Editor/Make New AppleScript
+    message: makeNewAppleScript
+    send_types: ["NSStringPboardType"]
+  - menu_item: Script Editor/Run as AppleScript
+    message: runAsAppleScript
+    send_types: ["NSStringPboardType"]
+  - menu_item: Script Editor/Get Result of AppleScript
+    message: runAsAppleScript
+    send_types: ["NSStringPboardType"]
+    return_types: ["NSRTFDPboardType", "NSRTFPboardType", "NSStringPboardType"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 4
+entitlements:
+  icloud:
+    - com.apple.developer.ubiquity-container-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - com.apple.application-identifier
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 10
+notable_frameworks:
+  - OSAKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.ScriptEditor2
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 2.11

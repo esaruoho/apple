@@ -1,0 +1,472 @@
+# Mail — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Mail.app
+
+app: Mail
+slug: mail
+path: /System/Applications/Mail.app
+layers_found: 10
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 4
+  commands: 16
+  classes: 25
+  command_names:
+    - delete
+    - duplicate
+    - move
+    - bounce
+    - check for new mail
+    - extract name from
+    - extract address from
+    - forward
+    - GetURL
+    - import Mail mailbox
+    - mailto
+    - perform mail action with messages
+    - redirect
+    - reply
+    - send
+    - synchronize
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: mailto
+    name: Email Address URL
+    is_default: true
+  - scheme: message
+    name: Email Message Storage URL
+    is_default: true
+  - scheme: mail-pref-pane
+    name: Pref Pane
+    is_default: true
+
+# ─── Layer 3: Document Types ───
+document_types_count: 7
+document_types:
+  - name: Email Message
+    role: Viewer
+    content_types: ["com.apple.mail.email"]
+  - name: Mail Message
+    role: Viewer
+    content_types: ["com.apple.mail.emlx"]
+  - name: Mail Message Part
+    role: None
+    content_types: ["com.apple.mail.emlx.part"]
+  - name: Mail Mailbox
+    role: Editor
+    content_types: ["com.apple.mail.mbox"]
+  - name: Mail Cached IMAP Mailbox
+    role: Editor
+    content_types: ["com.apple.mail.imapmbox"]
+  - name: Mail Cached Exchange Web Services Mailbox
+    role: Editor
+    content_types: ["com.apple.mail.ewsmbox"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.item"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - Send an email
+    - Compose a mail
+    - Write a mail message
+    - Draft an email message
+    - Start a new email
+    - Start writing up a new draft email
+    - Open email compose
+    - "Send an email to ${to}"
+    - "Compose an email and address it to ${to}"
+    - "Write a mail message to ${to}"
+    - "Draft an email message to ${to}"
+    - "Compose a mail to ${to}"
+    - "Start a new email to ${to}"
+    - "Send an email and CC ${cc}"
+    - "Compose an email and CC it to ${cc}"
+    - "Write an email message CC ${cc}"
+    - "Send an email and BCC ${bcc}"
+    - "Compose an email and BCC it to ${bcc}"
+    - "Write an email message BCC ${bcc}"
+    - "Send an email with the subject ${subject}"
+    - "Compose an email and set the subject to ${subject}"
+    - "Write an email about ${subject}"
+    - "Send an email asking ${body}"
+    - "Compose an email and set the body to ${body}"
+    - "Write an email ${body}"
+    - "Write an email about ${subject} saying ${body}"
+    - "Compose an email and set the subject to ${subject} and say ${body}"
+    - "Send an email with the subject ${subject} and the body ${body}"
+    - "Write an email from my ${account} account"
+    - "Compose an email from my ${account} email"
+    - "Send an email using my ${account} email address"
+    - "Write an email to ${to} about ${subject} saying ${body}"
+    - "Compose an email to ${to} and set the subject to ${subject} and say ${body}"
+    - "Send an email with the subject ${subject} and the body ${body} and address it to ${to}"
+    - Forward an email
+    - "Forward ${target}"
+    - "Forward ${target} and say ${body}"
+    - "Find ${target} and forward it"
+    - "Forward ${target} to ${to}"
+    - "Forward ${target} to ${to} and cc ${cc}"
+    - "Forward ${target} to ${to} and bcc ${bcc}"
+    - Reply all to an email
+    - Reply to everyone on an email
+    - "Respond to everyone on ${target} and add ${to}"
+    - "Reply all to ${target} and say ${body}"
+    - "Reply all to ${target} cc ${cc} and write ${body}"
+    - "Reply all to ${target} and attach ${attachments} to it and bcc ${bcc}"
+    - Reply to an email
+    - Respond to a mail message
+    - "Reply to ${target} and add ${to}"
+    - "Reply to ${target} and ask ${body}"
+    - "Respond to ${target} and cc ${cc}"
+    - "Draft a response to ${target} and attach ${attachments}"
+    - "Reply to ${target} and attach ${attachments} to it and bcc ${bcc}"
+    - Cancel the email
+    - Cancel this mail message
+    - Cancel that draft
+    - Delete draft
+    - "Delete ${entities}"
+    - Delete this draft mail
+    - Remove this draft email
+    - "Move ${entities} to trash"
+    - Save draft
+    - Save the draft
+    - "Save ${target}"
+    - "Save ${target} as a draft"
+    - "Draft ${target} for later"
+    - "Save ${target} for later"
+    - Save for later
+    - Send this email right now
+    - OK please send this email draft
+    - "Send it ${sendLaterDate}"
+    - "Can you send the email ${sendLaterDate}"
+    - Send the email
+    - "Send this email ${sendLaterDate}"
+    - "Send my draft ${sendLaterDate}"
+    - "OK please send this email draft ${sendLaterDate}"
+    - "Send it ${sendLaterDate}"
+    - "Can you send the email ${sendLaterDate}"
+    - "Send the email ${sendLaterDate}"
+    - Unsend
+    - Undo the last email
+    - Unsend the email
+    - Undo send email
+    - "Change the subject to ${subject}"
+    - "Change the subject of ${target} to ${subject}"
+    - "Put ${subject} in the subject field"
+    - "Make this email about ${subject}"
+    - "Set the message to ${body}"
+    - "Change the email body to ${body}"
+    - "Set subject to ${subject} and say ${body}"
+    - "Set body to ${body} and set subject to ${subject}"
+    - "Address it to ${to}"
+    - "Add ${to} to recipients"
+    - "Append ${to} to the to field"
+    - "Add ${to} to the email"
+    - "Add ${to} to ${target}"
+    - "Cc ${cc}"
+    - "Add ${cc} to cc field"
+    - "Carbon copy the email draft to ${cc}"
+    - "Cc ${cc} on the email"
+    - "Bcc ${bcc}"
+    - "Add ${bcc} to bcc field"
+    - "Blind carbon copy the email to ${bcc}"
+    - "Bcc ${bcc} on the email"
+    - "Attach ${attachments} to the email"
+    - "Can you please attach ${attachments} to ${target}"
+    - "Add ${attachments} as an attachment to the draft"
+    - "Address it from my ${account} account"
+    - "Move ${entities} to archive"
+    - "Archive ${entities}"
+    - "${entities} should go to the archive"
+    - "Transfer ${entities} to archive"
+    - "Block any more ${messages}"
+    - "Can you please block ${messages} from sending me mail"
+    - "Delete ${entities}"
+    - "Trash ${entities}"
+    - "Can you please move ${entities} to garbage"
+    - "Remove follow up suggestion on ${messages}"
+    - "Stop suggesting to follow up on ${messages}"
+    - "Unsubscribe from ${messages}"
+    - "I don't want to receive any more ${messages}"
+    - "Don't remind me about ${messages}"
+    - "Remove the read later on ${messages}"
+    - "Delete my email reminder ${messages}"
+    - "Stop reminding me about ${messages}"
+    - "Mark ${messages} as completed"
+    - "I don't need to be reminded to reply to ${messages}"
+    - "Mute ${messages}"
+    - "Silence ${messages}"
+    - "Turn off notifications for ${messages}"
+    - "Open the draft ${target}"
+    - "Where is my draft ${target}"
+    - "Remind me later to read ${messages}"
+    - "Can you please remind me about my ${messages}"
+    - "Remind me ${date} to respond to ${messages}"
+    - "Set an reminder about ${messages} ${date}"
+    - "Let me know to read ${messages} at ${date}"
+    - "Unflag ${target}"
+    - "Find ${target} and unflag it"
+    - "Find ${target} and unflag them"
+    - "Flag ${target}"
+    - "Find ${target} and flag it"
+    - "Find ${target} and flag them"
+    - "Set the flag on ${target}"
+    - "Add flag to ${target}"
+    - "Turn on the flag on ${target}"
+    - "Default flag ${target}"
+    - "Find ${target} and default flag it"
+    - "Find ${target} and default flag them"
+    - "Set the default flag on ${target}"
+    - "Add default flag to ${target}"
+    - "Turn on the default flag on ${target}"
+    - "Move ${target} to junk"
+    - "Please junk ${target}"
+    - "Mark ${target} as read"
+    - "Set ${target} to read"
+    - "Move ${target} to my ${mailbox} mailbox"
+    - "Can you move ${target} to the mailbox named ${mailbox}"
+    - "All ${target} to the ${mailbox} mailbox please"
+    - "Summarize ${messages}"
+    - "Give me a summary of ${messages}"
+    - "What's the summary for ${messages}"
+    - "Sum up ${messages}"
+  actions_count: 26
+  actions:
+    - id: CancelDraftIntent
+      title: Cancel Draft
+      description: Cancel an ongoing email composition
+    - id: SaveDraftIntent
+    - id: MailFocusConfigurationAction
+      title: FilterInboxes
+      description: SetMailFocusConfiguration
+    - id: SummarizeConversationIntent
+      title: Summarize Mail Conversation
+      description: SUMMARIZE_CONVERSATION_DESCRIPTION
+    - id: UndoSendMessageIntent
+      title: Undo Send Message
+      description: UNDO_SEND_DESCRIPTION
+    - id: SendDraftIntent
+    - id: ComposeMessageIntent
+    - id: ReplyMessageIntent
+    - id: SetMailMessageIsRead
+      title: SetMailMessageIsRead
+    - id: OpenMessageURLIntent
+      title: Open Message
+      description: OPEN_MESSAGE_DESCRIPTION
+    - id: SearchMailIntent
+    - id: RemoveFollowUpIntent
+      title: Remove Follow Up
+      description: REMOVE_FOLLOW_UP_DESCRIPTION
+    - id: ArchiveMessageIntent
+    - id: MuteMessageIntent
+      title: Mute Message
+      description: MUTE_MESSAGE_DESCRIPTION
+    - id: UpdateMessageIntent
+    - id: ForwardMessageIntent
+    - id: OpenDraftIntent
+      title: Open Draft
+      description: OPEN_DRAFT_DESCRIPTION
+    - id: SendMail
+      title: SendMail
+    - id: OpenDraftURLIntent
+      title: Open Draft
+      description: OPEN_DRAFT_DESCRIPTION
+    - id: UpdateDraftIntent
+    - id: BlockSenderIntent
+      title: Block Sender
+      description: BLOCK_SENDER_DESCRIPTION
+    - id: DeleteMessageIntent
+    - id: SetReadLaterIntent
+      title: Set Read Later
+      description: REMIND_ME_DESCRIPTION
+    - id: DeleteDraftIntent
+    - id: UnsubscribeMessageIntent
+      title: Unsubscribe Message
+      description: UNSUBSCRIBE_MESSAGE_DESCRIPTION
+    - id: DeleteReadLaterIntent
+      title: Delete Read Later
+      description: Delete the read later reminder on one or more email messages
+  queries:
+    - id: MailMessageQuery
+    - id: MailAddresseeQuery
+    - id: MailAccountQuery
+    - id: AccountEntityQuery
+    - id: DraftMessageQuery
+    - id: MailMessageEntityQuery
+    - id: MailboxEntityQuery
+    - id: MailboxQuery
+  entities: ["MailAccountEntity", "MailMessage", "MailAddresseeEntity", "MailMessageEntity", "Mailbox", "AccountEntity", "MailboxEntity", "DraftMessageEntity"]
+  enums: ["{'displayTypeName': {'key': 'Flag Color', 'table': 'AppIntents', 'alternatives': []}, 'identifier': 'FlagColor', 'fullyQualifiedTypeName': 'MailApp.FlagColor', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'assistantDefinedSchemas': [], 'mangledTypeName': '7MailApp9FlagColorO', 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Red', 'alternatives': []}}, 'identifier': 'red'}, {'identifier': 'orange', 'displayRepresentation': {'title': {'key': 'Orange', 'alternatives': []}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Yellow'}}, 'identifier': 'yellow'}, {'identifier': 'green', 'displayRepresentation': {'title': {'key': 'Green', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Blue', 'alternatives': []}}, 'identifier': 'blue'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Purple'}}, 'identifier': 'purple'}, {'identifier': 'gray', 'displayRepresentation': {'title': {'key': 'Gray', 'alternatives': []}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Unflag'}}, 'identifier': 'noColor'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Default'}}, 'identifier': 'defaultColor'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'effectiveBundleIdentifiers': [], 'isSystem': False}", "{'effectiveBundleIdentifiers': [], 'mangledTypeName': 'MailMessageAttribute', 'displayTypeName': {'key': 'MailMessageAttribute', 'alternatives': []}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'AppIntents.MailMessageAttribute', 'identifier': 'MailMessageAttribute', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Deleted', 'alternatives': []}}, 'identifier': 'deleted'}, {'identifier': 'forwarded', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Forwarded'}}}, {'displayRepresentation': {'title': {'key': 'Replied', 'alternatives': []}}, 'identifier': 'replied'}, {'identifier': 'redirected', 'displayRepresentation': {'title': {'key': 'Redirected', 'alternatives': []}}}]}"]
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Mail/New Email With Selection
+    message: mailSelection
+    send_types: ["NSPasteboardTypeRTFD", "NSPasteboardTypeRTF", "NSPasteboardTypeString", "Apple Web Archive pasteboard type"]
+  - menu_item: Mail/New Email To Address
+    message: mailTo
+    send_types: ["NSPasteboardTypeString"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.mail.compose
+  - com.apple.mail.mailbox
+  - com.apple.mail.message
+  - com.apple.mail.attachment
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 96
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Mail
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.downloads.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.dark-wake-network-reachability
+    - com.apple.private.dnssd.resolver-override
+    - com.apple.private.network.socket-delegate
+    - com.apple.private.networkserviceproxy
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.icloudmailagent.secret.xpc
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.dprivacyd.allow
+    - com.apple.private.tcc.allow
+  apple_intelligence:
+    - com.apple.ProactiveSummarization.feedback
+    - com.apple.ProactiveSummarization.model-input
+    - com.apple.ProactiveSummarization.summarization
+    - com.apple.generativeexperiences.availabilityService
+    - com.apple.generativeexperiences.textcomposition
+    - com.apple.intelligenceplatform.EntityResolution
+    - com.apple.intelligenceplatform.View
+    - com.apple.modelmanager.inference
+    - com.apple.private.intelligenceplatform.views.read-only
+  other:
+    - com.apple.PerfPowerServices.data-donation
+    - com.apple.UNCUserNotification
+    - com.apple.accounts.inactive.fullaccess
+    - com.apple.application-identifier
+    - com.apple.assistant.cdm.client
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.businessservicesd.businessmetadata
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.people
+    - com.apple.developer.maps
+    - com.apple.diagnosticpipeline.request
+    - com.apple.finance.private
+    - com.apple.private.MobileContainerManager.lookup
+    - com.apple.private.SkyLight.screencapturedirect
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.biome.pruner
+    - com.apple.private.biome.read-write
+    - com.apple.private.calendar.allow-suggestions
+    - com.apple.private.calendar.has-adopted-modern-request-access-methods
+    - com.apple.private.cloudkit.publishAssets
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contactsui
+    - com.apple.private.corerecents
+    - com.apple.private.email
+    - com.apple.private.familycontrols
+    - com.apple.private.feedback.drafting
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.imcore.imagent
+    - com.apple.private.kvs.ignore-quota
+    - com.apple.private.launchservices.changedefaulthandlers
+    - com.apple.private.mail.persistence
+    - com.apple.private.metadata.exattrs
+    - com.apple.private.notificationcenter.preference
+    - com.apple.private.persona.read
+    - com.apple.private.personas.propagate
+    - com.apple.private.screencapturekit.noprompt
+    - com.apple.private.suggestions
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.suggestions.events
+    - com.apple.private.suggestions.mail
+    - com.apple.private.suggestions.reminders
+    - com.apple.proactive.PersonalizationPortrait.Contact
+    - com.apple.proactive.eventtracker
+    - com.apple.rootless.storage.Mail
+    - com.apple.rootless.storage.coreduet_knowledge_store
+    - com.apple.spotlight.scopes
+    - com.apple.trial.client
+    - com.apple.usermanagerd.persona.background
+    - com.apple.usermanagerd.persona.create
+    - com.apple.usermanagerd.persona.delete
+    - com.apple.usermanagerd.persona.fetch
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 74
+notable_frameworks:
+  - CloudKit
+  - EventKit
+  - UserNotifications
+  - AppIntents
+  - Contacts
+  - CoreSpotlight
+  - WebKit
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: MailStorageManagement
+    extension_point: com.apple.storagemanagement
+  - name: MailCacheDelete
+    extension_point: com.apple.cache_delete_extension
+  - name: MailShareExtension
+    extension_point: com.apple.share-services
+  - name: MailNotificationContentExtension
+    extension_point: com.apple.usernotifications.content-extension
+  - name: MailQuickLookExtension
+    extension_point: com.apple.quicklook.preview
+  - name: com.apple.mail.SpotlightIndexExtension
+    extension_point: com.apple.spotlight.index
+
+# ─── Layer 12: Notification Actions ───
+notification_categories:
+  - id: com.apple.mail.replyArchive
+    actions:
+      - id: com.apple.mail.replyButton
+        title: ReplyNotificationActionTitle
+      - id: com.apple.mail.markAsReadButton
+        title: MarkReadNotificationActionTitle
+      - id: com.apple.mail.archiveButton
+        title: ArchiveNotificationActionTitle
+  - id: com.apple.mail.replyDelete
+    actions:
+      - id: com.apple.mail.replyButton
+        title: ReplyNotificationActionTitle
+      - id: com.apple.mail.markAsReadButton
+        title: MarkReadNotificationActionTitle
+      - id: com.apple.mail.deleteButton
+        title: DeleteNotificationActionTitle
+        destructive: true

@@ -1,0 +1,137 @@
+# Contacts — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Contacts.app
+
+app: Contacts
+slug: contacts
+path: /System/Applications/Contacts.app
+layers_found: 7
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 3
+  commands: 8
+  classes: 12
+  command_names:
+    - make
+    - add
+    - remove
+    - save
+    - action property
+    - action title
+    - perform action
+    - should enable action
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: addressbook
+    name: Contacts URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 8
+document_types:
+  - name: Contacts Person Data
+    extensions: ["abcdp"]
+    role: Viewer
+  - name: vCard
+    role: Viewer
+    content_types: ["public.vcard"]
+  - name: LDIF
+    extensions: ["ldif", "ldi"]
+    role: Viewer
+  - name: Contacts Group Data
+    extensions: ["abcdg"]
+    role: Viewer
+  - name: Contacts Card Data
+    extensions: ["abcdg", "abcdp"]
+    role: Viewer
+  - name: Folder
+    role: Viewer
+  - name: Backup File
+    extensions: ["abbu"]
+    role: Editor
+  - name: Instant Replay Document
+    extensions: ["persistentCardModel"]
+    role: Editor
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.Contacts.ViewingCard
+  - com.apple.Contacts.CreateContact
+  - com.apple.Contacts.SearchContacts
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 52
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.assets.pictures.read-only
+    - com.apple.security.device.camera
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.print
+    - com.apple.security.scripting-targets
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.icloud.fmfd.access
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.manager.check-by-audit-token
+  other:
+    - com.apple.CommCenter.fine-grained
+    - com.apple.FaceTime.NoPrompt
+    - com.apple.accounts.applicationidfrompid
+    - com.apple.accounts.inactive.fullaccess
+    - com.apple.authkit.client.internal
+    - com.apple.coreduetd
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.people
+    - com.apple.developer.maps
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.backupd.session
+    - com.apple.private.contacts
+    - com.apple.private.contacts-avatar-picker-host
+    - com.apple.private.contacts.disable-remote-database-access
+    - com.apple.private.contactsui
+    - com.apple.private.corerecents
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.dark-wake-push
+    - com.apple.private.iaaccounts
+    - com.apple.private.imcore.imdpersistence.data-detection-access
+    - com.apple.private.imcore.imdpersistence.database-access
+    - com.apple.private.imcore.spi.database-access
+    - com.apple.private.persona.read
+    - com.apple.private.persona.write
+    - com.apple.private.screen-time
+    - com.apple.private.suggestions
+    - com.apple.private.suggestions.contacts
+    - com.apple.system.get-alert-tone
+    - com.apple.transparency.kt
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 42
+notable_frameworks:
+  - Contacts
+  - CoreData
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.AddressBook
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2002–2024 Apple Inc.  All Rights Reserved.
+  Kind: Application
+  Version: 14.0

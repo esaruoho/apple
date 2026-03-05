@@ -1,0 +1,34 @@
+# Audio MIDI Setup — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Audio MIDI Setup.app
+
+app: Audio MIDI Setup
+slug: audio-midi-setup
+path: /System/Applications/Utilities/Audio MIDI Setup.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 6
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.avfoundation.allow-identifying-output-device-details
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.avfoundation.allows-access-to-device-list
+    - com.apple.avfoundation.allows-set-output-device
+    - com.apple.rootless.storage.AudioSettings
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 20
+notable_frameworks:
+  - AVFoundation
+  - CoreAudio
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.audio.AudioMIDISetup
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 3.6

@@ -1,0 +1,312 @@
+# Freeform — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Freeform.app
+
+app: Freeform
+slug: freeform
+path: /System/Applications/Freeform.app
+layers_found: 7
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: freeform
+    name: com.apple.freeform
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Insert ${strings} on my ${board} board"
+    - "Insert the following sentence into ${board}: ${strings}"
+    - "Add the text ${strings} into ${board} board"
+    - "Write ${strings} on my ${board} board"
+    - "Insert ${strings} on my ${board} board into a ${container}"
+    - "Insert the following sentence into ${board} as a ${container} ${strings}"
+    - "Add the text ${strings} into ${board} board as ${container}"
+    - "Write ${strings} on my ${board} board in a ${container}"
+    - "Write ${strings} in a ${container} on ${board} board"
+    - "Attach ${strings} in a ${container} on ${board} board"
+    - "Insert a note with the text ${string} to ${board}"
+    - "Add a note containing ${string} to ${board}"
+    - "Add a post it with the text ${string} to ${board}"
+    - "Create a sticky note with ${string} to ${board}"
+    - "Write ${string} in a sticky note on my ${board} board"
+    - "Add a sticky note to ${board}"
+    - "Insert a sticky note on my ${board} board"
+    - "Put a sticky note into ${board} board"
+    - "Add a post it note to ${board}"
+    - "Insert ${string} on my ${board} board"
+    - "Insert ${string} into a box on my ${board} board"
+    - "Insert the following sentence into ${board}: ${string}"
+    - "Add the text ${string} into ${board} board"
+    - "Add ${string} to ${board} board"
+    - "Write ${string} on my ${board} board"
+    - "Insert text box on my ${board} board"
+    - "Add a text box into ${board} board"
+    - "Put a text box into ${board} board"
+    - "Add an empty text box into ${board} board"
+    - "Create text box on my ${board} board"
+    - "I want a text box on the ${board} board"
+    - "Add ${url} to my ${board} canvas"
+    - "Add ${url} link to my ${board} canvas"
+    - "Add ${url} hyperlink to my ${board} board"
+    - "Add ${url} hyperlink to the ${board} board"
+    - "Insert ${url} to ${board} board"
+    - "Insert ${url} to my ${board} board"
+    - "Insert ${url} to my ${board} canvas"
+    - "Insert ${url} url to ${board} board"
+    - "Insert ${url} link to ${board} board"
+    - "Put ${url} in the ${board} board"
+    - "Put a link to ${url} in the ${board} board"
+    - "Insert ${files} into my ${applicationName} ${board}"
+    - "Insert ${files} into my ${board} board"
+    - "Add ${files} to my ${board} board"
+    - "Insert ${files} on my board called ${board}"
+    - "Put ${files} on ${board} board"
+    - "Place ${files} on my ${board} board"
+    - "Attach ${files} on my ${board} board"
+    - "Insert the photo ${images} into my ${applicationName} board ${board}"
+    - "Insert the photo ${images} into my ${applicationName} board called ${board}"
+    - "Insert photos ${images} into my ${board} board"
+    - "Add my photos ${images} to my ${board} board"
+    - "Add photos ${images} to ${board} board"
+    - "Add ${images} to ${board} board"
+    - "Put ${images} on ${board} board"
+    - "Insert the image of my cat called ${images} on my ${board} board"
+    - "Attach ${images} to my ${board} board"
+    - "Add a ${shapes} containing ${string} to my ${board} board"
+    - "Insert ${string} in a ${shapes} on ${board} board"
+    - "I want a ${shapes} with text saying ${string} on my ${board} canvas"
+    - "Attach the text ${string} in a ${shapes} to the ${board} board"
+    - "Add a ${shapes} to my ${board} board"
+    - "Insert a ${shapes} on ${board} board"
+    - "Put a ${shapes} shape on my ${board} board"
+    - "Place a ${shapes} on my ${board} board"
+    - "I want a ${shapes} shape on my ${board} board"
+    - "I want a new ${shapes} shape on my ${board} board"
+    - "Attach a ${shapes} shape to the ${board} board"
+    - "Change background to ${color}"
+    - "Change color to ${color}"
+    - "Update background to ${color}"
+    - "Update color to ${color}"
+    - "Tint background to ${color}"
+    - "Color background to ${color}"
+    - "Change this to ${color}"
+    - "I want to color this ${color}"
+    - "Change background to ${color} on ${board}"
+    - "Change color to ${color} on ${board}"
+    - "Update background to ${color} on ${board}"
+    - "Update color to ${color} on ${board}"
+    - "Tint background to ${color} on ${board}"
+    - "Color background to ${color} on ${board}"
+    - "Change this to ${color} on ${board}"
+    - "I want to color this ${color} on ${board}"
+    - "Set text to ${style}"
+    - "Make text ${style}"
+    - "Make font ${style}"
+    - "Apply ${style}"
+    - "${style} text"
+    - "Remove ${style}"
+    - "Delete ${style}"
+    - "Set text to ${style} on ${board}"
+    - "Make text ${style} on ${board}"
+    - "Make font ${style} on ${board}"
+    - "Apply ${style} on ${board}"
+    - "${style} text on ${board}"
+    - "Remove ${style} on ${board}"
+    - "Delete ${style} on ${board}"
+    - "${operation} font size"
+    - "${operation} text"
+    - Make text bigger
+    - Make the font size larger
+    - Change the font size to make it larger
+    - Enhance font size
+    - Make text tinier
+    - Make the font size smaller
+    - Change the font size to make it smaller
+    - "Make the font size ${behavior}"
+    - "Make text ${behavior}"
+    - "Change the font size to make it ${behavior}"
+    - Increase font size
+    - Make text bigger
+    - Reduce font size
+    - Decrease font size
+    - Shrink font size
+    - Make text tinier
+    - "Make the font size ${size}"
+    - "Change font size to ${size}"
+    - "Apply ${size} font size"
+    - "Update font size to ${size}"
+    - "Set font size ${size}"
+    - "${operation} my ${entity} board"
+    - "Set the board ${entity} ${operation}"
+    - "I want to ${operation} my ${entity} board"
+    - "Add ${entity} to favorites"
+    - "Make ${entity} a favorite"
+    - "Mark the board ${entity} as favorite"
+    - "Remove ${entity} from favorites"
+    - "${operation} connectors on board ${entity}"
+    - "${operation} object connectors on board ${entity}"
+    - "I want to use connectors on ${entity}"
+    - "Let me connect shapes easily on ${entity}"
+    - "Don't show object connectors on board ${entity}"
+    - "I don't want to use connectors on board ${entity}"
+    - "${operation} the grid on board ${entity}"
+    - "${operation} dots on board ${entity}"
+    - "${operation} dots on the background of board ${entity}"
+    - "Bring back the grid on ${entity}"
+    - "I want to see the dots on the board ${entity} again"
+    - "Make the dot grid visible for ${entity}"
+    - "Don't show dots on the canvas in ${entity}"
+    - "I don't want to see the dots on ${entity}"
+    - "Don't show me the grid on ${entity}"
+  actions_count: 23
+  actions:
+    - id: CRLChangeSelectionColorIntent
+      title: Change Fill Color
+      description: "Changes the fill color of the shape, sticky note, or text box selected on the board."
+    - id: CRLResizeSelectionFontIntent_v2
+      title: Resize Text
+      description: Increases or decreases the font size of the text selected on the board.
+    - id: CRLFavoriteBoardIntent_v2
+      title: Favorite/Unfavorite Board
+      description: Adds a board to Favorites or removes a board from Favorites.
+    - id: CRLAddTextToBoardIntent
+      title: Add Text
+      description: Adds a text box to a board (empty or with text in it).
+    - id: CRLiOSOpenBoardIntent
+      title: Open Freeform Board
+      description: Open the specified board in Freeform
+    - id: CRLAddStickyNoteToBoardIntent
+      title: Add Sticky Note
+      description: Adds a sticky note to a board (empty or with text in it).
+    - id: CRLUpdateBoardIntent
+    - id: CRLiOSCreateBoardIntent
+      title: Create New Freeform Board
+      description: Create a new board for Freeform
+    - id: CRLDeleteBoardIntent
+    - id: CRLChangeBoardCanvasGridIntent
+      title: Show/Hide Dot Grid
+      description: Shows or hides the dot grid for a board.
+    - id: CRLChangeSelectionFontStyleIntent
+      title: Change Font Style
+      description: Applies a font style to the text selected on the board.
+    - id: CRLRenameBoardIntent
+      title: Rename Board
+      description: Renames a board.
+    - id: CRLInsertShapeToBoardIntent
+      title: Add Shape
+      description: Adds a shape to a board (empty or with text in it).
+    - id: CRLChangeBoardObjectConnectorsIntent
+      title: Show/Hide Object Connectors
+      description: Shows or hides object connectors for a board.
+    - id: CRLInsertPhotosToBoardIntent
+      title: Add Photos
+      description: Adds one or more photos to a board.
+    - id: CRLInsertFilesToBoardIntent
+      title: Add Files
+      description: Adds one or more files to a board.
+    - id: CRLResizeSelectionFontIntent
+      title: Resize Text
+      description: Increases or decreases the font size of the text selected on the board.
+    - id: CRLInsertURLToBoardIntent
+      title: Add Link
+      description: Adds a web link to a board.
+    - id: CRLChangeSelectionFontSizeIntent
+      title: Change Font Size
+      description: Changes the font size of the text selected on the board.
+    - id: CRLInsertTextToBoardIntent
+      title: Insert Text
+      description: Adds text to a board in a text box or a specified container.
+    - id: CRLAddItemToBoardIntent
+    - id: CRLOpenBoardIntent
+    - id: CRLCreateBoardIntent
+  queries:
+    - id: BoardQuery
+    - id: CRLBoardQuery
+  entities: ["CRLiOSBoardEntity", "CRLBoardEntity"]
+  enums: ["{'mangledTypeName': '8Freeform17CRLFontSizeEntityO', 'fullyQualifiedTypeName': 'Freeform.CRLFontSizeEntity', 'displayTypeName': {'key': 'Font Size', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '10'}}, 'identifier': '10'}, {'displayRepresentation': {'title': {'key': '12', 'table': 'CRLAppIntents'}}, 'identifier': '12'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '14'}}, 'identifier': '14'}, {'displayRepresentation': {'title': {'key': '18', 'table': 'CRLAppIntents'}}, 'identifier': '18'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '24'}}, 'identifier': '24'}, {'displayRepresentation': {'title': {'key': '36', 'table': 'CRLAppIntents'}}, 'identifier': '36'}, {'displayRepresentation': {'title': {'key': '48', 'table': 'CRLAppIntents'}}, 'identifier': '48'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '72'}}, 'identifier': '72'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '96'}}, 'identifier': '96'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': '144'}}, 'identifier': '144'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLFontSizeEntity'}", "{'mangledTypeName': 'ResizeBehavior', 'fullyQualifiedTypeName': 'AppIntents.ResizeBehavior', 'displayTypeName': {'key': 'ResizeBehavior'}, 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Larger'}}, 'identifier': 'larger'}, {'displayRepresentation': {'title': {'key': 'Smaller'}}, 'identifier': 'smaller'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'ResizeBehavior'}", "{'mangledTypeName': '8Freeform22CRLVisibilityOperationO', 'fullyQualifiedTypeName': 'Freeform.CRLVisibilityOperation', 'displayTypeName': {'key': 'Visibility', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'synonyms': [{'key': 'Enable', 'table': 'CRLAppIntents'}, {'key': 'Display', 'table': 'CRLAppIntents'}, {'key': 'Turn on', 'table': 'CRLAppIntents'}], 'title': {'key': 'Show', 'table': 'CRLAppIntents'}}, 'identifier': 'show'}, {'displayRepresentation': {'title': {'key': 'Hide', 'table': 'CRLAppIntents'}, 'synonyms': [{'key': 'Disable', 'table': 'CRLAppIntents'}, {'key': 'Remove', 'table': 'CRLAppIntents'}, {'key': 'Turn off', 'table': 'CRLAppIntents'}]}, 'identifier': 'hide'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Toggle'}}, 'identifier': 'toggle'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLVisibilityOperation'}", "{'mangledTypeName': '8Freeform14CRLColorEntityO', 'fullyQualifiedTypeName': 'Freeform.CRLColorEntity', 'displayTypeName': {'key': ''}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [{'name': 'CanvasColor', 'version': '1.0.0', 'domain': 'whiteboard'}], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Black'}}, 'identifier': 'black'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Blue'}}, 'identifier': 'blue'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Gray'}}, 'identifier': 'gray'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Green'}}, 'identifier': 'green'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Orange'}}, 'identifier': 'orange'}, {'displayRepresentation': {'title': {'key': 'Purple', 'table': 'CRLAppIntents'}}, 'identifier': 'purple'}, {'displayRepresentation': {'title': {'key': 'Red', 'table': 'CRLAppIntents'}}, 'identifier': 'red'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Yellow'}}, 'identifier': 'yellow'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLColorEntity'}", "{'mangledTypeName': '8Freeform18CRLFontStyleEntityO', 'fullyQualifiedTypeName': 'Freeform.CRLFontStyleEntity', 'displayTypeName': {'key': 'Font Style', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Bold', 'table': 'CRLAppIntents'}}, 'identifier': 'bold'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Italic'}}, 'identifier': 'italic'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Underline'}}, 'identifier': 'underline'}, {'displayRepresentation': {'title': {'key': 'Strike Through', 'table': 'CRLAppIntents'}}, 'identifier': 'strikethrough'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLFontStyleEntity'}", "{'mangledTypeName': '8Freeform18CRLShapeTypeEntityO', 'fullyQualifiedTypeName': 'Freeform.CRLShapeTypeEntity', 'displayTypeName': {'key': 'Shape', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Circle', 'table': 'CRLAppIntents'}}, 'identifier': 'circle'}, {'displayRepresentation': {'title': {'key': 'Line', 'table': 'CRLAppIntents'}}, 'identifier': 'line'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Rounded Rectangle'}}, 'identifier': 'roundedRectangle'}, {'displayRepresentation': {'title': {'key': 'Square', 'table': 'CRLAppIntents'}}, 'identifier': 'square'}, {'displayRepresentation': {'title': {'key': 'Star', 'table': 'CRLAppIntents'}}, 'identifier': 'star'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Triangle'}}, 'identifier': 'triangle'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLShapeTypeEntity'}", "{'mangledTypeName': '8Freeform17CRLCanvasItemTypeO', 'fullyQualifiedTypeName': 'Freeform.CRLCanvasItemType', 'displayTypeName': {'key': ''}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [{'name': 'CanvasItemType', 'version': '1.0.0', 'domain': 'whiteboard'}], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Circle', 'table': 'CRLAppIntents'}}, 'identifier': 'circle'}, {'displayRepresentation': {'title': {'key': 'Line', 'table': 'CRLAppIntents'}}, 'identifier': 'line'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Rounded Rectangle'}}, 'identifier': 'roundedRectangle'}, {'displayRepresentation': {'title': {'key': 'Square', 'table': 'CRLAppIntents'}}, 'identifier': 'square'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Sticky Note'}}, 'identifier': 'stickyNote'}, {'displayRepresentation': {'title': {'key': 'Star', 'table': 'CRLAppIntents'}}, 'identifier': 'star'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Text Box'}}, 'identifier': 'textBox'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Triangle'}}, 'identifier': 'triangle'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'URL'}}, 'identifier': 'url'}, {'displayRepresentation': {'title': {'key': 'Media', 'table': 'CRLAppIntents'}}, 'identifier': 'media'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLCanvasItemType'}", "{'mangledTypeName': '8Freeform22CRLSizeChangeOperationO', 'fullyQualifiedTypeName': 'Freeform.CRLSizeChangeOperation', 'displayTypeName': {'key': 'Size Change', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Increase', 'table': 'CRLAppIntents'}, 'synonyms': [{'key': 'Grow', 'table': 'CRLAppIntents'}, {'key': 'Enlarge', 'table': 'CRLAppIntents'}, {'key': 'Expand', 'table': 'CRLAppIntents'}]}, 'identifier': 'increase'}, {'displayRepresentation': {'synonyms': [{'key': 'Shrink', 'table': 'CRLAppIntents'}, {'key': 'Reduce', 'table': 'CRLAppIntents'}, {'key': 'Lower', 'table': 'CRLAppIntents'}], 'title': {'key': 'Decrease', 'table': 'CRLAppIntents'}}, 'identifier': 'decrease'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLSizeChangeOperation'}", "{'mangledTypeName': '8Freeform20CRLFavoriteOperationO', 'fullyQualifiedTypeName': 'Freeform.CRLFavoriteOperation', 'displayTypeName': {'key': 'Favorite', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'synonyms': [{'key': 'Love', 'table': 'CRLAppIntents'}, {'key': 'Heart', 'table': 'CRLAppIntents'}, {'key': 'Like', 'table': 'CRLAppIntents'}], 'title': {'key': 'Favorite', 'table': 'CRLAppIntents'}}, 'identifier': 'favorite'}, {'displayRepresentation': {'title': {'key': 'Unfavorite', 'table': 'CRLAppIntents'}, 'synonyms': [{'key': 'Unheart', 'table': 'CRLAppIntents'}, {'key': 'Unlike', 'table': 'CRLAppIntents'}, {'key': 'Dislike', 'table': 'CRLAppIntents'}]}, 'identifier': 'unfavorite'}, {'displayRepresentation': {'title': {'table': 'CRLAppIntents', 'key': 'Toggle'}}, 'identifier': 'toggle'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLFavoriteOperation'}", "{'mangledTypeName': '8Freeform31CRLSupportedTextContainerEntityO', 'fullyQualifiedTypeName': 'Freeform.CRLSupportedTextContainerEntity', 'displayTypeName': {'key': 'Text Container', 'table': 'CRLAppIntents'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Text Box', 'table': 'CRLAppIntents'}}, 'identifier': 'textbox'}, {'displayRepresentation': {'title': {'key': 'Sticky Note', 'table': 'CRLAppIntents'}}, 'identifier': 'stickyNote'}], 'isSystem': False, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'identifier': 'CRLSupportedTextContainerEntity'}"]
+  auto_shortcuts: 2
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.freeform.viewModelItemHandoff
+  - com.apple.freeform.viewModelDrag
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 48
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.octagon
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.print
+    - com.apple.security.restricted-application-groups
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.idms.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.developer.aps-environment
+    - com.apple.developer.associated-domains
+    - com.apple.freeform.USD-renderer-remote-UI-entitlement
+    - com.apple.locationd.authorizeapplications
+    - com.apple.managedconfiguration.profiled.set
+    - com.apple.private.CloudSharing.SPI
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.biome.read-write
+    - com.apple.private.clouddocs.sharing.private-interface
+    - com.apple.private.cloudkit.realTimeOperations
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.copresence
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.hsa-authentication-processing
+    - com.apple.private.ind.client
+    - com.apple.private.metadata.exattrs
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.swc.system-app
+    - com.apple.runningboard.freeform.USD-renderer-remote-UI
+    - fairplay-client
+    - platform-application
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 73
+notable_frameworks:
+  - AVFoundation
+  - AppIntents
+  - CloudKit
+  - Contacts
+  - CoreMedia
+  - CoreSpotlight
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.freeform
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 3.5
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: FreeformSharingExtension
+    extension_point: com.apple.share-services

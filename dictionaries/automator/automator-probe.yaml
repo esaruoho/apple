@@ -1,0 +1,90 @@
+# Automator — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Automator.app
+
+app: Automator
+slug: automator
+path: /System/Applications/Automator.app
+layers_found: 6
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 5
+  commands: 16
+  classes: 17
+  command_names:
+    - close
+    - count
+    - delete
+    - duplicate
+    - exists
+    - get
+    - make
+    - move
+    - open
+    - print
+    - quit
+    - save
+    - set
+    - add
+    - execute
+    - remove
+
+# ─── Layer 3: Document Types ───
+document_types_count: 5
+document_types:
+  - name: Workflow
+    extensions: ["workflow"]
+    role: Editor
+  - name: Application
+    extensions: ["app"]
+    role: Editor
+  - name: Action
+    extensions: ["action"]
+    role: Viewer
+  - name: Conversion Action
+    extensions: ["caction"]
+    role: Viewer
+  - name: Data Type Definition
+    extensions: ["definition"]
+    role: Viewer
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Create Service
+    message: makeNewServiceWithPasteboard
+    send_types: ["NSStringPboardType", "NSFilenamesPboardType"]
+  - menu_item: Create Workflow
+    message: makeNewWorkflowServiceWithPasteboard
+    send_types: ["NSStringPboardType", "NSFilenamesPboardType"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 7
+entitlements:
+  sandbox:
+    - com.apple.private.automator.securityHost
+  icloud:
+    - com.apple.developer.ubiquity-container-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - com.apple.application-identifier
+    - com.apple.private.cs.automator-plugins
+    - com.apple.private.xprotect
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 16
+notable_frameworks:
+  - Automator
+  - OSAKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.Automator
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2004–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 2.10

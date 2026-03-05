@@ -1,0 +1,82 @@
+# ColorSync Utility — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/ColorSync Utility.app
+
+app: ColorSync Utility
+slug: colorsync-utility
+path: /System/Applications/Utilities/ColorSync Utility.app
+layers_found: 3
+
+# ─── Layer 3: Document Types ───
+document_types_count: 15
+document_types:
+  - name: ICC Profile
+    extensions: ["icc", "icm", "pf", "ICC", "ICM"]
+    role: Editor
+  - name: ColorSync CMM
+    extensions: ["cmm"]
+    role: None
+  - name: PDF Document
+    extensions: ["pdf", "PDF"]
+    role: Editor
+    content_types: ["com.adobe.pdf"]
+  - name: JPEG Image
+    extensions: ["jpg", "jpeg", "JPG", "JPEG", "jpe", "JPE"]
+    role: Editor
+    content_types: ["public.jpeg", "public.heic"]
+  - name: PNG Image
+    extensions: ["png"]
+    role: Editor
+    content_types: ["public.png"]
+  - name: GIF Image
+    extensions: ["gif"]
+    role: Editor
+    content_types: ["com.compuserve.gif"]
+  - name: TIFF Document
+    extensions: ["TIFF", "TIF", "tif", "tiff"]
+    role: Editor
+    content_types: ["public.tiff"]
+  - name: Windows Bitmap Image
+    extensions: ["bmp"]
+    role: Editor
+    content_types: ["com.microsoft.bmp"]
+  - name: PICT Image
+    extensions: ["pict", "pct"]
+    role: Editor
+    content_types: ["com.apple.pict"]
+  - name: Targa Image
+    extensions: ["tga"]
+    role: Editor
+    content_types: ["com.truevision.tga-image"]
+  - name: Silicon Graphics Image
+    extensions: ["sgi"]
+    role: Editor
+    content_types: ["com.sgi.sgi-image"]
+  - name: Adobe Photoshop Image
+    extensions: ["psd"]
+    role: Viewer
+    content_types: ["com.adobe.photoshop-image"]
+  - name: JPEG 2000 Image
+    extensions: ["jp2"]
+    role: Editor
+    content_types: ["public.jpeg-2000"]
+  - name: OpenEXR
+    extensions: ["exr"]
+    role: Editor
+    content_types: ["com.ilm.openexr-image"]
+  - name: HEIC
+    extensions: ["heic", "heif"]
+    role: Editor
+    content_types: ["public.heic", "public.heif"]
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 13
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.ColorSyncUtility
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2014–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 12.1.0

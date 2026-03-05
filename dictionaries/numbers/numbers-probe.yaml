@@ -1,0 +1,148 @@
+# Numbers — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Numbers.app
+
+app: Numbers
+slug: numbers
+path: /Applications/Numbers.app
+layers_found: 8
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 4
+  commands: 16
+  classes: 21
+  command_names:
+    - set
+    - delete
+    - make
+    - clear
+    - merge
+    - sort
+    - unmerge
+    - set password
+    - remove password
+    - transpose
+    - export
+    - add column after
+    - add column before
+    - add row above
+    - add row below
+    - remove
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: com.apple.iwork.numbers-share
+    name: com.apple.iwork.numbers-share
+
+# ─── Layer 3: Document Types ───
+document_types_count: 7
+document_types:
+  - name: com.apple.iwork.numbers.document
+    role: Editor
+    content_types: ["com.apple.iwork.numbers.numbers"]
+  - name: com.apple.iwork.numbers.alt-document
+    role: Editor
+    content_types: ["com.apple.iwork.numbers.sffnumbers", "com.apple.iwork.numbers.numbers-tef"]
+  - name: com.apple.iwork.numbers.template
+    role: Editor
+    content_types: ["com.apple.iwork.numbers.template", "com.apple.iwork.numbers.sfftemplate"]
+  - name: com.apple.iwork.numbers.excel
+    role: Editor
+    content_types: ["com.microsoft.excel.xls", "com.microsoft.excel.xlt", "com.microsoft.excel.xla", "com.microsoft.excel.xlam", "com.microsoft.excel.openxml.addin"]
+  - name: Microsoft Excel add-in
+    extensions: ["xlam"]
+    role: Viewer
+    content_types: ["com.microsoft.excel.openxml.addin"]
+  - name: com.apple.iwork.numbers.csv
+    role: Editor
+    content_types: ["public.comma-separated-values-text", "public.plain-text"]
+  - name: com.apple.iwork.numbers.tsv
+    role: Editor
+    content_types: ["public.tab-separated-values-text", "public.plain-text"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 2
+  actions:
+    - id: TNDocumentBackgroundExportIntent
+      title: Export Spreadsheet in Background
+      description: Exports a spreadsheet to a specified file format. Does not open the spreadsheet or bring it to the foreground.
+    - id: TNNewDocumentIntent
+      title: Create New Spreadsheet
+      description: Create a new spreadsheet from the template chooser in Numbers.
+  queries:
+    - id: TNDocumentQuery
+  entities: ["TNDocumentEntity"]
+  enums: ["{'mangledTypeName': '7Numbers20TNExportIntentFormatO', 'isSystem': False, 'fullyQualifiedTypeName': 'Numbers.TNExportIntentFormat', 'displayTypeName': {'key': 'Format', 'table': 'TNAppIntents'}, 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'PDF', 'table': 'TNAppIntents'}}, 'identifier': 'pdf'}, {'displayRepresentation': {'title': {'key': 'Excel', 'table': 'TNAppIntents'}}, 'identifier': 'excel'}], 'assistantDefinedSchemas': [], 'identifier': 'TNExportIntentFormat', 'effectiveBundleIdentifiers': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - TNiOSAddBodyRowAtBottomIntent
+  - TNiOSAddFormRecordIntent
+  - TNiOSAddValuesToFormIntent
+  - TNiOSAddValuesToSpreadsheetIntent
+  - TNiOSCreateNewSpreadsheetIntent
+  - TNiOSOpenAnyDocumentIntent
+  - TNiOSOpenDocumentIntent
+  - TSADocumentCreateIntent
+  - TSADocumentOpenIntent
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 37
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.assets.movies.read-only
+    - com.apple.security.assets.music.read-only
+    - com.apple.security.assets.pictures.read-only
+    - com.apple.security.device.audio-input
+    - com.apple.security.device.microphone
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.photos-library
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.developer.ClassKit-environment
+    - com.apple.developer.aps-environment
+    - com.apple.developer.shared-with-you
+    - com.apple.developer.shared-with-you.collaboration
+    - com.apple.fileprovider.alternate-contents
+    - com.apple.fileprovider.iwork-collaboration-messaging
+    - com.apple.fileprovider.pause-resume
+    - com.apple.private.ClassKit.dashboard
+    - com.apple.private.clouddocs.sharing-proxy
+    - com.apple.private.clouddocs.sharing.private-interface
+    - com.apple.private.cloudkit.participant-pii
+    - com.apple.private.contactsui
+    - com.apple.private.iwork.sharing-acceptance
+    - com.apple.private.rtcreportingd
+    - fairplay-client
+    - keychain-access-groups
+    - useractivity-team-identifier
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 42
+notable_frameworks:
+  - CoreMedia
+  - AVFoundation
+  - AppIntents
+  - Contacts
+  - Intents
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: NumbersNotificationServiceExtension
+    extension_point: com.apple.usernotifications.service

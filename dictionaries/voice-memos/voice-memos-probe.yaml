@@ -1,0 +1,191 @@
+# Voice Memos — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/VoiceMemos.app
+
+app: Voice Memos
+slug: voice-memos
+path: /System/Applications/VoiceMemos.app
+layers_found: 5
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "search ${applicationName} for ${searchPhrase}"
+    - "search in ${applicationName} for ${searchPhrase}"
+    - "search for ${searchPhrase} in ${applicationName}"
+    - "search for ${applicationName} called ${searchPhrase}"
+    - "open folder ${target} in ${applicationName}"
+    - "open my ${target} folder in ${applicationName}"
+    - "open my ${applicationName} ${target} folder"
+    - "create folder ${name} in ${applicationName}"
+    - "create a new ${applicationName} folder"
+    - "create a new ${applicationName} folder named ${name}"
+    - "create a new ${applicationName} folder called ${name}"
+    - "create a new ${applicationName} folder titled ${name}"
+    - "delete folder ${entities} in ${applicationName}"
+    - "delete ${applicationName} folder named ${entities}"
+    - "remove ${applicationName} folder named ${entities}"
+    - "delete my ${entities} folder"
+    - "delete folder called ${entities}"
+    - "delete folder named ${entities}"
+    - "remove folder named ${entities}"
+    - "play ${playbackType} ${applicationName}"
+    - "play ${entity} ${applicationName}"
+    - "play my ${applicationName} ${entity}"
+    - "create a new ${applicationName}"
+    - "Create ${name} in ${applicationName}"
+    - "create ${applicationName} named ${name}"
+    - "start a ${applicationName} called ${name}"
+    - "record a ${applicationName} called ${name}"
+    - "record a ${applicationName}"
+    - "record a new ${applicationName}"
+    - "start recording a ${applicationName}"
+    - "start recording a new ${applicationName}"
+    - stop recording
+    - "stop my ${applicationName}"
+    - Stop
+    - finish recording
+    - "Delete ${applicationName} ${entities}"
+    - "Delete recording ${entities}"
+    - "delete recording called  ${entities}"
+    - "delete ${applicationName} called ${entities}"
+    - Change Recording Playback Setting
+    - "change my recording playback setting to ${setting}"
+    - "change ${applicationName} setting to ${setting}"
+    - "open recording ${target}"
+    - "open ${applicationName} ${target}"
+    - "select ${applicationName} ${target}"
+  actions_count: 14
+  actions:
+    - id: DeleteFolder
+      title: DELETE_FOLDER_INTENT_TITLE
+      description: DELETE_FOLDER_INTENT_DESCRIPTION
+    - id: RecordVoiceMemoIntent
+      title: CREATE_RECORDING_INTENT_TITLE
+      description: CREATE_RECORDING_INTENT_DESCRIPTION
+    - id: RCCombineRecordings
+      title: COMBINE_RECORDINGS_INTENT_TITLE
+      description: COMBINE_RECORDINGS_INTENT_DESCRIPTION
+    - id: OpenFolder
+      title: OPEN_FOLDER_INTENT_TITLE
+      description: OPEN_FOLDER_INTENT_DESCRIPTION
+    - id: RCImportRecording
+      title: IMPORT_RECORDING_INTENT_TITLE
+      description: IMPORT_RECORDING_INTENT_DESCRIPTION
+    - id: SelectRecording
+      title: SELECT_RECORDING_INTENT_TITLE
+      description: SELECT_RECORDING_INTENT_DESCRIPTION
+    - id: DeleteRecording
+      title: DELETE_RECORDING_INTENT_TITLE
+      description: DELETE_RECORDING_INTENT_DESCRIPTION
+    - id: ChangeRecordingPlaybackSetting
+      title: CHANGE_RECORDING_PLAYBACK_SETTING_INTENT_TITLE
+      description: CHANGE_RECORDING_PLAYBACK_SETTING_INTENT_DESCRIPTION
+    - id: PlaybackVoiceMemoIntent
+      title: PLAY_RECORDING_INTENT_TITLE
+      description: PLAY_RECORDING_INTENT_DESCRIPTION
+    - id: SearchRecordings
+      title: SEARCH_RECORDINGS_INTENT_TITLE
+      description: SEARCH_RECORDINGS_INTENT_DESCRIPTION
+    - id: RCControlCenterToggleRecording
+      title: CONTROL_CENTER_TOGGLE_RECORDING_INTENT_TITLE
+      description: CONTROL_CENTER_TOGGLE_RECORDING_INTENT_DESCRIPTION
+    - id: ToggleRecording
+      title: TOGGLE_RECORDING_INTENT_TITLE
+      description: TOGGLE_RECORDING_INTENT_DESCRIPTION
+    - id: CreateFolder
+      title: CREATE_FOLDER_INTENT_TITLE
+      description: CREATE_FOLDER_INTENT_DESCRIPTION
+    - id: StopRecording
+      title: STOP_RECORDING_INTENT_TITLE
+      description: STOP_RECORDING_INTENT_DESCRIPTION
+  queries:
+    - id: RCFolderEntityStringQuery
+    - id: RCRecordingEntityStringQuery
+  entities: ["RCRecordingEntity", "RCFolderEntity", "RCUIElementEntity"]
+  enums: ["{'identifier': 'ChangeOperation', 'displayTypeName': {'key': 'ChangeOperation', 'alternatives': []}, 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'fullyQualifiedTypeName': 'AppIntents.ChangeOperation', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': True, 'cases': [{'identifier': 'disable', 'displayRepresentation': {'title': {'key': 'Disable', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Enable', 'alternatives': []}}, 'identifier': 'enable'}, {'identifier': 'toggle', 'displayRepresentation': {'title': {'key': 'Toggle', 'alternatives': []}}}], 'mangledTypeName': 'ChangeOperation'}", "{'fullyQualifiedTypeName': 'VoiceMemos.RCUIElementEntity', 'assistantDefinedSchemas': [], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False, 'mangledTypeName': '10VoiceMemos17RCUIElementEntityO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'numericFormatTypeName': {'alternatives': [], 'key': 'UIELEMENT_ENTITY_NAME'}, 'identifier': 'RCUIElementEntity', 'displayTypeName': {'key': 'UIELEMENT_ENTITY_NAME', 'alternatives': []}, 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'alternatives': [], 'key': 'UIELEMENT_ENTITY_CASE_SIDEBAR'}}, 'identifier': 'RCFoldersSidebar'}, {'displayRepresentation': {'title': {'key': 'UIELEMENT_ENTITY_CASE_PLAYBACK_SETTINGS', 'alternatives': []}}, 'identifier': 'RCPlaybackSettingsView'}, {'identifier': 'RCRecordingCard', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'UIELEMENT_ENTITY_CASE_RECORDING_CARD'}}}], 'effectiveBundleIdentifiers': []}", "{'assistantDefinedSchemas': [], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'effectiveBundleIdentifiers': [], 'displayTypeName': {'alternatives': [], 'key': 'RECORDING_SETTING_TYPE_NAME'}, 'cases': [{'displayRepresentation': {'title': {'alternatives': [], 'key': 'ENHANCE_RECORDING_SETTING'}}, 'identifier': 'enhanceRecording'}, {'identifier': 'skipSilence', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'SKIP_SILENCE_SETTING'}}}], 'numericFormatTypeName': {'alternatives': [], 'key': 'RECORDING_SETTING_TYPE_NAME'}, 'identifier': 'RecordingSettingType', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeName': '10VoiceMemos20RecordingSettingTypeO', 'fullyQualifiedTypeName': 'VoiceMemos.RecordingSettingType'}", "{'effectiveBundleIdentifiers': [], 'mangledTypeName': '10VoiceMemos12PlaybackTypeO', 'mangledTypeNameByBundleIdentifier': {}, 'assistantDefinedSchemas': [], 'fullyQualifiedTypeName': 'VoiceMemos.PlaybackType', 'cases': [{'displayRepresentation': {'title': {'key': 'PLAYBACK_TYPE_CASE_MOST_RECENT', 'alternatives': []}}, 'identifier': 'mostRecent'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'PLAYBACK_TYPE_CASE_SPECIFIC'}}, 'identifier': 'specific'}], 'numericFormatTypeName': {'alternatives': [], 'key': 'PLAYBACK_TYPE_NAME'}, 'displayTypeName': {'key': 'PLAYBACK_TYPE_NAME', 'alternatives': []}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'PlaybackType', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False}"]
+  auto_shortcuts: 2
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 46
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.VoiceMemos
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.device.audio-input
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.location
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-services
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.manager.access.delete
+    - com.apple.private.tcc.manager.access.modify
+    - com.apple.private.tcc.manager.access.read
+  other:
+    - application-identifier
+    - com.apple.CoreRoutine.LocationOfInterest
+    - com.apple.QuartzCore.secure-mode
+    - com.apple.UIKit.vends-view-services
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.assistant.dictation.prerecorded
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.avfoundation.allows-access-to-device-list
+    - com.apple.avfoundation.allows-set-output-device
+    - com.apple.coreaudio.allow-amr-decode
+    - com.apple.developer.siri
+    - com.apple.frontboard.launchapplications
+    - com.apple.itunesstored.private
+    - com.apple.locationd.effective_bundle
+    - com.apple.locationd.place_inference
+    - com.apple.private.applemediaservices
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.voicememod.client
+    - com.apple.springboard.activateawayviewplugins
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.secureAppAssertion
+    - com.apple.springboard.statusbarstyleoverrides
+    - com.apple.telephonyutilities.callservicesd
+    - fairplay-client
+    - platform-application
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 52
+notable_frameworks:
+  - CoreAudio
+  - CoreSpotlight
+  - CoreData
+  - AppIntents
+  - CloudKit
+  - AVFoundation
+  - CoreMedia
+  - CoreLocation
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.VoiceMemos
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2025 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 3.1
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: com.apple.VoiceMemos.SpotlightIndexExtension
+    extension_point: com.apple.spotlight.index
+  - name: VoiceMemosIntentsExtension
+    extension_point: com.apple.intents-service
+  - name: VoiceMemosSettingsWidgetExtension
+    extension_point: com.apple.widgetkit-extension

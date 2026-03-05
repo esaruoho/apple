@@ -1,0 +1,47 @@
+# Dictionary — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Dictionary.app
+
+app: Dictionary
+slug: dictionary
+path: /System/Applications/Dictionary.app
+layers_found: 5
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: x-dictionary
+    is_default: true
+  - scheme: dict
+    is_default: true
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Look Up in Dictionary
+    message: doLookupService
+    send_types: ["NSStringPboardType"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 7
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+  other:
+    - com.apple.private.assets.accessible-asset-types
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 10
+notable_frameworks:
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Reference
+  CFBundleIdentifier: com.apple.Dictionary
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 2.3.0

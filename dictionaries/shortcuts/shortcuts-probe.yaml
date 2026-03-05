@@ -1,0 +1,281 @@
+# Shortcuts — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Shortcuts.app
+
+app: Shortcuts
+slug: shortcuts
+path: /System/Applications/Shortcuts.app
+layers_found: 9
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 1
+  classes: 2
+  command_names:
+    - run
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: shortcuts-production
+    name: is.workflow.app.url-scheme
+  - scheme: shortcuts
+    name: is.workflow.app.url-scheme
+  - scheme: workflow
+    name: is.workflow.app.url-scheme
+
+# ─── Layer 3: Document Types ───
+document_types_count: 3
+document_types:
+  - name: Shortcut
+    role: Viewer
+    content_types: ["com.apple.shortcut", "com.apple.shortcuts.workflow-file"]
+  - name: Workflow
+    extensions: ["workflow"]
+    role: Viewer
+  - name: Application
+    extensions: ["app"]
+    role: Viewer
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Navigate to ${target}"
+    - "Jump to the ${target} section"
+    - "Go to ${target} in ${applicationName}"
+    - "Open ${target}"
+    - "Edit ${target} in ${applicationName}"
+    - "Open the editor for ${target}"
+    - Create a new shortcut
+    - "Create a shortcut called ${name}"
+    - "Make a new shortcut named ${name}"
+    - Create a new folder
+    - "Create a folder called ${name}"
+    - "Make a new folder named ${name}"
+    - "Move ${shortcuts} to ${folder}"
+    - "Let's move ${shortcuts} to ${folder}"
+    - "File ${shortcuts} under ${folder}"
+    - "Rename ${shortcut} to ${name}"
+    - "Name ${shortcut} ${name}"
+    - "Set the name of ${shortcut} to ${name}"
+    - "Change the icon for ${shortcut}"
+    - "Modify ${shortcut}'s icon"
+    - "Change the color for ${shortcut}"
+    - "Get the value of ${attribute} for ${shortcut}"
+    - "What is the current value of ${attribute} for ${shortcut}?"
+    - "What is ${shortcut}'s ${attribute} set to?"
+    - "Set the value of ${attribute} for ${shortcut} to ${state}"
+    - "Set ${shortcut}'s ${attribute} setting to ${state}"
+    - "Toggle ${shortcut}'s ${attribute} setting"
+    - "Toggle ${attribute} for ${shortcut}"
+    - "Show ${shortcut} on my Apple Watch"
+    - "Add ${shortcut} to my Apple Watch"
+    - "Enable ${shortcut} on my Apple Watch"
+    - "Show ${shortcut} in my share sheet"
+    - "Add ${shortcut} to the share sheet"
+    - "Enable ${shortcut} in sharing"
+    - "Show ${shortcut} in my menu bar"
+    - "Add ${shortcut} to my Mac bar"
+    - "Enable ${shortcut} in the top bar"
+    - "Allow me to run ${shortcut} when locked"
+    - "Run ${shortcut} when my device is off"
+    - "Enable ${shortcut} when my phone is closed"
+    - "Create an iCloud link for ${shortcut}"
+    - "Make a link for ${shortcut}"
+    - "Share an iCloud link for ${shortcut}"
+    - "Delete ${entities} from ${applicationName}"
+    - "Remove ${entities}"
+    - "Delete the ${entities} shortcuts"
+    - "Search ${applicationName} actions for ${searchPhrase}"
+    - "Search my library for ${searchPhrase}"
+    - "Find ${searchPhrase}"
+  actions_count: 13
+  actions:
+    - id: CreateFolderAction
+      title: Create Folder
+      description: Creates a new Shortcuts folder
+    - id: MoveShortcutToFolderAction
+      title: Move Shortcut
+      description: Move shortcuts to a specified folder.
+    - id: RenameShortcutAction
+      title: Rename Shortcut
+      description: Renames a shortcut to the specified name.
+    - id: SetShortcutAttributesAction
+      title: Set Shortcut Attributes
+      description: Modify a shortcut’s settings
+    - id: DeleteWorkflowAction
+      title: Delete Shortcuts
+      description: Deletes shortcuts from your library
+    - id: GetShortcutAttributesAction
+      title: Get Shortcut Attributes
+      description: Get a shortcut’s settings.
+    - id: OpenNavigationDestinationAction
+      title: Open Folder
+      description: Opens a page within the Shortcuts app
+    - id: CreateShortcutiCloudLinkAction
+      title: Create iCloud Link for Shortcut
+      description: Creates an iCloud link for a shortcut that can be shared
+    - id: CreateWorkflowAction
+      title: Create Shortcut
+      description: Creates a new empty shortcut
+    - id: AddShortcutToHomeScreenAction
+      title: Add Shortcut to Home Screen
+      description: Adds a shortcut to your Home Screen as an icon.
+    - id: SearchShortcutsAction
+      title: Search Shortcuts
+      description: Searches your shortcuts library
+    - id: OpenWorkflowAction
+      title: Open Shortcut
+      description: Opens the editor for a shortcut
+    - id: ChangeShortcutIconAction
+      title: Change Shortcut Icon
+      description: Opens the icon editor for a shortcut
+  queries:
+    - id: WorkflowQuery
+    - id: DestinationQuery
+    - id: FolderQuery
+  entities: ["RootNavigationDestination", "WFWorkflowReference"]
+  enums: ["{'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'SetShortcutAttributesOperation', 'fullyQualifiedTypeName': 'Shortcuts.SetShortcutAttributesAction.SetShortcutAttributesOperation', 'mangledTypeName': '9Shortcuts27SetShortcutAttributesActionV0bcD9OperationO', 'cases': [{'identifier': 'turn', 'displayRepresentation': {'title': {'key': 'Turn', 'alternatives': [], 'table': 'AppIntents'}}}, {'displayRepresentation': {'title': {'key': 'Toggle', 'table': 'AppIntents', 'alternatives': []}}, 'identifier': 'toggle'}], 'displayTypeName': {'key': 'Operation', 'table': 'AppIntents', 'alternatives': []}, 'isSystem': False, 'assistantDefinedSchemas': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'effectiveBundleIdentifiers': []}", "{'mangledTypeName': '9Shortcuts17ShortcutAttributeO', 'mangledTypeNameByBundleIdentifier': {}, 'fullyQualifiedTypeName': 'Shortcuts.ShortcutAttribute', 'identifier': 'ShortcutAttribute', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'effectiveBundleIdentifiers': [], 'assistantDefinedSchemas': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'displayTypeName': {'table': 'AppIntents', 'alternatives': [], 'key': 'Shortcut Attribute'}, 'cases': [{'identifier': 'showInShareSheet', 'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'square.and.arrow.up'}}, 'title': {'key': 'Show in Share Sheet', 'alternatives': [], 'table': 'AppIntents'}, 'image': {'systemImageName': {'_0': 'square.and.arrow.up'}}}}, {'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'applewatch'}}, 'title': {'alternatives': [], 'table': 'AppIntents', 'key': 'Show on Apple Watch'}, 'image': {'systemImageName': {'_0': 'applewatch'}}}, 'identifier': 'showOnWatch'}, {'identifier': 'pinInMenuBar', 'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'menubar.rectangle'}}, 'title': {'table': 'AppIntents', 'alternatives': [], 'key': 'Pin in Menu Bar'}, 'image': {'systemImageName': {'_0': 'menubar.rectangle'}}}}, {'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'text.viewfinder'}}, 'title': {'key': 'Receive What\u2019s On Screen', 'alternatives': [], 'table': 'AppIntents'}, 'image': {'systemImageName': {'_0': 'text.viewfinder'}}}, 'identifier': 'onScreenContent'}, {'identifier': 'quickActions', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'gearshape.fill'}}, 'title': {'table': 'AppIntents', 'alternatives': [], 'key': 'Use as Quick Action'}, 'imageV2': {'systemImageName': {'_0': 'gearshape.fill'}}}}, {'identifier': 'allowWhenLocked', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'lock'}}, 'imageV2': {'systemImageName': {'_0': 'lock'}}, 'title': {'alternatives': [], 'key': 'Allow Running When Locked', 'table': 'AppIntents'}}}]}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - INRunWorkflowIntent
+  - is.workflow.my.app.continueworkflow
+  - is.workflow.my.app.openurl
+  - is.workflow.my.app.runaction
+  - is.workflow.my.app.viewworkflow
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 100
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.proactivepredictions
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.automation.apple-events
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.personal-information.photos-library
+    - com.apple.security.system-groups
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.developer.networking.networkextension
+    - com.apple.private.network.socket-delegate
+    - com.apple.private.networkextension.configuration
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-container-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - aps-environment
+    - com.apple.CompanionLink
+    - com.apple.application-identifier
+    - com.apple.avfoundation.allow-identifying-output-device-details
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.avfoundation.allows-access-to-device-list
+    - com.apple.avfoundation.allows-set-output-device
+    - com.apple.bluetooth.system
+    - com.apple.coreduetd.allow
+    - com.apple.developer.associated-domains
+    - com.apple.developer.device-information.user-assigned-device-name
+    - com.apple.developer.healthkit
+    - com.apple.developer.homekit
+    - com.apple.developer.homekit.background-mode
+    - com.apple.developer.siri
+    - com.apple.extensionkit.host.extension-point-identifiers
+    - com.apple.fileprovider.enumerate
+    - com.apple.fileprovider.extension-host
+    - com.apple.frontboard.launchapplications
+    - com.apple.homekit.private-spi-access
+    - com.apple.intents.extension.discovery
+    - com.apple.intents.uiextension.discovery
+    - com.apple.linkd.registry
+    - com.apple.linkd.transcript.privileged
+    - com.apple.locationd.effective_bundle
+    - com.apple.managedconfiguration.profiled-access
+    - com.apple.private.appintents-attribution-override
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.appintents-handle-in-process
+    - com.apple.private.appintents.extension-host
+    - com.apple.private.appleevents.allowedtosend
+    - com.apple.private.cloudkit.masquerade
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.contacts
+    - com.apple.private.coreaudio.initiatetemporarybackgroundplayback.allow
+    - com.apple.private.corerecents
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.donotdisturb.mode.assertion.client-identifiers
+    - com.apple.private.donotdisturb.mode.assertion.user-requested.client-identifiers
+    - com.apple.private.donotdisturb.modeconfiguration.modify.client-identifiers
+    - com.apple.private.donotdisturb.modeconfiguration.request.client-identifiers
+    - com.apple.private.donotdisturb.modeconfiguration.updates.client-identifiers
+    - com.apple.private.donotdisturb.settings.request.client-identifiers
+    - com.apple.private.donotdisturb.state.updates.client-identifiers
+    - com.apple.private.healthkit
+    - com.apple.private.healthkit.source.identities
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.homekit
+    - com.apple.private.shortcuts.IntentsAvailableDuringBuddy
+    - com.apple.private.speech.synthesis.custom.voices.allow
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.swc.system-app
+    - com.apple.private.translation
+    - com.apple.proactive.ProactiveSuggestionClientModel.xpc
+    - com.apple.proactive.eventtracker
+    - com.apple.rootless.storage.coreduet_knowledge_store
+    - com.apple.rootless.storage.shortcuts
+    - com.apple.runningboard.assertions.siri
+    - com.apple.runningboard.launchprocess
+    - com.apple.runningboard.process-state
+    - com.apple.runningboard.terminateprocess
+    - com.apple.sharing.Client
+    - com.apple.shortcuts.background-running
+    - com.apple.shortcuts.mac-helper
+    - com.apple.shortcuts.trigger-editing
+    - com.apple.siri.VoiceShortcuts.xpc
+    - com.apple.sirittsd.can-dump-audio
+    - com.apple.soundscapes.picker
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 26
+notable_frameworks:
+  - AppIntents
+  - UserNotifications
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.shortcuts
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 7.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: ShortcutsWidgetExtension
+    extension_point: com.apple.widgetkit-extension
+  - name: QuickLookExtension
+    extension_point: com.apple.quicklook.preview
+  - name: ThumbnailExtension
+    extension_point: com.apple.quicklook.thumbnail
+  - name: ShortcutsActionExtension
+    extension_point: com.apple.share-services

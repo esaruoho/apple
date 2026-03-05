@@ -1,0 +1,39 @@
+# Image Events — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Library/CoreServices/Image Events.app
+
+app: Image Events
+slug: image-events
+path: /System/Library/CoreServices/Image Events.app
+layers_found: 3
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 3
+  commands: 13
+  classes: 16
+  command_names:
+    - delete
+    - move
+    - open
+    - close
+    - crop
+    - embed
+    - flip
+    - match
+    - pad
+    - rotate
+    - save
+    - scale
+    - unembed
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 12
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.imageevents
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 1.1.6

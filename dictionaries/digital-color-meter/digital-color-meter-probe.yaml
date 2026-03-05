@@ -1,0 +1,25 @@
+# Digital Color Meter — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Digital Color Meter.app
+
+app: Digital Color Meter
+slug: digital-color-meter
+path: /System/Applications/Utilities/Digital Color Meter.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 1
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 6
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.DigitalColorMeter
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 5.26

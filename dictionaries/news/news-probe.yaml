@@ -1,0 +1,205 @@
+# News — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/News.app
+
+app: News
+slug: news
+path: /System/Applications/News.app
+layers_found: 7
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: applenews
+    name: com.apple.NewsCustomScheme
+  - scheme: applenewss
+    name: com.apple.NewsCustomScheme
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 1
+  actions:
+    - id: ToggleAudioPlaybackIntent
+      title: Play Audio Article
+      description: Toggles playback of the given article.
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - TagIntent
+  - TodayIntent
+  - com.apple.news.articleViewing
+  - com.apple.news.feedBrowsing
+  - com.apple.news.feedBackCatalog
+  - com.apple.news.forYou
+  - com.apple.news.history
+  - com.apple.news.saved
+  - com.apple.news.magazineSections
+  - com.apple.news.link
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 117
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.News
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.files.absolute-path.read-only
+    - com.apple.security.exception.files.home-relative-path.read-only
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.process-info
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.process-info
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.cfnetwork.har-capture-amp
+    - com.apple.private.networkextension.configuration
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.iad.open-privacy-view-controller
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  apple_intelligence:
+    - com.apple.private.intelligenceplatform.client-identifier
+    - com.apple.private.intelligenceplatform.use-cases
+  other:
+    - adi-client
+    - application-identifier
+    - aps-connection-initiate
+    - aps-environment
+    - com.apple.CommCenter.fine-grained
+    - com.apple.CoreRoutine.Application
+    - com.apple.CoreRoutine.LocationOfInterest
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.aned.private.ANEAccess.allow
+    - com.apple.ap.adservicesd.statusconditionclient.allow_write
+    - com.apple.application-identifier
+    - com.apple.appstored.manage-iap
+    - com.apple.authkit.authorization-bundle-identifier-proxy
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.backboardd.hostCanRequireTouchesFromHostedContent
+    - com.apple.backboardd.launchapplications
+    - com.apple.chronoservices
+    - com.apple.coreduetd.allow
+    - com.apple.coreidvd.spi
+    - com.apple.developer.aps-environment
+    - com.apple.developer.associated-domains
+    - com.apple.developer.game-center
+    - com.apple.developer.openURL
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.duet.activityscheduler.allow
+    - com.apple.excludes-extensions
+    - com.apple.familycircle.agent
+    - com.apple.itunescloud.in-app-message-service
+    - com.apple.itunesstored.private
+    - com.apple.locationd.authorizeapplications
+    - com.apple.locationd.effective_bundle
+    - com.apple.payment.card-on-file
+    - com.apple.pegasus.context
+    - com.apple.private.CacheDelete
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.ad.analytics
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.appintents-bundle-relative-paths
+    - com.apple.private.appleevents.allowedtosend
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstorecomponents
+    - com.apple.private.appstorecomponents.media-client-id
+    - com.apple.private.appstorecomponents.media-client-version
+    - com.apple.private.appstored
+    - com.apple.private.associated-domains
+    - com.apple.private.bmk.allow
+    - com.apple.private.calendar.has-adopted-modern-request-access-methods
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.fpsd.client
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iad.news-client
+    - com.apple.private.iad.opt-in-control
+    - com.apple.private.iad.unlimited-controllers-allowed
+    - com.apple.private.ids.remoteurlconnection
+    - com.apple.private.imcore.imremoteurlconnection
+    - com.apple.private.in-app-payments
+    - com.apple.private.iosmac.unscaled
+    - com.apple.private.mobileinstall.upgrade-enabled
+    - com.apple.private.safari.can-use-launch-agent
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.swc.additional-service-details-consumer
+    - com.apple.private.swc.system-app
+    - com.apple.private.xpc.domain-extension
+    - com.apple.proactive.PersonalizationPortrait.Config
+    - com.apple.proactive.PersonalizationPortrait.Topic.readOnly
+    - com.apple.rootless.storage.coreduet_knowledge_store
+    - com.apple.springboard.hardware-button-service.event-consumption
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.xzfwk.customimage
+    - com.apple.telephonyutilities.callservicesd
+    - com.apple.watchlist.private
+    - fairplay-client
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 84
+notable_frameworks:
+  - Intents
+  - CloudKit
+  - WebKit
+  - AVFoundation
+  - CoreMedia
+  - CoreSpotlight
+  - CoreLocation
+  - UserNotifications
+  - MediaPlayer
+  - AppIntents
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: News
+  CFBundleIdentifier: com.apple.news
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2025 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 10.5
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: ArticleNotificationExtension
+    extension_point: com.apple.usernotifications.content-extension
+  - name: OpenInNews
+    extension_point: com.apple.share-services
+  - name: NewsTag
+    extension_point: com.apple.widgetkit-extension
+  - name: NewsEngagementExtension
+    extension_point: com.apple.amsengagementd-extension
+  - name: NewsDiagnosticExtension
+    extension_point: com.apple.diagnosticextensions-service
+  - name: NewsToday2
+    extension_point: com.apple.widgetkit-extension
+  - name: NewsAudioExtension
+    extension_point: com.apple.intents-service
+  - name: NewsTodayIntents
+    extension_point: com.apple.intents-service

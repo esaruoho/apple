@@ -1,0 +1,136 @@
+# Calendar — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Calendar.app
+
+app: Calendar
+slug: calendar
+path: /System/Applications/Calendar.app
+layers_found: 7
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 2
+  commands: 8
+  classes: 7
+  command_names:
+    - create calendar
+    - reload calendars
+    - switch view
+    - view calendar
+    - GetURL
+    - show
+    - make
+    - save
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: webcal
+    name: Remote Calendar URL
+  - scheme: ical
+    name: iCal URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 4
+document_types:
+  - name: ICS file
+    extensions: ["ics"]
+    role: Editor
+    content_types: ["com.apple.ical.ics"]
+  - name: vCal file
+    extensions: ["vcs"]
+    role: Viewer
+    content_types: ["com.apple.ical.vcs"]
+  - name: APL model
+    extensions: ["aplmodel"]
+    role: None
+  - name: Calendar Backup file
+    extensions: ["icbu"]
+    role: Editor
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.calendar.continuity.event_selection
+  - com.apple.calendar.continuity.date_selection
+  - INShowPersonInteractionsIntent
+  - com.apple.calendar.event_creation
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 51
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.bookmarks.document-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.scripting-targets
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.manager.check-by-audit-token
+  other:
+    - com.apple.account.publishedcalendar.fullaccess
+    - com.apple.accounts.inactive.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.chronoservices
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.people
+    - com.apple.developer.maps
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.locationd.effective_bundle
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.associated-domains
+    - com.apple.private.calendar
+    - com.apple.private.calendar.allow-diagnostics-collection
+    - com.apple.private.calendar.allow-integrations
+    - com.apple.private.calendar.allow-suggestions
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.contactsui
+    - com.apple.private.corerecents
+    - com.apple.private.corespotlight.bundleid
+    - com.apple.private.corespotlight.search.internal
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.launchservices.changedefaulthandlers
+    - com.apple.private.mailservice.delivery
+    - com.apple.private.remindd
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.suggestions.events
+    - com.apple.private.usernotifications.bundle-identifiers
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 53
+notable_frameworks:
+  - EventKit
+  - Intents
+  - Contacts
+  - CoreLocation
+  - MapKit
+  - AppIntents
+  - CoreData
+  - CoreSpotlight
+  - UserNotifications
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: FaceTimeExtension
+    extension_point: com.apple.calendar.virtualconference
+  - name: CalendarNotificationContentExtension_OSX
+    extension_point: com.apple.usernotifications.content-extension
+  - name: CalendarWidgetExtension
+    extension_point: com.apple.widgetkit-extension

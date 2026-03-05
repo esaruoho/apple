@@ -1,0 +1,94 @@
+# Tips — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Tips.app
+
+app: Tips
+slug: tips
+path: /System/Applications/Tips.app
+layers_found: 7
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: help
+    is_default: true
+  - scheme: x-apple-tips
+    name: com.apple.helpviewer.open
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: macOS Help Bundle
+    extensions: ["help"]
+    role: Viewer
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Show me ${collection} tips"
+    - "Show me tips for ${collection}"
+    - "Show me tips to ${collection}"
+    - "Show me tips about ${collection}"
+    - "View tips for ${collection}"
+    - "View ${collection} tips"
+    - "What can I do with ${collection}"
+    - "How do I use ${collection}?"
+  actions_count: 1
+  actions:
+    - id: CollectionOpenIntent
+      title: OPEN_COLLECTION_APP_INTENT_TITLE
+      description: OPEN_COLLECTION_APP_INTENT_DESCRIPTION
+  queries:
+    - id: TipCollectionQuery
+  entities: ["TipCollection"]
+  auto_shortcuts: 1
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 22
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.print
+    - com.apple.security.scripting-targets
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+  network:
+    - com.apple.private.network.socket-delegate
+  other:
+    - com.apple.AppleNVMeEAN.allow
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.developer.associated-domains
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.iaaccounts
+    - com.apple.private.swc.system-app
+    - com.apple.private.tips.allow
+    - com.apple.tipsd.tips-app-access
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 22
+notable_frameworks:
+  - AppIntents
+  - CoreSpotlight
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Education
+  CFBundleIdentifier: com.apple.helpviewer
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 15.6
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: HelpViewer-Quicklook
+    extension_point: com.apple.quicklook.preview
+  - name: TipsWidgetExtension
+    extension_point: com.apple.widgetkit-extension

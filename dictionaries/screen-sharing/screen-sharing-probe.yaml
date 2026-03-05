@@ -1,0 +1,105 @@
+# Screen Sharing — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Screen Sharing.app
+
+app: Screen Sharing
+slug: screen-sharing
+path: /System/Applications/Utilities/Screen Sharing.app
+layers_found: 6
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 1
+  classes: 0
+  command_names:
+    - GetURL
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: vnc
+    name: vnc URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 2
+document_types:
+  - name: VNC Internet Location
+    extensions: ["vncloc"]
+    role: Editor
+  - name: Screen Sharing Downloads
+    extensions: ["ssdownload"]
+    role: None
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 53
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.network.server
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.absolute-path.read-write
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.CompanionLink
+    - com.apple.FaceTime.NoPrompt
+    - com.apple.IdentityLookup.message-filter
+    - com.apple.developer.copresence
+    - com.apple.developer.hardened-process
+    - com.apple.identitylookup.classification-ui.extension-host
+    - com.apple.identitylookup.classification.extension-host
+    - com.apple.identitylookup.message-filter.extension-host
+    - com.apple.private.ac
+    - com.apple.private.aps-client-cert-access
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.audio.notification-wake-audio
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contactsui
+    - com.apple.private.copresence
+    - com.apple.private.copresence.access-all-sessions
+    - com.apple.private.hid.client.event-monitor
+    - com.apple.private.hid.client.service-protected
+    - com.apple.private.icfcallserver
+    - com.apple.private.ids.identityservicesd
+    - com.apple.private.ids.idquery-cache
+    - com.apple.private.ids.idsquery
+    - com.apple.private.ids.messaging
+    - com.apple.private.ids.messaging.urgent-priority
+    - com.apple.private.ids.session
+    - com.apple.private.ids.session-private
+    - com.apple.private.imcore.imremoteurlconnection
+    - com.apple.private.netauth.get-credentials
+    - com.apple.private.notificationcenterui.alerts
+    - com.apple.private.rfbeventhelper.xpcaccepted
+    - com.apple.private.screensharing.viewInvitation
+    - com.apple.private.suggestions
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.system-keychain
+    - com.apple.telephonyutilities.callservicesd
+    - com.apple.telephonyutilities.callservicesdaemon.conversationmanager
+    - com.apple.videoconference.allow-conferencing
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 31
+notable_frameworks:
+  - Contacts
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.ScreenSharing
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 5.3

@@ -1,0 +1,27 @@
+# Screenshot — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Screenshot.app
+
+app: Screenshot
+slug: screenshot
+path: /System/Applications/Utilities/Screenshot.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 2
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.private.screencapture.allow
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 2
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.screenshot.launcher
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 1.0

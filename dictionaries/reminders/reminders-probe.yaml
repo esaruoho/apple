@@ -1,0 +1,127 @@
+# Reminders — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Reminders.app
+
+app: Reminders
+slug: reminders
+path: /System/Applications/Reminders.app
+layers_found: 9
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 1
+  classes: 3
+  command_names:
+    - show
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: x-apple-reminderkit
+    name: ReminderKit
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: Reminders List
+    role: Editor
+    content_types: ["com.apple.reminders.list"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 1
+  actions:
+    - id: TTROpenSmartListAppIntent
+      title: Open List
+      description: Open any list in Reminders.
+  queries:
+    - id: AnyListEntityQuery
+  entities: ["AnyListEntity"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - ConfigurationIntent
+  - com.apple.reminders.activity.list
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 41
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.manager.check-by-audit-token
+  other:
+    - com.apple.application-identifier
+    - com.apple.chrono.invalidate-timelines
+    - com.apple.coreduetd.allow
+    - com.apple.corespotlight.search.allowed.bundleIDs
+    - com.apple.developer.aps-environment
+    - com.apple.developer.associated-domains
+    - com.apple.developer.hardened-process
+    - com.apple.developer.shared-with-you
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.calendar.has-adopted-modern-request-access-methods
+    - com.apple.private.cloudkit.customAccounts
+    - com.apple.private.cloudkit.masquerade
+    - com.apple.private.corerecents
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.remindd
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.suggestions.reminders
+    - com.apple.private.swc.system-app
+    - com.apple.proactive.eventtracker
+    - com.apple.siri.koa.donate.internal
+    - com.apple.trial.client
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 41
+notable_frameworks:
+  - MapKit
+  - AppIntents
+  - CloudKit
+  - Contacts
+  - CoreLocation
+  - CoreSpotlight
+  - UserNotifications
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.reminders
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 7.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: RemindersSharingExtension
+    extension_point: com.apple.share-services
+  - name: RemindersIntentsExtension
+    extension_point: com.apple.intents-service
+  - name: RemindersQuickLookExtension
+    extension_point: com.apple.quicklook.preview
+  - name: RemindersSpotlightIndexExtension
+    extension_point: com.apple.spotlight.index
+  - name: RemindersWidgetExtension
+    extension_point: com.apple.widgetkit-extension

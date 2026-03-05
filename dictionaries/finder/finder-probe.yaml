@@ -1,0 +1,345 @@
+# Finder — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Library/CoreServices/Finder.app
+
+app: Finder
+slug: finder
+path: /System/Library/CoreServices/Finder.app
+layers_found: 9
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 9
+  commands: 25
+  classes: 32
+  command_names:
+    - open
+    - print
+    - quit
+    - activate
+    - close
+    - count
+    - data size
+    - delete
+    - duplicate
+    - exists
+    - make
+    - move
+    - select
+    - openVirtualLocation
+    - copy
+    - sort
+    - clean up
+    - eject
+    - empty
+    - erase
+    - reveal
+    - update
+    - restart
+    - shut down
+    - sleep
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: afp
+    name: AFP URL
+    is_default: true
+  - scheme: file
+    name: File URL
+    is_default: true
+  - scheme: ftp
+    name: FTP URL
+    is_default: true
+  - scheme: smb
+    name: SMB URL
+    is_default: true
+  - scheme: cifs
+    name: SMB URL
+    is_default: true
+  - scheme: nwnode
+    name: NWNode URL
+    is_default: true
+
+# ─── Layer 3: Document Types ───
+document_types_count: 11
+document_types:
+  - name: Folder
+    role: Editor
+  - name: Predefined Search
+    role: Editor
+    content_types: ["com.apple.finder.predefined-search"]
+  - name: Saved Search Query
+    extensions: ["savedSearch"]
+    role: Editor
+  - name: AppleTalk Internet Location
+    extensions: ["atloc"]
+    role: Editor
+  - name: NSL Internet Location
+    extensions: ["nslloc"]
+    role: Editor
+  - name: Volume
+    role: Editor
+  - name: Burn Folder
+    extensions: ["fpbf"]
+    role: Editor
+    content_types: ["com.apple.finder.burn-folder"]
+  - name: Picture Clipping
+    extensions: ["pictClipping"]
+    role: Editor
+  - name: Text Clipping
+    extensions: ["textClipping"]
+    role: Editor
+  - name: Sound Clipping
+    extensions: ["sndClipping"]
+    role: Editor
+  - name: Clipping
+    extensions: ["Clipping"]
+    role: Editor
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Create a folder named ${fileName} inside ${target}"
+    - "Make a new folder called ${fileName} in ${target}"
+    - "Put a new folder named ${fileName} under ${target}"
+    - "Get info for ${targets}"
+    - "Show me info about ${targets}"
+    - "Bring up the Get Info window for ${targets}"
+    - "Get the currently selected ${applicationName} items"
+    - Take the current selection
+    - "Pick what I chose in ${applicationName}"
+    - "Reveal ${targets} in ${applicationName}"
+    - "Open a ${applicationName} window showing ${targets}"
+    - "Show me ${targets} in a ${applicationName} window"
+    - "Rename ${target} to ${newName}"
+    - "Change the name of ${target} to ${newName}"
+    - "Get the ${location}"
+    - "Give me the ${location} folder"
+    - "Go to ${location}"
+    - "Open a ${applicationName} window showing ${location}"
+    - "Show me my ${location}"
+    - Show the Go To Folder window
+    - Go to folder
+    - "Search for ${criteria} in ${applicationName}"
+    - "Search for ${criteria} in the ${applicationName} app"
+    - "Look for ${criteria} in ${applicationName}"
+    - "Query ${criteria} in my ${applicationName}"
+    - "Search in ${applicationName}"
+    - Go to the enclosing folder
+    - "Navigate front ${applicationName} window to its parent folder"
+    - Show the folder above this one
+    - "Open ${target}"
+    - "Double click on ${target} in ${applicationName}"
+    - "Open the ${target} folder"
+    - "Open the ${target} file"
+    - "Copy ${sources} to ${destination}"
+    - "Copy ${sources} and move to ${destination}"
+    - "Copy ${sources} and paste in ${destination}"
+    - "Put a copy of ${sources} in ${destination}"
+    - "Copy ${sources} to ${destination} keeping any existing copy"
+    - "Copy ${sources} to ${destination} overwriting conflicting names"
+    - "Copy ${sources} and move to ${destination} replacing the existing copy"
+    - "Copy ${sources} and paste in ${destination} removing anything with the same name"
+    - "Duplicate ${sources}"
+    - "Make a duplicate copy of ${sources}"
+    - "Create another copy of ${sources}"
+    - "Move ${entities} into ${destinationFolder}"
+    - "Put ${entities} in ${destinationFolder}"
+    - "Place ${entities} in the ${destinationFolder} folder"
+    - "Move ${entities} into ${destinationFolder}"
+    - "Put ${entities} in ${destinationFolder}"
+    - "Place ${entities} in the ${destinationFolder} folder"
+    - "Move ${entities} into ${destinationFolder} and keep existing items with the same names"
+    - "Move ${entities} into ${destinationFolder} overwriting conflicting names"
+    - "Put ${entities} in ${destinationFolder} replacing the existing copy"
+    - "Place ${entities} in the ${destinationFolder} folder removing anything with the same name"
+    - "Move ${entities} to the Trash"
+    - "Put ${entities} in the Trash"
+    - "Trash ${entities}"
+    - "Delete my ${entities} files"
+    - "Compress ${sources}"
+    - "Make an archive containing ${sources}"
+    - "Zip the items called ${sources}"
+    - "Zip ${sources}"
+    - "Archive ${sources}"
+    - "Compress ${sources} as ${format}"
+    - "Archive ${sources} as ${format}"
+    - "Compress ${sources} as ${format} into ${destination}"
+    - "Archive ${sources} and place it in ${destination}"
+  actions_count: 16
+  actions:
+    - id: GetSelectedItemsIntent
+      title: Get Selected Items
+      description: Gets the selected Finder items
+    - id: GoToLocationIntent
+      title: Go To Location
+      description: Navigates to a location in a Finder window
+    - id: TrashItemsIntent
+      title: Trash Items
+      description: Moves items to the Trash
+    - id: SearchInBrowserIntent
+      title: Search in Finder
+      description: Search for files and folders in Finder
+    - id: GoToFolderIntent
+      title: Go To Folder
+      description: Shows the Finder’s Go To Folder… UI
+    - id: CompressItemsIntent
+      title: Compress Items
+      description: Compresses items into an archive
+    - id: MoveItemsIntent
+    - id: CopyItemsIntent
+      title: Copy and Move Items
+      description: Copies items to another location
+    - id: RevealItemsIntent
+      title: Reveal Items
+      description: Shows the items in Finder windows
+    - id: GoToEnclosingFolderIntent
+      title: Go To Enclosing Folder
+      description: Navigates the front Finder window to its enclosing folder
+    - id: GetLocationIntent
+      title: Get Location
+      description: Provides a well-known location on disk
+    - id: GetInfoIntent
+      title: Get Info
+      description: Shows the Get Info window for an item or items
+    - id: OpenItemIntent
+    - id: RenameItemIntent
+    - id: DuplicateItemsIntent
+      title: Duplicate Items
+      description: Duplicates items in their current locations
+    - id: CreateFolderIntent
+      title: New Folder
+      description: Create a new folder
+  queries:
+    - id: FINodeEntityQuery
+  entities: ["FINodeEntity"]
+  enums: ["{'mangledTypeName': '6Finder17WellKnownLocationO', 'fullyQualifiedTypeName': 'Finder.WellKnownLocation', 'displayTypeName': {'alternatives': [], 'key': 'Location'}, 'numericFormatTypeName': {'key': 'Location', 'alternatives': []}, 'identifier': 'WellKnownLocation', 'effectiveBundleIdentifiers': [], 'isSystem': False, 'mangledTypeNameByBundleIdentifier': {}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'cases': [{'displayRepresentation': {'title': {'key': 'Recents', 'alternatives': []}, 'synonyms': [{'key': 'Newest', 'alternatives': []}, {'alternatives': [], 'key': 'Latest'}]}, 'identifier': 'recents'}, {'identifier': 'documents', 'displayRepresentation': {'title': {'key': 'Documents', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Desktop', 'alternatives': []}}, 'identifier': 'desktop'}, {'displayRepresentation': {'title': {'key': 'Downloads', 'alternatives': []}}, 'identifier': 'downloads'}, {'displayRepresentation': {'title': {'key': 'Home', 'alternatives': []}}, 'identifier': 'home'}, {'identifier': 'computer', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Computer'}}}, {'identifier': 'airDrop', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'AirDrop'}}}, {'displayRepresentation': {'title': {'key': 'Network', 'alternatives': []}}, 'identifier': 'network'}, {'displayRepresentation': {'title': {'key': 'iCloud Drive', 'alternatives': []}}, 'identifier': 'iCloudDrive'}, {'displayRepresentation': {'title': {'key': 'EDS iCloud Drive', 'alternatives': []}, 'synonyms': [{'key': 'Managed iCloud Drive', 'alternatives': []}, {'alternatives': [], 'key': 'Enterprise iCloud Drive'}]}, 'identifier': 'iCloudDriveEDS'}, {'identifier': 'shared', 'displayRepresentation': {'title': {'key': 'Shared', 'alternatives': []}}}, {'displayRepresentation': {'synonyms': [{'alternatives': [], 'key': 'Apps'}], 'title': {'alternatives': [], 'key': 'Applications'}}, 'identifier': 'applications'}, {'displayRepresentation': {'title': {'key': 'Utilities', 'alternatives': []}}, 'identifier': 'utilities'}, {'identifier': 'trash', 'displayRepresentation': {'title': {'key': 'Trash', 'alternatives': []}, 'synonyms': [{'key': 'Deleted Items', 'alternatives': []}, {'key': 'Deleted Items', 'alternatives': []}, {'key': 'Bin', 'alternatives': []}]}}, {'identifier': 'startupDisk', 'displayRepresentation': {'title': {'key': 'Startup Disk', 'alternatives': []}, 'synonyms': [{'key': 'Startup Drive', 'alternatives': []}]}}, {'identifier': 'library', 'displayRepresentation': {'title': {'key': 'Library', 'alternatives': []}}}], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}}", "{'numericFormatTypeName': {'alternatives': [], 'key': 'Format'}, 'cases': [{'identifier': 'zip', 'displayRepresentation': {'subtitle': {'alternatives': [], 'key': 'Zip archive format'}, 'synonyms': [{'alternatives': [], 'key': 'Zip file'}, {'alternatives': [], 'key': 'Zip archive'}], 'title': {'alternatives': [], 'key': 'Zip'}}}, {'identifier': 'appleArchive', 'displayRepresentation': {'synonyms': [{'alternatives': [], 'key': 'aar'}, {'alternatives': [], 'key': 'Apple Archive file'}], 'subtitle': {'key': 'Apple Archive format', 'alternatives': []}, 'title': {'alternatives': [], 'key': 'Apple Archive'}}}], 'displayTypeName': {'alternatives': [], 'key': 'Format'}, 'identifier': 'CompressionFormat', 'effectiveBundleIdentifiers': [], 'mangledTypeName': '6Finder17CompressionFormatO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeNameByBundleIdentifier': {}, 'assistantDefinedSchemas': [], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False, 'fullyQualifiedTypeName': 'Finder.CompressionFormat'}"]
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Finder/Open
+    message: open
+    send_types: ["NSStringPboardType", "NSFilenamesPboardType", "NSURLPboardType", "NSMultipleTextSelectionPboardType"]
+  - menu_item: Finder/Reveal
+    message: reveal
+    send_types: ["NSStringPboardType", "NSFilenamesPboardType", "NSURLPboardType", "NSMultipleTextSelectionPboardType"]
+  - menu_item: Finder/Show Info
+    message: showInfo
+    send_types: ["NSStringPboardType", "NSFilenamesPboardType", "NSURLPboardType", "NSMultipleTextSelectionPboardType"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.clouddocs.viewing
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 88
+entitlements:
+  sandbox:
+    - com.apple.private.security.storage.mobilesync
+    - com.apple.private.security.user-intent-authority
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+  network:
+    - com.apple.private.network.socket-delegate
+  icloud:
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.manager.access.delete
+    - com.apple.private.tcc.manager.access.modify
+    - com.apple.private.tcc.manager.access.read
+    - com.apple.private.tcc.manager.check-by-audit-token
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.amp.devices.client
+    - com.apple.application-identifier
+    - com.apple.authkit.client.private
+    - com.apple.bluetooth.system
+    - com.apple.dock.add-item
+    - com.apple.fileprovider.acl-read
+    - com.apple.fileprovider.enumerate
+    - com.apple.fileprovider.extension-host
+    - com.apple.fileprovider.fetch-url
+    - com.apple.imdpersistence.IMDPersistenceAgent-Syndication
+    - com.apple.launchservices.changeurlschemehandler
+    - com.apple.private.ArchiveService.XPC
+    - com.apple.private.AuthorizationServices
+    - com.apple.private.IMCore.share-extension-recipient-access
+    - com.apple.private.MobileContainerManager.allowed
+    - com.apple.private.MobileContainerManager.lookup
+    - com.apple.private.MobileContainerManager.otherIdLookup
+    - com.apple.private.MobileContainerManager.unrestrictedPersona
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.admin.writeconfig.enable-sharing
+    - com.apple.private.airdrop.discovery
+    - com.apple.private.airdrop.settings
+    - com.apple.private.apfs.get-graft-info
+    - com.apple.private.applemediaservices
+    - com.apple.private.application-service-browse
+    - com.apple.private.backupd.session
+    - com.apple.private.biome.writer
+    - com.apple.private.canmodifysharepoints
+    - com.apple.private.clouddocs.can-infer-session-from-url
+    - com.apple.private.contactsui
+    - com.apple.private.coreservices.canaccessanysharedfilelist
+    - com.apple.private.coreservices.canmanagebackgroundtasks
+    - com.apple.private.coreservices.useractivityd.sharedpasteboard
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.corespotlight.search.internal
+    - com.apple.private.dmd.policy
+    - com.apple.private.driverkit.driver-access
+    - com.apple.private.foundation.filecoordination-debug
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iaaccounts
+    - com.apple.private.ind.client
+    - com.apple.private.interstellar.data-access
+    - com.apple.private.launchservices.allowedtosetlauncheraudittoken
+    - com.apple.private.launchservices.changedefaulthandlers
+    - com.apple.private.launchservices.changeurlschemehandler
+    - com.apple.private.librarian.can-get-application-info
+    - com.apple.private.librarian.container-proxy
+    - com.apple.private.metadata.exattrs
+    - com.apple.private.persona.adopt.any
+    - com.apple.private.personas.propagate
+    - com.apple.private.pluginkit.persona
+    - com.apple.private.screen-time
+    - com.apple.private.screencapturekit.noprompt
+    - com.apple.private.screencapturekit.sharingsessionsystemui
+    - com.apple.private.skylight.plugin-power
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.spotlight.search.internal
+    - com.apple.private.storagekitd.destructive
+    - com.apple.private.syspolicy.gatekeeper-block-bypass
+    - com.apple.private.syspolicy.gatekeeper-override
+    - com.apple.private.system-extension.app-manager
+    - com.apple.private.widget-observer
+    - com.apple.private.windowmanager.desktopwindowowner
+    - com.apple.sharing.airdrop.service
+    - com.apple.shortcuts.contextual-actions-client
+    - com.apple.spotlight.documentunderstanding.entitledattributes
+    - com.apple.spotlight.entitledattributes
+    - com.apple.usermanagerd.persona.fetch
+    - com.apple.wifi.priority.id
+    - com.apple.wifi.priority.internal
+    - com.apple.wifi.set_power
+    - com.apple.wlan.authentication
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 83
+notable_frameworks:
+  - SafariServices
+  - CloudKit
+  - CoreMedia
+  - AVFoundation
+  - Contacts
+  - AppIntents
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: FileSearch
+    extension_point: com.apple.intents-service

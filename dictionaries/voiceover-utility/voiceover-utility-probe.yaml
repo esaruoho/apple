@@ -1,0 +1,63 @@
+# VoiceOver Utility — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/VoiceOver Utility.app
+
+app: VoiceOver Utility
+slug: voiceover-utility
+path: /System/Applications/Utilities/VoiceOver Utility.app
+layers_found: 4
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["com.apple.voiceover-preferences"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 27
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.security.application-groups
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.system-container
+    - com.apple.security.temporary-exception.audio-unit-host
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-services
+  other:
+    - aps-connection-initiate
+    - aps-environment
+    - com.apple.accessibility.axassets
+    - com.apple.application-identifier
+    - com.apple.bluetooth.system
+    - com.apple.developer.aps-environment
+    - com.apple.private.accessibility.copyVoiceOverInfo
+    - com.apple.private.admin.writeconfig.voiceover
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.assets.change-daemon-config
+    - com.apple.private.cloudkit.masquerade
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.speech.synthesis.custom.voices.allow
+    - com.apple.private.translation
+    - com.apple.shortcuts.background-running
+    - com.apple.shortcuts.library-read-access
+    - com.apple.trial.client
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 34
+notable_frameworks:
+  - CoreAudio
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.VoiceOverUtility
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2005-2024 Apple Inc. All Rights Reserved.
+  Kind: Application
+  Version: 10

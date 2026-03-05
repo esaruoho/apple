@@ -1,0 +1,54 @@
+# Photo Booth — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Photo Booth.app
+
+app: Photo Booth
+slug: photo-booth
+path: /System/Applications/Photo Booth.app
+layers_found: 4
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: Photo Booth Library
+    role: Viewer
+    content_types: ["com.apple.photo-booth-library"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 15
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.assets.pictures.read-write
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.device.usb
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.photos.cpanalytics.allow
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 42
+notable_frameworks:
+  - Contacts
+  - WebKit
+  - CoreAudio
+  - CoreMedia
+  - AVFoundation
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Entertainment
+  CFBundleIdentifier: com.apple.PhotoBooth
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 13.1

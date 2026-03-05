@@ -1,0 +1,224 @@
+# Messages — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Messages.app
+
+app: Messages
+slug: messages
+path: /System/Applications/Messages.app
+layers_found: 7
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 3
+  classes: 4
+  command_names:
+    - send
+    - login
+    - logout
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: sms
+    name: SMS URL
+    is_default: true
+  - scheme: sms-private
+    name: SMS Private URL
+  - scheme: itms-messages
+    name: Message Store URL
+  - scheme: itms-messagess
+    name: Message Store URL
+  - scheme: imessage
+    name: IMSG
+    is_default: true
+  - scheme: iChat
+    name: iChat URL
+    is_default: true
+  - scheme: Messages
+    name: Messages URL
+    is_default: true
+  - scheme: im
+    name: CPIM
+    is_default: true
+
+# ─── Layer 3: Document Types ───
+document_types_count: 3
+document_types:
+  - name: Image
+    role: Viewer
+    content_types: ["public.image"]
+  - name: Audiovisual content
+    role: Viewer
+    content_types: ["public.audiovisual-content"]
+  - name: Plain Text
+    role: Viewer
+    content_types: ["public.utf8-plain-text"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.Messages
+  - com.apple.Messages.StateRestoration
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 135
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Messages
+    - com.apple.private.security.storage.MessagesMetaData
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.attestation.access
+    - com.apple.security.device.microphone
+    - com.apple.security.exception.files.home-relative-path.read-only
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.downloads.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.absolute-path.read-write
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  apple_intelligence:
+    - com.apple.ProactiveSummarization.feedback
+    - com.apple.ProactiveSummarization.model-input
+    - com.apple.generativeexperiences.textcomposition
+  other:
+    - application-identifier
+    - com.apple.Contacts.database-allow
+    - com.apple.CoreRoutine.SafetyMonitor
+    - com.apple.FaceTime.NoPrompt
+    - com.apple.StatusKit.publish.types
+    - com.apple.StatusKit.subscribe.types
+    - com.apple.application-identifier
+    - com.apple.appstored.install-apps
+    - com.apple.authkit.client.internal
+    - com.apple.avfoundation.allow-capture-filter-rendering
+    - com.apple.bluetooth.doap
+    - com.apple.bluetooth.system
+    - com.apple.coreaudio.allow-amr-decode
+    - com.apple.coreaudio.allow-amr-encode
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.people
+    - com.apple.developer.applesignin
+    - com.apple.developer.associated-domains
+    - com.apple.developer.hardened-process
+    - com.apple.developer.hardened-process.hardened-heap
+    - com.apple.developer.usernotifications.communication
+    - com.apple.developer.usernotifications.critical-alerts
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.developer.usersafety.client
+    - com.apple.feedbackd.remote-evaluation
+    - com.apple.fileprovider.share
+    - com.apple.findmy.findmylocate.friendshipservice
+    - com.apple.findmy.findmylocate.locationservice
+    - com.apple.findmy.findmylocate.settings
+    - com.apple.imagent.chat
+    - com.apple.mediaanalysisd.client
+    - com.apple.messages.sticker-sharing-level
+    - com.apple.mobileactivationd.device-identifiers
+    - com.apple.mobileactivationd.spi
+    - com.apple.private.CloudSharing.SPI
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstored
+    - com.apple.private.avatar.store
+    - com.apple.private.biome.read-write
+    - com.apple.private.biome.writer
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.catalyst-openURL-source
+    - com.apple.private.clouddocs.sharing-proxy
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contacts
+    - com.apple.private.contacts.disable-remote-database-access
+    - com.apple.private.contactsui
+    - com.apple.private.corerecents
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.corespotlight.search.internal
+    - com.apple.private.dmd.emergency-mode
+    - com.apple.private.dmd.policy
+    - com.apple.private.donotdisturb.modeconfiguration.availability.client-identifiers
+    - com.apple.private.donotdisturb.settings.modify.client-identifiers
+    - com.apple.private.donotdisturb.settings.request.client-identifiers
+    - com.apple.private.donotdisturb.state.request.client-identifiers
+    - com.apple.private.donotdisturb.state.updates.client-identifiers
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.ids.idquery-cache
+    - com.apple.private.ids.messaging
+    - com.apple.private.ids.registration
+    - com.apple.private.imcore.imremoteurlconnection
+    - com.apple.private.imcore.imtranscoderservice
+    - com.apple.private.interstellar.data-access
+    - com.apple.private.iosmac
+    - com.apple.private.iosmac.unscaled
+    - com.apple.private.managed-settings.effective-read
+    - com.apple.private.photos.service.internal.cloud
+    - com.apple.private.pluginkit.manager
+    - com.apple.private.remindd
+    - com.apple.private.screen-time
+    - com.apple.private.screentime-communication
+    - com.apple.private.sociallayer.collaboration-handshake
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.sociallayer.shareable-content
+    - com.apple.private.stickers
+    - com.apple.private.suggestions
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.suggestions.messages
+    - com.apple.private.suggestions.reminders
+    - com.apple.private.swc.system-app
+    - com.apple.private.system-keychain
+    - com.apple.private.voicememod.client
+    - com.apple.remindd
+    - com.apple.rootless.storage.remotemanagementd
+    - com.apple.sage.textcomposition
+    - com.apple.sharesheet.recipients
+    - com.apple.spotlight.documentunderstanding.entitledattributes
+    - com.apple.spotlight.photos.entitledattributes
+    - com.apple.springboard.allowallcallurls
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.system.set-alert-tone
+    - com.apple.systemstatus.publisher.domains
+    - com.apple.telephonyutilities.callservicesd
+    - com.apple.transparency.kt
+    - com.apple.trustkit.orca
+    - com.apple.usersafety.service
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 17
+notable_frameworks:
+  - Contacts
+  - UserNotifications
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: Messages Assistant Extension
+    extension_point: com.apple.intents-service
+  - name: Messages Share Extension
+    extension_point: com.apple.share-services
+  - name: Messages Reply Extension
+    extension_point: com.apple.share-services
+  - name: Messages Storage Management Extension
+    extension_point: com.apple.storagemanagement
+  - name: MessagesPluginNotificationExtension
+    extension_point: com.apple.usernotifications.content-extension

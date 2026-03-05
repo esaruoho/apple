@@ -1,0 +1,50 @@
+# AirPort Utility — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/AirPort Utility.app
+
+app: AirPort Utility
+slug: airport-utility
+path: /System/Applications/Utilities/AirPort Utility.app
+layers_found: 5
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: apupdate
+  - scheme: apconfig
+
+# ─── Layer 3: Document Types ───
+document_types_count: 2
+document_types:
+  - name: AirPort Base Station Binary
+    extensions: ["basebinary"]
+    role: None
+  - name: AirPort Base Station Binary
+    extensions: ["basebinary"]
+    role: None
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 7
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.private.iaaccounts
+    - com.apple.wifi.associate
+    - com.apple.wifi.priority.id
+    - com.apple.wifi.priority.internal
+    - com.apple.wifi.scan
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 19
+notable_frameworks:
+  - Contacts
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.airport.airportutility
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2001–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 6.3.9

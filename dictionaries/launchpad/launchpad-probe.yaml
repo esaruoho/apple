@@ -1,0 +1,19 @@
+# Launchpad — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Launchpad.app
+
+app: Launchpad
+slug: launchpad
+path: /System/Applications/Launchpad.app
+layers_found: 2
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 3
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.launchpad.launcher
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 1.0

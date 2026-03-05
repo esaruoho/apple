@@ -1,0 +1,284 @@
+# Weather — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Weather.app
+
+app: Weather
+slug: weather
+path: /System/Applications/Weather.app
+layers_found: 7
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: weather
+    name: com.apple.weather
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - What time is sunset?
+    - When is sunrise?
+    - "Show sunrise and sunset for ${location}."
+    - "Show sunrise for ${location}."
+    - "Show sunset for ${location}."
+    - "Open ${location}'s sunrise and sunset."
+    - "I'd like to see sunrise and sunset averages for ${location}."
+    - "Sunrise and sunset in Weather ${applicationName}."
+    - "What is the ${specificCondition}?"
+    - "What is the ${specificCondition} in ${location}?"
+    - "What is the ${specificCondition} ${date}?"
+    - "What is the ${specificCondition} in ${location} ${date}?"
+    - "How bad is the ${specificCondition}?"
+    - "How bad is the ${specificCondition} in ${location}?"
+    - "How bad is the ${specificCondition} ${date}?"
+    - "How bad is the ${specificCondition} in ${location} ${date}?"
+    - "Open ${applicationName} to ${specificCondition}."
+    - "Open ${applicationName} to ${location}'s ${specificCondition}."
+    - "Open the ${specificCondition} forecast."
+    - "Show ${location}'s ${specificCondition} in ${applicationName}."
+    - "Display ${specificCondition} in ${applicationName}."
+    - "${specificCondition} forecast."
+    - How humid is it?
+    - "How humid is it in ${location}?"
+    - "How humid is it ${date}?"
+    - "How humid is it in ${location} ${date}?"
+    - "How much ${specificCondition} is there?"
+    - "Will it ${specificCondition} ${date}?"
+    - How much pressure is there?
+    - "How much pressure is there in ${location}?"
+    - "How much pressure is there ${date}?"
+    - "How much pressure is there in ${location} ${date}?"
+    - Do I need sunscreen?
+    - "Do I need sunscreen in ${location}?"
+    - "Do I need sunscreen ${date}?"
+    - "Do I need sunscreen in ${location} on ${date}?"
+    - "Is SPF recommended ${date}?"
+    - Is the UV under 5?
+    - Is the UV over 3?
+    - How foggy is it?
+    - "How foggy is it in ${location}?"
+    - "How foggy is it ${date}?"
+    - "How foggy is it in ${location} ${date}?"
+    - How much smoke is there?
+    - "How much smoke is there in ${location}?"
+    - "How much smoke is there ${date}?"
+    - "How much smoke is there in ${location} ${date}?"
+    - Is there haze?
+    - "Is there haze in ${location}?"
+    - "Is there haze ${date}?"
+    - "Is there haze in ${location} ${date}?"
+    - How far can I see?
+    - "How far can I see in ${location}?"
+    - "How far can I see ${date}?"
+    - "How far can I see in ${location} ${date}?"
+    - Is it going to be windy?
+    - "Is it going to be windy in ${location}?"
+    - "Is it going to be windy ${date}?"
+    - "Is it going to be windy in ${location} ${date}?"
+    - How fast are the wind gusts?
+    - "How fast are the wind gusts in ${location}?"
+    - "How fast are the wind gusts ${date}?"
+    - "How fast are the wind gusts in ${location} ${date}?"
+    - Show the wind chart.
+    - "Show the wind chart for ${location}."
+    - "Show the wind chart ${date}."
+    - "Show the wind chart for ${location} ${date}."
+    - "What is the ${temperatureKind} in ${location}?"
+    - "What is the ${temperatureKind} in ${location} ${date}?"
+    - "Show me the ${temperatureKind} in ${applicationName}."
+    - "Show the ${temperatureKind} in ${applicationName}."
+    - "Show ${temperatureKind}."
+    - "Open ${applicationName} to ${date}'s ${temperatureKind}."
+    - "Open the ${temperatureKind} forecast."
+    - "${location}'s ${temperatureKind}."
+    - "${location}'s ${temperatureKind} ${date}."
+    - "Whats ${location}'s ${temperatureKind}?"
+    - "Whats ${location}'s ${temperatureKind} ${date}?"
+    - "How is the ${temperatureKind} in ${location}?"
+    - "How is the ${temperatureKind} in ${location} ${date}?"
+    - "In ${applicationName}, show me ${location}'s ${temperatureKind} ${date}"
+    - "What is the temperature ${temperatureKind}?"
+    - "What is the temperature ${temperatureKind} ${date}?"
+    - "What is the temperature in ${location} ${temperatureKind}?"
+    - "What is the temperature in ${location} ${temperatureKind} ${date}?"
+    - "How is the temperature ${temperatureKind}?"
+    - "How is the temperature ${temperatureKind} ${date}?"
+    - "How is the temperature in ${location} ${temperatureKind}?"
+    - "How is the temperature in ${location} ${temperatureKind} ${date}?"
+    - "How ${temperatureKind}?"
+    - "How ${temperatureKind} ${date}?"
+    - "How ${temperatureKind} in ${location}?"
+    - "How ${temperatureKind} ${date}?"
+    - "How ${temperatureKind} in ${location} ${date}?"
+    - "Open ${applicationName} and show me the air quality for ${location}"
+    - "Open ${applicationName} to today’s air pollution."
+    - "Open ${applicationName} to air quality."
+    - "What is the air quality in ${location}?"
+    - "What is the air pollution for ${location}?"
+    - Show me the AQI.
+    - How good is the air quality index?
+    - "How bad is the air pollution in ${location}?"
+    - Is the AQI good today?
+    - Is the air quality still bad?
+    - "Show me ${location}'s AQI in ${applicationName}."
+    - "Show me the air quality in ${location}."
+    - "${applicationName} pollutant table."
+    - "In the ${applicationName} app, show ${location}'s Benzene level."
+    - Show me how much Carbon Monoxide is in the air.
+    - Show me the PM2.5 level.
+    - Show me how much PM10 is in the air.
+    - "In the ${applicationName} app, show ${location}'s Ammonia level."
+    - Show me how much Coarse Particulates is in the air.
+    - Show me how much Fine Particulates is in the air.
+    - Show me how much Coarse Particulates is in the air.
+    - Show me the Nitrogen Monoxide level.
+    - Show me the Nitrogen Monoxide level.
+    - Show me the Nitrogen Dioxide level.
+    - What is the NOx level?
+    - What is the level of Non-Methane Hydrocarbons in the air?
+    - "What is the Ammonia level in ${location}?"
+    - How much Nitrogen Oxide is in the air?
+    - "How much Ozone is in the atmosphere in ${location}?"
+    - "How much Sulfur Dioxide is there in ${location}?"
+    - Show me the Total Reduced Sulfur level.
+    - "Open ${applicationName} to configure units"
+    - Open units panel
+    - "Open units panel in ${applicationName}"
+    - "Open units configuration panel in ${applicationName}"
+    - "Open ${applicationName} to configure notifications"
+    - Set up severe weather notifications
+    - Configure severe weather alerts
+    - Set up rain alerts
+    - Change next-hour precipitation alerts
+    - "Set up storm alerts in ${applicationName}"
+    - "Open notifications panel in ${applicationName}"
+    - "Open notifications configuration panel in ${applicationName}"
+    - When is the next full moon?
+    - When is the next full moon?
+    - "What is the moon phase ${date}?"
+    - "What is the moon phase ${date} in ${location}?"
+    - When will the moon rise?
+    - "When will the moon rise ${date}?"
+    - "When will the moon rise ${date} in ${location}?"
+    - What time is moonset?
+    - Open the moon details in Weather.
+    - Show moon details.
+    - "Show moon details for ${location}."
+    - Moon.
+  actions_count: 6
+  actions:
+    - id: OpenSunriseSunsetIntent
+      title: Open Sunrise and Sunset Details
+      description: Opens Weather and shows sunrise and sunset details
+    - id: OpenUnitsConfigurationIntent
+      title: Open Units Configuration
+      description: "Opens the Units panel to change temperature, wind, precipitation, pressure and distance unit settings used by Weather."
+    - id: OpenWeatherAirQualityIntent
+      title: Open Air Quality Details
+      description: Opens Weather and shows air quality
+    - id: OpenWeatherSpecificConditionIntent
+      title: Open Weather Condition Details
+      description: Opens Weather and shows a specific weather detail
+    - id: OpenNotificationsConfigurationIntent
+      title: Open Notifications Configuration
+      description: Opens Weather to the Notifications panel to configure severe weather and next-hour precipitation notifications.
+    - id: OpenMoonIntent
+      title: Open Moon Details
+      description: Opens Weather and shows moon details
+  queries:
+    - id: LocationSearchEntityQuery
+  entities: ["LocationSearchEntity"]
+  enums: ["{'fullyQualifiedTypeName': 'Weather.SpecificConditionKind', 'assistantDefinedSchemas': [], 'effectiveBundleIdentifiers': [], 'cases': [{'identifier': 'conditions', 'displayRepresentation': {'synonyms': [{'alternatives': [], 'key': 'Temperature'}, {'key': 'Actual Temperature', 'alternatives': []}, {'key': 'Feels Like Temperature', 'alternatives': []}], 'imageV2': {'systemImageName': {'_0': 'cloud.sun'}}, 'title': {'alternatives': [], 'key': 'Conditions'}, 'image': {'systemImageName': {'_0': 'cloud.sun'}}}}, {'displayRepresentation': {'title': {'key': 'Humidity', 'alternatives': []}, 'imageV2': {'systemImageName': {'_0': 'humidity'}}, 'image': {'systemImageName': {'_0': 'humidity'}}, 'synonyms': [{'key': 'Dew point', 'alternatives': []}]}, 'identifier': 'humidity'}, {'identifier': 'precipitation', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'drop'}}, 'synonyms': [{'alternatives': [], 'key': 'Precipitation Level'}, {'alternatives': [], 'key': 'Rain'}, {'alternatives': [], 'key': 'Rain Level'}, {'key': 'Snow', 'alternatives': []}, {'key': 'Snow Level', 'alternatives': []}, {'alternatives': [], 'key': 'Snowfall'}, {'alternatives': [], 'key': 'Snowfall Level'}, {'alternatives': [], 'key': 'Sleet'}, {'alternatives': [], 'key': 'Sleet Level'}], 'imageV2': {'systemImageName': {'_0': 'drop'}}, 'title': {'key': 'Precipitation', 'alternatives': []}}}, {'identifier': 'pressure', 'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'gauge'}}, 'title': {'key': 'Pressure', 'alternatives': []}, 'image': {'systemImageName': {'_0': 'gauge'}}, 'synonyms': [{'key': 'Barometric Pressure', 'alternatives': []}, {'key': 'Atmospheric Pressure', 'alternatives': []}]}}, {'identifier': 'uvi', 'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'sun.max'}}, 'synonyms': [{'alternatives': [], 'key': 'UVI'}, {'key': 'UV', 'alternatives': []}, {'alternatives': [], 'key': 'Ultraviolet'}, {'key': 'Ultraviolet index', 'alternatives': []}, {'key': 'SPF', 'alternatives': []}, {'key': 'Sunscreen', 'alternatives': []}], 'title': {'key': 'UV Index', 'alternatives': []}, 'image': {'systemImageName': {'_0': 'sun.max'}}}}, {'identifier': 'visibility', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Visibility'}, 'imageV2': {'systemImageName': {'_0': 'eye'}}, 'image': {'systemImageName': {'_0': 'eye'}}, 'synonyms': []}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Wind'}, 'image': {'systemImageName': {'_0': 'wind'}}, 'synonyms': [{'key': 'Wind speed', 'alternatives': []}, {'alternatives': [], 'key': 'Wind gust'}, {'alternatives': [], 'key': 'Wind gust speed'}, {'key': 'Breeze', 'alternatives': []}], 'imageV2': {'systemImageName': {'_0': 'wind'}}}, 'identifier': 'wind'}], 'identifier': 'SpecificConditionKind', 'displayTypeName': {'alternatives': [], 'key': 'Condition'}, 'mangledTypeNameByBundleIdentifier': {}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'mangledTypeName': '7Weather21SpecificConditionKindO'}", "{'fullyQualifiedTypeName': 'Weather.DetailKind', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'identifier': 'DetailKind', 'mangledTypeName': '7Weather10DetailKindO', 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'displayTypeName': {'key': 'Detail Kind', 'alternatives': []}, 'isSystem': False, 'assistantDefinedSchemas': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'cases': [{'identifier': 'airQuality', 'displayRepresentation': {'title': {'key': 'Air Quality', 'alternatives': []}}}, {'identifier': 'chanceOfPrecipitation', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Chance of Precipitation'}}}, {'identifier': 'conditions', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Conditions'}}}, {'identifier': 'feelsLikeActual', 'displayRepresentation': {'synonyms': [{'alternatives': [], 'key': 'Actual Temperature'}], 'title': {'alternatives': [], 'key': 'Actual Temperature'}}}, {'identifier': 'feelsLikeApparent', 'displayRepresentation': {'synonyms': [{'key': 'Feels like', 'alternatives': []}, {'key': 'Feels like temperature', 'alternatives': []}], 'title': {'key': 'Apparent Temperature', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Humidity', 'alternatives': []}}, 'identifier': 'humidity'}, {'identifier': 'moon', 'displayRepresentation': {'title': {'key': 'Moon', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Precipitation Total', 'alternatives': []}}, 'identifier': 'precipitationTotal'}, {'identifier': 'pressure', 'displayRepresentation': {'title': {'key': 'Pressure', 'alternatives': []}}}, {'identifier': 'sunriseSunset', 'displayRepresentation': {'title': {'key': 'Sunrise and Sunset', 'alternatives': []}}}, {'identifier': 'temperature', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Temperature'}}}, {'displayRepresentation': {'title': {'key': 'High Temperature', 'alternatives': []}}, 'identifier': 'temperatureHigh'}, {'identifier': 'temperatureLow', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Low Temperature'}}}, {'identifier': 'uvIndex', 'displayRepresentation': {'title': {'key': 'UV Index', 'alternatives': []}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Visibility'}}, 'identifier': 'visibility'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Wind'}}, 'identifier': 'wind'}, {'identifier': 'nextHourPrecipitation', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Next-Hour Precipitation'}}}]}", "{'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'fullyQualifiedTypeName': 'Weather.AirQualityPosition', 'cases': [{'identifier': 'top', 'displayRepresentation': {'title': {'key': 'Top', 'alternatives': []}, 'synonyms': []}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Pollutant Details'}, 'synonyms': [{'key': 'C6H6', 'alternatives': []}, {'key': 'Benzene', 'alternatives': []}, {'alternatives': [], 'key': 'CO'}, {'key': 'Carbon Monoxide', 'alternatives': []}, {'alternatives': [], 'key': 'PM10'}, {'key': 'Coarse Particulates', 'alternatives': []}, {'key': 'PM2.5', 'alternatives': []}, {'key': 'Fine Particulates', 'alternatives': []}, {'key': 'NH3', 'alternatives': []}, {'key': 'Ammonia', 'alternatives': []}, {'key': 'NMHC', 'alternatives': []}, {'key': 'Non-Methane Hydrocarbons', 'alternatives': []}, {'alternatives': [], 'key': 'NO'}, {'key': 'Nitrogen Monoxide', 'alternatives': []}, {'key': 'NO2', 'alternatives': []}, {'alternatives': [], 'key': 'Nitrogen Dioxide'}, {'key': 'NOx', 'alternatives': []}, {'alternatives': [], 'key': 'Nitrogen Oxides'}, {'alternatives': [], 'key': 'O3'}, {'key': 'Ozone', 'alternatives': []}, {'key': 'SO2', 'alternatives': []}, {'key': 'Sulfur Dioxide', 'alternatives': []}, {'key': 'TRS', 'alternatives': []}, {'key': 'Total Reduced Sulfur', 'alternatives': []}]}, 'identifier': 'details'}], 'mangledTypeName': '7Weather18AirQualityPositionO', 'effectiveBundleIdentifiers': [], 'identifier': 'AirQualityPosition', 'displayTypeName': {'alternatives': [], 'key': 'Position'}, 'isSystem': False, 'mangledTypeNameByBundleIdentifier': {}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': []}", "{'fullyQualifiedTypeName': 'Weather.TemperatureKind', 'identifier': 'TemperatureKind', 'mangledTypeNameByBundleIdentifier': {}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'cases': [{'displayRepresentation': {'title': {'key': 'Actual', 'alternatives': []}, 'synonyms': [{'key': 'Actual Temperature', 'alternatives': []}, {'key': 'Hot', 'alternatives': []}, {'key': 'Cold', 'alternatives': []}]}, 'identifier': 'actual'}, {'displayRepresentation': {'title': {'key': 'Feels Like', 'alternatives': []}, 'synonyms': [{'key': 'Apparent', 'alternatives': []}, {'key': 'Feels like temperature', 'alternatives': []}, {'key': 'In the shade', 'alternatives': []}, {'key': 'Under shade', 'alternatives': []}, {'alternatives': [], 'key': 'Feel like in the shade'}, {'alternatives': [], 'key': 'Feel like under the shade'}, {'key': 'Temperature in the shade', 'alternatives': []}, {'alternatives': [], 'key': 'Under shade temperature'}, {'alternatives': [], 'key': 'Heat index'}, {'key': 'Wind chill', 'alternatives': []}, {'key': 'Hot does it feel', 'alternatives': []}, {'key': 'Cold does it feel', 'alternatives': []}]}, 'identifier': 'apparent'}], 'mangledTypeName': '7Weather15TemperatureKindO', 'isSystem': False, 'effectiveBundleIdentifiers': [], 'displayTypeName': {'alternatives': [], 'key': 'Temperature'}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - WeatherIntent
+  - com.apple.weather.useractivity
+  - com.apple.nanoweather.useractivity
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 51
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Weather
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.network.server
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.location
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.network.socket-delegate
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - application-identifier
+    - com.apple.CoreRoutine.LocationOfInterest
+    - com.apple.SystemConfiguration.SCPreferences-read-access
+    - com.apple.application-identifier
+    - com.apple.authkit.client.private
+    - com.apple.developer.associated-domains
+    - com.apple.developer.usernotifications.critical-alerts
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.itunesstored.private
+    - com.apple.locationd.effective_bundle
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstored
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.coreservices.canmanagebackgroundtasks
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.data-usage-classification-override
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iad.news-client
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.swc.system-app
+    - com.apple.springboard.allowIconVisibilityChanges
+    - com.apple.springboard.opensensitiveurl
+    - fairplay-client
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 52
+notable_frameworks:
+  - AppIntents
+  - Contacts
+  - CoreLocation
+  - Intents
+  - UserNotifications
+  - MapKit
+  - SafariServices
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.weather
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 5.1
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: WeatherWidget
+    extension_point: com.apple.widgetkit-extension
+  - name: WeatherDiagnosticExtension
+    extension_point: com.apple.diagnosticextensions-service
+  - name: WeatherIntents
+    extension_point: com.apple.intents-service

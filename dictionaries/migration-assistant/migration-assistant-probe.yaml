@@ -1,0 +1,30 @@
+# Migration Assistant — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Migration Assistant.app
+
+app: Migration Assistant
+slug: migration-assistant
+path: /System/Applications/Utilities/Migration Assistant.app
+layers_found: 4
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.migrationAssistant.target
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 2
+entitlements:
+  other:
+    - com.apple.private.mbsystemadministration
+    - com.apple.private.skylight.plugin-power
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 17
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.MigrateAssistant
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 15.6

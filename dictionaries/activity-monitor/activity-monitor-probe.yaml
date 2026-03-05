@@ -1,0 +1,31 @@
+# Activity Monitor — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Activity Monitor.app
+
+app: Activity Monitor
+slug: activity-monitor
+path: /System/Applications/Utilities/Activity Monitor.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 7
+entitlements:
+  other:
+    - com.apple.activitymonitor-helper
+    - com.apple.private.AssetCacheServices.Manager
+    - com.apple.private.AuthorizationServices
+    - com.apple.private.gpuwrangler
+    - com.apple.private.launchservices.allowedtoget.LSActivePageUserVisibleOriginsKey
+    - com.apple.private.launchservices.allowedtoget.LSPluginBundleIdentifierKey
+    - com.apple.sysmond.client
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 19
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.ActivityMonitor
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 10.14

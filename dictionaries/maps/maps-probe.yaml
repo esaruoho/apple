@@ -1,0 +1,233 @@
+# Maps — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Maps.app
+
+app: Maps
+slug: maps
+path: /System/Applications/Maps.app
+layers_found: 9
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: x-maps-ac-auth
+  - scheme: maps
+  - scheme: mapitem
+  - scheme: map
+  - scheme: x-maps-mapitemhandles
+  - scheme: x-maps-bulletin
+  - scheme: x-maps-punchinhint
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: custom trace file
+    role: Viewer
+    content_types: ["com.apple.maps.navtracefile"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 16
+  actions:
+    - id: UpdateAvoidTollsEntityValueIntent
+      title: Update Avoid Tolls
+      description: Change the Avoid Tolls value of Avoid Tolls
+    - id: UpdateNavigationVolumeEntityValueIntent
+      title: Update Volume Level
+      description: Change the Volume Level value of Volume Level
+    - id: UpdateTransitPreferFerryEntityValueIntent
+      title: Update Prefer Ferry
+      description: Change the Prefer Ferry value of Prefer Ferry
+    - id: UpdateTransitPreferCommuterRailEntityValueIntent
+      title: Update Prefer Commuter Rail
+      description: Change the Prefer Commuter Rail value of Prefer Commuter Rail
+    - id: UpdateAvoidHillsInCyclingEntityValueIntent
+      title: Update Avoid Hills In Cycling
+      description: Change the Avoid Hills In Cycling value of Avoid Hills In Cycling
+    - id: UpdateAvoidBusyRoadsInWalkingEntityValueIntent
+      title: "Update a Avoid Busy Roads In Walking's Avoid Busy Roads in Walking"
+      description: Change the Avoid Busy Roads in Walking value of Avoid Busy Roads In Walking
+    - id: UpdateAvoidHighwaysEntityValueIntent
+      title: Update Avoid Highways
+      description: Change the Avoid Highways value of Avoid Highways
+    - id: UpdateDirectionsWakeDeviceEntityValueIntent
+      title: Update Directions Wake Device
+      description: Change the Directions Wake Device value of Directions Wake Device
+    - id: UpdateAvoidBusyRoadsInCyclingEntityValueIntent
+      title: Update Avoid Busy Roads In Cycling
+      description: Change the Avoid Busy Roads In Cycling value of Avoid Busy Roads In Cycling
+    - id: UpdateTransitPreferBusEntityValueIntent
+      title: Update Prefer Bus
+      description: Change the Prefer Bus value of Prefer Bus
+    - id: UpdateAvoidHillsInWalkingEntityValueIntent
+      title: Update Avoid Hills In Walking
+      description: Change the Avoid Hills In Walking value of Avoid Hills In Walking
+    - id: UpdateDirectionsPauseSpokenDirectionsEntityValueIntent
+      title: Update Directions Pause Spoken Audio
+      description: Change the Directions Pause Spoken Audio value of Directions Pause Spoken Audio
+    - id: UpdateDirectionsOnRadioEntityValueIntent
+      title: Update Directions On Radio
+      description: Change the Directions On Radio value of Directions On Radio
+    - id: UpdateTransitPreferSubwayEntityValueIntent
+      title: "Update Prefer Subway & Light Rail"
+      description: "Change the Prefer Subway & Light Rail value of Prefer Subway & Light Rail"
+    - id: UpdateTransportTypePreferencesEntityValueIntent
+      title: Update Transport Type Preferences
+      description: Change the Transport Type Preferences value of Transport Type Preferences
+    - id: UpdateAvoidStairsEntityValueIntent
+      title: Update Avoid Stairs
+      description: Change the Avoid Stairs value of Avoid Stairs
+  queries:
+    - id: TransitPreferCommuterRailQuery
+    - id: NavigationVolumeQuery
+    - id: AvoidHillsInWalkingQuery
+    - id: DirectionsWakeDeviceQuery
+    - id: AvoidTollsQuery
+    - id: AvoidStairsQuery
+    - id: TransitPreferSubwayQuery
+    - id: TransitPreferFerryQuery
+    - id: AvoidBusyRoadsInCyclingQuery
+    - id: DirectionsOnRadioQuery
+    - id: AvoidHighwaysQuery
+    - id: TransportTypePreferencesQuery
+    - id: DirectionsPauseSpokenDirectionsQuery
+    - id: TransitPreferBusQuery
+    - id: PlaceQuery
+    - id: AvoidBusyRoadsInWalkingQuery
+    - id: AvoidHillsInCyclingQuery
+  entities: ["TransitPreferSubwayEntity", "TransportTypePreferencesEntity", "AvoidHillsInCyclingEntity", "PlaceEntity", "AvoidBusyRoadsInCyclingEntity", "AvoidHighwaysEntity", "TransitPreferBusEntity", "TransitPreferCommuterRailEntity", "AvoidBusyRoadsInWalkingEntity", "DirectionsPauseSpokenDirectionsEntity", "DirectionsOnRadioEntity", "NavigationVolumeEntity", "AvoidStairsEntity", "DirectionsWakeDeviceEntity", "AvoidTollsEntity", "AvoidHillsInWalkingEntity", "TransitPreferFerryEntity"]
+  enums: ["{'identifier': 'RoutePreferenceEnum', 'effectiveBundleIdentifiers': [], 'fullyQualifiedTypeName': 'Maps.RoutePreferenceEnum', 'cases': [{'identifier': 'shortest', 'displayRepresentation': {'title': {'key': 'Shortest', 'alternatives': []}, 'synonyms': [{'key': 'Smallest route', 'alternatives': []}, {'key': 'Closest route', 'alternatives': []}, {'alternatives': [], 'key': 'Smallest way'}, {'key': 'Closest way', 'alternatives': []}]}}, {'identifier': 'fastest', 'displayRepresentation': {'title': {'key': 'Fastest', 'alternatives': []}, 'synonyms': [{'key': 'Quickest route', 'alternatives': []}, {'key': 'Speedy route', 'alternatives': []}, {'key': 'Quickest way', 'alternatives': []}, {'key': 'Speedy way', 'alternatives': []}]}}], 'displayTypeName': {'key': 'Routing Preference', 'alternatives': []}, 'isSystem': False, 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'mangledTypeName': '4Maps19RoutePreferenceEnumO', 'assistantDefinedSchemas': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeNameByBundleIdentifier': {}}", "{'fullyQualifiedTypeName': 'Maps.VoiceVolumeLevel', 'mangledTypeNameByBundleIdentifier': {}, 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'mangledTypeName': '4Maps16VoiceVolumeLevelO', 'effectiveBundleIdentifiers': [], 'identifier': 'VoiceVolumeLevel', 'displayTypeName': {'key': 'Voice Volume', 'alternatives': []}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'cases': [{'identifier': 'volumeSoft', 'displayRepresentation': {'title': {'key': 'Softer Volume', 'alternatives': []}, 'synonyms': [{'alternatives': [], 'key': 'Low Volume'}, {'key': 'Minimum Volume', 'alternatives': []}, {'alternatives': [], 'key': 'Less Volume'}]}}, {'identifier': 'volumeNormal', 'displayRepresentation': {'title': {'key': 'Normal Volume', 'alternatives': []}, 'synonyms': [{'key': 'Medium Volume', 'alternatives': []}, {'alternatives': [], 'key': 'Middle Volume'}]}}, {'displayRepresentation': {'title': {'key': 'Louder Volume', 'alternatives': []}, 'synonyms': [{'key': 'Maximum Volume', 'alternatives': []}, {'key': 'High Volume', 'alternatives': []}]}, 'identifier': 'volumeLoud'}], 'assistantDefinedSchemas': [], 'isSystem': False}", "{'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'assistantDefinedSchemas': [], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'fullyQualifiedTypeName': 'Maps.TransportType', 'displayTypeName': {'key': 'Transport Type Preference', 'alternatives': []}, 'cases': [{'displayRepresentation': {'title': {'key': 'Driving', 'alternatives': []}, 'synonyms': [{'alternatives': [], 'key': 'Travel by car'}, {'key': 'Travel by motor vehicle', 'alternatives': []}, {'key': 'Drive on a four wheeler', 'alternatives': []}]}, 'identifier': 'driving'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Walking'}, 'synonyms': [{'key': 'On foot', 'alternatives': []}, {'key': 'Strolling', 'alternatives': []}]}, 'identifier': 'walking'}, {'identifier': 'transit', 'displayRepresentation': {'synonyms': [{'key': 'Public transport', 'alternatives': []}, {'alternatives': [], 'key': 'Public transit'}], 'title': {'key': 'Transit', 'alternatives': []}}}, {'identifier': 'cycling', 'displayRepresentation': {'synonyms': [{'key': 'Bicycling', 'alternatives': []}, {'key': 'Biking', 'alternatives': []}], 'title': {'key': 'Cycling', 'alternatives': []}}}], 'identifier': 'TransportType', 'mangledTypeNameByBundleIdentifier': {}, 'mangledTypeName': '4Maps13TransportTypeO', 'effectiveBundleIdentifiers': []}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.Maps
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 76
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.MapsSync
+    - com.apple.private.security.storage.Weather
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.attestation.access
+    - com.apple.security.exception.files.absolute-path.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.scripting-targets
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+  icloud:
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+  apple_intelligence:
+    - com.apple.private.intelligenceplatform.use-cases
+  other:
+    - com.apple.CoreRoutine.LocationOfInterest
+    - com.apple.CoreRoutine.LocationOfInterest.Delete
+    - com.apple.CoreRoutine.MapHint
+    - com.apple.CoreRoutine.Prediction
+    - com.apple.CoreRoutine.VehicleLocation
+    - com.apple.GeoServices.Config
+    - com.apple.Maps.mapspushd.geod
+    - com.apple.Maps.tripsharing.receiving
+    - com.apple.MapsSupport.MapsDaemon
+    - com.apple.TapToRadarKit.service-access
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.idms.fullaccess
+    - com.apple.application-identifier
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.knowledge
+    - com.apple.coreduetd.people
+    - com.apple.developer.associated-domains
+    - com.apple.developer.maps
+    - com.apple.findmy.findmylocate.friendshipservice
+    - com.apple.findmy.findmylocate.locationservice
+    - com.apple.findmy.findmylocate.settings
+    - com.apple.geoanalyticsd.analytics
+    - com.apple.geod.allow-user-initiated-request
+    - com.apple.geoservices.changetilegroup
+    - com.apple.geoservices.experiments.fetchall
+    - com.apple.geoservices.experiments.set
+    - com.apple.geoservices.getmanifest
+    - com.apple.geoservices.requestCounter
+    - com.apple.geoservices.setanydefault
+    - com.apple.geoservices.shrinkdb
+    - com.apple.geoservices.utility
+    - com.apple.keystore.sik.acces
+    - com.apple.launchservices.receivereferrerrurl
+    - com.apple.locationd.effective_bundle
+    - com.apple.locationd.simulation
+    - com.apple.maps.debug-assistant
+    - com.apple.maps.model-access
+    - com.apple.mobileactivationd.device-identifiers
+    - com.apple.mobileactivationd.spi
+    - com.apple.navigation.spi
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contacts
+    - com.apple.private.corerecents
+    - com.apple.private.corewifi
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iaaccounts
+    - com.apple.private.ids.messaging
+    - com.apple.private.ids.messaging.high-priority
+    - com.apple.private.swc.system-app
+    - com.apple.wifi.priority.id
+    - com.apple.wifi.priority.internal
+    - com.apple.wifi.set_power
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 113
+notable_frameworks:
+  - CoreMedia
+  - Photos
+  - SafariServices
+  - EventKit
+  - IntentsUI
+  - AVFoundation
+  - WebKit
+  - UserNotifications
+  - CloudKit
+  - CoreSpotlight
+  - Intents
+  - Contacts
+  - CoreLocation
+  - MapKit
+  - AppIntents
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Travel
+  CFBundleIdentifier: com.apple.Maps
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 3.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: MapsDiagnostic
+    extension_point: com.apple.diagnosticextensions-service
+
+# ─── Layer 12: Notification Actions ───
+notification_categories:
+  - id: MapsUNCategoryRAP
+  - id: MapsUNCategoryParkedCar
+  - id: MapsUNCategoryTraffic
+  - id: MapsUNCategoryTrafficReroute
+    actions:
+      - id: TrafficIncidentAlertRerouteAction
+        title: MapsRerouteActionTitle
+  - id: MapsUNCategoryPredictedDestination
+  - id: MapsUNCategoryLowFuel
+  - id: MapsUNCategorySharedTrip
+  - id: MapsUNCategorySharedTrip

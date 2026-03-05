@@ -1,6 +1,6 @@
 # apple
 
-### macOS automation arsenal. One button. One action. Zero wasted time.
+### macOS automation arsenal by [Esa Ruoho](https://github.com/esaruoho) @ [Ray Browser](https://raybrowser.com). One button. One action. Zero wasted time.
 
 [![macOS](https://img.shields.io/badge/macOS-Sequoia-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![AppleScript](https://img.shields.io/badge/AppleScript-Automation-blue?style=flat-square)](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/introduction/ASLR_intro.html)
@@ -116,6 +116,39 @@ Every Apple app and utility, ready for one-button activation from Loupedeck Live
 | iMovie | [`scripts/launchers/activate-imovie.applescript`](scripts/launchers/activate-imovie.applescript) |
 
 </details>
+
+### App Automation Probe (13 Layers)
+
+`bin/app-probe.py` extracts **13 layers of automation intelligence** from every Apple app:
+
+| Layer | What It Reveals |
+|-------|-----------------|
+| 1. Scripting Dictionary (sdef) | AppleScript commands, classes, properties |
+| 2. URL Schemes | URLs the app responds to (`mailto://`, `music://`) |
+| 3. Document Types | File types the app can open |
+| 4. **App Intents / Siri Phrases** | Shortcuts actions + Siri voice commands |
+| 5. NSServices | Services menu entries |
+| 6. User Activity Types | Handoff/Spotlight activities |
+| 7. Entitlements | What the app is *allowed* to do |
+| 8. Linked Frameworks | Which Apple frameworks the app uses |
+| 9. Spotlight Metadata | Bundle ID, version, category |
+| 10. LaunchServices | LS database registration (opt-in) |
+| 11. Plugin Extensions | `.appex` plugins inside the app |
+| 12. Notification Actions | Actionable notification buttons |
+| 13. CLI Tools | macOS command-line automation tools |
+
+```bash
+python3 bin/app-probe.py                    # All 66 apps, all layers
+python3 bin/app-probe.py Mail               # Single app
+python3 bin/app-probe.py --layer intents    # Only App Intents
+python3 bin/app-probe.py --cli              # Include CLI tools
+python3 bin/app-probe.py --list             # Show available apps
+```
+
+**66 apps probed, 378 layer hits, 20 apps with App Intents, 35 with URL schemes.**
+
+Output per app: `dictionaries/<app>/<app>-probe.yaml` + `<app>-probe.md`
+Cross-app index: `dictionaries/_probe-index.yaml` (URL scheme registry, App Intents summary, framework matrix)
 
 ### Workflow Scripts
 

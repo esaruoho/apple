@@ -1,0 +1,54 @@
+# Calculator — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Calculator.app
+
+app: Calculator
+slug: calculator
+path: /System/Applications/Calculator.app
+layers_found: 5
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 1
+  actions:
+    - id: LaunchCalculatorOpenIntent
+      title: Calculator
+      description: Opens calculator app.
+  enums: ["{'displayTypeName': {'table': 'WidgetLocalizable', 'alternatives': [], 'key': 'Calculator'}, 'fullyQualifiedTypeName': 'Calculator.CalculatorAppView', 'assistantDefinedSchemas': [], 'cases': [{'displayRepresentation': {'title': {'key': 'Calculator', 'table': 'WidgetLocalizable', 'alternatives': []}}, 'identifier': 'app'}], 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'CalculatorAppView', 'mangledTypeName': '10Calculator0A7AppViewO', 'isSystem': False, 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}}"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 13
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+  other:
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.runningboard.terminateprocess
+    - file-read-data
+    - file-write-data
+    - user-preference-read
+    - user-preference-write
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 17
+notable_frameworks:
+  - AppIntents
+  - SwiftData
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.calculator
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 11.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: CalculatorWidget
+    extension_point: com.apple.widgetkit-extension

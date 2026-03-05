@@ -1,0 +1,91 @@
+# System Settings — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/System Settings.app
+
+app: System Settings
+slug: system-settings
+path: /System/Applications/System Settings.app
+layers_found: 7
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 2
+  commands: 3
+  classes: 2
+  command_names:
+    - reveal
+    - authorize
+    - timedLoad
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: x-apple.systempreferences
+    name: System Preferences URL
+    is_default: true
+
+# ─── Layer 3: Document Types ───
+document_types_count: 4
+document_types:
+  - name: Internet Connect Document
+    extensions: ["internetconnect", "networkconnect"]
+    role: Editor
+  - name: OS X Preference Pane
+    extensions: ["prefPane"]
+    role: Viewer
+  - name: OS X Preference Pane Extension
+    extensions: ["sysprefex"]
+    role: Viewer
+  - name: OS X Preference Screen Saver
+    extensions: ["saver"]
+    role: Viewer
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 22
+entitlements:
+  sandbox:
+    - com.apple.private.extensionkit.host.unsandboxed-extensions-for-extension-points
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.security.application-groups
+    - com.apple.security.assets.pictures.read-only
+  privacy:
+    - com.apple.developer.extension-host.systemprefsapp.privacy
+  other:
+    - com.apple.Settings.extension.host
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.developer.extension-host.systemprefsapp.appleid
+    - com.apple.developer.extension-host.systemprefsapp.sharing
+    - com.apple.extensionkit.host.extension-point-identifiers
+    - com.apple.private.AmbientDisplay.messaging
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.assets.change-daemon-config
+    - com.apple.private.biome.client-identifier
+    - com.apple.private.biome.writer
+    - com.apple.private.contactsui
+    - com.apple.private.domain-extension
+    - com.apple.private.followup
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iaaccounts
+    - com.apple.private.systempreferences
+    - com.apple.private.viewbridge.host.command-equivalent.attempt-at-will
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 34
+notable_frameworks:
+  - CoreAudio
+  - AVFoundation
+  - CoreSpotlight
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.systempreferences
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 15.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: csimporter
+    extension_point: com.apple.spotlight.index
+  - name: GeneralSettings

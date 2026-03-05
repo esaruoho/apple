@@ -1,0 +1,202 @@
+# FaceTime — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/FaceTime.app
+
+app: FaceTime
+slug: facetime
+path: /System/Applications/FaceTime.app
+layers_found: 6
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: tel
+    name: Telephony URL
+  - scheme: facetime
+    name: Telephony URL
+  - scheme: facetime-audio
+    name: Telephony URL
+  - scheme: facetime-group
+    name: Telephony URL
+  - scheme: facetime-open-link
+    name: Telephony URL
+  - scheme: system-call-controls
+    name: Telephony URL
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.facetime.handoff
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 147
+entitlements:
+  sandbox:
+    - "com.apple.private.sandbox.profile:embedded"
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.CallHistory
+    - com.apple.private.security.storage.MessagesMetaData
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.exception.files.absolute-path.read-write
+    - com.apple.security.exception.files.home-relative-path.read-only
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.iokit-user-client-class
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.lockdownmode.read
+    - com.apple.security.network.client
+    - com.apple.security.network.server
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.absolute-path.read-write
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.icloud.fmfd.access
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow.overridable
+  other:
+    - SBStarkCapable
+    - abs-client
+    - aps-connection-initiate
+    - com.apple.AutoWake-write-access
+    - com.apple.CallHistory.sync.allow
+    - com.apple.CallKit.call-directory
+    - com.apple.CommCenter.fine-grained
+    - com.apple.Contacts.database-allow
+    - com.apple.FTLivePhotoService
+    - com.apple.FaceTime.NoPrompt
+    - com.apple.QuartzCore.display-state
+    - com.apple.QuartzCore.global-capture
+    - com.apple.SystemConfiguration.SCDynamicStore-write-access
+    - com.apple.SystemConfiguration.SCPreferences-write-access
+    - com.apple.UIKit.vends-view-services
+    - com.apple.application-identifier
+    - com.apple.appprotectiond.read.access
+    - com.apple.assistant.dictation.prerecorded
+    - com.apple.authkit.client.private
+    - com.apple.bulletinboard.utilities
+    - com.apple.callhistory.pluginhelper
+    - com.apple.coreaudio.allow-amr-decode
+    - com.apple.coreaudio.allow-opus-codec
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.context
+    - com.apple.coreduetd.people
+    - com.apple.coremedia.allow-protected-content-playback
+    - com.apple.developer.associated-domains
+    - com.apple.developer.healthkit
+    - com.apple.developer.usernotifications.communication
+    - com.apple.facetimemessagestored.service
+    - com.apple.facetimemessagestored.videomessaging
+    - com.apple.frontboard.launchapplications
+    - com.apple.frontboardservices.display-layout-monitor
+    - com.apple.imagent.av
+    - com.apple.imdpersistence.IMDPersistenceAgent-GroupMetadata
+    - com.apple.itunesstored.private
+    - com.apple.media.ringtones.read-only
+    - com.apple.mobilemail.mailservices
+    - com.apple.nano.nanoregistry.generalaccess
+    - com.apple.private.CallHistory.read-write
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.aps-client-cert-access
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.audio.notification-wake-audio
+    - com.apple.private.avatar.store
+    - com.apple.private.avfoundation.capture.allow-set-any-user-preferred-camera
+    - com.apple.private.avfoundation.capture.use-tundra-personality
+    - com.apple.private.bmk.allow
+    - com.apple.private.calendar.has-adopted-modern-request-access-methods
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.catalyst-openURL-source
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contacts
+    - com.apple.private.contactsui
+    - com.apple.private.corerecents
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.corespotlight.search.internal
+    - com.apple.private.dmd.emergency-mode
+    - com.apple.private.dmd.policy
+    - com.apple.private.game-center
+    - com.apple.private.game-center.bypass-authentication
+    - com.apple.private.healthkit.medicaliddata
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.icfcallserver
+    - com.apple.private.ids.identityservicesd
+    - com.apple.private.ids.idquery-cache
+    - com.apple.private.ids.idsquery
+    - com.apple.private.ids.messaging
+    - com.apple.private.ids.registration
+    - com.apple.private.ids.registration-control
+    - com.apple.private.imavcore.imavagent
+    - com.apple.private.imcore.imremoteurlconnection
+    - com.apple.private.imcore.spi.database-access
+    - com.apple.private.interstellar.data-access
+    - com.apple.private.iokit.darkwake-control
+    - com.apple.private.launchservices.changedefaulthandlers
+    - com.apple.private.messages.collaboration-initiate-send
+    - com.apple.private.persona.read
+    - com.apple.private.persona.write
+    - com.apple.private.rtcreportingd
+    - com.apple.private.screen-time
+    - com.apple.private.screencapturekit.sharingsessionsystemui
+    - com.apple.private.screentime-communication
+    - com.apple.private.shared-with-you.on-screen-content
+    - com.apple.private.skylight.unconditional-activation
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.sociallayer.shareable-content
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.suggestions.urls
+    - com.apple.private.swc.system-app
+    - com.apple.private.tipsd.discoverability
+    - com.apple.runningboard.facetime
+    - com.apple.runningboard.posterkit.host
+    - com.apple.springboard.allowallcallurls
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.openurlinbackground
+    - com.apple.springboard.openurlswhenlocked
+    - com.apple.springboard.topButtonFrames
+    - com.apple.system.get-alert-tone
+    - com.apple.system.set-alert-tone
+    - com.apple.telephonyutilities.callservicesd
+    - com.apple.videoconference.allow-conferencing
+    - com.apple.visualvoicemail.client
+    - com.apple.wifi.manager-access
+    - keychain-access-groups
+    - platform-application
+    - previous-application-identifiers
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 53
+notable_frameworks:
+  - AVFoundation
+  - Contacts
+  - UserNotifications
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Social Networking
+  CFBundleIdentifier: com.apple.FaceTime
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 36
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: RemotePeoplePicker
+    extension_point: com.apple.groupactivities

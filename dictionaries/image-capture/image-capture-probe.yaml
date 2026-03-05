@@ -1,0 +1,35 @@
+# Image Capture — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Image Capture.app
+
+app: Image Capture
+slug: image-capture
+path: /System/Applications/Image Capture.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 9
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.assets.movies.read-write
+    - com.apple.security.assets.music.read-write
+    - com.apple.security.assets.pictures.read-write
+    - com.apple.security.files.downloads.read-write
+    - com.apple.security.files.user-selected.read-write
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.application-identifier
+    - com.apple.private.imagecapturecore.authorization_bypass
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 7
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.Image_Capture
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 8.0

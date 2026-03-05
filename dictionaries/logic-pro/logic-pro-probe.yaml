@@ -1,0 +1,183 @@
+# Logic Pro — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Logic Pro.app
+
+app: Logic Pro
+slug: logic-pro
+path: /Applications/Logic Pro.app
+layers_found: 6
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 4
+  commands: 13
+  classes: 12
+  command_names:
+    - close
+    - count
+    - delete
+    - duplicate
+    - exists
+    - get
+    - make
+    - move
+    - open
+    - print
+    - quit
+    - save
+    - set
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: applelogicpro
+    name: com.apple.music.apps.logic
+  - scheme: logicpro
+    name: com.apple.logic10
+
+# ─── Layer 3: Document Types ───
+document_types_count: 32
+document_types:
+  - name: Logic Pro Project
+    extensions: ["logicx"]
+    role: Editor
+    content_types: ["com.apple.logicx.project"]
+  - name: Logic Pro Project
+    extensions: ["logic"]
+    role: Viewer
+    content_types: ["com.apple.logic.project"]
+  - name: Logic Pro Song
+    extensions: ["lso"]
+    role: Viewer
+    content_types: ["com.apple.logic-song"]
+  - name: Logic Pro Song Stationery
+    role: Viewer
+    content_types: ["com.apple.logic-song"]
+  - name: Logic Pro Patch
+    extensions: ["patch"]
+    role: Viewer
+    content_types: ["com.apple.mainstage.patches"]
+  - name: Standard MIDI File
+    extensions: ["midi", "mid", "smf", "kar"]
+    role: Editor
+    content_types: ["public.midi-audio"]
+  - name: Notator SL Song
+    extensions: ["son"]
+    role: Viewer
+    content_types: ["com.apple.logic.notator"]
+  - name: GarageBand Project
+    extensions: ["band", "gbProj"]
+    role: Viewer
+    content_types: ["com.apple.garageband.project"]
+  - name: OMF File
+    extensions: ["omf"]
+    role: Viewer
+  - name: AAF File
+    extensions: ["aaf"]
+    role: Viewer
+    content_types: ["org.aafassociation.advanced-authoring-format"]
+  - name: Final Cut Pro XML File
+    extensions: ["xml"]
+    role: Viewer
+    content_types: ["public.xml"]
+  - name: Final Cut Pro XML
+    extensions: ["fcpxml"]
+    role: Viewer
+    content_types: ["com.apple.finalcutpro.xml"]
+  - name: Final Cut Pro XML Bundle
+    extensions: ["fcpxmld"]
+    role: Viewer
+    content_types: ["com.apple.finalcutpro.xmld"]
+  - name: AIFF Audio file
+    extensions: ["aif", "aiff"]
+    role: Editor
+    content_types: ["public.aiff-audio"]
+  - name: CAF Audio file
+    extensions: ["caf"]
+    role: Editor
+    content_types: ["com.apple.coreaudio-format"]
+  - name: Sound Designer II audio file
+    extensions: ["sd2"]
+    role: Editor
+    content_types: ["com.digidesign.sd2-audio"]
+  - name: Sound Designer 1 audio file
+    extensions: ["sd1"]
+    role: Editor
+    content_types: ["com.digidesign.sd1-audio"]
+  - name: Waveform audio file
+    extensions: ["wav", "wave"]
+    role: Editor
+    content_types: ["com.microsoft.waveform-audio"]
+  - name: Logic Pro Plug-in settings file
+    extensions: ["pst"]
+    role: Editor
+    content_types: ["com.apple.logic.pluginsetting"]
+  - name: Logic Pro Channel Strip settings file
+    extensions: ["cst"]
+    role: Editor
+    content_types: ["com.apple.logic.channelstripsetting"]
+  - name: Logic Pro I/O label file
+    role: Editor
+    content_types: ["com.apple.logic.iolabels"]
+  - name: Space Designer Impulse Response
+    extensions: ["sdir", "SDIR"]
+    role: None
+    content_types: ["com.apple.logic.impulseresponse"]
+  - name: EXS24 instrument file
+    extensions: ["exs", "SBK"]
+    role: Editor
+    content_types: ["com.apple.logic.exs"]
+  - name: Logic Pro Key Commands
+    extensions: ["logikcs"]
+    role: None
+    content_types: ["com.apple.logic.keycommand"]
+  - name: OpenTL File
+    extensions: ["tl"]
+    role: Viewer
+    content_types: ["com.tascam.opentl"]
+  - name: Guitar Chord Library
+    extensions: ["gchdb"]
+    role: Editor
+    content_types: ["com.apple.logic.gchdb"]
+  - name: Drummer Editor Preset
+    extensions: ["dpst"]
+    role: None
+    content_types: ["com.apple.logic.dpst"]
+  - name: Grid Setting
+    extensions: ["grid"]
+    role: Editor
+    content_types: ["com.apple.logicx.gridsetting"]
+  - name: Logic Pro Step Sequencer Pattern
+    extensions: ["pattern"]
+    role: None
+    content_types: ["com.apple.musicapps.pattern"]
+  - name: Alchemy settings
+    extensions: ["acp"]
+    role: Editor
+    content_types: ["com.apple.musicapps.alchemy.settings"]
+  # ... and 2 more
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 2
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+  other:
+    - com.apple.application-identifier
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 90
+notable_frameworks:
+  - CoreAudio
+  - WebKit
+  - CoreData
+  - AVFoundation
+  - CoreMedia
+  - UserNotifications
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: LogicProQuickLookExtension
+    extension_point: com.apple.quicklook.preview
+  - name: LogicProThumbnailExtension
+    extension_point: com.apple.quicklook.thumbnail

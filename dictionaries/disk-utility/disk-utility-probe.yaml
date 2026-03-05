@@ -1,0 +1,35 @@
+# Disk Utility — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Disk Utility.app
+
+app: Disk Utility
+slug: disk-utility
+path: /System/Applications/Utilities/Disk Utility.app
+layers_found: 3
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 9
+entitlements:
+  icloud:
+    - com.apple.private.icloud.findmydevice.account.modify
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - allow-obliterate-device
+    - com.apple.authkit.client.private
+    - com.apple.authorization.extract-password
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.asr
+    - com.apple.private.skylight.plugin-power
+    - com.apple.private.storagekitd.destructive
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 23
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.DiskUtility
+  ContentType: com.apple.application-bundle
+  Copyright: © 2015–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 22.7

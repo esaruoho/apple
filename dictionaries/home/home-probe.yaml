@@ -1,0 +1,236 @@
+# Home — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Home.app
+
+app: Home
+slug: home
+path: /System/Applications/Home.app
+layers_found: 6
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 4
+  actions:
+    - id: OpenURLInHomeIntent
+      title: Open Accessory or Scene in Home app
+      description: Forwards and opens URLs in the Home app when an in-widget toggle cannot be performed
+    - id: ShowRoomIntent
+      title: Show Room
+    - id: ShowCategoryIntent
+      title: Show Category
+    - id: ShowHomeIntent
+      title: Show Home
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - ClimateSensorTypeConfigurationIntent
+  - SecurityAccessoryConfigurationIntent
+  - com.apple.home.useractivity
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 171
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Home
+    - com.apple.private.security.storage.HomeKit
+    - com.apple.private.security.storage.MessagesMetaData
+    - com.apple.private.security.storage.os_eligibility.readonly
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.attestation.access
+    - com.apple.security.exception.files.absolute-path.read-only
+    - com.apple.security.exception.files.home-relative-path.read-only
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.location
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.networkrelay.deviceMonitor
+    - com.apple.networkrelay.devices.read
+    - com.apple.networkrelay.devices.write
+    - com.apple.private.network.system-token-fetch
+  icloud:
+    - com.apple.developer.icloud-services
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-or-regional-prompt
+  other:
+    - CARAppHidden
+    - CARCapableApp
+    - application-identifier
+    - com.apple.CompanionLink
+    - com.apple.Contacts.database-allow
+    - com.apple.CoreRoutine.Application
+    - com.apple.CoreRoutine.LocationOfInterest
+    - com.apple.DistributedTimers
+    - com.apple.HomePlatformSettingsUI.CarrySettings
+    - com.apple.PairingManager.HomeKit
+    - com.apple.PairingManager.Read
+    - com.apple.PerfPowerServices.data-donation
+    - com.apple.QuartzCore.global-capture
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.appleidauthentication.defaultaccess
+    - com.apple.accounts.idms.fullaccess
+    - com.apple.accounts.inactive.fullaccess
+    - com.apple.application-identifier
+    - com.apple.appprotectiond.guard.access
+    - com.apple.appprotectiond.read.access
+    - com.apple.assistant.dictation.prerecorded
+    - com.apple.assistant.settings
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.avfoundation.allows-access-to-device-list
+    - com.apple.avfoundation.allows-set-output-device
+    - com.apple.captive.private
+    - com.apple.coreaudio.CanRecordPastData
+    - com.apple.coreaudio.CanRecordWithoutSessionActivation
+    - com.apple.coreaudio.LoadDecodersInProcess
+    - com.apple.coreaudio.register-internal-aus
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.context
+    - com.apple.coreduetd.people
+    - com.apple.coremedia.endpointremotecontrolsession.xpc
+    - com.apple.developer.homekit
+    - com.apple.developer.homekit.background-mode
+    - com.apple.developer.usernotifications.critical-alerts
+    - com.apple.dropin
+    - com.apple.energykit.client
+    - com.apple.energykit.spi
+    - com.apple.extensionkit.host.extension-point-identifiers
+    - com.apple.findmy.findmylocate.friendshipservice
+    - com.apple.findmy.findmylocate.locationservice
+    - com.apple.findmy.findmylocate.settings
+    - com.apple.frontboard.launchapplications
+    - com.apple.frontboardservices.display-layout-monitor
+    - com.apple.homekit.private-spi-access
+    - com.apple.intents.extension.discovery
+    - com.apple.itunesstored.private
+    - com.apple.keystore.device
+    - com.apple.keystore.sik.access
+    - com.apple.locationd.authorizeapplications
+    - com.apple.locationd.effective_bundle
+    - com.apple.managedconfiguration.profiled.configurationprofiles
+    - com.apple.managedconfiguration.profiled.set
+    - com.apple.mediaremote.device-info
+    - com.apple.mediaremote.remote-control-discovery
+    - com.apple.mediaremote.send-commands
+    - com.apple.mediasetupd.client
+    - com.apple.mkb.usersession.info
+    - com.apple.mkb.usersession.keybagopaquedata
+    - com.apple.mobileactivationd.bridge
+    - com.apple.mobileactivationd.device-identifiers
+    - com.apple.mobileactivationd.spi
+    - com.apple.mobilemail
+    - com.apple.multitasking.systemappassertions
+    - com.apple.nano.nanoregistry.generalaccess
+    - com.apple.nfcd.session.reader.internal
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.biome.read-only
+    - com.apple.private.biome.writer
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.contacts
+    - com.apple.private.contactsui
+    - com.apple.private.coordination.alarms
+    - com.apple.private.coordination.timers
+    - com.apple.private.corerecents
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.corewifi.readonly
+    - com.apple.private.energykit
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.homeenergy
+    - com.apple.private.homekit.cameraclips
+    - com.apple.private.homekit.diagnostics
+    - com.apple.private.homekit.home-location
+    - com.apple.private.homekit.location
+    - com.apple.private.homekit.person-manager
+    - com.apple.private.homekit.shortcuts-automation-access
+    - com.apple.private.homekit.wallet-key
+    - com.apple.private.hsa-authentication-processing
+    - com.apple.private.ids.messaging
+    - com.apple.private.ids.self-session
+    - com.apple.private.ids.session
+    - com.apple.private.ids.session-private
+    - com.apple.private.imcore.imagent
+    - com.apple.private.ind.client
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.octagon
+    - com.apple.private.persona.read
+    - com.apple.private.rtcreportingd
+    - com.apple.private.seeding.client
+    - com.apple.private.suggestions.contacts
+    - com.apple.private.system-keychain
+    - com.apple.proactive.eventtracker
+    - com.apple.rootless.storage.coreduet_knowledge_store
+    - com.apple.rootless.storage.shortcuts
+    - com.apple.runningboard.launchprocess
+    - com.apple.runningboard.posterkit.host
+    - com.apple.runningboard.terminateprocess
+    - com.apple.sharing.Client
+    - com.apple.sharing.DeviceDiscovery
+    - com.apple.sharing.Session
+    - com.apple.shortcuts.background-running
+    - com.apple.soundscapes.picker
+    - com.apple.springboard-ui.client
+    - com.apple.springboard.hardware-button-service.event-consumption
+    - com.apple.springboard.launchapplications
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.remote-alert
+    - com.apple.springboard.shortcutitems.customimage
+    - com.apple.springboard.topButtonFrames
+    - com.apple.usermanagerd.persona.fetch
+    - com.apple.videoconference.allow-conferencing
+    - com.apple.voicetrigger.voicetriggerservice
+    - com.apple.wifi.eap-nearby-device-setup-config-copy
+    - com.apple.wifi.manager-access
+    - keychain-access-groups
+    - platform-application
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 43
+notable_frameworks:
+  - AppIntents
+  - Contacts
+  - CoreLocation
+  - Intents
+  - UserNotifications
+  - WebKit
+  - MapKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.Home
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2018–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 9.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: HomeWidget
+    extension_point: com.apple.widgetkit-extension
+  - name: HomeUIUserList
+    extension_point: com.apple.Home.ui-extension.userList
+  - name: HomeEnergyWidgetsExtension
+    extension_point: com.apple.widgetkit-extension

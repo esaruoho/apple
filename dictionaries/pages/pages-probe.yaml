@@ -1,0 +1,151 @@
+# Pages — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Pages.app
+
+app: Pages
+slug: pages
+path: /Applications/Pages.app
+layers_found: 8
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 3
+  commands: 11
+  classes: 23
+  command_names:
+    - set
+    - delete
+    - make
+    - clear
+    - merge
+    - sort
+    - unmerge
+    - set password
+    - remove password
+    - make
+    - export
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: com.apple.iwork.pages-share
+    name: com.apple.iwork.pages-share
+
+# ─── Layer 3: Document Types ───
+document_types_count: 9
+document_types:
+  - name: com.apple.iwork.pages.document
+    role: Editor
+    content_types: ["com.apple.iwork.pages.pages"]
+  - name: com.apple.iwork.pages.alt-document
+    role: Editor
+    content_types: ["com.apple.iwork.pages.sffpages", "com.apple.iwork.pages.pages-tef"]
+  - name: com.apple.iwork.pages.template
+    role: Editor
+    content_types: ["com.apple.iwork.pages.template", "com.apple.iwork.pages.sfftemplate"]
+  - name: com.apple.ibooksauthor.book
+    role: Viewer
+    content_types: ["com.apple.ibooksauthor.book", "com.apple.ibooksauthor.template"]
+  - name: com.apple.ibooksauthor.pkgbook
+    role: Viewer
+    content_types: ["com.apple.ibooksauthor.pkgbook", "com.apple.ibooksauthor.pkgtemplate"]
+  - name: com.apple.iwork.pages.word
+    role: Editor
+    content_types: ["com.microsoft.word.doc", "com.microsoft.word.dot", "org.openxmlformats.wordprocessingml.document", "org.openxmlformats.wordprocessingml.template", "org.openxmlformats.wordprocessingml.document.macroenabled"]
+  - name: com.apple.iwork.pages.plain-text
+    role: Viewer
+    content_types: ["public.plain-text"]
+  - name: com.apple.iwork.pages.rich-text
+    role: Viewer
+    content_types: ["public.rtf", "com.apple.rtfd"]
+  - name: com.apple.notes.archive
+    role: Viewer
+    content_types: ["com.apple.notes.archive"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 2
+  actions:
+    - id: TPNewDocumentIntent
+      title: Create New Document
+      description: Create a new document from the template chooser in Pages.
+    - id: TPDocumentBackgroundExportIntent
+      title: Export Document in Background
+      description: Exports a document to a specified file format. Does not open the document or bring it to the foreground.
+  queries:
+    - id: TPDocumentQuery
+  entities: ["TPDocumentEntity"]
+  enums: ["{'mangledTypeName': '5Pages20TPExportIntentFormatO', 'isSystem': False, 'fullyQualifiedTypeName': 'Pages.TPExportIntentFormat', 'displayTypeName': {'key': 'Format', 'table': 'TPAppIntents'}, 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'PDF', 'table': 'TPAppIntents'}}, 'identifier': 'pdf'}, {'displayRepresentation': {'title': {'key': 'Word', 'table': 'TPAppIntents'}}, 'identifier': 'word'}], 'assistantDefinedSchemas': [], 'identifier': 'TPExportIntentFormat', 'effectiveBundleIdentifiers': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.Pages.NoteImport
+  - TPDocumentBeginPresenterModeIntent
+  - TPiOSCreateNewDocumentIntent
+  - TPiOSOpenAnyDocumentIntent
+  - TPiOSOpenDocumentIntent
+  - TPiOSScriptViewDocumentIntent
+  - TSADocumentCreateIntent
+  - TSADocumentOpenIntent
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 41
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.assets.movies.read-only
+    - com.apple.security.assets.music.read-only
+    - com.apple.security.assets.pictures.read-only
+    - com.apple.security.device.audio-input
+    - com.apple.security.device.microphone
+    - com.apple.security.files.bookmarks.document-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.photos-library
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.private
+    - com.apple.developer.ClassKit-environment
+    - com.apple.developer.aps-environment
+    - com.apple.developer.shared-with-you
+    - com.apple.developer.shared-with-you.collaboration
+    - com.apple.fileprovider.alternate-contents
+    - com.apple.fileprovider.iwork-collaboration-messaging
+    - com.apple.fileprovider.pause-resume
+    - com.apple.private.ClassKit.dashboard
+    - com.apple.private.clouddocs.sharing-proxy
+    - com.apple.private.clouddocs.sharing.private-interface
+    - com.apple.private.cloudkit.participant-pii
+    - com.apple.private.contactsui
+    - com.apple.private.iwork.sharing-acceptance
+    - com.apple.private.rtcreportingd
+    - fairplay-client
+    - keychain-access-groups
+    - useractivity-team-identifier
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 42
+notable_frameworks:
+  - AVFoundation
+  - AppIntents
+  - Contacts
+  - CoreMedia
+  - Intents
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: PagesNotificationServiceExtension
+    extension_point: com.apple.usernotifications.service

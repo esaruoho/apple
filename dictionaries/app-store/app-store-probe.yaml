@@ -1,0 +1,145 @@
+# App Store — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/App Store.app
+
+app: App Store
+slug: app-store
+path: /System/Applications/App Store.app
+layers_found: 6
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: itms-apps
+    name: App Store URL
+  - scheme: itms-appss
+    name: App Store URL
+  - scheme: macappstore
+    name: App Store URL
+  - scheme: macappstores
+    name: App Store URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 2
+document_types:
+  - name: App Store Download
+    extensions: ["appdownload"]
+    role: Editor
+    content_types: ["com.apple.appstore.appdownload"]
+  - name: "(unnamed)"
+    role: None
+    content_types: ["public.data", "com.apple.package"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Navigate to the ${target} tab"
+    - "Go to ${target}"
+    - "Open ${target} in ${applicationName}"
+    - "Show me the App Store ${target} page"
+    - Show me apps in the discover tab
+    - Find apps in discover
+    - Show me apps in the create tab
+    - Find apps in create
+    - Show me apps in the work tab
+    - Find apps in work
+    - Show me apps in the develop tab
+    - Find apps in develop
+    - Show me apps I can update
+    - What apps can I update?
+    - Show me Games in Play
+    - Find Games in Play
+    - Show me games in Arcade
+    - Show me upcoming Arcade games
+    - Show me popular Arcade games
+    - Show Arcade games
+    - Show Arcade
+    - Subscribe to Arcade
+    - Get Arcade games
+    - Find Arcade games
+    - Find games in Arcade
+    - Show me my App Store account
+    - Open account settings
+  actions_count: 1
+  actions:
+    - id: PageNavigationIntent
+      title: PAGE_NAVIGATION_INTENT_TITLE
+      description: PAGE_NAVIGATION_INTENT_DESCRIPTION
+  queries:
+    - id: ArticleQuery
+    - id: ProductPageAppQuery
+  entities: ["ArticleEntity", "ProductPageAppEntity"]
+  enums: ["{'cases': [{'identifier': 'discover', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'star'}}, 'title': {'key': 'PAGE_TITLE_DISCOVER', 'defaultValue': 'Discover', 'alternatives': []}, 'imageV2': {'systemImageName': {'_0': 'star'}}}}, {'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'joystickcontroller'}}, 'title': {'key': 'PAGE_TITLE_ARCADE', 'alternatives': [], 'defaultValue': 'Arcade'}, 'image': {'systemImageName': {'_0': 'joystickcontroller'}}}, 'identifier': 'arcade'}, {'identifier': 'create', 'displayRepresentation': {'title': {'defaultValue': 'Create', 'alternatives': [], 'key': 'PAGE_TITLE_CREATE'}, 'imageV2': {'systemImageName': {'_0': 'paintbrush'}}, 'image': {'systemImageName': {'_0': 'paintbrush'}}}}, {'displayRepresentation': {'title': {'defaultValue': 'Work', 'key': 'PAGE_TITLE_WORK', 'alternatives': []}, 'image': {'systemImageName': {'_0': 'paperplane'}}, 'imageV2': {'systemImageName': {'_0': 'paperplane'}}}, 'identifier': 'work'}, {'identifier': 'play', 'displayRepresentation': {'title': {'defaultValue': 'Play', 'alternatives': [], 'key': 'PAGE_TITLE_PLAY'}, 'imageV2': {'systemImageName': {'_0': 'rocket'}}, 'image': {'systemImageName': {'_0': 'rocket'}}}}, {'identifier': 'develop', 'displayRepresentation': {'title': {'key': 'PAGE_TITLE_DEVELOP', 'defaultValue': 'Develop', 'alternatives': []}, 'imageV2': {'systemImageName': {'_0': 'hammer'}}, 'image': {'systemImageName': {'_0': 'hammer'}}}}, {'identifier': 'categories', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'square.grid.2x2'}}, 'title': {'key': 'PAGE_TITLE_CATEGORIES', 'defaultValue': 'Categories', 'alternatives': []}, 'imageV2': {'systemImageName': {'_0': 'square.grid.2x2'}}}}, {'identifier': 'updates', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'PAGE_TITLE_UPDATES', 'defaultValue': 'Updates'}, 'image': {'systemImageName': {'_0': 'square.and.arrow.down'}}, 'imageV2': {'systemImageName': {'_0': 'square.and.arrow.down'}}}}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'person.circle'}}, 'title': {'defaultValue': 'Account', 'key': 'PAGE_TITLE_ACCOUNT', 'alternatives': []}, 'imageV2': {'systemImageName': {'_0': 'person.circle'}}}, 'identifier': 'account'}], 'isSystem': False, 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'effectiveBundleIdentifiers': [], 'identifier': 'PageEnum', 'mangledTypeName': '9App_Store8PageEnumO', 'fullyQualifiedTypeName': 'App_Store.PageEnum', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'displayTypeName': {'defaultValue': 'Page', 'key': 'PAGE_NAVIGATION_INTENT_PARAMETER_TITLE', 'alternatives': []}, 'mangledTypeNameByBundleIdentifier': {}, 'assistantDefinedSchemas': []}"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 49
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.device.camera
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.user-selected.read-only
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.private.icloud-account-access
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - application-identifier
+    - com.apple.Contacts.database-allow
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.developer.associated-domains
+    - com.apple.developer.game-center
+    - com.apple.itunesstored.private
+    - com.apple.launchservices.receivereferrerrurl
+    - com.apple.payment.all-access
+    - com.apple.payment.amp-card-enrollment
+    - com.apple.payment.card-on-file
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.LocalAuthentication.DTO
+    - com.apple.private.LocalAuthentication.DTO.FallbackToNoAuth
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstoreagent
+    - com.apple.private.appstorecomponents
+    - com.apple.private.appstored
+    - com.apple.private.biometrickit.allow-default
+    - com.apple.private.commerce
+    - com.apple.private.commercekit.appstore
+    - com.apple.private.contactsui
+    - com.apple.private.familycircle
+    - com.apple.private.game-center
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.notificationcenter-system
+    - com.apple.private.rtcreportingd
+    - com.apple.private.swc.additional-service-details-consumer
+    - com.apple.private.swc.system-app
+    - com.apple.runningboard.jetengine
+    - com.apple.storekit.client-override
+    - com.apple.symptom_analytics.query
+    - com.apple.symptoms.NetworkOfInterest
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 44
+notable_frameworks:
+  - AVFoundation
+  - AppIntents
+  - CoreMedia
+  - CoreSpotlight
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.AppStore
+  ContentType: com.apple.application-bundle
+  Copyright: © 2010–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 3.0

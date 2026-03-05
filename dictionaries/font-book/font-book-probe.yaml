@@ -1,0 +1,92 @@
+# Font Book — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Font Book.app
+
+app: Font Book
+slug: font-book
+path: /System/Applications/Font Book.app
+layers_found: 5
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: fontbook
+    name: com.apple.FontBook
+
+# ─── Layer 3: Document Types ───
+document_types_count: 11
+document_types:
+  - name: TrueType font
+    role: Viewer
+    content_types: ["com.apple.font-suitcase"]
+  - name: Datafork TrueType font
+    extensions: ["dfont"]
+    role: Viewer
+    content_types: ["com.apple.truetype-datafork-suitcase-font"]
+  - name: OpenType font
+    extensions: ["otf"]
+    role: Viewer
+    content_types: ["public.opentype-font"]
+  - name: TrueType font
+    extensions: ["ttf"]
+    role: Viewer
+    content_types: ["public.truetype-font"]
+  - name: TrueType font collection
+    extensions: ["ttc"]
+    role: Viewer
+    content_types: ["public.truetype-collection-font"]
+  - name: OpenType font collection
+    extensions: ["otc"]
+    role: Viewer
+    content_types: ["public.opentype-collection-font"]
+  - name: Font Suitcase
+    role: Viewer
+    content_types: ["com.apple.font-suitcase"]
+  - name: PostScript Type 1 outline font
+    role: Viewer
+    content_types: ["com.adobe.postscript-lwfn\u200b-font"]
+  - name: Font Suitcase
+    role: Viewer
+    content_types: ["com.apple.font-suitcase"]
+  - name: Composite Font Representation font
+    extensions: ["sfont"]
+    role: Viewer
+    content_types: ["com.apple.cfr-font"]
+  - name: Composite Font Representation font
+    extensions: ["cfr"]
+    role: Viewer
+    content_types: ["com.apple.cfr-font"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 17
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.device.usb
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.downloads.read-only
+    - com.apple.security.files.user-selected.read-only
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+  other:
+    - com.apple.XType.fontmover
+    - com.apple.XType.fontmover.restore
+    - com.apple.ats
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.ats.validation
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 15
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.FontBook
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2003–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 11.0

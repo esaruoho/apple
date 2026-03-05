@@ -1,0 +1,132 @@
+# Stocks — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Stocks.app
+
+app: Stocks
+slug: stocks
+path: /System/Applications/Stocks.app
+layers_found: 6
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: stocks
+    name: com.apple.stocks
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - OpenSymbolIntent
+  - OpenWatchlistIntent
+  - com.apple.stocks.basic
+  - com.apple.stocks.v2.ForYouFeed
+  - com.apple.stocks.v2.StockList
+  - com.apple.stocks.v2.SymbolFeed
+  - com.apple.stocks.v2.SymbolSearch
+  - com.apple.stocks.v2.Article
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 80
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Stocks
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.cfnetwork.har-capture-amp
+    - com.apple.private.network.socket-delegate
+    - com.apple.private.networkextension.configuration
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+  privacy:
+    - com.apple.private.tcc.allow-or-regional-prompt
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - adi-client
+    - application-identifier
+    - aps-environment
+    - com.apple.CommCenter.fine-grained
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.private
+    - com.apple.companionappd.connect.allow
+    - com.apple.developer.applesignin
+    - com.apple.developer.associated-domains
+    - com.apple.frontboard.launchapplications
+    - com.apple.itunesstored.private
+    - com.apple.locationd.effective_bundle
+    - com.apple.mediaremote.set-playback-state
+    - com.apple.mobileactivationd.spi
+    - com.apple.notificationcenter.widgetcontrollerhascontent
+    - com.apple.payment.card-on-file
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appintents-attribution-override
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstorecomponents
+    - com.apple.private.appstored
+    - com.apple.private.associated-domains
+    - com.apple.private.bmk.allow
+    - com.apple.private.calendar.has-adopted-modern-request-access-methods
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.fpsd.client
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iad.news-client
+    - com.apple.private.iad.opt-in-control
+    - com.apple.private.iosmac.unscaled
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.swc.system-app
+    - com.apple.private.xpc.domain-extension
+    - com.apple.proactive.eventtracker
+    - com.apple.siri.koa.donate.internal
+    - com.apple.springboard.allowIconVisibilityChanges
+    - com.apple.springboard.hardware-button-service.event-consumption
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.telephonyutilities.callservicesd
+    - fairplay-client
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 33
+notable_frameworks:
+  - EventKit
+  - AppIntents
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.stocks
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2025 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 7.4
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: StocksWidget
+    extension_point: com.apple.widgetkit-extension

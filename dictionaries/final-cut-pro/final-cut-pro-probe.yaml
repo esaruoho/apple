@@ -1,0 +1,111 @@
+# Final Cut Pro — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Final Cut Pro.app
+
+app: Final Cut Pro
+slug: final-cut-pro
+path: /Applications/Final Cut Pro.app
+layers_found: 5
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 2
+  commands: 1
+  classes: 5
+  command_names:
+    - get
+
+# ─── Layer 3: Document Types ───
+document_types_count: 11
+document_types:
+  - name: Color Preset
+    extensions: ["cboard"]
+    role: Viewer
+  - name: Final Cut Pro Project
+    extensions: ["fcpproject"]
+    role: None
+    content_types: ["com.apple.FinalCutProProject"]
+  - name: Final Cut Pro Event
+    extensions: ["fcpevent"]
+    role: None
+    content_types: ["com.apple.FinalCutProEvent"]
+  - name: Final Cut Pro XML
+    extensions: ["fcpxml"]
+    role: Viewer
+    content_types: ["com.apple.finalcutpro.xml"]
+  - name: Final Cut Pro XML Bundle
+    extensions: ["fcpxmld"]
+    role: Viewer
+    content_types: ["com.apple.finalcutpro.xmld"]
+  - name: Final Cut Camera Archive
+    extensions: ["fcarch"]
+    role: None
+  - name: Final Cut Share Destination
+    extensions: ["fcpxdest"]
+    role: Viewer
+  - name: Final Cut Library Database
+    extensions: ["flexolibrary"]
+    role: None
+  - name: Final Cut Pro Library
+    extensions: ["fcpbundle"]
+    role: Editor
+    content_types: ["com.apple.FinalCutProLibrary"]
+  - name: Final Cut Pro for iPad Project
+    extensions: ["fcpproj"]
+    role: Editor
+    content_types: ["com.apple.VideoApps.fcpproj"]
+  - name: Final Cut Pro Effects Preset
+    extensions: ["effectsPreset"]
+    role: None
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 29
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.assets.movies.read-write
+    - com.apple.security.assets.music.read-only
+    - com.apple.security.assets.pictures.read-only
+    - com.apple.security.automation.apple-events
+    - com.apple.security.device.audio-input
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.device.usb
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.bookmarks.document-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.network.server
+    - com.apple.security.personal-information.photos-library
+    - com.apple.security.scripting-targets
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.audio-unit-host
+    - com.apple.security.temporary-exception.files.absolute-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+  other:
+    - com.apple.application-identifier
+    - com.apple.developer.team-identifier
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 37
+notable_frameworks:
+  - CoreMedia
+  - UserNotifications
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: FxAnalyzer
+    extension_point: com.apple.FinalCut.AnalysisExtension
+  - name: BluRayH264Encoder
+    extension_point: com.apple.Compressor.EncoderExtensionV2
+  - name: DolbyDigitalEncoder
+    extension_point: com.apple.Compressor.EncoderExtensionV2

@@ -1,0 +1,41 @@
+# Stickies — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Stickies.app
+
+app: Stickies
+slug: stickies
+path: /System/Applications/Stickies.app
+layers_found: 5
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: StickieDocument
+    role: Editor
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Make Sticky
+    message: makeStickyFromTextService
+    send_types: ["public.plain-text", "public.rtf", "com.apple.flat-rtfd"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 4
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 7
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.Stickies
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 1999–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 10.3

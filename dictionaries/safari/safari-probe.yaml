@@ -1,0 +1,317 @@
+# Safari — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Safari.app
+
+app: Safari
+slug: safari
+path: /Applications/Safari.app
+layers_found: 9
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 10
+  classes: 1
+  command_names:
+    - add reading list item
+    - do JavaScript
+    - email contents
+    - search the web
+    - show bookmarks
+    - show extensions preferences
+    - dispatch message to extension
+    - sync all plist to disk
+    - show privacy report
+    - show credit card settings
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: http
+    name: Web site URL
+    is_default: true
+  - scheme: https
+    name: Web site URL
+    is_default: true
+  - scheme: file
+    name: Local file URL
+  - scheme: x-safari-https
+    name: Safari Start Page
+  - scheme: prefs
+  - scheme: x-webkit-app-launch
+
+# ─── Layer 3: Document Types ───
+document_types_count: 24
+document_types:
+  - name: CSS style sheet
+    extensions: ["css"]
+    role: Viewer
+  - name: PDF document
+    extensions: ["pdf"]
+    role: Viewer
+  - name: Web archive
+    extensions: ["webarchive"]
+    role: Viewer
+  - name: Safari bookmark
+    extensions: ["webbookmark"]
+    role: Viewer
+  - name: Safari history item
+    extensions: ["webhistory"]
+    role: Viewer
+  - name: Web internet location
+    extensions: ["webloc"]
+    role: Viewer
+  - name: Safari download
+    extensions: ["download"]
+    role: Editor
+  - name: Safari extension
+    extensions: ["safariextz"]
+    role: Viewer
+  - name: GIF image
+    extensions: ["gif"]
+    role: Viewer
+  - name: HTML document
+    extensions: ["html", "htm", "shtml", "jhtml"]
+    role: Viewer
+  - name: JavaScript script
+    extensions: ["js"]
+    role: Viewer
+  - name: JPEG image
+    extensions: ["jpg", "jpeg"]
+    role: Viewer
+  - name: Plain text document
+    extensions: ["txt", "text"]
+    role: Viewer
+  - name: PNG image
+    extensions: ["png"]
+    role: Viewer
+  - name: TIFF image
+    extensions: ["tiff", "tif"]
+    role: Viewer
+  - name: Web site location
+    extensions: ["url"]
+    role: Viewer
+  - name: Windows icon image
+    extensions: ["ico"]
+    role: Viewer
+  - name: XHTML document
+    extensions: ["xhtml", "xht", "xhtm", "xht"]
+    role: Viewer
+  - name: XML document
+    extensions: ["xml", "xbl", "xsl", "xslt"]
+    role: Viewer
+  - name: SVG document
+    extensions: ["svg"]
+    role: Viewer
+  - name: AVIF image
+    extensions: ["avif"]
+    role: Viewer
+  - name: WebP image
+    extensions: ["webp"]
+    role: Viewer
+  - name: HEIC image
+    extensions: ["heic"]
+    role: Viewer
+  - name: JPEG XL image
+    extensions: ["jxl"]
+    role: Viewer
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: "Search With %WebSearchProvider@"
+    message: searchWithWebSearchProvider
+    send_types: ["public.utf8-plain-text"]
+  - menu_item: Add to Reading List
+    message: addToReadingList
+    send_types: ["public.rtf", "public.utf8-plain-text"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - NSUserActivityTypeBrowsingWeb
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 157
+entitlements:
+  sandbox:
+    - com.apple.private.RemoteServiceDiscovery.allow-sandbox
+    - com.apple.private.app-sandbox.unquarantine
+    - com.apple.private.safari.can-use-sandbox-broker
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Safari
+    - com.apple.private.security.storage.WebDriver
+    - com.apple.private.security.storage.cookies
+    - com.apple.private.security.storage.os_eligibility.readonly
+    - com.apple.private.security.user-intent-authority
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.attestation.access
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.device.usb
+    - com.apple.security.exception.files.absolute-path.read-only
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.apple-events
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.networkserviceproxy
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-extended-share-access
+    - com.apple.developer.icloud-services
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.dprivacyd.allow
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-prompting
+  apple_intelligence:
+    - com.apple.generativeexperiences.availabilityService
+    - com.apple.generativeexperiences.summarization
+    - com.apple.sage.summarization
+  other:
+    - com.apple.PairingManager.Read
+    - com.apple.PairingManager.RemovePeer
+    - com.apple.PairingManager.Write
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.appattest.spi
+    - com.apple.application-identifier
+    - com.apple.assistant.dictation.prerecorded
+    - com.apple.authentication-services.access-credential-identities
+    - com.apple.authentication-services.allow-authentication-request-any-rpid
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.bluetooth.internal
+    - com.apple.chrono.invalidate-timelines
+    - com.apple.chronoservices
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.context
+    - com.apple.coreduetd.people
+    - com.apple.developer.aps-environment
+    - com.apple.developer.copresence
+    - com.apple.developer.group-session
+    - com.apple.developer.group-session.urlactivity
+    - com.apple.developer.hardened-process
+    - com.apple.developer.maps
+    - com.apple.dock.add-item
+    - com.apple.duet.activityscheduler.allow
+    - com.apple.features.all-access
+    - com.apple.finance.private
+    - com.apple.keystore.sik.access
+    - com.apple.launchservices.changeurlschemehandler
+    - com.apple.locationd.effective_bundle
+    - com.apple.mobileactivationd.bridge
+    - com.apple.mobileactivationd.spi
+    - com.apple.payment.all-access
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.LocalAuthentication.CallerName
+    - com.apple.private.RemoteServiceDiscovery.device-admin
+    - com.apple.private.Safari.History
+    - com.apple.private.Safari.PasswordBreachHelper
+    - com.apple.private.SkyLight.secureCursor
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.appleevents.allowedtosend
+    - com.apple.private.applemediaservices
+    - com.apple.private.appstorecomponents
+    - com.apple.private.appstorecomponents.media-client-id
+    - com.apple.private.appstorecomponents.media-client-version
+    - com.apple.private.appstorecomponents.media-clients
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.assets.bypass-asset-types-check
+    - com.apple.private.associated-domains
+    - com.apple.private.biome.read-write
+    - com.apple.private.can-import-browsing-data-to-Safari
+    - com.apple.private.can-interact-with-any-Safari-extension
+    - com.apple.private.can-load-any-content-blocker
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.commerce
+    - com.apple.private.copresence
+    - com.apple.private.copresence.stable-app-identifier
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.coreservices.definesExtensionPoint
+    - com.apple.private.coreservices.lsuseractivityd.bestappsuggestion
+    - com.apple.private.dmd.policy
+    - com.apple.private.email
+    - com.apple.private.extension-host.safari-content-blocker
+    - com.apple.private.extension-host.safari-extension
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iaaccounts
+    - com.apple.private.imcore.imagent
+    - com.apple.private.in-app-payments
+    - com.apple.private.interstellar.data-access
+    - com.apple.private.keychain.kcsharing.client
+    - com.apple.private.launchservices.allowopenwithanyhandler
+    - com.apple.private.launchservices.changedefaulthandlers
+    - com.apple.private.launchservices.templateapp.creation
+    - com.apple.private.managed-settings.effective-read
+    - com.apple.private.octagon
+    - com.apple.private.osanalytics.defaults.allow
+    - com.apple.private.parsec.default-client
+    - com.apple.private.rsr-cryptex-access
+    - com.apple.private.safari.can-use-bookmarks-sync-agent
+    - com.apple.private.safari.can-use-history-push-agent
+    - com.apple.private.safari.can-use-launch-agent
+    - com.apple.private.safari.can-use-search-helper
+    - com.apple.private.safari.safebrowsing.useallproviders
+    - com.apple.private.screen-time
+    - com.apple.private.screencapturekit.sharingsession
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.subscriptionservice.internal
+    - com.apple.private.suggestions.events
+    - com.apple.private.suggestions.urls
+    - com.apple.private.translation
+    - com.apple.private.usage-tracking
+    - com.apple.private.usernotifications.bundle-identifiers
+    - com.apple.private.webinspector.remote-inspection-debugger
+    - com.apple.private.webkit.webpush
+    - com.apple.proactive.PersonalizationPortrait.NamedEntity.readOnly
+    - com.apple.rootless.storage.Safari
+    - com.apple.rootless.storage.SafariFamily
+    - com.apple.rootless.storage.remotemanagementd
+    - com.apple.runningboard.assertions.webkit
+    - com.apple.sharing.DeviceDiscovery
+    - com.apple.sharing.Services
+    - com.apple.symptom_analytics.configure
+    - com.apple.symptom_diagnostics.report
+    - com.apple.synapse.allowLinkContextRequests
+    - com.apple.trial.client
+    - com.apple.trial.status.deployment-environment.allow
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 2
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.Safari
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 26.2
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: CacheDeleteExtension
+    extension_point: com.apple.cache_delete_extension
+  - name: SafariQuickLookPreview
+    extension_point: com.apple.quicklook.preview
+  - name: DiagnosticExtension
+    extension_point: com.apple.diagnosticextensions-service

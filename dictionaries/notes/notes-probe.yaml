@@ -1,0 +1,681 @@
+# Notes — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Notes.app
+
+app: Notes
+slug: notes
+path: /System/Applications/Notes.app
+layers_found: 9
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 2
+  classes: 4
+  command_names:
+    - open note location
+    - show
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: notes
+    name: com.apple.Notes
+  - scheme: applenotes
+    name: com.apple.Notes
+
+# ─── Layer 3: Document Types ───
+document_types_count: 10
+document_types:
+  - name: Notes Archive
+    role: Editor
+    content_types: ["com.apple.notes.archive"]
+  - name: Notes AirDrop Document
+    role: Viewer
+    content_types: ["com.apple.notes.airdrop.document"]
+  - name: Evernote Archive
+    role: Viewer
+    content_types: ["com.evernote.enex"]
+  - name: Plain text
+    role: Viewer
+    content_types: ["public.text"]
+  - name: HTML
+    role: Viewer
+    content_types: ["public.html"]
+  - name: Rich text file
+    role: Viewer
+    content_types: ["public.rtf"]
+  - name: Rich text format directory
+    role: Viewer
+    content_types: ["com.apple.rtfd"]
+  - name: Stickies Export
+    role: Viewer
+    content_types: ["com.apple.stickies.appexport"]
+  - name: Note
+    role: Editor
+    content_types: ["com.apple.notes.note"]
+  - name: Generic
+    role: Editor
+    content_types: ["public.data", "public.directory"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - "Add my ${file} to my ${note} note."
+    - "Add ${file} into my ${note} note."
+    - "Add the ${file} into my ${note} note."
+    - "Insert the ${file} into the ${note} note."
+    - "Put the ${file} into my ${note} note."
+    - "Lock my ${target} note."
+    - "Put a lock on my ${target} note."
+    - "Put my ${target} note behind OpticID."
+    - "Lock my ${target} note with FaceID."
+    - "Set a password for my ${target} note."
+    - "Remove the lock from my ${target} note."
+    - "Move my ${target} note out from behind a password."
+    - "Make it so I don’t have to enter a password to open my ${target} note."
+    - "Get rid of the password for my ${target} note."
+    - "Add a ${tags} tag to my ${notes} note."
+    - "Put a tag for ${tags} into my ${notes} note."
+    - "In the ${notes} note, insert a tag for ${tags}."
+    - "Insert a ${tags} tag into the ${notes} note."
+    - "Create an ${tags} tag in ${notes} note."
+    - "Add ${text} to the end of my ${entity} note."
+    - "At the end of the ${entity} note, add ${text}."
+    - "Add ${text} to the bottom of my ${entity} note."
+    - "At the bottom of my ${entity} note, write ${text}."
+    - "In my ${entity} note, add ${text}."
+    - Bold what’s selected.
+    - Change the text I have chosen to bold text.
+    - Update the text I’ve highlighted to show as bold.
+    - "Bold the paragraph that's selected."
+    - Italicize what’s selected.
+    - Change the text I have chosen to italic text.
+    - Update the text I’ve highlighted to show as italics.
+    - "Italicize the paragraph that's selected."
+    - Underline what’s selected.
+    - Change the text I have chosen to underlined text.
+    - Update the text I’ve highlighted to show as underlined.
+    - "Underline the paragraph that's selected."
+    - Strikethrough what’s selected.
+    - Change the text I have chosen to strikethrough text.
+    - Update the text I’ve highlighted to show as strikethrough.
+    - "Strikethrough the paragraph that's selected."
+    - Show my Notes folders as a gallery.
+    - Switch to a Notes view that shows a preview of each note.
+    - Switch the view of my notes.
+    - Switch the view of my notes.
+    - I want to view a list of my notes.
+    - Show me a list of my notes.
+    - "Select my tags in ${applicationName} that include ${includedTags}."
+    - "Select all of my tags that include ${includedTags}."
+    - "Select the ${includedTags} tag."
+    - "Select my ${includedTags} tag in ${applicationName}."
+    - "Stop selecting the tags that contain ${excludedTags}."
+    - "Deselect the ${excludedTags} tag."
+    - "Stop selecting the ${excludedTags} tag."
+    - "Show notes with ${includedTags} tag that don't have the tag ${excludedTags}."
+    - "Display notes that have ${includedTags} tag but not the ${excludedTags} tag."
+    - "Show notes that either have ${includedTags} tag or don't have the tag ${excludedTags}."
+    - "Display notes that have ${includedTags} tag and notes without the ${excludedTags} tag."
+    - "Show my notes that have all the tags ${includedTags}."
+    - "Display notes matching ${includedTags}"
+    - "Select my tags in ${applicationName} that include ${includedTags}."
+    - "Hide notes matching all the tags ${excludedTags}."
+    - "Exclude notes that contain all the tags ${excludedTags}."
+    - "Show notes with ${includedTags} tags that don't have the tags ${excludedTags}."
+    - "Display notes that have ${includedTags} tags but not the ${excludedTags} tags."
+    - "Show my notes that have any of the tags ${includedTags}."
+    - "Display notes matching at least one of ${includedTags} tags."
+    - "Select my tags in ${applicationName} that include any of ${includedTags}."
+    - "Hide notes matching any of the tags ${excludedTags}."
+    - "Exclude notes that contain at least one of the tags ${excludedTags}."
+    - "Show notes with ${includedTags} tags that don't have the tags ${excludedTags}."
+    - "Display notes that have ${includedTags} tags but not the ${excludedTags} tags."
+    - I don’t want my text to show as tags.
+    - Stop converting what I write to tags.
+    - Turn off text to tag conversions.
+    - Turn off the Auto Convert to Tag setting.
+    - I want my text to show as tags.
+    - Start converting what I write to tags.
+    - Turn on text to tag conversions.
+    - Turn on the Auto Convert to Tag setting.
+    - Stop sorting my checked items for me.
+    - Turn off sorting for checked items.
+    - Turn off the Sort Checked Items setting.
+    - Don’t move around my checked items.
+    - Start sorting my checked items for me.
+    - Turn on sorting for checked items.
+    - Turn on the Sort Checked Items setting.
+    - Sort items as I check them off.
+    - "Turn off the \\\"On My iPhone\\\" setting"
+    - Make sure my notes are not saving only to my device
+    - Stop saving all of my notes on my iPhone
+    - Save my notes to my phone
+    - "Turn on the \\\"On My iPhone\\\" setting"
+    - Make sure my notes are saving to my device
+    - Save all of my notes on my iPhone
+    - Make sure my notes are saving to my computer
+    - Don’t notify me when someone mentions me.
+    - Stop notifications when I’m “at” mentioned.
+    - Turn off “at” notifications.
+    - "Don’t tell me if someone \\\"at\\\" mentions me."
+    - Stop notifying me if someone mentions my name.
+    - Notify me when someone mentions me.
+    - Start notifications when I’m “at” mentioned.
+    - Turn on “at” notifications.
+    - "Tell me if someone \\\"at\\\" mentions me."
+    - Start notifying me if someone mentions my name.
+    - Always create a new quick note instead of opening the last one.
+    - Turn off the Always resume to last Quick Note setting.
+    - Disable Always resume to last Quick Note.
+    - Take me to a new quick note each time.
+    - Stop creating a new quick note instead of opening my existing quick notes.
+    - Always open my last quick note instead of creating a new one.
+    - Turn on the Always resume to last Quick Note setting.
+    - Enable Always resume to last Quick Note.
+    - Take me to my last quick note and not a new quick note.
+    - Start creating a new quick note instead of opening my existing quick notes.
+    - "Close my ${target} note."
+    - "Close out the ${target} note."
+    - Close the attachments view in Notes.
+    - Stop showing my Notes attachments.
+    - Close out my note attachments.
+    - Stop showing the attachments view for my notes.
+    - Close the attachments screen.
+    - Close the view of my Notes folders.
+    - Stop viewing my folders that contain notes.
+    - Close the view that shows all of my folders in Notes.
+    - I don’t want to view my Notes folders anymore.
+    - Get rid of the view that shows my Notes folders.
+    - "Add a checklist to my ${noteEntity} note."
+    - "Put a checklist in the ${noteEntity} note."
+    - "Insert an empty checklist into my ${noteEntity} note."
+    - "Add a checklist item named ${name}"
+    - "Insert a checklist item called ${name}"
+    - "Put ${name} in my checklist"
+    - "Add a folder with the name ${name}."
+    - "Add a folder called ${name}."
+    - "Create a folder and title it ${name}."
+    - "Set up a new ${name} folder."
+    - "Add a ${name} folder to my ${parentFolder} folder."
+    - "Make a ${name} folder under my ${parentFolder} folder."
+    - "In the ${parentFolder} folder, create a subfolder called ${name}."
+    - "Add a new note with the title ${name}."
+    - "Create a new ${name} note."
+    - "Start a new note named ${name} for me to record ideas."
+    - "Open a new note named ${name}."
+    - "Add a note and name it ${name}."
+    - "Add a note called ${name} to my ${folder} folder"
+    - "Start a ${name} note in the ${folder} folder"
+    - "Create a note titled ${name} in my ${folder} folder"
+    - "Add a table into my ${note} note."
+    - "Put a new table in the ${note} note."
+    - "Insert a blank table into the ${note} note."
+    - "In my ${note} note, add an empty table."
+    - "Add a table with data '${csvString}' into my ${note} note."
+    - "Insert a table into the ${note} note with initial data '${csvString}'."
+    - "Put a new table in the ${note} note using the data '${csvString}'."
+    - "Add a tag for ${name}."
+    - "Set up a new tag for ${name}."
+    - "Create a new tag to help organize my notes for ${name}."
+    - "Create a tag for ${name}."
+    - "Use a ${name} tag."
+    - "Delete the ${entities} attachment."
+    - "Delete the PDF attachment titled ${entities}."
+    - "Remove the ${entities} audio attachment."
+    - "Get rid of the ${entities} attachment."
+    - "Remove the ${entities}."
+    - "Delete the ${entities} item from my list."
+    - "Remove the ${entities} checklist entry."
+    - "Delete ${entities} from my checklist."
+    - "Get rid of the ${entities} item from the checklist."
+    - "Remove the checklist item to ${entities}."
+    - "Delete my ${entities} folder."
+    - "Delete my ${entities} folder from ${applicationName}."
+    - "Remove my ${entities} folder."
+    - "Move my ${entities} folder in ${applicationName} to the Trash."
+    - "Delete my ${entities} note."
+    - "Get rid of my ${entities} note."
+    - "Remove my ${entities} note."
+    - "Move my note titled ${entities} to the Trash."
+    - "Delete the table with ${entities} info in it."
+    - "Move the table that has my ${entities} info to the trash."
+    - "Get rid of the table that tracks the ${entities}."
+    - "Remove the table that contains ${entities}."
+    - "Delete my table with ${entities} in it."
+    - "Delete the ${entities} tag."
+    - "Get rid of my ${entities} tag."
+    - "Trash my ${entities} tag."
+    - "Delete all of my tags that include ${entities} in Notes."
+    - "Move the ${entities} tag to the trash."
+    - "Get the notes that are linked to from the ${entity} note."
+    - "Generate a list of notes that I added links to from my ${entity} note."
+    - "Build a list of notes that I linked to in the ${entity} note."
+    - "Show the notes that are linked to from the ${entity} note."
+    - "Mention everyone in my ${target} note."
+    - "“At” all in my ${target} note."
+    - "Add a mention of all into the ${target} note."
+    - "“At” mention everyone in the ${target} note."
+    - Mention everyone.
+    - “At” all.
+    - Add a mention of all.
+    - “At” mention everyone.
+    - "Mention ${mentionText} in my ${target} note."
+    - "“At” ${mentionText} in my ${target} note."
+    - "Add a mention of ${mentionText} into the ${target} note."
+    - "“At” mention ${mentionText} in the ${target} note."
+    - "Add a link to my ${linkedNote} note in my ${target} note."
+    - "Put a link to my ${linkedNote} note in the ${target} note."
+    - "Insert a link to the ${linkedNote} note in the ${target} note."
+    - "In my ${target} note, add a link to my ${linkedNote} note."
+    - "Link to my ${linkedNote} note from my ${target} note."
+    - "Add a link to my ${linkedNote} note."
+    - "Put a link to my ${linkedNote} note."
+    - "Insert a link to the ${linkedNote} note."
+    - "Link to my ${linkedNote} note."
+    - "Move the ${entities} note to the ${container} folder in ${applicationName}."
+    - "Put the note titled ${entities} into my ${container} folder."
+    - "Insert the ${entities} note into the ${container} folder."
+    - "Put my ${entities} note in my ${container} folder."
+    - "Move the ${entities} note into my ${container} folder."
+    - "Open my ${target} account"
+    - "Go to the ${target} account"
+    - "Show my ${target} account"
+    - "Display all the notes in my ${target} account"
+    - "Display the ${target} attachment."
+    - "Open the ${target} attachment."
+    - "Show the ${target} attachment."
+    - "Show the ${target} item from my list."
+    - "Open the ${target} checklist entry."
+    - "Display ${target} from my checklist."
+    - "Navigate to the ${target} item from the checklist."
+    - "Open my ${target} ${applicationName} folder."
+    - "Open the ${target} folder."
+    - "Open the ${target} folder in ${applicationName}."
+    - "Show me what’s in my ${target} folder in the ${applicationName} app."
+    - "Show the contents of the ${target} folder in ${applicationName}."
+    - "Open the ${target} note."
+    - "Open my ${target} note."
+    - "Go to the ${target} note."
+    - "Show my ${target} note."
+    - Show me all of the attachments I have in notes.
+    - Bring up my Notes attachments.
+    - Show me a list of all attachments I have imported into Notes.
+    - "Display the attachments I've inserted into notes."
+    - Show all of my note attachments.
+    - Open a list of all my folders in Notes.
+    - Show me the folders that I have in Notes.
+    - Show me all of the note folders that I have.
+    - Show me where my notes are stored.
+    - Give me a list of folders in Notes.
+    - Display the notes I have in my Quick Notes folder.
+    - Show my Quick Notes folder.
+    - Open up the Quick Notes folder.
+    - Show the contents of my Quick Notes folder.
+    - Open my Quick Notes folder.
+    - Show me my Shared notes.
+    - Bring up my shared notes.
+    - Bring me to my list of shared notes.
+    - Show all shared notes.
+    - Open my Shared folder in Notes.
+    - "Show the table with ${target} info in it."
+    - "Display the table that has my ${target} info."
+    - "Open the table that contains ${target}."
+    - "Show a list of notes that contain my ${target} tag."
+    - "Bring up all notes that have my ${target} tag."
+    - "If a note includes a ${target} tag, show it in a list."
+    - "List all notes that have the ${target} tag."
+    - "Show me my notes that have a ${target} tag."
+    - "Put a pin on my ${entities} note."
+    - "Make sure my ${entities} note stays in the top of my list of notes."
+    - "Pin the ${entities} note."
+    - "Pin ${entities} in ${applicationName}."
+    - "Add a pin to my ${entities} note."
+    - "Remove the pin from my ${entities} note."
+    - "Unpin my ${entities} note."
+    - "Remove all instances of the ${tags} tag from my ${notes} note."
+    - "In my ${notes} note, delete all cases of the ${tags} tag."
+    - "Remove the ${tags} tag from my ${notes} note."
+    - "Get rid of the ${tags} tag in my ${notes} note."
+    - "Remove instances of the ${tags} tag from my ${notes} note."
+    - "Rename my ${entity} folder in ${applicationName} to Favorite Balloon Colors."
+    - "Update my ${entity} folder to be named Condo Projects in ${applicationName}."
+    - "Change my ${entity} folder to Conversations within ${applicationName}."
+    - "In ${applicationName}, replace the name of the ${entity} folder with Gingerbread House Decorating Ideas."
+    - "I have a ${entity} folder in ${applicationName} that I’d like to rename to Work."
+    - "Replace the selected text with ${text}."
+    - "Add ${text} into the area I have chosen."
+    - "Update the info that's selected with ${text}."
+    - "Fill in ${text} where I have highlighted."
+    - "Insert ${text} into the note."
+    - "Decrease the ${target} attachment's size."
+    - "Make the ${target} attachment ${attachmentSize}."
+    - "Display the ${target} file as ${attachmentSize}."
+    - "Convert the ${target} attachment to ${attachmentSize} size."
+    - "Check the ${entities} item."
+    - "Check off the ${entities} item."
+    - "Add a check to ${entities}."
+    - "Clear the ${entities} option."
+    - "Remove the check from the ${entities} item."
+    - "Uncheck the ${entities} item."
+    - "Make the selected text a ${paragraphStyle}."
+    - "Update the info that’s selected to be a ${paragraphStyle}."
+    - "Add a ${paragraphStyle} to the text I have highlighted."
+    - "Make the chosen text a ${paragraphStyle}."
+    - "Convert what’s selected to a ${paragraphStyle}."
+    - "Search for my ${criteria} note."
+    - "Show all notes that contain ${criteria}."
+    - "Show any notes about ${criteria}."
+    - "Bring up all notes with ${criteria}."
+    - "Show me my ${criteria} notes."
+    - Start a quick note.
+    - "Open a new quick note in ${applicationName}."
+    - Create a quick note.
+    - Start writing in a new quick note.
+    - Begin note taking quickly.
+    - Start an audio note.
+    - "Record audio in ${applicationName}."
+    - Begin recording audio to insert in a note.
+    - "Start an audio recording in ${applicationName}."
+    - Start recording audio in a note.
+  actions_count: 50
+  actions:
+    - id: StartRecordingLinkAction
+      title: Start Audio Recording
+      description: Opens the audio details screen to record audio in Notes.
+    - id: RemoveTagsFromNotesLinkAction
+      title: Remove Tags from Notes
+      description: Removes tags from notes.
+    - id: OpenNoteLinkAction
+      title: Open Note
+      description: Opens the specified note.
+    - id: GetLinkedNotesLinkAction
+      title: Get Linked Notes
+      description: Creates a list of notes that are linked to from the specified note.
+    - id: ReplaceSelectionLinkAction
+      title: Replace Selected Text
+      description: Replaces selected text with new text in a note.
+    - id: OpenTableLinkAction
+      title: Reveal Table
+      description: Opens the note that contains the chosen table.
+    - id: OpenChecklistItemLinkAction
+      title: Reveal Checklist Item
+      description: Opens the note that contains the specified checklist item.
+    - id: CreateAttachmentLinkAction
+      title: Create Attachment
+      description: Create an attachment using the file or URL passed as input.
+    - id: AddTagsToNotesLinkAction
+      title: Add Tags to Notes
+      description: Adds tags to notes.
+    - id: SetParagraphStyleLinkAction
+      title: Set Paragraph Style
+      description: Applies a paragraph style to text in a note.
+    - id: OpenAccountLinkAction
+      title: Open Account
+      description: Opens an existing account in Notes.
+    - id: LockNoteLinkAction
+      title: Lock Note
+      description: "Lock the given note so that viewing it requires a password, passcode, or biometric authentication."
+    - id: RenameFolderLinkAction
+      title: Rename Folder
+      description: Renames a folder in Notes.
+    - id: CreateNoteLinkAction
+      title: Create Note
+      description: Creates a new note.
+    - id: OpenAppLocationLinkAction
+      title: Open Notes View
+      description: Opens the attachments browser or folder list in Notes.
+    - id: ChangeSettingLinkAction
+      title: Change Notes Setting
+      description: Change the settings of the Notes app.
+    - id: AddLinkAttachmentLinkAction
+      title: Add Link
+      description: Adds a link into a note.
+    - id: ShowQuickNoteIntent
+      title: Show Quick Note
+      description: Opens the Quick Note editor view.
+    - id: CreateChecklistItemLinkAction
+      title: Append Checklist Item
+      description: Adds a checklist item to the end of a note.
+    - id: DeleteFoldersLinkAction
+      title: Delete Folders
+      description: Deletes folders from Notes.
+    - id: MoveNotesToFolderLinkAction
+      title: Move Notes to Folder
+      description: Moves notes into a folder in Notes.
+    - id: OpenAttachmentLinkAction
+      title: Open Attachment
+      description: Opens an attachment that’s in a note.
+    - id: RemoveLockFromNoteLinkAction
+      title: Remove Lock from Note
+      description: "Remove lock from the given note so that viewing it does not require a password, passcode, or biometric authentication."
+    - id: ChangeTagSelectionIntent
+      title: Change Tag Selection
+      description: Changes the selected tags in the tag browser.
+    - id: CreateFolderLinkAction
+      title: Create Folder
+      description: Creates a new folder.
+    - id: OpenTagLinkAction
+      title: Open Tag
+      description: Opens a list of notes that contain a specific tag.
+    - id: InsertNoteLinkLinkAction
+      title: Insert Note Link
+      description: Adds a link to a note in a note.
+    - id: SetChecklistItemCheckedLinkActionv2
+      title: Set Checklist Items Checked
+      description: Checks or unchecks items in a checklist.
+    - id: DeleteTagsLinkAction
+      title: Delete Tags
+      description: Delete tags from Notes.
+    - id: AddOrRemoveNoteLockLinkAction
+      title: Add or Remove Note Lock
+      description: "Lock the given note so that viewing it requires a password, passcode, or biometric authentication, or remove the lock to allow unrestricted access."
+    - id: SetAttachmentSizeLinkAction
+      title: Set Attachment Size
+      description: Sets the size of an attachment in a note.
+    - id: ApplyFormattingLinkAction
+      title: Apply Formatting to Selected Text
+      description: Formats selected text in a note.
+    - id: OpenFolderLinkAction
+      title: Open Folder
+      description: Opens an existing folder in Notes.
+    - id: AppendToNoteLinkAction
+      title: Append to Note
+      description: Adds text to the end of a note.
+    - id: CreateTagLinkAction
+      title: Create Tag
+      description: Creates a tag that can be used in notes.
+    - id: InsertMentionLinkAction
+      title: Insert Mention
+      description: Mentions another participant or all participants in a shared note.
+    - id: CreateTableLinkAction
+      title: Add Table to Note
+      description: Adds a table into a note.
+    - id: ChangeFolderSettingLinkAction
+      title: Change Folder View Setting
+      description: Changes your folder view in Notes between Gallery and List views.
+    - id: SetChecklistItemCheckedLinkAction
+      title: Set Checklist Items Checked (V1)
+      description: Change whether the given checklist items are checked or not.
+    - id: ShowNotesAppSearchResultsLinkAction
+      title: Show Note and Attachment Search Result
+      description: Searches for notes and attachments in Notes.
+    - id: DeleteAttachmentsLinkAction
+      title: Delete Attachments
+      description: Deletes attachments from a note.
+    - id: PinNotesLinkAction
+      title: Pin or Unpin Notes
+      description: Pins or unpins notes.
+    - id: OpenTopLevelFolderLinkAction
+      title: Open Top-Level Folder
+      description: "Opens the Shared, Call Recordings, Math Notes, or Quick Notes folder in Notes."
+    - id: CloseNoteLinkAction
+      title: Close Note
+      description: Closes an open note.
+    - id: DeleteChecklistItemsLinkAction
+      title: Delete Checklist Items
+      description: Deletes checklist items from a note.
+    - id: DeleteNotesLinkAction
+      title: Delete Notes
+      description: Delete notes.
+    - id: DeleteTablesLinkAction
+      title: Delete Tables
+      description: Delete tables from a note.
+    - id: InsertAllMentionLinkAction
+      title: Insert All Mention
+      description: "Insert an all mention into the provided target note, notifying all collaborators."
+    - id: AddFileAttachmentLinkAction
+      title: Add File
+      description: Adds an attachment into a note.
+    - id: CloseAppLocationLinkAction
+      title: Close Notes View
+      description: Close or hide the provided view in the Notes app.
+  queries:
+    - id: VisibleTagsQuery
+    - id: VisibleFoldersQuery
+    - id: VisibleNotesQuery
+    - id: VisibleAttachmentsQuery
+    - id: VisibleTablesQuery
+    - id: VisibleChecklistItemsQuery
+    - id: VisibleAccountsQuery
+  entities: ["ChecklistItemEntity", "NoteEntity", "TableEntity", "FolderEntity", "AttachmentEntity", "TagEntity", "AccountEntity"]
+  enums: ["{'mangledTypeName': 'FavoriteOperation', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'fullyQualifiedTypeName': 'AppIntents.FavoriteOperation', 'identifier': 'FavoriteOperation', 'isSystem': True, 'mangledTypeNameByBundleIdentifier': {}, 'displayTypeName': {'alternatives': [], 'key': 'FavoriteOperation'}, 'effectiveBundleIdentifiers': [], 'cases': [{'identifier': 'add', 'displayRepresentation': {'title': {'key': 'Add', 'alternatives': []}}}, {'identifier': 'remove', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Remove'}}}]}", "{'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'identifier': 'check', 'displayRepresentation': {'title': {'key': 'Check', 'alternatives': []}}}, {'identifier': 'uncheck', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Uncheck'}}}, {'displayRepresentation': {'title': {'key': 'Toggle', 'alternatives': []}}, 'identifier': 'toggle'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'effectiveBundleIdentifiers': [], 'displayTypeName': {'key': 'Change Operation', 'alternatives': []}, 'mangledTypeName': '5Notes30SetChecklistItemsCheckedIntentV0E19ChangeOperationTypeO', 'identifier': 'CheckedChangeOperationType', 'isSystem': False, 'fullyQualifiedTypeName': 'Notes.SetChecklistItemsCheckedIntent.CheckedChangeOperationType', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}}", "{'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Default', 'alternatives': []}}, 'identifier': 'defaultSize'}, {'displayRepresentation': {'title': {'key': 'Small', 'alternatives': []}}, 'identifier': 'small'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Medium'}}, 'identifier': 'medium'}, {'displayRepresentation': {'title': {'key': 'Large', 'alternatives': []}}, 'identifier': 'large'}], 'displayTypeName': {'alternatives': [], 'key': 'Attachment Size'}, 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'fullyQualifiedTypeName': 'Notes.AttachmentViewSize', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'mangledTypeName': '5Notes18AttachmentViewSizeO', 'identifier': 'AttachmentViewSize'}", "{'mangledTypeName': '5Notes14ParagraphStyleO', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'alternatives': [], 'key': 'Title'}}, 'identifier': 'title'}, {'displayRepresentation': {'title': {'key': 'Heading', 'alternatives': []}}, 'identifier': 'heading'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Subheading'}}, 'identifier': 'subheading'}, {'displayRepresentation': {'title': {'key': 'Body', 'alternatives': []}}, 'identifier': 'body'}, {'displayRepresentation': {'title': {'key': 'Monostyled', 'alternatives': []}}, 'identifier': 'fixedWidth'}, {'identifier': 'caption', 'displayRepresentation': {'title': {'key': 'Caption', 'alternatives': []}}}, {'identifier': 'listBullet', 'displayRepresentation': {'title': {'key': 'Bulleted List', 'alternatives': []}}}, {'identifier': 'listDash', 'displayRepresentation': {'title': {'key': 'Dashed List', 'alternatives': []}}}, {'identifier': 'listNumbered', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Numbered List'}}}, {'identifier': 'listTodo', 'displayRepresentation': {'title': {'key': 'Checklist', 'alternatives': []}}}], 'effectiveBundleIdentifiers': [], 'identifier': 'ParagraphStyle', 'isSystem': False, 'assistantDefinedSchemas': [], 'displayTypeName': {'key': 'Paragraph Style', 'alternatives': []}, 'fullyQualifiedTypeName': 'Notes.ParagraphStyle'}", "{'mangledTypeName': '5Notes0A7SettingO', 'mangledTypeNameByBundleIdentifier': {}, 'fullyQualifiedTypeName': 'Notes.NotesSetting', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False, 'displayTypeName': {'key': 'Notes Setting', 'alternatives': []}, 'assistantDefinedSchemas': [], 'cases': [{'displayRepresentation': {'title': {'key': 'Auto Convert to Tag', 'alternatives': []}}, 'identifier': 'autoConvertToTag'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Auto Sort Checked Items'}}, 'identifier': 'autoSortCheckedItems'}, {'identifier': 'localAccount', 'displayRepresentation': {'title': {'key': 'Local Account', 'alternatives': []}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Mention Notifications'}}, 'identifier': 'mentionNotifications'}, {'displayRepresentation': {'title': {'key': 'Resume Last Quick Note', 'alternatives': []}}, 'identifier': 'resumeLastQuickNote'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'effectiveBundleIdentifiers': [], 'identifier': 'NotesSetting'}", "{'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': [], 'mangledTypeName': '5Notes24TagSelectionOperatorEnumO', 'fullyQualifiedTypeName': 'Notes.TagSelectionOperatorEnum', 'mangledTypeNameByBundleIdentifier': {}, 'effectiveBundleIdentifiers': [], 'cases': [{'identifier': 'any', 'displayRepresentation': {'title': {'key': 'Any', 'alternatives': []}}}, {'identifier': 'all', 'displayRepresentation': {'title': {'key': 'All', 'alternatives': []}}}], 'displayTypeName': {'key': 'Selection Operator', 'alternatives': []}, 'identifier': 'TagSelectionOperatorEnum'}", "{'fullyQualifiedTypeName': 'AppIntents.ChangeOperation', 'mangledTypeName': 'ChangeOperation', 'isSystem': True, 'identifier': 'ChangeOperation', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'cases': [{'identifier': 'disable', 'displayRepresentation': {'title': {'key': 'Disable', 'alternatives': []}}}, {'identifier': 'enable', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Enable'}}}, {'identifier': 'toggle', 'displayRepresentation': {'title': {'key': 'Toggle', 'alternatives': []}}}], 'displayTypeName': {'alternatives': [], 'key': 'ChangeOperation'}, 'mangledTypeNameByBundleIdentifier': {}, 'effectiveBundleIdentifiers': []}", "{'mangledTypeNameByBundleIdentifier': {}, 'displayTypeName': {'key': 'Notes Top-Level Folder', 'alternatives': []}, 'mangledTypeName': '5Notes14TopLevelFolderO', 'cases': [{'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'phone.badge.waveform.fill'}}, 'title': {'key': 'Call Recordings', 'alternatives': []}, 'image': {'systemImageName': {'_0': 'phone.badge.waveform.fill'}}}, 'identifier': 'callNotes'}, {'identifier': 'mathNotes', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'calculator'}}, 'imageV2': {'systemImageName': {'_0': 'calculator'}}, 'title': {'key': 'Math Notes', 'alternatives': []}}}, {'identifier': 'quickNotes', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'quicknote'}}, 'imageV2': {'systemImageName': {'_0': 'quicknote'}}, 'title': {'key': 'Quick Notes', 'alternatives': []}}}, {'identifier': 'sharedWithYou', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'person.crop.circle'}}, 'imageV2': {'systemImageName': {'_0': 'person.crop.circle'}}, 'title': {'key': 'Shared', 'alternatives': []}}}], 'assistantDefinedSchemas': [], 'fullyQualifiedTypeName': 'Notes.TopLevelFolder', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'isSystem': False, 'effectiveBundleIdentifiers': [], 'identifier': 'TopLevelFolder'}", "{'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'alternatives': [], 'key': 'Gallery View'}}, 'identifier': 'galleryView'}, {'identifier': 'listView', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'List View'}}}], 'identifier': 'FolderViewSetting', 'displayTypeName': {'alternatives': [], 'key': 'Folder View'}, 'fullyQualifiedTypeName': 'Notes.FolderViewSetting', 'isSystem': False, 'mangledTypeName': '5Notes17FolderViewSettingO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'assistantDefinedSchemas': []}", "{'fullyQualifiedTypeName': 'Notes.AddOrRemoveNoteLockIntent.LockOperation', 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'cases': [{'identifier': 'add', 'displayRepresentation': {'title': {'key': 'Add', 'alternatives': []}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Remove'}}, 'identifier': 'remove'}, {'identifier': 'toggle', 'displayRepresentation': {'title': {'key': 'Toggle', 'alternatives': []}}}], 'displayTypeName': {'alternatives': [], 'key': 'Operation'}, 'assistantDefinedSchemas': [], 'mangledTypeName': '5Notes25AddOrRemoveNoteLockIntentV0F9OperationO', 'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'LockOperation', 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False}", "{'mangledTypeName': '5Notes21ApplyFormattingIntentV19ChangeOperationTypeO', 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'ChangeOperationType', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'fullyQualifiedTypeName': 'Notes.ApplyFormattingIntent.ChangeOperationType', 'effectiveBundleIdentifiers': [], 'visibilityMetadata': {'isDiscoverable': True, 'assistantOnly': False}, 'assistantDefinedSchemas': [], 'isSystem': False, 'cases': [{'identifier': 'enable', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Enable'}}}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Disable'}}, 'identifier': 'disable'}, {'identifier': 'toggle', 'displayRepresentation': {'title': {'alternatives': [], 'key': 'Toggle'}}}], 'displayTypeName': {'alternatives': [], 'key': 'Change Operation'}}", "{'displayTypeName': {'key': 'Notes View', 'alternatives': []}, 'isSystem': False, 'identifier': 'NotesView', 'assistantDefinedSchemas': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'identifier': 'attachmentBrowser', 'displayRepresentation': {'title': {'key': 'Attachment Browser', 'alternatives': []}}}, {'displayRepresentation': {'title': {'key': 'Folder List', 'alternatives': []}}, 'identifier': 'folderList'}], 'mangledTypeNameByBundleIdentifier': {}, 'fullyQualifiedTypeName': 'Notes.NotesView', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'effectiveBundleIdentifiers': [], 'mangledTypeName': '5Notes0A4ViewO'}", "{'effectiveBundleIdentifiers': [], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'fullyQualifiedTypeName': 'Notes.SetChecklistItemsCheckedIntentv1.CheckedChangeOperationTypev1', 'identifier': 'CheckedChangeOperationTypev1', 'mangledTypeNameByBundleIdentifier': {}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Check', 'alternatives': []}}, 'identifier': 'check'}, {'displayRepresentation': {'title': {'alternatives': [], 'key': 'Uncheck'}}, 'identifier': 'uncheck'}, {'displayRepresentation': {'title': {'key': 'Toggle', 'alternatives': []}}, 'identifier': 'toggle'}], 'displayTypeName': {'key': 'Change Operation', 'alternatives': []}, 'assistantDefinedSchemas': [], 'mangledTypeName': '5Notes32SetChecklistItemsCheckedIntentv1V0E21ChangeOperationTypev1O'}"]
+  auto_shortcuts: 3
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - ICNoteIntent
+  - ICNotesFolderIntent
+  - com.apple.Notes
+  - com.apple.notes.activity.edit-note
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 84
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.Notes
+    - com.apple.private.security.storage.PhotosLibraries
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.device.audio-input
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.calendars
+    - com.apple.security.personal-information.location
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.private.appleaccount.app-hidden-from-icloud-settings
+    - com.apple.private.ubiquity-additional-kvstore-identifiers
+  privacy:
+    - com.apple.private.dprivacyd.allow
+    - com.apple.private.tcc.allow
+  apple_intelligence:
+    - com.apple.generativeexperiences.availabilityService
+    - com.apple.generativeexperiences.availabilityService.waitlistStatus
+    - com.apple.generativeexperiences.summarization
+    - com.apple.generativeexperiences.textcomposition
+    - com.apple.sage.summarization
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.assistant.dictation.prerecorded
+    - com.apple.authkit.client.internal
+    - com.apple.chrono.invalidate-timelines
+    - com.apple.corespotlight.search.allowed.bundleIDs
+    - com.apple.developer.aps-environment
+    - com.apple.developer.hardened-process
+    - com.apple.developer.maps
+    - com.apple.pds.clientid
+    - com.apple.private.CloudSharing.SPI
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.ckks
+    - com.apple.private.cloudkit.customAccounts
+    - com.apple.private.cloudkit.displaysSystemAcceptPrompt
+    - com.apple.private.cloudkit.explicitCodeOperationURL
+    - com.apple.private.cloudkit.participant-pii
+    - com.apple.private.cloudkit.realTimeOperations
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.cloudkit.spi
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.contacts
+    - com.apple.private.copresence
+    - com.apple.private.copresence.stable-app-identifier
+    - com.apple.private.coreservices.allowedToMatchUserActivities
+    - com.apple.private.coreservices.cangetcurrentactivityinfo
+    - com.apple.private.coreservices.canopenactivity
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.corespotlight.search.internal
+    - com.apple.private.exchangesyncd
+    - com.apple.private.feedback.drafting
+    - com.apple.private.feedbacklogger
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iaaccounts
+    - com.apple.private.ind.client
+    - com.apple.private.metadata.exattrs
+    - com.apple.private.octagon
+    - com.apple.private.paper.catalyst-scroll-event-forwarding
+    - com.apple.private.personas.propagate
+    - com.apple.private.photoanalysisd.access
+    - com.apple.private.rtcreportingd
+    - com.apple.private.sociallayer.highlights
+    - com.apple.proactive.PersonalizationPortrait.Contact
+    - com.apple.sage.textcomposition
+    - com.apple.spotlight.documentunderstanding.entitledattributes
+    - com.apple.spotlight.photos.entitledattributes
+    - com.apple.spotlight.search
+    - com.apple.synapse.allowAddLinkContextRequests
+    - keychain-access-groups
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 71
+notable_frameworks:
+  - AppIntents
+  - CoreLocation
+  - CoreSpotlight
+  - UserNotifications
+  - AVFoundation
+  - CloudKit
+  - Contacts
+  - CoreData
+  - CoreMedia
+  - Intents
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Productivity
+  CFBundleIdentifier: com.apple.Notes
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2011–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 4.12.7
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: com.apple.Notes.WidgetExtension
+    extension_point: com.apple.widgetkit-extension
+  - name: com.apple.Notes.QuickLookExtension
+    extension_point: com.apple.quicklook.preview
+  - name: com.apple.Notes.SharingExtension
+    extension_point: com.apple.share-services
+  - name: com.apple.Notes.SpotlightIndexExtension
+    extension_point: com.apple.spotlight.index
+  - name: com.apple.Notes.IntentsExtension
+    extension_point: com.apple.intents-service

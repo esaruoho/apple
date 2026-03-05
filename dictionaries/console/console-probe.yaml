@@ -1,0 +1,88 @@
+# Console — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Console.app
+
+app: Console
+slug: console
+path: /System/Applications/Utilities/Console.app
+layers_found: 5
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 1
+  classes: 0
+  command_names:
+    - selectDevice
+
+# ─── Layer 3: Document Types ───
+document_types_count: 16
+document_types:
+  - name: Analytics Report
+    role: Viewer
+    content_types: ["com.apple.ips"]
+  - name: Shutdown Stall
+    role: Viewer
+    content_types: ["com.apple.shutdownStall"]
+  - name: GPU Restart
+    role: Viewer
+    content_types: ["com.apple.gpuRestart"]
+  - name: Log Archive
+    role: Viewer
+    content_types: ["com.apple.logarchive"]
+  - name: Diagnostic Report
+    extensions: ["diag"]
+    role: Viewer
+  - name: Crash Report
+    role: Viewer
+    content_types: ["com.apple.crashreport"]
+  - name: Spin Report
+    role: Viewer
+    content_types: ["com.apple.spinreport"]
+  - name: Hang Report
+    role: Viewer
+    content_types: ["com.apple.hangreport"]
+  - name: Panic Report
+    role: Viewer
+    content_types: ["com.apple.panicreport"]
+  - name: Log File
+    role: Viewer
+    content_types: ["com.apple.log", "public.log"]
+  - name: gzip
+    extensions: ["gz"]
+    role: Viewer
+  - name: bzip2
+    extensions: ["bz2"]
+    role: Viewer
+  - name: ASL Database
+    extensions: ["asl"]
+    role: Viewer
+  - name: JSON Crash Report
+    role: Viewer
+    content_types: ["com.apple.json-crash"]
+  - name: ktrace file
+    role: Viewer
+    content_types: ["com.apple.ktrace"]
+  - name: Apple Trace file
+    role: Viewer
+    content_types: ["com.apple.trace"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 2
+entitlements:
+  other:
+    - com.apple.private.logging.diagnostic
+    - com.apple.private.logging.stream
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 7
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.Console
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2016–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 1.1

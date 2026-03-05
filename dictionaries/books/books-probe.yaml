@@ -1,0 +1,437 @@
+# Books — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Books.app
+
+app: Books
+slug: books
+path: /System/Applications/Books.app
+layers_found: 8
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: itms-books
+    name: iTunes Book Store URL
+  - scheme: itms-bookss
+    name: iTunes Book Store URL
+  - scheme: ibooks
+    name: iTunes Book URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 18
+document_types:
+  - name: Electronic Publication (EPUB)
+    role: Viewer
+    content_types: ["org.idpf.epub-container", "org.idpf.epub-folder", "com.apple.ibooks.epub"]
+  - name: Electronic Publication (Apple Books)
+    role: Viewer
+    content_types: ["com.apple.ibooks-container", "com.apple.ibooks-folder", "com.apple.ibooks"]
+  - name: Portable Document Format (PDF)
+    role: Viewer
+    content_types: ["com.adobe.pdf"]
+  - name: Protected mpeg 4 audio
+    role: Viewer
+    content_types: ["com.apple.protected-mpeg-4-audio"]
+  - name: Protected mpeg 4 audiobook
+    role: Viewer
+    content_types: ["com.apple.protected-mpeg-4-audio-b"]
+  - name: MP4
+    role: Viewer
+    content_types: ["public.mpeg-4"]
+  - name: MP3
+    role: Viewer
+    content_types: ["public.mp3"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.mpeg-4-audio", "com.apple.m4a-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.aac-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.ac3-audio"]
+  - name: .aif
+    role: Viewer
+    content_types: ["public.aiff-audio", "public.aifc-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.coreaudio-format"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.digidesign.sd2-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.au-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.microsoft.waveform-audio"]
+  - name: Folder
+    role: Viewer
+    content_types: ["public.folder"]
+  - name: Audible Format 4
+    role: Viewer
+    content_types: ["com.audible.aa-audiobook"]
+  - name: Audible Enhanced
+    role: Viewer
+    content_types: ["com.audible.aax-audiobook"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  siri_phrases:
+    - Stop audiobook when the current chapter ends
+    - Sleep when the current chapter ends
+    - "Set a Sleep Timer for ${duration}"
+    - "Set a Sleep Timer for ${duration} more minutes"
+    - "Sleep Timer for ${duration}"
+    - "Sleep Timer for ${duration} more minutes"
+    - "Close book in ${duration}"
+    - "Close book in ${duration} more minutes"
+    - "I want the book to stop in ${duration}"
+    - "I want the book to stop in ${duration} more minutes"
+    - "Enable ${setting}"
+    - "Turn on ${setting}"
+    - "Turn ${setting} on"
+    - "Disable ${setting}"
+    - "Turn off ${setting}"
+    - "Turn ${setting} off"
+    - Navigate book one page at a time
+    - Navigate book in paginated view
+    - Navigate book with pagination
+    - Move through book one page at a time
+    - I want to turn pages one at a time
+    - Navigate book by scrolling pages
+    - Navigate book in scrolling view
+    - Scroll through book
+    - Scroll pages in book
+    - Move through book by scrolling
+    - I want to scroll pages in the book
+    - Toggle scrolling view
+    - Toggle scroll mode
+    - Toggle scroll setting
+    - "I don't want to scroll pages in the book"
+    - "I don't want to turn pages one at a time"
+    - "Change book theme to ${setting}"
+    - "Put book on ${setting}"
+    - "Change theme back to ${setting}"
+    - "Make my book ${setting}"
+    - "Use ${setting}"
+    - "Turn book theme to ${setting}"
+    - "I’d like to use the ${setting}"
+    - "Switch to ${setting}"
+    - "I want to read with the ${setting}"
+    - "Use ${setting} for book text"
+    - Open my book
+    - Go to book I was reading
+    - I want to read my book
+    - Get back to my book
+    - Continue reading
+    - "I'm ready to read"
+    - "It's reading time"
+    - I want to finish my book
+    - I want to look at my book
+    - Open Table of Contents
+    - See chapter list
+    - Take me to the table of contents
+    - Show me the table of contents
+    - Open the TOC
+    - Navigate to the table of contents
+    - I want to see the table of contents
+    - Switch to the table of contents
+    - Jump to the table of contents
+    - I want to see a list of chapters
+    - Show me what chapters are in the book
+    - Show me a list of what page each chapter starts on
+    - I’d like to see an overview of what content is in the book
+    - "Make book font ${changeOperation}"
+    - "${changeOperation} text"
+    - Increase text size
+    - Text is too small
+    - Make text bigger
+    - Make the text larger
+    - Make the text easier to see
+    - Use a bigger font size
+    - Make the words bigger
+    - Enlarge text size
+    - I want a bigger font size
+    - The words are too small.
+    - Decrease text size
+    - Text is too big
+    - Make text smaller
+    - Use a smaller font size
+    - Make the words smaller
+    - Shrink text size
+    - I want a smaller font size
+    - The text is too large
+    - The words are too big
+    - "Open My ${target}"
+    - "Open ${target} Collection"
+    - "Open the ${target} Collection"
+    - "Take me to the ${target} Collection"
+    - "Display my ${target} Collection"
+    - "I want to see the books in my ${target} collection"
+    - "Open ${target} in books"
+    - Go to my finished books
+    - Show me all the books and audiobooks I’ve finished.
+    - I want to see all the books and audiobooks I’ve completed.
+    - Navigate to the collection of downloaded items
+    - Show me a collection of all the books and audiobooks I’ve added to Want to Read.
+    - "Open ${target} Tab"
+    - "Open ${target} Page"
+    - "Open my ${target}"
+    - "Navigate to Books ${target} Tab"
+    - "Go to ${target}"
+    - "Open to ${target}"
+    - "I want to search the ${applicationName} App"
+    - Look for books
+    - Find books
+    - Take me to the tab where I can find my current book
+    - Pause audiobook
+    - Stop playing book
+    - Turn off audiobook
+    - Pause book
+    - Stop reading book
+    - I want to stop listening
+    - Take a break from listening to audiobook
+    - I don’t want to listen now
+    - Open my audiobook
+    - Go to audiobook I was listening to
+    - I want to listen to my book
+    - Get back to my audiobook
+    - Continue listening
+    - Continue playing audiobook
+    - "I'm ready to listen"
+    - "It's listening time"
+    - I want to finish my audiobook
+    - I want to hear my audiobook
+  actions_count: 27
+  actions:
+    - id: OpenTableOfContentsIntent
+      title: Open Table of Contents
+      description: Opens the table of contents in the Books app for a book you specify.
+    - id: OpenDefaultCollectionIntent
+      title: Open Default Collection
+      description: Opens a specified default collection in the Books app.
+    - id: UpdateBookSettingsEntityFontsizeIntent
+      title: "Update a BookSettings AppEntity's Font Size"
+      description: Change the Font Size value of BookSettings AppEntity
+    - id: BookReaderNavigatePageInBookIntent
+      title: Turn Page
+    - id: UpdateBookSettingsEntityThemeIntent
+      title: "Update a BookSettings AppEntity's Theme"
+      description: Change the Theme value of BookSettings AppEntity
+    - id: OpenTabBarItemIntent
+      title: Open View in Books App
+      description: Opens the Books app to the tab or sidebar view you specify.
+    - id: PauseCurrentAudiobookIntent
+      title: Pause Current Audiobook
+      description: Pauses the audiobook you are currently listening to in the Books app.
+    - id: UpdateBookSettingsEntityFontIntent
+      title: "Update a BookSettings AppEntity's Font"
+      description: Change the Font value of BookSettings AppEntity
+    - id: CloseBookIntent
+      title: Close Book
+      description: "Close a book you specify, in the Books app."
+    - id: PlaySpecificAudiobookIntent
+      title: Play Specific Audiobook
+      description: "Plays an audiobook you specify, in the Books app."
+    - id: PlayMostRecentAudiobookIntent
+      title: Play Most Recent Audiobook
+      description: Plays the last audiobook you were listening to in the Books app.
+    - id: UpdateBookSettingsEntityPagenavigationsettingIntent
+      title: "Update a BookSettings AppEntity's Page Navigation Setting"
+      description: Change the Page Navigation Setting value of BookSettings AppEntity
+    - id: UpdateBookSettingsEntityIstextjustifiedIntent
+      title: "Update a BookSettings AppEntity's Text Justified"
+      description: Change the Text Justified value of BookSettings AppEntity
+    - id: OpenMostRecentBookIntent
+      title: Open Most Recent Book
+      description: Opens the last book you were reading in the Books app.
+    - id: SearchBooksAppIntent
+      title: Search in the Books App
+      description: Searches the Books app for books and audiobooks in the store and your library by title or author.
+    - id: UpdateBookSettingsEntityIsallowmultiplecolumnsIntent
+      title: "Update a BookSettings AppEntity's Allow Multiple Columns"
+      description: Change the Allow Multiple Columns value of BookSettings AppEntity
+    - id: PlayAudiobookIntent
+      title: Play Audiobook
+      description: "Plays the last audiobook you were listening to, or an audiobook you specify, in the Books app."
+    - id: UpdateBookSettingsIntent
+      title: UpdateReaderIntent
+      description: UpdateReaderIntent
+    - id: ChangeFontSizeIntent
+      title: Change Text Size
+    - id: BookReaderNavigatePagesIntent
+      title: Turn Page
+      description: Navigates pages in an open book forward to backwards sequentially.
+    - id: SearchBooksIntent
+      title: Search the Books App
+      description: Searches the Books app for books and audiobooks in the store and your library by title or author.
+    - id: BookReaderChangePageNavigationIntent
+      title: Change Page Navigation
+      description: Sets navigation in an open book to page turning or continuous scrolling.
+    - id: BookReaderChangeThemeIntent
+      title: Change Book Appearance
+      description: Changes the appearance or reading theme in an open book.
+    - id: DeepLinkIntent
+      title: Open View or Collection in Books App
+      description: Opens the Books app to the view you specify.
+    - id: AudiobookSleepTimerIntent
+      title: Set Audiobook Sleep Timer
+      description: Sets a sleep timer in the Books app from available sleep timer options.
+    - id: OpenBookIntent
+      title: Open Book
+      description: "Opens the last book you were reading, or a book you specify, in the Books app."
+    - id: OpenSpecificBookIntent
+      title: Open Specific Book
+      description: "Opens a book you specify, in the Books app."
+  queries:
+    - id: AudiobookEntityStringQuery
+    - id: BookSettingsEntityQuery
+    - id: BookEntityStringQuery
+    - id: DefaultCollectionQuery
+  entities: ["DefaultCollectionEntity", "AudiobookAppEntity", "BookAppEntity", "BookSettingsEntity"]
+  enums: ["{'displayTypeName': {'key': ''}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.BooksValueSizeChange', 'mangledTypeName': '5Books0A15ValueSizeChangeO', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookRelativeFontChange', 'domain': 'books'}], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'synonyms': [{'key': 'Raise'}, {'key': 'Enlarge'}, {'key': 'Bigger'}], 'image': {'systemImageName': {'_0': 'plus'}}, 'title': {'key': 'Increase'}, 'imageV2': {'systemImageName': {'_0': 'plus'}}}, 'identifier': 'increase'}, {'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'minus'}}, 'synonyms': [{'key': 'Lower'}, {'key': 'Smaller'}, {'key': 'Shrink'}], 'image': {'systemImageName': {'_0': 'minus'}}, 'title': {'key': 'Decrease'}}, 'identifier': 'decrease'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'BooksValueSizeChange', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': 'Open Mode'}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.OpenBookIntent.OpenMode', 'mangledTypeName': '5Books14OpenBookIntentV0B4ModeO', 'assistantDefinedSchemas': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Current Book'}}, 'identifier': 'mostRecent'}, {'displayRepresentation': {'title': {'key': 'Specific Book'}}, 'identifier': 'specific'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'OpenMode', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': 'Sleep Timer'}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.SleepTimerOption', 'numericFormatTypeName': {'key': '${int} minutes'}, 'mangledTypeName': '5Books16SleepTimerOptionO', 'assistantDefinedSchemas': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Off'}, 'synonyms': [{'key': 'Disabled'}]}, 'identifier': 'timerOff'}, {'displayRepresentation': {'title': {'key': 'When Current Chapter Ends'}, 'synonyms': [{'key': 'When the current chapter ends'}]}, 'identifier': 'timerWhenCurrentChapterEnds'}, {'displayRepresentation': {'title': {'key': 'Custom'}}, 'identifier': 'timerCustom'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'SleepTimerOption', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': ''}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.BookNavigationDirection', 'mangledTypeName': '5Books23BookNavigationDirectionO', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookNavigationDirection', 'domain': 'books'}], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Next'}}, 'identifier': 'next'}, {'displayRepresentation': {'title': {'key': 'Previous'}}, 'identifier': 'previous'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'BookNavigationDirection', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': ''}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.StubBookFontSize', 'mangledTypeName': '5Books16StubBookFontSizeO', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookFontSize', 'domain': 'books'}], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Default'}}, 'identifier': 'default'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'StubBookFontSize', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': 'NavigateSequentiallyDirection'}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': True, 'fullyQualifiedTypeName': 'AppIntents.NavigateSequentiallyDirection', 'mangledTypeName': 'NavigateSequentiallyDirection', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Next'}}, 'identifier': 'next'}, {'displayRepresentation': {'title': {'key': 'Previous'}}, 'identifier': 'previous'}], 'identifier': 'NavigateSequentiallyDirection', 'effectiveBundleIdentifiers': []}", "{'displayTypeName': {'key': ''}, 'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.BookPageNavigationSetting', 'mangledTypeName': '5Books25BookPageNavigationSettingO', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookPageNavigationSetting', 'domain': 'books'}], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'image': {'imageName': {'displayStyle': 0, '_0': 'pagehorizontalscroll'}}, 'imageV2': {'imageName': {'displayStyle': 0, '_0': 'pagehorizontalscroll'}}, 'synonyms': [{'key': 'Page Scrolling'}, {'key': 'Scrolling'}, {'key': 'Vertical Scrolling'}, {'key': 'Horizontal Scrolling'}, {'key': 'Scroll Navigation'}, {'key': 'Scroll Mode'}], 'title': {'key': 'Continuous Scrolling'}}, 'identifier': 'continuousScroll'}, {'displayRepresentation': {'image': {'imageName': {'displayStyle': 0, '_0': 'pageswipe'}}, 'imageV2': {'imageName': {'displayStyle': 0, '_0': 'pageswipe'}}, 'title': {'key': 'Page Turning'}, 'synonyms': [{'key': 'Paginated Navigation'}, {'key': 'Paginated Mode'}]}, 'identifier': 'pageTurning'}], 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'identifier': 'BookPageNavigationSetting', 'effectiveBundleIdentifiers': []}", "{'mangledTypeName': '5Books21DefaultCollectionItemO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.DefaultCollectionItem', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'effectiveBundleIdentifiers': [], 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'image': {'systemImageName': {'_0': 'books.vertical'}}, 'title': {'key': 'All'}, 'imageV2': {'systemImageName': {'_0': 'books.vertical'}}}, 'identifier': 'libraryAll'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'arrow.forward.circle'}}, 'title': {'key': 'Want to Read'}, 'imageV2': {'systemImageName': {'_0': 'arrow.forward.circle'}}}, 'identifier': 'wantToRead'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'checkmark.circle'}}, 'title': {'key': 'Finished'}, 'imageV2': {'systemImageName': {'_0': 'checkmark.circle'}}}, 'identifier': 'finished'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'bag'}}, 'title': {'key': 'Books'}, 'imageV2': {'systemImageName': {'_0': 'bag'}}}, 'identifier': 'books'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'headphones'}}, 'title': {'key': 'Audiobooks'}, 'imageV2': {'systemImageName': {'_0': 'headphones'}}}, 'identifier': 'audiobooks'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'doc.text'}}, 'title': {'key': 'PDFs'}, 'imageV2': {'systemImageName': {'_0': 'doc.text'}}}, 'identifier': 'pdfs'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'book.pages'}}, 'title': {'key': 'My Samples'}, 'imageV2': {'systemImageName': {'_0': 'book.pages'}}}, 'identifier': 'mySamples'}, {'displayRepresentation': {'image': {'systemImageName': {'_0': 'icloud.and.arrow.down'}}, 'title': {'key': 'Downloaded'}, 'imageV2': {'systemImageName': {'_0': 'icloud.and.arrow.down'}}}, 'identifier': 'downloaded'}], 'identifier': 'DefaultCollectionItem', 'displayTypeName': {'key': 'Standard Collection'}}", "{'mangledTypeName': 'ChangeOperation', 'isSystem': True, 'fullyQualifiedTypeName': 'AppIntents.ChangeOperation', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'effectiveBundleIdentifiers': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'defaultValue': 'Disable', 'key': 'Disable', 'bundleURL': 'file:///Applications/Xcode.app/Contents/Developer/Toolchains/iOS18.4.xctoolchain/usr/bin/'}}, 'identifier': 'disable'}, {'displayRepresentation': {'title': {'key': 'Enable', 'bundleURL': 'file:///Applications/Xcode.app/Contents/Developer/Toolchains/iOS18.4.xctoolchain/usr/bin/', 'defaultValue': 'Enable'}}, 'identifier': 'enable'}, {'displayRepresentation': {'title': {'key': 'Toggle', 'bundleURL': 'file:///Applications/Xcode.app/Contents/Developer/Toolchains/iOS18.4.xctoolchain/usr/bin/', 'defaultValue': 'Toggle'}}, 'identifier': 'toggle'}], 'identifier': 'ChangeOperation', 'displayTypeName': {'defaultValue': 'ChangeOperation', 'bundleURL': 'file:///Applications/Xcode.app/Contents/Developer/Toolchains/iOS18.4.xctoolchain/usr/bin/', 'key': 'ChangeOperation'}}", "{'mangledTypeName': '5Books24BookAppEntityContentTypeO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.BookAppEntityContentType', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'effectiveBundleIdentifiers': [], 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Book'}}, 'identifier': 'book'}, {'displayRepresentation': {'title': {'key': 'PDF'}}, 'identifier': 'pdf'}], 'identifier': 'BookAppEntityContentType', 'displayTypeName': {'key': 'Content Type'}}", "{'mangledTypeName': '5Books19PlayAudiobookIntentV0B4ModeO', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'isSystem': False, 'fullyQualifiedTypeName': 'Books.PlayAudiobookIntent.PlayMode', 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'effectiveBundleIdentifiers': [], 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'Current Audiobook'}}, 'identifier': 'mostRecent'}, {'displayRepresentation': {'title': {'key': 'Specific Audiobook'}}, 'identifier': 'specific'}], 'identifier': 'PlayMode', 'displayTypeName': {'key': 'Play Mode'}}", "{'mangledTypeNameByBundleIdentifier': {}, 'isSystem': False, 'identifier': 'DeepLinkItem', 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'mangledTypeName': '5Books12DeepLinkItemO', 'fullyQualifiedTypeName': 'Books.DeepLinkItem', 'assistantDefinedSchemas': [], 'displayTypeName': {'key': 'Deep Link to View'}, 'effectiveBundleIdentifiers': [], 'cases': [{'identifier': 'homeTab', 'displayRepresentation': {'synonyms': [{'key': 'Reading Now'}], 'title': {'key': 'Home'}}}, {'identifier': 'libraryTab', 'displayRepresentation': {'title': {'key': 'Library'}}}, {'identifier': 'bookStoreTab', 'displayRepresentation': {'title': {'key': 'Book Store'}}}, {'identifier': 'audiobookStoreTab', 'displayRepresentation': {'title': {'key': 'Audiobook Store'}}}, {'identifier': 'searchTab', 'displayRepresentation': {'title': {'key': 'Search'}}}, {'identifier': 'mangaTab', 'displayRepresentation': {'title': {'key': 'Manga Store'}}}, {'identifier': 'libraryAllCollection', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'books.vertical'}}, 'title': {'key': 'All'}, 'imageV2': {'systemImageName': {'_0': 'books.vertical'}}}}, {'identifier': 'wantToReadCollection', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'arrow.forward.circle'}}, 'title': {'key': 'Want to Read'}, 'imageV2': {'systemImageName': {'_0': 'arrow.forward.circle'}}}}, {'identifier': 'finishedCollection', 'displayRepresentation': {'title': {'key': 'Finished'}, 'image': {'systemImageName': {'_0': 'checkmark.circle'}}, 'imageV2': {'systemImageName': {'_0': 'checkmark.circle'}}}}, {'identifier': 'booksCollection', 'displayRepresentation': {'title': {'key': 'Books'}, 'imageV2': {'systemImageName': {'_0': 'bag'}}, 'image': {'systemImageName': {'_0': 'bag'}}}}, {'identifier': 'audiobooksCollection', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'headphones'}}, 'title': {'key': 'Audiobooks'}, 'imageV2': {'systemImageName': {'_0': 'headphones'}}}}, {'identifier': 'pdfsCollection', 'displayRepresentation': {'imageV2': {'systemImageName': {'_0': 'doc.text'}}, 'image': {'systemImageName': {'_0': 'doc.text'}}, 'title': {'key': 'PDFs'}}}, {'identifier': 'mySamplesCollection', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'book.pages'}}, 'title': {'key': 'My Samples'}, 'imageV2': {'systemImageName': {'_0': 'book.pages'}}}}, {'identifier': 'downloadedCollection', 'displayRepresentation': {'image': {'systemImageName': {'_0': 'icloud.and.arrow.down'}}, 'imageV2': {'systemImageName': {'_0': 'icloud.and.arrow.down'}}, 'title': {'key': 'Downloaded'}}}]}", "{'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeName': '5Books10TabBarItemO', 'effectiveBundleIdentifiers': [], 'fullyQualifiedTypeName': 'Books.TabBarItem', 'assistantDefinedSchemas': [], 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'TabBarItem', 'displayTypeName': {'key': 'TAB_BAR_ITEM_TYPE_DISPLAY_REPRESENTATION', 'defaultValue': 'View'}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'displayRepresentation': {'title': {'key': 'Home'}, 'synonyms': [{'key': 'Reading Now'}]}, 'identifier': 'home'}, {'displayRepresentation': {'title': {'key': 'Library'}}, 'identifier': 'library'}, {'displayRepresentation': {'title': {'key': 'Book Store'}}, 'identifier': 'bookStore'}, {'displayRepresentation': {'title': {'key': 'Audiobook Store'}}, 'identifier': 'audiobookStore'}, {'displayRepresentation': {'title': {'key': 'Search'}}, 'identifier': 'search'}, {'displayRepresentation': {'title': {'key': 'Manga Store'}}, 'identifier': 'manga'}], 'isSystem': False}", "{'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeName': '5Books12StubBookFontO', 'effectiveBundleIdentifiers': [], 'fullyQualifiedTypeName': 'Books.StubBookFont', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookFont', 'domain': 'books'}], 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'StubBookFont', 'displayTypeName': {'key': ''}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'identifier': 'default', 'displayRepresentation': {'title': {'key': 'Default'}}}], 'isSystem': False}", "{'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}, 'mangledTypeName': '5Books16BookThemeSettingO', 'effectiveBundleIdentifiers': [], 'fullyQualifiedTypeName': 'Books.BookThemeSetting', 'assistantDefinedSchemas': [{'version': '1.0.0', 'name': 'BookTheme', 'domain': 'books'}], 'mangledTypeNameByBundleIdentifier': {}, 'identifier': 'BookThemeSetting', 'displayTypeName': {'key': ''}, 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'cases': [{'identifier': 'lightMode', 'displayRepresentation': {'title': {'key': 'Light Mode'}, 'synonyms': [{'key': 'Light'}, {'key': 'Light Theme'}]}}, {'identifier': 'darkMode', 'displayRepresentation': {'synonyms': [{'key': 'Dark'}, {'key': 'Dark Theme'}], 'title': {'key': 'Dark Mode'}}}, {'identifier': 'theme1', 'displayRepresentation': {'title': {'key': 'Original Theme'}, 'synonyms': [{'key': 'Original'}, {'key': 'Original Mode'}]}}, {'identifier': 'theme2', 'displayRepresentation': {'synonyms': [{'key': 'Quiet'}, {'key': 'Quiet Mode'}], 'title': {'key': 'Quiet Theme'}}}, {'identifier': 'theme3', 'displayRepresentation': {'synonyms': [{'key': 'Paper'}, {'key': 'Paper Mode'}], 'title': {'key': 'Paper Theme'}}}, {'identifier': 'theme4', 'displayRepresentation': {'title': {'key': 'Bold Theme'}, 'synonyms': [{'key': 'Bold'}, {'key': 'Bold Mode'}]}}, {'identifier': 'theme5', 'displayRepresentation': {'synonyms': [{'key': 'Calm'}, {'key': 'Calm Mode'}], 'title': {'key': 'Calm Theme'}}}, {'identifier': 'theme6', 'displayRepresentation': {'synonyms': [{'key': 'Focus'}, {'key': 'Focus Mode'}], 'title': {'key': 'Focus Theme'}}}], 'isSystem': False}"]
+  auto_shortcuts: 2
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.iBooks.assetReading
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 91
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.system-groups
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-only
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  network:
+    - com.apple.private.cfnetwork.har-capture-amp
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-container-identifiers
+    - com.apple.developer.ubiquity-kvstore-identifier
+    - com.apple.icloud.findmydeviced.access
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - abs-client
+    - adi-client
+    - application-identifier
+    - backupd-connection-initiate
+    - com.apple.CommCenter.fine-grained
+    - com.apple.Contacts.database-allow
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.facebook.defaultaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.coremedia.allow-protected-content-playback
+    - com.apple.developer.ClassKit-environment
+    - com.apple.developer.aps-environment
+    - com.apple.developer.associated-domains
+    - com.apple.developer.carplay-audio
+    - com.apple.developer.pass-type-identifiers
+    - com.apple.developer.siri
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.excludes-extensions
+    - com.apple.iBooks.BDSService.private
+    - com.apple.ibooks.BLService.private
+    - com.apple.itunesstored.private
+    - com.apple.launchservices.receivereferrerrurl
+    - com.apple.mediaremote.send-commands
+    - com.apple.mediaremote.set-playback-state
+    - com.apple.mobile.deleted.AllowFreeSpace
+    - com.apple.payment.card-on-file
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.accounts.customaccesssinfo
+    - com.apple.private.applemediaservices
+    - com.apple.private.appshortcuts-allow-omit-appname
+    - com.apple.private.biome.read-only
+    - com.apple.private.biome.read-write
+    - com.apple.private.bookkit
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.cloudkit.masquerade
+    - com.apple.private.cloudkit.systemService
+    - com.apple.private.contactsui
+    - com.apple.private.coreaudio.allow-aa-audiofile
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.familycircle
+    - com.apple.private.fpsd.client
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.hid.client.event-monitor
+    - com.apple.private.hsa-authentication-processing
+    - com.apple.private.librarian.can-get-application-info
+    - com.apple.private.mobileinstall.upgrade-enabled
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.social.facebook.like
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.swc.additional-service-details-consumer
+    - com.apple.private.swc.system-app
+    - com.apple.runningboard.jetengine
+    - com.apple.springboard.appbackgroundstyle
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.shortcutitems.customimage
+    - com.apple.springboard.wallpaperAnimationSuspension
+    - com.apple.symptom_analytics
+    - com.apple.telephonyutilities.callservicesd
+    - fairplay-client
+    - keychain-access-groups
+    - platform-application
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 83
+notable_frameworks:
+  - AVFoundation
+  - AppIntents
+  - CloudKit
+  - Contacts
+  - CoreData
+  - CoreMedia
+  - CoreSpotlight
+  - Intents
+  - UserNotifications
+  - MediaPlayer
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Books
+  CFBundleIdentifier: com.apple.iBooksX
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 7.6
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: BooksNotificationContentExtension
+    extension_point: com.apple.usernotifications.content-extension
+  - name: SharingExtension
+    extension_point: com.apple.share-services
+  - name: BooksThumbnail
+    extension_point: com.apple.quicklook.thumbnail
+  - name: BooksSpotlightExtension
+    extension_point: com.apple.spotlight.index
+  - name: BooksStorageExtension
+    extension_point: com.apple.storagemanagement
+  - name: BooksEngagementExtension
+    extension_point: com.apple.amsengagementd-extension
+  - name: iBooksCacheDelete
+    extension_point: com.apple.cache_delete_extension

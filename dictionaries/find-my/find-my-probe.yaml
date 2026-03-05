@@ -1,0 +1,184 @@
+# Find My — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/FindMy.app
+
+app: Find My
+slug: find-my
+path: /System/Applications/FindMy.app
+layers_found: 7
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: grenada
+    name: com.apple.findmy
+  - scheme: findmyfriends
+    name: com.apple.findmy
+  - scheme: fmf1
+    name: com.apple.findmy
+  - scheme: findmy
+    name: com.apple.findmy
+  - scheme: fmip1
+    name: com.apple.findmy
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - LocateDeviceIntent
+  - LocateIntent
+  - PlaySoundIntent
+  - ToggleLocationSharingIntent
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 81
+entitlements:
+  sandbox:
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.FindMy
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.device.bluetooth
+    - com.apple.security.exception.files.absolute
+    - com.apple.security.exception.iokit-user-client-class
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.location
+    - com.apple.security.system-groups
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.shared-preference.read-write
+  icloud:
+    - com.apple.developer.icloud-services
+    - com.apple.icloud.FindMyDevice.FindMyDeviceHelperXPCService.access
+    - com.apple.icloud.FindMyDevice.FindMyDeviceSharedConfiguration.access
+    - com.apple.icloud.findmydeviced.access
+    - com.apple.icloud.searchparty.ownersession.fmipitemaccess
+    - com.apple.icloud.searchpartyd.accessorydiscovery
+    - com.apple.icloud.searchpartyd.beaconmanager
+    - com.apple.icloud.searchpartyd.beaconsharing.access
+    - com.apple.icloud.searchpartyd.btFinding.access
+    - com.apple.icloud.searchpartyd.ownersession
+    - com.apple.icloud.searchpartyd.pairingmanager
+    - com.apple.icloud.searchpartyd.securelocations
+    - com.apple.icloud.searchpartyd.securelocations.access
+    - com.apple.icloud.searchpartyuseragent.pairingmanager
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-or-regional-prompt
+  other:
+    - application-identifier
+    - aps-connection-initiate
+    - aps-environment
+    - com.apple.BTServer.allowRestrictedServices
+    - com.apple.CommCenter.fine-grained
+    - com.apple.Contacts.database-allow
+    - com.apple.SystemConfiguration.SCPreferences-write-access
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.idms.fullaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.bluetooth.system
+    - com.apple.chrono.invalidate-timelines
+    - com.apple.chronoservices
+    - com.apple.coreduetd.allow
+    - com.apple.coreduetd.people
+    - com.apple.developer.associated-domains
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.findmy.findmylocate.fenceservice
+    - com.apple.findmy.findmylocate.friendshipservice
+    - com.apple.findmy.findmylocate.locationservice
+    - com.apple.findmy.findmylocate.settings
+    - com.apple.locationd.activity
+    - com.apple.locationd.effective_bundle
+    - com.apple.nearbyd.diagnostics
+    - com.apple.nearbyd.xpc
+    - com.apple.private.MobileGestalt.AllowedProtectedKeys
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.appstorecomponents
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.biome.read-write
+    - com.apple.private.cloudkit.serviceNameForContainerMap
+    - com.apple.private.cloudkit.setEnvironment
+    - com.apple.private.communicationsfilter
+    - com.apple.private.contactsui
+    - com.apple.private.familycircle
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.hsa-authentication-processing
+    - com.apple.private.notificationcenter-system
+    - com.apple.private.octagon
+    - com.apple.private.swc.system-app
+    - com.apple.private.usernotifications.bundle-identifiers
+    - com.apple.sharing.Client
+    - com.apple.springboard.CFUserNotification
+    - com.apple.springboard.activateRemoteAlert
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.openurlinbackground
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 54
+notable_frameworks:
+  - AVFoundation
+  - CloudKit
+  - Contacts
+  - CoreLocation
+  - CoreMedia
+  - Intents
+  - UserNotifications
+  - MapKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.findmy
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2016–2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 4.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: FindMyWidgetItems
+    extension_point: com.apple.widgetkit-extension
+  - name: FindMyNotificationsService
+    extension_point: com.apple.usernotifications.service
+  - name: FindMyWidgetPeople
+    extension_point: com.apple.widgetkit-extension
+
+# ─── Layer 12: Notification Actions ───
+notification_categories:
+  - id: INVITE_RESPONSE
+    actions:
+      - id: ACCEPT_ACTION_ID
+        title: NOTIFICATION_ACCEPT
+      - id: DECLINE_ACTION_ID
+        title: NOTIFICATION_DECLINE
+  - id: OFFER_LOCATION
+    actions:
+      - id: SHARE_ACTION_ID
+        title: NOTIFICATION_SHARE
+      - id: SHARE_ONE_HOUR_ACTION_ID
+        title: NOTIFICATION_OFFER_ONE_HOUR
+      - id: SHARE_EOD_ACTION_ID
+        title: NOTIFICATION_OFFER_EOD
+      - id: SHARE_INDEFINITELY_ACTION_ID
+        title: NOTIFICATION_OFFER_FOREVER
+      - id: DISMISS_ACTION_ID
+        title: NOTIFICATION_DONT_SHARE
+  - id: com.apple.icloud.searchparty.utalert
+    actions:
+      - id: com.apple.icloud.searchparty.utalert.playsound
+        title: ITEM_FOLLOWING_PLAY_SOUND_BUTTON_TITLE
+      - id: com.apple.icloud.searchparty.utalert.learnmore
+        title: ITEM_FOLLOWING_LEARN_MORE_BUTTON_TITLE
+  - id: GEOFENCE_CONFIRMATION
+    actions:
+      - id: ACCEPT_GEOFENCE_ACTION_ID
+        title: NOTIFICATION_ACCEPT_LOCATION_ALERT
+      - id: DECLINE_GEOFENCE_ACTION_ID
+        title: NOTIFICATION_DECLINE_LOCATION_ALERT
+  - id: com.apple.icloud.searchpartyd.separationalert.leftbehind.devices
+  - id: com.apple.icloud.searchpartyd.separationalert.leftbehind.items
+  - id: com.apple.icloud.searchpartyd.separationalert.leftwhiletraveling.devices
+  - id: com.apple.icloud.searchpartyd.separationalert.leftwhiletraveling.items
+  - id: com.apple.icloud.searchparty.updatelitelocation

@@ -1,0 +1,160 @@
+# Keynote — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /Applications/Keynote.app
+
+app: Keynote
+slug: keynote
+path: /Applications/Keynote.app
+layers_found: 8
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 4
+  commands: 28
+  classes: 22
+  command_names:
+    - export
+    - duplicate
+    - get
+    - set
+    - delete
+    - make
+    - clear
+    - merge
+    - sort
+    - unmerge
+    - set password
+    - remove password
+    - add chart
+    - start
+    - make image slides
+    - stop
+    - show next
+    - show previous
+    - show slide switcher
+    - hide slide switcher
+    - move slide switcher forward
+    - move slide switcher backward
+    - cancel slide switcher
+    - accept slide switcher
+    - start slideshow
+    - start from
+    - stop slideshow
+    - show
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: com.apple.iwork.keynote-share
+    name: com.apple.iwork.keynote-share
+
+# ─── Layer 3: Document Types ───
+document_types_count: 6
+document_types:
+  - name: com.apple.iwork.keynote.document
+    role: Editor
+    content_types: ["com.apple.iwork.keynote.key"]
+  - name: com.apple.iwork.keynote.alt-document
+    role: Editor
+    content_types: ["com.apple.iwork.keynote.sffkey", "com.apple.iwork.keynote.key-tef"]
+  - name: com.apple.iwork.keynote.template
+    role: Editor
+    content_types: ["com.apple.iwork.keynote.kth", "com.apple.iwork.keynote.sffkth"]
+  - name: com.apple.iwork.keynote.powerpoint
+    role: Editor
+    content_types: ["com.microsoft.powerpoint.ppt", "org.openxmlformats.presentationml.presentation", "org.openxmlformats.presentationml.presentation.macroenabled", "com.microsoft.powerpoint.pps", "org.openxmlformats.presentationml.slideshow"]
+  - name: com.apple.iwork.keynote.kpf-document
+    role: Viewer
+    content_types: ["com.apple.iwork.keynote.kpf"]
+  - name: com.apple.iwork.keynote.pd-import
+    role: Editor
+    content_types: ["com.apple.iwork.keynote.kpdc"]
+
+# ─── Layer 4: App Intents / Siri Phrases ───
+app_intents:
+  actions_count: 2
+  actions:
+    - id: KNNewDocumentIntent
+      title: Create New Presentation
+      description: Create a new presentation from the theme chooser in Keynote.
+    - id: KNDocumentBackgroundExportIntent
+      title: Export Presentation in Background
+      description: Exports a presentation to a specified file format. Does not open the presentation or bring it to the foreground.
+  queries:
+    - id: KNDocumentQuery
+  entities: ["KNDocumentEntity"]
+  enums: ["{'mangledTypeName': '7Keynote20KNExportIntentFormatO', 'isSystem': False, 'fullyQualifiedTypeName': 'Keynote.KNExportIntentFormat', 'displayTypeName': {'key': 'Format', 'table': 'KNAppIntents'}, 'mangledTypeNameByBundleIdentifier': {}, 'cases': [{'displayRepresentation': {'title': {'key': 'PDF', 'table': 'KNAppIntents'}}, 'identifier': 'pdf'}, {'displayRepresentation': {'title': {'key': 'PowerPoint', 'table': 'KNAppIntents'}}, 'identifier': 'powerpoint'}], 'assistantDefinedSchemas': [], 'identifier': 'KNExportIntentFormat', 'effectiveBundleIdentifiers': [], 'visibilityMetadata': {'assistantOnly': False, 'isDiscoverable': True}, 'availabilityAnnotations': {'LNPlatformNameWildcard': {'introducedVersion': '*'}}}"]
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - KNDocumentPlayIntent
+  - KNDocumentRehearseIntent
+  - KNiOSCreateNewDocumentIntent
+  - KNiOSCreateNewOutlineIntent
+  - KNiOSOpenAnyDocumentIntent
+  - KNiOSOpenDocumentIntent
+  - KNiOSPlayPresentationIntent
+  - KNiOSRehearsePresentationIntent
+  - TSADocumentCreateIntent
+  - TSADocumentOpenIntent
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 40
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.assets.movies.read-only
+    - com.apple.security.assets.music.read-only
+    - com.apple.security.assets.pictures.read-only
+    - com.apple.security.device.audio-input
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.files.bookmarks.document-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.network.server
+    - com.apple.security.personal-information.addressbook
+    - com.apple.security.personal-information.photos-library
+    - com.apple.security.print
+    - com.apple.security.temporary-exception.files.home-relative-path.read-only
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+  icloud:
+    - com.apple.developer.icloud-container-environment
+    - com.apple.developer.icloud-container-identifiers
+    - com.apple.developer.icloud-services
+    - com.apple.developer.ubiquity-kvstore-identifier
+  other:
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.application-identifier
+    - com.apple.developer.ClassKit-environment
+    - com.apple.developer.aps-environment
+    - com.apple.developer.shared-with-you
+    - com.apple.developer.shared-with-you.collaboration
+    - com.apple.fileprovider.alternate-contents
+    - com.apple.fileprovider.iwork-collaboration-messaging
+    - com.apple.fileprovider.pause-resume
+    - com.apple.private.ClassKit.dashboard
+    - com.apple.private.clouddocs.sharing-proxy
+    - com.apple.private.clouddocs.sharing.private-interface
+    - com.apple.private.cloudkit.participant-pii
+    - com.apple.private.contactsui
+    - com.apple.private.iwork.sharing-acceptance
+    - com.apple.private.rtcreportingd
+    - fairplay-client
+    - keychain-access-groups
+    - useractivity-team-identifier
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 58
+notable_frameworks:
+  - Contacts
+  - AVFoundation
+  - AppIntents
+  - CoreMedia
+  - Intents
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: KeynoteNotificationServiceExtension
+    extension_point: com.apple.usernotifications.service

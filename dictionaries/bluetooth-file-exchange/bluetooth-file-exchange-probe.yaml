@@ -1,0 +1,58 @@
+# Bluetooth File Exchange — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Bluetooth File Exchange.app
+
+app: Bluetooth File Exchange
+slug: bluetooth-file-exchange
+path: /System/Applications/Utilities/Bluetooth File Exchange.app
+layers_found: 6
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 1
+  commands: 2
+  classes: 0
+  command_names:
+    - browse
+    - send
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: Any File
+    extensions: ["*"]
+    role: None
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: Send File To Bluetooth Device
+    message: sendFileUsingBluetoothOBEXService
+    send_types: ["public.plain-text", "NSFilenamesPboardType"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 9
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.assets.movies.read-write
+    - com.apple.security.assets.music.read-write
+    - com.apple.security.assets.pictures.read-write
+    - com.apple.security.device.bluetooth
+    - com.apple.security.files.downloads.read-write
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.temporary-exception.files.home-relative-path.read-write
+  privacy:
+    - com.apple.private.tcc.allow
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 8
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Utilities
+  CFBundleIdentifier: com.apple.BluetoothFileExchange
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2002-2021 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 9.0

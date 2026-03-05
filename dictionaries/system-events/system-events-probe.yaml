@@ -1,0 +1,75 @@
+# System Events — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Library/CoreServices/System Events.app
+
+app: System Events
+slug: system-events
+path: /System/Library/CoreServices/System Events.app
+layers_found: 5
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 18
+  commands: 31
+  classes: 89
+  command_names:
+    - abort transaction
+    - begin transaction
+    - end transaction
+    - connect
+    - disconnect
+    - start
+    - stop
+    - delete
+    - move
+    - open
+    - log out
+    - restart
+    - shut down
+    - sleep
+    - click
+    - key code
+    - keystroke
+    - perform
+    - select
+    - attach action to
+    - attached scripts
+    - cancel
+    - confirm
+    - decrement
+    - do folder action
+    - edit action of
+    - increment
+    - key down
+    - key up
+    - pick
+    - remove action from
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: scripting addition
+    extensions: ["osax"]
+    role: None
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 3
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - com.apple.Settings.extension.host
+    - com.apple.private.responsibility.set-arbitrary
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 13
+notable_frameworks:
+  - Automator
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.systemevents
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 1.3.6

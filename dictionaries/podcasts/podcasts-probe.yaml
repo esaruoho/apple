@@ -1,0 +1,179 @@
+# Podcasts — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Podcasts.app
+
+app: Podcasts
+slug: podcasts
+path: /System/Applications/Podcasts.app
+layers_found: 6
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: podcast
+    name: Podcast Feed
+  - scheme: pcast
+    name: Podcast Feed
+  - scheme: itms-podcasts
+    name: Podcast Feed
+  - scheme: podcasts
+    name: Podcast Spotlight
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - com.apple.podcasts.playback.podcast
+  - com.apple.podcasts.playback.playlist
+  - com.apple.podcasts.playback.unplayed
+  - com.apple.podcasts.playback.episode
+  - com.apple.podcasts.playback.store
+  - com.apple.podcasts.playback.listenNow
+  - com.apple.corespotlightitem
+  - com.apple.corespotlightquerycontinuation
+  - com.apple.podcasts.playback.NetworkMedia
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 108
+entitlements:
+  sandbox:
+    - com.apple.private.security.container-required
+    - com.apple.private.security.restricted-application-groups
+    - com.apple.private.security.storage.os_eligibility.readonly
+    - com.apple.private.security.system-application
+    - com.apple.security.app-sandbox
+    - com.apple.security.application-groups
+    - com.apple.security.exception.files.absolute-path.read-only
+    - com.apple.security.exception.files.absolute-path.read-write
+    - com.apple.security.exception.files.home-relative-path.read-write
+    - com.apple.security.exception.mach-lookup.global-name
+    - com.apple.security.exception.shared-preference.read-only
+    - com.apple.security.exception.shared-preference.read-write
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.temporary-exception.files.absolute-path.read-only
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+    - com.apple.security.temporary-exception.sbpl
+    - com.apple.security.temporary-exception.shared-preference.read-only
+  network:
+    - com.apple.private.cfnetwork.har-capture-amp
+  privacy:
+    - com.apple.private.tcc.allow
+    - com.apple.private.tcc.allow-or-regional-prompt
+  apple_intelligence:
+    - com.apple.private.intelligenceplatform.client-identifier
+    - com.apple.private.intelligenceplatform.use-cases
+  other:
+    - adi-client
+    - application-identifier
+    - aps-connection-initiate
+    - aps-environment
+    - com.apple.CommCenter.fine-grained
+    - com.apple.Contacts.database-allow
+    - com.apple.CoreRoutine.Application
+    - com.apple.CoreTelephony.DataUsageInfo.allow
+    - com.apple.accounts.appleaccount.fullaccess
+    - com.apple.accounts.facebook.defaultaccess
+    - com.apple.application-identifier
+    - com.apple.authkit.client.internal
+    - com.apple.authkit.client.private
+    - com.apple.avfoundation.allow-system-wide-context
+    - com.apple.avfoundation.allows-access-to-device-list
+    - com.apple.avfoundation.allows-set-output-device
+    - com.apple.container2
+    - com.apple.coreaudio.app-tap
+    - com.apple.coreidvd.spi
+    - com.apple.developer.ClassKit-environment
+    - com.apple.developer.associated-domains
+    - com.apple.developer.carplay-audio
+    - com.apple.developer.pass-type-identifiers
+    - com.apple.developer.usernotifications.time-sensitive
+    - com.apple.excludes-extensions
+    - com.apple.frontboard.launchapplications
+    - com.apple.itunesstored.private
+    - com.apple.launchservices.receivereferrerrurl
+    - com.apple.managedconfiguration.profiled-access
+    - com.apple.mediaremote.device-info
+    - com.apple.mediaremote.remote-control-discovery
+    - com.apple.mediaremote.request-bless
+    - com.apple.mediaremote.send-commands
+    - com.apple.mediaremote.set-playback-state
+    - com.apple.mobile.deleted.AllowFreeSpace
+    - com.apple.mobile.keybagd.UserManager.logout
+    - com.apple.mobileactivationd.spi
+    - com.apple.nano.nanoregistry.generalaccess
+    - com.apple.payment.all-access
+    - com.apple.payment.amp-card-enrollment
+    - com.apple.payment.card-on-file
+    - com.apple.private.ClassKit.dashboard
+    - com.apple.private.CoreAuthentication.SPI
+    - com.apple.private.ShazamKit
+    - com.apple.private.accounts.allaccounts
+    - com.apple.private.applemediaservices
+    - com.apple.private.aps-connection-initiate
+    - com.apple.private.attribution.implicitly-assumed-identity
+    - com.apple.private.bmk.allow
+    - com.apple.private.canGetAppLinkInfo
+    - com.apple.private.canModifyAppLinkPermissions
+    - com.apple.private.coreaudio.viewInterruptorName.allow
+    - com.apple.private.coreservices.alwaysEligibleEvenWhenInBackground
+    - com.apple.private.coreservices.canmaplsdatabase
+    - com.apple.private.corespotlight.internal
+    - com.apple.private.fpsd.client
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.iosmac.unscaled
+    - com.apple.private.mobileinstall.upgrade-enabled
+    - com.apple.private.mobileinstall.xpc-services-enabled
+    - com.apple.private.podcasts.PodcastContentService.client
+    - com.apple.private.rtcreportingd
+    - com.apple.private.screen-time
+    - com.apple.private.social.facebook.like
+    - com.apple.private.sociallayer.highlights
+    - com.apple.private.swc.additional-service-details-consumer
+    - com.apple.private.swc.system-app
+    - com.apple.proactive.PersonalizationPortrait.Event
+    - com.apple.proactive.PersonalizationPortrait.NamedEntity.readOnly
+    - com.apple.proactive.PersonalizationPortrait.Topic.readOnly
+    - com.apple.springboard.activateassistant
+    - com.apple.springboard.opensensitiveurl
+    - com.apple.springboard.openurlinbackground
+    - com.apple.springboard.shortcutitems.customimage
+    - com.apple.springboard.wallpaperAnimationSuspension
+    - com.apple.symptom_analytics.query
+    - com.apple.symptoms.NetworkOfInterest
+    - com.apple.telephony.cupolicy-rw-access
+    - com.apple.telephonyutilities.callservicesd
+    - fairplay-client
+    - keychain-access-groups
+    - platform-application
+    - seatbelt-profiles
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 66
+notable_frameworks:
+  - AVFoundation
+  - MediaPlayer
+  - CoreData
+  - AppIntents
+  - CoreSpotlight
+  - Intents
+  - CoreMedia
+  - UserNotifications
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.podcasts
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2019–2025 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 1.1.0
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: PodcastsWidget
+    extension_point: com.apple.widgetkit-extension
+  - name: PodcastsNotificationExtension
+    extension_point: com.apple.usernotifications.content-extension
+  - name: MacPodcastsStorageExtension
+    extension_point: com.apple.storagemanagement
+  - name: com.apple.podcasts.SpotlightIndexExtension
+    extension_point: com.apple.spotlight.index

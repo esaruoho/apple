@@ -1,0 +1,86 @@
+# Terminal — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Terminal.app
+
+app: Terminal
+slug: terminal
+path: /System/Applications/Utilities/Terminal.app
+layers_found: 6
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 2
+  commands: 13
+  classes: 4
+  command_names:
+    - open
+    - close
+    - save
+    - print
+    - quit
+    - count
+    - delete
+    - duplicate
+    - exists
+    - make
+    - move
+    - do script
+    - get URL
+
+# ─── Layer 2: URL Schemes ───
+url_schemes:
+  - scheme: telnet
+    name: telnet URL
+  - scheme: ssh
+    name: ssh URL
+  - scheme: x-man-page
+    name: x-man-page URL
+
+# ─── Layer 3: Document Types ───
+document_types_count: 5
+document_types:
+  - name: Terminal session
+    role: Editor
+    content_types: ["com.apple.terminal.session"]
+  - name: Terminal settings
+    role: Editor
+    content_types: ["com.apple.terminal.settings"]
+  - name: Terminal shell script
+    role: Shell
+    content_types: ["com.apple.terminal.shell-script"]
+  - name: "(unnamed)"
+    role: Shell
+    content_types: ["public.unix-executable"]
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["public.directory", "com.apple.bundle", "com.apple.resolvable"]
+
+# ─── Layer 5: NSServices ───
+services:
+  - menu_item: New Terminal at Folder
+    message: newTerminalAtFolder
+    send_types: ["public.plain-text"]
+  - menu_item: New Terminal Tab at Folder
+    message: newTerminalAtFolder
+    send_types: ["public.plain-text"]
+  - menu_item: Open man Page in Terminal
+    message: openManPage
+    send_types: ["public.plain-text"]
+  - menu_item: Search man Page Index in Terminal
+    message: searchManPages
+    send_types: ["public.plain-text"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 3
+entitlements:
+  privacy:
+    - com.apple.private.tcc.allow-prompting
+  other:
+    - com.apple.private.kernel.global-proc-info
+    - com.apple.private.quarantine.control-add
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 14
+notable_frameworks:
+  - CoreAudio

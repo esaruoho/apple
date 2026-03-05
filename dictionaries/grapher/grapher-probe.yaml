@@ -1,0 +1,40 @@
+# Grapher — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Utilities/Grapher.app
+
+app: Grapher
+slug: grapher
+path: /System/Applications/Utilities/Grapher.app
+layers_found: 4
+
+# ─── Layer 3: Document Types ───
+document_types_count: 1
+document_types:
+  - name: Grapher Document
+    extensions: ["gcx"]
+    role: Editor
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 5
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.files.user-selected.executable
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.print
+  other:
+    - com.apple.private.hid.client.event-dispatch.internal
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 12
+notable_frameworks:
+  - CoreMedia
+  - AVFoundation
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Education
+  CFBundleIdentifier: com.apple.grapher
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 2.7

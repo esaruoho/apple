@@ -1,0 +1,141 @@
+# QuickTime Player — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/QuickTime Player.app
+
+app: QuickTime Player
+slug: quicktime-player
+path: /System/Applications/QuickTime Player.app
+layers_found: 5
+
+# ─── Layer 1: Scripting Dictionary ───
+sdef:
+  has_sdef: true
+  suites: 2
+  commands: 15
+  classes: 5
+  command_names:
+    - open URL
+    - play
+    - start
+    - pause
+    - resume
+    - stop
+    - step backward
+    - step forward
+    - trim
+    - present
+    - new movie recording
+    - new audio recording
+    - new screen recording
+    - export
+    - show remote hud
+
+# ─── Layer 3: Document Types ───
+document_types_count: 21
+document_types:
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["com.apple.quicktimeplayerx-composition"]
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["com.apple.quicktimeplayerx-composition-bundle"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.avchd-content", "public.avchd-collection"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.audiovisual-content"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.audio", "public.mpeg-4-audio", "com.apple.protected-mpeg-4-audio", "public.mp3", "public.ulaw-audio"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.movie"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.quicktime-movie"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.mpeg"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.mpeg-2-video"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.mpeg-4", "com.apple.protected-mpeg-4-video"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.m4v-video"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.dv-movie"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.avi"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.flc-animation"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.3gpp"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["public.3gpp2"]
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["com.apple.photos.apple-adjustment-envelope", "com.apple.photos.slow-motion-video-sidecar"]
+  - name: "(unnamed)"
+    role: Editor
+    content_types: ["public.camera-raw-image", "public.jpeg", "public.png", "public.tiff", "public.heif"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.mediaextension-content"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.avurlasset-content"]
+  - name: "(unnamed)"
+    role: Viewer
+    content_types: ["com.apple.quicktime-audio"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 18
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.assets.movies.read-write
+    - com.apple.security.device.camera
+    - com.apple.security.device.microphone
+    - com.apple.security.files.bookmarks.app-scope
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+    - com.apple.security.temporary-exception.audio-unit-host
+    - com.apple.security.temporary-exception.iokit-user-client-class
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+  icloud:
+    - com.apple.developer.ubiquity-container-identifiers
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.application-identifier
+    - com.apple.developer.maps
+    - com.apple.private.assets.accessible-asset-types
+    - com.apple.private.avkit.qtpx
+    - com.apple.private.fpsd.client
+    - com.apple.private.screencapturekit.noprompt
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 37
+notable_frameworks:
+  - AVFoundation
+  - CoreMedia
+  - CoreAudio
+  - WebKit
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Video
+  CFBundleIdentifier: com.apple.QuickTimePlayerX
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2009–2023 Apple Inc. All Rights Reserved.
+  Kind: Application
+  Version: 10.5

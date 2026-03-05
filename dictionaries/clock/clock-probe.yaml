@@ -1,0 +1,61 @@
+# Clock — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Clock.app
+
+app: Clock
+slug: clock
+path: /System/Applications/Clock.app
+layers_found: 5
+
+# ─── Layer 6: User Activity Types ───
+activity_types:
+  - MTCreateAlarmIntent
+  - MTDisableAlarmIntent
+  - MTEnableAlarmIntent
+  - MTGetAlarmsIntent
+  - MTToggleAlarmIntent
+  - MTUpdateAlarmIntent
+  - com.apple.clock.alarm
+  - com.apple.clock.stopwatch
+  - com.apple.clock.timer
+  - com.apple.clock.wakealarm
+  - com.apple.clock.worldclock
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 12
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.iokit-user-client-class
+    - com.apple.security.network.client
+    - com.apple.security.personal-information.location
+    - com.apple.security.temporary-exception.mach-lookup.global-name
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.coremedia.allow-protected-content-playback
+    - com.apple.itunesstored.private
+    - com.apple.private.appintents-bundle-absolute-paths
+    - com.apple.private.appshortcuts-allow-omit-appname
+    - com.apple.private.hid.client.event-dispatch.internal
+    - com.apple.private.mobiletimerd
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 29
+notable_frameworks:
+  - Intents
+  - MediaPlayer
+  - CoreLocation
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  CFBundleIdentifier: com.apple.clock
+  ContentType: com.apple.application-bundle
+  Copyright: Copyright © 2007-2024 Apple Inc. All rights reserved.
+  Kind: Application
+  Version: 1.1
+
+# ─── Layer 11: Plugin Extensions ───
+plugins:
+  - name: WorldClockWidget
+    extension_point: com.apple.widgetkit-extension

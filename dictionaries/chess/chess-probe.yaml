@@ -1,0 +1,48 @@
+# Chess — Automation Probe
+# Extracted via: app-probe.py (13 layers)
+# Path: /System/Applications/Chess.app
+
+app: Chess
+slug: chess
+path: /System/Applications/Chess.app
+layers_found: 4
+
+# ─── Layer 3: Document Types ───
+document_types_count: 2
+document_types:
+  - name: game
+    extensions: ["game"]
+    role: Editor
+    content_types: ["com.apple.chess.game"]
+  - name: moves
+    extensions: ["pgn"]
+    role: None
+    content_types: ["com.apple.chess.pgn"]
+
+# ─── Layer 7: Entitlements ───
+entitlements_count: 7
+entitlements:
+  sandbox:
+    - com.apple.security.app-sandbox
+    - com.apple.security.device.microphone
+    - com.apple.security.files.user-selected.read-write
+    - com.apple.security.network.client
+  privacy:
+    - com.apple.private.tcc.allow
+  other:
+    - com.apple.developer.game-center
+    - com.apple.developer.group-session
+
+# ─── Layer 8: Linked Frameworks ───
+frameworks_count: 23
+notable_frameworks:
+  - UserNotifications
+  - CoreMedia
+
+# ─── Layer 9: Spotlight Metadata ───
+spotlight:
+  AppStoreCategory: Board Games
+  CFBundleIdentifier: com.apple.Chess
+  ContentType: com.apple.application-bundle
+  Kind: Application
+  Version: 3.18
