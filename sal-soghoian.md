@@ -44,6 +44,20 @@ Apple **eliminated his position entirely** — didn't replace him, dissolved the
 
 **Community reaction was seismic**: John Gruber called it "ominous" and "profoundly worrisome." Brent Simmons, MacSparky, Six Colors, 9to5Mac, MacRumors — the entire Apple press mourned.
 
+**Bill Cheeseman** (co-author with Sal of *AppleScript 1-2-3*):
+
+> Way back when Steve Jobs returned to Apple and was axing technologies left and right, Cal Simone went to visit him and — to hear Cal tell the story — single handedly convinced Steve to retain AppleScript. I believe Cal's pitch was mainly that the publishing industry was an established Mac customer enclave, large enough to matter, and that it was one industry that was utterly dependent on AppleScript.
+>
+> Is there an analogous pitch today? What is it? Who can make it with the right tone of rationality, realism and business sense?
+
+**Jon Gotow:**
+
+> You may not directly use AppleScript, but many applications use AppleScript or AppleEvents in lots of little ways. iTunes, for example, lets you pause, play, go forward and backward a track, change playlists, add properties to songs, and a zillion other things. Those little iTunes controller apps that live in your menubar or dock? They use AppleScript to talk to iTunes. The ones that add lyrics to the currently playing song at the push of a button? Yup, AppleScript. Applications that grab the current page from your browser? AppleScript. The "contact us" button in an app that automatically creates an email in Mail with a subject and the To: address filled in? AppleScript. There's probably something on your Mac that uses AppleScript or AppleEvents, even though you're not aware of it.
+>
+> […]
+>
+> My fear is that with Sal's departure, Apple's waning interest in scripting, and application interoperability in general, will be gone for good.
+
 **Jason Snell:**
 
 > Sal has been a champion for power users and other professionals who use the Mac for years. AppleScript was one of the few reasons major publishing companies stayed on the Mac during its darker days.
