@@ -200,6 +200,31 @@ Full profile with all quotes: `sal-soghoian.md`
 - Community reactions: Gruber, Snell, Cheeseman, Gotow, Weatherhead
 - **TODO**: Scrape @macautomation Twitter/X feed for years of automation tips and commentary
 
+## Esa's Bash Profile — macOS Patterns
+
+See `bash-aliases.md` for Apple-native aliases extracted from `~/.bash_profile`.
+Key pattern: `osascript script.scpt &` — fire-and-forget AppleScript from bash (used in `ask()` function).
+
+## Public/Private Split
+
+**Public** (pushed to GitHub `esaruoho/apple`):
+- README.md, skill.md, scripts/, dictionaries/, bin/, patents/, sal-soghoian.md, scripts.md
+
+**Private** (gitignored, local only):
+- bash-aliases.md, whiteboards/, icons/
+
+## Whiteboards Generated
+
+34 whiteboards across 5 sets in `whiteboards/`:
+
+| Set | Boards | Topic |
+|-----|--------|-------|
+| `bash-aliases/` | 5 | macOS bash patterns, osascript integration |
+| `automation-atlas/` | 5 | Full scriptability map, CLI tools |
+| `sal-soghoian/` | 4 | Sal's career, philosophy, WWSD |
+| `sdef-deep-dive/` | 10 | Atlas deep dive: all 4 tiers, CLI tools, terminal automation |
+| `sdef-understanding/` | 10 | How Sal connected every app: sdef architecture, data type chains, narrative |
+
 ## Sal-Like Tools
 
 Tools in this repo that follow Sal's philosophy: one action, one result.
