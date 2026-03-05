@@ -1,0 +1,37 @@
+#!/bin/bash
+# ghc — GitHub Clone + Claude
+# Clones a repo into CWD and launches Claude Code with the github-cloner skill.
+#
+# Usage:
+#   ghc owner/repo
+#   ghc https://github.com/owner/repo
+#
+# From ~/work:
+#   ghc esaruoho/paketti  →  clones to ~/work/paketti, launches claude there
+
+set -e
+
+if [[ -z "$1" ]]; then
+    echo "Usage: ghc <owner/repo>"
+    echo "  Clones the repo into the current directory and launches Claude Code."
+    exit 1
+fi
+
+# Parse owner/repo from URL or shorthand
+REPO="$1"
+REPO="${REPO#https://github.com/}"
+REPO="${REPO%.git}"
+
+REPO_NAME="${REPO#*/}"
+
+if [[ -d "$REPO_NAME" ]]; then
+    echo "$REPO_NAME/ already exists — launching Claude there."
+    cd "$REPO_NAME"
+else
+    echo "Cloning $REPO into ./$REPO_NAME..."
+    gh repo clone "$REPO" "$REPO_NAME"
+    cd "$REPO_NAME"
+fi
+
+echo "Launching Claude Code with github-cloner skill..."
+exec claude --prompt "/github-cloner $REPO"
