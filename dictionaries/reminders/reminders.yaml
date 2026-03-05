@@ -1,0 +1,104 @@
+# Reminders Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Reminders" to <command>
+
+app: "Reminders"
+slug: "reminders"
+commands_count: 1
+classes_count: 3
+suites_count: 1
+
+data_types:
+  accepts:
+    - "specifier"
+  produces:
+    - "specifier"
+
+suites:
+  - name: "Reminders Suite"
+    description: "Terms and Events for controlling the Reminders application"
+    commands:
+      - name: "show"
+        description: "Show an object in the Reminders UI"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "specifier"
+    classes:
+      - name: "account"
+        description: "An account in the Reminders application"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+        elements:
+          - "list"
+          - "reminder"
+      - name: "list"
+        description: "A list in the Reminders application"
+        inherits: "item"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "container"
+            type: ""
+            access: "r"
+          - name: "color"
+            type: "text"
+            access: "rw"
+          - name: "emblem"
+            type: "text"
+            access: "rw"
+        elements:
+          - "reminder"
+      - name: "reminder"
+        description: "A reminder in the Reminders application"
+        inherits: "item"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "container"
+            type: ""
+            access: "r"
+          - name: "creation date"
+            type: "date"
+            access: "r"
+          - name: "modification date"
+            type: "date"
+            access: "r"
+          - name: "body"
+            type: "text"
+            access: "rw"
+          - name: "completed"
+            type: "boolean"
+            access: "rw"
+          - name: "completion date"
+            type: "date"
+            access: "rw"
+          - name: "due date"
+            type: "date"
+            access: "rw"
+          - name: "allday due date"
+            type: "date"
+            access: "rw"
+          - name: "remind me date"
+            type: "date"
+            access: "rw"
+          - name: "priority"
+            type: "integer"
+            access: "rw"
+          - name: "flagged"
+            type: "boolean"
+            access: "rw"

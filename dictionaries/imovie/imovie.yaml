@@ -1,0 +1,393 @@
+# iMovie Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "iMovie" to <command>
+
+app: "iMovie"
+slug: "imovie"
+commands_count: 13
+classes_count: 12
+suites_count: 4
+
+data_types:
+  accepts:
+    - "alias"
+    - "any"
+    - "boolean"
+    - "location specifier"
+    - "print settings"
+    - "record"
+    - "savo"
+    - "specifier"
+    - "text"
+    - "type"
+  produces:
+    - "any"
+    - "boolean"
+    - "document"
+    - "integer"
+    - "specifier"
+
+suites:
+  - name: "Standard Suite"
+    description: "Common classes and commands for most applications."
+    commands:
+      - name: "close"
+        description: "Close an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "saving"
+            type: "savo"
+            optional: true
+          - name: "saving in"
+            type: "alias"
+            optional: true
+      - name: "count"
+        description: "Return the number of elements of a particular class within an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "each"
+            type: "type"
+            optional: true
+        result:
+          type: "integer"
+      - name: "delete"
+        description: "Delete an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "duplicate"
+        description: "Copy object(s) and put the copies at a new location."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "location specifier"
+            optional: true
+          - name: "with properties"
+            type: "record"
+            optional: true
+      - name: "exists"
+        description: "Verify if an object exists."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "boolean"
+      - name: "get"
+        description: "Get the data for an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "any"
+      - name: "make"
+        description: "Make a new object."
+        parameters:
+          - name: "new"
+            type: "type"
+            optional: false
+          - name: "at"
+            type: "location specifier"
+            optional: true
+          - name: "with data"
+            type: "any"
+            optional: true
+          - name: "with properties"
+            type: "record"
+            optional: true
+        result:
+          type: "specifier"
+      - name: "move"
+        description: "Move object(s) to a new location."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "location specifier"
+            optional: false
+      - name: "open"
+        description: "Open an object."
+        direct_parameter:
+          type: "alias"
+          optional: false
+        result:
+          type: "document"
+      - name: "print"
+        description: "Print an object."
+        direct_parameter:
+          type: "alias"
+          optional: false
+        parameters:
+          - name: "print dialog"
+            type: "boolean"
+            optional: true
+          - name: "with properties"
+            type: "print settings"
+            optional: true
+      - name: "quit"
+        description: "Quit an application."
+        parameters:
+          - name: "saving"
+            type: "savo"
+            optional: true
+      - name: "save"
+        description: "Save an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "as"
+            type: "text"
+            optional: true
+          - name: "in"
+            type: "alias"
+            optional: true
+      - name: "set"
+        description: "Set an object's data."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "any"
+            optional: false
+    classes:
+      - name: "application"
+        description: "An application's top level scripting object."
+        inherits: "item"
+        properties:
+          - name: "frontmost"
+            type: "boolean"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "version"
+            type: "text"
+            access: "r"
+        elements:
+          - "document"
+          - "window"
+      - name: "color"
+        description: "A color."
+        inherits: "item"
+      - name: "document"
+        description: "A document."
+        inherits: "item"
+        properties:
+          - name: "modified"
+            type: "boolean"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "path"
+            type: "text"
+            access: "rw"
+      - name: "item"
+        description: "A scriptable object."
+        properties:
+          - name: "class"
+            type: "type"
+            access: "r"
+          - name: "properties"
+            type: "record"
+            access: "rw"
+      - name: "window"
+        description: "A window."
+        inherits: "item"
+        properties:
+          - name: "bounds"
+            type: "rectangle"
+            access: "rw"
+          - name: "closeable"
+            type: "boolean"
+            access: "r"
+          - name: "document"
+            type: "document"
+            access: "r"
+          - name: "floating"
+            type: "boolean"
+            access: "r"
+          - name: "id"
+            type: "integer"
+            access: "r"
+          - name: "index"
+            type: "integer"
+            access: "rw"
+          - name: "miniaturizable"
+            type: "boolean"
+            access: "r"
+          - name: "miniaturized"
+            type: "boolean"
+            access: "rw"
+          - name: "modal"
+            type: "boolean"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "resizable"
+            type: "boolean"
+            access: "r"
+          - name: "titled"
+            type: "boolean"
+            access: "r"
+          - name: "visible"
+            type: "boolean"
+            access: "rw"
+          - name: "zoomable"
+            type: "boolean"
+            access: "r"
+          - name: "zoomed"
+            type: "boolean"
+            access: "rw"
+  - name: "Text Suite"
+    description: "A set of basic classes for text processing."
+    classes:
+      - name: "attachment"
+        description: "Represents an inline text attachment.  This class is used mainly for make commands."
+        inherits: "text.ctxt"
+        properties:
+          - name: "file name"
+            type: "text"
+            access: "rw"
+      - name: "attribute run"
+        description: "This subdivides the text into chunks that all have the same attributes."
+        inherits: "item"
+        properties:
+          - name: "color"
+            type: "color"
+            access: "rw"
+          - name: "font"
+            type: "text"
+            access: "rw"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+        elements:
+          - "attachment"
+          - "attribute run"
+          - "character"
+          - "paragraph"
+          - "word"
+      - name: "character"
+        description: "This subdivides the text into characters."
+        inherits: "item"
+        properties:
+          - name: "color"
+            type: "color"
+            access: "rw"
+          - name: "font"
+            type: "text"
+            access: "rw"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+        elements:
+          - "attachment"
+          - "attribute run"
+          - "character"
+          - "paragraph"
+          - "word"
+      - name: "paragraph"
+        description: "This subdivides the text into paragraphs."
+        inherits: "item"
+        properties:
+          - name: "color"
+            type: "color"
+            access: "rw"
+          - name: "font"
+            type: "text"
+            access: "rw"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+        elements:
+          - "attachment"
+          - "attribute run"
+          - "character"
+          - "paragraph"
+          - "word"
+      - name: "text"
+        description: "Rich (styled) text"
+        inherits: "item"
+        properties:
+          - name: "color"
+            type: "color"
+            access: "rw"
+          - name: "font"
+            type: "text"
+            access: "rw"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+        elements:
+          - "attachment"
+          - "attribute run"
+          - "character"
+          - "paragraph"
+          - "word"
+      - name: "word"
+        description: "This subdivides the text into words."
+        inherits: "item"
+        properties:
+          - name: "color"
+            type: "color"
+            access: "rw"
+          - name: "font"
+            type: "text"
+            access: "rw"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+        elements:
+          - "attachment"
+          - "attribute run"
+          - "character"
+          - "paragraph"
+          - "word"
+  - name: "Type Definitions"
+    description: "Records used in scripting iMovie"
+    classes:
+      - name: "print settings"
+        description: ""
+        properties:
+          - name: "copies"
+            type: "integer"
+            access: "rw"
+          - name: "collating"
+            type: "boolean"
+            access: "rw"
+          - name: "starting page"
+            type: "integer"
+            access: "rw"
+          - name: "ending page"
+            type: "integer"
+            access: "rw"
+          - name: "pages across"
+            type: "integer"
+            access: "rw"
+          - name: "pages down"
+            type: "integer"
+            access: "rw"
+          - name: "requested print time"
+            type: "date"
+            access: "rw"
+          - name: "error handling"
+            type: "enum"
+            access: "rw"
+          - name: "fax number"
+            type: "text"
+            access: "rw"
+          - name: "target printer"
+            type: "text"
+            access: "rw"
+  - name: "Type Names"
+    description: "Other classes and commands"

@@ -1,0 +1,357 @@
+# Terminal Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Terminal" to <command>
+
+app: "Terminal"
+slug: "terminal"
+commands_count: 13
+classes_count: 4
+suites_count: 2
+
+data_types:
+  accepts:
+    - "any"
+    - "boolean"
+    - "file"
+    - "location specifier"
+    - "print settings"
+    - "record"
+    - "save options"
+    - "specifier"
+    - "text"
+    - "type"
+  produces:
+    - "boolean"
+    - "integer"
+    - "specifier"
+    - "tab"
+
+suites:
+  - name: "Standard Suite"
+    description: "Common classes and commands for all applications."
+    commands:
+      - name: "open"
+        description: "Open a document."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "close"
+        description: "Close a document."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "saving"
+            type: "save options"
+            optional: true
+          - name: "saving in"
+            type: "file"
+            optional: true
+      - name: "save"
+        description: "Save a document."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "in"
+            type: "file"
+            optional: true
+      - name: "print"
+        description: "Print a document."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "with properties"
+            type: "print settings"
+            optional: true
+          - name: "print dialog"
+            type: "boolean"
+            optional: true
+      - name: "quit"
+        description: "Quit the application."
+        parameters:
+          - name: "saving"
+            type: "save options"
+            optional: true
+      - name: "count"
+        description: "Return the number of elements of a particular class within an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "each"
+            type: "type"
+            optional: true
+        result:
+          type: "integer"
+      - name: "delete"
+        description: "Delete an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "duplicate"
+        description: "Copy object(s) and put the copies at a new location."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "location specifier"
+            optional: false
+          - name: "with properties"
+            type: "record"
+            optional: true
+      - name: "exists"
+        description: "Verify if an object exists."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "boolean"
+      - name: "make"
+        description: "Make a new object."
+        parameters:
+          - name: "new"
+            type: "type"
+            optional: false
+          - name: "at"
+            type: "location specifier"
+            optional: true
+          - name: "with data"
+            type: "any"
+            optional: true
+          - name: "with properties"
+            type: "record"
+            optional: true
+        result:
+          type: "specifier"
+      - name: "move"
+        description: "Move object(s) to a new location."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "location specifier"
+            optional: false
+    classes:
+      - name: "application"
+        description: "The application‘s top-level scripting object."
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "frontmost"
+            type: "boolean"
+            access: "r"
+          - name: "version"
+            type: "text"
+            access: "r"
+        elements:
+          - "window"
+      - name: "window"
+        description: "A window."
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "integer"
+            access: "r"
+          - name: "index"
+            type: "integer"
+            access: "rw"
+          - name: "bounds"
+            type: "rectangle"
+            access: "rw"
+          - name: "closeable"
+            type: "boolean"
+            access: "r"
+          - name: "miniaturizable"
+            type: "boolean"
+            access: "r"
+          - name: "miniaturized"
+            type: "boolean"
+            access: "rw"
+          - name: "resizable"
+            type: "boolean"
+            access: "r"
+          - name: "visible"
+            type: "boolean"
+            access: "rw"
+          - name: "zoomable"
+            type: "boolean"
+            access: "r"
+          - name: "zoomed"
+            type: "boolean"
+            access: "rw"
+          - name: "frontmost"
+            type: "boolean"
+            access: "rw"
+          - name: "position"
+            type: "point"
+            access: "rw"
+          - name: "origin"
+            type: "point"
+            access: "rw"
+          - name: "size"
+            type: "point"
+            access: "rw"
+          - name: "frame"
+            type: "rectangle"
+            access: "rw"
+        elements:
+          - "tab"
+  - name: "Terminal Suite"
+    description: "Terminal specific classes."
+    commands:
+      - name: "do script"
+        description: "Runs a UNIX shell script or command."
+        direct_parameter:
+          type: "text"
+          optional: true
+        parameters:
+          - name: "with command"
+            type: "specifier"
+            optional: true
+          - name: "in"
+            type: "specifier"
+            optional: true
+        result:
+          type: "tab"
+      - name: "get URL"
+        description: "Open a command an ssh, telnet, or x-man-page URL."
+        direct_parameter:
+          type: "text"
+          optional: false
+    classes:
+      - name: "settings set"
+        description: "A set of settings."
+        properties:
+          - name: "id"
+            type: "integer"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "number of rows"
+            type: "integer"
+            access: "rw"
+          - name: "number of columns"
+            type: "integer"
+            access: "rw"
+          - name: "cursor color"
+            type: "color"
+            access: "rw"
+          - name: "background color"
+            type: "color"
+            access: "rw"
+          - name: "normal text color"
+            type: "color"
+            access: "rw"
+          - name: "bold text color"
+            type: "color"
+            access: "rw"
+          - name: "font name"
+            type: "text"
+            access: "rw"
+          - name: "font size"
+            type: "integer"
+            access: "rw"
+          - name: "font antialiasing"
+            type: "boolean"
+            access: "rw"
+          - name: "clean commands"
+            type: ""
+            access: "rw"
+          - name: "title displays device name"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays shell path"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays window size"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays settings name"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays custom title"
+            type: "boolean"
+            access: "rw"
+          - name: "custom title"
+            type: "text"
+            access: "rw"
+      - name: "tab"
+        description: "A tab."
+        properties:
+          - name: "number of rows"
+            type: "integer"
+            access: "rw"
+          - name: "number of columns"
+            type: "integer"
+            access: "rw"
+          - name: "contents"
+            type: "text"
+            access: "r"
+          - name: "history"
+            type: "text"
+            access: "r"
+          - name: "busy"
+            type: "boolean"
+            access: "r"
+          - name: "processes"
+            type: ""
+            access: "r"
+          - name: "selected"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays custom title"
+            type: "boolean"
+            access: "rw"
+          - name: "custom title"
+            type: "text"
+            access: "rw"
+          - name: "tty"
+            type: "text"
+            access: "r"
+          - name: "current settings"
+            type: "settings set"
+            access: "rw"
+          - name: "cursor color"
+            type: "color"
+            access: "rw"
+          - name: "background color"
+            type: "color"
+            access: "rw"
+          - name: "normal text color"
+            type: "color"
+            access: "rw"
+          - name: "bold text color"
+            type: "color"
+            access: "rw"
+          - name: "clean commands"
+            type: ""
+            access: "rw"
+          - name: "title displays device name"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays shell path"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays window size"
+            type: "boolean"
+            access: "rw"
+          - name: "title displays file name"
+            type: "boolean"
+            access: "rw"
+          - name: "font name"
+            type: "text"
+            access: "rw"
+          - name: "font size"
+            type: "integer"
+            access: "rw"
+          - name: "font antialiasing"
+            type: "boolean"
+            access: "rw"

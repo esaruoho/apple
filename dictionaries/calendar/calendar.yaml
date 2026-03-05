@@ -1,0 +1,204 @@
+# Calendar Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Calendar" to <command>
+
+app: "Calendar"
+slug: "calendar"
+commands_count: 8
+classes_count: 7
+suites_count: 2
+
+data_types:
+  accepts:
+    - "any"
+    - "date"
+    - "location specifier"
+    - "record"
+    - "specifier"
+    - "text"
+    - "type"
+    - "view type"
+  produces:
+    - "specifier"
+
+suites:
+  - name: "Standard Suite"
+    description: "Common classes and commands for all applications."
+  - name: "iCal"
+    description: "iCal classes and commands"
+    commands:
+      - name: "create calendar"
+        description: "Creates a new calendar (obsolete, will be removed in next release)"
+        parameters:
+          - name: "with name"
+            type: "text"
+            optional: true
+      - name: "reload calendars"
+        description: "Tell the application to reload all calendar files contents"
+      - name: "switch view"
+        description: "Show calendar on the given view"
+        parameters:
+          - name: "to"
+            type: "view type"
+            optional: false
+      - name: "view calendar"
+        description: "Show calendar on the given date"
+        parameters:
+          - name: "at"
+            type: "date"
+            optional: false
+      - name: "GetURL"
+        description: "Subscribe to a remote calendar through a webcal or http URL"
+        direct_parameter:
+          type: "text"
+          optional: false
+      - name: "show"
+        description: "Show the event or to-do in the calendar window"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "make"
+        description: ""
+        parameters:
+          - name: "new"
+            type: "type"
+            optional: false
+          - name: "at"
+            type: "location specifier"
+            optional: true
+          - name: "with data"
+            type: "any"
+            optional: true
+          - name: "with properties"
+            type: "record"
+            optional: true
+        result:
+          type: "specifier"
+      - name: "save"
+        description: ""
+    classes:
+      - name: "calendar"
+        description: "This class represents a calendar."
+        properties:
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "color"
+            type: "RGB color"
+            access: "rw"
+          - name: "calendarIdentifier"
+            type: "text"
+            access: "r"
+          - name: "writable"
+            type: "boolean"
+            access: "r"
+          - name: "description"
+            type: "text"
+            access: "rw"
+        elements:
+          - "event"
+      - name: "display alarm"
+        description: "This class represents a message alarm."
+        properties:
+          - name: "trigger interval"
+            type: "integer"
+            access: "rw"
+          - name: "trigger date"
+            type: "date"
+            access: "rw"
+      - name: "mail alarm"
+        description: "This class represents a mail alarm."
+        properties:
+          - name: "trigger interval"
+            type: "integer"
+            access: "rw"
+          - name: "trigger date"
+            type: "date"
+            access: "rw"
+      - name: "sound alarm"
+        description: "This class represents a sound alarm."
+        properties:
+          - name: "trigger interval"
+            type: "integer"
+            access: "rw"
+          - name: "trigger date"
+            type: "date"
+            access: "rw"
+          - name: "sound name"
+            type: "text"
+            access: "rw"
+          - name: "sound file"
+            type: "text"
+            access: "rw"
+      - name: "open file alarm"
+        description: "This class represents an 'open file' alarm. Starting with OS X 10.14, it is not possible to create new open file alarms or view URLs for existing open file alarms. Trying to save or modify an open file alarm will result in a save error. Editing other aspects of events or reminders that have existing open file alarms is allowed as long as the alarm isn't modified."
+        properties:
+          - name: "trigger interval"
+            type: "integer"
+            access: "rw"
+          - name: "trigger date"
+            type: "date"
+            access: "rw"
+          - name: "filepath"
+            type: "text"
+            access: "rw"
+      - name: "attendee"
+        description: "This class represents a attendee."
+        properties:
+          - name: "display name"
+            type: "text"
+            access: "r"
+          - name: "email"
+            type: "text"
+            access: "r"
+          - name: "participation status"
+            type: "participation status"
+            access: "r"
+      - name: "event"
+        description: "This class represents an event."
+        properties:
+          - name: "description"
+            type: "text"
+            access: "rw"
+          - name: "start date"
+            type: "date"
+            access: "rw"
+          - name: "end date"
+            type: "date"
+            access: "rw"
+          - name: "allday event"
+            type: "boolean"
+            access: "rw"
+          - name: "recurrence"
+            type: "text"
+            access: "rw"
+          - name: "sequence"
+            type: "integer"
+            access: "r"
+          - name: "stamp date"
+            type: "date"
+            access: "rw"
+          - name: "excluded dates"
+            type: ""
+            access: "rw"
+          - name: "status"
+            type: "event status"
+            access: "rw"
+          - name: "summary"
+            type: "text"
+            access: "rw"
+          - name: "location"
+            type: "text"
+            access: "rw"
+          - name: "uid"
+            type: "text"
+            access: "r"
+          - name: "url"
+            type: "text"
+            access: "rw"
+        elements:
+          - "attendee"
+          - "display alarm"
+          - "mail alarm"
+          - "open file alarm"
+          - "sound alarm"

@@ -1,0 +1,165 @@
+# QuickTime Player Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "QuickTime Player" to <command>
+
+app: "QuickTime Player"
+slug: "quicktime-player"
+commands_count: 15
+classes_count: 5
+suites_count: 2
+
+data_types:
+  accepts:
+    - "document"
+    - "file"
+    - "integer"
+    - "real"
+    - "text"
+  produces:
+    - "specifier"
+
+suites:
+  - name: "Internet Suite"
+    description: "Common URL related functionality"
+    commands:
+      - name: "open URL"
+        description: "Open a URL."
+        direct_parameter:
+          type: "text"
+          optional: false
+  - name: "QuickTime Player Suite"
+    description: "Classes and Commands for working with QuickTime Player"
+    commands:
+      - name: "play"
+        description: "Play the movie."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "start"
+        description: "Start the movie recording."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "pause"
+        description: "Pause the recording."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "resume"
+        description: "Resume the recording."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "stop"
+        description: "Stop the movie or recording."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "step backward"
+        description: "Step the movie backward the specified number of steps (default is 1)."
+        direct_parameter:
+          type: "document"
+          optional: false
+        parameters:
+          - name: "by"
+            type: "integer"
+            optional: true
+      - name: "step forward"
+        description: "Step the movie forward the specified number of steps (default is 1)."
+        direct_parameter:
+          type: "document"
+          optional: false
+        parameters:
+          - name: "by"
+            type: "integer"
+            optional: true
+      - name: "trim"
+        description: "Trim the movie."
+        direct_parameter:
+          type: "document"
+          optional: false
+        parameters:
+          - name: "from"
+            type: "real"
+            optional: false
+          - name: "to"
+            type: "real"
+            optional: false
+      - name: "present"
+        description: "Present the document full screen."
+        direct_parameter:
+          type: "document"
+          optional: false
+      - name: "new movie recording"
+        description: "Create a new movie recording document."
+        result:
+          type: "specifier"
+      - name: "new audio recording"
+        description: "Create a new audio recording document."
+        result:
+          type: "specifier"
+      - name: "new screen recording"
+        description: "Create a new screen recording document."
+      - name: "export"
+        description: "Export a movie to another file"
+        direct_parameter:
+          type: "document"
+          optional: false
+        parameters:
+          - name: "in"
+            type: "file"
+            optional: false
+          - name: "using settings preset"
+            type: "text"
+            optional: false
+      - name: "show remote hud"
+        description: "Show the document's Remote HUD"
+        direct_parameter:
+          type: "document"
+          optional: false
+    classes:
+      - name: "video recording device"
+        description: "A video recording device"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+      - name: "audio recording device"
+        description: "An audio recording device"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+      - name: "audio compression preset"
+        description: "An audio recording compression preset"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+      - name: "movie compression preset"
+        description: "A movie recording compression preset"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+      - name: "screen compression preset"
+        description: "A screen recording compression preset"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"

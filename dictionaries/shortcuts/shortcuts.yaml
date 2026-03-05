@@ -1,0 +1,71 @@
+# Shortcuts Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Shortcuts" to <command>
+
+app: "Shortcuts"
+slug: "shortcuts"
+commands_count: 1
+classes_count: 2
+suites_count: 1
+
+data_types:
+  accepts:
+    - "any"
+    - "shortcut"
+  produces:
+    - "any"
+
+suites:
+  - name: "Shortcuts Suite"
+    description: "Classes and Commands for working with Shortcuts"
+    commands:
+      - name: "run"
+        description: "Run a shortcut. To run a shortcut in the background, without opening the Shortcuts app, tell 'Shortcuts Events' instead of 'Shortcuts'."
+        direct_parameter:
+          type: "shortcut"
+          optional: false
+        parameters:
+          - name: "with input"
+            type: "any"
+            optional: true
+        result:
+          type: "any"
+    classes:
+      - name: "shortcut"
+        description: "a shortcut in the Shortcuts application"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "subtitle"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "folder"
+            type: "folder"
+            access: "rw"
+          - name: "color"
+            type: "RGB color"
+            access: "r"
+          - name: "icon"
+            type: "TIFF image"
+            access: "r"
+          - name: "accepts input"
+            type: "boolean"
+            access: "r"
+          - name: "action count"
+            type: "integer"
+            access: "r"
+      - name: "folder"
+        description: "a folder containing shortcuts"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "id"
+            type: "text"
+            access: "r"
+        elements:
+          - "shortcut"

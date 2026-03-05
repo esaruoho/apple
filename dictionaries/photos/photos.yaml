@@ -1,0 +1,225 @@
+# Photos Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Photos" to <command>
+
+app: "Photos"
+slug: "photos"
+commands_count: 18
+classes_count: 5
+suites_count: 2
+
+data_types:
+  accepts:
+    - "album"
+    - "any"
+    - "boolean"
+    - "file"
+    - "folder"
+    - "specifier"
+    - "text"
+    - "type"
+  produces:
+    - "boolean"
+    - "integer"
+    - "media item"
+    - "specifier"
+
+suites:
+  - name: "Standard Suite"
+    description: "Common classes and commands for all applications."
+    commands:
+      - name: "count"
+        description: "Return the number of elements of a particular class within an object."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "each"
+            type: "type"
+            optional: true
+        result:
+          type: "integer"
+      - name: "exists"
+        description: "Verify that an object exists."
+        direct_parameter:
+          type: "any"
+          optional: false
+        result:
+          type: "boolean"
+      - name: "open"
+        description: "Open a photo library"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "quit"
+        description: "Quit the application."
+    classes:
+      - name: "application"
+        description: "The application's top-level scripting object."
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "frontmost"
+            type: "boolean"
+            access: "r"
+          - name: "version"
+            type: "text"
+            access: "r"
+  - name: "Photos Suite"
+    description: "Classes and commands for Photos"
+    commands:
+      - name: "import"
+        description: "Import files into the library"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "into"
+            type: "album"
+            optional: true
+          - name: "skip check duplicates"
+            type: "boolean"
+            optional: true
+        result:
+          type: "specifier"
+      - name: "export"
+        description: "Export media items to the specified location as files"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "file"
+            optional: false
+          - name: "using originals"
+            type: "boolean"
+            optional: true
+      - name: "duplicate"
+        description: "Duplicate an object.  Only media items can be duplicated"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "media item"
+      - name: "make"
+        description: "Create a new object.  Only new albums and folders can be created."
+        parameters:
+          - name: "new"
+            type: "type"
+            optional: false
+          - name: "named"
+            type: "text"
+            optional: true
+          - name: "at"
+            type: "folder"
+            optional: true
+        result:
+          type: "specifier"
+      - name: "delete"
+        description: "Delete an object.  Only albums and folders can be deleted."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "add"
+        description: "Add media items to an album."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "album"
+            optional: false
+      - name: "start slideshow"
+        description: "Display an ad-hoc slide show from a list of media items, an album, or a folder."
+        parameters:
+          - name: "using"
+            type: "specifier"
+            optional: false
+      - name: "stop slideshow"
+        description: "End the currently-playing slideshow."
+      - name: "next slide"
+        description: "Skip to next slide in currently-playing slideshow."
+      - name: "previous slide"
+        description: "Skip to previous slide in currently-playing slideshow."
+      - name: "pause slideshow"
+        description: "Pause the currently-playing slideshow."
+      - name: "resume slideshow"
+        description: "Resume the currently-playing slideshow."
+      - name: "spotlight"
+        description: "Show the image at path in the application, used to show spotlight search results"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "search"
+        description: "search for items matching the search string. Identical to entering search text in the Search field in Photos"
+        parameters:
+          - name: "for"
+            type: "text"
+            optional: false
+        result:
+          type: "specifier"
+    classes:
+      - name: "media item"
+        description: "A media item, such as a photo or video."
+        properties:
+          - name: "keywords"
+            type: ""
+            access: "rw"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "description"
+            type: "text"
+            access: "rw"
+          - name: "favorite"
+            type: "boolean"
+            access: "rw"
+          - name: "date"
+            type: "date"
+            access: "rw"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "height"
+            type: "integer"
+            access: "r"
+          - name: "width"
+            type: "integer"
+            access: "r"
+          - name: "filename"
+            type: "text"
+            access: "r"
+          - name: "altitude"
+            type: "real"
+            access: "r"
+          - name: "size"
+            type: "integer"
+            access: "rw"
+          - name: "location"
+            type: ""
+            access: "rw"
+      - name: "container"
+        description: "Base class for collections that contains other items, such as albums and folders"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "parent"
+            type: "folder"
+            access: "r"
+      - name: "album"
+        description: "An album. A container that holds media items"
+        inherits: "container"
+        elements:
+          - "media item"
+      - name: "folder"
+        description: "A folder. A container that holds albums and other folders, but not media items"
+        inherits: "container"
+        elements:
+          - "container"
+          - "album"
+          - "folder"

@@ -1,0 +1,126 @@
+# Messages Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Messages" to <command>
+
+app: "Messages"
+slug: "messages"
+commands_count: 3
+classes_count: 4
+suites_count: 1
+
+data_types:
+  accepts:
+    - "specifier"
+  produces:
+
+suites:
+  - name: "Messages Suite"
+    description: "commands and classes for Messages scripting."
+    commands:
+      - name: "send"
+        description: "Sends a message to a participant or to a chat."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "to"
+            type: "specifier"
+            optional: false
+      - name: "login"
+        description: "Login to all accounts."
+      - name: "logout"
+        description: "Logout of all accounts."
+    classes:
+      - name: "participant"
+        description: "A participant for an account."
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "account"
+            type: "account"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "handle"
+            type: "text"
+            access: "r"
+          - name: "first name"
+            type: "text"
+            access: "r"
+          - name: "last name"
+            type: "text"
+            access: "r"
+          - name: "full name"
+            type: "text"
+            access: "r"
+      - name: "account"
+        description: "An account that can be logged in to from this system"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "description"
+            type: "text"
+            access: "r"
+          - name: "enabled"
+            type: "boolean"
+            access: "rw"
+          - name: "connection status"
+            type: "connection status"
+            access: "r"
+          - name: "service type"
+            type: "service type"
+            access: "r"
+        elements:
+          - "chat"
+          - "participant"
+      - name: "chat"
+        description: "An SMS or iMessage chat."
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "account"
+            type: "account"
+            access: "r"
+        elements:
+          - "participant"
+      - name: "file transfer"
+        description: "A file being sent or received"
+        inherits: "item"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "file path"
+            type: "file"
+            access: "r"
+          - name: "direction"
+            type: "direction"
+            access: "r"
+          - name: "account"
+            type: "account"
+            access: "r"
+          - name: "participant"
+            type: "participant"
+            access: "r"
+          - name: "file size"
+            type: "integer"
+            access: "r"
+          - name: "file progress"
+            type: "integer"
+            access: "r"
+          - name: "transfer status"
+            type: "transfer status"
+            access: "r"
+          - name: "started"
+            type: "date"
+            access: "r"

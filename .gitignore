@@ -1,0 +1,16 @@
+# ─── Private (local-only, not pushed) ───
+# Claude skill definition — references personal setup, Ray Browser, Loupedeck
+skill.md
+
+# Personal bash profile extract — contains Ray-specific aliases and paths
+bash-aliases.md
+
+# Generated whiteboards — large PNGs, personal learning material
+whiteboards/
+
+# macOS junk
+.DS_Store
+**/.DS_Store
+
+# Raw sdef XML (large, regenerable via bin/sdef-extract.py)
+dictionaries/**/*.sdef.xml

@@ -1,0 +1,100 @@
+# Safari Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Safari" to <command>
+
+app: "Safari"
+slug: "safari"
+commands_count: 10
+classes_count: 1
+suites_count: 1
+
+data_types:
+  accepts:
+    - "any"
+    - "specifier"
+    - "text"
+  produces:
+    - "any"
+
+suites:
+  - name: "Safari suite"
+    description: "Safari specific classes"
+    commands:
+      - name: "add reading list item"
+        description: "Add a new Reading List item with the given URL. Allows a custom title and preview text to be specified."
+        direct_parameter:
+          type: "text"
+          optional: false
+        parameters:
+          - name: "and preview text"
+            type: "text"
+            optional: true
+          - name: "with title"
+            type: "text"
+            optional: true
+      - name: "do JavaScript"
+        description: "Applies a string of JavaScript code to a document."
+        direct_parameter:
+          type: "text"
+          optional: false
+        parameters:
+          - name: "in"
+            type: "specifier"
+            optional: true
+        result:
+          type: "any"
+      - name: "email contents"
+        description: "Emails the contents of a tab."
+        parameters:
+          - name: "of"
+            type: "specifier"
+            optional: true
+      - name: "search the web"
+        description: "Searches the web using Safari's current search provider."
+        parameters:
+          - name: "in"
+            type: "specifier"
+            optional: true
+          - name: "for"
+            type: "text"
+            optional: false
+      - name: "show bookmarks"
+        description: "Shows Safari's bookmarks."
+      - name: "show extensions preferences"
+        description: "Show Safari Extensions preferences."
+        direct_parameter:
+          type: "text"
+          optional: false
+      - name: "dispatch message to extension"
+        description: "Dispatch a message to a Safari Extension."
+        direct_parameter:
+          type: "any"
+          optional: false
+      - name: "sync all plist to disk"
+        description: "Make sure that all in-memory structures are in-sync with their on-disk counterparts."
+      - name: "show privacy report"
+        description: "Show Safari's Privacy Report"
+      - name: "show credit card settings"
+        description: "Show Safari Credit Card Settings."
+    classes:
+      - name: "tab"
+        description: "A Safari window tab."
+        properties:
+          - name: "source"
+            type: "text"
+            access: "r"
+          - name: "URL"
+            type: "text"
+            access: "rw"
+          - name: "index"
+            type: "number"
+            access: "r"
+          - name: "text"
+            type: "text"
+            access: "r"
+          - name: "visible"
+            type: "boolean"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"

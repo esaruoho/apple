@@ -1,0 +1,222 @@
+# Apple App Automation Index
+# Maps data types across apps for workflow chaining
+# Inspired by US 7,428,535 — Automatic Relevance Filtering (Sal Soghoian)
+
+# To chain App A → App B, find matching types:
+#   App A produces type X → App B accepts type X → compatible chain
+
+apps:
+  automator:
+    name: "Automator"
+    commands: 16
+    classes: 17
+    accepts: ["alias", "any", "boolean", "integer", "location specifier", "print settings", "record", "savo", "specifier", "text", "type", "workflow"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  bluetooth-file-exchange:
+    name: "Bluetooth File Exchange"
+    commands: 2
+    classes: 0
+    accepts: ["file", "text"]
+    produces: []
+  calendar:
+    name: "Calendar"
+    commands: 8
+    classes: 7
+    accepts: ["any", "date", "location specifier", "record", "specifier", "text", "type", "view type"]
+    produces: ["specifier"]
+  console:
+    name: "Console"
+    commands: 1
+    classes: 0
+    accepts: ["text"]
+    produces: []
+  contacts:
+    name: "Contacts"
+    commands: 8
+    classes: 12
+    accepts: ["any", "entry", "location specifier", "person", "record", "specifier", "type"]
+    produces: ["any", "boolean", "person", "specifier", "text"]
+  final-cut-pro:
+    name: "Final Cut Pro"
+    commands: 1
+    classes: 5
+    accepts: ["specifier"]
+    produces: ["any"]
+  finder:
+    name: "Finder"
+    commands: 25
+    classes: 32
+    accepts: ["boolean", "list", "location specifier", "property", "record", "specifier", "text", "type"]
+    produces: ["boolean", "integer", "specifier"]
+  image-events:
+    name: "Image Events"
+    commands: 13
+    classes: 16
+    accepts: ["boolean", "cmlv", "disk item", "integer", "profile", "real", "savo", "specifier", "text", "typv"]
+    produces: ["alias", "file", "specifier"]
+  keynote:
+    name: "Keynote"
+    commands: 28
+    classes: 22
+    accepts: ["NMSD", "any", "boolean", "column", "document", "export format", "export options", "file", "legacy chart grouping", "legacy chart type", "location specifier", "range", "record", "slide", "slide layout", "specifier", "table", "text", "type"]
+    produces: ["any", "specifier"]
+  logic-pro:
+    name: "Logic Pro"
+    commands: 13
+    classes: 12
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  mail:
+    name: "Mail"
+    commands: 16
+    classes: 25
+    accepts: ["account", "boolean", "file", "location specifier", "mailbox", "message", "outgoing message", "record", "rule", "specifier", "text"]
+    produces: ["boolean", "outgoing message", "text"]
+  messages:
+    name: "Messages"
+    commands: 3
+    classes: 4
+    accepts: ["specifier"]
+    produces: []
+  music:
+    name: "Music"
+    commands: 31
+    classes: 26
+    accepts: ["boolean", "eExF", "eKnd", "eSrA", "file", "file track", "item", "location specifier", "playlist", "print settings", "record", "specifier", "text", "type"]
+    produces: ["boolean", "integer", "specifier", "text", "track"]
+  notes:
+    name: "Notes"
+    commands: 2
+    classes: 4
+    accepts: ["boolean", "specifier"]
+    produces: ["specifier"]
+  numbers:
+    name: "Numbers"
+    commands: 16
+    classes: 21
+    accepts: ["NMSD", "any", "boolean", "column", "document", "export format", "export options", "file", "location specifier", "range", "record", "specifier", "table", "text", "type"]
+    produces: ["specifier"]
+  pages:
+    name: "Pages"
+    commands: 11
+    classes: 23
+    accepts: ["NMSD", "any", "boolean", "column", "document", "export format", "export options", "file", "location specifier", "range", "record", "specifier", "table", "text", "type"]
+    produces: ["specifier"]
+  photos:
+    name: "Photos"
+    commands: 18
+    classes: 5
+    accepts: ["album", "any", "boolean", "file", "folder", "specifier", "text", "type"]
+    produces: ["boolean", "integer", "media item", "specifier"]
+  preview:
+    name: "Preview"
+    commands: 13
+    classes: 12
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  quicktime-player:
+    name: "QuickTime Player"
+    commands: 15
+    classes: 5
+    accepts: ["document", "file", "integer", "real", "text"]
+    produces: ["specifier"]
+  reminders:
+    name: "Reminders"
+    commands: 1
+    classes: 3
+    accepts: ["specifier"]
+    produces: ["specifier"]
+  safari:
+    name: "Safari"
+    commands: 10
+    classes: 1
+    accepts: ["any", "specifier", "text"]
+    produces: ["any"]
+  screen-sharing:
+    name: "Screen Sharing"
+    commands: 1
+    classes: 0
+    accepts: ["text"]
+    produces: []
+  script-editor:
+    name: "Script Editor"
+    commands: 16
+    classes: 16
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  shortcuts:
+    name: "Shortcuts"
+    commands: 1
+    classes: 2
+    accepts: ["any", "shortcut"]
+    produces: ["any"]
+  system-events:
+    name: "System Events"
+    commands: 31
+    classes: 89
+    accepts: ["UI element", "action", "actn", "any", "boolean", "disk item", "integer", "rectangle", "specifier", "text"]
+    produces: ["UI element", "action", "configuration", "file", "folder action", "integer", "specifier"]
+  system-information:
+    name: "System Information"
+    commands: 14
+    classes: 12
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  system-settings:
+    name: "System Settings"
+    commands: 3
+    classes: 2
+    accepts: ["pane", "specifier"]
+    produces: ["real", "specifier"]
+  tv:
+    name: "TV"
+    commands: 29
+    classes: 16
+    accepts: ["boolean", "eSrA", "file track", "item", "location specifier", "playlist", "record", "specifier", "text", "type"]
+    produces: ["boolean", "integer", "specifier", "track"]
+  terminal:
+    name: "Terminal"
+    commands: 13
+    classes: 4
+    accepts: ["any", "boolean", "file", "location specifier", "print settings", "record", "save options", "specifier", "text", "type"]
+    produces: ["boolean", "integer", "specifier", "tab"]
+  textedit:
+    name: "TextEdit"
+    commands: 13
+    classes: 12
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+  imovie:
+    name: "iMovie"
+    commands: 13
+    classes: 12
+    accepts: ["alias", "any", "boolean", "location specifier", "print settings", "record", "savo", "specifier", "text", "type"]
+    produces: ["any", "boolean", "document", "integer", "specifier"]
+
+# ─── Data Type Chaining Map ───
+# Which apps can pass data to which other apps?
+chains:
+  - type: "UI element"
+    from: ["system-events"]
+    to: ["system-events"]
+  - type: "action"
+    from: ["system-events"]
+    to: ["system-events"]
+  - type: "alias"
+    from: ["image-events"]
+    to: ["automator", "logic-pro", "preview", "script-editor", "system-information", "textedit", "imovie"]
+  - type: "any"
+    from: ["automator", "contacts", "final-cut-pro", "keynote", "logic-pro", "preview", "safari", "script-editor", "shortcuts", "system-information", "textedit", "imovie"]
+    to: ["automator", "calendar", "contacts", "keynote", "logic-pro", "numbers", "pages", "photos", "preview", "safari", "script-editor", "shortcuts", "system-events", "system-information", "terminal", "textedit", "imovie"]
+  - type: "document"
+    from: ["automator", "logic-pro", "preview", "script-editor", "system-information", "textedit", "imovie"]
+    to: ["keynote", "numbers", "pages", "quicktime-player"]
+  - type: "file"
+    from: ["image-events", "system-events"]
+    to: ["bluetooth-file-exchange", "keynote", "mail", "music", "numbers", "pages", "photos", "quicktime-player", "terminal"]
+  - type: "outgoing message"
+    from: ["mail"]
+    to: ["mail"]
+  - type: "person"
+    from: ["contacts"]
+    to: ["contacts"]

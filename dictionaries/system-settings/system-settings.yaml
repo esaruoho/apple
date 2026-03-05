@@ -1,0 +1,65 @@
+# System Settings Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "System Settings" to <command>
+
+app: "System Settings"
+slug: "system-settings"
+commands_count: 3
+classes_count: 2
+suites_count: 2
+
+data_types:
+  accepts:
+    - "pane"
+    - "specifier"
+  produces:
+    - "real"
+    - "specifier"
+
+suites:
+  - name: "Standard Suite"
+    description: ""
+  - name: "System Settings"
+    description: "Classes and Commands specific to System Settings"
+    commands:
+      - name: "reveal"
+        description: "Reveals a settings pane or an anchor within a pane."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        result:
+          type: "specifier"
+      - name: "authorize"
+        description: "Prompt for authorization for a settings pane. Deprecated: no longer does anything."
+        direct_parameter:
+          type: "pane"
+          optional: false
+        result:
+          type: "specifier"
+      - name: "timedLoad"
+        description: "Times and loads given settings pane and returns load time. Deprecated: no longer does anything."
+        direct_parameter:
+          type: "pane"
+          optional: false
+        result:
+          type: "real"
+    classes:
+      - name: "pane"
+        description: "A settings pane."
+        inherits: "item"
+        properties:
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "name"
+            type: "text"
+            access: "r"
+        elements:
+          - "anchor"
+      - name: "anchor"
+        description: "An anchor within a settings pane."
+        inherits: "item"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"

@@ -1,0 +1,24 @@
+# Screen Sharing Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Screen Sharing" to <command>
+
+app: "Screen Sharing"
+slug: "screen-sharing"
+commands_count: 1
+classes_count: 0
+suites_count: 1
+
+data_types:
+  accepts:
+    - "text"
+  produces:
+
+suites:
+  - name: "Screen Sharing Suite"
+    description: "Terms and Events for controlling the Screen Sharing application."
+    commands:
+      - name: "GetURL"
+        description: "Open a vnc URL"
+        direct_parameter:
+          type: "text"
+          optional: false

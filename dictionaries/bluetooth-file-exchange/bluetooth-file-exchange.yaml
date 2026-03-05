@@ -1,0 +1,35 @@
+# Bluetooth File Exchange Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Bluetooth File Exchange" to <command>
+
+app: "Bluetooth File Exchange"
+slug: "bluetooth-file-exchange"
+commands_count: 2
+classes_count: 0
+suites_count: 1
+
+data_types:
+  accepts:
+    - "file"
+    - "text"
+  produces:
+
+suites:
+  - name: "Bluetooth File Exchange Suite"
+    description: "The suite of commands for Bluetooth File Exchange"
+    commands:
+      - name: "browse"
+        description: "Browse a device."
+        parameters:
+          - name: "device"
+            type: "text"
+            optional: true
+      - name: "send"
+        description: "Send a file to a bluetooth device."
+        parameters:
+          - name: "file"
+            type: "file"
+            optional: true
+          - name: "to device"
+            type: "text"
+            optional: true

@@ -1,0 +1,133 @@
+# Notes Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Notes" to <command>
+
+app: "Notes"
+slug: "notes"
+commands_count: 2
+classes_count: 4
+suites_count: 1
+
+data_types:
+  accepts:
+    - "boolean"
+    - "specifier"
+  produces:
+    - "specifier"
+
+suites:
+  - name: "Notes Suite"
+    description: "Terms and Events for controlling the Notes application"
+    commands:
+      - name: "open note location"
+        description: "Open a note URL."
+        direct_parameter:
+          type: "specifier"
+          optional: false
+      - name: "show"
+        description: "Show an object in the UI"
+        direct_parameter:
+          type: "specifier"
+          optional: false
+        parameters:
+          - name: "separately"
+            type: "boolean"
+            optional: true
+        result:
+          type: "specifier"
+    classes:
+      - name: "account"
+        description: "a Notes account"
+        properties:
+          - name: "default folder"
+            type: "folder"
+            access: "rw"
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "upgraded"
+            type: "boolean"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+        elements:
+          - "folder"
+          - "note"
+      - name: "folder"
+        description: "a folder containing notes"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "shared"
+            type: "boolean"
+            access: "r"
+          - name: "container"
+            type: ""
+            access: "r"
+        elements:
+          - "folder"
+          - "note"
+      - name: "note"
+        description: "a note in the Notes application"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "rw"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "container"
+            type: "folder"
+            access: "r"
+          - name: "body"
+            type: "text"
+            access: "rw"
+          - name: "plaintext"
+            type: "text"
+            access: "r"
+          - name: "creation date"
+            type: "date"
+            access: "r"
+          - name: "modification date"
+            type: "date"
+            access: "r"
+          - name: "password protected"
+            type: "boolean"
+            access: "r"
+          - name: "shared"
+            type: "boolean"
+            access: "r"
+        elements:
+          - "attachment"
+      - name: "attachment"
+        description: "an attachment in a note"
+        properties:
+          - name: "name"
+            type: "text"
+            access: "r"
+          - name: "id"
+            type: "text"
+            access: "r"
+          - name: "container"
+            type: "note"
+            access: "r"
+          - name: "content identifier"
+            type: "text"
+            access: "r"
+          - name: "creation date"
+            type: "date"
+            access: "r"
+          - name: "modification date"
+            type: "date"
+            access: "r"
+          - name: "URL"
+            type: "text"
+            access: "r"
+          - name: "shared"
+            type: "boolean"
+            access: "r"

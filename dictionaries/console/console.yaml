@@ -1,0 +1,24 @@
+# Console Scripting Dictionary
+# Extracted via: sdef | sdef-extract.py
+# Usage: tell application "Console" to <command>
+
+app: "Console"
+slug: "console"
+commands_count: 1
+classes_count: 0
+suites_count: 1
+
+data_types:
+  accepts:
+    - "text"
+  produces:
+
+suites:
+  - name: "Console Suite"
+    description: "Console commands."
+    commands:
+      - name: "selectDevice"
+        description: "Select a device."
+        direct_parameter:
+          type: "text"
+          optional: false
