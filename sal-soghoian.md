@@ -30,9 +30,12 @@
 
 ### His Departure (November 2016)
 
-Apple **eliminated his position entirely** — didn't replace him, dissolved the role.
+Apple **eliminated his position entirely** — didn't replace him, dissolved the role. In his own words:
 
-> "I am no longer employed by Apple Inc. But, I still believe my credo to be as true today as ever."
+> **Q.** I hear you no longer work for Apple; is that true?
+>
+> **A.** Correct. I joined Apple in January of 1997, almost twenty years ago, because of my profound belief that "the power of the computer should reside in the hands of the one using it." That credo remains my truth to this day. Recently, I was informed that my position as Product Manager of Automation Technologies was eliminated for business reasons. Consequently, I am no longer employed by Apple Inc. But, I still believe my credo to be as true today as ever.
+
 > "If user automation technologies are important to you, then now is the time for all good men and women to reach out, speak up and ask questions."
 
 **Community reaction was seismic**: John Gruber called it "ominous" and "profoundly worrisome." Brent Simmons, MacSparky, Six Colors, 9to5Mac, MacRumors — the entire Apple press mourned.
