@@ -12,5 +12,8 @@ whiteboards/
 .DS_Store
 **/.DS_Store
 
+# Extracted app icons — regenerable via bin/extract-icons.sh
+icons/
+
 # Raw sdef XML (large, regenerable via bin/sdef-extract.py)
 dictionaries/**/*.sdef.xml
