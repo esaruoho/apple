@@ -6,19 +6,27 @@
 
 **Sal Soghoian** — Product Manager of Automation Technologies at Apple Inc., January 1997 to October 2016. Nearly 20 years as the sole internal champion for the idea that the Mac should be scriptable and automatable by its users.
 
+> Sal Soghoian is a user automation expert and evangelist, software developer, author and musician. Working in the publishing industry in the 1990s, he discovered the power of user automation. As a consultant, he wrote scripts that allowed businesses to save money and time by automating frequent computer tasks. He became a champion of the power of automation, sharing script collections, writing and speaking on the topic.
+>
+> — [macosxautomation.com/about.html](http://macosxautomation.com/about.html)
+
 ### His Credo
 
 > **"The power of the computer should reside in the hands of the one using it."**
 
 ### What He Built at Apple
 
+From his own description: *"At Apple, he advanced a wide range of user automation technologies including: UNIX CLI (shell, python, ruby, perl), System Services, Apple Events, JavaScript, AppleScript, AppleScriptObj-C, Scripting Bridge, Automator, Apple Configurator, the Master for iTunes tools, Dictation Commands, and application scripting support for Photos, iWork, Finder, Mail, Notes, and other Apple applications."*
+
 - **AppleScript revival** — saved it from languishing, got it PowerPC-native in Mac OS 8.5, transitioned it to Mac OS X
 - **Automator** — his signature creation. Demoed it on stage with Steve Jobs at WWDC 2004 (Jobs called him "Saul")
 - **System Services** — inter-application automation mechanism
 - **JavaScript for Automation (JXA)** — JS as alternative scripting language (OS X Yosemite)
 - **Dictation Commands** — custom voice-triggered commands on macOS
-- **Application scripting support** in Photos, iWork, Finder, Mail, and other Apple apps
+- **Application scripting support** in Photos, iWork, Finder, Mail, Notes, and other Apple apps
 - **AppleScriptObjC, Scripting Bridge** — bridging AppleScript to Cocoa
+- **Master for iTunes tools** — Mastered for iTunes automation
+- **Apple Configurator automation** — AppleScript + Automator for device management
 
 ### His Philosophy
 
@@ -30,17 +38,33 @@
 
 ### His Departure (November 2016)
 
-Apple **eliminated his position entirely** — didn't replace him, dissolved the role. In his own words:
+Apple **eliminated his position entirely** — didn't replace him, dissolved the role.
 
-> **Q.** I hear you no longer work for Apple; is that true?
->
-> **A.** Correct. I joined Apple in January of 1997, almost twenty years ago, because of my profound belief that "the power of the computer should reside in the hands of the one using it." That credo remains my truth to this day. Recently, I was informed that my position as Product Manager of Automation Technologies was eliminated for business reasons. Consequently, I am no longer employed by Apple Inc. But, I still believe my credo to be as true today as ever.
+The complete FAQ from [macosxautomation.com/about.html](http://macosxautomation.com/about.html), November 2016:
 
-> Seriously, if you have any questions or concerns about the future of user automation, ask Apple. If user automation technologies are important to you, then now is the time for all good men and women to reach out, speak up and ask questions. The macOS user automation technologies include: UNIX CLI (shell, python, ruby, perl), System Services, Apple Events (JavaScript, AppleScript, AppleScriptObj-C, Scripting Bridge), Automator, Apple Configurator (AppleScript, Automator), and Application scripting support in Photos, iWork, Finder, Mail, and other Apple applications.
+> **Q. I hear you no longer work for Apple; is that true?**
 >
-> […]
+> A. Correct. I joined Apple in January of 1997, almost twenty years ago, because of my profound belief that "the power of the computer should reside in the hands of the one using it." That credo remains my truth to this day. Recently, I was informed that my position as Product Manager of Automation Technologies was eliminated for business reasons. Consequently, I am no longer employed by Apple Inc. But, I still believe my credo to be as true today as ever.
 >
-> The need for user automation is a constant. I've seen the benefits and power of individuals being able to automate critical and repetitive tasks. Solution apps are great, emojis are fun, but there's nothing like really great automation tools.
+> **Q. What are you going to do?**
+>
+> A. Effective December 1, I will be considering opportunities and available for consulting. In the meantime, sign up to receive User Automation news, and I will keep you posted.
+>
+> **Q. Are you available to help me out?**
+>
+> A. Possibly. If you reach out, please be patient. I'm taking the rest of November off.
+>
+> **Q. What does the termination of the position of Product Manager of Automation Technologies mean for the future of user automation in macOS?**
+>
+> A. Ask Apple. Seriously, if you have any questions or concerns about the future of user automation, ask Apple. If user automation technologies are important to you, then now is the time for all good men and women to reach out, speak up and ask questions. The macOS user automation technologies include: UNIX CLI (shell, python, ruby, perl), System Services, Apple Events (JavaScript, AppleScript, AppleScriptObj-C, Scripting Bridge), Automator, Apple Configurator (AppleScript, Automator), and Application scripting support in Photos, iWork, Finder, Mail, and other Apple applications.
+>
+> **Q. What is going to happen to your websites?**
+>
+> A. I've been hosting these websites on my own for years. I plan to continue for the foreseeable future. It is important to me that people have decent, usable information about user automation -- and that goes double for the accessibility community.
+>
+> **Q. Are you still upbeat about the future of user automation?**
+>
+> A. Absolutely. The need for user automation is a constant. I've seen the benefits and power of individuals being able to automate critical and repetitive tasks. Solution apps are great, emojis are fun, but there's nothing like really great automation tools. I have faith in this community, and that makes me optimistic about what we can do together.
 
 **Community reaction was seismic**: John Gruber called it "ominous" and "profoundly worrisome." Brent Simmons, MacSparky, Six Colors, 9to5Mac, MacRumors — the entire Apple press mourned.
 
