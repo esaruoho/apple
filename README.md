@@ -12,7 +12,11 @@
 
 ## What is this?
 
-A growing collection of **battle-tested AppleScripts** for macOS automation, built specifically for one-press execution from a **Loupedeck Live** hardware controller.
+In November 2016, Apple eliminated the position of **Product Manager of Automation Technologies** — the role Sal Soghoian held for nearly 20 years. The person who built Automator, championed AppleScript, and believed *"the power of the computer should reside in the hands of the one using it"* was told his job no longer existed.
+
+This repo picks up where that role left off.
+
+It's a **complete automation knowledge base for macOS** — 66 apps probed across 13 layers, 1,254 Siri phrases extracted, 246 Shortcuts actions cataloged, 111 URL schemes mapped, 31 scripting dictionaries parsed, and a growing library of workflow scripts. Built with Claude Code, optimized for [Loupedeck Live](https://loupedeck.com/) hardware buttons, and open to anyone who believes automation is a right, not a feature.
 
 Every script in this repo is:
 - **Fast** -- no unnecessary delays, no spinners, no waiting

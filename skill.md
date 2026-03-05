@@ -1,6 +1,6 @@
 ---
 name: apple
-description: Write perfect AppleScript, automate macOS, and optimize workflows for Loupedeck Live integration
+description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
 version: 2.0.0
 generated: 2026-03-05T00:00:00Z
@@ -13,7 +13,7 @@ triggers:
 
 # Apple Skill
 
-> Write perfect AppleScript for macOS automation, Loupedeck Live integration, and Ray Browser workflow optimization.
+> Product Manager of Automation Technologies — the role Apple eliminated in November 2016, continued as open-source. 66 apps probed across 13 layers, 1,254 Siri phrases, 246 Shortcuts actions, 111 URL schemes, 31 scripting dictionaries. The credo lives on: *"The power of the computer should reside in the hands of the one using it."*
 
 ## User Context
 
