@@ -36,3 +36,24 @@ One verb, permanent result. It doesn't just do a thing and throw away the contex
 **Lives at:** `bin/ghc` in this repo, installed to `~/bin/ghc`
 **Skill source:** [esaruoho/github-cloner](https://github.com/esaruoho/github-cloner) (public)
 **Skills backup:** `esaruoho/esa-skills` (private, all 44+ Claude Code skills)
+
+---
+
+## `ask` — Voice Dictation + Claude
+
+**Command:** `ask`
+
+**What it replaces** (3 manual steps → 1):
+1. Open terminal, type `claude`
+2. Go to Edit menu, click Start Dictation
+3. Wait for dictation to be ready, then speak
+
+**What it does:**
+Launches Claude Code and triggers macOS dictation simultaneously. The AppleScript waits 1.5 seconds for Claude to initialize, then activates Start Dictation via the Edit menu. You speak, Claude listens.
+
+**Why it's Sal-like:**
+This is the purest Sal pattern: combining AppleScript with a CLI tool to create something neither could do alone. The AppleScript handles the GUI automation (menu clicks), the shell handles the tool launch. Fire and forget — the `osascript` runs in the background, Claude takes the foreground. The computer adapts to how you want to work (voice), not the other way around.
+
+**The final Sal mile:** Should be a Loupedeck Live button. One physical press, voice + AI, no screen interaction at all.
+
+**Lives at:** `bin/ask` + `scripts/start_dictation.scpt` in this repo, installed to `~/bin/ask`

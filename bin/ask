@@ -1,0 +1,13 @@
+#!/bin/bash
+# ask — Voice Dictation + Claude
+# Launches Claude Code and triggers macOS dictation simultaneously.
+# You speak, Claude listens. One verb.
+#
+# Usage: ask
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Trigger dictation in background after delay (gives Claude time to init)
+osascript "${SCRIPT_DIR}/scripts/start_dictation.scpt" &
+
+exec claude
