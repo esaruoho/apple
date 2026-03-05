@@ -2,13 +2,13 @@
 name: apple
 description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
-version: 2.0.0
+version: 3.0.0
 generated: 2026-03-05T00:00:00Z
-tags: [applescript, macos, automation, loupedeck, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining]
+tags: [applescript, macos, automation, loupedeck, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes]
 triggers:
   keywords:
     primary: [applescript, apple script, osascript, apple]
-    secondary: [loupedeck, macos automation, finder, system events, activate app, bring to front, sal, what would sal do, wwsd]
+    secondary: [loupedeck, macos automation, finder, system events, activate app, bring to front, sal, what would sal do, wwsd, shortcuts, app intents, siri phrases]
 ---
 
 # Apple Skill
@@ -20,7 +20,7 @@ triggers:
 - **User**: Esa Ruoho — Apple aficionado, works at Ray Browser
 - **Hardware**: Loupedeck Live (physical controller with programmable buttons)
 - **Use case**: Loupedeck Live buttons trigger AppleScripts via osascript to launch/activate apps, automate workflows, and optimize the workday
-- **OS**: macOS (Darwin)
+- **OS**: macOS Sequoia (Darwin)
 
 ## Loupedeck Live Integration
 
@@ -29,6 +29,8 @@ The Loupedeck Live software allows custom actions that can run shell commands. A
 osascript /path/to/script.scpt
 # or inline:
 osascript -e 'tell application "Finder" to activate'
+# or Shortcuts:
+shortcuts run "Shortcut Name"
 ```
 
 For Loupedeck buttons, scripts should be:
@@ -44,8 +46,33 @@ For Loupedeck buttons, scripts should be:
 4. **Error handling**: Wrap risky operations in `try ... on error ... end try`
 5. **Delays**: Only use `delay` when absolutely necessary (UI needs time to respond)
 6. **Finder operations**: Finder is always running on macOS — just activate it
-7. **AppleScript + CLI combo**: Run `osascript script.scpt &` in background from bash — fire and forget. The `ask()` function pattern: trigger macOS dictation via AppleScript, then launch a CLI tool. This is the Sal-worthy bridge between GUI automation and Terminal power.
-8. **Use scripting dictionaries**: Before writing a script, check `dictionaries/<app>.md` for available commands, classes, and properties. Every scriptable app's full API is extracted there.
+7. **AppleScript + CLI combo**: Run `osascript script.scpt &` in background from bash — fire and forget
+8. **Use scripting dictionaries**: Before writing a script, check `dictionaries/<app>.md` for available commands, classes, and properties
+9. **Use `shortcuts run`**: The `shortcuts` CLI bridges AppleScript (depth) to App Intents (width) — Sal's AND not OR
+
+## The Automation Atlas — 6 Tiers
+
+The README is the Automation Atlas — every Apple app tiered by automation depth. Key findings:
+
+### Tier 1: Fully Automatable (AppleScript + Intents + URL schemes)
+Mail (10 layers, 164 Siri phrases), Notes (318 Siri phrases, 50 actions — Siri champion), Finder (25 cmds, 67 phrases), Music (31 cmds, 123 phrases), Keynote, Numbers, Pages, Reminders, Shortcuts
+
+### Tier 2: Deep AppleScript, No Intents
+System Events (31 cmds, **89 classes** — deepest dictionary), TV, Photos, QuickTime, Logic Pro, iMovie, Terminal, TextEdit, Script Editor, Safari, Calendar, Contacts, Messages, Final Cut Pro, Automator
+
+### Tier 3: Intents But No AppleScript
+Freeform (144 phrases), Books (125 phrases), Weather (149 phrases), Maps (17 queries), Preview (35 phrases), Voice Memos (45 phrases), Home, Calculator, App Store, News, Tips
+
+### Tier 4: URL Schemes Only
+FaceTime, Passwords, Podcasts, Stocks, Find My, Font Book, Dictionary, Screen Sharing
+
+### Tier 5: Nearly Dark
+Activity Monitor, Audio MIDI Setup, Disk Utility, Image Capture, Screenshot, System Settings, Photo Booth, Stickies, Console, Chess, Grapher, VoiceOver Utility, Clock, Migration Assistant
+
+### Tier 6: Completely Dark
+Launchpad, Mission Control, Time Machine
+
+**Key insight**: Every "dark" app is a GUI wrapper around a CLI tool that's more powerful (diskutil > Disk Utility, screencapture > Screenshot, tmutil > Time Machine, defaults > System Settings).
 
 ## Scripting Dictionaries (Domain Knowledge)
 
@@ -53,7 +80,8 @@ For Loupedeck buttons, scripts should be:
 - `<app>.yaml` — machine-readable: commands, classes, properties, data types
 - `<app>.md` — human-readable: full scripting reference with descriptions
 - `<app>-examples.md` — ready-to-use AppleScript snippets
-- `<app>.sdef.xml` — raw Apple sdef XML
+- `<app>-probe.yaml` — 13-layer automation probe (from app-probe.py)
+- `<app>-probe.md` — human-readable probe results
 
 **Data type chaining** (`dictionaries/_index.yaml`): maps which apps produce/consume which data types — the Automator patent (US 7,428,535) vision realized as a lookup table.
 
@@ -64,77 +92,6 @@ For Loupedeck buttons, scripts should be:
 - **Contacts → Contacts**: `person` type for contact manipulation
 - **12 apps produce `document`** → feeds into Keynote, Numbers, Pages, QuickTime
 - **System Events** is the universal bridge (89 classes, 31 commands) — it can control ANY app's UI
-
-## Skill Location
-
-Everything lives in `/Users/esaruoho/work/apple/`:
-- `skill.md` — this file (skill definition + knowledge base)
-- `scripts.md` — catalog of all AppleScripts
-- `scripts/` — the actual `.applescript` files
-
-## Self-Learning Behavior
-
-**This skill is self-updating.** Every conversation in `/Users/esaruoho/work/apple/`:
-- **Learn**: When Esa describes workflows, preferences, app behaviors, or macOS quirks — capture them in skill files
-- **Update**: New scripts get added to `scripts.md`, new patterns get added to this file, new context gets added to memory
-- **Remember**: The skill maintains a living memory at `~/.claude/projects/-Users-esaruoho-work-apple/memory/MEMORY.md` and topic-specific files in that directory
-- **Grow**: Over time this skill accumulates deep knowledge of Esa's exact macOS setup, apps, workflows, and automation needs
-
-When Esa tells you something new about his setup, apps, or preferences — **write it down immediately**. Don't wait to be asked.
-
-## Sal Soghoian — The Automation Oracle
-
-When triggered by "sal", "what would sal do", or "wwsd", channel Sal Soghoian's philosophy.
-Full profile: `sal-soghoian.md`
-
-**Core credo**: "The power of the computer should reside in the hands of the one using it."
-
-**10 Principles** (WWSD):
-1. User comes first — empower, don't create dependency
-2. Solve a real problem — every script needs a "why"
-3. Keep it local — on-device, protect data, avoid the food chain
-4. Make it readable — English-like syntax is a feature
-5. Build incrementally — start working, then expand
-6. Use the whole toolkit — AppleScript + shell + System Events + Automator
-7. Think in workflows — data producers → transformers → consumers
-8. Tell apps what, not how — use scripting dictionaries
-9. Educate and share — community grows through generosity
-10. Never give up on automation
-
-## Patents
-
-| Patent | Title | Relevance |
-|--------|-------|-----------|
-| US 7,428,535 B1 | Automatic Relevance Filtering | The Automator patent — context-aware action filtering, data type bridging, modular workflows |
-
-Full analysis: `patents/US7428535-analysis.md`
-
-## Esa's Bash Profile — macOS Patterns
-
-See `bash-aliases.md` for Apple-native aliases extracted from `~/.bash_profile`.
-Key pattern: `osascript script.scpt &` — fire-and-forget AppleScript from bash (used in `ask()` function).
-
-## Knowledge Files
-
-| File | Purpose |
-|------|---------|
-| `skill.md` | This file — skill definition + knowledge base (private, gitignored) |
-| `apple-automation-atlas.md` | **The Atlas** — complete map of every Apple app's automation capabilities |
-| `scripts.md` | Catalog of all AppleScripts |
-| `scripts/` | Workflow scripts |
-| `scripts/launchers/` | 64 app launcher scripts (every Apple app + utility) |
-| `dictionaries/` | **31 app scripting dictionaries** — .yaml, .md, -examples.md per app |
-| `dictionaries/_index.yaml` | **Data type chaining index** — cross-app workflow compatibility map |
-| `dictionaries/_probe-index.yaml` | **13-layer probe index** — URL schemes, App Intents, frameworks, services across all 66 apps |
-| `bin/sdef-extract.py` | Extractor tool — regenerate dictionaries with `python3 bin/sdef-extract.py` |
-| `bin/app-probe.py` | **13-layer automation probe** — `python3 bin/app-probe.py` extracts ALL automation knowledge from 66 apps |
-| `bin/extract-icons.sh` | Extract 64 Apple app icons as PNG — `./bin/extract-icons.sh` or `--app Photos` |
-| `icons/` | **64 app icons** as 256x256 PNG (private, gitignored, regenerable) |
-| `sal-soghoian.md` | Sal Soghoian profile, philosophy, "What Would Sal Do" |
-| `bash-aliases.md` | macOS-native bash aliases from Esa's profile (private, gitignored) |
-| `patents/` | Apple automation patents and analyses |
-| `how-it-was-built.md` | Full conversation replay — 22 prompts, 8 phases, how the repo was created |
-| `video-script.md` | 10-scene video script with marketing psychology annotations |
 
 ## App Intelligence Layers (13 Layers via app-probe.py)
 
@@ -160,65 +117,160 @@ Key pattern: `osascript script.scpt &` — fire-and-forget AppleScript from bash
 
 Cross-app index: `dictionaries/_probe-index.yaml` — URL scheme registry, App Intents summary, framework matrix, services map.
 
-## Public/Private Split
+## Apple's Automation Architecture — 7 Layers
 
-**Public** (pushed to GitHub `esaruoho/apple`):
-- README.md, scripts/, dictionaries/, bin/, patents/, sal-soghoian.md, apple-automation-atlas.md, scripts.md
+Discovered through framework analysis:
 
-**Private** (gitignored, local only):
-- skill.md, bash-aliases.md, whiteboards/, icons/
+```
+Layer 1: Apple Events / OSA        ← osascript, OSAKit, ScriptingBridge (DEPTH)
+Layer 2: Automator                  ← AMWorkflow, AMAction
+Layer 3: Intents (legacy, ObjC)     ← INIntent, 14 apps
+Layer 4: AppIntents (modern, Swift) ← 82 protocols, 23 apps (WIDTH)
+Layer 5: Shortcuts/WorkflowKit      ← Visual composition of Layer 4
+Layer 6: Siri/AssistantSchema       ← Natural language routing
+Layer 7: Apple Intelligence         ← GenerativeAssistantActions
+```
 
-## Whiteboards Generated
+The `shortcuts run` CLI is the bridge: Layer 1 scripts can invoke Layer 4-6 actions.
 
-34 whiteboards across 5 sets in `whiteboards/`:
+**160+ private frameworks** power the automation stack internally, including 80+ Siri frameworks, WorkflowKit (Shortcuts engine), ActionKit, and bridge frameworks like `_Photos_AppIntents`.
 
-| Set | Boards | Topic |
-|-----|--------|-------|
-| `bash-aliases/` | 5 | macOS bash patterns, osascript integration |
-| `automation-atlas/` | 5 | Full scriptability map, CLI tools |
-| `sal-soghoian/` | 4 | Sal's career, philosophy, WWSD |
-| `sdef-deep-dive/` | 10 | Atlas deep dive: all 4 tiers, CLI tools, terminal automation |
-| `sdef-understanding/` | 10 | How Sal connected every app: sdef architecture, data type chains, narrative |
+## CLI Tool Intelligence
 
-## Automation Tiers (from the Atlas)
+**16,176 man pages** on macOS. Key automation CLI tools:
 
-- **Tier 1 (Fully Scriptable)**: Finder, Mail, Safari, Music, Photos, Notes, Reminders, Calendar, Contacts, Messages, TV, TextEdit, Preview, QuickTime Player, Keynote, Numbers, Pages, Final Cut Pro, Logic Pro, iMovie, Automator, Shortcuts
-- **Tier 2 (Scriptable Utilities)**: Terminal, Script Editor, Console, System Information, Screen Sharing, Bluetooth File Exchange
-- **Tier 3 (Hidden Powerhouses)**: System Events, Image Events, Finder (CoreServices)
-- **Tier 4 (Activate + UI Script)**: Everything else — launchable and controllable via System Events UI scripting
+| Tool | What It Does |
+|------|-------------|
+| `shortcuts run/list` | Run any Shortcut from CLI — the bridge to App Intents |
+| `osascript` | Execute AppleScript/JXA |
+| `defaults` | Read/write any app preference |
+| `screencapture` | Programmable screenshots (more flags than the GUI) |
+| `mdfind` / `mdls` | Spotlight search + metadata from CLI |
+| `textutil` | Convert between txt, rtf, html, doc, docx |
+| `sips` | Scriptable image processing |
+| `/usr/libexec/PlistBuddy` | Surgical nested plist editing (deeper than `defaults`) |
+| `networksetup` | Full network configuration |
+| `tmutil` | Time Machine from CLI |
+| `diskutil` | Disk management from CLI |
+| `system_profiler` | Full system info as JSON |
+| `ioreg` | I/O Registry / hardware tree |
+
+## Messages/iMessage Automation
+
+Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Write-only by design.
+
+**What works:** Send text/files to participants, list 201 chats, list participants with handles, URL schemes (`imessage://`, `sms://`) open compose window
+
+**What doesn't work:** Read message content, search, delete, react, auto-reply, access history. No App Intents for sending. The only Intent is Focus Mode filtering.
+
+**Workaround:** `~/Library/Messages/chat.db` (SQLite) is readable with Full Disk Access but SIP-protected.
+
+## Sal Soghoian — The Automation Oracle
+
+When triggered by "sal", "what would sal do", or "wwsd", channel Sal Soghoian's philosophy.
+Full profile with all quotes: `sal-soghoian.md`
+
+**Core credo**: "The power of the computer should reside in the hands of the one using it."
+
+**His position on Shortcuts**: AND, not OR. Shortcuts = width (every app, every device). AppleScript = depth (every property, every object, every class). Both should coexist. He proposed "AutomationKit" — a cross-platform framework incorporating user automation openness with developer plugins, including an Apple Event bridge.
+
+**Key quotes:**
+- "Shortcuts is succeeding in bringing user automation to the masses."
+- "Solution apps are great, emojis are fun, but there's nothing like really great automation tools."
+- "That goes double for the accessibility community."
+- "I'm dreadfully afraid of a future where MacOS is devolved to iOS's state" — John Gruber
+
+**10 Principles** (WWSD):
+1. User comes first — empower, don't create dependency
+2. Solve a real problem — every script needs a "why"
+3. Keep it local — on-device, protect data, avoid the food chain
+4. Make it readable — English-like syntax is a feature
+5. Build incrementally — start working, then expand
+6. Use the whole toolkit — AppleScript + shell + System Events + Automator + Shortcuts
+7. Think in workflows — data producers → transformers → consumers
+8. Tell apps what, not how — use scripting dictionaries
+9. Educate and share — community grows through generosity
+10. Never give up on automation
+
+**Primary sources captured in sal-soghoian.md:**
+- Full FAQ from macosxautomation.com/about.html (November 2016)
+- MacStories manifesto: "App Extensions Are Not a Replacement for User Automation" (January 2017)
+- Omni Show: Shortcuts as "component automation" (October 2021)
+- Rebooting interview: "Shortcuts is just beginning to reach its potential" (2023-24)
+- Community reactions: Gruber, Snell, Cheeseman, Gotow, Weatherhead
+- **TODO**: Scrape @macautomation Twitter/X feed for years of automation tips and commentary
+
+## Sal-Like Tools
+
+Tools in this repo that follow Sal's philosophy: one action, one result.
+
+| Tool | Command | What it does |
+|------|---------|-------------|
+| `ghc` | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps → 1. |
+| `ask` | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
+| `app-probe` | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. |
+| `sdef-extract` | `python3 bin/sdef-extract.py` | Extract scripting dictionaries for 31 apps. |
+| `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
+
+## Patents
+
+| Patent | Title | Relevance |
+|--------|-------|-----------|
+| US 7,428,535 B1 | Automatic Relevance Filtering | The Automator patent — context-aware action filtering, data type bridging, modular workflows |
+
+Full analysis: `patents/US7428535-analysis.md`
+
+## Knowledge Files
+
+| File | Purpose |
+|------|---------|
+| `skill.md` | This file — skill definition + knowledge base (public) |
+| `README.md` | **The Automation Atlas** — 66 apps tiered by automation depth |
+| `sal-soghoian.md` | **Sal Soghoian knowledge base** — full profile, quotes, Shortcuts position, community reactions, @macautomation scraping plan |
+| `scripts.md` | Catalog of all AppleScripts |
+| `scripts/launchers/` | 64 app launcher scripts (every Apple app + utility) |
+| `dictionaries/` | **31 scripting dictionaries + 66 probe files** |
+| `dictionaries/_index.yaml` | Data type chaining index — cross-app workflow compatibility |
+| `dictionaries/_probe-index.yaml` | 13-layer probe index — URL schemes, App Intents, frameworks, services |
+| `bin/app-probe.py` | 13-layer automation probe |
+| `bin/sdef-extract.py` | Scripting dictionary extractor |
+| `bin/extract-icons.sh` | App icon extractor for Loupedeck |
+| `bin/ghc` | GitHub Clone + Claude skill generator |
+| `bin/ask` | Voice dictation + Claude launcher |
+| `patents/` | Apple automation patents and analyses |
+| `icons/` | 64 app icons as 256x256 PNG (gitignored, regenerable) |
+| `whiteboards/` | 34 visual educational whiteboards (gitignored) |
+
+## Self-Learning Behavior
+
+**This skill is self-updating.** Every conversation in `/Users/esaruoho/work/apple/`:
+- **Learn**: When Esa describes workflows, preferences, app behaviors, or macOS quirks — capture them in skill files
+- **Update**: New scripts get added to `scripts.md`, new patterns get added to this file, new context gets added to memory
+- **Remember**: The skill maintains a living memory at `~/.claude/projects/-Users-esaruoho-work-apple/memory/MEMORY.md`
+- **Grow**: Over time this skill accumulates deep knowledge of Esa's exact macOS setup, apps, workflows, and automation needs
+- **Push**: All knowledge goes to GitHub `esaruoho/apple` so nothing is lost
+
+When Esa tells you something new about his setup, apps, or preferences — **write it down immediately**. Don't wait to be asked.
 
 ## Whiteboard Integration
 
-The Apple skill uses the **BBS Whiteboard skill** (`~/.claude/skills/whiteboard/`) to generate visual educational whiteboards for any Apple automation topic. When Esa asks for whiteboards in this workspace, generate them using:
+The Apple skill uses the **BBS Whiteboard skill** (`~/.claude/skills/whiteboard/`) to generate visual educational whiteboards. When Esa asks for whiteboards in this workspace:
 
 ```bash
 ~/.claude/skills/whiteboard/bin/whiteboard-generate.sh --full --count N --text "content"
-# or from a file:
-~/.claude/skills/whiteboard/bin/whiteboard-generate.sh --full --count N ./file.md
 ```
 
 Output goes to `/Users/esaruoho/work/apple/whiteboards/`
-
-### When to Whiteboard
-- New skill files are created (bash-aliases, atlas, sal profile) → offer whiteboards
-- Esa says "board it", "whiteboard this", "visualize" → generate boards
-- Complex automation topics benefit from visual explanation
 
 ## App Icon Extraction
 
 When Esa says "gimme logo of Photos" or "icon for Mail":
 
-1. **Single icon:** `./bin/extract-icons.sh --app Photos --open` — extracts and opens the folder
-2. **All icons:** `./bin/extract-icons.sh --open` — all 64 at once
-3. **Custom size:** `./bin/extract-icons.sh --size 512` — for higher-res needs
+1. **Single icon:** `./bin/extract-icons.sh --app Photos --open`
+2. **All icons:** `./bin/extract-icons.sh --open`
+3. **Custom size:** `./bin/extract-icons.sh --size 512`
 
 Icons are 256x256 PNG by default — ideal for Loupedeck Live button icons.
-
-**Two extraction methods** (handled automatically):
-- **sips** — for apps with `.icns` files (58 apps)
-- **Swift/NSWorkspace** — for apps using Asset Catalogs: Calendar, Photo Booth, System Settings, Voice Memos, Migration Assistant, System Information
-
-Icons are gitignored (`icons/`) — regenerable on any Mac via the script.
 
 ## Patterns Catalog
 
