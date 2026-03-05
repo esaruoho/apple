@@ -74,9 +74,53 @@ Apple **eliminated his position entirely** — didn't replace him, dissolved the
 >
 > From this year's Mac announcements it looks like the Mac road map is going down a dead-end for me. […] 2016 has been a year of disappointment and acceptance.
 
+### Sal on Shortcuts: "AND, Not OR"
+
+The timeline matters. Sal was fired in November 2016. Apple acquired Workflow (which became Shortcuts) in March 2017. Shortcuts came to macOS in Monterey (2021). Sal lived through the full arc.
+
+**January 2017 — The MacStories Manifesto**
+
+Two months after being fired, Sal wrote ["App Extensions Are Not a Replacement for User Automation"](https://www.macstories.net/stories/app-extensions-are-not-a-replacement-for-user-automation/) for MacStories. His core argument:
+
+> "Perhaps it is time for Apple and all of us to think of User Automation and App Extensions in terms of 'AND' instead of 'OR.' To embrace the development of a new cross-platform automation architecture, maybe called 'AutomationKit,' that would incorporate the 'everyman openness' of User Automation with the focused abilities of developer-created plugins."
+
+> "App Extensions could become the new macOS System Services, and Automator could save workflows as Extensions with access to the Share Menu and new 'non-selection' extension points. And AutomationKit could even include an Apple Event bridge so that it would work with the existing macOS automation tools."
+
+John Gruber's response on [Daring Fireball](https://daringfireball.net/linked/2017/01/11/soghoian-extensions-and-automation):
+
+> "I'm dreadfully afraid of a future where MacOS is devolved to iOS's state, with no supported automation technologies."
+
+**October 2021 — Shortcuts Arrives on Mac**
+
+When Shortcuts finally came to macOS, Sal embraced it — on his terms. On [The Omni Show](https://theomnishow.omnigroup.com/episode/the-omni-show-shortcuts-automation-and-macos-monterey):
+
+> "It's a very exciting time for users of Apple's Operating Systems, with Shortcuts now providing a way to automate the things that you do on any of their devices."
+
+> "Shortcuts is an example of what we call component automation, where you create a sequence of individual actions that perform their own individual tasks, and they're chained together and data is passed between those individual components."
+
+**2023–2024 — The Verdict**
+
+From a [Rebooting interview](https://rebooting.substack.com/p/interview-sal-soghoian-on-automating):
+
+> "I'm excited by the progress made in the development of the Shortcuts app."
+
+> "Shortcuts is succeeding in bringing user automation to the masses."
+
+> "I believe Shortcuts is just beginning to reach its potential."
+
+But always with the local-first caveat — automation tools that "reside on my devices." And the recognition that success requires "integration with scripting languages, as well as widespread developer adoption."
+
+> "It's a great time to be on the Apple platform."
+
+**The Sal Position on Shortcuts, summarized:**
+
+Sal doesn't oppose Shortcuts. He *celebrates* it — as long as it's AND, not OR. Shortcuts is component automation for everyone. AppleScript is deep automation for power users. Both should coexist. The Automator workflow concept "lives on in Shortcuts and is expanding." What Sal fears is not Shortcuts replacing Automator — it's Apple abandoning the *depth* that AppleScript, Apple Events, and scripting dictionaries provide. Shortcuts gives you width (every app, every device). AppleScript gives you depth (every property, every object, every class).
+
+This repo exists at that intersection — we probe both layers. The `sdef` dictionaries are the depth. The `extract.actionsdata` App Intents are the width. Sal would want both.
+
 ### Post-Apple Work
 
-- **MacStories guest series** (Jan 2017) — argued the case for continued user automation
+- **MacStories guest series** (Jan 2017) — ["App Extensions Are Not a Replacement for User Automation"](https://www.macstories.net/stories/app-extensions-are-not-a-replacement-for-user-automation/)
 - **CMD-D: Masters of Automation Conference** (2017) — his own conference in Santa Clara
 - **Omni Automation** — JavaScript-based automation for OmniFocus/OmniGraffle/OmniOutliner/OmniPlan (macOS + iOS)
 - **Dictation Commands** — hundreds of voice-triggered commands for macOS apps
