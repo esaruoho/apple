@@ -90,12 +90,18 @@ One button = one action = one result (Sal's rule).
 | `workflows/calendar/calendar-show-month.applescript` | Switch Calendar to month view |
 | `workflows/calendar/calendar-reload.applescript` | Reload all calendars |
 | `workflows/calendar/calendar-next-event.applescript` | Show the next upcoming calendar event |
+| `workflows/calendar/calendar-list-calendars.applescript` | List all calendar names |
+| `workflows/calendar/calendar-count-events-today.applescript` | Count events happening today |
+| `workflows/calendar/calendar-event-at-time.applescript` | Create an event at a specific time today |
 
 ### Contacts
 
 | Script | Description |
 |--------|-------------|
 | `workflows/contacts/contacts-search-contact.applescript` | Search for a contact and show their info |
+| `workflows/contacts/contacts-count-contacts.applescript` | Show total number of contacts |
+| `workflows/contacts/contacts-new-contact.applescript` | Create a new contact |
+| `workflows/contacts/contacts-list-groups.applescript` | List all contact groups |
 
 ### Finder
 
@@ -112,6 +118,10 @@ One button = one action = one result (Sal's rule).
 | `workflows/finder/finder-tag-red.applescript` | Tag selected Finder items red |
 | `workflows/finder/finder-tag-orange.applescript` | Tag selected Finder items orange |
 | `workflows/finder/finder-tag-clear.applescript` | Clear tags from selected Finder items |
+| `workflows/finder/finder-duplicate-selected.applescript` | Duplicate the selected Finder items |
+| `workflows/finder/finder-compress-selected.applescript` | Compress selected Finder items into a zip |
+| `workflows/finder/finder-move-to-trash.applescript` | Move selected Finder items to Trash |
+| `workflows/finder/finder-count-items.applescript` | Count items in the frontmost Finder window |
 | `workflows/finder/finder-toggle-hidden-files.applescript` | Toggle visibility of hidden files in Finder |
 | `workflows/finder/finder-new-folder.applescript` | Create a new folder in the frontmost Finder window |
 | `workflows/finder/finder-get-window-path.applescript` | Get POSIX path of the frontmost Finder window |
@@ -139,6 +149,9 @@ One button = one action = one result (Sal's rule).
 | `workflows/mail/mail-forward-selected.applescript` | Forward the selected message |
 | `workflows/mail/mail-flag-selected.applescript` | Flag the selected message |
 | `workflows/mail/mail-mark-all-read.applescript` | Mark all inbox messages as read |
+| `workflows/mail/mail-delete-junk.applescript` | Delete all junk mail |
+| `workflows/mail/mail-list-accounts.applescript` | List all mail accounts |
+| `workflows/mail/mail-archive-selected.applescript` | Move selected messages to Archive |
 | `workflows/mail/mail-send-quick.applescript` | Send a quick email (dialog prompts for to/subject/body) |
 
 ### Messages
@@ -147,6 +160,7 @@ One button = one action = one result (Sal's rule).
 |--------|-------------|
 | `workflows/messages/messages-send-message.applescript` | Send an iMessage to a contact |
 | `workflows/messages/messages-list-chats.applescript` | List recent chat names |
+| `workflows/messages/messages-send-clipboard.applescript` | Send clipboard contents as an iMessage |
 
 ### Music
 
@@ -199,6 +213,9 @@ One button = one action = one result (Sal's rule).
 | `workflows/notes/notes-list-notes.applescript` | List names of recent notes |
 | `workflows/notes/notes-search-notes.applescript` | Search notes by name |
 | `workflows/notes/notes-count-notes.applescript` | Show total note count |
+| `workflows/notes/notes-list-folders.applescript` | List all Notes folders |
+| `workflows/notes/notes-append-to-note.applescript` | Append text to an existing note |
+| `workflows/notes/notes-show-recent-note.applescript` | Open the most recently modified note |
 
 ### Photos
 
@@ -208,6 +225,11 @@ One button = one action = one result (Sal's rule).
 | `workflows/photos/photos-export-selected.applescript` | Export selected photos to Desktop |
 | `workflows/photos/photos-favorites-count.applescript` | Count favorited photos |
 | `workflows/photos/photos-start-slideshow.applescript` | Start a slideshow of selected photos |
+| `workflows/photos/photos-stop-slideshow.applescript` | Stop the currently playing slideshow |
+| `workflows/photos/photos-count-photos.applescript` | Show total photo count in library |
+| `workflows/photos/photos-list-albums.applescript` | List all album names |
+| `workflows/photos/photos-create-album.applescript` | Create a new empty album |
+| `workflows/photos/photos-favorite-selected.applescript` | Favorite the selected photos |
 
 ### Quicktime
 
@@ -216,6 +238,9 @@ One button = one action = one result (Sal's rule).
 | `workflows/quicktime/quicktime-new-screen-recording.applescript` | Start a new screen recording |
 | `workflows/quicktime/quicktime-new-audio-recording.applescript` | Start a new audio recording |
 | `workflows/quicktime/quicktime-new-movie-recording.applescript` | Start a new movie recording |
+| `workflows/quicktime/quicktime-play-frontmost.applescript` | Play the frontmost QuickTime document |
+| `workflows/quicktime/quicktime-pause-frontmost.applescript` | Pause the frontmost QuickTime document |
+| `workflows/quicktime/quicktime-present-fullscreen.applescript` | Present the frontmost document in fullscreen |
 
 ### Reminders
 
@@ -226,6 +251,10 @@ One button = one action = one result (Sal's rule).
 | `workflows/reminders/reminders-reminder-from-clipboard.applescript` | Create a reminder from clipboard text |
 | `workflows/reminders/reminders-show-today.applescript` | Show reminders due today |
 | `workflows/reminders/reminders-complete-latest.applescript` | Mark the most recent incomplete reminder as done |
+| `workflows/reminders/reminders-list-lists.applescript` | Show all reminder lists |
+| `workflows/reminders/reminders-count-incomplete.applescript` | Count incomplete reminders |
+| `workflows/reminders/reminders-reminder-with-priority.applescript` | Create a high-priority reminder |
+| `workflows/reminders/reminders-flagged-reminders.applescript` | Show all flagged reminders |
 
 ### Safari
 
@@ -241,6 +270,11 @@ One button = one action = one result (Sal's rule).
 | `workflows/safari/safari-list-all-tabs.applescript` | List all open Safari tab URLs |
 | `workflows/safari/safari-page-source.applescript` | Copy page source of current tab to clipboard |
 | `workflows/safari/safari-do-javascript.applescript` | Run JavaScript in the current Safari tab |
+| `workflows/safari/safari-show-bookmarks.applescript` | Show Safari bookmarks |
+| `workflows/safari/safari-reload-tab.applescript` | Reload the current Safari tab |
+| `workflows/safari/safari-show-privacy-report.applescript` | Show Safari Privacy Report |
+| `workflows/safari/safari-tab-count.applescript` | Show number of open tabs across all windows |
+| `workflows/safari/safari-close-other-tabs.applescript` | Close all tabs except the current one |
 
 ### Shortcuts
 
@@ -249,6 +283,7 @@ One button = one action = one result (Sal's rule).
 | `workflows/shortcuts/shortcuts-run-shortcut.applescript` | Run a named Shortcut |
 | `workflows/shortcuts/shortcuts-list-shortcuts.applescript` | List all available Shortcuts |
 | `workflows/shortcuts/shortcuts-run-shortcut-with-input.applescript` | Run a Shortcut with text input |
+| `workflows/shortcuts/shortcuts-search-shortcuts.applescript` | Search for a Shortcut by name and run it |
 
 ### System Events
 
@@ -271,6 +306,15 @@ One button = one action = one result (Sal's rule).
 | `workflows/system-events/system-events-restart-menu-bar.applescript` | Restart the macOS menu bar (topbar) |
 | `workflows/system-events/system-events-reset-apple-events.applescript` | Reset Apple Events daemon (fixes -1712 errors) |
 | `workflows/system-events/system-events-key-shortcut.applescript` | Send a keyboard shortcut to the frontmost app |
+| `workflows/system-events/system-events-battery-status.applescript` | Show battery percentage and charging state |
+| `workflows/system-events/system-events-disk-usage.applescript` | Show disk space usage for the main drive |
+| `workflows/system-events/system-events-uptime.applescript` | Show system uptime |
+| `workflows/system-events/system-events-ip-address.applescript` | Show current IP addresses (local and external) |
+| `workflows/system-events/system-events-bluetooth-toggle.applescript` | Toggle Bluetooth on/off |
+| `workflows/system-events/system-events-screen-lock.applescript` | Lock the screen immediately |
+| `workflows/system-events/system-events-empty-clipboard.applescript` | Clear the clipboard |
+| `workflows/system-events/system-events-trash-size.applescript` | Show the size of the Trash |
+| `workflows/system-events/system-events-notification-count.applescript` | Show pending notification count |
 
 ### Terminal
 
@@ -279,6 +323,9 @@ One button = one action = one result (Sal's rule).
 | `workflows/terminal/terminal-new-tab.applescript` | Open a new Terminal tab |
 | `workflows/terminal/terminal-new-tab-at-path.applescript` | Open Terminal tab at a specific directory |
 | `workflows/terminal/terminal-run-command.applescript` | Run a command in a new Terminal tab |
+| `workflows/terminal/terminal-clear-scrollback.applescript` | Clear scrollback in the front Terminal tab |
+| `workflows/terminal/terminal-set-title.applescript` | Set a custom title for the front Terminal tab |
+| `workflows/terminal/terminal-ssh-connect.applescript` | Open an SSH connection in a new tab |
 
 ### Textedit
 
@@ -286,7 +333,10 @@ One button = one action = one result (Sal's rule).
 |--------|-------------|
 | `workflows/textedit/textedit-new-from-clipboard.applescript` | Open TextEdit with clipboard contents |
 | `workflows/textedit/textedit-word-count.applescript` | Count words in frontmost TextEdit document |
+| `workflows/textedit/textedit-new-document.applescript` | Create a new blank TextEdit document |
+| `workflows/textedit/textedit-save-as-txt.applescript` | Save frontmost TextEdit document as plain text to Desktop |
+| `workflows/textedit/textedit-char-count.applescript` | Count characters in frontmost TextEdit document |
 
 ---
 
-**Total: 64 launchers + 132 workflows = 196 scripts**
+**Total: 64 launchers + 182 workflows = 246 scripts**

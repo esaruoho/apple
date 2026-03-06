@@ -128,6 +128,56 @@ tell application "Finder"
     end repeat
 end tell
 '''),
+        ("duplicate-selected", "Duplicate the selected Finder items", '''\
+tell application "Finder"
+    set sel to selection
+    if sel is {} then
+        display notification "Nothing selected" with title "Finder"
+        return
+    end if
+    repeat with f in sel
+        duplicate f
+    end repeat
+    display notification "Duplicated " & (count of sel) & " item(s)" with title "Finder"
+end tell
+'''),
+        ("compress-selected", "Compress selected Finder items into a zip", '''\
+tell application "Finder"
+    set sel to selection
+    if sel is {} then
+        display notification "Nothing selected" with title "Finder"
+        return
+    end if
+    set firstItem to item 1 of sel as alias
+    set p to POSIX path of firstItem
+    do shell script "cd " & quoted form of (do shell script "dirname " & quoted form of p) & " && zip -r " & quoted form of (do shell script "basename " & quoted form of p) & ".zip " & quoted form of (do shell script "basename " & quoted form of p)
+    display notification "Compressed " & name of item 1 of sel with title "Finder"
+end tell
+'''),
+        ("move-to-trash", "Move selected Finder items to Trash", '''\
+tell application "Finder"
+    set sel to selection
+    if sel is {} then
+        display notification "Nothing selected" with title "Finder"
+        return
+    end if
+    repeat with f in sel
+        move f to trash
+    end repeat
+    display notification "Trashed " & (count of sel) & " item(s)" with title "Finder"
+end tell
+'''),
+        ("count-items", "Count items in the frontmost Finder window", '''\
+tell application "Finder"
+    if (count of Finder windows) > 0 then
+        set c to count of items of target of front Finder window
+        set p to name of target of front Finder window
+        display notification (c as text) & " items in " & p with title "Finder"
+    else
+        display notification "No Finder windows open" with title "Finder"
+    end if
+end tell
+'''),
         ("toggle-hidden-files", "Toggle visibility of hidden files in Finder", '''\
 set curVal to do shell script "defaults read com.apple.finder AppleShowAllFiles"
 if curVal is "TRUE" or curVal is "true" or curVal is "1" then
@@ -626,6 +676,42 @@ tell application "Mail"
     display notification "Marked " & (count of msgs) & " messages read" with title "Mail"
 end tell
 '''),
+        ("delete-junk", "Delete all junk mail", '''\
+tell application "Mail"
+    set junkMsgs to every message of junk mailbox
+    set c to count of junkMsgs
+    repeat with m in junkMsgs
+        delete m
+    end repeat
+    display notification "Deleted " & (c as text) & " junk messages" with title "Mail"
+end tell
+'''),
+        ("list-accounts", "List all mail accounts", '''\
+tell application "Mail"
+    set acctNames to name of every account
+    set output to ""
+    repeat with a in acctNames
+        set output to output & a & return
+    end repeat
+    display dialog output with title "Mail Accounts" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("archive-selected", "Move selected messages to Archive", '''\
+tell application "Mail"
+    set sel to selection
+    if (count of sel) > 0 then
+        repeat with m in sel
+            set acct to account of mailbox of m
+            try
+                move m to mailbox "Archive" of acct
+            on error
+                move m to mailbox "All Mail" of acct
+            end try
+        end repeat
+        display notification "Archived " & (count of sel) & " message(s)" with title "Mail"
+    end if
+end tell
+'''),
         ("send-quick", "Send a quick email (dialog prompts for to/subject/body)", '''\
 tell application "Mail"
     set addr to text returned of (display dialog "To:" default answer "")
@@ -731,6 +817,44 @@ tell application "Safari"
     end if
 end tell
 '''),
+        ("show-bookmarks", "Show Safari bookmarks", '''\
+tell application "Safari"
+    activate
+    show bookmarks
+end tell
+'''),
+        ("reload-tab", "Reload the current Safari tab", '''\
+tell application "Safari"
+    set URL of current tab of front window to URL of current tab of front window
+    display notification "Reloaded" with title "Safari"
+end tell
+'''),
+        ("show-privacy-report", "Show Safari Privacy Report", '''\
+tell application "Safari"
+    activate
+    show privacy report
+end tell
+'''),
+        ("tab-count", "Show number of open tabs across all windows", '''\
+tell application "Safari"
+    set total to 0
+    repeat with w in every window
+        set total to total + (count of tabs of w)
+    end repeat
+    display notification (total as text) & " tabs open" with title "Safari"
+end tell
+'''),
+        ("close-other-tabs", "Close all tabs except the current one", '''\
+tell application "Safari"
+    tell front window
+        set currentIndex to index of current tab
+        repeat with t in (reverse of (every tab whose index is not currentIndex))
+            close t
+        end repeat
+    end tell
+    display notification "Closed other tabs" with title "Safari"
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -789,6 +913,38 @@ end tell
 tell application "Notes"
     set c to count of every note
     display notification (c as text) & " notes total" with title "Notes"
+end tell
+'''),
+        ("list-folders", "List all Notes folders", '''\
+tell application "Notes"
+    set folderNames to name of every folder of account "iCloud"
+    set output to ""
+    repeat with f in folderNames
+        set output to output & f & return
+    end repeat
+    display dialog output with title "Notes Folders" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("append-to-note", "Append text to an existing note", '''\
+tell application "Notes"
+    set q to text returned of (display dialog "Note name to append to:" default answer "")
+    set results to every note of account "iCloud" whose name contains q
+    if (count of results) is 0 then
+        display notification "No note matching: " & q with title "Notes"
+        return
+    end if
+    set n to item 1 of results
+    set newText to text returned of (display dialog "Text to append:" default answer "")
+    set body of n to (body of n) & "<br>" & newText
+    display notification "Appended to: " & name of n with title "Notes"
+end tell
+'''),
+        ("show-recent-note", "Open the most recently modified note", '''\
+tell application "Notes"
+    set n to note 1
+    show n
+    activate
+    display notification "Opened: " & name of n with title "Notes"
 end tell
 '''),
     ],
@@ -853,6 +1009,45 @@ tell application "Reminders"
     end if
 end tell
 '''),
+        ("list-lists", "Show all reminder lists", '''\
+tell application "Reminders"
+    set listNames to name of every list
+    set output to ""
+    repeat with l in listNames
+        set output to output & l & return
+    end repeat
+    display dialog output with title "Reminder Lists" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("count-incomplete", "Count incomplete reminders", '''\
+tell application "Reminders"
+    set incomplete to every reminder whose completed is false
+    display notification (count of incomplete) & " incomplete reminders" with title "Reminders"
+end tell
+'''),
+        ("reminder-with-priority", "Create a high-priority reminder", '''\
+tell application "Reminders"
+    set t to text returned of (display dialog "High priority reminder:" default answer "")
+    tell default list
+        make new reminder with properties {name:t, priority:1}
+    end tell
+    display notification "HIGH: " & t with title "Reminders"
+end tell
+'''),
+        ("flagged-reminders", "Show all flagged reminders", '''\
+tell application "Reminders"
+    set flagged to every reminder whose flagged is true and completed is false
+    set output to ""
+    repeat with r in flagged
+        set output to output & name of r & return
+    end repeat
+    if output is "" then
+        display notification "No flagged reminders" with title "Reminders"
+    else
+        display dialog output with title "Flagged Reminders" buttons {"OK"} default button "OK"
+    end if
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -913,6 +1108,44 @@ tell application "Calendar"
     end if
 end tell
 '''),
+        ("list-calendars", "List all calendar names", '''\
+tell application "Calendar"
+    set calNames to name of every calendar
+    set output to ""
+    repeat with c in calNames
+        set output to output & c & return
+    end repeat
+    display dialog output with title "Calendars" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("count-events-today", "Count events happening today", '''\
+tell application "Calendar"
+    set today to current date
+    set time of today to 0
+    set tomorrow to today + (1 * days)
+    set eventCount to 0
+    repeat with cal in every calendar
+        set evts to (every event of cal whose start date >= today and start date < tomorrow)
+        set eventCount to eventCount + (count of evts)
+    end repeat
+    display notification (eventCount as text) & " events today" with title "Calendar"
+end tell
+'''),
+        ("event-at-time", "Create an event at a specific time today", '''\
+tell application "Calendar"
+    set t to text returned of (display dialog "Event title:" default answer "")
+    set h to text returned of (display dialog "Hour (0-23):" default answer "14")
+    set startDate to current date
+    set hours of startDate to (h as integer)
+    set minutes of startDate to 0
+    set seconds of startDate to 0
+    set endDate to startDate + (1 * hours)
+    tell calendar "Home"
+        make new event with properties {summary:t, start date:startDate, end date:endDate}
+    end tell
+    display notification t & " at " & h & ":00" with title "Calendar"
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -955,6 +1188,48 @@ tell application "Photos"
     end if
 end tell
 '''),
+        ("stop-slideshow", "Stop the currently playing slideshow", '''\
+tell application "Photos"
+    stop slideshow
+end tell
+'''),
+        ("count-photos", "Show total photo count in library", '''\
+tell application "Photos"
+    set c to count of every media item
+    display notification (c as text) & " photos in library" with title "Photos"
+end tell
+'''),
+        ("list-albums", "List all album names", '''\
+tell application "Photos"
+    set albumNames to name of every album
+    set output to ""
+    repeat with a in albumNames
+        set output to output & a & return
+    end repeat
+    set the clipboard to output
+    display notification "Copied " & (count of albumNames) & " album names" with title "Photos"
+end tell
+'''),
+        ("create-album", "Create a new empty album", '''\
+tell application "Photos"
+    set aName to text returned of (display dialog "New album name:" default answer "My Album")
+    make new album named aName
+    display notification "Created: " & aName with title "Photos"
+end tell
+'''),
+        ("favorite-selected", "Favorite the selected photos", '''\
+tell application "Photos"
+    set sel to selection
+    if sel is {} then
+        display notification "No photos selected" with title "Photos"
+        return
+    end if
+    repeat with p in sel
+        set favorite of p to true
+    end repeat
+    display notification "Favorited " & (count of sel) & " photo(s)" with title "Photos"
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -987,6 +1262,27 @@ tell application "Terminal"
     do script cmd
 end tell
 '''),
+        ("clear-scrollback", "Clear scrollback in the front Terminal tab", '''\
+tell application "Terminal"
+    set contents of selected tab of front window to ""
+end tell
+'''),
+        ("set-title", "Set a custom title for the front Terminal tab", '''\
+tell application "Terminal"
+    set t to text returned of (display dialog "Tab title:" default answer "")
+    tell selected tab of front window
+        set custom title to t
+        set title displays custom title to true
+    end tell
+end tell
+'''),
+        ("ssh-connect", "Open an SSH connection in a new tab", '''\
+tell application "Terminal"
+    activate
+    set h to text returned of (display dialog "SSH host (user@host):" default answer "")
+    do script "ssh " & h
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1016,6 +1312,16 @@ tell application "Messages"
     display notification "Copied " & maxChats & " chat names" with title "Messages"
 end tell
 '''),
+        ("send-clipboard", "Send clipboard contents as an iMessage", '''\
+set clipText to the clipboard as text
+tell application "Messages"
+    set targetBuddy to text returned of (display dialog "Send clipboard to (phone/email):" default answer "")
+    set targetService to 1st account whose service type = iMessage
+    set targetParticipant to participant targetBuddy of targetService
+    send clipText to targetParticipant
+    display notification "Sent clipboard to " & targetBuddy with title "Messages"
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1038,6 +1344,35 @@ tell application "Contacts"
         if (count of phones) > 0 then set info to info & return & "Phone: " & item 1 of phones
         display dialog info with title "Contact" buttons {"Copy", "OK"} default button "OK"
         if button returned of result is "Copy" then set the clipboard to info
+    end if
+end tell
+'''),
+        ("count-contacts", "Show total number of contacts", '''\
+tell application "Contacts"
+    set c to count of every person
+    display notification (c as text) & " contacts" with title "Contacts"
+end tell
+'''),
+        ("new-contact", "Create a new contact", '''\
+tell application "Contacts"
+    set fn to text returned of (display dialog "First name:" default answer "")
+    set ln to text returned of (display dialog "Last name:" default answer "")
+    set p to make new person with properties {first name:fn, last name:ln}
+    save
+    display notification "Created: " & fn & " " & ln with title "Contacts"
+end tell
+'''),
+        ("list-groups", "List all contact groups", '''\
+tell application "Contacts"
+    set groupNames to name of every group
+    set output to ""
+    repeat with g in groupNames
+        set output to output & g & return
+    end repeat
+    if output is "" then
+        display notification "No groups" with title "Contacts"
+    else
+        display dialog output with title "Contact Groups" buttons {"OK"} default button "OK"
     end if
 end tell
 '''),
@@ -1153,6 +1488,54 @@ tell application "System Events"
     keystroke "s" using {command down, shift down}
 end tell
 '''),
+        ("battery-status", "Show battery percentage and charging state", '''\
+set battPct to do shell script "pmset -g batt | grep -o '[0-9]*%' | head -1"
+set battSrc to do shell script "pmset -g ps | head -1"
+display notification battSrc with title "Battery: " & battPct
+'''),
+        ("disk-usage", "Show disk space usage for the main drive", '''\
+set diskInfo to do shell script "df -h / | tail -1 | awk '{print $3, \"/\", $2, $5}'"
+display notification diskInfo with title "Disk Usage"
+'''),
+        ("uptime", "Show system uptime", '''\
+set uptimeStr to do shell script "uptime | sed 's/.*up //' | sed 's/,.*//' | xargs"
+display notification uptimeStr with title "Uptime"
+'''),
+        ("ip-address", "Show current IP addresses (local and external)", '''\
+set localIP to do shell script "ipconfig getifaddr en0 2>/dev/null || echo 'No Wi-Fi'"
+set extIP to do shell script "curl -s ifconfig.me 2>/dev/null || echo 'No internet'"
+display dialog "Local: " & localIP & return & "External: " & extIP with title "IP Address" buttons {"Copy Local", "Copy External", "OK"} default button "OK"
+if button returned of result is "Copy Local" then
+    set the clipboard to localIP
+else if button returned of result is "Copy External" then
+    set the clipboard to extIP
+end if
+'''),
+        ("bluetooth-toggle", "Toggle Bluetooth on/off", '''\
+set status to do shell script "defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null || echo 0"
+if status is "1" then
+    do shell script "blueutil --power 0"
+    display notification "Bluetooth OFF" with title "System"
+else
+    do shell script "blueutil --power 1"
+    display notification "Bluetooth ON" with title "System"
+end if
+'''),
+        ("screen-lock", "Lock the screen immediately", '''\
+do shell script "/System/Library/CoreServices/Menu\\\\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+'''),
+        ("empty-clipboard", "Clear the clipboard", '''\
+set the clipboard to ""
+display notification "Clipboard cleared" with title "System"
+'''),
+        ("trash-size", "Show the size of the Trash", '''\
+set sz to do shell script "du -sh ~/.Trash 2>/dev/null | awk '{print $1}'"
+display notification sz with title "Trash Size"
+'''),
+        ("notification-count", "Show pending notification count", '''\
+set c to do shell script "sqlite3 $(getconf DARWIN_USER_DIR)com.apple.notificationcenter/db2/db 'SELECT COUNT(*) FROM record WHERE presented=1' 2>/dev/null || echo '?'"
+display notification c & " notifications" with title "Notification Center"
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1175,6 +1558,20 @@ set input to text returned of (display dialog "Input:" default answer "")
 do shell script "echo " & quoted form of input & " | shortcuts run " & quoted form of sName
 display notification "Ran: " & sName with title "Shortcuts"
 '''),
+        ("search-shortcuts", "Search for a Shortcut by name and run it", '''\
+set allShortcuts to do shell script "shortcuts list"
+set q to text returned of (display dialog "Search shortcuts:" default answer "")
+set matches to do shell script "echo " & quoted form of allShortcuts & " | grep -i " & quoted form of q & " || echo ''"
+if matches is "" then
+    display notification "No shortcuts matching: " & q with title "Shortcuts"
+else
+    set chosen to choose from list (paragraphs of matches) with title "Shortcuts" with prompt "Run which shortcut?"
+    if chosen is not false then
+        do shell script "shortcuts run " & quoted form of (item 1 of chosen)
+        display notification "Ran: " & (item 1 of chosen) with title "Shortcuts"
+    end if
+end if
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1193,6 +1590,29 @@ tell application "TextEdit"
     set t to text of front document
     set wc to count of words of t
     display notification (wc as text) & " words" with title "TextEdit"
+end tell
+'''),
+        ("new-document", "Create a new blank TextEdit document", '''\
+tell application "TextEdit"
+    activate
+    make new document
+end tell
+'''),
+        ("save-as-txt", "Save frontmost TextEdit document as plain text to Desktop", '''\
+tell application "TextEdit"
+    set d to front document
+    set n to name of d
+    set savePath to (POSIX path of (path to desktop)) & n & ".txt"
+    save d as "public.plain-text" in POSIX file savePath
+    display notification "Saved: " & n & ".txt" with title "TextEdit"
+end tell
+'''),
+        ("char-count", "Count characters in frontmost TextEdit document", '''\
+tell application "TextEdit"
+    set t to text of front document
+    set cc to count of characters of t
+    set wc to count of words of t
+    display notification (cc as text) & " chars, " & (wc as text) & " words" with title "TextEdit"
 end tell
 '''),
     ],
@@ -1219,11 +1639,86 @@ tell application "QuickTime Player"
     new movie recording
 end tell
 '''),
+        ("play-frontmost", "Play the frontmost QuickTime document", '''\
+tell application "QuickTime Player"
+    if (count of documents) > 0 then
+        play front document
+    else
+        display notification "No documents open" with title "QuickTime"
+    end if
+end tell
+'''),
+        ("pause-frontmost", "Pause the frontmost QuickTime document", '''\
+tell application "QuickTime Player"
+    if (count of documents) > 0 then
+        pause front document
+    else
+        display notification "No documents open" with title "QuickTime"
+    end if
+end tell
+'''),
+        ("present-fullscreen", "Present the frontmost document in fullscreen", '''\
+tell application "QuickTime Player"
+    if (count of documents) > 0 then
+        present front document
+    else
+        display notification "No documents open" with title "QuickTime"
+    end if
+end tell
+'''),
     ],
 }
 
 
 # ─── Generator ────────────────────────────────────────────────────────────────
+
+def extract_teaching_comments(code):
+    """Extract teaching comments explaining AppleScript concepts used in the code."""
+    comments = []
+    seen = set()
+
+    teachings = [
+        ('tell application', 'tell application ... end tell',
+         'Sends Apple Events to an app. The app must have a scripting dictionary (sdef).'),
+        ('try', 'try ... on error ... end try',
+         'Error handling. Catches runtime errors so the script doesn\'t crash.'),
+        ('display notification', 'display notification "text" with title "title"',
+         'Shows a macOS notification banner. Disappears after a few seconds.'),
+        ('display dialog', 'display dialog "text"',
+         'Shows a modal dialog. Can include text fields (default answer), buttons, and icons.'),
+        ('choose from list', 'choose from list myList',
+         'Shows a scrollable list picker. Returns false if cancelled, otherwise a list.'),
+        ('set the clipboard', 'set the clipboard to "text"',
+         'Copies text to the system clipboard, same as Cmd+C.'),
+        ('do shell script', 'do shell script "command"',
+         'Runs a shell command from AppleScript and returns stdout as text.'),
+        ('repeat with', 'repeat with item in list',
+         'Loops over each item in a list, like a for-each loop.'),
+        ('if ', 'if condition then ... else ... end if',
+         'Conditional branching. AppleScript uses English-like "is", "is not", "contains".'),
+        ('keystroke', 'keystroke "key" using {command down}',
+         'Simulates keyboard input via System Events. Needs accessibility permission.'),
+        ('current date', 'current date',
+         'Returns the current date and time as an AppleScript date object.'),
+        ('quoted form of', 'quoted form of variable',
+         'Safely escapes a string for shell commands. Prevents injection.'),
+        ('POSIX path', 'POSIX path of alias',
+         'Converts a Mac alias/HFS path to a Unix-style /path/to/file.'),
+        ('with administrator privileges', 'do shell script "cmd" with administrator privileges',
+         'Prompts for admin password. Required for system-level changes.'),
+        ('as alias', 'file "path" as alias',
+         'Converts a file reference to an alias. Aliases track files even if moved.'),
+    ]
+
+    code_lower = code.lower()
+    for trigger, syntax, explanation in teachings:
+        if trigger.lower() in code_lower and trigger not in seen:
+            seen.add(trigger)
+            comments.append(f'-- Concept: {syntax}')
+            comments.append(f'--   {explanation}')
+
+    return '\n'.join(comments)
+
 
 def generate_script(app_name, suffix, description, code):
     """Write a single .applescript file."""
@@ -1234,12 +1729,15 @@ def generate_script(app_name, suffix, description, code):
     filename = f"{slug}-{suffix}.applescript"
     filepath = app_dir / filename
 
+    teaching = extract_teaching_comments(code)
+    teaching_block = f'\n{teaching}\n' if teaching else ''
+
     header = f'''\
 -- {description}
 -- App: {app_name}
 -- Usage: osascript scripts/workflows/{slug}/{filename}
 -- Generated by workflow-gen.py
-
+{teaching_block}
 '''
     filepath.write_text(header + code)
     return filepath
