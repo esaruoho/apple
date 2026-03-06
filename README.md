@@ -190,6 +190,12 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 
 ---
 
+## Automator vs Shortcuts
+
+[**The Gap Analysis**](automator-vs-shortcuts.md) — 227 Automator actions vs 246 Shortcuts actions. What each can do that the other can't. And the bridge that doesn't exist: Shortcuts has no `Run AppleScript` action, so 30 apps with rich scripting dictionaries are invisible to it. 36 apps have zero sdef. 20 apps have zero automation surface at all. The whole sausage.
+
+---
+
 ## How It All Connects
 
 [**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s → Automator at Apple → context-aware relevance filtering → scripting dictionaries → departure → this repo as open-source continuation.
