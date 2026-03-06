@@ -46,6 +46,7 @@ APP_ICONS = {
     "shortcuts":      {"glyph": 59511, "color": 4282601983},   # red, shortcuts
     "textedit":       {"glyph": 59538, "color": 3679049983},   # gray, doc
     "quicktime":      {"glyph": 59452, "color": 463140863},    # blue, play
+    "homepod":        {"glyph": 59458, "color": 4292093695},   # pink, speaker
 }
 
 DEFAULT_ICON = {"glyph": 59511, "color": 4282601983}
