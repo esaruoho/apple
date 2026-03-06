@@ -147,6 +147,9 @@ The `shortcuts run` CLI is the bridge: Layer 1 scripts can invoke Layer 4-6 acti
 | `defaults` | Read/write any app preference |
 | `screencapture` | Programmable screenshots (more flags than the GUI) |
 | `mdfind` / `mdls` | Spotlight search + metadata from CLI |
+| `mdutil` | Manage Spotlight indexes — check status, enable/disable, rebuild |
+| `mdimport` | Force-import files into Spotlight index |
+| `lsregister` | Register/unregister apps with LaunchServices |
 | `textutil` | Convert between txt, rtf, html, doc, docx |
 | `sips` | Scriptable image processing |
 | `/usr/libexec/PlistBuddy` | Surgical nested plist editing (deeper than `defaults`) |

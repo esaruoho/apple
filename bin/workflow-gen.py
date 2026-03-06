@@ -889,6 +889,18 @@ tell application "System Events"
     display notification (count of appNames) & " apps running" with title "System Events"
 end tell
 '''),
+        ("spotlight-status", "Check Spotlight indexing status", '''\
+set status to do shell script "mdutil -s /System/Volumes/Data 2>&1 | tail -1 | sed 's/^[[:space:]]//'"
+set appCount to do shell script "mdfind 'kMDItemContentType == \\\"com.apple.application-bundle\\\"' 2>/dev/null | grep -c '/Applications/'"
+set workflowCount to do shell script "mdfind 'kMDItemContentType == \\\"com.apple.application-bundle\\\"' 2>/dev/null | grep -c 'Apple-Workflows' || echo 0"
+set cpuUse to do shell script "ps aux | grep '[m]ds_stores' | awk '{print $3}' || echo 0"
+set msg to status & return & "Apps indexed: " & appCount & return & "Workflows: " & workflowCount & "/109" & return & "mds_stores CPU: " & cpuUse & "%"
+if cpuUse is "0" or cpuUse is "0.0" then
+    display dialog msg with title "Spotlight: Idle" buttons {"OK"} default button "OK"
+else
+    display dialog msg with title "Spotlight: Indexing..." buttons {"OK"} default button "OK"
+end if
+'''),
         ("wifi-toggle", "Toggle Wi-Fi on/off", '''\
 set wifiStatus to do shell script "networksetup -getairportpower en0 | awk '{print $NF}'"
 if wifiStatus is "On" then

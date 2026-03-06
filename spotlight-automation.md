@@ -148,6 +148,45 @@ osascript -e 'tell application "Finder" to set comment of (POSIX file "/path/to/
 
 ## Spotlight Troubleshooting
 
+### Monitoring Indexing Progress
+
+After `sudo mdutil -E`, Spotlight rebuilds the entire index. Here's how to track it:
+
+```bash
+# Quick status — is indexing still running?
+mdutil -s /System/Volumes/Data
+# "Indexing enabled." = done or idle
+# "Indexing enabled. Scan in progress." = still working
+
+# Watch the mds process — high CPU means still indexing
+top -l 1 -stats pid,command,cpu | grep -E "mds|mdworker"
+# mds_stores at 0% CPU = indexing complete
+
+# Monitor indexing in real-time (Ctrl+C to stop)
+while true; do
+    indexed=$(mdfind "kMDItemContentType == 'com.apple.application-bundle'" 2>/dev/null | grep "/Applications/" | wc -l)
+    workflows=$(mdfind "kMDItemContentType == 'com.apple.application-bundle'" 2>/dev/null | grep "Apple-Workflows" | wc -l)
+    cpu=$(ps aux | grep "[m]ds_stores" | awk '{print $3}')
+    echo "$(date +%H:%M:%S) | Apps: $indexed | Workflows: $workflows/109 | mds_stores CPU: ${cpu:-0}%"
+    sleep 10
+done
+
+# Check Spotlight index size (growing = still indexing)
+du -sh /System/Volumes/Data/.Spotlight-V100 2>/dev/null
+
+# Count total indexed items
+mdimport -L 2>/dev/null | wc -l
+
+# Check what mds is currently doing (log stream)
+log stream --predicate 'subsystem == "com.apple.spotlight"' --info --style compact 2>/dev/null | head -20
+```
+
+**How to know indexing is done:**
+1. The progress bar in Spotlight (Cmd+Space) disappears
+2. `mds_stores` CPU drops to 0%
+3. `mdfind` returns your expected results
+4. `/System/Volumes/Data/.Spotlight-V100` stops growing
+
 ### Diagnostic Commands
 
 ```bash
