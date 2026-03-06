@@ -195,6 +195,37 @@ tell application "Finder"
     display dialog msg with title "File Info" buttons {"OK"} default button "OK"
 end tell
 '''),
+        ("restart-finder", "Restart Finder (kf)", '''\
+do shell script "killall Finder"
+'''),
+        ("hide-desktop-icons", "Hide all desktop icons", '''\
+do shell script "defaults write com.apple.Finder CreateDesktop false"
+do shell script "killall Finder"
+'''),
+        ("show-desktop-icons", "Show all desktop icons", '''\
+do shell script "defaults write com.apple.Finder CreateDesktop true"
+do shell script "killall Finder"
+'''),
+        ("open-current-dir", "Open current working directory in Finder", '''\
+tell application "Finder"
+    activate
+    open (POSIX file (do shell script "pwd") as alias)
+end tell
+'''),
+        ("set-wallpaper", "Set desktop wallpaper from a file path", '''\
+set imgPath to choose file with prompt "Choose wallpaper image:" of type {"public.image"}
+tell application "Finder"
+    set desktop picture to imgPath
+end tell
+display notification "Wallpaper changed" with title "Finder"
+'''),
+        ("airdrop-reveal", "Reveal a file in Finder for AirDrop sharing", '''\
+set f to choose file with prompt "Choose file to AirDrop:"
+set p to POSIX path of f
+do shell script "open -R " & quoted form of p
+tell application "Finder" to activate
+display notification "Right-click > Share > AirDrop" with title "AirDrop"
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -886,6 +917,34 @@ set t to text returned of (display dialog "Type text:" default answer "")
 tell application "System Events"
     keystroke t
 end tell
+'''),
+        ("hide-dock", "Hide the Dock (autohide on)", '''\
+do shell script "defaults write com.apple.Dock autohide -bool TRUE"
+do shell script "killall Dock"
+display notification "Dock hidden" with title "Dock"
+'''),
+        ("show-dock", "Show the Dock (autohide off)", '''\
+do shell script "defaults write com.apple.Dock autohide -bool FALSE"
+do shell script "killall Dock"
+display notification "Dock visible" with title "Dock"
+'''),
+        ("dock-add-spacer", "Add a spacer tile to the Dock", '''\
+do shell script "defaults write com.apple.dock persistent-apps -array-add '{\"tile-type\"=\"spacer-tile\";}'"
+do shell script "killall Dock"
+display notification "Spacer added" with title "Dock"
+'''),
+        ("dock-add-recent-apps", "Add Recent Apps stack to the Dock", '''\
+do shell script "defaults write com.apple.dock persistent-others -array-add '{\"tile-data\" = {\"list-type\" = 1;}; \"tile-type\" = \"recents-tile\";}'"
+do shell script "killall Dock"
+display notification "Recent Apps added to Dock" with title "Dock"
+'''),
+        ("restart-menu-bar", "Restart the macOS menu bar (topbar)", '''\
+do shell script "killall -KILL SystemUIServer"
+display notification "Menu bar restarted" with title "System"
+'''),
+        ("reset-apple-events", "Reset Apple Events daemon (fixes -1712 errors)", '''\
+do shell script "sudo killall -KILL appleeventsd" with administrator privileges
+display notification "Apple Events daemon restarted" with title "System"
 '''),
         ("key-shortcut", "Send a keyboard shortcut to the frontmost app", '''\
 -- Example: Cmd+Shift+S (Save As)

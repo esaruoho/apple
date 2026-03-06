@@ -119,6 +119,12 @@ One button = one action = one result (Sal's rule).
 | `workflows/finder/finder-eject-all.applescript` | Eject all mounted external volumes |
 | `workflows/finder/finder-sort-by-name.applescript` | Sort the frontmost Finder window by name |
 | `workflows/finder/finder-file-info.applescript` | Display info about the selected file |
+| `workflows/finder/finder-restart-finder.applescript` | Restart Finder (kf) |
+| `workflows/finder/finder-hide-desktop-icons.applescript` | Hide all desktop icons |
+| `workflows/finder/finder-show-desktop-icons.applescript` | Show all desktop icons |
+| `workflows/finder/finder-open-current-dir.applescript` | Open current working directory in Finder |
+| `workflows/finder/finder-set-wallpaper.applescript` | Set desktop wallpaper from a file path |
+| `workflows/finder/finder-airdrop-reveal.applescript` | Reveal a file in Finder for AirDrop sharing |
 
 ### Mail
 
@@ -235,6 +241,12 @@ One button = one action = one result (Sal's rule).
 | `workflows/system-events/system-events-volume-set.applescript` | Set system volume to a specific level |
 | `workflows/system-events/system-events-do-not-disturb.applescript` | Toggle Do Not Disturb (Focus) |
 | `workflows/system-events/system-events-type-text.applescript` | Type text via System Events (paste alternative) |
+| `workflows/system-events/system-events-hide-dock.applescript` | Hide the Dock (autohide on) |
+| `workflows/system-events/system-events-show-dock.applescript` | Show the Dock (autohide off) |
+| `workflows/system-events/system-events-dock-add-spacer.applescript` | Add a spacer tile to the Dock |
+| `workflows/system-events/system-events-dock-add-recent-apps.applescript` | Add Recent Apps stack to the Dock |
+| `workflows/system-events/system-events-restart-menu-bar.applescript` | Restart the macOS menu bar (topbar) |
+| `workflows/system-events/system-events-reset-apple-events.applescript` | Reset Apple Events daemon (fixes -1712 errors) |
 | `workflows/system-events/system-events-key-shortcut.applescript` | Send a keyboard shortcut to the frontmost app |
 
 ### Terminal
@@ -254,4 +266,4 @@ One button = one action = one result (Sal's rule).
 
 ---
 
-**Total: 64 launchers + 97 workflows = 161 scripts**
+**Total: 64 launchers + 109 workflows = 173 scripts**
