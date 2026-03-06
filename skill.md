@@ -240,7 +240,8 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `app-probe` | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. |
 | `sdef-extract` | `python3 bin/sdef-extract.py` | Extract scripting dictionaries for 31 apps. |
 | `workflow-gen` | `python3 bin/workflow-gen.py` | Generate 109 workflow scripts from curated recipes across 15 apps. |
-| `spotlight-export` | `./bin/spotlight-export.sh` | Compile workflows to .app bundles in ~/Applications/ — Spotlight-reachable. |
+| `spotlight-export` | `./bin/spotlight-export.sh` | Compile workflows to .app bundles in /Applications/ — Spotlight-reachable. |
+| `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate signed .shortcut files — Siri, Spotlight, share sheet, menu bar. |
 | `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
 
 ## Spotlight Integration — The Final Sal Mile
