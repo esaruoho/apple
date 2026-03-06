@@ -10,6 +10,29 @@
 >
 > — [macosxautomation.com/about.html](http://macosxautomation.com/about.html)
 
+### Personal Life
+
+Born into an Armenian-American military family. Grew up on Marine and Naval bases, including **Guantanamo Bay, Cuba** — evacuated during the Cuban Missile Crisis. Attended the **University of Virginia** briefly in 1969, then moved to Boston where he earned a **degree in music from Berklee College of Music**.
+
+In the late 1980s he returned to Charlottesville, Virginia, where he worked at a digital printshop called **"Pixels"** — his bridge from music to computing. He is also an avid jazz musician who played guitar in a band called **Blue Indigo** in Charlottesville. The band is notable: it was composed of **Carter Beauford** (drums), **LeRoi Moore** (saxophone), **George Melvin** (Hammond B3 organ), and Soghoian (guitar). Beauford and Moore went on to found the **Dave Matthews Band**. Jeff Decker and Phil Riddle joined following their departure.
+
+He is the uncle of noted privacy researcher and activist **Christopher Soghoian**.
+
+*Source: [Wikipedia — Sal Soghoian](https://en.wikipedia.org/wiki/Sal_Soghoian)*
+
+### Pre-Apple Career
+
+Before joining Apple in 1997, Sal was a **publishing automation consultant** in the 1990s. He created automation solutions for the publishing industry using AppleScript — the exact workflow that Cal Simone later used to convince Steve Jobs to keep AppleScript alive.
+
+He authored:
+- **Sal's AppleScript Snippets** — a popular script collection
+- **The ShadowCaster Quark XTension** — a QuarkXPress plugin
+- ***The Quark XTensions Book*** (Hayden Books, 1994, ISBN 1-56830-069-7)
+
+He was a featured presenter for **Quark, Thunder Lizard Productions, Apple, Seybold**, and the **Macworld** conferences. A special guest at a Leopard Tech Talk.
+
+This is the publishing world that made AppleScript indispensable — QuarkXPress workflows, automated typesetting, batch processing for magazines and newspapers. When Bill Cheeseman later said "the publishing industry was utterly dependent on AppleScript," he was describing Sal's own client base.
+
 ### His Credo
 
 > **"The power of the computer should reside in the hands of the one using it."**
@@ -18,15 +41,16 @@
 
 From his own description: *"At Apple, he advanced a wide range of user automation technologies including: UNIX CLI (shell, python, ruby, perl), System Services, Apple Events, JavaScript, AppleScript, AppleScriptObj-C, Scripting Bridge, Automator, Apple Configurator, the Master for iTunes tools, Dictation Commands, and application scripting support for Photos, iWork, Finder, Mail, Notes, and other Apple applications."*
 
-- **AppleScript revival** — saved it from languishing, got it PowerPC-native in Mac OS 8.5, transitioned it to Mac OS X
-- **Automator** — his signature creation. Demoed it on stage with Steve Jobs at WWDC 2004 (Jobs called him "Saul")
+- **AppleScript revival** — was an advocate for AppleScript years before joining Apple. During his tenure, AppleScript was revived and upgraded to be PowerPC-native in Mac OS 8.5, then successfully transitioned to Apple's UNIX-based Mac OS X, integrated with Project Builder and Interface Builder (precursors to Xcode)
+- **AppleScript evolution (Lion → Mavericks)** — added library support and direct access to Cocoa frameworks through AppleScriptObj-C, a fusion of AppleScript and Objective-C
+- **Automator** — his signature creation. In late 2002, joined an ad hoc team of engineers developing an application for creating and running automation workflows. After a year and a half of development, showed it to Steve Jobs **one week before WWDC 2004**. Jobs was impressed and asked Soghoian to appear at the keynote to demo Automator for the first time. Introduced as part of Mac OS X 10.4 Tiger. (Jobs called him "Saul" on stage.)
+- **JavaScript for Automation (JXA)** — introduced in OS X Yosemite as a peer to AppleScript, providing access to Apple Events and Cocoa through an enhanced version of JavaScriptCore
+- **Scripting dictionaries** — wrote the scripting dictionaries for **iWork** (Keynote, Numbers, Pages), **iPhoto**, **Aperture**, and **Photos**
+- **Apple Configurator automation** — designed and wrote the automation tools. Architecture: a central AppleScriptObj-C library + a set of Automator actions. Enables iOS devices to be prepared, managed, and refreshed automatically upon connection to a hosting Mac
+- **Mastered for iTunes tools** — automation toolchain for the Mastered for iTunes program
+- **Dictation Commands** — hundreds of voice-triggered commands for controlling Keynote, Pages, Numbers, Photos, Finder, and other apps
 - **System Services** — inter-application automation mechanism
-- **JavaScript for Automation (JXA)** — JS as alternative scripting language (OS X Yosemite)
-- **Dictation Commands** — custom voice-triggered commands on macOS
-- **Application scripting support** in Photos, iWork, Finder, Mail, Notes, and other Apple apps
 - **AppleScriptObjC, Scripting Bridge** — bridging AppleScript to Cocoa
-- **Master for iTunes tools** — Mastered for iTunes automation
-- **Apple Configurator automation** — AppleScript + Automator for device management
 
 ### His Philosophy
 
@@ -149,10 +173,27 @@ This repo exists at that intersection — we probe both layers. The `sdef` dicti
 - **Omni Automation** — JavaScript-based automation for OmniFocus/OmniGraffle/OmniOutliner/OmniPlan (macOS + iOS)
 - **Dictation Commands** — hundreds of voice-triggered commands for macOS apps
 
+### Bibliography
+
+| Year | Title | Publisher | ISBN |
+|------|-------|-----------|------|
+| 1994 | *The Quark XTensions Book* (Book and Disk) | Hayden Books | 1-56830-069-7 |
+| 2009 | *Apple Training Series: AppleScript 1-2-3* (with Bill Cheeseman) | Peachpit Press | 0-321-14931-9 |
+
+Plus numerous magazine articles about automation.
+
+### Discography
+
+| Year | Artist | Album |
+|------|--------|-------|
+| 1992 | Sal Soghoian | *To Be with You* |
+| 2011 | Blue Indigo | *Catwalk* |
+
 ### Key Resources
 
 | Resource | URL |
 |----------|-----|
+| Wikipedia | [en.wikipedia.org/wiki/Sal_Soghoian](https://en.wikipedia.org/wiki/Sal_Soghoian) |
 | macOS X Automation | [macosxautomation.com](http://macosxautomation.com) |
 | About / FAQ (Nov 2016) | [macosxautomation.com/about.html](http://macosxautomation.com/about.html) |
 | iWork Automation | [iworkautomation.com](http://iworkautomation.com) |
@@ -160,7 +201,9 @@ This repo exists at that intersection — we probe both layers. The `sdef` dicti
 | Omni Automation | [omni-automation.com](http://omni-automation.com) |
 | CMD-D Conference | [cmddconf.com](http://cmddconf.com) |
 | Twitter/X | [@macautomation](https://x.com/macautomation) |
-| Book | *AppleScript 1-2-3* (Apple Pro Training Series, with Bill Cheeseman) |
+| Music Bio | [salsoghoian.com](http://salsoghoian.com) |
+| Automator.us | [automator.us](http://automator.us) |
+| Books | *AppleScript 1-2-3* (2009), *The Quark XTensions Book* (1994) |
 
 ### Twitter/X Archive: @macautomation
 

@@ -180,6 +180,29 @@ Cross-app index: `dictionaries/_probe-index.yaml`
 
 ---
 
+## Painpoints
+
+UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho) — software tester, UI enthusiast, amateur scripter, automation/workflow obsessive, and user experience evaluator. These are my takes on Apple's current state, reported one at a time: the missing bits and pieces where the automation surface fails the user. Filed with click counts, Sal's principles, and fix paths.
+
+| ID | App | Issue | Clicks | Status |
+|----|-----|-------|:------:|--------|
+| [NOTES-001](painpoints/NOTES-001-record-audio.md) | Notes | Recording audio should be one action, not five clicks | 5 to start, 6 to finish | Open |
+
+---
+
+## Launcher Scripts
+
+64 one-liner AppleScripts in [`scripts/launchers/`](scripts/launchers/) — one per Apple app. Use from Terminal, Loupedeck Live buttons, or any automation tool:
+
+```bash
+osascript scripts/launchers/activate-mail.applescript
+osascript scripts/launchers/activate-logic-pro.applescript
+```
+
+Every app from the Atlas has a launcher: Finder, Mail, Music, Notes, Safari, System Settings, Logic Pro, Final Cut Pro, and 56 more.
+
+---
+
 ## About
 
 **Esa Ruoho** — user automation practitioner, software developer, musician (30+ albums, 203 gigs, 20 countries), and workflow optimizer. Works at [Ray Browser](https://raybrowser.com). Creator of [Paketti](https://github.com/esaruoho/paketti) (3,022-feature workflow suite for Renoise). Believes automation is a right, not a feature.
