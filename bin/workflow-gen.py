@@ -1667,6 +1667,34 @@ tell application "QuickTime Player"
 end tell
 '''),
     ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HOMEPOD — sensor data via Shortcuts CLI
+    # ═══════════════════════════════════════════════════════════════════════════
+    "homepod": [
+        ("climate-reading", "Read HomePod temperature and humidity", '''\
+set reading to do shell script "shortcuts run 'HomePod Sensors'"
+if reading is "" then
+    display notification "No response from HomePod" with title "HomePod"
+    return
+end if
+set humidity to do shell script "echo " & quoted form of reading & " | sed 's/,.*//'"
+set temperature to do shell script "echo " & quoted form of reading & " | sed 's/^[^,]*, //' | tr -d '°C' | tr ',' '.'"
+display notification "Temp: " & temperature & "°C | Humidity: " & humidity & "%" with title "HomePod Climate"
+'''),
+        ("climate-log", "Take a climate reading and log it", '''\
+do shell script "bash /Users/esaruoho/work/apple/homepod/homepod-climate.sh --nograph"
+display notification "Climate reading logged" with title "HomePod"
+'''),
+        ("climate-dashboard", "Open the HomePod climate dashboard", '''\
+do shell script "cd /Users/esaruoho/work/apple/homepod && if ! lsof -i :3007 >/dev/null 2>&1; then nohup python3 climate-server.py >/dev/null 2>&1 & sleep 0.5; fi"
+do shell script "open http://localhost:3007/climate-graph.html"
+'''),
+        ("climate-summary", "Show today's climate summary", '''\
+set summary to do shell script "bash /Users/esaruoho/work/apple/homepod/climate-summary.sh"
+display dialog summary with title "Climate Summary" buttons {"OK"} default button "OK"
+'''),
+    ],
 }
 
 

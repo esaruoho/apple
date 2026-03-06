@@ -136,6 +136,15 @@ One button = one action = one result (Sal's rule).
 | `workflows/finder/finder-set-wallpaper.applescript` | Set desktop wallpaper from a file path |
 | `workflows/finder/finder-airdrop-reveal.applescript` | Reveal a file in Finder for AirDrop sharing |
 
+### Homepod
+
+| Script | Description |
+|--------|-------------|
+| `workflows/homepod/homepod-climate-reading.applescript` | Read HomePod temperature and humidity |
+| `workflows/homepod/homepod-climate-log.applescript` | Take a climate reading and log it |
+| `workflows/homepod/homepod-climate-dashboard.applescript` | Open the HomePod climate dashboard |
+| `workflows/homepod/homepod-climate-summary.applescript` | Show today's climate summary |
+
 ### Mail
 
 | Script | Description |
@@ -339,4 +348,4 @@ One button = one action = one result (Sal's rule).
 
 ---
 
-**Total: 64 launchers + 182 workflows = 246 scripts**
+**Total: 64 launchers + 186 workflows = 250 scripts**

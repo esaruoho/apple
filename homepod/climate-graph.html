@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#111113">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koti — Ilmasto</title>
+<style>
+  :root {
+    --bg: #111113;
+    --surface: #1a1a1e;
+    --surface-2: #222228;
+    --border: #2a2a30;
+    --text: #e8e8ec;
+    --text-2: #a0a0b8;
+    --temp: #e85d5d;
+    --humid: #45b8ac;
+    --co2: #e8a33e;
+    --pm: #b07ee8;
+    --tvoc: #8888aa;
+    --noise: #5d8de8;
+    --pressure: #888899;
+    --light: #e8d44d;
+    --dewpoint: #e85d9d;
+    --warn: #d4a017;
+    --warn-bg: rgba(212, 160, 23, 0.08);
+    --warn-border: rgba(212, 160, 23, 0.2);
+    --good: #5dbb63;
+    --good-bg: rgba(93, 187, 99, 0.08);
+    --good-border: rgba(93, 187, 99, 0.2);
+    --bad: #e85d5d;
+    --bad-bg: rgba(232, 93, 93, 0.08);
+    --bad-border: rgba(232, 93, 93, 0.2);
+    --up: #5dbb63;
+    --down: #e85d5d;
+    --flat: #888;
+    --radius: 10px;
+    --font: 'SF Pro Display', -apple-system, 'Helvetica Neue', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    font-weight: 600;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0.75rem 1rem;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .top-bar h1 {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    margin-right: 0.125rem;
+  }
+
+  .top-bar h1 span { color: var(--text-2); font-weight: 600; }
+
+  .update-btn, .csv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    height: 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .update-btn { width: 1.5rem; }
+  .csv-btn { padding: 0 0.5rem; font-size: 0.6875rem; font-weight: 700; font-family: var(--font); gap: 0.25rem; }
+
+  .update-btn:hover, .csv-btn:hover { background: #2a2a32; border-color: #3a3a44; }
+  .update-btn:active, .csv-btn:active { background: #333338; }
+  .update-btn.loading { opacity: 0.5; pointer-events: none; }
+  .update-btn svg, .csv-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .update-btn.loading svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .top-bar .stats {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.375rem 0.625rem;
+    min-width: 0;
+  }
+
+  .stat .label {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    margin-bottom: 0.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat .value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .stat .value {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .stat .trend {
+    font-size: 0.6875rem;
+    font-weight: 700;
+  }
+
+  .trend.up { color: var(--up); }
+  .trend.down { color: var(--down); }
+  .trend.flat { color: var(--flat); }
+
+  .stat.temp .value { color: var(--temp); }
+  .stat.humid .value { color: var(--humid); }
+  .stat.co2-stat .value { color: var(--co2); }
+  .stat.pm-stat .value { color: var(--pm); }
+  .stat.tvoc-stat .value { color: var(--tvoc); }
+  .stat.noise-stat .value { color: var(--noise); }
+  .stat.warn .value { color: var(--warn); }
+  .stat.neutral .value { color: var(--text); }
+
+  .alert {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 6px;
+    padding: 0.3rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--warn);
+    line-height: 1.3;
+    display: none;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Source tabs */
+  .source-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid var(--border);
+  }
+
+  .source-tab {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-family: var(--font);
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .source-tab.active {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .source-tab:hover:not(.active) { color: var(--text); }
+
+  /* Range tabs */
+  .range-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid var(--border);
+  }
+
+  .range-tab {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-family: var(--font);
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .range-tab.active {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .range-tab:hover:not(.active) { color: var(--text); }
+  .range-tab.loading { opacity: 0.5; pointer-events: none; }
+
+  /* Chart tabs */
+  .chart-tabs {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .chart-tab {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-family: var(--font);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .chart-tab.active {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: #3a3a44;
+  }
+
+  .chart-tab:hover:not(.active) { color: var(--text); }
+
+  /* Main layout */
+  .main-row {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0.5rem;
+    min-height: 0;
+  }
+
+  .main-row.csv-mode {
+    grid-template-columns: 1fr 320px;
+  }
+
+  .chart-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+  }
+
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.625rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+
+  canvas { width: 100%; display: block; flex: 1; min-height: 0; }
+
+  /* Side panel */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .readings {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .readings-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .readings-list { flex: 1; overflow-y: auto; min-height: 0; max-height: 200px; }
+
+  .reading-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .reading-row:last-child { border-bottom: none; }
+  .reading-row .r-time { color: var(--text-2); }
+  .reading-row .r-temp { color: var(--temp); }
+  .reading-row .r-humid { color: var(--humid); }
+
+  /* Analysis panel */
+  .analysis-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    display: none;
+  }
+
+  .analysis-panel.visible { display: block; }
+
+  .analysis-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.625rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .metric-card:last-child { margin-bottom: 0; }
+
+  .metric-card .mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .metric-card .mc-name {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .metric-card .mc-badge {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .mc-badge.good { background: var(--good-bg); border: 1px solid var(--good-border); color: var(--good); }
+  .mc-badge.moderate { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn); }
+  .mc-badge.poor { background: var(--bad-bg); border: 1px solid var(--bad-border); color: var(--bad); }
+
+  .metric-card .mc-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.125rem;
+  }
+
+  .metric-card .mc-range {
+    font-size: 0.625rem;
+    color: var(--text-2);
+    font-weight: 600;
+  }
+
+  .metric-card .mc-note {
+    font-size: 0.625rem;
+    color: var(--text-2);
+    font-weight: 500;
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: none;
+  }
+
+  .drop-zone.visible { display: block; }
+  .drop-zone.dragover { border-color: var(--humid); background: rgba(69, 184, 172, 0.05); color: var(--text); }
+  .drop-zone .dz-icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .drop-zone .dz-sub { font-size: 0.6875rem; color: var(--text-2); margin-top: 0.25rem; }
+
+  .csv-info {
+    font-size: 0.6875rem;
+    color: var(--text-2);
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .csv-info.visible { display: flex; }
+  .csv-info .csv-name { color: var(--humid); }
+  .csv-info .csv-clear {
+    color: var(--text-2);
+    cursor: pointer;
+    font-size: 0.75rem;
+  }
+  .csv-info .csv-clear:hover { color: var(--bad); }
+
+  .status-line {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+
+  #csvFileInput { display: none; }
+
+  @media (max-width: 768px) {
+    .main-row, .main-row.csv-mode {
+      grid-template-columns: 1fr;
+    }
+    .side-panel { max-height: none; }
+    .readings-list { max-height: 150px; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 0.5rem; }
+    .stat { padding: 0.375rem 0.5rem; }
+    .stat .value { font-size: 1rem; }
+    .stat .label { font-size: 0.625rem; }
+    .chart-wrap { padding: 0.375rem; min-height: 200px; }
+    .reading-row { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+    .readings-header { font-size: 0.6875rem; padding: 0.375rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="top-bar">
+    <h1>Koti <span>— Inkiväärikuja</span> <span id="calibBadge" style="font-size:0.5rem;color:var(--good);font-weight:700;vertical-align:middle;margin-left:0.25rem" title="HomePod readings corrected: +0.45°C temp, +4.5% humidity (calibrated against olosuhdemittaus sensor Feb 13)">CAL</span></h1>
+    <button class="update-btn" id="updateBtn" onclick="triggerUpdate()" title="Reload HomePod data">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M2 8a6 6 0 0 1 10.3-4.2M14 8a6 6 0 0 1-10.3 4.2"/>
+        <path d="M14 2v4h-4M2 14v-4h4"/>
+      </svg>
+    </button>
+    <div class="source-tabs">
+      <button class="source-tab active" onclick="setSource('homepod')">HomePod</button>
+      <button class="source-tab" onclick="setSource('csv')">Sensor CSV</button>
+    </div>
+    <div class="range-tabs" id="rangeTabs">
+      <button class="range-tab active" onclick="setRange('today')">Today</button>
+      <button class="range-tab" onclick="setRange('7d')">7 days</button>
+      <button class="range-tab" onclick="setRange('all')">All</button>
+    </div>
+    <button class="csv-btn" onclick="document.getElementById('csvFileInput').click()" title="Load CSV file">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v9M4 7l4-4 4 4"/><path d="M2 12v2h12v-2"/></svg>
+      CSV
+    </button>
+    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVFile(this.files[0])">
+    <div class="csv-info" id="csvInfo">
+      <span class="csv-name" id="csvName"></span>
+      <span class="csv-clear" onclick="clearCSV()" title="Remove CSV">&times;</span>
+    </div>
+    <div class="stats" id="statsBar">
+      <div class="stat temp" id="statTemp">
+        <div class="label">Temp</div>
+        <div class="value-row">
+          <div class="value" id="curTemp">—</div>
+          <span class="trend" id="trendTemp"></span>
+        </div>
+      </div>
+      <div class="stat humid" id="statHumid">
+        <div class="label">Humidity</div>
+        <div class="value-row">
+          <div class="value" id="curHumid">—</div>
+          <span class="trend" id="trendHumid"></span>
+        </div>
+      </div>
+      <div class="stat neutral">
+        <div class="label">Readings</div>
+        <div class="value-row">
+          <div class="value" id="count">—</div>
+        </div>
+      </div>
+      <div class="stat neutral">
+        <div class="label">Updated</div>
+        <div class="value-row">
+          <div class="value" id="lastTime">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="alertBox" class="alert"></div>
+  </div>
+
+  <!-- CSV Stats (shown when CSV loaded) -->
+  <div class="stats" id="csvStatsBar" style="display:none; flex-wrap:wrap; gap:0.375rem;">
+    <div class="stat co2-stat">
+      <div class="label">CO2</div>
+      <div class="value-row"><div class="value" id="csvCO2">—</div></div>
+    </div>
+    <div class="stat pm-stat">
+      <div class="label">PM2.5</div>
+      <div class="value-row"><div class="value" id="csvPM25">—</div></div>
+    </div>
+    <div class="stat tvoc-stat">
+      <div class="label">TVOC</div>
+      <div class="value-row"><div class="value" id="csvTVOC">—</div></div>
+    </div>
+    <div class="stat noise-stat">
+      <div class="label">Noise</div>
+      <div class="value-row"><div class="value" id="csvNoise">—</div></div>
+    </div>
+    <div class="stat neutral">
+      <div class="label">Pressure</div>
+      <div class="value-row"><div class="value" id="csvPressure">—</div></div>
+    </div>
+    <div class="stat neutral">
+      <div class="label">Light</div>
+      <div class="value-row"><div class="value" id="csvLight">—</div></div>
+    </div>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="dz-icon">CSV</div>
+    Drop olosuhdemittaus CSV here
+    <div class="dz-sub">or click to browse</div>
+  </div>
+
+  <div class="main-row" id="mainRow">
+    <div class="chart-area">
+      <div class="chart-tabs" id="chartTabs" style="display:none">
+        <button class="chart-tab active" onclick="setChartTab('climate')">Climate</button>
+        <button class="chart-tab" onclick="setChartTab('airquality')">Air Quality</button>
+        <button class="chart-tab" onclick="setChartTab('comfort')">Comfort</button>
+      </div>
+      <div class="chart-wrap" id="chartWrap1">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="readings" id="readingsTable" style="display:none">
+        <div class="readings-header">All Readings</div>
+        <div class="readings-list" id="readingsList"></div>
+      </div>
+
+      <div class="analysis-panel" id="analysisPanel">
+        <div class="analysis-title">Environment Analysis</div>
+        <div id="analysisCards"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="status-line" id="statusMsg">Loading...</p>
+
+</div>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+const FONT = getComputedStyle(document.body).fontFamily;
+
+let currentSource = 'homepod';
+let currentChartTab = 'climate';
+let currentRange = 'today';
+let homepodData = [];
+let multiDayData = [];  // populated for 7d / all ranges
+let csvData = [];
+let csvFileName = '';
+
+// ============== Health Thresholds ==============
+const THRESHOLDS = {
+  co2:      { good: 800, moderate: 1000, unit: 'ppm', name: 'CO2',
+              goodText: 'Fresh air', modText: 'Moderate — ventilate soon', poorText: 'High — open windows now' },
+  pm25:     { good: 12, moderate: 35, unit: 'µg/m³', name: 'PM2.5',
+              goodText: 'Clean air', modText: 'Moderate particles', poorText: 'Poor — limit exposure' },
+  tvoc:     { good: 220, moderate: 660, unit: 'ppb', name: 'TVOC',
+              goodText: 'Low VOCs', modText: 'Moderate VOCs — ventilate', poorText: 'High VOCs — ventilate now' },
+  humidity: { good: [30, 50], unit: '%', name: 'Humidity',
+              lowText: 'Very dry — UFOX HK2 needed!', goodText: 'Comfortable range', highText: 'Too humid' },
+  temp:     { good: [20, 23], unit: '°C', name: 'Temperature',
+              lowText: 'Cool', goodText: 'Comfortable', highText: 'Warm — crack a window' },
+  noise:    { good: 35, moderate: 50, unit: 'dB(A)', name: 'Noise',
+              goodText: 'Quiet', modText: 'Moderate noise', poorText: 'Noisy' }
+};
+
+function getStatus(metric, value) {
+  if (value === null || value === undefined) return { status: 'unknown', text: '—' };
+  const t = THRESHOLDS[metric];
+  if (!t) return { status: 'unknown', text: '—' };
+  if (Array.isArray(t.good)) {
+    if (value < t.good[0]) return { status: 'poor', text: t.lowText };
+    if (value > t.good[1]) return { status: 'moderate', text: t.highText };
+    return { status: 'good', text: t.goodText };
+  }
+  if (value <= t.good) return { status: 'good', text: t.goodText };
+  if (value <= t.moderate) return { status: 'moderate', text: t.modText };
+  return { status: 'poor', text: t.poorText };
+}
+
+// ============== CSV Parsing ==============
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',');
+  const data = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',');
+    if (vals.length < headers.length) continue;
+    const row = {};
+    headers.forEach((h, idx) => {
+      const v = vals[idx];
+      row[h.trim()] = v === '' ? null : v;
+    });
+    // Parse numerics
+    const entry = {
+      time: new Date(row.dt),
+      temperature: row.temperature !== null ? parseFloat(row.temperature) : null,
+      humidity: row.humidity !== null ? parseFloat(row.humidity) : null,
+      absolute_humidity: row.absolute_humidity !== null ? parseFloat(row.absolute_humidity) : null,
+      dewpoint: row.dewpoint !== null ? parseFloat(row.dewpoint) : null,
+      co2: row.co2 !== null ? parseFloat(row.co2) : null,
+      pm1p0: row.pm1p0 !== null ? parseFloat(row.pm1p0) : null,
+      pm2p5: row.pm2p5 !== null ? parseFloat(row.pm2p5) : null,
+      pm4p0: row.pm4p0 !== null ? parseFloat(row.pm4p0) : null,
+      pm10p0: row.pm10p0 !== null ? parseFloat(row.pm10p0) : null,
+      tvoc: row.tvoc !== null ? parseFloat(row.tvoc) : null,
+      pressure: row.pressure !== null ? parseFloat(row.pressure) : null,
+      noise_avg: row.laeqx !== null ? parseFloat(row.laeqx) : null,
+      noise_max: row.lafmax !== null ? parseFloat(row.lafmax) : null,
+      noise_min: row.lafmin !== null ? parseFloat(row.lafmin) : null,
+      light: row.light !== null ? parseFloat(row.light) : null,
+      battery: row.batt !== null ? parseFloat(row.batt) : null,
+      device: row.name || 'sensor'
+    };
+    if (!isNaN(entry.time.getTime())) data.push(entry);
+  }
+  return data.sort((a, b) => a.time - b.time);
+}
+
+// ============== HomePod Data ==============
+// Calibration offsets (measured Feb 13, 2026 against professional olosuhdemittaus sensor)
+// HomePod reads 0.4-0.5°C low on temp, 4-5% low on humidity
+const HOMEPOD_TEMP_OFFSET = 0.45;   // add to HomePod reading
+const HOMEPOD_HUMID_OFFSET = 4.5;   // add to HomePod reading
+
+function parseHomepodData(entries) {
+  const byMinute = new Map();
+  entries.forEach(d => {
+    const t = new Date(d.timestamp);
+    // Include full date in key so multi-day data doesn't collide
+    const key = t.getFullYear() * 1000000 + (t.getMonth() + 1) * 10000 + t.getDate() * 100 + t.getHours() * 60 + t.getMinutes();
+    const rawTemp = d.temperature_c ?? d.temperature ?? null;
+    const rawHumid = d.humidity_pct ?? d.humidity ?? null;
+    // Use pre-calibrated values from data if available, otherwise apply offset
+    const calTemp = d.temperature_cal ?? (rawTemp !== null ? rawTemp + HOMEPOD_TEMP_OFFSET : null);
+    const calHumid = d.humidity_cal ?? (rawHumid !== null ? rawHumid + HOMEPOD_HUMID_OFFSET : null);
+    byMinute.set(key, {
+      time: t,
+      temp: calTemp,
+      humidity: calHumid,
+      rawTemp: rawTemp,
+      rawHumidity: rawHumid
+    });
+  });
+  return Array.from(byMinute.values()).sort((a, b) => a.time - b.time);
+}
+
+// ============== Canvas Drawing ==============
+function setupCanvas(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const wrap = canvas.parentElement;
+  const W = wrap.clientWidth - 20;
+  const H = wrap.clientHeight - 10;
+  canvas.style.height = H + 'px';
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return { canvas, ctx, W, H };
+}
+
+function labelSafe(positions, x, y, w, h) {
+  for (const p of positions) {
+    if (Math.abs(x - p.x) < (w + p.w) * 0.5 + 4 && Math.abs(y - p.y) < (h + p.h) * 0.5 + 2)
+      return false;
+  }
+  positions.push({ x, y, w, h });
+  return true;
+}
+
+function drawLine(ctx, data, xPos, yFn, color, key, showDots, showLabels, labelPositions, fontSize, labelAbove) {
+  const vals = data.filter(d => d[key] !== null && d[key] !== undefined && !isNaN(d[key]));
+  if (!vals.length) return;
+
+  ctx.strokeStyle = color.replace(')', ', 0.7)').replace('rgb', 'rgba');
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let started = false;
+  vals.forEach(d => {
+    const x = xPos(d.time), y = yFn(d[key]);
+    started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
+  });
+  ctx.stroke();
+
+  if (showDots || showLabels) {
+    ctx.font = '700 ' + fontSize + 'px ' + FONT;
+    vals.forEach(d => {
+      const x = xPos(d.time), y = yFn(d[key]);
+      if (showDots) {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      if (showLabels) {
+        ctx.fillStyle = color;
+        const v = d[key];
+        const txt = Number.isInteger(v) ? v.toString() : v.toFixed(1);
+        const tw = ctx.measureText(txt).width;
+        ctx.textAlign = 'center';
+        const ly = labelAbove ? y - 10 : y + 16;
+        if (labelSafe(labelPositions, x, ly, tw, fontSize)) {
+          ctx.fillText(txt, x, ly);
+        }
+      }
+    });
+  }
+}
+
+function drawBand(ctx, yFn, lo, hi, color, padLeft, plotW) {
+  const y1 = yFn(hi);
+  const y2 = yFn(lo);
+  ctx.fillStyle = color;
+  ctx.fillRect(padLeft, y1, plotW, y2 - y1);
+}
+
+function drawGrid(ctx, pad, plotW, plotH, W, steps) {
+  ctx.strokeStyle = '#262630';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= steps; i++) {
+    const y = pad.top + (plotH / steps) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+  }
+}
+
+function drawAxes(ctx, data, pad, plotW, plotH, W, H, fontSize, leftMin, leftMax, leftColor, leftUnit, rightMin, rightMax, rightColor, rightUnit, steps) {
+  // Left axis
+  ctx.fillStyle = leftColor.replace(')', ', 0.5)').replace('rgb', 'rgba');
+  ctx.font = '600 ' + fontSize + 'px ' + FONT;
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= steps; i++) {
+    const v = leftMin + ((leftMax - leftMin) / steps) * (steps - i);
+    ctx.fillText(v.toFixed(leftUnit === '%' || leftUnit === 'ppm' ? 0 : 1) + leftUnit, pad.left - 8, pad.top + (plotH / steps) * i + 4);
+  }
+
+  // Right axis
+  if (rightMax !== undefined) {
+    ctx.fillStyle = rightColor.replace(')', ', 0.5)').replace('rgb', 'rgba');
+    ctx.textAlign = 'left';
+    for (let i = 0; i <= steps; i++) {
+      const v = rightMin + ((rightMax - rightMin) / steps) * (steps - i);
+      ctx.fillText(v.toFixed(rightUnit === '%' || rightUnit === 'ppm' || rightUnit === 'hPa' ? 0 : 1) + rightUnit, W - pad.right + 8, pad.top + (plotH / steps) * i + 4);
+    }
+  }
+
+  // Time axis
+  ctx.fillStyle = '#666680';
+  ctx.textAlign = 'center';
+  ctx.font = '600 ' + fontSize + 'px ' + FONT;
+  const timeMin = data[0].time.getTime();
+  const timeMax = data[data.length - 1].time.getTime();
+  const timeRange = timeMax - timeMin || 1;
+  const xPos = t => pad.left + ((t.getTime() - timeMin) / timeRange) * plotW;
+  const maxTimeLabels = W < 400 ? 4 : 8;
+  const timeStep = Math.max(1, Math.ceil(data.length / maxTimeLabels));
+  const timeLabelPositions = [];
+  for (let i = 0; i < data.length; i += timeStep) {
+    const x = xPos(data[i].time);
+    const t = data[i].time;
+    const txt = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+    const tw = ctx.measureText(txt).width;
+    let ok = true;
+    for (const p of timeLabelPositions) { if (Math.abs(x - p) < tw + 10) { ok = false; break; } }
+    if (ok) { ctx.fillText(txt, x, H - pad.bottom + 16); timeLabelPositions.push(x); }
+  }
+  // Last label
+  if (data.length > 1) {
+    const x = xPos(data[data.length - 1].time);
+    const t = data[data.length - 1].time;
+    const txt = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+    let ok = true;
+    const tw = ctx.measureText(txt).width;
+    for (const p of timeLabelPositions) { if (Math.abs(x - p) < tw + 10) { ok = false; break; } }
+    if (ok) ctx.fillText(txt, x, H - pad.bottom + 16);
+  }
+}
+
+function drawLegend(ctx, items, pad, fontSize, isNarrow) {
+  const legendY = 10;
+  ctx.font = '700 ' + (fontSize + 1) + 'px ' + FONT;
+  let xOff = pad.left;
+  items.forEach(item => {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(xOff, legendY, 10, 10);
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.label, xOff + 14, legendY + 10);
+    xOff += ctx.measureText(item.label).width + 30;
+  });
+}
+
+// ============== Chart Drawing Functions ==============
+function drawClimateChart(data, isCSV) {
+  const { ctx, W, H } = setupCanvas('chart');
+  const isNarrow = W < 400;
+  const pad = isNarrow ? { top: 24, right: 32, bottom: 24, left: 32 } : { top: 28, right: 42, bottom: 28, left: 42 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const fontSize = isNarrow ? 11 : 12;
+  const steps = isNarrow ? 3 : 4;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const tKey = isCSV ? 'temperature' : 'temp';
+  const temps = data.map(d => d[tKey]).filter(v => v !== null && v !== undefined);
+  const humids = data.map(d => d.humidity).filter(v => v !== null && v !== undefined);
+  if (!temps.length && !humids.length) return;
+
+  const tMin = temps.length ? Math.floor(Math.min(...temps) - 1) : 18;
+  const tMax = temps.length ? Math.ceil(Math.max(...temps) + 1) : 26;
+  const hMin = humids.length ? Math.floor(Math.min(...humids) - 5) : 0;
+  const hMax = humids.length ? Math.ceil(Math.max(...humids) + 5) : 100;
+
+  const timeMin = data[0].time.getTime();
+  const timeMax = data[data.length - 1].time.getTime();
+  const timeRange = timeMax - timeMin || 1;
+  const xPos = t => pad.left + ((t.getTime() - timeMin) / timeRange) * plotW;
+  const yTemp = v => pad.top + plotH - ((v - tMin) / (tMax - tMin)) * plotH;
+  const yHumid = v => pad.top + plotH - ((v - hMin) / (hMax - hMin)) * plotH;
+
+  // Ideal humidity band
+  if (humids.length) drawBand(ctx, yHumid, Math.max(30, hMin), Math.min(50, hMax), 'rgba(69, 184, 172, 0.04)', pad.left, plotW);
+
+  drawGrid(ctx, pad, plotW, plotH, W, steps);
+
+  const labelPositions = [];
+  const showLabels = data.length <= 50;
+
+  // Dewpoint (CSV only, dashed)
+  if (isCSV) {
+    const dps = data.filter(d => d.dewpoint !== null && d.dewpoint !== undefined);
+    if (dps.length) {
+      ctx.setLineDash([4, 4]);
+      drawLine(ctx, data, xPos, yTemp, 'rgb(232, 93, 157)', 'dewpoint', false, false, labelPositions, fontSize, true);
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Suppress dots when data is dense
+  const showDots = data.length <= 200;
+
+  // Temperature
+  drawLine(ctx, data, xPos, yTemp, 'rgb(232, 93, 93)', tKey, showDots, showLabels, labelPositions, fontSize, true);
+
+  // Humidity
+  drawLine(ctx, data, xPos, yHumid, 'rgb(69, 184, 172)', 'humidity', showDots, showLabels, labelPositions, fontSize + 1, false);
+
+  // Detect multi-day data
+  const isMultiDay = data.length > 1 &&
+    data[0].time.toDateString() !== data[data.length - 1].time.toDateString();
+
+  if (isMultiDay) {
+    drawMultiDayAxes(ctx, data, pad, plotW, plotH, W, H, fontSize,
+      tMin, tMax, 'rgb(232, 93, 93)', '°', hMin, hMax, 'rgb(69, 184, 172)', '%', steps);
+  } else {
+    drawAxes(ctx, data, pad, plotW, plotH, W, H, fontSize, tMin, tMax, 'rgb(232, 93, 93)', '°', hMin, hMax, 'rgb(69, 184, 172)', '%', steps);
+  }
+
+  const legend = [{ color: '#e85d5d', label: 'Temp °C' }, { color: '#45b8ac', label: 'Humidity %' }];
+  if (isCSV) legend.push({ color: '#e85d9d', label: 'Dewpoint °C' });
+  drawLegend(ctx, legend, pad, fontSize, isNarrow);
+}
+
+function drawAirQualityChart(data) {
+  const { ctx, W, H } = setupCanvas('chart');
+  const isNarrow = W < 400;
+  const pad = isNarrow ? { top: 24, right: 42, bottom: 24, left: 42 } : { top: 28, right: 52, bottom: 28, left: 52 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const fontSize = isNarrow ? 11 : 12;
+  const steps = isNarrow ? 3 : 4;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const co2Vals = data.map(d => d.co2).filter(v => v !== null && v !== undefined);
+  const pm25Vals = data.map(d => d.pm2p5).filter(v => v !== null && v !== undefined);
+  const tvocVals = data.map(d => d.tvoc).filter(v => v !== null && v !== undefined);
+
+  if (!co2Vals.length && !pm25Vals.length && !tvocVals.length) {
+    ctx.fillStyle = '#666';
+    ctx.font = '600 14px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.fillText('No air quality data in this CSV', W / 2, H / 2);
+    return;
+  }
+
+  const co2Min = co2Vals.length ? Math.floor(Math.min(...co2Vals) - 50) : 400;
+  const co2Max = co2Vals.length ? Math.ceil(Math.max(...co2Vals) + 50) : 1200;
+
+  // PM2.5 + TVOC share right axis
+  const rightVals = [...pm25Vals, ...tvocVals];
+  const rMin = rightVals.length ? Math.floor(Math.min(...rightVals) - 2) : 0;
+  const rMax = rightVals.length ? Math.ceil(Math.max(...rightVals) + 5) : 50;
+
+  const timeMin = data[0].time.getTime();
+  const timeMax = data[data.length - 1].time.getTime();
+  const timeRange = timeMax - timeMin || 1;
+  const xPos = t => pad.left + ((t.getTime() - timeMin) / timeRange) * plotW;
+  const yCO2 = v => pad.top + plotH - ((v - co2Min) / (co2Max - co2Min)) * plotH;
+  const yRight = v => pad.top + plotH - ((v - rMin) / (rMax - rMin)) * plotH;
+
+  // CO2 bands
+  if (co2Vals.length) {
+    const bandTop = Math.min(800, co2Max);
+    drawBand(ctx, yCO2, co2Min, bandTop, 'rgba(93, 187, 99, 0.04)', pad.left, plotW);
+    if (co2Max > 1000) drawBand(ctx, yCO2, 1000, co2Max, 'rgba(232, 93, 93, 0.04)', pad.left, plotW);
+  }
+
+  drawGrid(ctx, pad, plotW, plotH, W, steps);
+
+  const labelPositions = [];
+
+  // CO2 line
+  drawLine(ctx, data, xPos, yCO2, 'rgb(232, 163, 62)', 'co2', true, false, labelPositions, fontSize, true);
+
+  // PM2.5 dots (sparse data)
+  if (pm25Vals.length) {
+    drawLine(ctx, data, xPos, yRight, 'rgb(176, 126, 232)', 'pm2p5', true, true, labelPositions, fontSize, false);
+  }
+
+  // TVOC dots
+  if (tvocVals.length) {
+    drawLine(ctx, data, xPos, yRight, 'rgb(136, 136, 170)', 'tvoc', true, true, labelPositions, fontSize, true);
+  }
+
+  drawAxes(ctx, data, pad, plotW, plotH, W, H, fontSize,
+    co2Min, co2Max, 'rgb(232, 163, 62)', 'ppm',
+    rMin, rMax, 'rgb(176, 126, 232)', '', steps);
+
+  // Threshold lines
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(212, 160, 23, 0.3)';
+  ctx.lineWidth = 1;
+  if (800 >= co2Min && 800 <= co2Max) {
+    const y800 = yCO2(800);
+    ctx.beginPath(); ctx.moveTo(pad.left, y800); ctx.lineTo(W - pad.right, y800); ctx.stroke();
+  }
+  if (1000 >= co2Min && 1000 <= co2Max) {
+    ctx.strokeStyle = 'rgba(232, 93, 93, 0.3)';
+    const y1000 = yCO2(1000);
+    ctx.beginPath(); ctx.moveTo(pad.left, y1000); ctx.lineTo(W - pad.right, y1000); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  const legend = [{ color: '#e8a33e', label: 'CO2 ppm' }];
+  if (pm25Vals.length) legend.push({ color: '#b07ee8', label: 'PM2.5' });
+  if (tvocVals.length) legend.push({ color: '#8888aa', label: 'TVOC' });
+  drawLegend(ctx, legend, pad, fontSize, isNarrow);
+}
+
+function drawComfortChart(data) {
+  const { ctx, W, H } = setupCanvas('chart');
+  const isNarrow = W < 400;
+  const pad = isNarrow ? { top: 24, right: 42, bottom: 24, left: 42 } : { top: 28, right: 52, bottom: 28, left: 52 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const fontSize = isNarrow ? 11 : 12;
+  const steps = isNarrow ? 3 : 4;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const noiseVals = data.map(d => d.noise_avg).filter(v => v !== null && v !== undefined);
+  const pressureVals = data.map(d => d.pressure).filter(v => v !== null && v !== undefined);
+  const lightVals = data.map(d => d.light).filter(v => v !== null && v !== undefined);
+
+  if (!noiseVals.length && !pressureVals.length) {
+    ctx.fillStyle = '#666';
+    ctx.font = '600 14px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.fillText('No comfort data in this CSV', W / 2, H / 2);
+    return;
+  }
+
+  const nMin = noiseVals.length ? Math.floor(Math.min(...noiseVals) - 5) : 20;
+  const nMax = noiseVals.length ? Math.ceil(Math.max(...noiseVals) + 5) : 80;
+  const pMin = pressureVals.length ? Math.floor(Math.min(...pressureVals) - 1) : 990;
+  const pMax = pressureVals.length ? Math.ceil(Math.max(...pressureVals) + 1) : 1010;
+
+  const timeMin = data[0].time.getTime();
+  const timeMax = data[data.length - 1].time.getTime();
+  const timeRange = timeMax - timeMin || 1;
+  const xPos = t => pad.left + ((t.getTime() - timeMin) / timeRange) * plotW;
+  const yNoise = v => pad.top + plotH - ((v - nMin) / (nMax - nMin)) * plotH;
+  const yPressure = v => pad.top + plotH - ((v - pMin) / (pMax - pMin)) * plotH;
+
+  drawGrid(ctx, pad, plotW, plotH, W, steps);
+
+  const labelPositions = [];
+
+  // Noise average
+  if (noiseVals.length) {
+    drawLine(ctx, data, xPos, yNoise, 'rgb(93, 141, 232)', 'noise_avg', true, false, labelPositions, fontSize, true);
+    // Noise max as faded area
+    const maxVals = data.filter(d => d.noise_max !== null && d.noise_max !== undefined);
+    if (maxVals.length) {
+      ctx.fillStyle = 'rgba(93, 141, 232, 0.08)';
+      ctx.beginPath();
+      let started = false;
+      maxVals.forEach(d => {
+        const x = xPos(d.time), y = yNoise(d.noise_max);
+        started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
+      });
+      maxVals.slice().reverse().forEach(d => {
+        if (d.noise_avg !== null) ctx.lineTo(xPos(d.time), yNoise(d.noise_avg));
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // Pressure
+  if (pressureVals.length) {
+    drawLine(ctx, data, xPos, yPressure, 'rgb(136, 136, 153)', 'pressure', false, false, labelPositions, fontSize, false);
+  }
+
+  // Light as dots
+  if (lightVals.length) {
+    const lMax = Math.max(...lightVals.filter(v => v > 0)) || 200;
+    data.forEach(d => {
+      if (d.light !== null && d.light !== undefined && d.light > 0) {
+        const x = xPos(d.time);
+        const radius = 2 + (d.light / lMax) * 6;
+        ctx.fillStyle = 'rgba(232, 212, 77, ' + (0.3 + 0.5 * d.light / lMax) + ')';
+        ctx.beginPath(); ctx.arc(x, pad.top + 15, radius, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+  }
+
+  drawAxes(ctx, data, pad, plotW, plotH, W, H, fontSize,
+    nMin, nMax, 'rgb(93, 141, 232)', 'dB',
+    pMin, pMax, 'rgb(136, 136, 153)', 'hPa', steps);
+
+  const legend = [{ color: '#5d8de8', label: 'Noise dB(A)' }, { color: '#888899', label: 'Pressure hPa' }];
+  if (lightVals.filter(v => v > 0).length) legend.push({ color: '#e8d44d', label: 'Light' });
+  drawLegend(ctx, legend, pad, fontSize, isNarrow);
+}
+
+// ============== Multi-day X-axis ==============
+function drawMultiDayAxes(ctx, data, pad, plotW, plotH, W, H, fontSize, leftMin, leftMax, leftColor, leftUnit, rightMin, rightMax, rightColor, rightUnit, steps) {
+  // Left axis
+  ctx.fillStyle = leftColor.replace(')', ', 0.5)').replace('rgb', 'rgba');
+  ctx.font = '600 ' + fontSize + 'px ' + FONT;
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= steps; i++) {
+    const v = leftMin + ((leftMax - leftMin) / steps) * (steps - i);
+    ctx.fillText(v.toFixed(leftUnit === '%' || leftUnit === 'ppm' ? 0 : 1) + leftUnit, pad.left - 8, pad.top + (plotH / steps) * i + 4);
+  }
+
+  // Right axis
+  if (rightMax !== undefined) {
+    ctx.fillStyle = rightColor.replace(')', ', 0.5)').replace('rgb', 'rgba');
+    ctx.textAlign = 'left';
+    for (let i = 0; i <= steps; i++) {
+      const v = rightMin + ((rightMax - rightMin) / steps) * (steps - i);
+      ctx.fillText(v.toFixed(rightUnit === '%' || rightUnit === 'ppm' ? 0 : 1) + rightUnit, W - pad.right + 8, pad.top + (plotH / steps) * i + 4);
+    }
+  }
+
+  // Multi-day time axis: show date labels (e.g. "Feb 7", "Feb 8")
+  ctx.fillStyle = '#666680';
+  ctx.textAlign = 'center';
+  ctx.font = '600 ' + fontSize + 'px ' + FONT;
+  const timeMin = data[0].time.getTime();
+  const timeMax = data[data.length - 1].time.getTime();
+  const timeRange = timeMax - timeMin || 1;
+  const xPos = t => pad.left + ((t.getTime() - timeMin) / timeRange) * plotW;
+
+  // Group by date, show one label per day
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const seenDates = new Set();
+  const labelPositions = [];
+  for (const d of data) {
+    const dateKey = d.time.toDateString();
+    if (seenDates.has(dateKey)) continue;
+    seenDates.add(dateKey);
+    const x = xPos(d.time);
+    const txt = months[d.time.getMonth()] + ' ' + d.time.getDate();
+    const tw = ctx.measureText(txt).width;
+    let ok = true;
+    for (const p of labelPositions) { if (Math.abs(x - p) < tw + 16) { ok = false; break; } }
+    if (ok) {
+      ctx.fillText(txt, x, H - pad.bottom + 16);
+      labelPositions.push(x);
+      // Draw a faint vertical day separator
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    }
+  }
+}
+
+// ============== Range Selection (Today / 7 days / All) ==============
+async function setRange(range) {
+  currentRange = range;
+  document.querySelectorAll('.range-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.range-tab[onclick="setRange('${range}')"]`).classList.add('active');
+
+  if (currentSource !== 'homepod') return;
+
+  if (range === 'today') {
+    multiDayData = [];
+    reloadData();
+    return;
+  }
+
+  // Fetch multi-day data from API
+  const tabs = document.querySelectorAll('.range-tab');
+  tabs.forEach(t => t.classList.add('loading'));
+  document.getElementById('statusMsg').textContent = 'Loading ' + (range === '7d' ? '7 days' : 'all') + ' of data...';
+
+  try {
+    const res = await fetch('/api/days');
+    if (!res.ok) throw new Error('Failed to fetch days');
+    let days = await res.json();
+
+    if (range === '7d') {
+      days = days.slice(-7);
+    }
+
+    // Parallel-fetch each day
+    const allReadings = [];
+    const fetches = days.map(day =>
+      fetch('/api/day/' + day).then(r => r.json()).then(readings => {
+        allReadings.push(...readings);
+      })
+    );
+    await Promise.all(fetches);
+
+    // Sort by timestamp
+    allReadings.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+
+    multiDayData = parseHomepodData(allReadings);
+    if (multiDayData.length) {
+      updateHomepodStats(multiDayData);
+      drawClimateChart(multiDayData, false);
+      document.getElementById('statusMsg').textContent =
+        multiDayData.length + ' readings across ' + days.length + ' days (calibrated: +0.45°C, +4.5% humidity)';
+    } else {
+      document.getElementById('statusMsg').textContent = 'No data found.';
+    }
+  } catch (e) {
+    document.getElementById('statusMsg').textContent = 'Failed to load multi-day data — is climate-server.py running?';
+  } finally {
+    tabs.forEach(t => t.classList.remove('loading'));
+  }
+}
+
+// ============== Stats & Analysis ==============
+function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null; }
+
+function updateHomepodStats(data) {
+  if (!data.length) return;
+  const last = data[data.length - 1];
+  document.getElementById('curTemp').textContent = last.temp !== null ? last.temp.toFixed(1) + '°C' : '—';
+  document.getElementById('curHumid').textContent = last.humidity !== null ? last.humidity + '%' : '—';
+  document.getElementById('count').textContent = data.length;
+  const lt = last.time;
+  document.getElementById('lastTime').textContent = lt.getHours().toString().padStart(2,'0') + ':' + lt.getMinutes().toString().padStart(2,'0');
+
+  // Trends
+  const tTrend = getTrend(data, 'temp');
+  const hTrend = getTrend(data, 'humidity');
+  applyTrend('trendTemp', tTrend, '°');
+  applyTrend('trendHumid', hTrend, '%');
+
+  const humidEl = document.getElementById('statHumid');
+  humidEl.className = (last.humidity !== null && last.humidity < 25) ? 'stat warn' : 'stat humid';
+
+  checkAlerts(data);
+  buildReadingsTable(data);
+}
+
+function updateCSVStats(data) {
+  if (!data.length) return;
+  const last = data[data.length - 1];
+
+  document.getElementById('curTemp').textContent = last.temperature !== null ? last.temperature.toFixed(1) + '°C' : '—';
+  document.getElementById('curHumid').textContent = last.humidity !== null ? last.humidity.toFixed(1) + '%' : '—';
+  document.getElementById('count').textContent = data.length;
+  const lt = last.time;
+  document.getElementById('lastTime').textContent = lt.getHours().toString().padStart(2,'0') + ':' + lt.getMinutes().toString().padStart(2,'0');
+
+  // CSV-specific stats
+  document.getElementById('csvCO2').textContent = last.co2 !== null ? Math.round(last.co2) + ' ppm' : '—';
+  document.getElementById('csvPM25').textContent = last.pm2p5 !== null ? last.pm2p5.toFixed(1) + ' µg/m³' : '—';
+  document.getElementById('csvTVOC').textContent = last.tvoc !== null ? Math.round(last.tvoc) + '' : '—';
+  document.getElementById('csvNoise').textContent = last.noise_avg !== null ? last.noise_avg.toFixed(0) + ' dB' : '—';
+  document.getElementById('csvPressure').textContent = last.pressure !== null ? last.pressure.toFixed(0) + ' hPa' : '—';
+  document.getElementById('csvLight').textContent = last.light !== null ? last.light.toFixed(0) + ' lux' : '—';
+
+  document.getElementById('csvStatsBar').style.display = 'flex';
+
+  buildCSVAnalysis(data);
+}
+
+function buildCSVAnalysis(data) {
+  const panel = document.getElementById('analysisPanel');
+  const cards = document.getElementById('analysisCards');
+  panel.classList.add('visible');
+
+  const metrics = [];
+
+  // Temperature
+  const temps = data.map(d => d.temperature).filter(v => v !== null);
+  if (temps.length) {
+    const avgT = avg(temps);
+    const status = getStatus('temp', avgT);
+    metrics.push({
+      name: 'Temperature', color: 'var(--temp)',
+      value: avgT.toFixed(1) + '°C', status: status.status,
+      range: 'Min ' + Math.min(...temps).toFixed(1) + '° — Max ' + Math.max(...temps).toFixed(1) + '°',
+      note: status.text + '. Target for home: 22-22.5°C.'
+    });
+  }
+
+  // Humidity
+  const humids = data.map(d => d.humidity).filter(v => v !== null);
+  if (humids.length) {
+    const avgH = avg(humids);
+    const status = getStatus('humidity', avgH);
+    metrics.push({
+      name: 'Humidity', color: 'var(--humid)',
+      value: avgH.toFixed(1) + '%', status: status.status,
+      range: 'Min ' + Math.min(...humids).toFixed(1) + '% — Max ' + Math.max(...humids).toFixed(1) + '%',
+      note: status.text + '. Ideal: 30-50%. UFOX HK2 should help raise this.'
+    });
+  }
+
+  // CO2
+  const co2s = data.map(d => d.co2).filter(v => v !== null);
+  if (co2s.length) {
+    const avgC = avg(co2s);
+    const maxC = Math.max(...co2s);
+    const status = getStatus('co2', avgC);
+    const peakStatus = getStatus('co2', maxC);
+    metrics.push({
+      name: 'CO2', color: 'var(--co2)',
+      value: Math.round(avgC) + ' ppm', status: status.status,
+      range: 'Min ' + Math.min(...co2s).toFixed(0) + ' — Peak ' + maxC.toFixed(0) + ' ppm',
+      note: status.text + (peakStatus.status !== 'good' ? '. Peak was ' + peakStatus.text.toLowerCase() + '.' : '') + ' Below 800 is good. Above 1000: ventilate.'
+    });
+  }
+
+  // PM2.5
+  const pm25s = data.map(d => d.pm2p5).filter(v => v !== null);
+  if (pm25s.length) {
+    const avgP = avg(pm25s);
+    const status = getStatus('pm25', avgP);
+    metrics.push({
+      name: 'PM2.5', color: 'var(--pm)',
+      value: avgP.toFixed(1) + ' µg/m³', status: status.status,
+      range: pm25s.length + ' readings (sensor reports intermittently)',
+      note: status.text + '. Fine particles — below 12 is WHO safe.'
+    });
+  }
+
+  // TVOC
+  const tvocs = data.map(d => d.tvoc).filter(v => v !== null);
+  if (tvocs.length) {
+    const avgV = avg(tvocs);
+    const status = getStatus('tvoc', avgV);
+    metrics.push({
+      name: 'TVOC', color: 'var(--tvoc)',
+      value: Math.round(avgV) + ' ppb', status: status.status,
+      range: 'Min ' + Math.min(...tvocs) + ' — Max ' + Math.max(...tvocs),
+      note: status.text + '. Volatile organic compounds from furniture, paint, cleaning products.'
+    });
+  }
+
+  // Noise
+  const noises = data.map(d => d.noise_avg).filter(v => v !== null);
+  if (noises.length) {
+    const avgN = avg(noises);
+    const maxN = Math.max(...data.map(d => d.noise_max).filter(v => v !== null));
+    const status = getStatus('noise', avgN);
+    metrics.push({
+      name: 'Noise', color: 'var(--noise)',
+      value: avgN.toFixed(0) + ' dB(A)', status: status.status,
+      range: 'Avg ' + avgN.toFixed(0) + ' — Peak ' + maxN.toFixed(0) + ' dB(A)',
+      note: status.text + '. Sleep quality needs <35 dB. Peak ' + maxN.toFixed(0) + ' dB = ' + (maxN > 70 ? 'loud event (TV? conversation?)' : maxN > 50 ? 'moderate activity' : 'quiet environment') + '.'
+    });
+  }
+
+  // Pressure
+  const pressures = data.map(d => d.pressure).filter(v => v !== null);
+  if (pressures.length) {
+    const first = pressures[0];
+    const last = pressures[pressures.length - 1];
+    const trend = last - first;
+    metrics.push({
+      name: 'Barometric Pressure', color: 'var(--pressure)',
+      value: last.toFixed(0) + ' hPa', status: 'good',
+      range: first.toFixed(0) + ' → ' + last.toFixed(0) + ' hPa (' + (trend > 0 ? '+' : '') + trend.toFixed(1) + ')',
+      note: (trend > 1 ? 'Rising pressure — weather clearing/stabilizing.' : trend < -1 ? 'Falling pressure — weather changing, possible front approaching.' : 'Stable pressure.') + ' Rapid changes can trigger headaches in sensitive people.'
+    });
+  }
+
+  cards.innerHTML = metrics.map(m => `
+    <div class="metric-card">
+      <div class="mc-header">
+        <span class="mc-name" style="color:${m.color}">${m.name}</span>
+        <span class="mc-badge ${m.status}">${m.status}</span>
+      </div>
+      <div class="mc-value" style="color:${m.color}">${m.value}</div>
+      <div class="mc-range">${m.range}</div>
+      <div class="mc-note">${m.note}</div>
+    </div>
+  `).join('');
+}
+
+// ============== Original HomePod helpers ==============
+function getTrend(data, key) {
+  const vals = data.filter(d => d[key] !== null && d[key] !== undefined).map(d => d[key]);
+  if (vals.length < 2) return { dir: 'flat', delta: 0 };
+  const last = vals[vals.length - 1];
+  const prev = vals[vals.length - 2];
+  const delta = last - prev;
+  if (Math.abs(delta) < 0.1) return { dir: 'flat', delta: 0 };
+  return { dir: delta > 0 ? 'up' : 'down', delta };
+}
+
+function applyTrend(elId, trend, unit) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.className = 'trend ' + trend.dir;
+  if (trend.dir === 'flat') { el.innerHTML = '—'; return; }
+  const arrow = trend.dir === 'up' ? '\u25B2' : '\u25BC';
+  const abs = Math.abs(trend.delta);
+  const label = (trend.dir === 'up' ? '+' : '-') + (unit === '%' ? abs : abs.toFixed(1)) + unit;
+  el.textContent = arrow + ' ' + label;
+}
+
+function checkAlerts(data) {
+  if (!data.length) return;
+  const last = data[data.length - 1];
+  const hKey = last.humidity !== undefined ? 'humidity' : null;
+  const tKey = last.temp !== undefined ? 'temp' : (last.temperature !== undefined ? 'temperature' : null);
+  const hVal = hKey ? last[hKey] : null;
+  const tVal = tKey ? last[tKey] : null;
+  const msgs = [];
+  if (hVal !== null && hVal < 25)
+    msgs.push('Humidity ' + (typeof hVal === 'number' ? hVal.toFixed(1) : hVal) + '% — very low. UFOX HK2 should be running. Hang wet towels. Open bathroom door after showering.');
+  else if (hVal !== null && hVal < 30)
+    msgs.push('Humidity ' + (typeof hVal === 'number' ? hVal.toFixed(1) : hVal) + '% — dry. UFOX HK2 should help.');
+  if (tVal !== null && tVal > 25) msgs.push('Temp ' + tVal.toFixed(1) + '°C — warm, crack a window.');
+  if (tVal !== null && tVal < 18) msgs.push('Temp ' + tVal.toFixed(1) + '°C — cold, add a blanket.');
+  const box = document.getElementById('alertBox');
+  if (msgs.length) { box.style.display = 'block'; box.innerHTML = msgs.join(' '); }
+  else { box.style.display = 'none'; }
+}
+
+function buildReadingsTable(data) {
+  const table = document.getElementById('readingsTable');
+  const list = document.getElementById('readingsList');
+  if (!data.length) { table.style.display = 'none'; return; }
+  table.style.display = 'flex';
+
+  const isCSV = data[0].temperature !== undefined;
+  const tKey = isCSV ? 'temperature' : 'temp';
+
+  list.innerHTML = data.slice().reverse().map((d, i, arr) => {
+    const t = d.time;
+    const ts = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+    const prev = arr[i + 1];
+    let tempTrend = '', humidTrend = '';
+    if (prev) {
+      if (d[tKey] !== null && prev[tKey] !== null) {
+        const dt = d[tKey] - prev[tKey];
+        if (dt > 0.05) tempTrend = ' <span style="color:var(--up);font-size:0.75em">&#9650;</span>';
+        else if (dt < -0.05) tempTrend = ' <span style="color:var(--down);font-size:0.75em">&#9660;</span>';
+      }
+      if (d.humidity !== null && prev.humidity !== null) {
+        const dh = d.humidity - prev.humidity;
+        if (dh > 0.05) humidTrend = ' <span style="color:var(--up);font-size:0.75em">&#9650;</span>';
+        else if (dh < -0.05) humidTrend = ' <span style="color:var(--down);font-size:0.75em">&#9660;</span>';
+      }
+    }
+    const tempVal = d[tKey] !== null ? d[tKey].toFixed(1) + '°C' : '—';
+    const humVal = d.humidity !== null ? (typeof d.humidity === 'number' ? d.humidity.toFixed(1) : d.humidity) + '%' : '—';
+    // Show raw HomePod values in parentheses if calibrated
+    const rawNote = (!isCSV && d.rawTemp !== undefined) ? ' <span style="color:#555;font-size:0.6em">(' + d.rawTemp.toFixed(1) + '°/' + d.rawHumidity + '%)</span>' : '';
+    return '<div class="reading-row">'
+      + '<span class="r-time">' + ts + rawNote + '</span>'
+      + '<span class="r-temp">' + tempVal + tempTrend + '</span>'
+      + '<span class="r-humid">' + humVal + humidTrend + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+// ============== Source / Tab Management ==============
+function setSource(source) {
+  currentSource = source;
+  document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.source-tab[onclick="setSource('${source}')"]`).classList.add('active');
+
+  const dropZone = document.getElementById('dropZone');
+  const chartTabs = document.getElementById('chartTabs');
+  const mainRow = document.getElementById('mainRow');
+  const csvStatsBar = document.getElementById('csvStatsBar');
+  const analysisPanel = document.getElementById('analysisPanel');
+  const rangeTabs = document.getElementById('rangeTabs');
+
+  if (source === 'csv') {
+    rangeTabs.style.display = 'none';
+    if (!csvData.length) {
+      dropZone.classList.add('visible');
+      chartTabs.style.display = 'none';
+      csvStatsBar.style.display = 'none';
+      analysisPanel.classList.remove('visible');
+      mainRow.classList.add('csv-mode');
+    } else {
+      dropZone.classList.remove('visible');
+      chartTabs.style.display = 'flex';
+      csvStatsBar.style.display = 'flex';
+      mainRow.classList.add('csv-mode');
+      redrawCSV();
+    }
+  } else {
+    rangeTabs.style.display = 'flex';
+    dropZone.classList.remove('visible');
+    chartTabs.style.display = 'none';
+    csvStatsBar.style.display = 'none';
+    analysisPanel.classList.remove('visible');
+    mainRow.classList.remove('csv-mode');
+    // Respect current range
+    if (currentRange !== 'today' && multiDayData.length) {
+      updateHomepodStats(multiDayData);
+      drawClimateChart(multiDayData, false);
+    } else if (homepodData.length) {
+      updateHomepodStats(homepodData);
+      drawClimateChart(homepodData, false);
+    }
+  }
+}
+
+function setChartTab(tab) {
+  currentChartTab = tab;
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.chart-tab[onclick="setChartTab('${tab}')"]`).classList.add('active');
+  redrawCSV();
+}
+
+function redrawCSV() {
+  if (!csvData.length) return;
+  updateCSVStats(csvData);
+  buildReadingsTable(csvData);
+  checkAlerts(csvData);
+
+  switch (currentChartTab) {
+    case 'climate': drawClimateChart(csvData, true); break;
+    case 'airquality': drawAirQualityChart(csvData); break;
+    case 'comfort': drawComfortChart(csvData); break;
+  }
+}
+
+// ============== CSV File Handling ==============
+function handleCSVFile(file) {
+  if (!file) return;
+  csvFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    csvData = parseCSV(e.target.result);
+    if (!csvData.length) {
+      document.getElementById('statusMsg').textContent = 'Failed to parse CSV — check format.';
+      return;
+    }
+    document.getElementById('csvInfo').classList.add('visible');
+    document.getElementById('csvName').textContent = csvFileName + ' (' + csvData.length + ' readings)';
+    document.getElementById('statusMsg').textContent = csvData.length + ' sensor readings loaded from ' + csvFileName;
+    setSource('csv');
+  };
+  reader.readAsText(file);
+}
+
+function clearCSV() {
+  csvData = [];
+  csvFileName = '';
+  document.getElementById('csvInfo').classList.remove('visible');
+  document.getElementById('csvStatsBar').style.display = 'none';
+  document.getElementById('analysisPanel').classList.remove('visible');
+  setSource('homepod');
+}
+
+// ============== Drag & Drop ==============
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('click', () => document.getElementById('csvFileInput').click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) handleCSVFile(file);
+});
+
+// Also support drop on body
+document.body.addEventListener('dragover', e => e.preventDefault());
+document.body.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) handleCSVFile(file);
+});
+
+// ============== HomePod Data Loading ==============
+async function triggerUpdate() {
+  const btn = document.getElementById('updateBtn');
+  const status = document.getElementById('statusMsg');
+  btn.classList.add('loading');
+  status.textContent = 'Grabbing reading from HomePod...';
+  try {
+    const res = await fetch('/update', { method: 'POST' });
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    await reloadData();
+  } catch (e) {
+    status.textContent = 'Update failed — is climate-server.py running?';
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function reloadData() {
+  return new Promise((resolve) => {
+    const old = document.querySelector('script[src^="climate-logs/climate-data.js"]');
+    if (old) old.remove();
+    window._climateData = null;
+    const script = document.createElement('script');
+    script.src = 'climate-logs/climate-data.js?' + Date.now();
+    script.onload = () => {
+      if (window._climateData && window._climateData.length) {
+        homepodData = parseHomepodData(window._climateData);
+        if (currentSource === 'homepod') {
+          document.getElementById('statusMsg').textContent = homepodData.length + ' HomePod readings today (calibrated: +0.45°C, +4.5% humidity)';
+          updateHomepodStats(homepodData);
+          drawClimateChart(homepodData, false);
+        }
+      }
+      resolve();
+    };
+    script.onerror = () => {
+      if (currentSource === 'homepod') {
+        document.getElementById('statusMsg').textContent = 'No HomePod data file found.';
+      }
+      resolve();
+    };
+    document.body.appendChild(script);
+  });
+}
+
+// ============== Resize Handler ==============
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (currentSource === 'csv' && csvData.length) {
+      redrawCSV();
+    } else if (currentRange !== 'today' && multiDayData.length) {
+      drawClimateChart(multiDayData, false);
+    } else if (homepodData.length) {
+      drawClimateChart(homepodData, false);
+    }
+  }, 150);
+});
+
+// ============== Initial Load ==============
+reloadData();
+setInterval(() => { if (currentSource === 'homepod' && currentRange === 'today') reloadData(); }, 60000);
+</script>
+</body>
+</html>
