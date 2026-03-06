@@ -13,8 +13,8 @@ tell application "Calendar"
         end repeat
     end repeat
     if (count of upcoming) > 0 then
-        set first to item 1 of upcoming
-        display notification (item 2 of first as text) with title (item 1 of first)
+        set nextEvt to item 1 of upcoming
+        display notification (item 2 of nextEvt as text) with title (item 1 of nextEvt)
     else
         display notification "No upcoming events" with title "Calendar"
     end if

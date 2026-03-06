@@ -717,8 +717,8 @@ tell application "Calendar"
         end repeat
     end repeat
     if (count of upcoming) > 0 then
-        set first to item 1 of upcoming
-        display notification (item 2 of first as text) with title (item 1 of first)
+        set nextEvt to item 1 of upcoming
+        display notification (item 2 of nextEvt as text) with title (item 1 of nextEvt)
     else
         display notification "No upcoming events" with title "Calendar"
     end if
@@ -929,12 +929,12 @@ do shell script "killall Dock"
 display notification "Dock visible" with title "Dock"
 '''),
         ("dock-add-spacer", "Add a spacer tile to the Dock", '''\
-do shell script "defaults write com.apple.dock persistent-apps -array-add '{\"tile-type\"=\"spacer-tile\";}'"
+do shell script "defaults write com.apple.dock persistent-apps -array-add '{\\"tile-type\\"=\\"spacer-tile\\";}'"
 do shell script "killall Dock"
 display notification "Spacer added" with title "Dock"
 '''),
         ("dock-add-recent-apps", "Add Recent Apps stack to the Dock", '''\
-do shell script "defaults write com.apple.dock persistent-others -array-add '{\"tile-data\" = {\"list-type\" = 1;}; \"tile-type\" = \"recents-tile\";}'"
+do shell script "defaults write com.apple.dock persistent-others -array-add '{\\"tile-data\\" = {\\"list-type\\" = 1;}; \\"tile-type\\" = \\"recents-tile\\";}'"
 do shell script "killall Dock"
 display notification "Recent Apps added to Dock" with title "Dock"
 '''),
