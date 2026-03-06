@@ -15,11 +15,85 @@ In November 2016, Apple eliminated the position of **Product Manager of Automati
 
 This repo picks up where that role left off.
 
-`bin/app-probe.py` extracts **13 layers of automation intelligence** from every Apple app in a single 60-second pass — the complete automation surface of macOS that no one else has mapped. The results below are the current state of the platform.
+**186 workflow scripts** across 16 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus a HomePod climate sensor bridge that turns a hidden HomeKit sensor into a logging dashboard.
+
+---
+
+## The Pipeline
+
+```
+sdef-extract.py → workflow-gen.py → spotlight-export.sh → shortcut-gen.py
+"what can apps do"  "write scripts"   "make findable"       "make speakable"
+```
+
+Each tool's output feeds the next. Add a recipe, run the chain, and it appears in Spotlight AND Siri automatically.
+
+| Stage | Tool | What it does |
+|-------|------|-------------|
+| 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
+| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 186 curated workflow recipes → `.applescript` files with teaching comments |
+| 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/Apple-Workflows/` for Spotlight |
+| 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
+
+---
+
+## 186 Workflow Scripts
+
+Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation — not just an app launcher. Skip a song, empty the trash, toggle dark mode, copy the current Safari URL, create a calendar event.
+
+Each script includes **teaching comments** that explain the AppleScript concepts used (tell blocks, error handling, notifications, shell scripts, etc.).
+
+```
+Finder ............. 28    Safari ............. 15    Calendar ............ 9
+Music .............. 37    System Events ...... 26    Reminders ........... 9
+Mail ............... 13    Notes ............... 8    Photos .............. 9
+Terminal ............ 6    QuickTime ........... 6    Contacts ............ 4
+TextEdit ............ 5    Messages ............ 3    Shortcuts ........... 4
+HomePod ............. 4
+```
+
+```bash
+# Run any workflow directly
+osascript scripts/workflows/music/music-play-pause.applescript
+osascript scripts/workflows/finder/finder-empty-trash.applescript
+osascript scripts/workflows/system-events/system-events-toggle-dark-mode.applescript
+
+# Generate all 186 scripts from recipes
+python3 bin/workflow-gen.py
+
+# Compile to Spotlight-searchable .app bundles
+bin/spotlight-export.sh
+
+# Generate Siri Shortcuts
+python3 bin/shortcut-gen.py
+```
+
+---
+
+## HomePod Climate Sensor
+
+Reads temperature and humidity from a HomePod's hidden sensor via the Shortcuts CLI, logs to JSONL, and serves a live dashboard.
+
+```
+HomePod sensor → Shortcuts app → shortcuts run CLI → bash script → JSONL log → live graph
+```
+
+```bash
+cd homepod/
+./homepod-climate.sh              # Single reading — log + graph
+./homepod-climate.sh --stdout     # Print JSON only
+./homepod-climate.sh --dump       # Show today's readings
+./climate-summary.sh              # Daily min/max/avg
+./start.sh                        # Continuous logger + dashboard server (port 3007)
+```
+
+Calibrated against a professional sensor (Feb 2026): +0.45C temperature, +4.5% humidity. Runs as a LaunchAgent every 10 minutes. See [`homepod/README.md`](homepod/README.md) for setup.
 
 ---
 
 ## The Automation Atlas — 66 Apps, 13 Layers
+
+`bin/app-probe.py` extracts **13 layers of automation intelligence** from every Apple app in a single 60-second pass — the complete automation surface of macOS that no one else has mapped.
 
 ```
 66 apps probed · 378 layer hits · 30 with scripting dictionaries
@@ -159,9 +233,12 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 
 | Tool | Command | What it does |
 |------|---------|-------------|
-| [`ghc`](bin/ghc) | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps → 1. |
+| [`ghc`](bin/ghc) | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps -> 1. |
 | [`ask`](bin/ask) | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | [`app-probe`](bin/app-probe.py) | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. The census Sal never had. |
+| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 186 workflow scripts from curated recipes with teaching comments. |
+| [`spotlight-export`](bin/spotlight-export.sh) | `bin/spotlight-export.sh` | Compile all workflows to Spotlight-searchable `.app` bundles. |
+| [`shortcut-gen`](bin/shortcut-gen.py) | `python3 bin/shortcut-gen.py` | Generate signed Siri Shortcuts from AppleScript workflows. |
 
 ---
 
@@ -177,6 +254,17 @@ python3 bin/app-probe.py --list             # Show available apps
 
 Output per app: `dictionaries/<app>/<app>-probe.yaml` + `<app>-probe.md`
 Cross-app index: `dictionaries/_probe-index.yaml`
+
+---
+
+## Launcher Scripts
+
+64 one-liner AppleScripts in [`scripts/launchers/`](scripts/launchers/) — one per Apple app. Use from Terminal, Loupedeck Live buttons, or any automation tool:
+
+```bash
+osascript scripts/launchers/activate-mail.applescript
+osascript scripts/launchers/activate-logic-pro.applescript
+```
 
 ---
 
@@ -198,20 +286,7 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 
 ## How It All Connects
 
-[**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s → Automator at Apple → context-aware relevance filtering → scripting dictionaries → departure → this repo as open-source continuation.
-
----
-
-## Launcher Scripts
-
-64 one-liner AppleScripts in [`scripts/launchers/`](scripts/launchers/) — one per Apple app. Use from Terminal, Loupedeck Live buttons, or any automation tool:
-
-```bash
-osascript scripts/launchers/activate-mail.applescript
-osascript scripts/launchers/activate-logic-pro.applescript
-```
-
-Every app from the Atlas has a launcher: Finder, Mail, Music, Notes, Safari, System Settings, Logic Pro, Final Cut Pro, and 56 more.
+[**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s -> Automator at Apple -> context-aware relevance filtering -> scripting dictionaries -> departure -> this repo as open-source continuation.
 
 ---
 
@@ -221,7 +296,7 @@ Every app from the Atlas has a launcher: Finder, Mail, Music, Notes, Safari, Sys
 
 Built with [Claude Code](https://claude.ai/) and a custom [Apple skill](https://github.com/esaruoho/esa-skills).
 
-Inspired by **Sal Soghoian** — Apple's Product Manager of Automation Technologies (1997–2016), co-inventor of Automator ([US Patent 7,428,535](patents/US7428535-analysis.md)), and the person who proved that the power of the computer should reside in the hands of the one using it. [Read the full profile →](sal-soghoian.md)
+Inspired by **Sal Soghoian** — Apple's Product Manager of Automation Technologies (1997-2016), co-inventor of Automator ([US Patent 7,428,535](patents/US7428535-analysis.md)), and the person who proved that the power of the computer should reside in the hands of the one using it. [Read the full profile ->](sal-soghoian.md)
 
 ---
 
