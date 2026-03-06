@@ -350,6 +350,195 @@ end tell
         ("stop", "Stop playback", '''\
 tell application "Music" to stop
 '''),
+        ("toggle-repeat", "Cycle repeat mode: off → all → one → off", '''\
+tell application "Music"
+    if song repeat is off then
+        set song repeat to all
+        display notification "Repeat ALL" with title "Music"
+    else if song repeat is all then
+        set song repeat to one
+        display notification "Repeat ONE" with title "Music"
+    else
+        set song repeat to off
+        display notification "Repeat OFF" with title "Music"
+    end if
+end tell
+'''),
+        ("rating-0-stars", "Clear rating of current track", '''\
+tell application "Music"
+    set rating of current track to 0
+    display notification "Rating cleared: " & name of current track with title "Music"
+end tell
+'''),
+        ("rating-1-star", "Rate the current track 1 star", '''\
+tell application "Music"
+    set rating of current track to 20
+    display notification "Rated 1 star: " & name of current track with title "Music"
+end tell
+'''),
+        ("rating-2-stars", "Rate the current track 2 stars", '''\
+tell application "Music"
+    set rating of current track to 40
+    display notification "Rated 2 stars: " & name of current track with title "Music"
+end tell
+'''),
+        ("rating-3-stars", "Rate the current track 3 stars", '''\
+tell application "Music"
+    set rating of current track to 60
+    display notification "Rated 3 stars: " & name of current track with title "Music"
+end tell
+'''),
+        ("rating-4-stars", "Rate the current track 4 stars", '''\
+tell application "Music"
+    set rating of current track to 80
+    display notification "Rated 4 stars: " & name of current track with title "Music"
+end tell
+'''),
+        ("get-lyrics", "Show lyrics of current track", '''\
+tell application "Music"
+    set t to current track
+    set l to lyrics of t
+    if l is "" then
+        display dialog "No lyrics found for: " & name of t with title "Music" buttons {"OK"} default button "OK"
+    else
+        display dialog l with title (name of t & " — Lyrics") buttons {"OK"} default button "OK"
+    end if
+end tell
+'''),
+        ("track-info-detail", "Show detailed info about current track", '''\
+tell application "Music"
+    set t to current track
+    set info to "Track: " & name of t & return
+    set info to info & "Artist: " & artist of t & return
+    set info to info & "Album: " & album of t & return
+    set info to info & "Genre: " & genre of t & return
+    set info to info & "Year: " & (year of t as text) & return
+    set info to info & "Duration: " & time of t & return
+    set info to info & "Plays: " & (played count of t as text) & return
+    set info to info & "BPM: " & (bpm of t as text) & return
+    set info to info & "Bit Rate: " & (bit rate of t as text) & " kbps"
+    display dialog info with title "Track Info" buttons {"Copy", "OK"} default button "OK"
+    if button returned of result is "Copy" then
+        set the clipboard to info
+    end if
+end tell
+'''),
+        ("toggle-eq", "Toggle equalizer on/off", '''\
+tell application "Music"
+    set EQ enabled to not EQ enabled
+    if EQ enabled then
+        display notification "EQ ON" with title "Music"
+    else
+        display notification "EQ OFF" with title "Music"
+    end if
+end tell
+'''),
+        ("set-eq-preset", "Choose an EQ preset from list", '''\
+tell application "Music"
+    set presetNames to name of every EQ preset
+    set chosen to choose from list presetNames with title "Music EQ" with prompt "Choose EQ preset:"
+    if chosen is not false then
+        set EQ enabled to true
+        set current EQ preset to EQ preset (item 1 of chosen)
+        display notification "EQ: " & (item 1 of chosen) with title "Music"
+    end if
+end tell
+'''),
+        ("toggle-visuals", "Toggle visual effects on/off", '''\
+tell application "Music"
+    set visuals enabled to not visuals enabled
+end tell
+'''),
+        ("play-playlist", "Choose a playlist to play", '''\
+tell application "Music"
+    set pNames to name of every user playlist
+    set chosen to choose from list pNames with title "Music" with prompt "Choose playlist:"
+    if chosen is not false then
+        play user playlist (item 1 of chosen)
+        display notification "Playing: " & (item 1 of chosen) with title "Music"
+    end if
+end tell
+'''),
+        ("reveal-current", "Reveal current track in Music library", '''\
+tell application "Music"
+    reveal current track
+    activate
+end tell
+'''),
+        ("count-library", "Show total track count in library", '''\
+tell application "Music"
+    set c to count of tracks of library playlist 1
+    display notification (c as text) & " tracks in library" with title "Music"
+end tell
+'''),
+        ("played-count-current", "Show how many times current track was played", '''\
+tell application "Music"
+    set t to current track
+    display notification "Played " & (played count of t as text) & " times" with title (name of t)
+end tell
+'''),
+        ("toggle-fullscreen", "Toggle Music fullscreen mode", '''\
+tell application "Music"
+    set full screen to not full screen
+end tell
+'''),
+        ("seek-forward-30", "Jump forward 30 seconds", '''\
+tell application "Music"
+    set player position to (player position + 30)
+end tell
+'''),
+        ("seek-backward-30", "Jump backward 30 seconds", '''\
+tell application "Music"
+    set p to player position
+    if p > 30 then
+        set player position to (p - 30)
+    else
+        set player position to 0
+    end if
+end tell
+'''),
+        ("list-playlists", "Show all user playlists as notification", '''\
+tell application "Music"
+    set pNames to name of every user playlist
+    set output to ""
+    repeat with p in pNames
+        set output to output & p & ", "
+    end repeat
+    display dialog output with title "Your Playlists" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("create-playlist", "Create a new empty playlist", '''\
+tell application "Music"
+    set pName to text returned of (display dialog "New playlist name:" default answer "My Playlist")
+    make new user playlist with properties {name:pName}
+    display notification "Created: " & pName with title "Music"
+end tell
+'''),
+        ("airplay-list", "Show available AirPlay devices", '''\
+tell application "Music"
+    set devNames to name of every AirPlay device
+    set output to ""
+    repeat with d in devNames
+        set output to output & d & return
+    end repeat
+    if output is "" then
+        display dialog "No AirPlay devices found" with title "AirPlay" buttons {"OK"} default button "OK"
+    else
+        display dialog output with title "AirPlay Devices" buttons {"OK"} default button "OK"
+    end if
+end tell
+'''),
+        ("current-stream-info", "Show stream title and URL if streaming", '''\
+tell application "Music"
+    set t to current stream title
+    set u to current stream URL
+    if t is "" and u is "" then
+        display notification "Not streaming" with title "Music"
+    else
+        display notification u with title t
+    end if
+end tell
+'''),
     ],
 
     # ═══════════════════════════════════════════════════════════════════════════
