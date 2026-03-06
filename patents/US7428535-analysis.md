@@ -57,12 +57,12 @@ Actions are modular, self-contained, parametric. They can be imported from third
 
 This patent embodies Sal's core philosophy: **"The power of the computer should reside in the hands of the one using it."**
 
-The key insight is that **the system should be smart so the user doesn't have to be**. Applied to our Loupedeck Live AppleScript arsenal:
+The key insight is that **the system should be smart so the user doesn't have to be**. Applied to our automation work:
 
 1. **Data flows between scripts** — think about what each script produces/consumes
 2. **Type awareness** — when chaining actions, consider data type compatibility
 3. **Filter for relevance** — don't overwhelm with options; present what's useful in context
 4. **Invisible bridging** — handle conversions and edge cases transparently
-5. **Modular, self-contained actions** — each script does one thing perfectly (one button = one action)
+5. **Modular, self-contained actions** — each script does one thing perfectly (one trigger = one action)
 
-This is literally the engineering philosophy behind everything we build here.
+Whether the trigger is a hardware controller button, a keyboard shortcut, a Siri phrase, or an automator bot — the principle is the same. This is the engineering philosophy behind everything we build here.

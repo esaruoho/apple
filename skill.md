@@ -4,11 +4,11 @@ description: Product Manager of Automation Technologies — the role Apple elimi
 domain: global
 version: 3.0.0
 generated: 2026-03-05T00:00:00Z
-tags: [applescript, macos, automation, loupedeck, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes]
+tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints]
 triggers:
   keywords:
     primary: [applescript, apple script, osascript, apple]
-    secondary: [loupedeck, macos automation, finder, system events, activate app, bring to front, sal, what would sal do, wwsd, shortcuts, app intents, siri phrases]
+    secondary: [loupedeck, streamdeck, contour shuttle, macos automation, finder, system events, activate app, bring to front, sal, what would sal do, wwsd, shortcuts, app intents, siri phrases, painpoint]
 ---
 
 # Apple Skill
@@ -17,14 +17,15 @@ triggers:
 
 ## User Context
 
-- **User**: Esa Ruoho — Apple aficionado, works at Ray Browser
-- **Hardware**: Loupedeck Live (physical controller with programmable buttons)
-- **Use case**: Loupedeck Live buttons trigger AppleScripts via osascript to launch/activate apps, automate workflows, and optimize the workday
+- **User**: Esa Juhani Ruoho ([@esaruoho](https://github.com/esaruoho)) — software tester, UI enthusiast, amateur scripter, automation/workflow obsessive, and user experience evaluator
 - **OS**: macOS Sequoia (Darwin)
+- **Hardware controllers**: Loupedeck Live, Contour Shuttle Pro, Stream Deck, and any programmable controller that can trigger shell commands
+- **Use case**: Hardware buttons, keyboard shortcuts, Siri, and CLI all trigger AppleScripts via osascript to launch/activate apps, automate workflows, and optimize the workday
 
-## Loupedeck Live Integration
+## Hardware Controller Integration
 
-The Loupedeck Live software allows custom actions that can run shell commands. AppleScripts are executed via:
+Any programmable controller (Loupedeck Live, Stream Deck, Contour Shuttle Pro, etc.) that can run shell commands works with these scripts:
+
 ```bash
 osascript /path/to/script.scpt
 # or inline:
@@ -33,7 +34,7 @@ osascript -e 'tell application "Finder" to activate'
 shortcuts run "Shortcut Name"
 ```
 
-For Loupedeck buttons, scripts should be:
+For hardware-triggered scripts:
 - **Fast** — no unnecessary delays
 - **Reliable** — handle edge cases (app not running, etc.)
 - **Single-purpose** — one button = one action

@@ -190,6 +190,12 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 
 ---
 
+## How It All Connects
+
+[**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s → Automator at Apple → context-aware relevance filtering → scripting dictionaries → departure → this repo as open-source continuation.
+
+---
+
 ## Launcher Scripts
 
 64 one-liner AppleScripts in [`scripts/launchers/`](scripts/launchers/) — one per Apple app. Use from Terminal, Loupedeck Live buttons, or any automation tool:
