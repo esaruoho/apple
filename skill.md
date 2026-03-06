@@ -236,7 +236,34 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `ask` | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | `app-probe` | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. |
 | `sdef-extract` | `python3 bin/sdef-extract.py` | Extract scripting dictionaries for 31 apps. |
+| `workflow-gen` | `python3 bin/workflow-gen.py` | Generate 109 workflow scripts from curated recipes across 15 apps. |
+| `spotlight-export` | `./bin/spotlight-export.sh` | Compile workflows to .app bundles in ~/Applications/ — Spotlight-reachable. |
 | `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
+
+## Spotlight Integration — The Final Sal Mile
+
+Every workflow script can be compiled to a Spotlight-reachable `.app` via `osacompile`. Full guide: `spotlight-automation.md`.
+
+**5 paths to Spotlight:**
+
+| # | Method | Best For | How |
+|---|--------|----------|-----|
+| 1 | `osacompile` to .app | AppleScripts (our workflows) | `osacompile -o ~/Applications/X.app script.applescript` |
+| 2 | Shortcuts | App Intents width | Create Shortcut with "Run AppleScript" action |
+| 3 | Automator Quick Actions | Context-dependent (selected files/text) | Save to `~/Library/Services/` |
+| 4 | Automator Application | Multi-action pipelines | Save as .app to `~/Applications/` |
+| 5 | Shell wrapper | CLI tools (ghc, ask, etc.) | `osacompile -o X.app -e 'do shell script "cmd"'` |
+
+**Pipeline:** `sdef-extract.py` (extract) → `workflow-gen.py` (generate) → `spotlight-export.sh` (export to Spotlight)
+
+```bash
+# Export all 109 workflows as Spotlight-reachable apps
+./bin/spotlight-export.sh
+
+# Then: Cmd+Space → "Music PlayPause" → Enter
+```
+
+**14 Apple apps use CoreSpotlight framework** for content indexing: App Store, Books, Calendar, Freeform, Mail, Maps, News, Notes, Photos, Podcasts, Reminders, System Settings, Tips, Voice Memos.
 
 ## Patents
 
@@ -253,13 +280,17 @@ Full analysis: `patents/US7428535-analysis.md`
 | `skill.md` | This file — skill definition + knowledge base (public) |
 | `README.md` | **The Automation Atlas** — 66 apps tiered by automation depth |
 | `sal-soghoian.md` | **Sal Soghoian knowledge base** — full profile, quotes, Shortcuts position, community reactions, @macautomation scraping plan |
-| `scripts.md` | Catalog of all AppleScripts |
+| `spotlight-automation.md` | **Spotlight integration guide** — 5 paths to make scripts Cmd+Space reachable |
+| `scripts.md` | Catalog of all AppleScripts (64 launchers + 109 workflows = 173 scripts) |
 | `scripts/launchers/` | 64 app launcher scripts (every Apple app + utility) |
+| `scripts/workflows/` | **109 workflow scripts** across 15 apps — the action layer |
 | `dictionaries/` | **31 scripting dictionaries + 66 probe files** |
 | `dictionaries/_index.yaml` | Data type chaining index — cross-app workflow compatibility |
 | `dictionaries/_probe-index.yaml` | 13-layer probe index — URL schemes, App Intents, frameworks, services |
 | `bin/app-probe.py` | 13-layer automation probe |
 | `bin/sdef-extract.py` | Scripting dictionary extractor |
+| `bin/workflow-gen.py` | Workflow script generator (109 recipes across 15 apps) |
+| `bin/spotlight-export.sh` | Compile workflows to Spotlight-reachable .app bundles |
 | `bin/extract-icons.sh` | App icon extractor for Loupedeck |
 | `bin/ghc` | GitHub Clone + Claude skill generator |
 | `bin/ask` | Voice dictation + Claude launcher |
