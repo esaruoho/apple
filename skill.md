@@ -263,6 +263,10 @@ Every workflow script can be compiled to a Spotlight-reachable `.app` via `osaco
 # Then: Cmd+Space → "Music PlayPause" → Enter
 ```
 
+**Critical `osacompile` gotcha:** Apps compiled with `osacompile` have NO `CFBundleIdentifier` in their `Info.plist`. Without a bundle ID, Spotlight ignores them. `spotlight-export.sh` injects one via PlistBuddy.
+
+**APFS Spotlight bug:** On APFS Macs, `/Applications/` lives on the Data volume (`/System/Volumes/Data`). If indexing is disabled on that volume, Spotlight can't find ANY installed apps — only system apps in `/System/Applications/`. Diagnose with `mdutil -sa`. Fix with `sudo mdutil -i on /System/Volumes/Data && sudo mdutil -E /System/Volumes/Data`. Full troubleshooting guide in `spotlight-automation.md`.
+
 **14 Apple apps use CoreSpotlight framework** for content indexing: App Store, Books, Calendar, Freeform, Mail, Maps, News, Notes, Photos, Podcasts, Reminders, System Settings, Tips, Voice Memos.
 
 ## Patents
