@@ -19,7 +19,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORKFLOWS_DIR="$REPO_DIR/scripts/workflows"
-EXPORT_DIR="$HOME/Applications/Apple-Workflows"
+EXPORT_DIR="/Applications/Apple-Workflows"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -121,9 +121,15 @@ for app_dir in "$WORKFLOWS_DIR"/*/; do
             echo "    [dry-run] $app_name.app"
         else
             if osacompile -o "$target" "$script" 2>/dev/null; then
+                # Inject CFBundleIdentifier — required for Spotlight indexing
+                bundle_id="com.esaruoho.apple-workflows.$(echo "$basename_no_ext" | tr '[:upper:]' '[:lower:]')"
+                /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $bundle_id" "$target/Contents/Info.plist" 2>/dev/null || \
+                /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$target/Contents/Info.plist" 2>/dev/null
                 # Set Spotlight comment with keywords for better searchability
                 comment=$(head -1 "$script" | sed 's/^-- //')
                 osascript -e "tell application \"Finder\" to set comment of (POSIX file \"$target\" as alias) to \"$comment\"" 2>/dev/null || true
+                # Register with LaunchServices so Spotlight picks it up
+                /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$target" 2>/dev/null || true
                 echo "    $app_name.app"
             else
                 echo "    $app_name.app [COMPILE ERROR]"
