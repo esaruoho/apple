@@ -243,4 +243,65 @@ Instead, each app must individually implement App Intents in Swift. 20 have. 46 
 
 ---
 
+---
+
+## The 20 Apps With Zero Automation Surface
+
+No scripting dictionary. No App Intents. No URL schemes. The only way in is System Events UI scripting or CLI tools.
+
+1. **Activity Monitor** → `top`, `ps`, `vm_stat`
+2. **Audio MIDI Setup** → `system_profiler SPAudioDataType`
+3. **Chess** → PGN files only
+4. **Clock** → `date` CLI
+5. **ColorSync Utility** → `colorsync` CLI
+6. **Digital Color Meter** → nothing
+7. **Disk Utility** → `diskutil`, `hdiutil`
+8. **Grapher** → GCX files only
+9. **Image Capture** → `sips`, `system_profiler`
+10. **Launchpad** → `open -a`
+11. **Migration Assistant** → not meaningfully automatable
+12. **Mission Control** → `defaults write com.apple.dock`
+13. **Photo Booth** → nothing
+14. **Screenshot** → `screencapture`
+15. **Stickies** → 1 Service only ("Make Sticky")
+16. **Time Machine** → `tmutil`
+17. **VoiceOver Utility** → `VoiceOver` CLI
+18. **Passwords** → `security` CLI (has URL schemes but no sdef/Intents)
+
+Every one of these has a CLI tool that does more than the GUI. The pattern holds.
+
+---
+
+## The Actual Bridge (What Works Today)
+
+Automator and Shortcuts aren't fully isolated — there are seams:
+
+```
+Automator "Run Shell Script" → shortcuts run "Name" → App Intents
+```
+
+This chain works today. An Automator workflow can call a Shortcut via CLI, which triggers App Intents actions. That's depth (Automator's scripting) reaching width (Shortcuts' cross-app Intents).
+
+Going the other direction:
+
+```
+Shortcuts → open workflow.app → Automator runs (but can't pass data back)
+```
+
+**What the AND future looks like:**
+
+| Feature | Today | AND |
+|---------|-------|-----|
+| Shortcuts runs AppleScript | No | `Run AppleScript` action in Shortcuts |
+| Shortcuts runs shell scripts | No | `Run Shell Script` action in Shortcuts |
+| Automator actions in Shortcuts | No | Auto-import 227 actions as Shortcuts actions |
+| Shortcuts saves as `.app` | No | Save to Dock, drag files onto it |
+| Folder Actions from Shortcuts | No | Trigger Shortcut when file added to folder |
+| Shortcuts reads sdef | No | Bridge to 30 apps' scripting dictionaries |
+| Shared variable space | No | Automator variables ↔ Shortcuts input/output |
+
+The technology exists for all of this. The `shortcuts` CLI already bridges Layer 1 (AppleScript) to Layer 4 (App Intents). What's missing is Apple making that bridge official — inside Shortcuts itself, not just from the Terminal.
+
+---
+
 *The whole sausage. The whole widget. The whole service. Someone at Apple needs to think about this.*
