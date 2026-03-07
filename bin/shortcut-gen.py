@@ -8,7 +8,12 @@ Usage:
     python3 bin/shortcut-gen.py --install             # Generate + open for import
     python3 bin/shortcut-gen.py --install finder      # Generate + open for one app
     python3 bin/shortcut-gen.py --list                # List what would be generated
+    python3 bin/shortcut-gen.py --phrases             # List Siri voice phrases
+    python3 bin/shortcut-gen.py --setup               # Open Shortcuts Advanced prefs
     python3 bin/shortcut-gen.py --folder "My Folder"  # Set Shortcuts folder name
+
+Prerequisites:
+    Shortcuts.app → Settings → Advanced → Allow Running Scripts (one-time)
 
 Output:
     shortcuts/<app>/<Shortcut-Name>.shortcut (signed, importable)
@@ -110,14 +115,17 @@ def siri_phrase_from_name(name):
 
 
 def build_shortcut_plist(name, applescript_code, icon_config):
-    """Build a .shortcut plist with a Run AppleScript action and Siri phrase."""
-    phrase = siri_phrase_from_name(name)
+    """Build a .shortcut plist with native Run AppleScript action.
+
+    Uses is.workflow.actions.runapplescript — the native AppleScript action
+    in Shortcuts. Requires 'Allow Running Scripts' in Shortcuts > Advanced.
+    """
     return {
         'WFWorkflowActions': [
             {
-                'WFWorkflowActionIdentifier': 'is.workflow.actions.runscript',
+                'WFWorkflowActionIdentifier': 'is.workflow.actions.runapplescript',
                 'WFWorkflowActionParameters': {
-                    'WFScriptActionScript': applescript_code,
+                    'Script': applescript_code,
                 },
             }
         ],
@@ -169,6 +177,27 @@ def main():
         if idx + 1 < len(args):
             folder_name = args[idx + 1]
             args = args[:idx] + args[idx+2:]
+
+    if '--setup' in args:
+        print("Opening Shortcuts Advanced preferences...")
+        print("Check 'Allow Running Scripts' to enable script execution.")
+        subprocess.run(['open', '-b', 'com.apple.shortcuts'])
+        import time
+        time.sleep(1)
+        subprocess.run(['osascript', '-e',
+            'tell application "System Events" to tell process "Shortcuts" to keystroke "," using command down'])
+        # Click "Advanced" tab
+        time.sleep(0.5)
+        subprocess.run(['osascript', '-e', '''
+            tell application "System Events"
+                tell process "Shortcuts"
+                    try
+                        click button "Advanced" of toolbar 1 of window 1
+                    end try
+                end tell
+            end tell
+        '''])
+        return
 
     if '--list' in args:
         print("Shortcuts that would be generated:\n")
@@ -271,6 +300,8 @@ def main():
     print(f"\n═══ Done: {total} shortcuts across {len(list(SHORTCUTS_DIR.iterdir()))} apps ═══")
     if not install:
         print(f"Run with --install to open for import into Shortcuts app.")
+    print(f"\n  IMPORTANT: Enable 'Allow Running Scripts' in Shortcuts:")
+    print(f"  Shortcuts.app → Settings → Advanced → Allow Running Scripts")
 
 
 if __name__ == '__main__':

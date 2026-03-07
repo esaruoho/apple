@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Automation Pipeline — Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif; background: #000; color: #fff; overflow: hidden; }
+.slide { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 60px; }
+.slide.active { display: flex; }
+.slide h1 { font-size: 4rem; font-weight: 700; margin-bottom: 20px; letter-spacing: -1px; }
+.slide h2 { font-size: 2.4rem; font-weight: 600; margin-bottom: 20px; opacity: 0.9; }
+.slide p { font-size: 1.4rem; line-height: 1.6; opacity: 0.8; max-width: 800px; text-align: center; }
+.slide .big { font-size: 6rem; font-weight: 800; letter-spacing: -2px; }
+.slide .code { font-family: 'SF Mono', 'Menlo', monospace; background: #1a1a2e; padding: 30px 40px; border-radius: 12px; font-size: 1.2rem; line-height: 1.8; text-align: left; max-width: 900px; width: 100%; margin: 20px 0; }
+.slide .code .comment { color: #6a9955; }
+.slide .code .string { color: #ce9178; }
+.slide .code .keyword { color: #569cd6; }
+.slide .code .cmd { color: #dcdcaa; }
+.pipeline { display: flex; gap: 20px; align-items: center; margin: 30px 0; }
+.pipeline .stage { background: #1a1a2e; padding: 20px 30px; border-radius: 12px; text-align: center; }
+.pipeline .stage .name { font-size: 1.1rem; font-weight: 600; color: #569cd6; }
+.pipeline .stage .desc { font-size: 0.85rem; opacity: 0.6; margin-top: 4px; }
+.pipeline .arrow { font-size: 2rem; opacity: 0.4; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0; max-width: 700px; }
+.stats .stat { background: #1a1a2e; padding: 25px; border-radius: 12px; text-align: center; }
+.stats .stat .num { font-size: 3rem; font-weight: 800; color: #569cd6; }
+.stats .stat .label { font-size: 0.9rem; opacity: 0.6; margin-top: 4px; }
+.painpoints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; max-width: 800px; }
+.painpoints .pp { background: #2a1a1a; padding: 15px 20px; border-radius: 10px; border-left: 3px solid #e74c3c; }
+.painpoints .pp .app { font-weight: 600; color: #e74c3c; }
+.painpoints .pp .issue { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
+.quote { font-style: italic; font-size: 1.8rem; opacity: 0.9; max-width: 700px; text-align: center; line-height: 1.5; }
+.quote .attr { font-style: normal; font-size: 1rem; opacity: 0.5; margin-top: 15px; display: block; }
+.nav { position: fixed; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 100; }
+.nav button { background: #333; border: none; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+.nav button:hover { background: #555; }
+.counter { position: fixed; bottom: 35px; left: 30px; font-size: 0.9rem; opacity: 0.3; }
+.accent { color: #569cd6; }
+.green { color: #4ec9b0; }
+.red { color: #e74c3c; }
+</style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide active" id="s1">
+<h1>186 Workflows. One Pipeline.</h1>
+<p>How we mapped the complete automation surface of macOS and built the toolkit Apple stopped building.</p>
+<br>
+<p style="opacity: 0.4;">github.com/esaruoho/apple</p>
+</div>
+
+<!-- Slide 2: The Problem -->
+<div class="slide" id="s2">
+<h2>November 2016</h2>
+<p class="quote">"Your position has been eliminated."<span class="attr">Apple to Sal Soghoian, Product Manager of Automation Technologies (1997-2016)</span></p>
+</div>
+
+<!-- Slide 3: Sal's Credo -->
+<div class="slide" id="s3">
+<p class="quote">"The power of the computer should reside in the hands of the one using it."<span class="attr">Sal Soghoian</span></p>
+</div>
+
+<!-- Slide 4: The Pipeline -->
+<div class="slide" id="s4">
+<h2>The Pipeline</h2>
+<div class="pipeline">
+<div class="stage"><div class="name">sdef-extract</div><div class="desc">what can apps do</div></div>
+<div class="arrow">&#8594;</div>
+<div class="stage"><div class="name">workflow-gen</div><div class="desc">write scripts</div></div>
+<div class="arrow">&#8594;</div>
+<div class="stage"><div class="name">spotlight-export</div><div class="desc">make findable</div></div>
+<div class="arrow">&#8594;</div>
+<div class="stage"><div class="name">shortcut-gen</div><div class="desc">make speakable</div></div>
+</div>
+<p>Add a recipe, run the chain. It appears in <span class="accent">Spotlight</span> and <span class="accent">Siri</span> automatically.</p>
+</div>
+
+<!-- Slide 5: The Numbers -->
+<div class="slide" id="s5">
+<h2>The Automation Atlas</h2>
+<div class="stats">
+<div class="stat"><div class="num">66</div><div class="label">Apps Probed</div></div>
+<div class="stat"><div class="num">378</div><div class="label">Layer Hits</div></div>
+<div class="stat"><div class="num">13</div><div class="label">Layers Deep</div></div>
+<div class="stat"><div class="num">186</div><div class="label">Workflow Scripts</div></div>
+<div class="stat"><div class="num">16</div><div class="label">Apps Covered</div></div>
+<div class="stat"><div class="num">186</div><div class="label">Siri Phrases</div></div>
+</div>
+</div>
+
+<!-- Slide 6: How It Works -->
+<div class="slide" id="s6">
+<h2>Type what you want. It runs.</h2>
+<div class="code">
+<span class="comment"># Spotlight: Cmd+Space</span><br>
+<span class="string">"Empty Trash"</span> <span class="comment">&#8594; runs finder-empty-trash.applescript</span><br>
+<span class="string">"Toggle Dark Mode"</span> <span class="comment">&#8594; runs system-events-dark-mode-toggle.applescript</span><br>
+<span class="string">"Music Play Pause"</span> <span class="comment">&#8594; runs music-playpause.applescript</span><br><br>
+<span class="comment"># Siri: "Hey Siri..."</span><br>
+<span class="string">"Hey Siri, Copy Path"</span><br>
+<span class="string">"Hey Siri, Empty Trash"</span><br>
+<span class="string">"Hey Siri, Next Track"</span><br>
+</div>
+</div>
+
+<!-- Slide 7: Teaching Comments -->
+<div class="slide" id="s7">
+<h2>Every Script Teaches</h2>
+<div class="code">
+<span class="comment">-- Toggle macOS dark mode on/off</span><br>
+<span class="comment">-- App: System Events</span><br>
+<span class="comment">-- Generated by workflow-gen.py</span><br><br>
+<span class="comment">-- Concept: tell application ... end tell</span><br>
+<span class="comment">--   Sends Apple Events to an app.</span><br>
+<span class="comment">-- Concept: not (boolean toggle)</span><br>
+<span class="comment">--   Inverts a boolean value.</span><br><br>
+<span class="keyword">tell</span> application <span class="string">"System Events"</span><br>
+&nbsp;&nbsp;<span class="keyword">tell</span> appearance preferences<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">set</span> dark mode <span class="keyword">to</span> <span class="keyword">not</span> dark mode<br>
+&nbsp;&nbsp;<span class="keyword">end tell</span><br>
+<span class="keyword">end tell</span>
+</div>
+</div>
+
+<!-- Slide 8: Painpoints -->
+<div class="slide" id="s8">
+<h2>Filed: What Apple Should Fix</h2>
+<div class="painpoints">
+<div class="pp"><div class="app">System Settings</div><div class="issue">3 commands for the most important config app on macOS</div></div>
+<div class="pp"><div class="app">Messages</div><div class="issue">3 commands. Write-only. Cannot read messages.</div></div>
+<div class="pp"><div class="app">Photos</div><div class="issue">18 commands that only read the catalog. No import/edit.</div></div>
+<div class="pp"><div class="app">Preview</div><div class="issue">Zero AppleScript. Default PDF viewer is invisible.</div></div>
+<div class="pp"><div class="app">Home</div><div class="issue">No CLI for HomeKit. Manual Shortcuts only.</div></div>
+<div class="pp"><div class="app">Notes</div><div class="issue">5 clicks to record audio. Should be 1.</div></div>
+</div>
+</div>
+
+<!-- Slide 9: HomePod -->
+<div class="slide" id="s9">
+<h2>HomePod Climate Sensor</h2>
+<div class="code">
+<span class="comment"># The HomePod has a hidden temperature/humidity sensor.</span><br>
+<span class="comment"># Apple doesn't expose it in any app. Shortcuts is the only way.</span><br><br>
+HomePod sensor <span class="arrow">&#8594;</span> Shortcuts app <span class="arrow">&#8594;</span> <span class="cmd">shortcuts run</span> CLI <span class="arrow">&#8594;</span> bash <span class="arrow">&#8594;</span> JSONL log <span class="arrow">&#8594;</span> live graph<br><br>
+<span class="comment"># Calibrated: +0.45C temp, +4.5% humidity</span><br>
+<span class="comment"># Runs every 10 minutes via LaunchAgent</span><br>
+<span class="comment"># Dashboard on port 3007</span>
+</div>
+</div>
+
+<!-- Slide 10: The Close -->
+<div class="slide" id="s10">
+<div class="big">One button.<br>One action.<br>Zero friction.</div>
+<br>
+<p style="font-size: 1.2rem; opacity: 0.5;">github.com/esaruoho/apple</p>
+<br>
+<p class="quote" style="font-size: 1.2rem;">"The power of the computer should reside in the hands of the one using it."</p>
+</div>
+
+<div class="nav">
+<button onclick="prev()">&#8592; Prev</button>
+<button onclick="next()">Next &#8594;</button>
+</div>
+<div class="counter" id="counter">1 / 10</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+
+function show(n) {
+    slides[current].classList.remove('active');
+    current = ((n % total) + total) % total;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+}
+function next() { show(current + 1); }
+function prev() { show(current - 1); }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') next();
+    if (e.key === 'ArrowLeft') prev();
+});
+</script>
+</body>
+</html>
