@@ -121,8 +121,9 @@ for app_dir in "$WORKFLOWS_DIR"/*/; do
             echo "    [dry-run] $app_name.app"
         else
             if osacompile -o "$target" "$script" 2>/dev/null; then
-                # Inject CFBundleIdentifier — required for Spotlight indexing
-                bundle_id="com.esaruoho.apple-workflows.$(echo "$basename_no_ext" | tr '[:upper:]' '[:lower:]')"
+                # Inject shared CFBundleIdentifier — all apps share one ID so a single
+                # TCC "Allow" approval grants Apple Events permission to ALL workflows
+                bundle_id="com.esaruoho.apple-workflows"
                 /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $bundle_id" "$target/Contents/Info.plist" 2>/dev/null || \
                 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$target/Contents/Info.plist" 2>/dev/null
                 # Set Spotlight comment with keywords for better searchability
