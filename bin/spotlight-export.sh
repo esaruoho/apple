@@ -120,15 +120,16 @@ for app_dir in "$WORKFLOWS_DIR"/*/; do
         if [[ "$DRY_RUN" == true ]]; then
             echo "    [dry-run] $app_name.app"
         else
+            # Compile with osacompile (creates real macOS applet with Mach-O binary)
+            # then patch Info.plist and codesign — this triggers TCC consent prompts
             if osacompile -o "$target" "$script" 2>/dev/null; then
-                # Inject shared CFBundleIdentifier — all apps share one ID so a single
-                # TCC "Allow" approval grants Apple Events permission to ALL workflows
-                bundle_id="com.esaruoho.apple-workflows"
-                /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $bundle_id" "$target/Contents/Info.plist" 2>/dev/null || \
-                /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$target/Contents/Info.plist" 2>/dev/null
-                # Set Spotlight comment with keywords for better searchability
-                comment=$(head -1 "$script" | sed 's/^-- //')
-                osascript -e "tell application \"Finder\" to set comment of (POSIX file \"$target\" as alias) to \"$comment\"" 2>/dev/null || true
+                # Shared CFBundleIdentifier — approve ONE app, all 186 work
+                /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.esaruoho.apple-workflows" "$target/Contents/Info.plist" 2>/dev/null || \
+                /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.esaruoho.apple-workflows" "$target/Contents/Info.plist" 2>/dev/null
+                # Usage description for TCC consent prompt
+                /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string 'This workflow needs to control other applications to run.'" "$target/Contents/Info.plist" 2>/dev/null || true
+                # Ad-hoc codesign — required for TCC consent prompt on Sequoia
+                codesign --force --sign - "$target" 2>/dev/null
                 # Register with LaunchServices so Spotlight picks it up
                 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$target" 2>/dev/null || true
                 echo "    $app_name.app"

@@ -76,8 +76,42 @@ def get_description(script_path):
     return script_path.stem
 
 
+def siri_phrase_from_name(name):
+    """Convert a Shortcut name to a natural Siri voice phrase.
+    'Finder Empty Trash' -> 'Empty Trash'
+    'Music Play Pause' -> 'Play Pause Music'
+    'System Events Toggle Dark Mode' -> 'Toggle Dark Mode'
+    """
+    # Remove app prefix
+    parts = name.split()
+    if len(parts) < 2:
+        return name
+
+    app = parts[0].lower()
+    action = ' '.join(parts[1:])
+
+    # For System Events, strip the prefix entirely
+    if app == 'system' and len(parts) > 2 and parts[1].lower() == 'events':
+        action = ' '.join(parts[2:])
+
+    # For HomePod, keep as-is
+    if app == 'homepod':
+        return name
+
+    # Verbs that sound better before the app name
+    verb_first = ['play', 'toggle', 'show', 'open', 'list', 'count',
+                  'search', 'create', 'start', 'stop', 'get', 'set',
+                  'check', 'run', 'send', 'close', 'reload', 'reveal']
+
+    first_word = action.split()[0].lower() if action else ''
+    if first_word in verb_first:
+        return action
+    return action
+
+
 def build_shortcut_plist(name, applescript_code, icon_config):
-    """Build a .shortcut plist with a Run AppleScript action."""
+    """Build a .shortcut plist with a Run AppleScript action and Siri phrase."""
+    phrase = siri_phrase_from_name(name)
     return {
         'WFWorkflowActions': [
             {
@@ -147,6 +181,21 @@ def main():
                 print(f"  {app_display}:")
                 for s in scripts:
                     print(f"    {shortcut_name_from_script(s)}")
+        return
+
+    if '--phrases' in args:
+        print("Siri voice phrases (dictation commands):\n")
+        for app_dir in sorted(WORKFLOWS_DIR.iterdir()):
+            if not app_dir.is_dir():
+                continue
+            scripts = sorted(app_dir.glob("*.applescript"))
+            if scripts:
+                app_display = app_dir.name.replace('-', ' ').title()
+                print(f"  {app_display}:")
+                for s in scripts:
+                    name = shortcut_name_from_script(s)
+                    phrase = siri_phrase_from_name(name)
+                    print(f'    "Hey Siri, {phrase}"')
         return
 
     # Filter apps

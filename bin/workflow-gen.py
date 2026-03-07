@@ -1772,7 +1772,7 @@ def generate_script(app_name, suffix, description, code):
 
 
 def generate_catalog(generated):
-    """Generate/update scripts.md catalog."""
+    """Generate/update scripts.md catalog from recipes and launcher scripts."""
     lines = []
     lines.append("# AppleScript Catalog")
     lines.append("")
@@ -1808,11 +1808,12 @@ def generate_catalog(generated):
         scripts = generated[app_slug]
         lines.append(f"### {app_display}")
         lines.append("")
-        lines.append("| Script | Description |")
-        lines.append("|--------|-------------|")
+        lines.append("| Script | Description | Run |")
+        lines.append("|--------|-------------|-----|")
         for filepath, description in scripts:
             rel = filepath.relative_to(Path(__file__).parent.parent / "scripts")
-            lines.append(f"| `{rel}` | {description} |")
+            osacmd = f"`osascript scripts/{rel}`"
+            lines.append(f"| `{rel}` | {description} | {osacmd} |")
         lines.append("")
 
     # Summary
@@ -1840,6 +1841,27 @@ def main():
     catalog_only = '--catalog' in args
     args = [a for a in args if not a.startswith('--')]
 
+    # --catalog: standalone mode — generate scripts.md from RECIPES + launchers, no file writes
+    if catalog_only:
+        all_generated = {}
+        for app_slug, recipes in sorted(RECIPES.items()):
+            slug = app_slug.lower().replace(' ', '-')
+            all_generated[slug] = []
+            for suffix, description, _code in recipes:
+                filename = f"{slug}-{suffix}.applescript"
+                filepath = SCRIPTS_DIR / slug / filename
+                all_generated[slug].append((filepath, description))
+
+        catalog = generate_catalog(all_generated)
+        CATALOG_PATH.write_text(catalog)
+
+        total_workflows = sum(len(v) for v in all_generated.values())
+        launchers_dir = Path(__file__).parent.parent / "scripts" / "launchers"
+        total_launchers = len(list(launchers_dir.glob("*.applescript"))) if launchers_dir.exists() else 0
+        print(f"Catalog written: {CATALOG_PATH}")
+        print(f"  {total_launchers} launchers + {total_workflows} workflows = {total_launchers + total_workflows} scripts")
+        return
+
     # Filter apps if specified
     if args:
         apps = {k: v for k, v in RECIPES.items() if k in args}
@@ -1850,31 +1872,27 @@ def main():
     else:
         apps = RECIPES
 
-    if not catalog_only:
-        SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
 
-        print("═══ Apple Workflow Generator ═══")
-        print(f"Output: {SCRIPTS_DIR}")
-        print(f"Apps: {len(apps)}")
-        print()
+    print("═══ Apple Workflow Generator ═══")
+    print(f"Output: {SCRIPTS_DIR}")
+    print(f"Apps: {len(apps)}")
+    print()
 
     generated = {}
 
     for app_slug, recipes in sorted(apps.items()):
         app_display = app_slug.replace("-", " ").title()
-        if not catalog_only:
-            print(f"  {app_display}:")
+        print(f"  {app_display}:")
 
         generated[app_slug] = []
         for suffix, description, code in recipes:
             filepath = generate_script(app_display, suffix, description, code)
             generated[app_slug].append((filepath, description))
-            if not catalog_only:
-                print(f"    {filepath.name}")
+            print(f"    {filepath.name}")
 
     total = sum(len(v) for v in generated.values())
-    if not catalog_only:
-        print(f"\n  Generated: {total} workflow scripts")
+    print(f"\n  Generated: {total} workflow scripts")
 
     # Update catalog
     # For full catalog, we need all apps even if we only generated some

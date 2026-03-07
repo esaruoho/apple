@@ -1,6 +1,6 @@
-# Video Script: "One Conversation, 167 Files"
+# Video Script: "186 Workflows, One Pipeline"
 
-> How I built a complete macOS automation arsenal by talking to an AI for 75 minutes.
+> How I built a complete macOS automation arsenal — 186 workflow scripts across 16 apps, searchable from Spotlight and speakable via Siri.
 
 ## Video Format
 - **Duration:** 3-4 minutes
@@ -145,13 +145,14 @@ and passing information across them.
 | Built | Count |
 |-------|-------|
 | Launcher scripts | 64 |
+| Workflow scripts | 186 |
+| Apps covered | 16 |
 | Apps with extracted dictionaries | 31 |
 | Commands indexed | 347 |
 | Classes documented | 408 |
-| Whiteboards generated | 34 |
-| Total files pushed to GitHub | 167 |
-| Prompts used | 22 |
-| Time spent | 75 minutes |
+| Spotlight-searchable apps | 186 |
+| Siri Shortcuts generated | 186 |
+| Total files pushed to GitHub | 250+ |
 
 **Narration:**
 "22 prompts. 75 minutes. 167 files. One conversation."
