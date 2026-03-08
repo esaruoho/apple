@@ -312,9 +312,14 @@ osascript scripts/launchers/activate-logic-pro.applescript
 | [**XPC Atlas**](xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
 | [**Data Type Chaining**](data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
 | [**WWSD Decision Tree**](wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
-| [**Siri Phrases**](siri-phrases.md) | All 189+ voice commands in a browsable table. |
+| [**Siri Phrases**](siri-phrases.md) | All 288 voice commands for generated shortcuts in a browsable table. |
 | [**Compatibility**](compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
 | [**Automator vs Shortcuts**](automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
+| [**Spotlight Automation**](spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
+| [**Loupedeck Guide**](loupedeck-guide.md) | Setup guide for Loupedeck Live, Stream Deck, and hardware controllers. |
+| [**How It Was Built**](how-it-was-built.md) | One conversation, 167 files — the build story. |
+| [**App Probe Pitch**](app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
+| [**Video Script**](video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
 
 ---
 

@@ -189,6 +189,20 @@ def categorize_services(services, domain_label):
 def main():
     args = sys.argv[1:]
 
+    if '--help' in args or '-h' in args:
+        print("Usage: python3 bin/xpc-probe.py [OPTIONS]")
+        print()
+        print("Map XPC services across macOS — the hidden automation layer.")
+        print()
+        print("Options:")
+        print("  --yaml          Output as YAML (default: text summary)")
+        print("  --count         Show service counts only")
+        print("  --app NAME      Filter to services matching app name")
+        print("  --help, -h      Show this help message")
+        print()
+        print("Output: dictionaries/_xpc-services.yaml (with --yaml)")
+        sys.exit(0)
+
     yaml_mode = '--yaml' in args
     count_mode = '--count' in args
     filter_app = None
