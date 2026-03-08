@@ -2,7 +2,7 @@
 name: apple
 description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
-version: 3.1.0
+version: 3.2.0
 generated: 2026-03-08T00:00:00Z
 tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints]
 triggers:
@@ -254,8 +254,7 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `sdef-extract` | `python3 bin/sdef-extract.py` | Extract scripting dictionaries for 31 apps. |
 | `workflow-gen` | `python3 bin/workflow-gen.py` | Generate 288 workflow scripts from curated recipes across 31 apps. |
 | `spotlight-export` | `./bin/spotlight-export.sh` | Compile workflows to .app bundles in /Applications/ — Spotlight-reachable. |
-| `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate signed .shortcut files — Siri, Spotlight, share sheet, menu bar. |
-| `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate 189 signed .shortcut files for Siri/Spotlight/Shortcuts app. |
+| `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate signed .shortcut files for Siri/Spotlight/Shortcuts app. |
 | `auto-gen` | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. |
 | `batch-import` | `bin/batch-import.sh` | Import all shortcuts into Shortcuts.app with folder organization. |
 | `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
@@ -313,7 +312,7 @@ Full analysis: `patents/US7428535-analysis.md`
 | `dictionaries/_probe-index.yaml` | 13-layer probe index — URL schemes, App Intents, frameworks, services |
 | `bin/app-probe.py` | 13-layer automation probe |
 | `bin/sdef-extract.py` | Scripting dictionary extractor |
-| `bin/workflow-gen.py` | Workflow script generator (209 recipes across 31 apps) |
+| `bin/workflow-gen.py` | Workflow script generator (288 recipes across 31 apps) |
 | `bin/spotlight-export.sh` | Compile workflows to Spotlight-reachable .app bundles |
 | `bin/extract-icons.sh` | App icon extractor for Loupedeck |
 | `bin/ghc` | GitHub Clone + Claude skill generator |

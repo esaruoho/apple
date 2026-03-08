@@ -7,6 +7,9 @@
 --   Shows a modal dialog. Can include text fields (default answer), buttons, and icons.
 -- Concept: do shell script "command"
 --   Runs a shell command from AppleScript and returns stdout as text.
+-- Concept: quoted form of variable
+--   Safely escapes a string for shell commands. Prevents injection.
 
-set summary to do shell script "bash /Users/esaruoho/work/apple/homepod/climate-summary.sh"
+set repoDir to do shell script "echo $HOME/work/apple"
+set summary to do shell script "bash " & quoted form of (repoDir & "/homepod/climate-summary.sh")
 display dialog summary with title "Climate Summary" buttons {"OK"} default button "OK"

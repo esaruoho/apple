@@ -52,6 +52,23 @@ APP_ICONS = {
     "textedit":       {"glyph": 59538, "color": 3679049983},   # gray, doc
     "quicktime":      {"glyph": 59452, "color": 463140863},    # blue, play
     "homepod":        {"glyph": 59458, "color": 4292093695},   # pink, speaker
+    "tv":             {"glyph": 59452, "color": 4292093695},   # pink, play
+    "keynote":        {"glyph": 59511, "color": 463140863},    # blue, presentation
+    "numbers":        {"glyph": 59496, "color": 1440546815},   # green, spreadsheet
+    "pages":          {"glyph": 59538, "color": 463140863},    # blue, document
+    "automator":      {"glyph": 59458, "color": 2071128063},   # purple, gear
+    "script-editor":  {"glyph": 59511, "color": 255},          # gray, code
+    "image-events":   {"glyph": 59470, "color": 4282601983},   # red, image
+    "imovie":         {"glyph": 59452, "color": 2071128063},   # purple, film
+    "system-information": {"glyph": 59458, "color": 3679049983}, # gray, info
+    "preview":        {"glyph": 59470, "color": 463140863},    # blue, view
+    "system-settings": {"glyph": 59458, "color": 3679049983},  # gray, gear
+    "disk-utility":   {"glyph": 59458, "color": 3679049983},   # gray, disk
+    "screenshot":     {"glyph": 59470, "color": 463140863},    # blue, camera
+    "console":        {"glyph": 59511, "color": 255},          # black, terminal
+    "time-machine":   {"glyph": 59434, "color": 1440546815},   # green, clock
+    "accessibility":  {"glyph": 59458, "color": 463140863},    # blue, accessibility
+    "hardware":       {"glyph": 59458, "color": 3679049983},   # gray, chip
 }
 
 DEFAULT_ICON = {"glyph": 59511, "color": 4282601983}

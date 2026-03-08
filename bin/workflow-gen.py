@@ -1683,15 +1683,18 @@ set temperature to do shell script "echo " & quoted form of reading & " | sed 's
 display notification "Temp: " & temperature & "°C | Humidity: " & humidity & "%" with title "HomePod Climate"
 '''),
         ("climate-log", "Take a climate reading and log it", '''\
-do shell script "bash /Users/esaruoho/work/apple/homepod/homepod-climate.sh --nograph"
+set repoDir to do shell script "cd -- \\"$(dirname $(dirname $(dirname \\\"$0\\\")))\\\" 2>/dev/null && pwd || echo $HOME/work/apple"
+do shell script "bash " & quoted form of (repoDir & "/homepod/homepod-climate.sh") & " --nograph"
 display notification "Climate reading logged" with title "HomePod"
 '''),
         ("climate-dashboard", "Open the HomePod climate dashboard", '''\
-do shell script "cd /Users/esaruoho/work/apple/homepod && if ! lsof -i :3007 >/dev/null 2>&1; then nohup python3 climate-server.py >/dev/null 2>&1 & sleep 0.5; fi"
+set repoDir to do shell script "echo $HOME/work/apple"
+do shell script "cd " & quoted form of (repoDir & "/homepod") & " && if ! lsof -i :3007 >/dev/null 2>&1; then nohup python3 climate-server.py >/dev/null 2>&1 & sleep 0.5; fi"
 do shell script "open http://localhost:3007/climate-graph.html"
 '''),
         ("climate-summary", "Show today's climate summary", '''\
-set summary to do shell script "bash /Users/esaruoho/work/apple/homepod/climate-summary.sh"
+set repoDir to do shell script "echo $HOME/work/apple"
+set summary to do shell script "bash " & quoted form of (repoDir & "/homepod/climate-summary.sh")
 display dialog summary with title "Climate Summary" buttons {"OK"} default button "OK"
 '''),
     ],

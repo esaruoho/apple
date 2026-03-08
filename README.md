@@ -39,7 +39,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 
 ---
 
-## 209 Workflow Scripts
+## 288 Workflow Scripts
 
 Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation — not just an app launcher. Skip a song, empty the trash, toggle dark mode, copy the current Safari URL, create a calendar event, check battery status, open System Settings panes.
 
@@ -67,7 +67,7 @@ osascript scripts/workflows/music/music-play-pause.applescript
 osascript scripts/workflows/finder/finder-empty-trash.applescript
 osascript scripts/workflows/system-events/system-events-toggle-dark-mode.applescript
 
-# Generate all 209 scripts from recipes
+# Generate all 288 scripts from recipes
 python3 bin/workflow-gen.py
 
 # Compile to Spotlight-searchable .app bundles
@@ -79,7 +79,7 @@ python3 bin/shortcut-gen.py
 
 ### Auto-Generated Scripts (121 additional)
 
-[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 209 hand-curated scripts.
+[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 288 hand-curated scripts.
 
 ```bash
 python3 bin/auto-gen.py              # Generate all 121 auto-workflows

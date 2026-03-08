@@ -1,4 +1,4 @@
-# Video Script: "209 Workflows, One Pipeline"
+# Video Script: "288 Workflows, One Pipeline"
 
 > How I built a complete macOS automation arsenal — 288 workflow scripts across 31 apps, searchable from Spotlight and speakable via Siri.
 
@@ -145,12 +145,12 @@ and passing information across them.
 | Built | Count |
 |-------|-------|
 | Launcher scripts | 64 |
-| Workflow scripts | 209 |
-| Apps covered | 18 |
+| Workflow scripts | 288 |
+| Apps covered | 31 |
 | Apps with extracted dictionaries | 31 |
 | Commands indexed | 347 |
 | Classes documented | 408 |
-| Spotlight-searchable apps | 209 |
+| Spotlight-searchable apps | 288 |
 | Siri Shortcuts generated | 189 |
 | Total files pushed to GitHub | 250+ |
 

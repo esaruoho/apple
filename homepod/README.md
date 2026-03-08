@@ -45,7 +45,7 @@ Create a Shortcut in Shortcuts.app called **"HomePod Sensors"** that:
 
 ## Calibration
 
-Measured Feb 13, 2026 against a professional olosuhdemittaus sensor:
+Measured Feb 13, 2026 against a professional indoor climate sensor (olosuhdemittaus = conditions measurement, Finnish):
 - Temperature: HomePod reads **0.45°C low** — script adds +0.45°C
 - Humidity: HomePod reads **4.5% low** — script adds +4.5%
 

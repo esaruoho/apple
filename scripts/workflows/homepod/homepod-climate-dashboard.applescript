@@ -7,6 +7,9 @@
 --   Runs a shell command from AppleScript and returns stdout as text.
 -- Concept: if condition then ... else ... end if
 --   Conditional branching. AppleScript uses English-like "is", "is not", "contains".
+-- Concept: quoted form of variable
+--   Safely escapes a string for shell commands. Prevents injection.
 
-do shell script "cd /Users/esaruoho/work/apple/homepod && if ! lsof -i :3007 >/dev/null 2>&1; then nohup python3 climate-server.py >/dev/null 2>&1 & sleep 0.5; fi"
+set repoDir to do shell script "echo $HOME/work/apple"
+do shell script "cd " & quoted form of (repoDir & "/homepod") & " && if ! lsof -i :3007 >/dev/null 2>&1; then nohup python3 climate-server.py >/dev/null 2>&1 & sleep 0.5; fi"
 do shell script "open http://localhost:3007/climate-graph.html"

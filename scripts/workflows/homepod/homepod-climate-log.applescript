@@ -7,6 +7,9 @@
 --   Shows a macOS notification banner. Disappears after a few seconds.
 -- Concept: do shell script "command"
 --   Runs a shell command from AppleScript and returns stdout as text.
+-- Concept: quoted form of variable
+--   Safely escapes a string for shell commands. Prevents injection.
 
-do shell script "bash /Users/esaruoho/work/apple/homepod/homepod-climate.sh --nograph"
+set repoDir to do shell script "cd -- \"$(dirname $(dirname $(dirname \"$0\")))\" 2>/dev/null && pwd || echo $HOME/work/apple"
+do shell script "bash " & quoted form of (repoDir & "/homepod/homepod-climate.sh") & " --nograph"
 display notification "Climate reading logged" with title "HomePod"
