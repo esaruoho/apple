@@ -15,7 +15,7 @@ In November 2016, Apple eliminated the position of **Product Manager of Automati
 
 This repo picks up where that role left off.
 
-**209 workflow scripts** across 18 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
+**288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
 ---
 
@@ -31,7 +31,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 | Stage | Tool | What it does |
 |-------|------|-------------|
 | 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
-| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 209 curated workflow recipes → `.applescript` files with teaching comments |
+| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 288 curated workflow recipes → `.applescript` files with teaching comments |
 | 2b. Auto-gen | [`bin/auto-gen.py`](bin/auto-gen.py) | 121 additional scripts auto-generated from YAML dictionaries |
 | 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/Apple-Workflows/` for Spotlight |
 | 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
@@ -46,15 +46,20 @@ Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation 
 Each script includes **teaching comments** that explain the AppleScript concepts used (tell blocks, error handling, notifications, shell scripts, etc.).
 
 ```
-Finder ............. 28    Safari ............. 15    Calendar ............ 9
-Music .............. 37    System Events ...... 26    Reminders ........... 9
-Mail ............... 13    Notes ............... 8    Photos .............. 9
-Terminal ............ 6    QuickTime ........... 6    Contacts ............ 4
-TextEdit ............ 5    Messages ............ 3    Shortcuts ........... 4
-HomePod ............ 11    Accessibility ....... 8    Hardware ............ 8
+Finder ............. 28    Music .............. 37    System Events ...... 26
+Safari ............. 15    Mail ............... 13    Calendar ............ 9
+Reminders ........... 9    Photos .............. 9    Notes ............... 8
+Keynote ............ 10    TV ................. 10    System Settings ..... 8
+Terminal ............ 6    QuickTime ........... 6    Pages ............... 6
+Numbers ............ 6    Automator ........... 5    Image Events ........ 5
+Script Editor ....... 5    Screenshot .......... 4    Contacts ............ 4
+Shortcuts ........... 4    HomePod ............ 11    Time Machine ........ 4
+System Information .. 4    Disk Utility ........ 3    Console ............. 3
+Preview ............ 4    Messages ............ 3    iMovie .............. 2
+TextEdit ............ 5    Accessibility ....... 8    Hardware ............ 8
 ```
 
-**New in v3.1:** Accessibility API scripts (Tier 8) open System Settings panes directly. Hardware scripts (Tier 10) read battery, USB, Bluetooth, audio, CPU, memory, and disk state via IOKit/CLI.
+**v3.2:** Added 15 new apps: TV, Keynote, Pages, Numbers, Automator, Script Editor, Image Events, iMovie, System Information, Preview, System Settings, Disk Utility, Screenshot, Console, Time Machine. Plus Accessibility API (Tier 8) and Hardware/IOKit (Tier 10) scripts.
 
 ```bash
 # Run any workflow directly
@@ -264,7 +269,7 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 | [`ghc`](bin/ghc) | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps -> 1. |
 | [`ask`](bin/ask) | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | [`app-probe`](bin/app-probe.py) | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. The census Sal never had. |
-| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 209 workflow scripts from curated recipes with teaching comments. |
+| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 288 workflow scripts from curated recipes with teaching comments. |
 | [`spotlight-export`](bin/spotlight-export.sh) | `bin/spotlight-export.sh` | Compile all workflows to Spotlight-searchable `.app` bundles. |
 | [`shortcut-gen`](bin/shortcut-gen.py) | `python3 bin/shortcut-gen.py` | Generate signed Siri Shortcuts from AppleScript workflows. |
 | [`auto-gen`](bin/auto-gen.py) | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. Fill the gaps. |

@@ -1695,6 +1695,786 @@ set summary to do shell script "bash /Users/esaruoho/work/apple/homepod/climate-
 display dialog summary with title "Climate Summary" buttons {"OK"} default button "OK"
 '''),
     ],
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TV — 29 commands, video playback and library management
+    # ═══════════════════════════════════════════════════════════════════════════
+    "tv": [
+        ("playpause", "Toggle play/pause", '''\
+tell application "TV" to playpause
+'''),
+        ("next-track", "Skip to next track", '''\
+tell application "TV" to next track
+'''),
+        ("previous-track", "Go to previous track", '''\
+tell application "TV" to previous track
+'''),
+        ("now-playing", "Show current track as notification", '''\
+tell application "TV"
+    try
+        set t to name of current track
+        set s to show of current track
+        display notification s with title t
+    on error
+        display notification "Nothing playing" with title "TV"
+    end try
+end tell
+'''),
+        ("list-playlists", "List playlists in a dialog", '''\
+tell application "TV"
+    set pNames to name of every playlist
+    set AppleScript's text item delimiters to linefeed
+    set pList to pNames as text
+    set AppleScript's text item delimiters to ""
+    display dialog pList with title "TV Playlists" buttons {"OK"} default button "OK"
+end tell
+'''),
+        ("search-library", "Search TV library by name", '''\
+tell application "TV"
+    set q to text returned of (display dialog "Search TV:" default answer "")
+    set results to search library playlist 1 for q
+    if (count of results) is 0 then
+        display notification "No results for: " & q with title "TV"
+    else
+        set t to item 1 of results
+        play t
+        display notification "Playing: " & name of t with title "TV"
+    end if
+end tell
+'''),
+        ("mute-toggle", "Toggle TV mute", '''\
+tell application "TV"
+    set mute to not mute
+end tell
+'''),
+        ("volume-up", "Increase TV volume by 10", '''\
+tell application "TV"
+    set v to sound volume
+    if v + 10 > 100 then
+        set sound volume to 100
+    else
+        set sound volume to v + 10
+    end if
+end tell
+'''),
+        ("volume-down", "Decrease TV volume by 10", '''\
+tell application "TV"
+    set v to sound volume
+    if v - 10 < 0 then
+        set sound volume to 0
+    else
+        set sound volume to v - 10
+    end if
+end tell
+'''),
+        ("reveal-current", "Reveal current track in library", '''\
+tell application "TV"
+    try
+        reveal current track
+        activate
+    on error
+        display notification "Nothing playing to reveal" with title "TV"
+    end try
+end tell
+'''),
+    ],
+    # ═══════════════════════════════════════════════════════════════════════════
+    # KEYNOTE — 28 commands, presentation creation and playback
+    # ═══════════════════════════════════════════════════════════════════════════
+    "keynote": [
+        ("new-presentation", "Create a new Keynote presentation", '''\
+tell application "Keynote"
+    activate
+    make new document
+end tell
+'''),
+        ("start-slideshow", "Start slideshow from the beginning", '''\
+tell application "Keynote"
+    try
+        start front document
+    on error
+        display notification "No presentation open" with title "Keynote"
+    end try
+end tell
+'''),
+        ("stop-slideshow", "Stop the current slideshow", '''\
+tell application "Keynote"
+    try
+        stop front document
+    on error
+        display notification "No slideshow running" with title "Keynote"
+    end try
+end tell
+'''),
+        ("next-slide", "Advance to the next slide", '''\
+tell application "Keynote"
+    try
+        show next
+    on error
+        display notification "No slideshow running" with title "Keynote"
+    end try
+end tell
+'''),
+        ("previous-slide", "Go to the previous slide", '''\
+tell application "Keynote"
+    try
+        show previous
+    on error
+        display notification "No slideshow running" with title "Keynote"
+    end try
+end tell
+'''),
+        ("slide-count", "Show slide count of front document", '''\
+tell application "Keynote"
+    try
+        set n to count of slides of front document
+        display notification (n as text) & " slides" with title "Keynote"
+    on error
+        display notification "No presentation open" with title "Keynote"
+    end try
+end tell
+'''),
+        ("export-pdf", "Export front presentation as PDF to Desktop", '''\
+tell application "Keynote"
+    try
+        set docName to name of front document
+        if docName ends with ".key" then set docName to text 1 thru -5 of docName
+        set exportPath to (((path to desktop) as text) & docName & ".pdf")
+        export front document to file exportPath as PDF
+        display notification "Exported: " & docName & ".pdf" with title "Keynote"
+    on error errMsg
+        display notification errMsg with title "Keynote Export Error"
+    end try
+end tell
+'''),
+        ("current-slide", "Show current slide number", '''\
+tell application "Keynote"
+    try
+        set n to slide number of current slide of front document
+        set total to count of slides of front document
+        display notification "Slide " & n & " of " & total with title "Keynote"
+    on error
+        display notification "No presentation open" with title "Keynote"
+    end try
+end tell
+'''),
+        ("list-slides", "List slide titles in a dialog", '''\
+tell application "Keynote"
+    try
+        set slideInfo to {}
+        set allSlides to slides of front document
+        repeat with s in allSlides
+            try
+                set t to object text of default title item of s as text
+            on error
+                set t to "(untitled)"
+            end try
+            set end of slideInfo to (slide number of s as text) & ". " & t
+        end repeat
+        set AppleScript's text item delimiters to linefeed
+        set slideList to slideInfo as text
+        set AppleScript's text item delimiters to ""
+        display dialog slideList with title "Keynote Slides" buttons {"OK"} default button "OK"
+    on error errMsg
+        display notification errMsg with title "Keynote"
+    end try
+end tell
+'''),
+        ("presenter-notes", "Show presenter notes for current slide", '''\
+tell application "Keynote"
+    try
+        set n to presenter notes of current slide of front document as text
+        if n is "" then
+            display notification "No presenter notes on this slide" with title "Keynote"
+        else
+            display dialog n with title "Presenter Notes" buttons {"OK"} default button "OK"
+        end if
+    on error
+        display notification "No presentation open" with title "Keynote"
+    end try
+end tell
+'''),
+    ],
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PAGES — 11 commands, word processing and document export
+    # ═══════════════════════════════════════════════════════════════════════════
+    "pages": [
+        ("new-document", "Create a new blank Pages document", '''\
+tell application "Pages"
+    activate
+    make new document
+end tell
+'''),
+        ("word-count", "Show word count of front document", '''\
+tell application "Pages"
+    try
+        set n to count of words of body text of front document
+        display notification (n as text) & " words" with title "Pages"
+    on error
+        display notification "No document open" with title "Pages"
+    end try
+end tell
+'''),
+        ("export-pdf", "Export front document as PDF to Desktop", '''\
+tell application "Pages"
+    try
+        set docName to name of front document
+        if docName ends with ".pages" then set docName to text 1 thru -7 of docName
+        set exportPath to (((path to desktop) as text) & docName & ".pdf")
+        export front document to file exportPath as PDF
+        display notification "Exported: " & docName & ".pdf" with title "Pages"
+    on error errMsg
+        display notification errMsg with title "Pages Export Error"
+    end try
+end tell
+'''),
+        ("character-count", "Show character count of front document", '''\
+tell application "Pages"
+    try
+        set n to count of characters of body text of front document
+        display notification (n as text) & " characters" with title "Pages"
+    on error
+        display notification "No document open" with title "Pages"
+    end try
+end tell
+'''),
+        ("page-count", "Show page count of front document", '''\
+tell application "Pages"
+    try
+        set n to count of pages of front document
+        display notification (n as text) & " pages" with title "Pages"
+    on error
+        display notification "No document open" with title "Pages"
+    end try
+end tell
+'''),
+        ("list-documents", "List all open Pages documents", '''\
+tell application "Pages"
+    try
+        set docNames to name of every document
+        set AppleScript's text item delimiters to linefeed
+        set docList to docNames as text
+        set AppleScript's text item delimiters to ""
+        display dialog docList with title "Open Documents" buttons {"OK"} default button "OK"
+    on error
+        display notification "No documents open" with title "Pages"
+    end try
+end tell
+'''),
+    ],
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NUMBERS — 16 commands, spreadsheet management and export
+    # ═══════════════════════════════════════════════════════════════════════════
+    "numbers": [
+        ("new-spreadsheet", "Create a new blank Numbers spreadsheet", '''\
+tell application "Numbers"
+    activate
+    make new document
+end tell
+'''),
+        ("export-csv", "Export front document as CSV to Desktop", '''\
+tell application "Numbers"
+    try
+        set docName to name of front document
+        if docName ends with ".numbers" then set docName to text 1 thru -9 of docName
+        set exportPath to (((path to desktop) as text) & docName & ".csv")
+        export front document to file exportPath as CSV
+        display notification "Exported: " & docName & ".csv" with title "Numbers"
+    on error errMsg
+        display notification errMsg with title "Numbers Export Error"
+    end try
+end tell
+'''),
+        ("sheet-count", "Show sheet count of front document", '''\
+tell application "Numbers"
+    try
+        set n to count of sheets of front document
+        display notification (n as text) & " sheets" with title "Numbers"
+    on error
+        display notification "No spreadsheet open" with title "Numbers"
+    end try
+end tell
+'''),
+        ("table-count", "Show table count in active sheet", '''\
+tell application "Numbers"
+    try
+        set n to count of tables of active sheet of front document
+        display notification (n as text) & " tables" with title "Numbers"
+    on error
+        display notification "No spreadsheet open" with title "Numbers"
+    end try
+end tell
+'''),
+        ("list-sheets", "List sheet names in a dialog", '''\
+tell application "Numbers"
+    try
+        set sheetNames to name of every sheet of front document
+        set AppleScript's text item delimiters to linefeed
+        set sheetList to sheetNames as text
+        set AppleScript's text item delimiters to ""
+        display dialog sheetList with title "Numbers Sheets" buttons {"OK"} default button "OK"
+    on error
+        display notification "No spreadsheet open" with title "Numbers"
+    end try
+end tell
+'''),
+        ("export-pdf", "Export front document as PDF to Desktop", '''\
+tell application "Numbers"
+    try
+        set docName to name of front document
+        if docName ends with ".numbers" then set docName to text 1 thru -9 of docName
+        set exportPath to (((path to desktop) as text) & docName & ".pdf")
+        export front document to file exportPath as PDF
+        display notification "Exported: " & docName & ".pdf" with title "Numbers"
+    on error errMsg
+        display notification errMsg with title "Numbers Export Error"
+    end try
+end tell
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # AUTOMATOR — workflow automation tool (16 commands, 17 classes)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "automator": [
+        ("new-workflow", "Create a new Automator workflow document", '''\
+tell application "Automator"
+    activate
+    make new document
+end tell
+'''),
+        ("run-workflow", "Run an Automator workflow file by path", '''\
+set workflowPath to choose file with prompt "Choose an Automator workflow to run:" of type {"com.apple.automator-workflow"}
+tell application "Automator"
+    activate
+    open workflowPath
+    set theDoc to front document
+    set theWorkflow to workflow of theDoc
+    try
+        execute theWorkflow
+        set theResult to execution result of theWorkflow
+        if theResult is not missing value then
+            display notification (theResult as text) with title "Automator"
+        else
+            display notification "Workflow completed" with title "Automator"
+        end if
+    on error errMsg
+        display dialog "Workflow error: " & errMsg with title "Automator" buttons {"OK"} default button "OK" with icon stop
+    end try
+end tell
+'''),
+        ("list-actions", "List available Automator actions and copy to clipboard", '''\
+tell application "Automator"
+    activate
+    make new document
+    set actionNames to name of every Automator action
+    set actionCount to count of actionNames
+    set actionList to ""
+    repeat with anAction in actionNames
+        set actionList to actionList & anAction & linefeed
+    end repeat
+    set the clipboard to actionList
+    display notification (actionCount as text) & " actions copied to clipboard" with title "Automator"
+end tell
+'''),
+        ("save-as-app", "Save the front Automator workflow as an application", '''\
+tell application "Automator"
+    activate
+    if (count of documents) is 0 then
+        display notification "No workflow open" with title "Automator"
+        return
+    end if
+    set savePath to choose file name with prompt "Save workflow as application:" default name "My Workflow.app"
+    save front document as "application" in savePath
+    display notification "Saved as application" with title "Automator"
+end tell
+'''),
+        ("get-result", "Get the execution result of the front workflow", '''\
+tell application "Automator"
+    activate
+    if (count of documents) is 0 then
+        display notification "No workflow open" with title "Automator"
+        return
+    end if
+    set theDoc to front document
+    set theWorkflow to workflow of theDoc
+    set theResult to execution result of theWorkflow
+    set errMsg to execution error message of theWorkflow
+    if errMsg is not "" and errMsg is not missing value then
+        display dialog "Error: " & errMsg with title "Automator Result" buttons {"OK"} default button "OK" with icon stop
+    else if theResult is not missing value then
+        display dialog "Result: " & (theResult as text) with title "Automator Result" buttons {"Copy", "OK"} default button "OK"
+        if button returned of result is "Copy" then
+            set the clipboard to (theResult as text)
+        end if
+    else
+        display notification "No result available (run a workflow first)" with title "Automator"
+    end if
+end tell
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SCRIPT EDITOR — AppleScript IDE (16 commands, 16 classes)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "script-editor": [
+        ("compile", "Compile the front Script Editor document", '''\
+tell application "Script Editor"
+    activate
+    if (count of documents) is 0 then
+        display notification "No document open" with title "Script Editor"
+        return
+    end if
+    try
+        set compileResult to compile front document
+        if compileResult then
+            display notification "Compiled successfully" with title "Script Editor"
+        else
+            display notification "Compilation failed" with title "Script Editor"
+        end if
+    on error errMsg
+        display dialog "Compile error: " & errMsg with title "Script Editor" buttons {"OK"} default button "OK" with icon stop
+    end try
+end tell
+'''),
+        ("run", "Run the front Script Editor document", '''\
+tell application "Script Editor"
+    activate
+    if (count of documents) is 0 then
+        display notification "No document open" with title "Script Editor"
+        return
+    end if
+    try
+        compile front document
+        tell front document
+            execute
+        end tell
+        display notification "Script executed" with title "Script Editor"
+    on error errMsg
+        display dialog "Run error: " & errMsg with title "Script Editor" buttons {"OK"} default button "OK" with icon stop
+    end try
+end tell
+'''),
+        ("new-script", "Create a new Script Editor document with a template", '''\
+tell application "Script Editor"
+    activate
+    set newDoc to make new document
+    set contents of newDoc to "-- New AppleScript" & linefeed & "-- Created: " & (current date) as text & linefeed & linefeed & "tell application \\"Finder\\"" & linefeed & "    activate" & linefeed & "end tell" & linefeed
+end tell
+'''),
+        ("get-result", "Get the result of the last script run", '''\
+tell application "Script Editor"
+    activate
+    if (count of documents) is 0 then
+        display notification "No document open" with title "Script Editor"
+        return
+    end if
+    set theResult to contents of result of front document
+    if theResult is "" or theResult is missing value then
+        display notification "No result available" with title "Script Editor"
+    else
+        display dialog theResult with title "Script Result" buttons {"Copy", "OK"} default button "OK"
+        if button returned of result is "Copy" then
+            set the clipboard to theResult
+        end if
+    end if
+end tell
+'''),
+        ("open-dictionary", "Open the scripting dictionary browser", '''\
+tell application "Script Editor"
+    activate
+end tell
+tell application "System Events"
+    tell process "Script Editor"
+        click menu item "Open Dictionary…" of menu "File" of menu bar 1
+    end tell
+end tell
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # IMAGE EVENTS — headless image processing (13 commands, 16 classes)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "image-events": [
+        ("resize", "Resize an image file to specified dimensions", '''\
+set imagePath to choose file with prompt "Choose an image to resize:" of type {"public.image"}
+set newWidth to text returned of (display dialog "Enter new width in pixels:" default answer "800" with title "Resize Image")
+tell application "Image Events"
+    set theImage to open imagePath
+    set {origW, origH} to dimensions of theImage
+    set scaleFactor to (newWidth as number) / origW
+    scale theImage by factor scaleFactor
+    save theImage
+    close theImage
+end tell
+display notification "Resized to " & newWidth & "px wide" with title "Image Events"
+'''),
+        ("rotate", "Rotate an image 90 degrees clockwise", '''\
+set imagePath to choose file with prompt "Choose an image to rotate:" of type {"public.image"}
+tell application "Image Events"
+    set theImage to open imagePath
+    rotate theImage to angle 90
+    save theImage
+    close theImage
+end tell
+display notification "Rotated 90 degrees clockwise" with title "Image Events"
+'''),
+        ("flip", "Flip an image horizontally", '''\
+set imagePath to choose file with prompt "Choose an image to flip:" of type {"public.image"}
+tell application "Image Events"
+    set theImage to open imagePath
+    flip theImage horizontal
+    save theImage
+    close theImage
+end tell
+display notification "Flipped horizontally" with title "Image Events"
+'''),
+        ("get-dimensions", "Show width and height of an image", '''\
+set imagePath to choose file with prompt "Choose an image:" of type {"public.image"}
+tell application "Image Events"
+    set theImage to open imagePath
+    set {imgWidth, imgHeight} to dimensions of theImage
+    set imgSpace to color space of theImage
+    close theImage
+end tell
+display dialog "Width: " & imgWidth & " px" & linefeed & "Height: " & imgHeight & " px" & linefeed & "Color space: " & imgSpace with title "Image Info" buttons {"Copy", "OK"} default button "OK"
+if button returned of result is "Copy" then
+    set the clipboard to (imgWidth as text) & "x" & (imgHeight as text)
+end if
+'''),
+        ("convert-format", "Convert an image to JPEG, PNG, or TIFF", '''\
+set imagePath to choose file with prompt "Choose an image to convert:" of type {"public.image"}
+set formatChoice to choose from list {"JPEG", "PNG", "TIFF"} with prompt "Choose output format:" with title "Convert Image" default items {"JPEG"}
+if formatChoice is false then return
+set outputFormat to item 1 of formatChoice
+tell application "Image Events"
+    set theImage to open imagePath
+    if outputFormat is "JPEG" then
+        save theImage as JPEG
+    else if outputFormat is "PNG" then
+        save theImage as PNG
+    else if outputFormat is "TIFF" then
+        save theImage as TIFF
+    end if
+    close theImage
+end tell
+display notification "Converted to " & outputFormat with title "Image Events"
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # IMOVIE — video editing (Standard Suite only, limited scripting)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "imovie": [
+        ("new-project", "Create a new iMovie document", '''\
+tell application "iMovie"
+    activate
+    make new document
+end tell
+'''),
+        ("list-projects", "List open iMovie projects", '''\
+tell application "iMovie"
+    activate
+    set docCount to count of documents
+    if docCount is 0 then
+        display notification "No projects open" with title "iMovie"
+        return
+    end if
+    set docNames to {}
+    repeat with i from 1 to docCount
+        set end of docNames to name of document i
+    end repeat
+    choose from list docNames with prompt "Open iMovie projects:" with title "iMovie Projects"
+end tell
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SYSTEM INFORMATION — hardware/software profiling via system_profiler CLI
+    # ═══════════════════════════════════════════════════════════════════════════
+    "system-information": [
+        ("hardware", "Show hardware overview", '''\
+set hwInfo to do shell script "system_profiler SPHardwareDataType"
+display dialog hwInfo with title "Hardware Overview" buttons {"Copy", "OK"} default button "OK"
+if button returned of result is "Copy" then
+    set the clipboard to hwInfo
+end if
+'''),
+        ("software", "Show software overview", '''\
+set swInfo to do shell script "system_profiler SPSoftwareDataType"
+display dialog swInfo with title "Software Overview" buttons {"Copy", "OK"} default button "OK"
+if button returned of result is "Copy" then
+    set the clipboard to swInfo
+end if
+'''),
+        ("network", "Show network configuration info", '''\
+set netInfo to do shell script "system_profiler SPNetworkDataType"
+display dialog netInfo with title "Network Info" buttons {"Copy", "OK"} default button "OK"
+if button returned of result is "Copy" then
+    set the clipboard to netInfo
+end if
+'''),
+        ("storage", "Show storage and disk info", '''\
+set storageInfo to do shell script "system_profiler SPStorageDataType"
+display dialog storageInfo with title "Storage Info" buttons {"Copy", "OK"} default button "OK"
+if button returned of result is "Copy" then
+    set the clipboard to storageInfo
+end if
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PREVIEW — UI scripting + CLI (no useful sdef)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "preview": [
+        ("open-file", "Open a file in Preview via choose dialog", '''\
+set f to choose file with prompt "Choose a file to open in Preview:" of type {"public.image", "com.adobe.pdf"}
+tell application "Preview"
+    activate
+    open f
+end tell
+'''),
+        ("zoom-in", "Zoom in on current Preview document", '''\
+tell application "Preview" to activate
+tell application "System Events"
+    tell process "Preview"
+        keystroke "+" using command down
+    end tell
+end tell
+'''),
+        ("zoom-out", "Zoom out on current Preview document", '''\
+tell application "Preview" to activate
+tell application "System Events"
+    tell process "Preview"
+        keystroke "-" using command down
+    end tell
+end tell
+'''),
+        ("rotate-left", "Rotate current Preview document left", '''\
+tell application "Preview" to activate
+tell application "System Events"
+    tell process "Preview"
+        keystroke "L" using command down
+    end tell
+end tell
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SYSTEM SETTINGS — URL scheme navigation (3 sdef commands)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "system-settings": [
+        ("wifi", "Open Wi-Fi settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.wifi-settings-extension'"
+'''),
+        ("bluetooth", "Open Bluetooth settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.BluetoothSettings'"
+'''),
+        ("sound", "Open Sound settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'"
+'''),
+        ("displays", "Open Displays settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.Displays-Settings.extension'"
+'''),
+        ("battery", "Open Battery settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.settings.battery'"
+'''),
+        ("notifications", "Open Notifications settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.Notifications-Settings.extension'"
+'''),
+        ("privacy", "Open Privacy and Security settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension'"
+'''),
+        ("general", "Open General settings pane", '''\
+do shell script "open 'x-apple.systempreferences:com.apple.systempreferences.GeneralSettings'"
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # DISK UTILITY — CLI wrapper via diskutil
+    # ═══════════════════════════════════════════════════════════════════════════
+    "disk-utility": [
+        ("list-disks", "List all disks via diskutil", '''\
+set output to do shell script "diskutil list"
+display dialog output with title "Disk List" buttons {"OK"} default button "OK"
+'''),
+        ("disk-info", "Show info for main disk via diskutil", '''\
+set output to do shell script "diskutil info /"
+display dialog output with title "Disk Info" buttons {"OK"} default button "OK"
+'''),
+        ("apfs-list", "List APFS containers via diskutil", '''\
+set output to do shell script "diskutil apfs list"
+display dialog output with title "APFS Containers" buttons {"OK"} default button "OK"
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SCREENSHOT — CLI wrapper via screencapture
+    # ═══════════════════════════════════════════════════════════════════════════
+    "screenshot": [
+        ("fullscreen", "Capture full screen to Desktop", '''\
+set ts to do shell script "date '+%Y-%m-%d_%H%M%S'"
+set f to (POSIX path of (path to desktop)) & "Screenshot-" & ts & ".png"
+do shell script "screencapture " & quoted form of f
+display notification "Saved to Desktop" with title "Screenshot"
+'''),
+        ("area", "Capture selected area to Desktop", '''\
+set ts to do shell script "date '+%Y-%m-%d_%H%M%S'"
+set f to (POSIX path of (path to desktop)) & "Screenshot-" & ts & ".png"
+do shell script "screencapture -i " & quoted form of f
+display notification "Saved to Desktop" with title "Screenshot"
+'''),
+        ("window", "Capture front window to Desktop", '''\
+set ts to do shell script "date '+%Y-%m-%d_%H%M%S'"
+set f to (POSIX path of (path to desktop)) & "Screenshot-" & ts & ".png"
+do shell script "screencapture -w " & quoted form of f
+display notification "Saved to Desktop" with title "Screenshot"
+'''),
+        ("clipboard", "Capture selected area to clipboard", '''\
+do shell script "screencapture -ic"
+display notification "Screenshot copied to clipboard" with title "Screenshot"
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CONSOLE — CLI wrapper via log command
+    # ═══════════════════════════════════════════════════════════════════════════
+    "console": [
+        ("recent-errors", "Show recent system errors from last 5 minutes", '''\
+set output to do shell script "log show --last 5m --predicate 'messageType == error' --style compact 2>&1 | tail -50"
+display dialog output with title "Recent Errors (last 5m)" buttons {"OK"} default button "OK"
+'''),
+        ("app-log", "Show recent log entries for a specific app", '''\
+set appName to text returned of (display dialog "App name to filter:" default answer "Finder")
+set output to do shell script "log show --last 10m --predicate 'process == \\"" & appName & "\\"' --style compact 2>&1 | tail -50"
+display dialog output with title (appName & " Log") buttons {"OK"} default button "OK"
+'''),
+        ("system-log", "Show recent system messages", '''\
+set output to do shell script "log show --last 5m --style compact 2>&1 | tail -50"
+display dialog output with title "System Log (last 5m)" buttons {"OK"} default button "OK"
+'''),
+    ],
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TIME MACHINE — CLI wrapper via tmutil
+    # ═══════════════════════════════════════════════════════════════════════════
+    "time-machine": [
+        ("status", "Show Time Machine backup status", '''\
+set output to do shell script "tmutil status 2>&1"
+display dialog output with title "Time Machine Status" buttons {"OK"} default button "OK"
+'''),
+        ("list-backups", "List recent Time Machine backups", '''\
+set output to do shell script "tmutil listbackups 2>&1 | tail -10"
+display dialog output with title "Recent Backups" buttons {"OK"} default button "OK"
+'''),
+        ("start-backup", "Start a Time Machine backup", '''\
+do shell script "tmutil startbackup" with administrator privileges
+display notification "Backup started" with title "Time Machine"
+'''),
+        ("latest-backup", "Show latest Time Machine backup timestamp", '''\
+set output to do shell script "tmutil latestbackup 2>&1"
+display dialog output with title "Latest Backup" buttons {"OK"} default button "OK"
+'''),
+    ],
 }
 
 

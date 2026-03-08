@@ -252,7 +252,7 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `ask` | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | `app-probe` | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. |
 | `sdef-extract` | `python3 bin/sdef-extract.py` | Extract scripting dictionaries for 31 apps. |
-| `workflow-gen` | `python3 bin/workflow-gen.py` | Generate 209 workflow scripts from curated recipes across 18 apps. |
+| `workflow-gen` | `python3 bin/workflow-gen.py` | Generate 288 workflow scripts from curated recipes across 31 apps. |
 | `spotlight-export` | `./bin/spotlight-export.sh` | Compile workflows to .app bundles in /Applications/ — Spotlight-reachable. |
 | `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate signed .shortcut files — Siri, Spotlight, share sheet, menu bar. |
 | `shortcut-gen` | `python3 bin/shortcut-gen.py` | Generate 189 signed .shortcut files for Siri/Spotlight/Shortcuts app. |
@@ -277,7 +277,7 @@ Every workflow script can be compiled to a Spotlight-reachable `.app` via `osaco
 **Pipeline:** `sdef-extract.py` (extract) → `workflow-gen.py` (generate) → `spotlight-export.sh` (export to Spotlight)
 
 ```bash
-# Export all 209 workflows as Spotlight-reachable apps
+# Export all 288 workflows as Spotlight-reachable apps
 ./bin/spotlight-export.sh
 
 # Then: Cmd+Space → "Music PlayPause" → Enter
@@ -305,15 +305,15 @@ Full analysis: `patents/US7428535-analysis.md`
 | `README.md` | **The Automation Atlas** — 66 apps tiered by automation depth |
 | `sal-soghoian.md` | **Sal Soghoian knowledge base** — full profile, quotes, Shortcuts position, community reactions, @macautomation scraping plan |
 | `spotlight-automation.md` | **Spotlight integration guide** — 5 paths to make scripts Cmd+Space reachable |
-| `scripts.md` | Catalog of all AppleScripts (64 launchers + 209 workflows = 273 scripts) |
+| `scripts.md` | Catalog of all AppleScripts (64 launchers + 288 workflows = 273 scripts) |
 | `scripts/launchers/` | 64 app launcher scripts (every Apple app + utility) |
-| `scripts/workflows/` | **209 workflow scripts** across 18 apps — the action layer |
+| `scripts/workflows/` | **288 workflow scripts** across 31 apps — the action layer |
 | `dictionaries/` | **31 scripting dictionaries + 66 probe files** |
 | `dictionaries/_index.yaml` | Data type chaining index — cross-app workflow compatibility |
 | `dictionaries/_probe-index.yaml` | 13-layer probe index — URL schemes, App Intents, frameworks, services |
 | `bin/app-probe.py` | 13-layer automation probe |
 | `bin/sdef-extract.py` | Scripting dictionary extractor |
-| `bin/workflow-gen.py` | Workflow script generator (209 recipes across 18 apps) |
+| `bin/workflow-gen.py` | Workflow script generator (209 recipes across 31 apps) |
 | `bin/spotlight-export.sh` | Compile workflows to Spotlight-reachable .app bundles |
 | `bin/extract-icons.sh` | App icon extractor for Loupedeck |
 | `bin/ghc` | GitHub Clone + Claude skill generator |

@@ -93,6 +93,16 @@ One button = one action = one result (Sal's rule).
 | `workflows/accessibility/ax-system-settings-sound.applescript` | Open System Settings Sound pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-sound.applescript` |
 | `workflows/accessibility/ax-system-settings-wifi.applescript` | Open System Settings Wi-Fi pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-wifi.applescript` |
 
+### Automator
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/automator/automator-new-workflow.applescript` | Create a new Automator workflow document | `osascript scripts/workflows/automator/automator-new-workflow.applescript` |
+| `workflows/automator/automator-run-workflow.applescript` | Run an Automator workflow file by path | `osascript scripts/workflows/automator/automator-run-workflow.applescript` |
+| `workflows/automator/automator-list-actions.applescript` | List available Automator actions and copy to clipboard | `osascript scripts/workflows/automator/automator-list-actions.applescript` |
+| `workflows/automator/automator-save-as-app.applescript` | Save the front Automator workflow as an application | `osascript scripts/workflows/automator/automator-save-as-app.applescript` |
+| `workflows/automator/automator-get-result.applescript` | Get the execution result of the front workflow | `osascript scripts/workflows/automator/automator-get-result.applescript` |
+
 ### Calendar
 
 | Script | Description | Run |
@@ -107,6 +117,14 @@ One button = one action = one result (Sal's rule).
 | `workflows/calendar/calendar-count-events-today.applescript` | Count events happening today | `osascript scripts/workflows/calendar/calendar-count-events-today.applescript` |
 | `workflows/calendar/calendar-event-at-time.applescript` | Create an event at a specific time today | `osascript scripts/workflows/calendar/calendar-event-at-time.applescript` |
 
+### Console
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/console/console-recent-errors.applescript` | Show recent system errors from last 5 minutes | `osascript scripts/workflows/console/console-recent-errors.applescript` |
+| `workflows/console/console-app-log.applescript` | Show recent log entries for a specific app | `osascript scripts/workflows/console/console-app-log.applescript` |
+| `workflows/console/console-system-log.applescript` | Show recent system messages | `osascript scripts/workflows/console/console-system-log.applescript` |
+
 ### Contacts
 
 | Script | Description | Run |
@@ -115,6 +133,14 @@ One button = one action = one result (Sal's rule).
 | `workflows/contacts/contacts-count-contacts.applescript` | Show total number of contacts | `osascript scripts/workflows/contacts/contacts-count-contacts.applescript` |
 | `workflows/contacts/contacts-new-contact.applescript` | Create a new contact | `osascript scripts/workflows/contacts/contacts-new-contact.applescript` |
 | `workflows/contacts/contacts-list-groups.applescript` | List all contact groups | `osascript scripts/workflows/contacts/contacts-list-groups.applescript` |
+
+### Disk Utility
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/disk-utility/disk-utility-list-disks.applescript` | List all disks via diskutil | `osascript scripts/workflows/disk-utility/disk-utility-list-disks.applescript` |
+| `workflows/disk-utility/disk-utility-disk-info.applescript` | Show info for main disk via diskutil | `osascript scripts/workflows/disk-utility/disk-utility-disk-info.applescript` |
+| `workflows/disk-utility/disk-utility-apfs-list.applescript` | List APFS containers via diskutil | `osascript scripts/workflows/disk-utility/disk-utility-apfs-list.applescript` |
 
 ### Finder
 
@@ -170,6 +196,38 @@ One button = one action = one result (Sal's rule).
 | `workflows/homepod/homepod-climate-log.applescript` | Take a climate reading and log it | `osascript scripts/workflows/homepod/homepod-climate-log.applescript` |
 | `workflows/homepod/homepod-climate-dashboard.applescript` | Open the HomePod climate dashboard | `osascript scripts/workflows/homepod/homepod-climate-dashboard.applescript` |
 | `workflows/homepod/homepod-climate-summary.applescript` | Show today's climate summary | `osascript scripts/workflows/homepod/homepod-climate-summary.applescript` |
+
+### Image Events
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/image-events/image-events-resize.applescript` | Resize an image file to specified dimensions | `osascript scripts/workflows/image-events/image-events-resize.applescript` |
+| `workflows/image-events/image-events-rotate.applescript` | Rotate an image 90 degrees clockwise | `osascript scripts/workflows/image-events/image-events-rotate.applescript` |
+| `workflows/image-events/image-events-flip.applescript` | Flip an image horizontally | `osascript scripts/workflows/image-events/image-events-flip.applescript` |
+| `workflows/image-events/image-events-get-dimensions.applescript` | Show width and height of an image | `osascript scripts/workflows/image-events/image-events-get-dimensions.applescript` |
+| `workflows/image-events/image-events-convert-format.applescript` | Convert an image to JPEG, PNG, or TIFF | `osascript scripts/workflows/image-events/image-events-convert-format.applescript` |
+
+### Imovie
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/imovie/imovie-new-project.applescript` | Create a new iMovie document | `osascript scripts/workflows/imovie/imovie-new-project.applescript` |
+| `workflows/imovie/imovie-list-projects.applescript` | List open iMovie projects | `osascript scripts/workflows/imovie/imovie-list-projects.applescript` |
+
+### Keynote
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/keynote/keynote-new-presentation.applescript` | Create a new Keynote presentation | `osascript scripts/workflows/keynote/keynote-new-presentation.applescript` |
+| `workflows/keynote/keynote-start-slideshow.applescript` | Start slideshow from the beginning | `osascript scripts/workflows/keynote/keynote-start-slideshow.applescript` |
+| `workflows/keynote/keynote-stop-slideshow.applescript` | Stop the current slideshow | `osascript scripts/workflows/keynote/keynote-stop-slideshow.applescript` |
+| `workflows/keynote/keynote-next-slide.applescript` | Advance to the next slide | `osascript scripts/workflows/keynote/keynote-next-slide.applescript` |
+| `workflows/keynote/keynote-previous-slide.applescript` | Go to the previous slide | `osascript scripts/workflows/keynote/keynote-previous-slide.applescript` |
+| `workflows/keynote/keynote-slide-count.applescript` | Show slide count of front document | `osascript scripts/workflows/keynote/keynote-slide-count.applescript` |
+| `workflows/keynote/keynote-export-pdf.applescript` | Export front presentation as PDF to Desktop | `osascript scripts/workflows/keynote/keynote-export-pdf.applescript` |
+| `workflows/keynote/keynote-current-slide.applescript` | Show current slide number | `osascript scripts/workflows/keynote/keynote-current-slide.applescript` |
+| `workflows/keynote/keynote-list-slides.applescript` | List slide titles in a dialog | `osascript scripts/workflows/keynote/keynote-list-slides.applescript` |
+| `workflows/keynote/keynote-presenter-notes.applescript` | Show presenter notes for current slide | `osascript scripts/workflows/keynote/keynote-presenter-notes.applescript` |
 
 ### Mail
 
@@ -252,6 +310,28 @@ One button = one action = one result (Sal's rule).
 | `workflows/notes/notes-append-to-note.applescript` | Append text to an existing note | `osascript scripts/workflows/notes/notes-append-to-note.applescript` |
 | `workflows/notes/notes-show-recent-note.applescript` | Open the most recently modified note | `osascript scripts/workflows/notes/notes-show-recent-note.applescript` |
 
+### Numbers
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/numbers/numbers-new-spreadsheet.applescript` | Create a new blank Numbers spreadsheet | `osascript scripts/workflows/numbers/numbers-new-spreadsheet.applescript` |
+| `workflows/numbers/numbers-export-csv.applescript` | Export front document as CSV to Desktop | `osascript scripts/workflows/numbers/numbers-export-csv.applescript` |
+| `workflows/numbers/numbers-sheet-count.applescript` | Show sheet count of front document | `osascript scripts/workflows/numbers/numbers-sheet-count.applescript` |
+| `workflows/numbers/numbers-table-count.applescript` | Show table count in active sheet | `osascript scripts/workflows/numbers/numbers-table-count.applescript` |
+| `workflows/numbers/numbers-list-sheets.applescript` | List sheet names in a dialog | `osascript scripts/workflows/numbers/numbers-list-sheets.applescript` |
+| `workflows/numbers/numbers-export-pdf.applescript` | Export front document as PDF to Desktop | `osascript scripts/workflows/numbers/numbers-export-pdf.applescript` |
+
+### Pages
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/pages/pages-new-document.applescript` | Create a new blank Pages document | `osascript scripts/workflows/pages/pages-new-document.applescript` |
+| `workflows/pages/pages-word-count.applescript` | Show word count of front document | `osascript scripts/workflows/pages/pages-word-count.applescript` |
+| `workflows/pages/pages-export-pdf.applescript` | Export front document as PDF to Desktop | `osascript scripts/workflows/pages/pages-export-pdf.applescript` |
+| `workflows/pages/pages-character-count.applescript` | Show character count of front document | `osascript scripts/workflows/pages/pages-character-count.applescript` |
+| `workflows/pages/pages-page-count.applescript` | Show page count of front document | `osascript scripts/workflows/pages/pages-page-count.applescript` |
+| `workflows/pages/pages-list-documents.applescript` | List all open Pages documents | `osascript scripts/workflows/pages/pages-list-documents.applescript` |
+
 ### Photos
 
 | Script | Description | Run |
@@ -265,6 +345,15 @@ One button = one action = one result (Sal's rule).
 | `workflows/photos/photos-list-albums.applescript` | List all album names | `osascript scripts/workflows/photos/photos-list-albums.applescript` |
 | `workflows/photos/photos-create-album.applescript` | Create a new empty album | `osascript scripts/workflows/photos/photos-create-album.applescript` |
 | `workflows/photos/photos-favorite-selected.applescript` | Favorite the selected photos | `osascript scripts/workflows/photos/photos-favorite-selected.applescript` |
+
+### Preview
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/preview/preview-open-file.applescript` | Open a file in Preview via choose dialog | `osascript scripts/workflows/preview/preview-open-file.applescript` |
+| `workflows/preview/preview-zoom-in.applescript` | Zoom in on current Preview document | `osascript scripts/workflows/preview/preview-zoom-in.applescript` |
+| `workflows/preview/preview-zoom-out.applescript` | Zoom out on current Preview document | `osascript scripts/workflows/preview/preview-zoom-out.applescript` |
+| `workflows/preview/preview-rotate-left.applescript` | Rotate current Preview document left | `osascript scripts/workflows/preview/preview-rotate-left.applescript` |
 
 ### Quicktime
 
@@ -311,6 +400,25 @@ One button = one action = one result (Sal's rule).
 | `workflows/safari/safari-tab-count.applescript` | Show number of open tabs across all windows | `osascript scripts/workflows/safari/safari-tab-count.applescript` |
 | `workflows/safari/safari-close-other-tabs.applescript` | Close all tabs except the current one | `osascript scripts/workflows/safari/safari-close-other-tabs.applescript` |
 
+### Screenshot
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/screenshot/screenshot-fullscreen.applescript` | Capture full screen to Desktop | `osascript scripts/workflows/screenshot/screenshot-fullscreen.applescript` |
+| `workflows/screenshot/screenshot-area.applescript` | Capture selected area to Desktop | `osascript scripts/workflows/screenshot/screenshot-area.applescript` |
+| `workflows/screenshot/screenshot-window.applescript` | Capture front window to Desktop | `osascript scripts/workflows/screenshot/screenshot-window.applescript` |
+| `workflows/screenshot/screenshot-clipboard.applescript` | Capture selected area to clipboard | `osascript scripts/workflows/screenshot/screenshot-clipboard.applescript` |
+
+### Script Editor
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/script-editor/script-editor-compile.applescript` | Compile the front Script Editor document | `osascript scripts/workflows/script-editor/script-editor-compile.applescript` |
+| `workflows/script-editor/script-editor-run.applescript` | Run the front Script Editor document | `osascript scripts/workflows/script-editor/script-editor-run.applescript` |
+| `workflows/script-editor/script-editor-new-script.applescript` | Create a new Script Editor document with a template | `osascript scripts/workflows/script-editor/script-editor-new-script.applescript` |
+| `workflows/script-editor/script-editor-get-result.applescript` | Get the result of the last script run | `osascript scripts/workflows/script-editor/script-editor-get-result.applescript` |
+| `workflows/script-editor/script-editor-open-dictionary.applescript` | Open the scripting dictionary browser | `osascript scripts/workflows/script-editor/script-editor-open-dictionary.applescript` |
+
 ### Shortcuts
 
 | Script | Description | Run |
@@ -351,6 +459,28 @@ One button = one action = one result (Sal's rule).
 | `workflows/system-events/system-events-trash-size.applescript` | Show the size of the Trash | `osascript scripts/workflows/system-events/system-events-trash-size.applescript` |
 | `workflows/system-events/system-events-notification-count.applescript` | Show pending notification count | `osascript scripts/workflows/system-events/system-events-notification-count.applescript` |
 
+### System Information
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/system-information/system-information-hardware.applescript` | Show hardware overview | `osascript scripts/workflows/system-information/system-information-hardware.applescript` |
+| `workflows/system-information/system-information-software.applescript` | Show software overview | `osascript scripts/workflows/system-information/system-information-software.applescript` |
+| `workflows/system-information/system-information-network.applescript` | Show network configuration info | `osascript scripts/workflows/system-information/system-information-network.applescript` |
+| `workflows/system-information/system-information-storage.applescript` | Show storage and disk info | `osascript scripts/workflows/system-information/system-information-storage.applescript` |
+
+### System Settings
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/system-settings/system-settings-wifi.applescript` | Open Wi-Fi settings pane | `osascript scripts/workflows/system-settings/system-settings-wifi.applescript` |
+| `workflows/system-settings/system-settings-bluetooth.applescript` | Open Bluetooth settings pane | `osascript scripts/workflows/system-settings/system-settings-bluetooth.applescript` |
+| `workflows/system-settings/system-settings-sound.applescript` | Open Sound settings pane | `osascript scripts/workflows/system-settings/system-settings-sound.applescript` |
+| `workflows/system-settings/system-settings-displays.applescript` | Open Displays settings pane | `osascript scripts/workflows/system-settings/system-settings-displays.applescript` |
+| `workflows/system-settings/system-settings-battery.applescript` | Open Battery settings pane | `osascript scripts/workflows/system-settings/system-settings-battery.applescript` |
+| `workflows/system-settings/system-settings-notifications.applescript` | Open Notifications settings pane | `osascript scripts/workflows/system-settings/system-settings-notifications.applescript` |
+| `workflows/system-settings/system-settings-privacy.applescript` | Open Privacy and Security settings pane | `osascript scripts/workflows/system-settings/system-settings-privacy.applescript` |
+| `workflows/system-settings/system-settings-general.applescript` | Open General settings pane | `osascript scripts/workflows/system-settings/system-settings-general.applescript` |
+
 ### Terminal
 
 | Script | Description | Run |
@@ -372,6 +502,30 @@ One button = one action = one result (Sal's rule).
 | `workflows/textedit/textedit-save-as-txt.applescript` | Save frontmost TextEdit document as plain text to Desktop | `osascript scripts/workflows/textedit/textedit-save-as-txt.applescript` |
 | `workflows/textedit/textedit-char-count.applescript` | Count characters in frontmost TextEdit document | `osascript scripts/workflows/textedit/textedit-char-count.applescript` |
 
+### Time Machine
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/time-machine/time-machine-status.applescript` | Show Time Machine backup status | `osascript scripts/workflows/time-machine/time-machine-status.applescript` |
+| `workflows/time-machine/time-machine-list-backups.applescript` | List recent Time Machine backups | `osascript scripts/workflows/time-machine/time-machine-list-backups.applescript` |
+| `workflows/time-machine/time-machine-start-backup.applescript` | Start a Time Machine backup | `osascript scripts/workflows/time-machine/time-machine-start-backup.applescript` |
+| `workflows/time-machine/time-machine-latest-backup.applescript` | Show latest Time Machine backup timestamp | `osascript scripts/workflows/time-machine/time-machine-latest-backup.applescript` |
+
+### Tv
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/tv/tv-playpause.applescript` | Toggle play/pause | `osascript scripts/workflows/tv/tv-playpause.applescript` |
+| `workflows/tv/tv-next-track.applescript` | Skip to next track | `osascript scripts/workflows/tv/tv-next-track.applescript` |
+| `workflows/tv/tv-previous-track.applescript` | Go to previous track | `osascript scripts/workflows/tv/tv-previous-track.applescript` |
+| `workflows/tv/tv-now-playing.applescript` | Show current track as notification | `osascript scripts/workflows/tv/tv-now-playing.applescript` |
+| `workflows/tv/tv-list-playlists.applescript` | List playlists in a dialog | `osascript scripts/workflows/tv/tv-list-playlists.applescript` |
+| `workflows/tv/tv-search-library.applescript` | Search TV library by name | `osascript scripts/workflows/tv/tv-search-library.applescript` |
+| `workflows/tv/tv-mute-toggle.applescript` | Toggle TV mute | `osascript scripts/workflows/tv/tv-mute-toggle.applescript` |
+| `workflows/tv/tv-volume-up.applescript` | Increase TV volume by 10 | `osascript scripts/workflows/tv/tv-volume-up.applescript` |
+| `workflows/tv/tv-volume-down.applescript` | Decrease TV volume by 10 | `osascript scripts/workflows/tv/tv-volume-down.applescript` |
+| `workflows/tv/tv-reveal-current.applescript` | Reveal current track in library | `osascript scripts/workflows/tv/tv-reveal-current.applescript` |
+
 ---
 
-**Total: 64 launchers + 202 workflows = 266 scripts**
+**Total: 64 launchers + 281 workflows = 345 scripts**

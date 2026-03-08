@@ -6,7 +6,7 @@
 - **Architecture**: Apple Silicon (M3)
 - **Shell**: bash / zsh
 
-All 209 workflows in this repo were developed and tested on this configuration.
+All 288 workflows in this repo were developed and tested on this configuration.
 
 ## macOS Version Requirements
 

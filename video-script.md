@@ -1,6 +1,6 @@
 # Video Script: "209 Workflows, One Pipeline"
 
-> How I built a complete macOS automation arsenal — 209 workflow scripts across 18 apps, searchable from Spotlight and speakable via Siri.
+> How I built a complete macOS automation arsenal — 288 workflow scripts across 31 apps, searchable from Spotlight and speakable via Siri.
 
 ## Video Format
 - **Duration:** 3-4 minutes
