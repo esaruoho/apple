@@ -1,0 +1,16 @@
+-- Pause music on HomePod via Shortcuts
+-- App: Homepod
+-- Usage: osascript scripts/workflows/homepod/homepod-pause-music.applescript
+-- Requires: A Shortcut named "Pause Music" that targets HomePod
+
+-- Concept: do shell script "shortcuts run 'Name'"
+--   The Shortcuts CLI bridge: runs any Shortcut from AppleScript.
+--   This lets you control HomeKit devices (like HomePod) from scripts,
+--   because AppleScript can't talk to HomeKit directly — but Shortcuts can.
+
+try
+	do shell script "shortcuts run 'Pause Music'"
+	display notification "Music paused on HomePod" with title "HomePod"
+on error errMsg
+	display notification errMsg with title "HomePod Error"
+end try

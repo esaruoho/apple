@@ -15,7 +15,7 @@ In November 2016, Apple eliminated the position of **Product Manager of Automati
 
 This repo picks up where that role left off.
 
-**186 workflow scripts** across 16 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus a HomePod climate sensor bridge that turns a hidden HomeKit sensor into a logging dashboard.
+**209 workflow scripts** across 18 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
 ---
 
@@ -32,14 +32,16 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 |-------|------|-------------|
 | 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
 | 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 186 curated workflow recipes → `.applescript` files with teaching comments |
+| 2b. Auto-gen | [`bin/auto-gen.py`](bin/auto-gen.py) | 121 additional scripts auto-generated from YAML dictionaries |
 | 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/Apple-Workflows/` for Spotlight |
 | 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
+| 5. Import | [`bin/batch-import.sh`](bin/batch-import.sh) | Batch-import all shortcuts into Shortcuts.app with folder organization |
 
 ---
 
-## 186 Workflow Scripts
+## 209 Workflow Scripts
 
-Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation — not just an app launcher. Skip a song, empty the trash, toggle dark mode, copy the current Safari URL, create a calendar event.
+Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation — not just an app launcher. Skip a song, empty the trash, toggle dark mode, copy the current Safari URL, create a calendar event, check battery status, open System Settings panes.
 
 Each script includes **teaching comments** that explain the AppleScript concepts used (tell blocks, error handling, notifications, shell scripts, etc.).
 
@@ -49,8 +51,10 @@ Music .............. 37    System Events ...... 26    Reminders ........... 9
 Mail ............... 13    Notes ............... 8    Photos .............. 9
 Terminal ............ 6    QuickTime ........... 6    Contacts ............ 4
 TextEdit ............ 5    Messages ............ 3    Shortcuts ........... 4
-HomePod ............. 4
+HomePod ............ 11    Accessibility ....... 8    Hardware ............ 8
 ```
+
+**New in v3.1:** Accessibility API scripts (Tier 8) open System Settings panes directly. Hardware scripts (Tier 10) read battery, USB, Bluetooth, audio, CPU, memory, and disk state via IOKit/CLI.
 
 ```bash
 # Run any workflow directly
@@ -66,6 +70,30 @@ bin/spotlight-export.sh
 
 # Generate Siri Shortcuts
 python3 bin/shortcut-gen.py
+```
+
+### Auto-Generated Scripts (121 additional)
+
+[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 186 hand-curated scripts.
+
+```bash
+python3 bin/auto-gen.py              # Generate all 121 auto-workflows
+python3 bin/auto-gen.py --app music  # Generate for one app
+python3 bin/auto-gen.py --list       # Dry run — show what would be generated
+```
+
+Output: [`scripts/auto-workflows/`](scripts/auto-workflows/) — 121 scripts across 10 apps (Music: 69, System Events: 30, Finder: 6, Safari: 6, Photos: 4, QuickTime: 3, Messages: 2, Calendar: 1).
+
+### Batch Import to Shortcuts.app
+
+[`bin/batch-import.sh`](bin/batch-import.sh) imports all generated `.shortcut` files into Shortcuts.app, creates an "Apple Workflows" folder, and organizes everything automatically.
+
+```bash
+bin/batch-import.sh                    # Import all shortcuts
+bin/batch-import.sh finder             # Import one app's shortcuts
+bin/batch-import.sh --dry-run          # Show what would be imported
+bin/batch-import.sh --count            # Count available shortcuts
+bin/batch-import.sh --folder "My Name" # Custom folder name
 ```
 
 ---
@@ -239,6 +267,9 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 | [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 186 workflow scripts from curated recipes with teaching comments. |
 | [`spotlight-export`](bin/spotlight-export.sh) | `bin/spotlight-export.sh` | Compile all workflows to Spotlight-searchable `.app` bundles. |
 | [`shortcut-gen`](bin/shortcut-gen.py) | `python3 bin/shortcut-gen.py` | Generate signed Siri Shortcuts from AppleScript workflows. |
+| [`auto-gen`](bin/auto-gen.py) | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. Fill the gaps. |
+| [`batch-import`](bin/batch-import.sh) | `bin/batch-import.sh` | Import all shortcuts into Shortcuts.app with folder organization. |
+| [`xpc-probe`](bin/xpc-probe.py) | `python3 bin/xpc-probe.py` | Map 2,359 XPC services — the hidden automation layer. |
 
 ---
 
@@ -268,12 +299,27 @@ osascript scripts/launchers/activate-logic-pro.applescript
 
 ---
 
+## Deep Dives
+
+| Document | What it covers |
+|----------|---------------|
+| [**Automation Tiers**](automation-tiers.md) | Full 10-tier stack: AppleScript → XPC → Accessibility → IOKit. Coverage matrix. |
+| [**XPC Atlas**](xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
+| [**Data Type Chaining**](data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
+| [**WWSD Decision Tree**](wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
+| [**Siri Phrases**](siri-phrases.md) | All 186+ voice commands in a browsable table. |
+| [**Compatibility**](compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
+| [**Automator vs Shortcuts**](automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
+
+---
+
 ## Painpoints
 
 UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho) — software tester, UI enthusiast, amateur scripter, automation/workflow obsessive, and user experience evaluator. These are my takes on Apple's current state, reported one at a time: the missing bits and pieces where the automation surface fails the user. Filed with click counts, Sal's principles, and fix paths.
 
 | ID | App | Issue | Clicks | Status |
 |----|-----|-------|:------:|--------|
+| [PLATFORM-001](painpoints/PLATFORM-001-automation-fragmentation.md) | macOS | Automation splintered across 5 incompatible layers | — | Open |
 | [NOTES-001](painpoints/NOTES-001-record-audio.md) | Notes | Recording audio should be one action, not five clicks | 5 to start, 6 to finish | Open |
 
 ---
