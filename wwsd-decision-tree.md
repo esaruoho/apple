@@ -20,7 +20,7 @@ What are you trying to automate?
 │    │
 │    ├─ App has sdef (scripting dictionary)?
 │    │  YES → AppleScript (`tell application "AppName"`)
-│    │         Tool: bin/workflow-gen.py covers 31 apps, 209 recipes
+│    │         Tool: bin/workflow-gen.py covers 31 apps, 288 recipes
 │    │  NO  ↓
 │    │
 │    ├─ App has URL scheme?
