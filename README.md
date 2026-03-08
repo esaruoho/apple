@@ -322,10 +322,15 @@ osascript scripts/launchers/activate-logic-pro.applescript
 
 UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho) — software tester, UI enthusiast, amateur scripter, automation/workflow obsessive, and user experience evaluator. These are my takes on Apple's current state, reported one at a time: the missing bits and pieces where the automation surface fails the user. Filed with click counts, Sal's principles, and fix paths.
 
-| ID | App | Issue | Clicks | Status |
-|----|-----|-------|:------:|--------|
-| [PLATFORM-001](painpoints/PLATFORM-001-automation-fragmentation.md) | macOS | Automation splintered across 5 incompatible layers | — | Open |
-| [NOTES-001](painpoints/NOTES-001-record-audio.md) | Notes | Recording audio should be one action, not five clicks | 5 to start, 6 to finish | Open |
+| ID | App | Issue | Status |
+|----|-----|-------|--------|
+| [PLATFORM-001](painpoints/PLATFORM-001-automation-fragmentation.md) | macOS | Automation splintered across 5 incompatible layers | Open |
+| [SYSTEM-SETTINGS-001](painpoints/SYSTEM-SETTINGS-001-most-important-app-least-scriptable.md) | System Settings | Most-used app, least scriptable (3 commands) | Open |
+| [PREVIEW-001](painpoints/PREVIEW-001-no-applescript-despite-being-default-viewer.md) | Preview | Default viewer with zero AppleScript support | Open |
+| [HOME-001](painpoints/HOME-001-no-applescript-homekit-cli.md) | Home | No AppleScript, no CLI for HomeKit | Open |
+| [PHOTOS-001](painpoints/PHOTOS-001-shallow-scripting-dictionary.md) | Photos | Shallow scripting dictionary (read-only) | Open |
+| [MESSAGES-001](painpoints/MESSAGES-001-write-only-automation.md) | Messages | Write-only automation (can send, can't read) | Open |
+| [NOTES-001](painpoints/NOTES-001-record-audio.md) | Notes | Recording audio should be one action, not five clicks | Open |
 
 ---
 

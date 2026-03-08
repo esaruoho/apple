@@ -2635,10 +2635,13 @@ def main():
                 filepath = SCRIPTS_DIR / slug / filename
                 all_generated[slug].append((filepath, description))
 
-        # Pick up workflow directories that exist on disk but aren't in RECIPES
+        # Pick up workflow directories and scripts that exist on disk but aren't in RECIPES
         if SCRIPTS_DIR.exists():
             for app_dir in sorted(SCRIPTS_DIR.iterdir()):
-                if app_dir.is_dir() and app_dir.name not in all_generated:
+                if not app_dir.is_dir():
+                    continue
+                if app_dir.name not in all_generated:
+                    # Entirely new directory not in RECIPES
                     scripts = []
                     for f in sorted(app_dir.glob("*.applescript")):
                         first_line = f.read_text().split('\n')[0]
@@ -2646,6 +2649,14 @@ def main():
                         scripts.append((f, desc))
                     if scripts:
                         all_generated[app_dir.name] = scripts
+                else:
+                    # Directory exists in RECIPES — check for extra scripts on disk
+                    known_files = {fp.name for fp, _ in all_generated[app_dir.name]}
+                    for f in sorted(app_dir.glob("*.applescript")):
+                        if f.name not in known_files:
+                            first_line = f.read_text().split('\n')[0]
+                            desc = first_line.replace('-- ', '') if first_line.startswith('-- ') else f.stem
+                            all_generated[app_dir.name].append((f, desc))
 
         catalog = generate_catalog(all_generated)
         CATALOG_PATH.write_text(catalog)
