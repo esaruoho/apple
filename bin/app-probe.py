@@ -1340,6 +1340,34 @@ def main():
     show_list = False
     app_names = []
 
+    if '--help' in args or '-h' in args:
+        print("app-probe.py — Extract ALL automation knowledge from every Apple app.")
+        print("")
+        print("Usage:")
+        print("  python3 bin/app-probe.py                    # All apps, all layers")
+        print("  python3 bin/app-probe.py Mail               # Single app")
+        print("  python3 bin/app-probe.py --layer intents    # Only App Intents layer")
+        print("  python3 bin/app-probe.py --layer url        # Only URL schemes")
+        print("  python3 bin/app-probe.py --cli              # Include CLI tools (layer 13)")
+        print("  python3 bin/app-probe.py --list             # Show available apps")
+        print("  python3 bin/app-probe.py --ls               # Include LaunchServices (slow)")
+        print("  python3 bin/app-probe.py --help             # Show this help")
+        print("")
+        print("Options:")
+        print("  --layer LAYER  Only extract a specific layer (sdef, url, doc, intents,")
+        print("                 services, activity, entitlements, frameworks, spotlight,")
+        print("                 ls, plugins, notifications)")
+        print("  --cli          Include CLI tools scan (layer 13)")
+        print("  --ls           Include LaunchServices dump (slow)")
+        print("  --list         Show all available apps and exit")
+        print("  --help, -h     Show this help and exit")
+        print("")
+        print("Output:")
+        print("  dictionaries/<app>/<app>-probe.yaml   Machine-readable probe results")
+        print("  dictionaries/<app>/<app>-probe.md     Human-readable probe results")
+        print("  dictionaries/_probe-index.yaml        Cross-app capabilities map")
+        return
+
     i = 0
     while i < len(args):
         if args[i] == '--layer' and i + 1 < len(args):

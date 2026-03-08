@@ -419,12 +419,12 @@ Shortcuts is ironically both the successor to Automator's vision and a step back
 
 ## 6. How This Repo Bridges the Gap
 
-The Automator patent envisions invisible, automatic type conversion. In practice, AppleScript workflows must manually bridge type gaps. This is exactly what `workflow-gen.py` does — it generates 186 scripts across 16 apps that handle the bridging explicitly.
+The Automator patent envisions invisible, automatic type conversion. In practice, AppleScript workflows must manually bridge type gaps. This is exactly what `workflow-gen.py` does — it generates 209 scripts across 18 apps that handle the bridging explicitly.
 
 ### Bridge Patterns Used
 
 **Text as universal bridge:**
-Most cross-app chains extract properties as text, manipulate the string, then pass it to the target app's text-accepting commands. This is the most common pattern in the 186 generated workflows.
+Most cross-app chains extract properties as text, manipulate the string, then pass it to the target app's text-accepting commands. This is the most common pattern in the 209 generated workflows.
 
 ```applescript
 -- Pattern: extract as text, pass as text

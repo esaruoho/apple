@@ -31,7 +31,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 | Stage | Tool | What it does |
 |-------|------|-------------|
 | 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
-| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 186 curated workflow recipes → `.applescript` files with teaching comments |
+| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 209 curated workflow recipes → `.applescript` files with teaching comments |
 | 2b. Auto-gen | [`bin/auto-gen.py`](bin/auto-gen.py) | 121 additional scripts auto-generated from YAML dictionaries |
 | 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/Apple-Workflows/` for Spotlight |
 | 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
@@ -62,7 +62,7 @@ osascript scripts/workflows/music/music-play-pause.applescript
 osascript scripts/workflows/finder/finder-empty-trash.applescript
 osascript scripts/workflows/system-events/system-events-toggle-dark-mode.applescript
 
-# Generate all 186 scripts from recipes
+# Generate all 209 scripts from recipes
 python3 bin/workflow-gen.py
 
 # Compile to Spotlight-searchable .app bundles
@@ -74,7 +74,7 @@ python3 bin/shortcut-gen.py
 
 ### Auto-Generated Scripts (121 additional)
 
-[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 186 hand-curated scripts.
+[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 209 hand-curated scripts.
 
 ```bash
 python3 bin/auto-gen.py              # Generate all 121 auto-workflows
@@ -124,7 +124,7 @@ Calibrated against a professional sensor (Feb 2026): +0.45C temperature, +4.5% h
 `bin/app-probe.py` extracts **13 layers of automation intelligence** from every Apple app in a single 60-second pass — the complete automation surface of macOS that no one else has mapped.
 
 ```
-66 apps probed · 378 layer hits · 30 with scripting dictionaries
+66 apps probed · 378 layer hits · 31 with scripting dictionaries
 20 with App Intents · 35 with URL schemes · 11 with Services menu
 ```
 
@@ -264,7 +264,7 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 | [`ghc`](bin/ghc) | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps -> 1. |
 | [`ask`](bin/ask) | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | [`app-probe`](bin/app-probe.py) | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. The census Sal never had. |
-| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 186 workflow scripts from curated recipes with teaching comments. |
+| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 209 workflow scripts from curated recipes with teaching comments. |
 | [`spotlight-export`](bin/spotlight-export.sh) | `bin/spotlight-export.sh` | Compile all workflows to Spotlight-searchable `.app` bundles. |
 | [`shortcut-gen`](bin/shortcut-gen.py) | `python3 bin/shortcut-gen.py` | Generate signed Siri Shortcuts from AppleScript workflows. |
 | [`auto-gen`](bin/auto-gen.py) | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. Fill the gaps. |
@@ -307,7 +307,7 @@ osascript scripts/launchers/activate-logic-pro.applescript
 | [**XPC Atlas**](xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
 | [**Data Type Chaining**](data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
 | [**WWSD Decision Tree**](wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
-| [**Siri Phrases**](siri-phrases.md) | All 186+ voice commands in a browsable table. |
+| [**Siri Phrases**](siri-phrases.md) | All 189+ voice commands in a browsable table. |
 | [**Compatibility**](compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
 | [**Automator vs Shortcuts**](automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
 

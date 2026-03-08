@@ -1841,7 +1841,7 @@ def main():
     catalog_only = '--catalog' in args
     args = [a for a in args if not a.startswith('--')]
 
-    # --catalog: standalone mode — generate scripts.md from RECIPES + launchers, no file writes
+    # --catalog: standalone mode — generate scripts.md from RECIPES + launchers + any extra dirs
     if catalog_only:
         all_generated = {}
         for app_slug, recipes in sorted(RECIPES.items()):
@@ -1851,6 +1851,18 @@ def main():
                 filename = f"{slug}-{suffix}.applescript"
                 filepath = SCRIPTS_DIR / slug / filename
                 all_generated[slug].append((filepath, description))
+
+        # Pick up workflow directories that exist on disk but aren't in RECIPES
+        if SCRIPTS_DIR.exists():
+            for app_dir in sorted(SCRIPTS_DIR.iterdir()):
+                if app_dir.is_dir() and app_dir.name not in all_generated:
+                    scripts = []
+                    for f in sorted(app_dir.glob("*.applescript")):
+                        first_line = f.read_text().split('\n')[0]
+                        desc = first_line.replace('-- ', '') if first_line.startswith('-- ') else f.stem
+                        scripts.append((f, desc))
+                    if scripts:
+                        all_generated[app_dir.name] = scripts
 
         catalog = generate_catalog(all_generated)
         CATALOG_PATH.write_text(catalog)

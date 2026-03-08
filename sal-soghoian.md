@@ -217,7 +217,7 @@ Plus numerous magazine articles about automation.
 - Commentary on Apple's automation decisions post-departure
 - Omni Automation announcements and examples
 
-**Scraping approach (TODO):**
+**Future work — scraping approach:**
 - Use a Twitter/X archival tool to pull the full @macautomation timeline
 - Extract tweets with automation keywords, code snippets, and links
 - Categorize by topic: AppleScript, Shortcuts, Omni Automation, philosophy, community

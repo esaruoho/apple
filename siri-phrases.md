@@ -1,4 +1,4 @@
-# Siri Voice Commands — 186 Phrases
+# Siri Voice Commands — 189 Phrases
 
 > Every workflow in this repo is speakable. Import the shortcuts, then use these phrases.
 > Generated from `bin/shortcut-gen.py --phrases`.

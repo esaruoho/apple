@@ -20,7 +20,7 @@ What are you trying to automate?
 │    │
 │    ├─ App has sdef (scripting dictionary)?
 │    │  YES → AppleScript (`tell application "AppName"`)
-│    │         Tool: bin/workflow-gen.py covers 16 apps, 186 recipes
+│    │         Tool: bin/workflow-gen.py covers 18 apps, 209 recipes
 │    │  NO  ↓
 │    │
 │    ├─ App has URL scheme?
@@ -181,7 +181,7 @@ path to all three surfaces. Shortcuts is the most direct path to Siri.
   - `workflow-gen.py` (Python) generates `.applescript` files
   - `spotlight-export.sh` (bash) compiles them to `.app` bundles via `osacompile`
   - `shortcut-gen.py` (Python) wraps them in signed `.shortcut` files
-  - Result: 186 workflows accessible via Spotlight, Siri, and hardware buttons
+  - Result: 209 workflows accessible via Spotlight, Siri, and hardware buttons
 - The best automation uses whatever tool is strongest for each layer:
   Python for generation, shell for compilation, AppleScript for app control,
   Shortcuts for Siri/HomeKit, launchd for scheduling.

@@ -1,7 +1,7 @@
 # AppleScript Catalog
 
 > All scripts in this repo, organized by type.
-> Last updated: 2026-03-07
+> Last updated: 2026-03-08
 
 ## Launchers
 
@@ -80,6 +80,19 @@ Each one brings an app to the foreground — ideal for hardware buttons.
 Real automation scripts in `scripts/workflows/` — these DO things, not just open apps.
 One button = one action = one result (Sal's rule).
 
+### Accessibility
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/accessibility/ax-system-settings-battery.applescript` | Open System Settings Battery pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-battery.applescript` |
+| `workflows/accessibility/ax-system-settings-bluetooth.applescript` | Open System Settings Bluetooth pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-bluetooth.applescript` |
+| `workflows/accessibility/ax-system-settings-displays.applescript` | Open System Settings Displays pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-displays.applescript` |
+| `workflows/accessibility/ax-system-settings-keyboard.applescript` | Open System Settings Keyboard pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-keyboard.applescript` |
+| `workflows/accessibility/ax-system-settings-notifications.applescript` | Open System Settings Notifications pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-notifications.applescript` |
+| `workflows/accessibility/ax-system-settings-privacy.applescript` | Open System Settings Privacy & Security pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-privacy.applescript` |
+| `workflows/accessibility/ax-system-settings-sound.applescript` | Open System Settings Sound pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-sound.applescript` |
+| `workflows/accessibility/ax-system-settings-wifi.applescript` | Open System Settings Wi-Fi pane via Accessibility API | `osascript scripts/workflows/accessibility/ax-system-settings-wifi.applescript` |
+
 ### Calendar
 
 | Script | Description | Run |
@@ -135,6 +148,19 @@ One button = one action = one result (Sal's rule).
 | `workflows/finder/finder-open-current-dir.applescript` | Open current working directory in Finder | `osascript scripts/workflows/finder/finder-open-current-dir.applescript` |
 | `workflows/finder/finder-set-wallpaper.applescript` | Set desktop wallpaper from a file path | `osascript scripts/workflows/finder/finder-set-wallpaper.applescript` |
 | `workflows/finder/finder-airdrop-reveal.applescript` | Reveal a file in Finder for AirDrop sharing | `osascript scripts/workflows/finder/finder-airdrop-reveal.applescript` |
+
+### Hardware
+
+| Script | Description | Run |
+|--------|-------------|-----|
+| `workflows/hardware/hardware-audio-devices.applescript` | List audio input and output devices | `osascript scripts/workflows/hardware/hardware-audio-devices.applescript` |
+| `workflows/hardware/hardware-battery-status.applescript` | Full battery status via IOKit (ioreg) | `osascript scripts/workflows/hardware/hardware-battery-status.applescript` |
+| `workflows/hardware/hardware-bluetooth-devices.applescript` | List Bluetooth devices and connection status | `osascript scripts/workflows/hardware/hardware-bluetooth-devices.applescript` |
+| `workflows/hardware/hardware-cpu-info.applescript` | Show CPU model, core count, and current load | `osascript scripts/workflows/hardware/hardware-cpu-info.applescript` |
+| `workflows/hardware/hardware-disk-usage.applescript` | Show disk usage for the startup volume | `osascript scripts/workflows/hardware/hardware-disk-usage.applescript` |
+| `workflows/hardware/hardware-display-brightness.applescript` | Display current screen brightness level | `osascript scripts/workflows/hardware/hardware-display-brightness.applescript` |
+| `workflows/hardware/hardware-memory-pressure.applescript` | Show memory pressure and usage statistics | `osascript scripts/workflows/hardware/hardware-memory-pressure.applescript` |
+| `workflows/hardware/hardware-usb-devices.applescript` | List connected USB devices | `osascript scripts/workflows/hardware/hardware-usb-devices.applescript` |
 
 ### Homepod
 
@@ -348,4 +374,4 @@ One button = one action = one result (Sal's rule).
 
 ---
 
-**Total: 64 launchers + 186 workflows = 250 scripts**
+**Total: 64 launchers + 202 workflows = 266 scripts**
