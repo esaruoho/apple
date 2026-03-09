@@ -316,6 +316,7 @@ osascript scripts/launchers/activate-logic-pro.applescript
 | [**Compatibility**](compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
 | [**Automator vs Shortcuts**](automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
 | [**Spotlight Automation**](spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
+| [**Apple Driver's License**](apple-drivers-license.md) | The user knowledge layer: where your data lives, what you own vs. rent, what breaks when. |
 | [**Loupedeck Guide**](loupedeck-guide.md) | Setup guide for Loupedeck Live, Stream Deck, and hardware controllers. |
 | [**How It Was Built**](how-it-was-built.md) | One conversation, 167 files — the build story. |
 | [**App Probe Pitch**](app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
