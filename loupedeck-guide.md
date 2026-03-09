@@ -59,7 +59,7 @@ Use this in a Loupedeck **Custom > Run** action the same way as above.
 - **Icon:** `icons/finder.png`
 
 ### Play/Pause Music
-- **Command:** `osascript /path/to/apple/scripts/workflows/music/music-play-pause.applescript`
+- **Command:** `osascript /path/to/apple/scripts/workflows/music/music-playpause.applescript`
 - **Icon:** `icons/music.png`
 
 ### Toggle Dark Mode
@@ -78,8 +78,8 @@ Use this in a Loupedeck **Custom > Run** action the same way as above.
 - **Command:** `osascript /path/to/apple/scripts/workflows/system-events/system-events-battery-status.applescript`
 - **Icon:** `icons/system-events.png`
 
-### New Safari Window
-- **Command:** `osascript /path/to/apple/scripts/workflows/safari/safari-new-window.applescript`
+### Copy Safari URL
+- **Command:** `osascript /path/to/apple/scripts/workflows/safari/safari-current-url.applescript`
 - **Icon:** `icons/safari.png`
 
 ---

@@ -63,9 +63,9 @@ TextEdit ............ 5    Accessibility ....... 8    Hardware ............ 8
 
 ```bash
 # Run any workflow directly
-osascript scripts/workflows/music/music-play-pause.applescript
+osascript scripts/workflows/music/music-playpause.applescript
 osascript scripts/workflows/finder/finder-empty-trash.applescript
-osascript scripts/workflows/system-events/system-events-toggle-dark-mode.applescript
+osascript scripts/workflows/system-events/system-events-dark-mode-toggle.applescript
 
 # Generate all 288 scripts from recipes
 python3 bin/workflow-gen.py
