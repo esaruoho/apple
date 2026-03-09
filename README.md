@@ -336,6 +336,10 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 | [PHOTOS-001](painpoints/PHOTOS-001-shallow-scripting-dictionary.md) | Photos | Shallow scripting dictionary (read-only) | Open |
 | [MESSAGES-001](painpoints/MESSAGES-001-write-only-automation.md) | Messages | Write-only automation (can send, can't read) | Open |
 | [NOTES-001](painpoints/NOTES-001-record-audio.md) | Notes | Recording audio should be one action, not five clicks | Open |
+| [DISK-UTILITY-001](painpoints/DISK-UTILITY-001-no-scripting-for-disk-management.md) | Disk Utility | Zero scripting for the only disk management GUI | Open |
+| [ACTIVITY-MONITOR-001](painpoints/ACTIVITY-MONITOR-001-no-scripting-for-process-management.md) | Activity Monitor | Zero scripting for process monitoring and management | Open |
+| [TIME-MACHINE-001](painpoints/TIME-MACHINE-001-no-scripting-for-backups.md) | Time Machine | Zero scripting for the most critical data protection app | Open |
+| [SCREENSHOT-001](painpoints/SCREENSHOT-001-no-scripting-for-screen-capture.md) | Screenshot | CLI is more powerful than the GUI, neither connects to Shortcuts | Open |
 
 ---
 
