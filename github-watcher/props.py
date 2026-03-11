@@ -354,7 +354,7 @@ class PropsTUI:
     # ─── List View ──────────────────────────────────────────────────────
 
     def handle_list_key(self, key):
-        if key == ord('q'):
+        if key == ord('q') or key == 27:  # q or esc
             return False
         elif key == curses.KEY_UP or key == ord('k'):
             if self.cursor > 0:
@@ -628,7 +628,7 @@ class PropsTUI:
         row += 1
 
         # Key hints at very bottom
-        keys = " ↑↓:navigate  enter:detail  R:rebase  r:refresh  q:quit"
+        keys = " ↑↓:navigate  enter:detail  R:rebase  r:refresh  esc/q:quit"
         self.safe_addstr(h - 1, 0, keys[:w-1], curses.A_DIM)
 
     # ─── Detail View ────────────────────────────────────────────────────
