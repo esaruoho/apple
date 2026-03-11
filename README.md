@@ -382,6 +382,32 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 
 ---
 
+## Live Automation via Claude Code
+
+This repo isn't just scripts on disk — it's a **live automation surface**. With the Apple skill loaded, you can tell Claude what you want and it happens immediately:
+
+```
+You: "hide the desktop icons on my macOS"
+Claude: runs `defaults write com.apple.finder CreateDesktop -bool false && killall Finder`
+→ Desktop icons disappear instantly.
+
+You: "show them again"
+Claude: runs `defaults write com.apple.finder CreateDesktop -bool true && killall Finder`
+→ Desktop icons reappear.
+```
+
+This works because the skill knows the `defaults` commands, `osascript` patterns, and CLI equivalents for dark apps. Every recipe in this repo — the 288 workflow scripts, the bash aliases, the CLI equivalents table — becomes something Claude can execute on demand, in natural language.
+
+**What this unlocks:**
+- No need to remember command syntax — just describe what you want
+- Claude chains multiple commands when needed (toggle dark mode + hide dock + set wallpaper)
+- The [bash aliases](bash-aliases.md) and [workflow scripts](scripts.md) serve as Claude's playbook
+- Every "dark app" CLI equivalent (see table above) is directly invocable
+
+This is Sal's vision realized differently: instead of Automator's drag-and-drop, you get **natural language automation** backed by the same AppleScript and CLI toolkit.
+
+---
+
 ## How It All Connects
 
 [**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s -> Automator at Apple -> context-aware relevance filtering -> scripting dictionaries -> departure -> this repo as open-source continuation.
