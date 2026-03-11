@@ -14,6 +14,10 @@ on less()
 end less
 
 on doMosaic(direction)
+	-- Valid steps: only counts that fill the grid with no empty cells
+	-- 1=1x1, 2=2x1, 3=3x1, 4=2x2, 6=3x2, 8=4x2, 9=3x3, 12=4x3, 16=4x4
+	set validSteps to {1, 2, 3, 4, 6, 8, 9, 12, 16}
+
 	-- Read current state
 	try
 		set showCount to (do shell script "cat /tmp/mosaic-knob-state") as integer
@@ -25,7 +29,25 @@ on doMosaic(direction)
 		end if
 	end try
 
-	set showCount to showCount + direction
+	-- Jump to next/previous valid step
+	if direction is 1 then
+		set showCount to showCount + 1
+		-- Find next valid step >= showCount
+		repeat with s in validSteps
+			if s as integer ≥ showCount then
+				set showCount to s as integer
+				exit repeat
+			end if
+		end repeat
+	else
+		set showCount to showCount - 1
+		-- Find previous valid step <= showCount
+		set best to 1
+		repeat with s in validSteps
+			if s as integer ≤ showCount then set best to s as integer
+		end repeat
+		set showCount to best
+	end if
 	if showCount < 1 then set showCount to 1
 
 	tell application "System Events"
