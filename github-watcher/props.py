@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""props — PR Operations. Full status, strategic context, and actions for any PR.
+"""props — PR Operations TUI. Full status, strategic context, and actions.
 
-The fzf picker IS the triage view — CI status, rebase state, conflicts, pillar,
-all visible before you pick. Pick a PR → go straight to action.
+Persistent terminal UI with keyboard navigation:
+  List view:   up/down to navigate, enter to drill in, q to quit
+  Detail view: r=rebase, b=build qa, B=build nightly, o=open, m=merge
+               esc/left to go back to list
+  Action view: live CI polling every 5 seconds, esc to return
 
 Usage:
-  props                      # interactive picker with full status (fzf)
+  props                      # TUI mode (default)
   props 2373                 # go straight to PR #2373
-  props --status             # print status overview (no fzf)
+  props --status             # print status overview (no TUI)
+  props --repo owner/repo    # specify repo
 """
 
+import curses
 import json
 import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -113,16 +119,6 @@ PILLAR_SETS = {
     },
 }
 
-C_RESET  = "\033[0m"
-C_BOLD   = "\033[1m"
-C_DIM    = "\033[0;90m"
-C_RED    = "\033[1;31m"
-C_GREEN  = "\033[1;32m"
-C_YELLOW = "\033[1;33m"
-C_BLUE   = "\033[1;34m"
-C_CYAN   = "\033[1;36m"
-C_WHITE  = "\033[0;37m"
-
 GCS_BASE = "https://storage.cloud.google.com/ray-ci/dmg"
 
 
@@ -170,7 +166,6 @@ def detect_repo():
 
 
 def fetch_prs_full(repo):
-    """Fetch all open PRs with full metadata in one call."""
     result = run_cmd([
         "gh", "pr", "list", "--repo", repo, "--state", "open",
         "--json", "number,title,headRefName,baseRefName,author,isDraft,"
@@ -195,7 +190,6 @@ def fetch_compare(repo, base, head):
 
 
 def fetch_all_compares(repo, prs):
-    """Fetch ahead/behind for all PRs in parallel."""
     compares = {}
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = {}
@@ -208,8 +202,43 @@ def fetch_all_compares(repo, prs):
     return compares
 
 
-def build_status_line(pr, compare, repo):
-    """Build a single-line status string for fzf picker."""
+def fetch_ci_status(repo, pr_number):
+    """Fetch fresh CI status for a single PR."""
+    result = run_cmd([
+        "gh", "pr", "view", str(pr_number), "--repo", repo,
+        "--json", "statusCheckRollup"
+    ])
+    if result.returncode == 0:
+        data = json.loads(result.stdout)
+        return data.get("statusCheckRollup", [])
+    return []
+
+
+def analyze_checks(checks):
+    """Return (pass, fail, pending, skip, details) from check list."""
+    ci_pass = ci_fail = ci_pending = ci_skip = 0
+    details = []
+    for c in checks:
+        conclusion = (c.get("conclusion") or "").upper()
+        status = (c.get("status") or "").upper()
+        name = c.get("name", c.get("context", "?"))
+        if conclusion == "SUCCESS":
+            ci_pass += 1
+            details.append(("pass", name))
+        elif conclusion == "FAILURE":
+            ci_fail += 1
+            details.append(("fail", name))
+        elif conclusion in ("SKIPPED", "NEUTRAL"):
+            ci_skip += 1
+            details.append(("skip", name))
+        else:
+            ci_pending += 1
+            details.append(("pending", name))
+    return ci_pass, ci_fail, ci_pending, ci_skip, details
+
+
+def build_pr_state(pr, compare, repo):
+    """Build a state dict for a PR (used by both list and detail views)."""
     num = pr["number"]
     title = pr["title"]
     branch = pr["headRefName"]
@@ -218,197 +247,14 @@ def build_status_line(pr, compare, repo):
     draft = pr.get("isDraft", False)
     body = (pr.get("body") or "")[:300]
     mergeable = pr.get("mergeable", "UNKNOWN")
-
-    checks = pr.get("statusCheckRollup", [])
-    ci_fail = sum(1 for c in checks if (c.get("conclusion") or "").upper() == "FAILURE")
-    ci_pending = sum(1 for c in checks if (c.get("conclusion") or c.get("status") or "").upper()
-                     not in ("SUCCESS", "FAILURE", "SKIPPED", "NEUTRAL"))
-    ci_pass = sum(1 for c in checks if (c.get("conclusion") or "").upper() == "SUCCESS")
-
-    behind = compare.get("behind", 0)
-
-    pillar = categorize(title, body, branch, repo)
-
-    # CI indicator
-    if ci_fail > 0:
-        ci = f"\033[1;31mCI✗{ci_fail}\033[0m"
-    elif ci_pending > 0:
-        ci = f"\033[1;33mCI● \033[0m"
-    elif ci_pass > 0:
-        ci = f"\033[1;32mCI✓ \033[0m"
-    else:
-        ci = f"\033[0;90mCI? \033[0m"
-
-    # Rebase indicator
-    if behind == 0:
-        rebase = f"\033[1;32m✓sync\033[0m"
-    elif behind < 10:
-        rebase = f"\033[1;31m↓{behind:<4}\033[0m"
-    else:
-        rebase = f"\033[1;31m↓{behind:<4}\033[0m"
-
-    # Conflicts
-    if mergeable == "CONFLICTING":
-        conflict = f"\033[1;31m⚡\033[0m"
-    else:
-        conflict = " "
-
-    # Draft
-    draft_str = f"\033[1;33mD\033[0m" if draft else " "
-
-    # Pillar (short)
-    pillar_short = pillar[:14].ljust(14)
-
-    # Ready to merge?
-    blockers = []
-    if ci_fail > 0: blockers.append("ci")
-    if behind > 0: blockers.append("rebase")
-    if mergeable == "CONFLICTING": blockers.append("conflicts")
-    if draft: blockers.append("draft")
-
-    if not blockers:
-        ready = f"\033[1;32m✓READY\033[0m"
-    else:
-        ready = f"\033[0;90m------\033[0m"
-
-    # Title (truncated)
-    title_trunc = title[:48].ljust(48)
-    author_str = author[:16].ljust(16)
-
-    return (f"{ci} {rebase} {conflict}{draft_str} {ready}  "
-            f"#{num:<5}  {title_trunc}  "
-            f"\033[0;90m{author_str}\033[0m  "
-            f"\033[1;34m{pillar_short}\033[0m")
-
-
-def pick_pr_fzf(prs, compares, repo):
-    """Status-rich fzf picker — triage at a glance."""
-    lines = []
-    for pr in prs:
-        compare = compares.get(pr["number"], {"behind": 0, "ahead": 0})
-        line = build_status_line(pr, compare, repo)
-        lines.append(line)
-
-    header = (f"{'CI':4} {'SYNC':6} {'':2} {'READY':6}  "
-              f"{'PR':<7} {'TITLE':48}  {'AUTHOR':16}  {'PILLAR':14}")
-
-    try:
-        result = subprocess.run(
-            ["fzf", "--ansi", "--height=30", "--reverse",
-             "--prompt=props> ",
-             f"--header={header}",
-             "--no-mouse"],
-            input="\n".join(lines), capture_output=True, text=True
-        )
-    except FileNotFoundError:
-        print("fzf not found. Use: props 2373", file=sys.stderr)
-        sys.exit(1)
-
-    if result.returncode != 0 or not result.stdout.strip():
-        sys.exit(0)
-
-    match = re.search(r"#(\d+)", result.stdout)
-    if match:
-        return int(match.group(1))
-    sys.exit(1)
-
-
-def display_pr(pr, repo, compare):
-    """Full PR report."""
-    num = pr["number"]
-    title = pr["title"]
-    branch = pr["headRefName"]
-    base = pr["baseRefName"]
-    author = pr["author"]["login"]
-    body = (pr.get("body") or "")[:500]
-    checks = pr.get("statusCheckRollup", [])
-    mergeable = pr.get("mergeable", "UNKNOWN")
     review = pr.get("reviewDecision") or "NONE"
-    draft = pr.get("isDraft", False)
-    adds = pr.get("additions", 0)
-    dels = pr.get("deletions", 0)
-    files = pr.get("changedFiles", 0)
-    commits = len(pr.get("commits", []))
-    labels = [l["name"] for l in pr.get("labels", [])]
+    checks = pr.get("statusCheckRollup", [])
     behind = compare.get("behind", 0)
     ahead = compare.get("ahead", 0)
 
+    ci_pass, ci_fail, ci_pending, ci_skip, ci_details = analyze_checks(checks)
     pillar = categorize(title, body, branch, repo)
     why = get_pillar_why(pillar, repo)
-
-    ci_pass = sum(1 for c in checks if (c.get("conclusion") or "").upper() == "SUCCESS")
-    ci_fail = sum(1 for c in checks if (c.get("conclusion") or "").upper() == "FAILURE")
-    ci_skip = sum(1 for c in checks if (c.get("conclusion") or "").upper() in ("SKIPPED", "NEUTRAL"))
-    ci_pending = len(checks) - ci_pass - ci_fail - ci_skip
-
-    print(f"\n{C_CYAN}{'━' * 60}{C_RESET}")
-    print(f"{C_BOLD}  #{num}  {title}{C_RESET}")
-    print(f"{C_CYAN}{'━' * 60}{C_RESET}")
-
-    print(f"\n  {C_YELLOW}▸ {pillar}{C_RESET}")
-    if why:
-        print(f"    {C_DIM}{why}{C_RESET}")
-
-    print(f"\n  {C_WHITE}Branch{C_RESET}    {C_BLUE}{branch}{C_RESET} → {base}")
-    print(f"  {C_WHITE}Author{C_RESET}    {author}")
-    print(f"  {C_WHITE}Changes{C_RESET}   {C_GREEN}+{adds}{C_RESET} {C_RED}-{dels}{C_RESET} in {files} files ({commits} commit{'s' if commits != 1 else ''})")
-    if labels:
-        print(f"  {C_WHITE}Labels{C_RESET}    {', '.join(labels)}")
-    if draft:
-        print(f"  {C_WHITE}Draft{C_RESET}     {C_YELLOW}Yes — not ready for merge{C_RESET}")
-
-    print()
-    if behind == 0:
-        print(f"  {C_GREEN}✓ Up to date{C_RESET} with {base} ({ahead} ahead)")
-    else:
-        print(f"  {C_RED}✗ {behind} behind {base}{C_RESET} ({ahead} ahead) — needs rebase")
-
-    if mergeable == "MERGEABLE":
-        print(f"  {C_GREEN}✓ No conflicts{C_RESET}")
-    elif mergeable == "CONFLICTING":
-        print(f"  {C_RED}✗ Has merge conflicts{C_RESET}")
-    else:
-        print(f"  {C_YELLOW}● Merge: {mergeable}{C_RESET}")
-
-    if review == "APPROVED":
-        print(f"  {C_GREEN}✓ Approved{C_RESET}")
-    elif review == "CHANGES_REQUESTED":
-        print(f"  {C_RED}✗ Changes requested{C_RESET}")
-    else:
-        print(f"  {C_DIM}○ No reviews{C_RESET}")
-
-    print()
-    if ci_fail > 0:
-        print(f"  {C_RED}✗ CI: {ci_fail} failing{C_RESET}", end="")
-    elif ci_pending > 0:
-        print(f"  {C_YELLOW}● CI: {ci_pending} pending{C_RESET}", end="")
-    elif ci_pass > 0:
-        print(f"  {C_GREEN}✓ CI: all passing{C_RESET}", end="")
-    else:
-        print(f"  {C_DIM}○ No CI{C_RESET}", end="")
-
-    parts = []
-    if ci_pass: parts.append(f"{ci_pass} passed")
-    if ci_fail: parts.append(f"{ci_fail} failed")
-    if ci_pending: parts.append(f"{ci_pending} pending")
-    if ci_skip: parts.append(f"{ci_skip} skipped")
-    if parts:
-        print(f"  {C_DIM}({', '.join(parts)}){C_RESET}")
-    else:
-        print()
-
-    for c in checks:
-        conclusion = (c.get("conclusion") or c.get("status") or "?").upper()
-        name = c.get("name", c.get("context", "?"))
-        if conclusion == "SUCCESS":
-            icon = f"{C_GREEN}✓{C_RESET}"
-        elif conclusion == "FAILURE":
-            icon = f"{C_RED}✗{C_RESET}"
-        elif conclusion in ("SKIPPED", "NEUTRAL"):
-            icon = f"{C_DIM}○{C_RESET}"
-        else:
-            icon = f"{C_YELLOW}●{C_RESET}"
-        print(f"    {icon} {name}")
 
     blockers = []
     if ci_fail > 0: blockers.append("CI failing")
@@ -417,183 +263,1022 @@ def display_pr(pr, repo, compare):
     if review == "CHANGES_REQUESTED": blockers.append("changes requested")
     if draft: blockers.append("draft")
 
-    print()
-    if not blockers:
-        print(f"  {C_GREEN}{C_BOLD}Ready to merge.{C_RESET}")
-    else:
-        print(f"  {C_RED}{C_BOLD}Blocked:{C_RESET} {', '.join(blockers)}")
-
     return {
-        "behind": behind, "mergeable": mergeable, "ci_fail": ci_fail,
-        "ci_pending": ci_pending, "draft": draft, "branch": branch,
-        "base": base, "number": num, "title": title, "blockers": blockers,
+        "number": num, "title": title, "branch": branch, "base": base,
+        "author": author, "draft": draft, "mergeable": mergeable,
+        "review": review, "behind": behind, "ahead": ahead,
+        "ci_pass": ci_pass, "ci_fail": ci_fail, "ci_pending": ci_pending,
+        "ci_skip": ci_skip, "ci_details": ci_details,
+        "pillar": pillar, "why": why, "blockers": blockers,
+        "additions": pr.get("additions", 0), "deletions": pr.get("deletions", 0),
+        "changedFiles": pr.get("changedFiles", 0),
+        "commits": len(pr.get("commits", [])),
+        "labels": [l["name"] for l in pr.get("labels", [])],
+        "checks": checks,
     }
 
 
-def show_actions(state, repo):
-    """Interactive action menu."""
-    num = state["number"]
-    branch = state["branch"]
-    base = state["base"]
-    title = state["title"]
+# ─── Curses TUI ───────────────────────────────────────────────────────────────
 
-    is_ray_browser = (repo == "raybrowser/chromium-ray-poc")
+class PropsTUI:
+    # Views
+    VIEW_LIST = "list"
+    VIEW_DETAIL = "detail"
+    VIEW_ACTION = "action"
 
-    actions = []
-    keys = []
+    def __init__(self, stdscr, repo, prs, compares):
+        self.stdscr = stdscr
+        self.repo = repo
+        self.prs = prs
+        self.compares = compares
 
-    actions.append(f"  {C_WHITE}[o]{C_RESET} Open in browser")
-    keys.append("o")
+        # Build state for each PR
+        self.states = []
+        for pr in prs:
+            cmp = compares.get(pr["number"], {"behind": 0, "ahead": 0})
+            self.states.append(build_pr_state(pr, cmp, repo))
 
-    if state["behind"] > 0:
-        actions.append(f"  {C_YELLOW}[r]{C_RESET} Rebase on {base}")
-        keys.append("r")
+        self.view = self.VIEW_LIST
+        self.cursor = 0
+        self.scroll_offset = 0
+        self.selected_idx = None
 
-    if is_ray_browser:
-        actions.append(f"  {C_BLUE}[b]{C_RESET} Build Mac DMG (qa)")
-        keys.append("b")
-        actions.append(f"  {C_BLUE}[B]{C_RESET} Build Mac DMG (nightly)")
-        keys.append("B")
+        # Action view state
+        self.action_log = []
+        self.action_running = False
+        self.action_thread = None
+        self.ci_polling = False
+        self.ci_poll_thread = None
 
-    if not state["blockers"]:
-        actions.append(f"  {C_GREEN}[m]{C_RESET} Merge (squash)")
-        keys.append("m")
-    elif state["mergeable"] != "CONFLICTING" and not state["draft"]:
-        actions.append(f"  {C_DIM}[m] Merge (blocked: {', '.join(state['blockers'])}){C_RESET}")
+        # For thread-safe screen updates
+        self.lock = threading.Lock()
 
-    actions.append(f"  {C_DIM}[q]{C_RESET} Quit")
-    keys.append("q")
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_GREEN, -1)   # green
+        curses.init_pair(2, curses.COLOR_RED, -1)      # red
+        curses.init_pair(3, curses.COLOR_YELLOW, -1)   # yellow
+        curses.init_pair(4, curses.COLOR_CYAN, -1)     # cyan
+        curses.init_pair(5, curses.COLOR_BLUE, -1)     # blue
+        curses.init_pair(6, curses.COLOR_WHITE, -1)    # white
+        curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_WHITE)  # selected row
 
-    print(f"\n  {C_CYAN}Actions:{C_RESET}")
-    for a in actions:
-        print(a)
+        self.stdscr.timeout(100)  # 100ms for responsive input + thread updates
 
-    try:
-        choice = input(f"\n  > ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return
+    def run(self):
+        while True:
+            with self.lock:
+                self.draw()
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if not self.handle_key(key):
+                break
 
-    if choice == "o":
-        subprocess.run(["gh", "pr", "view", str(num), "--repo", repo, "--web"])
-    elif choice == "r" and "r" in keys:
-        do_rebase(repo, num, branch, base)
-    elif choice == "b" and "b" in keys:
-        do_build(repo, num, branch, title, "qa")
-    elif choice == "B" and "B" in keys:
-        do_build(repo, num, branch, title, "nightly")
-    elif choice == "m" and not state["blockers"]:
-        do_merge(repo, num, branch, title)
+    def handle_key(self, key):
+        if self.view == self.VIEW_LIST:
+            return self.handle_list_key(key)
+        elif self.view == self.VIEW_DETAIL:
+            return self.handle_detail_key(key)
+        elif self.view == self.VIEW_ACTION:
+            return self.handle_action_key(key)
+        return True
 
+    # ─── List View ──────────────────────────────────────────────────────
 
-def do_rebase(repo, num, branch, base):
-    print(f"\n  {C_YELLOW}▸ Rebasing {branch} on {base}...{C_RESET}")
-    result = run_cmd([
-        "gh", "api", "-X", "PUT",
-        f"repos/{repo}/pulls/{num}/update-branch",
-        "-f", "update_method=rebase"
-    ])
-    if result.returncode == 0:
-        print(f"  {C_GREEN}✓ Rebase triggered.{C_RESET} CI will re-run.")
-        notify("Rebase Triggered", f"PR #{num} rebasing on {base}")
-    else:
+    def handle_list_key(self, key):
+        if key == ord('q'):
+            return False
+        elif key == curses.KEY_UP or key == ord('k'):
+            if self.cursor > 0:
+                self.cursor -= 1
+        elif key == curses.KEY_DOWN or key == ord('j'):
+            if self.cursor < len(self.states) - 1:
+                self.cursor += 1
+        elif key == 10 or key == curses.KEY_RIGHT:  # enter or right
+            self.selected_idx = self.cursor
+            self.view = self.VIEW_DETAIL
+            self.detail_scroll = 0
+        elif key == ord('R'):
+            # Shift-R: rebase highlighted PR directly from list
+            st = self.states[self.cursor]
+            if st["behind"] > 0:
+                self.selected_idx = self.cursor
+                self._action_rebase_and_return(st)
+        elif key == ord('r'):
+            # lowercase r: refresh data
+            self._refresh_data()
+        return True
+
+    def _refresh_data(self):
+        """Re-fetch all PR data."""
+        self.action_log = [("info", "Refreshing...")]
+        self.view = self.VIEW_ACTION
+        self.action_running = True
+
+        def do_refresh():
+            try:
+                prs = fetch_prs_full(self.repo)
+                if prs:
+                    compares = fetch_all_compares(self.repo, prs)
+                    with self.lock:
+                        self.prs = prs
+                        self.compares = compares
+                        self.states = []
+                        for pr in prs:
+                            cmp = compares.get(pr["number"], {"behind": 0, "ahead": 0})
+                            self.states.append(build_pr_state(pr, cmp, self.repo))
+                        if self.cursor >= len(self.states):
+                            self.cursor = max(0, len(self.states) - 1)
+                        self.action_log.append(("ok", f"Loaded {len(prs)} PRs."))
+                else:
+                    with self.lock:
+                        self.action_log.append(("err", "No PRs found."))
+            except Exception as e:
+                with self.lock:
+                    self.action_log.append(("err", str(e)))
+            finally:
+                with self.lock:
+                    self.action_running = False
+
+        self.action_thread = threading.Thread(target=do_refresh, daemon=True)
+        self.action_thread.start()
+
+    def _refresh_data_silent(self):
+        """Re-fetch all PR data in background without leaving current view."""
+        def do_refresh():
+            try:
+                prs = fetch_prs_full(self.repo)
+                if prs:
+                    compares = fetch_all_compares(self.repo, prs)
+                    with self.lock:
+                        self.prs = prs
+                        self.compares = compares
+                        self.states = []
+                        for pr in prs:
+                            cmp = compares.get(pr["number"], {"behind": 0, "ahead": 0})
+                            self.states.append(build_pr_state(pr, cmp, self.repo))
+                        if self.cursor >= len(self.states):
+                            self.cursor = max(0, len(self.states) - 1)
+            except Exception:
+                pass
+
+        threading.Thread(target=do_refresh, daemon=True).start()
+
+    def draw_list(self):
+        h, w = self.stdscr.getmaxyx()
+        self.stdscr.erase()
+
+        repo_name = self.repo.split("/")[-1]
+        title = f" props — {repo_name} — {len(self.states)} open PRs "
+        self.safe_addstr(0, 0, title, curses.color_pair(4) | curses.A_BOLD)
+
+        # Header
+        hdr = f" {'CI':4} {'SYNC':5} {'':1} {'READY':6}  {'PR':<6} {'TITLE':40}  {'AUTHOR':12}  {'PILLAR':12}"
+        self.safe_addstr(2, 0, hdr[:w], curses.A_DIM)
+
+        # Reserve bottom panel: separator + up to 7 info lines + keyhints
+        panel_height = 9
+        list_start = 3
+        list_height = max(1, h - list_start - panel_height)
+
+        # Adjust scroll offset to keep cursor visible
+        if self.cursor < self.scroll_offset:
+            self.scroll_offset = self.cursor
+        elif self.cursor >= self.scroll_offset + list_height:
+            self.scroll_offset = self.cursor - list_height + 1
+
+        for i in range(list_height):
+            idx = self.scroll_offset + i
+            if idx >= len(self.states):
+                break
+            row = list_start + i
+            st = self.states[idx]
+            is_selected = (idx == self.cursor)
+            self.draw_status_line(row, st, w, is_selected)
+
+        # ─── Bottom info panel for highlighted PR ───
+        self.draw_info_panel(list_start + list_height, w, h)
+
+    def draw_status_line(self, row, st, w, selected):
+        """Draw a single PR status line (plain curses, no ANSI)."""
+        # CI indicator
+        if st["ci_fail"] > 0:
+            ci_text = f"CI✗{st['ci_fail']}"
+            ci_color = curses.color_pair(2) | curses.A_BOLD
+        elif st["ci_pending"] > 0:
+            ci_text = "CI● "
+            ci_color = curses.color_pair(3) | curses.A_BOLD
+        elif st["ci_pass"] > 0:
+            ci_text = "CI✓ "
+            ci_color = curses.color_pair(1) | curses.A_BOLD
+        else:
+            ci_text = "CI? "
+            ci_color = curses.A_DIM
+
+        # Sync
+        if st["behind"] == 0:
+            sync_text = "✓sync"
+            sync_color = curses.color_pair(1) | curses.A_BOLD
+        else:
+            sync_text = f"↓{st['behind']:<4}"
+            sync_color = curses.color_pair(2) | curses.A_BOLD
+
+        # Conflicts
+        conflict_text = "⚡" if st["mergeable"] == "CONFLICTING" else " "
+        conflict_color = curses.color_pair(2) | curses.A_BOLD
+
+        # Draft
+        draft_text = "D" if st["draft"] else " "
+        draft_color = curses.color_pair(3) | curses.A_BOLD
+
+        # Ready
+        if not st["blockers"]:
+            ready_text = "✓READY"
+            ready_color = curses.color_pair(1) | curses.A_BOLD
+        else:
+            ready_text = "------"
+            ready_color = curses.A_DIM
+
+        # PR number
+        pr_text = f"#{st['number']:<5}"
+
+        # Title (truncated)
+        max_title = min(40, w - 55)
+        title_text = st["title"][:max_title].ljust(max_title)
+
+        # Author
+        author_text = st["author"][:12].ljust(12)
+
+        # Pillar
+        pillar_text = st["pillar"][:12].ljust(12)
+
+        base_attr = curses.color_pair(7) if selected else 0
+
+        col = 1
+        self.safe_addstr(row, col, ci_text, ci_color | (curses.A_REVERSE if selected else 0))
+        col += 5
+        self.safe_addstr(row, col, sync_text, sync_color | (curses.A_REVERSE if selected else 0))
+        col += 6
+        self.safe_addstr(row, col, conflict_text, conflict_color | (curses.A_REVERSE if selected else 0))
+        self.safe_addstr(row, col + 1, draft_text, draft_color | (curses.A_REVERSE if selected else 0))
+        col += 3
+        self.safe_addstr(row, col, ready_text, ready_color | (curses.A_REVERSE if selected else 0))
+        col += 8
+        self.safe_addstr(row, col, pr_text, base_attr)
+        col += 7
+        self.safe_addstr(row, col, title_text, base_attr | curses.A_BOLD if selected else base_attr)
+        col += max_title + 2
+        self.safe_addstr(row, col, author_text, curses.A_DIM | (curses.A_REVERSE if selected else 0))
+        col += 14
+        self.safe_addstr(row, col, pillar_text, curses.color_pair(5) | curses.A_BOLD | (curses.A_REVERSE if selected else 0))
+
+    def draw_info_panel(self, top_row, w, h):
+        """Draw a rich info panel at the bottom showing full details of highlighted PR."""
+        if not self.states or self.cursor >= len(self.states):
+            return
+
+        st = self.states[self.cursor]
+
+        # Separator line
+        self.safe_addstr(top_row, 0, "─" * (w - 1), curses.color_pair(4))
+
+        row = top_row + 1
+
+        # Line 1: PR number + full title + pillar
+        line1_pr = f" #{st['number']}  "
+        line1_title = st["title"]
+        line1_pillar = f"  [{st['pillar']}]"
+        max_t = w - len(line1_pr) - len(line1_pillar) - 2
+        if max_t > 0:
+            line1_title = line1_title[:max_t]
+        self.safe_addstr(row, 0, line1_pr, curses.A_BOLD)
+        self.safe_addstr(row, len(line1_pr), line1_title, curses.A_BOLD)
+        self.safe_addstr(row, len(line1_pr) + len(line1_title), line1_pillar, curses.color_pair(5) | curses.A_BOLD)
+        row += 1
+
+        # Line 2: Why (pillar description)
+        if st["why"]:
+            self.safe_addstr(row, 1, st["why"][:w-3], curses.A_DIM)
+        row += 1
+
+        # Line 3: Branch + sync status (human-readable)
+        branch_info = f" {st['branch']} → {st['base']}"
+        self.safe_addstr(row, 0, branch_info[:w-1], curses.color_pair(5))
+        row += 1
+
+        # Line 4: Sync + conflicts + draft (full English sentences)
+        sync_parts = []
+        if st["behind"] == 0:
+            sync_parts.append(("In sync with " + st["base"], curses.color_pair(1)))
+        else:
+            sync_parts.append((f"{st['behind']} commits behind {st['base']} — needs rebase", curses.color_pair(2) | curses.A_BOLD))
+
+        if st["mergeable"] == "CONFLICTING":
+            sync_parts.append(("  |  Has merge conflicts", curses.color_pair(2) | curses.A_BOLD))
+        if st["draft"]:
+            sync_parts.append(("  |  Draft PR", curses.color_pair(3)))
+
+        col = 1
+        for text, attr in sync_parts:
+            self.safe_addstr(row, col, text, attr)
+            col += len(text)
+        row += 1
+
+        # Line 5: CI status (full English + failed check names)
+        if st["ci_fail"] > 0:
+            failed_names = [name for kind, name in st["ci_details"] if kind == "fail"]
+            ci_msg = f" CI: {st['ci_fail']} failed"
+            if failed_names:
+                ci_msg += " — " + ", ".join(failed_names[:3])
+                if len(failed_names) > 3:
+                    ci_msg += f" (+{len(failed_names) - 3} more)"
+            self.safe_addstr(row, 0, ci_msg[:w-1], curses.color_pair(2) | curses.A_BOLD)
+        elif st["ci_pending"] > 0:
+            pending_names = [name for kind, name in st["ci_details"] if kind == "pending"]
+            ci_msg = f" CI: {st['ci_pending']} running"
+            if pending_names:
+                ci_msg += " — " + ", ".join(pending_names[:3])
+                if len(pending_names) > 3:
+                    ci_msg += f" (+{len(pending_names) - 3} more)"
+            self.safe_addstr(row, 0, ci_msg[:w-1], curses.color_pair(3))
+        elif st["ci_pass"] > 0:
+            self.safe_addstr(row, 0, f" CI: all {st['ci_pass']} checks passing", curses.color_pair(1))
+        else:
+            self.safe_addstr(row, 0, " CI: no checks", curses.A_DIM)
+        row += 1
+
+        # Line 6: Passing checks summary (if there are failures, show what passed too)
+        if st["ci_fail"] > 0 and st["ci_pass"] > 0:
+            self.safe_addstr(row, 0, f" ({st['ci_pass']} passing, {st['ci_skip']} skipped)"[:w-1], curses.A_DIM)
+            row += 1
+
+        # Line 7: Ready / Blocked verdict
+        if not st["blockers"]:
+            self.safe_addstr(row, 0, " Ready to merge", curses.color_pair(1) | curses.A_BOLD)
+        else:
+            self.safe_addstr(row, 0, f" Blocked: {', '.join(st['blockers'])}"[:w-1], curses.color_pair(2))
+        row += 1
+
+        # Key hints at very bottom
+        keys = " ↑↓:navigate  enter:detail  R:rebase  r:refresh  q:quit"
+        self.safe_addstr(h - 1, 0, keys[:w-1], curses.A_DIM)
+
+    # ─── Detail View ────────────────────────────────────────────────────
+
+    def handle_detail_key(self, key):
+        if key == 27 or key == curses.KEY_LEFT:  # esc or left
+            self.view = self.VIEW_LIST
+        elif key == ord('o'):
+            self._action_open_browser()
+        elif key == ord('r'):
+            st = self.states[self.selected_idx]
+            if st["behind"] > 0:
+                self._action_rebase(st)
+        elif key == ord('b'):
+            st = self.states[self.selected_idx]
+            if self.repo == "raybrowser/chromium-ray-poc":
+                self._action_build(st, "qa")
+        elif key == ord('B'):
+            st = self.states[self.selected_idx]
+            if self.repo == "raybrowser/chromium-ray-poc":
+                self._action_build(st, "nightly")
+        elif key == ord('m'):
+            st = self.states[self.selected_idx]
+            if not st["blockers"]:
+                self._action_merge(st)
+        elif key == curses.KEY_UP or key == ord('k'):
+            if self.detail_scroll > 0:
+                self.detail_scroll -= 1
+        elif key == curses.KEY_DOWN or key == ord('j'):
+            self.detail_scroll += 1
+        elif key == ord('q'):
+            return False
+        return True
+
+    def draw_detail(self):
+        h, w = self.stdscr.getmaxyx()
+        self.stdscr.erase()
+
+        st = self.states[self.selected_idx]
+        is_ray = (self.repo == "raybrowser/chromium-ray-poc")
+
+        lines = []  # list of (text, attr) tuples
+
+        lines.append((f" #{st['number']}  {st['title']}", curses.color_pair(4) | curses.A_BOLD))
+        lines.append(("━" * min(60, w - 2), curses.color_pair(4)))
+        lines.append(("", 0))
+
+        # Pillar
+        lines.append((f" ▸ {st['pillar']}", curses.color_pair(3) | curses.A_BOLD))
+        if st["why"]:
+            lines.append((f"   {st['why']}", curses.A_DIM))
+        lines.append(("", 0))
+
+        # Branch info
+        lines.append((f" Branch    {st['branch']} → {st['base']}", curses.color_pair(5)))
+        lines.append((f" Author    {st['author']}", 0))
+        lines.append((f" Changes   +{st['additions']} -{st['deletions']} in {st['changedFiles']} files ({st['commits']} commits)", 0))
+        if st["labels"]:
+            lines.append((f" Labels    {', '.join(st['labels'])}", 0))
+        if st["draft"]:
+            lines.append((" Draft     Yes — not ready for merge", curses.color_pair(3)))
+        lines.append(("", 0))
+
+        # Sync status
+        if st["behind"] == 0:
+            lines.append((f" ✓ Up to date with {st['base']} ({st['ahead']} ahead)", curses.color_pair(1)))
+        else:
+            lines.append((f" ✗ {st['behind']} behind {st['base']} ({st['ahead']} ahead) — needs rebase", curses.color_pair(2)))
+
+        # Conflicts
+        if st["mergeable"] == "MERGEABLE":
+            lines.append((" ✓ No conflicts", curses.color_pair(1)))
+        elif st["mergeable"] == "CONFLICTING":
+            lines.append((" ✗ Has merge conflicts", curses.color_pair(2)))
+        else:
+            lines.append((f" ● Merge: {st['mergeable']}", curses.color_pair(3)))
+
+        # Review
+        if st["review"] == "APPROVED":
+            lines.append((" ✓ Approved", curses.color_pair(1)))
+        elif st["review"] == "CHANGES_REQUESTED":
+            lines.append((" ✗ Changes requested", curses.color_pair(2)))
+        else:
+            lines.append((" ○ No reviews", curses.A_DIM))
+        lines.append(("", 0))
+
+        # CI
+        if st["ci_fail"] > 0:
+            lines.append((f" ✗ CI: {st['ci_fail']} failing  ({st['ci_pass']} passed, {st['ci_pending']} pending, {st['ci_skip']} skipped)", curses.color_pair(2)))
+        elif st["ci_pending"] > 0:
+            lines.append((f" ● CI: {st['ci_pending']} pending  ({st['ci_pass']} passed, {st['ci_fail']} failed, {st['ci_skip']} skipped)", curses.color_pair(3)))
+        elif st["ci_pass"] > 0:
+            lines.append((f" ✓ CI: all passing  ({st['ci_pass']} passed, {st['ci_skip']} skipped)", curses.color_pair(1)))
+        else:
+            lines.append((" ○ No CI", curses.A_DIM))
+
+        # Individual checks
+        for kind, name in st["ci_details"]:
+            if kind == "pass":
+                lines.append((f"   ✓ {name}", curses.color_pair(1)))
+            elif kind == "fail":
+                lines.append((f"   ✗ {name}", curses.color_pair(2)))
+            elif kind == "pending":
+                lines.append((f"   ● {name}", curses.color_pair(3)))
+            else:
+                lines.append((f"   ○ {name}", curses.A_DIM))
+
+        lines.append(("", 0))
+
+        # Ready / Blocked
+        if not st["blockers"]:
+            lines.append((" Ready to merge.", curses.color_pair(1) | curses.A_BOLD))
+        else:
+            lines.append((f" Blocked: {', '.join(st['blockers'])}", curses.color_pair(2) | curses.A_BOLD))
+
+        lines.append(("", 0))
+
+        # Actions
+        lines.append((" Actions:", curses.color_pair(4) | curses.A_BOLD))
+        lines.append(("  [o] Open in browser", 0))
+        if st["behind"] > 0:
+            lines.append((f"  [r] Rebase on {st['base']}", curses.color_pair(3)))
+        if is_ray:
+            lines.append(("  [b] Build Mac DMG (qa)", curses.color_pair(5)))
+            lines.append(("  [B] Build Mac DMG (nightly)", curses.color_pair(5)))
+        if not st["blockers"]:
+            lines.append(("  [m] Merge (squash)", curses.color_pair(1)))
+        elif st["mergeable"] != "CONFLICTING" and not st["draft"]:
+            lines.append((f"  [m] Merge (blocked: {', '.join(st['blockers'])})", curses.A_DIM))
+
+        # Clamp scroll
+        max_scroll = max(0, len(lines) - (h - 2))
+        if self.detail_scroll > max_scroll:
+            self.detail_scroll = max_scroll
+
+        # Draw
+        for i, (text, attr) in enumerate(lines):
+            row = i - self.detail_scroll
+            if row < 0 or row >= h - 1:
+                continue
+            self.safe_addstr(row, 0, text[:w-1], attr)
+
+        # Footer
+        footer = " esc/←:back  ↑↓:scroll  o:open  r:rebase  b/B:build  m:merge  q:quit"
+        self.safe_addstr(h - 1, 0, footer[:w-1], curses.A_DIM)
+
+    def _action_open_browser(self):
+        st = self.states[self.selected_idx]
+        subprocess.Popen(["gh", "pr", "view", str(st["number"]), "--repo", self.repo, "--web"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def _do_rebase_api(self, st):
+        """Execute rebase API call. Returns True on success."""
+        num = st["number"]
+        base = st["base"]
+
+        result = run_cmd([
+            "gh", "api", "-X", "PUT",
+            f"repos/{self.repo}/pulls/{num}/update-branch",
+            "-f", "update_method=rebase"
+        ])
+
+        if result.returncode == 0:
+            with self.lock:
+                self.action_log.append(("ok", f"Rebase triggered for #{num} on {base}."))
+            notify("Rebase Triggered", f"PR #{num} rebasing on {base}")
+            return True
+
+        # Fallback to merge
         result2 = run_cmd([
             "gh", "api", "-X", "PUT",
-            f"repos/{repo}/pulls/{num}/update-branch",
+            f"repos/{self.repo}/pulls/{num}/update-branch",
             "-f", "update_method=merge"
         ])
         if result2.returncode == 0:
-            print(f"  {C_GREEN}✓ Branch updated (merge).{C_RESET} CI will re-run.")
+            with self.lock:
+                self.action_log.append(("ok", f"Branch #{num} updated (merge) from {base}."))
             notify("Branch Updated", f"PR #{num} updated from {base}")
-        else:
-            print(f"  {C_RED}✗ Failed.{C_RESET} {(result.stderr or result2.stderr).strip()}")
+            return True
 
+        err = (result.stderr or result2.stderr).strip()
+        with self.lock:
+            self.action_log.append(("err", f"Failed: {err}"))
+        return False
 
-def do_build(repo, num, branch, title, channel):
-    print(f"\n  {C_BLUE}▸ Triggering Mac DMG ({channel})...{C_RESET}")
-    result = run_cmd([
-        "gh", "workflow", "run", "Mac DMG", "--repo", repo,
-        "--ref", branch, "-f", f"channel={channel}"
-    ])
-    if result.returncode != 0:
-        print(f"  {C_RED}✗ Failed:{C_RESET} {result.stderr.strip()}")
-        return
+    def _action_rebase(self, st):
+        """Rebase from detail view — stays in action view with CI polling."""
+        self.view = self.VIEW_ACTION
+        self.action_log = [("info", f"Rebasing #{st['number']} on {st['base']}...")]
+        self.action_running = True
+        self.ci_polling = False
 
-    print(f"  {C_GREEN}✓ Build triggered.{C_RESET}")
-    notify("DMG Build Started", f"PR #{num} — {title} ({channel})")
-
-    print(f"  Waiting for run to appear...")
-    time.sleep(5)
-
-    for _ in range(12):
-        r = run_cmd([
-            "gh", "run", "list", "--repo", repo,
-            "--workflow", "Mac DMG", "--branch", branch,
-            "--limit", "1", "--json", "databaseId,status"
-        ])
-        if r.returncode == 0:
-            runs = json.loads(r.stdout)
-            if runs and runs[0]["status"] in ("queued", "in_progress", "waiting"):
-                run_id = runs[0]["databaseId"]
-                print(f"  Run: https://github.com/{repo}/actions/runs/{run_id}")
-                print(f"\n  {C_CYAN}▸ Watching build...{C_RESET}\n")
-
-                watch = subprocess.run(
-                    ["gh", "run", "watch", str(run_id), "--repo", repo, "--exit-status"],
-                    timeout=36000
-                )
-
-                if watch.returncode == 0:
-                    log = run_cmd(["gh", "run", "view", str(run_id), "--repo", repo, "--log"], timeout=60)
-                    dmg_name = None
-                    if log.returncode == 0:
-                        for line in log.stdout.split("\n"):
-                            if "DMG_NAME=" in line and "RayDMG" in line:
-                                m = re.search(r"DMG_NAME=(RayDMG-\S+\.dmg)", line)
-                                if m:
-                                    dmg_name = m.group(1)
-                                    break
-                    if dmg_name:
-                        url = f"{GCS_BASE}/{dmg_name}"
-                        print(f"\n  {C_GREEN}✓ DMG ready: {dmg_name}{C_RESET}")
-                        subprocess.run(["open", url])
-                        notify("DMG Ready", dmg_name, "Hero")
-                    else:
-                        print(f"\n  {C_GREEN}✓ Build succeeded.{C_RESET}")
-                        notify("DMG Complete", f"PR #{num}")
-                else:
-                    print(f"\n  {C_RED}✗ Build failed.{C_RESET}")
-                    print(f"    https://github.com/{repo}/actions/runs/{run_id}")
-                    notify("DMG Failed", f"PR #{num} — {title}", "Basso")
+        def do_rebase():
+            if not self._do_rebase_api(st):
+                with self.lock:
+                    self.action_running = False
                 return
-        time.sleep(5)
 
-    print(f"  {C_YELLOW}Run not found.{C_RESET} Check GitHub Actions.")
+            with self.lock:
+                self.action_running = False
+                self.action_log.append(("info", "Waiting for CI checks to appear..."))
+                self.ci_polling = True
+
+            self._start_ci_poll(st["number"])
+
+        self.action_thread = threading.Thread(target=do_rebase, daemon=True)
+        self.action_thread.start()
+
+    def _action_rebase_and_return(self, st):
+        """Rebase from list view — shows progress, then auto-returns to list."""
+        self.view = self.VIEW_ACTION
+        self.action_log = [("info", f"Rebasing #{st['number']} on {st['base']}...")]
+        self.action_running = True
+        self.ci_polling = False
+        self._return_to = self.VIEW_LIST
+
+        def do_rebase_and_poll():
+            if not self._do_rebase_api(st):
+                with self.lock:
+                    self.action_running = False
+                return
+
+            with self.lock:
+                self.action_running = False
+                self.action_log.append(("info", "Waiting for CI checks to appear..."))
+                self.ci_polling = True
+
+            self._start_ci_poll(st["number"], auto_return=True)
+
+        self.action_thread = threading.Thread(target=do_rebase_and_poll, daemon=True)
+        self.action_thread.start()
+
+    def _action_build(self, st, channel):
+        self.view = self.VIEW_ACTION
+        self.action_log = [("info", f"Triggering Mac DMG ({channel}) for #{st['number']}...")]
+        self.action_running = True
+        self.ci_polling = False
+
+        def do_build():
+            num = st["number"]
+            branch = st["branch"]
+            title = st["title"]
+
+            result = run_cmd([
+                "gh", "workflow", "run", "Mac DMG", "--repo", self.repo,
+                "--ref", branch, "-f", f"channel={channel}"
+            ])
+
+            if result.returncode != 0:
+                with self.lock:
+                    self.action_log.append(("err", f"Failed: {result.stderr.strip()}"))
+                    self.action_running = False
+                return
+
+            with self.lock:
+                self.action_log.append(("ok", f"Build triggered ({channel})."))
+            notify("DMG Build Started", f"PR #{num} — {title} ({channel})")
+
+            # Wait for run to appear
+            with self.lock:
+                self.action_log.append(("info", "Waiting for run to appear..."))
+
+            time.sleep(5)
+            run_id = None
+            for _ in range(12):
+                r = run_cmd([
+                    "gh", "run", "list", "--repo", self.repo,
+                    "--workflow", "Mac DMG", "--branch", branch,
+                    "--limit", "1", "--json", "databaseId,status"
+                ])
+                if r.returncode == 0:
+                    runs = json.loads(r.stdout)
+                    if runs and runs[0]["status"] in ("queued", "in_progress", "waiting"):
+                        run_id = runs[0]["databaseId"]
+                        break
+                time.sleep(5)
+
+            if not run_id:
+                with self.lock:
+                    self.action_log.append(("err", "Run not found. Check GitHub Actions."))
+                    self.action_running = False
+                return
+
+            with self.lock:
+                self.action_log.append(("info", f"Run {run_id} found. Polling status..."))
+                self.action_running = False
+                self.ci_polling = True
+
+            # Poll the build run
+            while self.ci_polling:
+                r = run_cmd([
+                    "gh", "run", "view", str(run_id), "--repo", self.repo,
+                    "--json", "status,conclusion,jobs"
+                ])
+                if r.returncode == 0:
+                    data = json.loads(r.stdout)
+                    status = data.get("status", "?")
+                    conclusion = data.get("conclusion", "")
+
+                    jobs = data.get("jobs", [])
+                    job_lines = []
+                    for job in jobs:
+                        jname = job.get("name", "?")
+                        jstatus = job.get("conclusion") or job.get("status", "?")
+                        job_lines.append(f"  {jname}: {jstatus}")
+
+                    with self.lock:
+                        self.action_log.append(("info", f"Build: {status} {conclusion}"))
+                        for jl in job_lines:
+                            self.action_log.append(("dim", jl))
+
+                    if status == "completed":
+                        if conclusion == "success":
+                            # Try to extract DMG name
+                            log = run_cmd(["gh", "run", "view", str(run_id), "--repo", self.repo, "--log"], timeout=60)
+                            dmg_name = None
+                            if log.returncode == 0:
+                                for line in log.stdout.split("\n"):
+                                    if "DMG_NAME=" in line and "RayDMG" in line:
+                                        m = re.search(r"DMG_NAME=(RayDMG-\S+\.dmg)", line)
+                                        if m:
+                                            dmg_name = m.group(1)
+                                            break
+                            if dmg_name:
+                                url = f"{GCS_BASE}/{dmg_name}"
+                                with self.lock:
+                                    self.action_log.append(("ok", f"DMG ready: {dmg_name}"))
+                                subprocess.Popen(["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                notify("DMG Ready", dmg_name, "Hero")
+                            else:
+                                with self.lock:
+                                    self.action_log.append(("ok", "Build succeeded."))
+                                notify("DMG Complete", f"PR #{num}")
+                        else:
+                            with self.lock:
+                                self.action_log.append(("err", f"Build {conclusion}."))
+                            notify("DMG Failed", f"PR #{num} — {title}", "Basso")
+
+                        with self.lock:
+                            self.ci_polling = False
+                        break
+
+                time.sleep(5)
+
+        self.action_thread = threading.Thread(target=do_build, daemon=True)
+        self.action_thread.start()
+
+    def _action_merge(self, st):
+        """Merge requires confirmation — handled in action view with a prompt."""
+        self.view = self.VIEW_ACTION
+        self.action_log = [
+            ("warn", f"Squash merge #{st['number']}?"),
+            ("info", f"  {st['title']}"),
+            ("info", ""),
+            ("warn", f"Press 'y' to confirm, any other key to cancel."),
+        ]
+        self.action_running = False
+        self.ci_polling = False
+        self._merge_pending = st
+
+    def _do_merge_confirmed(self, st):
+        self.action_log.append(("info", f"Merging #{st['number']}..."))
+        self.action_running = True
+
+        def do_merge():
+            num = st["number"]
+            title = st["title"]
+            result = run_cmd([
+                "gh", "pr", "merge", str(num), "--repo", self.repo,
+                "--squash", "--delete-branch"
+            ])
+            if result.returncode == 0:
+                with self.lock:
+                    self.action_log.append(("ok", "Merged and branch deleted."))
+                notify("PR Merged", f"#{num} — {title}", "Hero")
+            else:
+                with self.lock:
+                    self.action_log.append(("err", f"Failed: {result.stderr.strip()}"))
+            with self.lock:
+                self.action_running = False
+
+        self.action_thread = threading.Thread(target=do_merge, daemon=True)
+        self.action_thread.start()
+
+    def _start_ci_poll(self, pr_number, auto_return=False):
+        """Poll CI status every 5 seconds until all checks complete or user presses esc.
+
+        After rebase, GitHub takes 10-30 seconds to create CI checks.
+        We wait for checks to appear before reporting status.
+        If auto_return is True, return to list view + refresh when CI finishes.
+        """
+        def poll():
+            # Phase 1: Wait for checks to actually appear (up to 60s)
+            checks_found = False
+            for wait_attempt in range(12):
+                if not self.ci_polling:
+                    return
+                checks = fetch_ci_status(self.repo, pr_number)
+                total = len(checks)
+                if total > 0:
+                    checks_found = True
+                    with self.lock:
+                        self.action_log.append(("info", f"CI checks detected ({total} checks). Polling..."))
+                    break
+                with self.lock:
+                    ts = time.strftime("%H:%M:%S")
+                    self.action_log.append(("dim", f"[{ts}] Waiting for CI checks to appear... ({wait_attempt + 1}/12)"))
+                time.sleep(5)
+
+            if not checks_found:
+                with self.lock:
+                    self.action_log.append(("warn", "No CI checks appeared after 60s. Check GitHub."))
+                    self.ci_polling = False
+                if auto_return:
+                    self._auto_return_to_list()
+                return
+
+            # Phase 2: Poll until all checks resolve
+            while self.ci_polling:
+                checks = fetch_ci_status(self.repo, pr_number)
+                ci_pass, ci_fail, ci_pending, ci_skip, details = analyze_checks(checks)
+                total = ci_pass + ci_fail + ci_pending + ci_skip
+
+                with self.lock:
+                    ts = time.strftime("%H:%M:%S")
+                    # Single summary line per poll (not every check listed each time)
+                    summary = f"[{ts}] {ci_pass}✓ {ci_fail}✗ {ci_pending}● {ci_skip}○ ({total} checks)"
+                    self.action_log.append(("info", summary))
+
+                    # Only list failing and pending checks (not all passing ones)
+                    for kind, name in details:
+                        if kind == "fail":
+                            self.action_log.append(("err", f"  ✗ {name}"))
+                        elif kind == "pending":
+                            self.action_log.append(("warn", f"  ● {name}"))
+
+                    # Update the cached state for this PR
+                    if self.selected_idx is not None and self.selected_idx < len(self.states):
+                        s = self.states[self.selected_idx]
+                        s["ci_pass"] = ci_pass
+                        s["ci_fail"] = ci_fail
+                        s["ci_pending"] = ci_pending
+                        s["ci_skip"] = ci_skip
+                        s["ci_details"] = details
+                        s["behind"] = 0  # just rebased
+                        blockers = []
+                        if ci_fail > 0: blockers.append("CI failing")
+                        if s["mergeable"] == "CONFLICTING": blockers.append("conflicts")
+                        if s["review"] == "CHANGES_REQUESTED": blockers.append("changes requested")
+                        if s["draft"]: blockers.append("draft")
+                        s["blockers"] = blockers
+
+                if ci_pending == 0 and total > 0:
+                    with self.lock:
+                        if ci_fail > 0:
+                            self.action_log.append(("err", f"CI done: {ci_fail} failed."))
+                            notify("CI Failed", f"PR #{pr_number}: {ci_fail} checks failed", "Basso")
+                        else:
+                            self.action_log.append(("ok", f"CI done: all {ci_pass} passing."))
+                            notify("CI Passed", f"PR #{pr_number}: all checks passed", "Hero")
+                        self.ci_polling = False
+                    break
+
+                time.sleep(5)
+
+            if auto_return:
+                self._auto_return_to_list()
+
+        self.ci_poll_thread = threading.Thread(target=poll, daemon=True)
+        self.ci_poll_thread.start()
+
+    def _auto_return_to_list(self):
+        """Return to list view and refresh data after an action completes."""
+        time.sleep(1)  # brief pause so user sees the final status
+        with self.lock:
+            self.view = self.VIEW_LIST
+            self.ci_polling = False
+            self.action_running = False
+        # Refresh in background
+        self._refresh_data_silent()
+
+    # ─── Action View ────────────────────────────────────────────────────
+
+    def handle_action_key(self, key):
+        # Check merge confirmation
+        if hasattr(self, '_merge_pending') and self._merge_pending:
+            st = self._merge_pending
+            self._merge_pending = None
+            if key == ord('y'):
+                self._do_merge_confirmed(st)
+            else:
+                self.action_log.append(("info", "Cancelled."))
+            return True
+
+        if key == 27 or key == curses.KEY_LEFT:  # esc or left
+            self.ci_polling = False
+            self.action_running = False
+            return_to = getattr(self, '_return_to', None)
+            if return_to:
+                self.view = return_to
+                self._return_to = None
+                self._refresh_data_silent()
+            elif self.selected_idx is not None:
+                self.view = self.VIEW_DETAIL
+            else:
+                self.view = self.VIEW_LIST
+        elif key == ord('q'):
+            self.ci_polling = False
+            return False
+        return True
+
+    def draw_action(self):
+        h, w = self.stdscr.getmaxyx()
+        self.stdscr.erase()
+
+        # Title
+        if self.selected_idx is not None and self.selected_idx < len(self.states):
+            st = self.states[self.selected_idx]
+            self.safe_addstr(0, 0, f" #{st['number']}  {st['title'][:w-10]}", curses.color_pair(4) | curses.A_BOLD)
+        else:
+            self.safe_addstr(0, 0, " props", curses.color_pair(4) | curses.A_BOLD)
+
+        # Show action log (scrolled to bottom)
+        log_start = 2
+        log_height = h - log_start - 2
+        log_len = len(self.action_log)
+        start_idx = max(0, log_len - log_height)
+
+        for i, (kind, text) in enumerate(self.action_log[start_idx:]):
+            row = log_start + i
+            if row >= h - 1:
+                break
+            if kind == "ok":
+                attr = curses.color_pair(1) | curses.A_BOLD
+            elif kind == "err":
+                attr = curses.color_pair(2) | curses.A_BOLD
+            elif kind == "warn":
+                attr = curses.color_pair(3) | curses.A_BOLD
+            elif kind == "dim":
+                attr = curses.A_DIM
+            else:
+                attr = 0
+            self.safe_addstr(row, 1, text[:w-2], attr)
+
+        # Spinner if running
+        if self.action_running or self.ci_polling:
+            spinner = "⣾⣽⣻⢿⡿⣟⣯⣷"
+            frame = spinner[int(time.time() * 4) % len(spinner)]
+            self.safe_addstr(h - 1, 1, f"{frame} Working... (esc to stop)", curses.color_pair(3))
+        else:
+            self.safe_addstr(h - 1, 1, "esc/←:back  q:quit", curses.A_DIM)
+
+    # ─── Drawing dispatch ───────────────────────────────────────────────
+
+    def draw(self):
+        if self.view == self.VIEW_LIST:
+            self.draw_list()
+        elif self.view == self.VIEW_DETAIL:
+            self.draw_detail()
+        elif self.view == self.VIEW_ACTION:
+            self.draw_action()
+        self.stdscr.refresh()
+
+    def safe_addstr(self, row, col, text, attr=0):
+        """Write text to screen, silently ignoring out-of-bounds."""
+        h, w = self.stdscr.getmaxyx()
+        if row < 0 or row >= h or col >= w:
+            return
+        try:
+            self.stdscr.addnstr(row, col, text, w - col - 1, attr)
+        except curses.error:
+            pass
 
 
-def do_merge(repo, num, branch, title):
-    try:
-        confirm = input(f"\n  {C_RED}Squash merge #{num}?{C_RESET} Type PR number to confirm: ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print("\n  Cancelled.")
+def run_tui(repo, pr_number=None):
+    """Load data and launch curses TUI."""
+    # Show loading message before curses takes over
+    print("Loading PRs...", end="\r", flush=True)
+    prs = fetch_prs_full(repo)
+    if not prs:
+        print(f"No open PRs on {repo}.")
         return
-    if confirm != str(num):
-        print("  Cancelled.")
-        return
 
-    result = run_cmd([
-        "gh", "pr", "merge", str(num), "--repo", repo,
-        "--squash", "--delete-branch"
-    ])
-    if result.returncode == 0:
-        print(f"  {C_GREEN}✓ Merged and branch deleted.{C_RESET}")
-        notify("PR Merged", f"#{num} — {title}", "Hero")
+    print("Checking sync status...", end="\r", flush=True)
+    compares = fetch_all_compares(repo, prs)
+    print("                              ", end="\r", flush=True)
+
+    def main(stdscr):
+        tui = PropsTUI(stdscr, repo, prs, compares)
+
+        # If a specific PR number was given, jump straight to detail
+        if pr_number:
+            for i, st in enumerate(tui.states):
+                if st["number"] == pr_number:
+                    tui.cursor = i
+                    tui.selected_idx = i
+                    tui.view = PropsTUI.VIEW_DETAIL
+                    tui.detail_scroll = 0
+                    break
+
+        tui.run()
+
+    curses.wrapper(main)
+
+
+# ─── Non-TUI mode (--status) ─────────────────────────────────────────────────
+
+C_RESET  = "\033[0m"
+C_BOLD   = "\033[1m"
+C_DIM    = "\033[0;90m"
+C_RED    = "\033[1;31m"
+C_GREEN  = "\033[1;32m"
+C_YELLOW = "\033[1;33m"
+C_BLUE   = "\033[1;34m"
+C_CYAN   = "\033[1;36m"
+C_WHITE  = "\033[0;37m"
+
+
+def build_ansi_status_line(st):
+    """Build ANSI-colored status line for --status mode."""
+    if st["ci_fail"] > 0:
+        ci = f"{C_RED}CI✗{st['ci_fail']}{C_RESET}"
+    elif st["ci_pending"] > 0:
+        ci = f"{C_YELLOW}CI● {C_RESET}"
+    elif st["ci_pass"] > 0:
+        ci = f"{C_GREEN}CI✓ {C_RESET}"
     else:
-        print(f"  {C_RED}✗ Failed:{C_RESET} {result.stderr.strip()}")
+        ci = f"{C_DIM}CI? {C_RESET}"
+
+    if st["behind"] == 0:
+        rebase = f"{C_GREEN}✓sync{C_RESET}"
+    else:
+        rebase = f"{C_RED}↓{st['behind']:<4}{C_RESET}"
+
+    conflict = f"{C_RED}⚡{C_RESET}" if st["mergeable"] == "CONFLICTING" else " "
+    draft_str = f"{C_YELLOW}D{C_RESET}" if st["draft"] else " "
+
+    if not st["blockers"]:
+        ready = f"{C_GREEN}✓READY{C_RESET}"
+    else:
+        ready = f"{C_DIM}------{C_RESET}"
+
+    title_trunc = st["title"][:48].ljust(48)
+    author_str = st["author"][:16].ljust(16)
+    pillar_short = st["pillar"][:14].ljust(14)
+
+    return (f"{ci} {rebase} {conflict}{draft_str} {ready}  "
+            f"#{st['number']:<5}  {title_trunc}  "
+            f"{C_DIM}{author_str}{C_RESET}  "
+            f"{C_BLUE}{pillar_short}{C_RESET}")
 
 
 def show_status(repo):
-    """Print status overview (non-interactive)."""
     print(f"{C_DIM}Fetching PRs...{C_RESET}", end="\r")
     prs = fetch_prs_full(repo)
     if not prs:
@@ -603,15 +1288,19 @@ def show_status(repo):
     print(f"{C_DIM}Fetching sync status...{C_RESET}", end="\r")
     compares = fetch_all_compares(repo, prs)
 
+    states = []
+    for pr in prs:
+        cmp = compares.get(pr["number"], {"behind": 0, "ahead": 0})
+        states.append(build_pr_state(pr, cmp, repo))
+
     name = repo.split("/")[-1]
-    print(f"\n{C_CYAN}━━━ {name} — {len(prs)} open PRs ━━━{C_RESET}\n")
+    print(f"\n{C_CYAN}━━━ {name} — {len(states)} open PRs ━━━{C_RESET}\n")
 
     header = f"  {'CI':4} {'SYNC':6} {'':2} {'READY':6}  {'PR':<7} {'TITLE':48}  {'AUTHOR':16}  {'PILLAR':14}"
     print(f"{C_DIM}{header}{C_RESET}\n")
 
-    for pr in prs:
-        compare = compares.get(pr["number"], {"behind": 0, "ahead": 0})
-        print(f"  {build_status_line(pr, compare, repo)}")
+    for st in states:
+        print(f"  {build_ansi_status_line(st)}")
 
     print()
 
@@ -648,43 +1337,7 @@ def main():
         print("Not in a git repo. Use: props --repo owner/repo", file=sys.stderr)
         sys.exit(1)
 
-    if not pr_number:
-        # Fetch everything, build rich fzf picker
-        print(f"{C_DIM}Loading PRs...{C_RESET}", end="\r")
-        prs = fetch_prs_full(repo)
-        if not prs:
-            print(f"No open PRs on {repo}.")
-            return
-
-        print(f"{C_DIM}Checking sync status...{C_RESET}", end="\r")
-        compares = fetch_all_compares(repo, prs)
-        print(f"                              ", end="\r")  # clear loading msg
-
-        pr_number = pick_pr_fzf(prs, compares, repo)
-
-        # We already have full data — find it
-        pr = next((p for p in prs if p["number"] == pr_number), None)
-        if pr:
-            compare = compares.get(pr_number, {"behind": 0, "ahead": 0})
-            state = display_pr(pr, repo, compare)
-            show_actions(state, repo)
-            return
-
-    # Direct PR number — fetch fresh
-    result = run_cmd([
-        "gh", "pr", "view", str(pr_number), "--repo", repo,
-        "--json", "number,title,headRefName,baseRefName,author,isDraft,"
-                  "mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,"
-                  "additions,deletions,changedFiles,commits,labels,body,url"
-    ])
-    if result.returncode != 0:
-        print(f"PR #{pr_number} not found.", file=sys.stderr)
-        sys.exit(1)
-
-    pr = json.loads(result.stdout)
-    compare = fetch_compare(repo, pr["baseRefName"], pr["headRefName"])
-    state = display_pr(pr, repo, compare)
-    show_actions(state, repo)
+    run_tui(repo, pr_number)
 
 
 if __name__ == "__main__":
