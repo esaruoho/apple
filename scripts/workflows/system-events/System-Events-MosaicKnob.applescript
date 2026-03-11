@@ -39,6 +39,7 @@ on doMosaic(direction)
 	end tell
 
 	-- Get screen info for the screen containing the frontmost window
+	-- Uses comma delimiter because AppleScript's "word" eats negative signs
 	set screenInfo to do shell script "swift -e '" & ¬
 		"import AppKit; " & ¬
 		"let wx = " & wx & ".0, wy = " & wy & ".0; " & ¬
@@ -48,11 +49,14 @@ on doMosaic(direction)
 		"for screen in NSScreen.screens { " & ¬
 		"if screen.frame.contains(flipped) { target = screen; break } }; " & ¬
 		"let vf = target.visibleFrame; let f = target.frame; " & ¬
-		"print(Int(vf.origin.x), Int(primaryH - vf.origin.y - vf.size.height), Int(vf.size.width), Int(vf.size.height))'"
-	set sX to word 1 of screenInfo as integer
-	set menuBarH to word 2 of screenInfo as integer
-	set sW to word 3 of screenInfo as integer
-	set sH to word 4 of screenInfo as integer
+		"print(\"\\(Int(vf.origin.x)),\\(Int(primaryH - vf.origin.y - vf.size.height)),\\(Int(vf.size.width)),\\(Int(vf.size.height))\")'"
+	set AppleScript's text item delimiters to ","
+	set parts to text items of screenInfo
+	set sX to (item 1 of parts) as integer
+	set menuBarH to (item 2 of parts) as integer
+	set sW to (item 3 of parts) as integer
+	set sH to (item 4 of parts) as integer
+	set AppleScript's text item delimiters to ""
 
 	if winCount is 0 then return "No windows"
 	if showCount > winCount then set showCount to winCount
