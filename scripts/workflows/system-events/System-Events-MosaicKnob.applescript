@@ -69,16 +69,7 @@ on doMosaic(direction)
 	set cellH to sH div bestRows
 
 	tell application "System Events"
-		-- Unminimize windows we need to show
-		repeat with i from 1 to showCount
-			try
-				if (value of attribute "AXMinimized" of window i of fp) is true then
-					set value of attribute "AXMinimized" of window i of fp to false
-				end if
-			end try
-		end repeat
-
-		-- Tile the visible windows
+		-- Tile the visible windows (move on-screen)
 		repeat with i from 1 to showCount
 			set idx to i - 1
 			set c to idx mod bestCols
@@ -91,12 +82,10 @@ on doMosaic(direction)
 			end try
 		end repeat
 
-		-- Minimize the rest
+		-- Hide the rest off-screen (no dock animation)
 		repeat with i from (showCount + 1) to winCount
 			try
-				if (value of attribute "AXMinimized" of window i of fp) is false then
-					set value of attribute "AXMinimized" of window i of fp to true
-				end if
+				set position of window i of fp to {-10000, -10000}
 			end try
 		end repeat
 	end tell
