@@ -126,12 +126,7 @@ on doMosaic(direction)
 			end try
 		end repeat
 
-		-- Minimize the rest (clean, no off-screen hiding)
-		repeat with i from (showCount + 1) to winCount
-			try
-				click (first button of window i of fp whose subrole is "AXMinimizeButton")
-			end try
-		end repeat
+		-- Leave remaining windows untouched — only tile the first N
 	end tell
 
 	return appName & ": " & showCount & "/" & winCount
