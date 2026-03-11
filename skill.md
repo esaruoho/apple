@@ -242,6 +242,40 @@ Key pattern: `osascript script.scpt &` — fire-and-forget AppleScript from bash
 | `sdef-deep-dive/` | 10 | Atlas deep dive: all 4 tiers, CLI tools, terminal automation |
 | `sdef-understanding/` | 10 | How Sal connected every app: sdef architecture, data type chains, narrative |
 
+## Loupedeck Window Management — Native Window Snapping
+
+No Magnet, no Rectangle — pure System Events + NSScreen. Physical controls for window tiling.
+
+**Scripts:** `scripts/workflows/system-events/` (source `.applescript`) + `compiled/` (`.scpt` for Loupedeck)
+
+| Control | File | Subroutine | Action |
+|---------|------|------------|--------|
+| **Button** | `HideAllOthers.scpt` | — | Hide all other apps (native, bypasses menu bar) |
+| **Button** | `MosaicWindows.scpt` | — | Tile all frontmost app windows into auto-grid |
+| **Knob ↻** | `MosaicKnob.scpt` | `more` | Show one more window, retile grid |
+| **Knob ↺** | `MosaicKnob.scpt` | `less` | Show one fewer window, retile grid |
+
+**Workflow:** Hide All Others (focus on one app) → turn knob to dial in how many windows you see. Physical focus control.
+
+**Key design decisions:**
+- **Valid steps only**: 1→2→3→4→6→8→9→12→16 — skips counts that leave empty grid cells
+- **Explicit layouts for 1-4**: 1=full, 2=side-by-side columns, 3=three columns, 4=2x2 grid. Only 6+ uses ratio optimizer.
+- **Always main screen**: uses `NSScreen.main` (keyboard focus screen). No multi-monitor detection — it was unreliable and sent windows to wrong screens.
+- **No window hiding**: excess windows left untouched. No minimize, no off-screen moves. Just tile the first N.
+- **Two-pass tiling**: resize all first, then position (prevents Safari overlap)
+- **Loupedeck subroutines**: one `.scpt` with `on more()` / `on less()` handlers — Loupedeck calls the right one per knob direction
+
+**AppleScript gotchas solved:**
+- `use framework "AppKit"` inside handlers breaks `osacompile` → use `do shell script "swift -e '...'"` for NSScreen
+- AppleScript `word` eats hyphens → comma delimiters + `text item delimiters` for negative coords
+- Safari auto-adjusts position after resize → resize first pass, position second pass
+
+**Design lessons (earned the hard way):**
+- Multi-monitor coordinate flipping is fragile — `NSScreen.main` is simple and correct
+- Never hide/minimize windows the user didn't ask to hide — just tile fewer, leave the rest
+- Ratio optimizer picks wrong layouts for small counts (stacked instead of side-by-side) — use explicit layouts
+- Simple beats clever: the final version is shorter and works better than the "smart" one
+
 ## Sal-Like Tools
 
 Tools in this repo that follow Sal's philosophy: one action, one result.
