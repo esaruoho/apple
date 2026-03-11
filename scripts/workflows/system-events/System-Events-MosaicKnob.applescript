@@ -70,23 +70,40 @@ on doMosaic(direction)
 	-- Save capped state
 	do shell script "echo " & showCount & " > /tmp/mosaic-knob-state"
 
-	-- Calculate best grid: optimize for 16:10 aspect ratio per cell
-	set bestCols to 1
-	set bestRows to showCount
-	set bestRatio to 999
-	repeat with c from 1 to showCount
-		set r to ((showCount + c - 1) div c)
-		set cellW2 to sW / c
-		set cellH2 to sH / r
-		set ratio to cellW2 / cellH2
-		set diff to (ratio - 1.6)
-		if diff < 0 then set diff to diff * -1
-		if diff < bestRatio then
-			set bestRatio to diff
-			set bestCols to c
-			set bestRows to r
-		end if
-	end repeat
+	-- Calculate grid layout
+	-- Small counts: explicit sensible layouts
+	-- 1=full, 2=side-by-side, 3=three columns, 4=2x2
+	-- Larger counts: optimize for 16:10 aspect ratio per cell
+	if showCount is 1 then
+		set bestCols to 1
+		set bestRows to 1
+	else if showCount is 2 then
+		set bestCols to 2
+		set bestRows to 1
+	else if showCount is 3 then
+		set bestCols to 3
+		set bestRows to 1
+	else if showCount is 4 then
+		set bestCols to 2
+		set bestRows to 2
+	else
+		set bestCols to 1
+		set bestRows to showCount
+		set bestRatio to 999
+		repeat with c from 1 to showCount
+			set r to ((showCount + c - 1) div c)
+			set cellW2 to sW / c
+			set cellH2 to sH / r
+			set ratio to cellW2 / cellH2
+			set diff to (ratio - 1.6)
+			if diff < 0 then set diff to diff * -1
+			if diff < bestRatio then
+				set bestRatio to diff
+				set bestCols to c
+				set bestRows to r
+			end if
+		end repeat
+	end if
 
 	set cellW to sW div bestCols
 	set cellH to sH div bestRows
