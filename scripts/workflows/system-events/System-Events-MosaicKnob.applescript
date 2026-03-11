@@ -28,18 +28,31 @@ on doMosaic(direction)
 	set showCount to showCount + direction
 	if showCount < 1 then set showCount to 1
 
-	-- Get screen info via Swift (avoids use framework + do shell script conflict)
-	set screenInfo to do shell script "swift -e 'import AppKit; let s = NSScreen.main!.visibleFrame; let f = NSScreen.main!.frame; print(Int(s.origin.x), Int(f.size.height - s.origin.y - s.size.height), Int(s.size.width), Int(s.size.height))'"
-	set sX to word 1 of screenInfo as integer
-	set menuBarH to word 2 of screenInfo as integer
-	set sW to word 3 of screenInfo as integer
-	set sH to word 4 of screenInfo as integer
-
 	tell application "System Events"
 		set fp to first process whose frontmost is true
 		set appName to name of fp
 		set winCount to count of windows of fp
+		-- Get frontmost window position to detect which screen it's on
+		set winPos to position of window 1 of fp
+		set wx to item 1 of winPos
+		set wy to item 2 of winPos
 	end tell
+
+	-- Get screen info for the screen containing the frontmost window
+	set screenInfo to do shell script "swift -e '" & ¬
+		"import AppKit; " & ¬
+		"let wx = " & wx & ".0, wy = " & wy & ".0; " & ¬
+		"let primaryH = NSScreen.screens[0].frame.size.height; " & ¬
+		"let flipped = NSPoint(x: wx, y: primaryH - wy); " & ¬
+		"var target = NSScreen.main!; " & ¬
+		"for screen in NSScreen.screens { " & ¬
+		"if screen.frame.contains(flipped) { target = screen; break } }; " & ¬
+		"let vf = target.visibleFrame; let f = target.frame; " & ¬
+		"print(Int(vf.origin.x), Int(primaryH - vf.origin.y - vf.size.height), Int(vf.size.width), Int(vf.size.height))'"
+	set sX to word 1 of screenInfo as integer
+	set menuBarH to word 2 of screenInfo as integer
+	set sW to word 3 of screenInfo as integer
+	set sH to word 4 of screenInfo as integer
 
 	if winCount is 0 then return "No windows"
 	if showCount > winCount then set showCount to winCount
