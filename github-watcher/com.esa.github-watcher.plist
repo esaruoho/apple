@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.esa.github-watcher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/esaruoho/work/apple/github-watcher/github-watcher.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>600</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/esaruoho/work/apple/github-watcher/logs/launchd-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/esaruoho/work/apple/github-watcher/logs/launchd-stderr.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Watcher</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: #7d8590; font-size: 13px; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .refresh-btn { background: #21262d; color: #7d8590; border: 1px solid #30363d; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .refresh-btn:hover { background: #30363d; color: #e6edf3; }
+
+  .group-title { font-size: 13px; font-weight: 600; color: #7d8590; text-transform: uppercase; letter-spacing: 0.8px; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #21262d; }
+  .group-title:first-child { margin-top: 0; }
+  .group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+
+  .repo { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+  .repo-header { padding: 10px 14px; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; }
+  .repo-label { font-size: 14px; font-weight: 600; color: #e6edf3; }
+  .repo-slug { font-size: 11px; color: #484f58; margin-left: 6px; }
+  .repo-slug a { color: inherit; text-decoration: none; }
+  .repo-slug a:hover { color: #58a6ff; text-decoration: underline; }
+  .badges { display: flex; gap: 6px; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+  .badge-pr { background: #1f6feb33; color: #58a6ff; }
+  .badge-pass { background: #23883233; color: #3fb950; }
+  .badge-fail { background: #8b141433; color: #f85149; }
+  .badge-none { background: #30363d; color: #7d8590; }
+
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #484f58; padding: 8px 14px 2px; }
+  .pr-list, .run-list { list-style: none; }
+  .pr-item, .run-item { padding: 5px 14px; border-top: 1px solid #21262d; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .pr-item:first-child, .run-item:first-child { border-top: none; }
+  .pr-number { color: #7d8590; min-width: 36px; font-size: 11px; }
+  .pr-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pr-title a { color: #e6edf3; text-decoration: none; }
+  .pr-title a:hover { color: #58a6ff; text-decoration: underline; }
+  .pr-author { color: #7d8590; font-size: 11px; flex-shrink: 0; }
+  .pr-time { color: #484f58; font-size: 11px; flex-shrink: 0; }
+
+  .run-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .run-status.success { background: #3fb950; }
+  .run-status.failure { background: #f85149; }
+  .run-status.in_progress { background: #d29922; animation: pulse 1.5s infinite; }
+  .run-status.queued { background: #7d8590; }
+  .run-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run-branch { color: #7d8590; font-size: 11px; background: #1c2128; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+  .run-time { color: #484f58; font-size: 11px; flex-shrink: 0; }
+
+  .empty { color: #484f58; padding: 10px 14px; font-size: 12px; font-style: italic; }
+  .updated { color: #484f58; font-size: 11px; text-align: right; margin-top: 16px; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .summary-bar { display: flex; gap: 16px; margin-bottom: 20px; padding: 10px 14px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+  .summary-item { font-size: 13px; }
+  .summary-item .num { font-weight: 700; }
+  .summary-item .lbl { color: #7d8590; }
+</style>
+</head>
+<body>
+<div class="header-row">
+  <div>
+    <h1>GitHub Watcher</h1>
+    <div class="subtitle">PR &amp; CI awareness across the ecosystem</div>
+  </div>
+  <button class="refresh-btn" onclick="loadData()">Refresh</button>
+</div>
+<div class="summary-bar" id="summary"></div>
+<div id="groups"></div>
+<div class="updated" id="updated"></div>
+
+<script>
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const mins = Math.floor((now - d) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function renderRepo(repo) {
+  const prs = repo.prs || [];
+  const runs = repo.runs || [];
+  const prCount = prs.length;
+  const failCount = runs.filter(r => r.conclusion === 'failure').length;
+
+  let badges = '';
+  if (prCount > 0) badges += `<span class="badge badge-pr">${prCount} PR${prCount !== 1 ? 's' : ''}</span>`;
+  if (failCount > 0) badges += `<span class="badge badge-fail">${failCount} failing</span>`;
+  else if (runs.length > 0) badges += `<span class="badge badge-pass">passing</span>`;
+  else badges += `<span class="badge badge-none">no CI</span>`;
+
+  let prHtml = '';
+  if (prs.length > 0) {
+    prHtml = `<div class="section-label">Pull Requests</div><ul class="pr-list">`;
+    for (const pr of prs) {
+      prHtml += `<li class="pr-item">
+        <span class="pr-number">#${pr.number}</span>
+        <span class="pr-title"><a href="${pr.url}" target="_blank">${pr.title}</a></span>
+        <span class="pr-author">${pr.author?.login || '?'}</span>
+        <span class="pr-time">${timeAgo(pr.updatedAt)}</span>
+      </li>`;
+    }
+    prHtml += `</ul>`;
+  } else {
+    prHtml = `<div class="empty">No open PRs</div>`;
+  }
+
+  let runHtml = '';
+  if (runs.length > 0) {
+    runHtml = `<div class="section-label">CI Runs</div><ul class="run-list">`;
+    for (const run of runs) {
+      const status = run.conclusion || run.status || 'queued';
+      runHtml += `<li class="run-item">
+        <span class="run-status ${status}"></span>
+        <span class="run-name">${run.name}</span>
+        <span class="run-branch">${run.headBranch}</span>
+        <span class="run-time">${timeAgo(run.updatedAt)}</span>
+      </li>`;
+    }
+    runHtml += `</ul>`;
+  }
+
+  return `<div class="repo">
+    <div class="repo-header">
+      <div>
+        <span class="repo-label">${repo.label}</span>
+        <span class="repo-slug"><a href="https://github.com/${repo.owner}/${repo.name}" target="_blank">${repo.owner}/${repo.name}</a></span>
+      </div>
+      <div class="badges">${badges}</div>
+    </div>
+    ${prHtml}
+    ${runHtml}
+  </div>`;
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    const repos = data.repos;
+
+    // Summary
+    const totalPRs = repos.reduce((s, r) => s + (r.prs || []).length, 0);
+    const totalFails = repos.reduce((s, r) => s + (r.runs || []).filter(x => x.conclusion === 'failure').length, 0);
+    const totalRepos = repos.length;
+    document.getElementById('summary').innerHTML =
+      `<span class="summary-item"><span class="num">${totalRepos}</span> <span class="lbl">repos</span></span>` +
+      `<span class="summary-item"><span class="num" style="color:#58a6ff">${totalPRs}</span> <span class="lbl">open PRs</span></span>` +
+      `<span class="summary-item"><span class="num" style="color:${totalFails > 0 ? '#f85149' : '#3fb950'}">${totalFails}</span> <span class="lbl">failing</span></span>`;
+
+    // Group repos
+    const groups = {};
+    const groupOrder = ['Personal', 'Ray Core', 'Ray Frontend', 'Ray Backend', 'Ray Infra', 'Ray Bots'];
+    for (const repo of repos) {
+      const g = repo.group || 'Other';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(repo);
+    }
+
+    let html = '';
+    for (const g of groupOrder) {
+      if (!groups[g]) continue;
+      html += `<div class="group-title">${g}</div>`;
+      html += `<div class="group-grid">`;
+      html += groups[g].map(renderRepo).join('');
+      html += `</div>`;
+    }
+    // Any remaining groups
+    for (const g of Object.keys(groups)) {
+      if (!groupOrder.includes(g)) {
+        html += `<div class="group-title">${g}</div>`;
+        html += `<div class="group-grid">`;
+        html += groups[g].map(renderRepo).join('');
+        html += `</div>`;
+      }
+    }
+
+    document.getElementById('groups').innerHTML = html;
+    document.getElementById('updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    document.getElementById('groups').innerHTML = '<div class="empty">Failed to load data — is the server running?</div>';
+  }
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>

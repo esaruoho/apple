@@ -124,6 +124,36 @@ Calibrated against a professional sensor (Feb 2026): +0.45C temperature, +4.5% h
 
 ---
 
+## GitHub Watcher — PR & CI Awareness
+
+Monitors your open-source repos for PR and CI changes — macOS notifications + live dashboard. Same architecture as the HomePod climate sensor: periodic poll → state diff → notification → dashboard.
+
+```
+gh CLI (poll) → JSON state (diff) → display notification (alert) → Python server (dashboard)
+```
+
+```bash
+cd github-watcher/
+./github-watcher.sh              # Run once — notify on changes
+./github-watcher.sh --stdout     # Print status to terminal
+./github-watcher.sh --reset      # Clear state, start fresh
+python3 prwhy.py                 # Strategic view — PRs grouped by pillar
+python3 prwhy.py --all           # All watched repos
+```
+
+**`prwhy`** groups PRs by *what they advance*, not when they were created. Each project gets its own strategic pillars:
+
+| Project | Pillars |
+|---------|---------|
+| **Apple** | Automation, Probing, Tools, Documentation |
+| **Paketti** | Workflow, Instruments, Import/Export, UI, Bug Fixes |
+| **CircuitJS1** | Simulation Accuracy, New Components, Visual/UX, Import/Export, Example Circuits |
+| **LENR Academy** | Content, Discovery, UI/UX, Infrastructure |
+
+Runs as a LaunchAgent every 10 minutes. Dashboard at `http://localhost:3008`. See `github-watcher/repos.json` to configure which repos to watch.
+
+---
+
 ## The Automation Atlas — 66 Apps, 13 Layers
 
 `bin/app-probe.py` extracts **13 layers of automation intelligence** from every Apple app in a single 60-second pass — the complete automation surface of macOS that no one else has mapped.
@@ -275,6 +305,8 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 | [`auto-gen`](bin/auto-gen.py) | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. Fill the gaps. |
 | [`batch-import`](bin/batch-import.sh) | `bin/batch-import.sh` | Import all shortcuts into Shortcuts.app with folder organization. |
 | [`xpc-probe`](bin/xpc-probe.py) | `python3 bin/xpc-probe.py` | Map 2,359 XPC services — the hidden automation layer. |
+| [`github-watcher`](github-watcher/github-watcher.sh) | `github-watcher.sh` | PR & CI awareness bot — polls repos, macOS notifications on changes. |
+| [`prwhy`](github-watcher/prwhy.py) | `prwhy.py` | Strategic PR viewer — PRs grouped by project pillar with the WHY. |
 
 ---
 

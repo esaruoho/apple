@@ -16,6 +16,11 @@ icons/
 dictionaries/**/*.sdef.xml
 shortcuts/
 
+# GitHub Watcher — private runtime data
+github-watcher/.state/
+github-watcher/logs/
+github-watcher/repos.json
+
 # Python cache
 __pycache__/
 bin/__pycache__/

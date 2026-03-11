@@ -258,6 +258,41 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `auto-gen` | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. |
 | `batch-import` | `bin/batch-import.sh` | Import all shortcuts into Shortcuts.app with folder organization. |
 | `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
+| `github-watcher` | `github-watcher.sh` | PR & CI awareness bot — polls repos, macOS notifications on changes. LaunchAgent. |
+| `prwhy` | `prwhy.py` | Strategic PR viewer — PRs grouped by project pillar with the WHY. |
+| `ghd` | `ghd` | Open GitHub Watcher dashboard (localhost:3008). |
+
+## GitHub Watcher — PR & CI Awareness
+
+`github-watcher/` — monitors open-source repos for PR and CI changes, sends macOS notifications, serves a live dashboard.
+
+**Architecture** (same pattern as HomePod climate sensor):
+```
+gh CLI (poll) → JSON state files (diff) → display notification (alert) → Python server (dashboard)
+```
+
+**Components:**
+
+| File | Purpose |
+|------|---------|
+| `github-watcher.sh` | Poller — runs every 10 min via LaunchAgent, diffs state, sends notifications |
+| `dashboard-server.py` | Web dashboard on port 3008 — two-column grid, grouped by project |
+| `dashboard.html` | Dashboard UI — auto-refreshes every 60s, links to GitHub |
+| `prwhy.py` | Strategic PR viewer — groups PRs by project-specific pillars |
+| `repos.json` | Single config file — add/remove repos here, both watcher and dashboard read it |
+| `com.esa.github-watcher.plist` | LaunchAgent for poller (every 10 min) |
+| `com.esa.github-dashboard.plist` | LaunchAgent for dashboard server (KeepAlive) |
+
+**Per-project strategic pillars** (used by `prwhy`):
+
+| Project | Pillars |
+|---------|---------|
+| Apple | Automation, Probing, Tools, Documentation |
+| Paketti | Workflow, Instruments, Import/Export, UI, Bug Fixes |
+| CircuitJS1 | Simulation Accuracy, New Components, Visual/UX, Import/Export, Example Circuits, Bug Fixes |
+| LENR Academy | Content, Discovery, UI/UX, Infrastructure |
+
+**Notifications sent on:** new PR opened, PR closed/merged, CI run failed, CI run recovered.
 
 ## Spotlight Integration — The Final Sal Mile
 
@@ -320,6 +355,24 @@ Full analysis: `patents/US7428535-analysis.md`
 | `patents/` | Apple automation patents and analyses |
 | `icons/` | 64 app icons as 256x256 PNG (gitignored, regenerable) |
 | `whiteboards/` | 34 visual educational whiteboards (gitignored) |
+
+## Core Principle: Pattern Reusability
+
+**If you can identify a pattern of manual labour, and organize it, then that pattern becomes an underlying principle — which allows for any other reorganization of the pattern.**
+
+This is the deepest lesson from this project. Every tool here proves it:
+
+1. **HomePod climate** identified the pattern: periodic poll → state diff → notification → dashboard. That's manual labour (checking the thermometer) organized into a principle (LaunchAgent + bash + JSON state + Python server).
+
+2. **GitHub Watcher** reused the exact same principle for a completely different domain. The pattern didn't care whether it was reading temperature or PRs. The underlying structure — poll, diff, notify, display — transferred wholesale.
+
+3. **prwhy** added a layer: the same PR data, reorganized by *strategic meaning* instead of chronology. Same input, different principle applied, different insight produced.
+
+4. **The sdef pipeline** is the same thing at a different scale: `sdef-extract` (poll apps) → `workflow-gen` (organize into recipes) → `spotlight-export` (make reachable) → `shortcut-gen` (make triggerable). Each step is a reorganization of what the previous step produced.
+
+This is what Sal understood intuitively. Automator's patent (US 7,428,535) is literally about this: actions that produce typed data, fed into actions that consume it, with automatic relevance filtering. The pattern is: **identify the manual step → extract the principle → apply it everywhere.**
+
+The practical test: when you build something, ask "what is the underlying pattern here, and where else could it apply?" If the answer is "only here," you've built a script. If the answer is "anywhere there's periodic state to watch," you've built a principle.
 
 ## Self-Learning Behavior
 
