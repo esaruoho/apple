@@ -99,7 +99,13 @@ on doMosaic(direction)
 	set cellH to sH div bestRows
 
 	tell application "System Events"
-		-- Tile the visible windows (move on-screen)
+		-- Tile the visible windows: size first, then position
+		-- (some apps like Safari adjust position after resize)
+		repeat with i from 1 to showCount
+			try
+				set size of window i of fp to {cellW, cellH}
+			end try
+		end repeat
 		repeat with i from 1 to showCount
 			set idx to i - 1
 			set c to idx mod bestCols
@@ -108,7 +114,6 @@ on doMosaic(direction)
 			set winY to menuBarH + (r * cellH)
 			try
 				set position of window i of fp to {winX, winY}
-				set size of window i of fp to {cellW, cellH}
 			end try
 		end repeat
 
