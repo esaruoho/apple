@@ -304,11 +304,14 @@ class PropsTUI:
         self.selected_idx = None
 
         # Action view state
-        self.action_log = []
+        self.action_log = []       # brief history: ("ok"/"err"/"info", "text")
+        self.action_status = ""    # one-line status message
         self.action_running = False
         self.action_thread = None
         self.ci_polling = False
         self.ci_poll_thread = None
+        self.ci_live = []          # live CI check state: [("pass"/"fail"/"pending"/"skip", "name")]
+        self.ci_last_poll = ""     # timestamp of last poll
 
         # For thread-safe screen updates
         self.lock = threading.Lock()
@@ -815,6 +818,9 @@ class PropsTUI:
         """Rebase from detail view — stays in action view with CI polling."""
         self.view = self.VIEW_ACTION
         self.action_log = [("info", f"Rebasing #{st['number']} on {st['base']}...")]
+        self.action_status = "Rebasing..."
+        self.ci_live = []
+        self.ci_last_poll = ""
         self.action_running = True
         self.ci_polling = False
 
@@ -838,6 +844,9 @@ class PropsTUI:
         """Rebase from list view — shows progress, then auto-returns to list."""
         self.view = self.VIEW_ACTION
         self.action_log = [("info", f"Rebasing #{st['number']} on {st['base']}...")]
+        self.action_status = "Rebasing..."
+        self.ci_live = []
+        self.ci_last_poll = ""
         self.action_running = True
         self.ci_polling = False
         self._return_to = self.VIEW_LIST
@@ -1043,24 +1052,16 @@ class PropsTUI:
                     self._auto_return_to_list()
                 return
 
-            # Phase 2: Poll until all checks resolve
+            # Phase 2: Poll until all checks resolve — update live state in-place
             while self.ci_polling:
                 checks = fetch_ci_status(self.repo, pr_number)
                 ci_pass, ci_fail, ci_pending, ci_skip, details = analyze_checks(checks)
                 total = ci_pass + ci_fail + ci_pending + ci_skip
 
                 with self.lock:
-                    ts = time.strftime("%H:%M:%S")
-                    # Single summary line per poll (not every check listed each time)
-                    summary = f"[{ts}] {ci_pass}✓ {ci_fail}✗ {ci_pending}● {ci_skip}○ ({total} checks)"
-                    self.action_log.append(("info", summary))
-
-                    # Only list failing and pending checks (not all passing ones)
-                    for kind, name in details:
-                        if kind == "fail":
-                            self.action_log.append(("err", f"  ✗ {name}"))
-                        elif kind == "pending":
-                            self.action_log.append(("warn", f"  ● {name}"))
+                    self.ci_last_poll = time.strftime("%H:%M:%S")
+                    self.ci_live = details
+                    self.action_status = f"{ci_pass} passed, {ci_fail} failed, {ci_pending} running, {ci_skip} skipped"
 
                     # Update the cached state for this PR
                     if self.selected_idx is not None and self.selected_idx < len(self.states):
@@ -1081,9 +1082,11 @@ class PropsTUI:
                 if ci_pending == 0 and total > 0:
                     with self.lock:
                         if ci_fail > 0:
+                            self.action_status = f"Done: {ci_fail} failed, {ci_pass} passed"
                             self.action_log.append(("err", f"CI done: {ci_fail} failed."))
                             notify("CI Failed", f"PR #{pr_number}: {ci_fail} checks failed", "Basso")
                         else:
+                            self.action_status = f"Done: all {ci_pass} checks passed"
                             self.action_log.append(("ok", f"CI done: all {ci_pass} passing."))
                             notify("CI Passed", f"PR #{pr_number}: all checks passed", "Hero")
                         self.ci_polling = False
@@ -1141,22 +1144,66 @@ class PropsTUI:
         h, w = self.stdscr.getmaxyx()
         self.stdscr.erase()
 
-        # Title
+        row = 0
+
+        # Title: PR info
         if self.selected_idx is not None and self.selected_idx < len(self.states):
             st = self.states[self.selected_idx]
-            self.safe_addstr(0, 0, f" #{st['number']}  {st['title'][:w-10]}", curses.color_pair(4) | curses.A_BOLD)
+            self.safe_addstr(row, 0, f" #{st['number']}  {st['title'][:w-10]}", curses.color_pair(4) | curses.A_BOLD)
         else:
-            self.safe_addstr(0, 0, " props", curses.color_pair(4) | curses.A_BOLD)
+            self.safe_addstr(row, 0, " props", curses.color_pair(4) | curses.A_BOLD)
+        row += 1
 
-        # Show action log (scrolled to bottom)
-        log_start = 2
-        log_height = h - log_start - 2
+        # If CI is being polled, show the live updating check list
+        if self.ci_live:
+            self.safe_addstr(row, 0, "─" * (w - 1), curses.color_pair(4))
+            row += 1
+
+            # Status summary
+            if self.ci_last_poll:
+                status_line = f" {self.action_status}  (updated {self.ci_last_poll})"
+            else:
+                status_line = f" {self.action_status}"
+            self.safe_addstr(row, 0, status_line[:w-1], curses.A_BOLD)
+            row += 2
+
+            # Each check on its own line — updates in place, no flooding
+            for kind, name in self.ci_live:
+                if row >= h - 2:
+                    break
+                if kind == "pass":
+                    icon = "✓"
+                    label = "passed"
+                    attr = curses.color_pair(1)
+                elif kind == "fail":
+                    icon = "✗"
+                    label = "FAILED"
+                    attr = curses.color_pair(2) | curses.A_BOLD
+                elif kind == "pending":
+                    # Animate the spinner per-check
+                    spinner = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+                    frame = spinner[int(time.time() * 4) % len(spinner)]
+                    icon = frame
+                    label = "running"
+                    attr = curses.color_pair(3)
+                else:
+                    icon = "○"
+                    label = "skipped"
+                    attr = curses.A_DIM
+
+                check_line = f"  {icon} {name:50} {label}"
+                self.safe_addstr(row, 0, check_line[:w-1], attr)
+                row += 1
+
+        # Below CI checks (or if no CI yet): show the message log (brief history)
+        row += 1
+        log_height = max(1, h - row - 2)
         log_len = len(self.action_log)
         start_idx = max(0, log_len - log_height)
 
         for i, (kind, text) in enumerate(self.action_log[start_idx:]):
-            row = log_start + i
-            if row >= h - 1:
+            draw_row = row + i
+            if draw_row >= h - 1:
                 break
             if kind == "ok":
                 attr = curses.color_pair(1) | curses.A_BOLD
@@ -1168,13 +1215,13 @@ class PropsTUI:
                 attr = curses.A_DIM
             else:
                 attr = 0
-            self.safe_addstr(row, 1, text[:w-2], attr)
+            self.safe_addstr(draw_row, 1, text[:w-2], attr)
 
-        # Spinner if running
+        # Footer
         if self.action_running or self.ci_polling:
             spinner = "⣾⣽⣻⢿⡿⣟⣯⣷"
             frame = spinner[int(time.time() * 4) % len(spinner)]
-            self.safe_addstr(h - 1, 1, f"{frame} Working... (esc to stop)", curses.color_pair(3))
+            self.safe_addstr(h - 1, 1, f"{frame} Polling every 5s... (esc to stop)", curses.color_pair(3))
         else:
             self.safe_addstr(h - 1, 1, "esc/←:back  q:quit", curses.A_DIM)
 
