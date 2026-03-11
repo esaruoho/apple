@@ -47,23 +47,14 @@ on doMosaic(direction)
 	-- Save capped state
 	do shell script "echo " & showCount & " > /tmp/mosaic-knob-state"
 
-	-- Calculate best grid
-	set bestCols to 1
-	set bestRows to showCount
-	set bestRatio to 999
-	repeat with c from 1 to showCount
-		set r to ((showCount + c - 1) div c)
-		set cellW2 to sW / c
-		set cellH2 to sH / r
-		set ratio to cellW2 / cellH2
-		set diff to (ratio - 1.6)
-		if diff < 0 then set diff to diff * -1
-		if diff < bestRatio then
-			set bestRatio to diff
-			set bestCols to c
-			set bestRows to r
-		end if
+	-- Calculate grid: prefer fewer rows (wider cells)
+	-- floor(sqrt(n)) rows, ceil(n/rows) cols
+	-- 1=1x1, 2=2x1, 3=3x1, 4=2x2, 5=3x2, 6=3x2, 9=3x3
+	set bestRows to 1
+	repeat while (bestRows + 1) * (bestRows + 1) ≤ showCount
+		set bestRows to bestRows + 1
 	end repeat
+	set bestCols to ((showCount + bestRows - 1) div bestRows)
 
 	set cellW to sW div bestCols
 	set cellH to sH div bestRows
