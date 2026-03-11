@@ -69,6 +69,16 @@ on doMosaic(direction)
 	set cellH to sH div bestRows
 
 	tell application "System Events"
+		-- Unminimize windows we need to show
+		repeat with i from 1 to showCount
+			try
+				if (value of attribute "AXMinimized" of window i of fp) is true then
+					set value of attribute "AXMinimized" of window i of fp to false
+				end if
+			end try
+		end repeat
+
+		-- Tile the visible windows
 		repeat with i from 1 to showCount
 			set idx to i - 1
 			set c to idx mod bestCols
@@ -84,7 +94,9 @@ on doMosaic(direction)
 		-- Minimize the rest
 		repeat with i from (showCount + 1) to winCount
 			try
-				click (first button of window i of fp whose subrole is "AXMinimizeButton")
+				if (value of attribute "AXMinimized" of window i of fp) is false then
+					set value of attribute "AXMinimized" of window i of fp to true
+				end if
 			end try
 		end repeat
 	end tell
