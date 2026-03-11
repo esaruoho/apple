@@ -2,6 +2,7 @@
 -- Subroutine "more" = turn right = show one more window tiled.
 -- Subroutine "less" = turn left = show one fewer window tiled.
 -- State persisted in /tmp/mosaic-knob-state between turns.
+-- Always tiles on the MAIN screen (the one with keyboard focus).
 -- Loupedeck knob LEFT:  file=MosaicKnob.scpt, subroutine=less
 -- Loupedeck knob RIGHT: file=MosaicKnob.scpt, subroutine=more
 
@@ -15,7 +16,6 @@ end less
 
 on doMosaic(direction)
 	-- Valid steps: only counts that fill the grid with no empty cells
-	-- 1=1x1, 2=2x1, 3=3x1, 4=2x2, 6=3x2, 8=4x2, 9=3x3, 12=4x3, 16=4x4
 	set validSteps to {1, 2, 3, 4, 6, 8, 9, 12, 16}
 
 	-- Read current state
@@ -32,46 +32,24 @@ on doMosaic(direction)
 	-- Jump to next/previous valid step
 	if direction is 1 then
 		set showCount to showCount + 1
-		-- Find next valid step >= showCount
 		repeat with s in validSteps
-			if s as integer ≥ showCount then
+			if (s as integer) is greater than or equal to showCount then
 				set showCount to s as integer
 				exit repeat
 			end if
 		end repeat
 	else
 		set showCount to showCount - 1
-		-- Find previous valid step <= showCount
 		set best to 1
 		repeat with s in validSteps
-			if s as integer ≤ showCount then set best to s as integer
+			if (s as integer) is less than or equal to showCount then set best to s as integer
 		end repeat
 		set showCount to best
 	end if
 	if showCount < 1 then set showCount to 1
 
-	tell application "System Events"
-		set fp to first process whose frontmost is true
-		set appName to name of fp
-		set winCount to count of windows of fp
-		-- Get frontmost window position to detect which screen it's on
-		set winPos to position of window 1 of fp
-		set wx to item 1 of winPos
-		set wy to item 2 of winPos
-	end tell
-
-	-- Get screen info for the screen containing the frontmost window
-	-- Uses comma delimiter because AppleScript's "word" eats negative signs
-	set screenInfo to do shell script "swift -e '" & ¬
-		"import AppKit; " & ¬
-		"let wx = " & wx & ".0, wy = " & wy & ".0; " & ¬
-		"let primaryH = NSScreen.screens[0].frame.size.height; " & ¬
-		"let flipped = NSPoint(x: wx, y: primaryH - wy); " & ¬
-		"var target = NSScreen.main!; " & ¬
-		"for screen in NSScreen.screens { " & ¬
-		"if screen.frame.contains(flipped) { target = screen; break } }; " & ¬
-		"let vf = target.visibleFrame; let f = target.frame; " & ¬
-		"print(\"\\(Int(vf.origin.x)),\\(Int(primaryH - vf.origin.y - vf.size.height)),\\(Int(vf.size.width)),\\(Int(vf.size.height))\")'"
+	-- Get MAIN screen geometry (keyboard focus screen) via Swift
+	set screenInfo to do shell script "swift -e 'import AppKit; let s = NSScreen.main!; let vf = s.visibleFrame; let f = s.frame; let menuH = Int(f.size.height - vf.size.height - vf.origin.y); print(\"\\(Int(vf.origin.x)),\\(menuH),\\(Int(vf.size.width)),\\(Int(vf.size.height))\")'"
 	set AppleScript's text item delimiters to ","
 	set parts to text items of screenInfo
 	set sX to (item 1 of parts) as integer
@@ -80,27 +58,41 @@ on doMosaic(direction)
 	set sH to (item 4 of parts) as integer
 	set AppleScript's text item delimiters to ""
 
+	tell application "System Events"
+		set fp to first process whose frontmost is true
+		set appName to name of fp
+		set winCount to count of windows of fp
+	end tell
+
 	if winCount is 0 then return "No windows"
 	if showCount > winCount then set showCount to winCount
 
 	-- Save capped state
 	do shell script "echo " & showCount & " > /tmp/mosaic-knob-state"
 
-	-- Calculate grid: prefer fewer rows (wider cells)
-	-- floor(sqrt(n)) rows, ceil(n/rows) cols
-	-- 1=1x1, 2=2x1, 3=3x1, 4=2x2, 5=3x2, 6=3x2, 9=3x3
-	set bestRows to 1
-	repeat while (bestRows + 1) * (bestRows + 1) ≤ showCount
-		set bestRows to bestRows + 1
+	-- Calculate best grid: optimize for 16:10 aspect ratio per cell
+	set bestCols to 1
+	set bestRows to showCount
+	set bestRatio to 999
+	repeat with c from 1 to showCount
+		set r to ((showCount + c - 1) div c)
+		set cellW2 to sW / c
+		set cellH2 to sH / r
+		set ratio to cellW2 / cellH2
+		set diff to (ratio - 1.6)
+		if diff < 0 then set diff to diff * -1
+		if diff < bestRatio then
+			set bestRatio to diff
+			set bestCols to c
+			set bestRows to r
+		end if
 	end repeat
-	set bestCols to ((showCount + bestRows - 1) div bestRows)
 
 	set cellW to sW div bestCols
 	set cellH to sH div bestRows
 
 	tell application "System Events"
-		-- Tile the visible windows: size first, then position
-		-- (some apps like Safari adjust position after resize)
+		-- Size first, then position (some apps adjust position after resize)
 		repeat with i from 1 to showCount
 			try
 				set size of window i of fp to {cellW, cellH}
@@ -117,10 +109,10 @@ on doMosaic(direction)
 			end try
 		end repeat
 
-		-- Hide the rest off-screen (no dock animation)
+		-- Minimize the rest (clean, no off-screen hiding)
 		repeat with i from (showCount + 1) to winCount
 			try
-				set position of window i of fp to {-10000, -10000}
+				click (first button of window i of fp whose subrole is "AXMinimizeButton")
 			end try
 		end repeat
 	end tell
