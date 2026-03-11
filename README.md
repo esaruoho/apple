@@ -139,6 +139,10 @@ cd github-watcher/
 ./github-watcher.sh --reset      # Clear state, start fresh
 python3 prwhy.py                 # Strategic view — PRs grouped by pillar
 python3 prwhy.py --all           # All watched repos
+props                            # Interactive TUI — triage PRs with CI, rebase, builds
+props 2373                       # Jump straight to PR #2373
+props --status                   # One-line status overview (no TUI)
+prbuild 2373                     # Trigger Mac DMG build for a PR
 ```
 
 **`prwhy`** groups PRs by *what they advance*, not when they were created. Each project gets its own strategic pillars:
@@ -307,6 +311,8 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.m
 | [`xpc-probe`](bin/xpc-probe.py) | `python3 bin/xpc-probe.py` | Map 2,359 XPC services — the hidden automation layer. |
 | [`github-watcher`](github-watcher/github-watcher.sh) | `github-watcher.sh` | PR & CI awareness bot — polls repos, macOS notifications on changes. |
 | [`prwhy`](github-watcher/prwhy.py) | `prwhy.py` | Strategic PR viewer — PRs grouped by project pillar with the WHY. |
+| [`props`](github-watcher/props.py) | `props` / `props 2373` | PR Operations TUI — curses triage with CI polling, rebase, builds, conflict→Claude resolution. |
+| [`prbuild`](github-watcher/prbuild.py) | `prbuild 2373` | Trigger Mac DMG build, watch, download. 9 steps → 1. |
 
 ---
 

@@ -2,7 +2,7 @@
 name: apple
 description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
-version: 3.2.0
+version: 3.3.0
 generated: 2026-03-08T00:00:00Z
 tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints]
 triggers:
@@ -294,6 +294,8 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `extract-icons` | `./bin/extract-icons.sh` | Extract 64 app icons as PNG for Loupedeck buttons. |
 | `github-watcher` | `github-watcher.sh` | PR & CI awareness bot — polls repos, macOS notifications on changes. LaunchAgent. |
 | `prwhy` | `prwhy.py` | Strategic PR viewer — PRs grouped by project pillar with the WHY. |
+| `props` | `props` / `props 2373` | PR Operations TUI — curses triage with CI polling, rebase, build, conflict→Claude handoff. |
+| `prbuild` | `prbuild` / `prbuild 2373` | Trigger Mac DMG builds, watch progress, download when done. 9 steps → 1. |
 | `ghd` | `ghd` | Open GitHub Watcher dashboard (localhost:3008). |
 
 ## GitHub Watcher — PR & CI Awareness
@@ -313,6 +315,8 @@ gh CLI (poll) → JSON state files (diff) → display notification (alert) → P
 | `dashboard-server.py` | Web dashboard on port 3008 — two-column grid, grouped by project |
 | `dashboard.html` | Dashboard UI — auto-refreshes every 60s, links to GitHub |
 | `prwhy.py` | Strategic PR viewer — groups PRs by project-specific pillars |
+| `props.py` | PR Operations TUI — curses list/detail/action views with inline triage, rebase, builds, conflict→Claude |
+| `prbuild.py` | Mac DMG build trigger — fzf picker, watch run, extract DMG name, download |
 | `repos.json` | Single config file — add/remove repos here, both watcher and dashboard read it |
 | `com.esa.github-watcher.plist` | LaunchAgent for poller (every 10 min) |
 | `com.esa.github-dashboard.plist` | LaunchAgent for dashboard server (KeepAlive) |
@@ -403,6 +407,8 @@ This is the deepest lesson from this project. Every tool here proves it:
 3. **prwhy** added a layer: the same PR data, reorganized by *strategic meaning* instead of chronology. Same input, different principle applied, different insight produced.
 
 4. **The sdef pipeline** is the same thing at a different scale: `sdef-extract` (poll apps) → `workflow-gen` (organize into recipes) → `spotlight-export` (make reachable) → `shortcut-gen` (make triggerable). Each step is a reorganization of what the previous step produced.
+
+5. **props** extended the pattern from passive monitoring to active triage. Same PR data, but now you can act on it — rebase, build, merge — without leaving the terminal. And when it hits a wall (merge conflicts), it hands off to Claude Code with full context. The pattern scaled from "watch and notify" to "watch, triage, act, and delegate" without breaking the underlying architecture.
 
 This is what Sal understood intuitively. Automator's patent (US 7,428,535) is literally about this: actions that produce typed data, fed into actions that consume it, with automatic relevance filtering. The pattern is: **identify the manual step → extract the principle → apply it everywhere.**
 
