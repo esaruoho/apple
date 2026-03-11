@@ -810,8 +810,20 @@ class PropsTUI:
             return True
 
         err = (result.stderr or result2.stderr).strip()
+        is_conflict = "conflict" in err.lower()
         with self.lock:
-            self.action_log.append(("err", f"Failed: {err}"))
+            if is_conflict:
+                self.action_log.append(("err", f"Conflicts — can't auto-rebase #{num}."))
+                self.action_log.append(("info", "Needs manual conflict resolution."))
+                self.action_log.append(("info", "Press 'o' to open in browser, or esc to go back."))
+                # Update cached state
+                if self.selected_idx is not None and self.selected_idx < len(self.states):
+                    self.states[self.selected_idx]["mergeable"] = "CONFLICTING"
+                    s = self.states[self.selected_idx]
+                    if "conflicts" not in s["blockers"]:
+                        s["blockers"].append("conflicts")
+            else:
+                self.action_log.append(("err", f"Failed: {err}"))
         return False
 
     def _action_rebase(self, st):
@@ -1121,6 +1133,10 @@ class PropsTUI:
                 self._do_merge_confirmed(st)
             else:
                 self.action_log.append(("info", "Cancelled."))
+            return True
+
+        if key == ord('o') and self.selected_idx is not None:
+            self._action_open_browser()
             return True
 
         if key == 27 or key == curses.KEY_LEFT:  # esc or left
