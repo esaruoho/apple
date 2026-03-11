@@ -339,8 +339,13 @@ class PropsTUI:
             key = self.stdscr.getch()
             if key == -1:
                 continue
-            if not self.handle_key(key):
+            result = self.handle_key(key)
+            if result is False:
                 break
+            if result is None:
+                # Special exit — e.g. launching claude
+                return "claude"
+        return None
 
     def handle_key(self, key):
         if self.view == self.VIEW_LIST:
@@ -780,6 +785,17 @@ class PropsTUI:
         subprocess.Popen(["gh", "pr", "view", str(st["number"]), "--repo", self.repo, "--web"],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    def _resolve_with_claude(self, st):
+        """Store state for post-TUI claude launch."""
+        self._claude_resolve = {
+            "number": st["number"],
+            "title": st["title"],
+            "branch": st["branch"],
+            "base": st["base"],
+            "repo": self.repo,
+            "pillar": st["pillar"],
+        }
+
     def _do_rebase_api(self, st):
         """Execute rebase API call. Returns True on success."""
         num = st["number"]
@@ -814,8 +830,9 @@ class PropsTUI:
         with self.lock:
             if is_conflict:
                 self.action_log.append(("err", f"Conflicts — can't auto-rebase #{num}."))
-                self.action_log.append(("info", "Needs manual conflict resolution."))
-                self.action_log.append(("info", "Press 'o' to open in browser, or esc to go back."))
+                self.action_log.append(("info", ""))
+                self.action_log.append(("warn", "Press 'c' to resolve with Claude Code"))
+                self.action_log.append(("info", "Press 'o' to open in browser, esc to go back"))
                 # Update cached state
                 if self.selected_idx is not None and self.selected_idx < len(self.states):
                     self.states[self.selected_idx]["mergeable"] = "CONFLICTING"
@@ -1139,6 +1156,13 @@ class PropsTUI:
             self._action_open_browser()
             return True
 
+        if key == ord('c') and self.selected_idx is not None:
+            st = self.states[self.selected_idx]
+            if st["mergeable"] == "CONFLICTING":
+                self._resolve_with_claude(st)
+                return None  # signal to exit TUI
+            return True
+
         if key == 27 or key == curses.KEY_LEFT:  # esc or left
             self.ci_polling = False
             self.action_running = False
@@ -1289,9 +1313,123 @@ def run_tui(repo, pr_number=None):
                     tui.detail_scroll = 0
                     break
 
-        tui.run()
+        return tui.run(), tui
 
-    curses.wrapper(main)
+    result = [None, None]
+    def wrapper(stdscr):
+        result[0], result[1] = main(stdscr)
+    curses.wrapper(wrapper)
+
+    exit_signal, tui = result
+
+    # Post-TUI: launch Claude for conflict resolution
+    if exit_signal == "claude" and tui and hasattr(tui, '_claude_resolve'):
+        resolve_conflicts_with_claude(tui._claude_resolve)
+
+
+def resolve_conflicts_with_claude(info):
+    """Checkout PR branch, attempt rebase, launch Claude Code to resolve conflicts."""
+    repo = info["repo"]
+    num = info["number"]
+    branch = info["branch"]
+    base = info["base"]
+    title = info["title"]
+    pillar = info["pillar"]
+
+    C_CYAN = "\033[1;36m"
+    C_YELLOW = "\033[1;33m"
+    C_GREEN = "\033[1;32m"
+    C_RED = "\033[1;31m"
+    C_RESET = "\033[0m"
+
+    print(f"\n{C_CYAN}━━━ Resolve conflicts: #{num} {title} ━━━{C_RESET}\n")
+
+    # Step 1: Find local clone
+    # If we're already in the right repo, use cwd. Otherwise look for it.
+    current_repo = detect_repo()
+    if current_repo == repo:
+        repo_dir = os.getcwd()
+    else:
+        # Try common locations
+        repo_name = repo.split("/")[-1]
+        candidates = [
+            os.path.expanduser(f"~/work/{repo_name}"),
+            os.path.expanduser(f"~/{repo_name}"),
+            os.path.expanduser(f"~/src/{repo_name}"),
+            os.path.expanduser(f"~/projects/{repo_name}"),
+        ]
+        repo_dir = None
+        for candidate in candidates:
+            if os.path.isdir(os.path.join(candidate, ".git")):
+                repo_dir = candidate
+                break
+
+        if not repo_dir:
+            print(f"{C_YELLOW}Can't find local clone of {repo}.{C_RESET}")
+            print(f"Clone it first, then run from that directory:\n")
+            print(f"  gh repo clone {repo}")
+            print(f"  cd {repo_name}")
+            print(f"  props {num}")
+            return
+
+    print(f"  Repo:   {repo_dir}")
+    print(f"  Branch: {branch} → {base}")
+    print()
+
+    # Step 2: Fetch and checkout
+    print(f"{C_YELLOW}▸ Checking out PR #{num}...{C_RESET}")
+    result = subprocess.run(
+        ["gh", "pr", "checkout", str(num), "--repo", repo],
+        cwd=repo_dir
+    )
+    if result.returncode != 0:
+        print(f"{C_RED}Failed to checkout PR.{C_RESET}")
+        return
+
+    # Step 3: Fetch base and attempt rebase
+    print(f"\n{C_YELLOW}▸ Fetching {base} and attempting rebase...{C_RESET}")
+    subprocess.run(["git", "fetch", "origin", base], cwd=repo_dir)
+    rebase = subprocess.run(
+        ["git", "rebase", f"origin/{base}"],
+        cwd=repo_dir, capture_output=True, text=True
+    )
+
+    if rebase.returncode == 0:
+        print(f"\n{C_GREEN}✓ Rebase succeeded! No conflicts after all.{C_RESET}")
+        print(f"  Push with: git push --force-with-lease")
+        return
+
+    # Step 4: We have conflicts — find the files
+    print(f"\n{C_RED}Conflicts found. Launching Claude Code to resolve...{C_RESET}\n")
+
+    # Get conflicting files
+    diff_result = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=U"],
+        cwd=repo_dir, capture_output=True, text=True
+    )
+    conflict_files = diff_result.stdout.strip().split("\n") if diff_result.stdout.strip() else []
+
+    if conflict_files:
+        print(f"  Conflicting files:")
+        for f in conflict_files:
+            print(f"    {C_RED}✗{C_RESET} {f}")
+        print()
+
+    # Step 5: Build the Claude prompt
+    files_list = ", ".join(conflict_files) if conflict_files else "unknown files"
+    claude_prompt = (
+        f"I'm rebasing PR #{num} ({title}) onto {base} and hit merge conflicts. "
+        f"The conflicting files are: {files_list}. "
+        f"This PR is in the '{pillar}' pillar of {repo}. "
+        f"Please resolve the merge conflicts — keep the intent of the PR while incorporating "
+        f"changes from {base}. After resolving, run 'git add' on the fixed files and 'git rebase --continue'. "
+        f"Then push with 'git push --force-with-lease'."
+    )
+
+    # Step 6: Launch Claude Code interactively in the repo directory
+    # os.execlp replaces this process — Claude gets full terminal control
+    os.chdir(repo_dir)
+    os.execlp("claude", "claude", claude_prompt)
 
 
 # ─── Non-TUI mode (--status) ─────────────────────────────────────────────────
