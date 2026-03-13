@@ -3,6 +3,7 @@
 -- Subroutine "less" = turn left = show one fewer window tiled.
 -- State persisted in /tmp/mosaic-knob-state between turns.
 -- Always tiles on the MAIN screen (the one with keyboard focus).
+-- Only tiles windows already on the main screen — won't pull from other screens.
 -- Loupedeck knob LEFT:  file=MosaicKnob.scpt, subroutine=less
 -- Loupedeck knob RIGHT: file=MosaicKnob.scpt, subroutine=more
 
@@ -65,7 +66,26 @@ on doMosaic(direction)
 	end tell
 
 	if winCount is 0 then return "No windows"
-	if showCount > winCount then set showCount to winCount
+
+	-- Filter: only windows whose origin is on the main screen
+	-- Uses 10px tolerance for windows sitting right at screen edges
+	set onScreenIndices to {}
+	tell application "System Events"
+		repeat with i from 1 to winCount
+			try
+				set wPos to position of window i of fp
+				set wX to item 1 of wPos
+				set wY to item 2 of wPos
+				if wX >= sX and wX < (sX + sW) and wY >= (menuBarH - 10) and wY < (menuBarH + sH + 10) then
+					set end of onScreenIndices to i
+				end if
+			end try
+		end repeat
+	end tell
+
+	set screenWinCount to count of onScreenIndices
+	if screenWinCount is 0 then return "No windows on this screen"
+	if showCount > screenWinCount then set showCount to screenWinCount
 
 	-- Save capped state
 	do shell script "echo " & showCount & " > /tmp/mosaic-knob-state"
@@ -111,23 +131,25 @@ on doMosaic(direction)
 	tell application "System Events"
 		-- Size first, then position (some apps adjust position after resize)
 		repeat with i from 1 to showCount
+			set winIdx to item i of onScreenIndices
 			try
-				set size of window i of fp to {cellW, cellH}
+				set size of window winIdx of fp to {cellW, cellH}
 			end try
 		end repeat
 		repeat with i from 1 to showCount
+			set winIdx to item i of onScreenIndices
 			set idx to i - 1
 			set c to idx mod bestCols
 			set r to idx div bestCols
 			set winX to sX + (c * cellW)
 			set winY to menuBarH + (r * cellH)
 			try
-				set position of window i of fp to {winX, winY}
+				set position of window winIdx of fp to {winX, winY}
 			end try
 		end repeat
 
-		-- Leave remaining windows untouched — only tile the first N
+		-- Leave remaining windows untouched — only tile on-screen ones
 	end tell
 
-	return appName & ": " & showCount & "/" & winCount
+	return appName & ": " & showCount & "/" & screenWinCount & " (on screen)"
 end doMosaic

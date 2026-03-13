@@ -359,6 +359,7 @@ osascript scripts/launchers/activate-logic-pro.applescript
 | [**How It Was Built**](how-it-was-built.md) | One conversation, 167 files — the build story. |
 | [**App Probe Pitch**](app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
 | [**Video Script**](video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
+| [**iCloud URL Shortcuts**](https://esaruoho.medium.com/apples-icloud-services-quick-urls-and-future-improvements-67256b841809) | 12 working `x.icloud.com` direct-access subdomains mapped (2016, updated 2023). |
 
 ---
 

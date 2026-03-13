@@ -261,6 +261,7 @@ No Magnet, no Rectangle — pure System Events + NSScreen. Physical controls for
 - **Valid steps only**: 1→2→3→4→6→8→9→12→16 — skips counts that leave empty grid cells
 - **Explicit layouts for 1-4**: 1=full, 2=side-by-side columns, 3=three columns, 4=2x2 grid. Only 6+ uses ratio optimizer.
 - **Always main screen**: uses `NSScreen.main` (keyboard focus screen). No multi-monitor detection — it was unreliable and sent windows to wrong screens.
+- **Screen-aware filtering**: only tiles windows already on the main screen — won't pull windows from other screens. Checks each window's position against screen bounds with 10px tolerance.
 - **No window hiding**: excess windows left untouched. No minimize, no off-screen moves. Just tile the first N.
 - **Two-pass tiling**: resize all first, then position (prevents Safari overlap)
 - **Loupedeck subroutines**: one `.scpt` with `on more()` / `on less()` handlers — Loupedeck calls the right one per knob direction
@@ -275,6 +276,7 @@ No Magnet, no Rectangle — pure System Events + NSScreen. Physical controls for
 - Never hide/minimize windows the user didn't ask to hide — just tile fewer, leave the rest
 - Ratio optimizer picks wrong layouts for small counts (stacked instead of side-by-side) — use explicit layouts
 - Simple beats clever: the final version is shorter and works better than the "smart" one
+- Counting all process windows pulls off-screen windows onto the main screen — filter by position first
 
 ## Sal-Like Tools
 
@@ -444,6 +446,30 @@ When Esa says "gimme logo of Photos" or "icon for Mail":
 3. **Custom size:** `./bin/extract-icons.sh --size 512`
 
 Icons are 256x256 PNG by default — ideal for Loupedeck Live button icons.
+
+## iCloud.com URL Shortcuts
+
+Direct-access subdomains for iCloud services (as of March 2023). Useful for automation workflows that open specific iCloud apps in a browser.
+
+**Working:**
+| URL | Redirects to |
+|-----|-------------|
+| `reminders.icloud.com` | `icloud.com/#reminders` |
+| `notes.icloud.com` | `icloud.com/#notes2` |
+| `mail.icloud.com` | `icloud.com/#mail` |
+| `calendar.icloud.com` | `icloud.com/#calendar` |
+| `photos.icloud.com` | `icloud.com/#photos` |
+| `iclouddrive.icloud.com` / `drive.icloud.com` | `icloud.com/#iclouddrive` |
+| `find.icloud.com` | `icloud.com/#find` (extra password prompt) |
+| `keynote.icloud.com` | `icloud.com/#keynote` |
+| `pages.icloud.com` | `icloud.com/#pages` |
+| `numbers.icloud.com` | `icloud.com/#numbers` |
+| `contacts.icloud.com` | `icloud.com/#contacts` |
+| `settings.icloud.com` | `icloud.com/#settings` |
+
+**Not working (as of 2023):** `fmf.icloud.com`, `findmyfriends.icloud.com`
+
+Source: [Esa's Medium article (2016, updated 2023)](https://esaruoho.medium.com/apples-icloud-services-quick-urls-and-future-improvements-67256b841809)
 
 ## Patterns Catalog
 
