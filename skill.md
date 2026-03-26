@@ -2,9 +2,9 @@
 name: apple
 description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
-version: 3.3.0
+version: 3.4.0
 generated: 2026-03-08T00:00:00Z
-tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints]
+tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints, thought-multiplier, bbs, ray-browser]
 triggers:
   keywords:
     primary: [applescript, apple script, osascript, apple]
@@ -278,6 +278,34 @@ No Magnet, no Rectangle — pure System Events + NSScreen. Physical controls for
 - Simple beats clever: the final version is shorter and works better than the "smart" one
 - Counting all process windows pulls off-screen windows onto the main screen — filter by position first
 
+## Loupedeck Whiteboard Browser — 2,684 Boards on a Knob
+
+Browse every whiteboard across `~/work/` and `~/.claude/skills/` with a physical knob. No dialogs, no picking — press Browse to load all 2,684 PNGs into a flat list, then turn the knob to scroll.
+
+**Scripts:** `scripts/workflows/system-events/` (source `.applescript`) + `compiled/` (`.scpt` for Loupedeck)
+
+| Control | File | Subroutine | Action |
+|---------|------|------------|--------|
+| **Button** | `WhiteboardKnob.scpt` | `browse` | Scan all whiteboards, load flat list, show first |
+| **Knob ↻** | `WhiteboardKnob.scpt` | `next` | Next board (wraps around) |
+| **Knob ↺** | `WhiteboardKnob.scpt` | `prev` | Previous board (wraps around) |
+| **Knob press** | `WhiteboardKnob.scpt` | `open` | Open current board in Preview |
+
+**Alternative wiring** (wrapper scripts, no subroutine needed): `WhiteboardBrowse.scpt`, `WhiteboardNext.scpt`, `WhiteboardPrev.scpt`, `WhiteboardOpen.scpt`
+
+**State files:**
+- `/tmp/whiteboard-knob-files` — flat sorted list of all PNG paths (one per line)
+- `/tmp/whiteboard-knob-index` — current position (1-based)
+- `/tmp/whiteboard-knob-current` — current PNG path (bridge for external consumers)
+
+**Design decisions:**
+- Flat list over folder picker — 2,684 boards scrollable without dialogs
+- `sed -n` for random access into the file list (no loading entire list into AppleScript)
+- macOS notification on every turn shows `WhiteboardKnob 42/2684` — always know where you are
+- Wrap-around navigation — board 1 after last, last before board 1
+
+**Loupedeck wiring (critical):** Use **Custom → AppleScript** in Loupedeck action search. NOT Custom → Run (that opens Script Editor). The dialog has three fields: file path, subroutine, arguments.
+
 ## Sal-Like Tools
 
 Tools in this repo that follow Sal's philosophy: one action, one result.
@@ -299,6 +327,30 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `props` | `props` / `props 2373` | PR Operations TUI — curses triage with CI polling, rebase, build, conflict→Claude handoff. |
 | `prbuild` | `prbuild` / `prbuild 2373` | Trigger Mac DMG builds, watch progress, download when done. 9 steps → 1. |
 | `ghd` | `ghd` | Open GitHub Watcher dashboard (localhost:3008). |
+| `slideshow` | `python3 bin/slideshow.py /path` | Fullscreen slideshow on any screen. Folder → presentation. One command. |
+
+## Slideshow — Folder → Fullscreen Presentation
+
+**Underlying principle:** A folder of images is a presentation waiting to happen. Any folder, any screen, sequential or random. The same seed as WhiteboardKnob (folder → browse images) but unattended — auto-advance instead of manual knob control.
+
+```bash
+python3 bin/slideshow.py /path/to/images              # sequential on secondary screen
+python3 bin/slideshow.py --shuffle /path/to/images     # random order
+python3 bin/slideshow.py --interval 3 /path            # 3 seconds per slide
+python3 bin/slideshow.py --screen 0 /path              # force main screen
+python3 bin/slideshow.py                               # folder picker dialog
+```
+
+**Controls:** Escape/Q=quit, Right/Space=next, Left=prev, P=pause (counter turns orange)
+
+**Architecture:** Python + Pillow + tkinter. Swift one-liner detects all screens via `NSScreen`. No Preview, no Finder, no permissions issues — Python reads files directly.
+
+**Pattern relationship:**
+- **WhiteboardKnob** = manual browse (Loupedeck knob, one image at a time, user-paced)
+- **Slideshow** = unattended display (auto-advance, any screen, ambient)
+- Same input (folder of images), different interaction model. The folder is the data; the tool is the lens.
+
+**Wrapper scripts:** Any project can create a thin shell wrapper that calls `slideshow.py` with a hardcoded folder. The tool stays generic; the wrapper carries the context.
 
 ## GitHub Watcher — PR & CI Awareness
 
@@ -470,6 +522,43 @@ Direct-access subdomains for iCloud services (as of March 2023). Useful for auto
 **Not working (as of 2023):** `fmf.icloud.com`, `findmyfriends.icloud.com`
 
 Source: [Esa's Medium article (2016, updated 2023)](https://esaruoho.medium.com/apples-icloud-services-quick-urls-and-future-improvements-67256b841809)
+
+## Thought Multiplier
+
+Type once, radiate to many, catch every rebound. A system built inside Ray Browser that turns a single typed thought into multiple simultaneous outputs.
+
+### Architecture
+
+```
+Layer 1: SEED CAPTURE -----> Studio app (pinned tab, text field)
+Layer 2: THE FORK ----------> Agent Scripter pipeline (5 parallel branches)
+Layer 3: DESTINATIONS ------> Archive, LLM, Browser, Email, Graph
+Layer 4: REBOUND CAPTURE ---> Dashboard showing all branch outputs
+Layer 5: SELF-UPDATING -----> Studio versioning (conversational refinement)
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `thought-multiplier/architecture.md` | Full architecture document |
+| `thought-multiplier/studio-prompts.md` | Exact prompts to paste into Ray Studio |
+| `thought-multiplier/agent-scripter-pipeline.md` | Agent Scripter JSON pipeline specs |
+| `thought-multiplier/archive-schema.md` | JSONL archive format specification |
+| `thought-multiplier/studio-apps/seed-capture.html` | Seed Capture Studio app (Phase 1) |
+| `thought-multiplier/studio-apps/rebound-dashboard.html` | Rebound Dashboard (Phase 5) |
+| `thought-multiplier/studio-apps/graph-viewer.html` | Thought Graph visualization (Phase 4) |
+| `bin/thought-archive.py` | CLI archive manager (stats, search, add, export) |
+
+### Three Lineages
+
+- **Sal Soghoian**: Data type chaining, one-input parallel pipelines, user-first power
+- **Walter Russell (RBI)**: Self-Multiplication (P2), Rebound (P3), Dead Centers (P5)
+- **BBS/Cloudcity**: The operating system that replaces siloed internet — this IS the BBS ingest surface
+
+### Why Only Ray Browser
+
+AI Agent (18 tools) + Agent Scripter (visual pipelines) + Studio (app factory) + Phi-4 (local LLM) + BGE embeddings + Chat with Tabs + Studio versioning + Privacy screening. No other browser has even three of these.
 
 ## Patterns Catalog
 
