@@ -14,6 +14,8 @@
 
 Born into an Armenian-American military family. Grew up on Marine and Naval bases, including **Guantanamo Bay, Cuba** — evacuated during the Cuban Missile Crisis. Attended the **University of Virginia** briefly in 1969, then moved to Boston where he earned a **degree in music from Berklee College of Music**.
 
+**Berklee details (from CCATP #559, Aug 2018):** Arrived in 1974. Was "one of the last people through the instrumental performance program" — instead of book classes, did ear training, harmonic studies, and hands-on playing in different idioms. Improvisation in the swing idiom, improvisation in the Dixieland idiom, played in the **Basie ensemble with the original Count Basie charts**. Attended for four years. Contemporaries included **Kevin Eubanks**, Wayne Pedzawater, Quinnis Johnson, **Ralph Moore** — "a lot of people that went on to The Tonight Show and other aspects of the music business." On the school: *"No facilities, no swimming pool, no sports, nothing else — but we had a marching band that never left the room and they just cooked."*
+
 In the late 1980s he returned to Charlottesville, Virginia, where he worked at a digital printshop called **"Pixels"** — his bridge from music to computing. He is also an avid jazz musician who played guitar in a band called **Blue Indigo** in Charlottesville. The band is notable: it was composed of **Carter Beauford** (drums), **LeRoi Moore** (saxophone), **George Melvin** (Hammond B3 organ), and Soghoian (guitar). Beauford and Moore went on to found the **Dave Matthews Band**. Jeff Decker and Phil Riddle joined following their departure.
 
 He is the uncle of noted privacy researcher and activist **Christopher Soghoian**.
@@ -30,6 +32,8 @@ He authored:
 - ***The Quark XTensions Book*** (Hayden Books, 1994, ISBN 1-56830-069-7)
 
 He was a featured presenter for **Quark, Thunder Lizard Productions, Apple, Seybold**, and the **Macworld** conferences. A special guest at a Leopard Tech Talk.
+
+**The "sinking ship" story (Ray Robertson, CCATP #559):** Ray met Sal at a Seybold Expo around 1997, before Sal joined Apple. *"A few months later we heard a crazy story that Sal had taken a job with Apple, which was then a sinking ship. What in the world is Sal doing?"* But it was a brilliant move. At that convention, Apple had one presentation *"in the corner of the expo hall... next to the bathrooms."* After Sal joined: *"I walk into Moscone and there are these huge AppleScript booths right out front with big banners that said 'the power of AppleScript' and all talking about automation — and there was Sal standing out front. It was a wonderful transformation."*
 
 This is the publishing world that made AppleScript indispensable — QuarkXPress workflows, automated typesetting, batch processing for magazines and newspapers. When Bill Cheeseman later said "the publishing industry was utterly dependent on AppleScript," he was describing Sal's own client base.
 
@@ -59,6 +63,12 @@ From his own description: *"At Apple, he advanced a wide range of user automatio
 3. **User automation is not app extensions** — true user automation (AppleScript, Automator, Services, UNIX CLI) gives genuine power and control
 4. **Automation as a right, not a feature** — fundamental to what makes the Mac the Mac
 5. **Practical over theoretical** — scripts on almost every page, not reams of boring theory
+6. **Automation as human nature** — *"Automation is a fundamental human concept. We always look for ways to automate stuff... when we farm we look for a way to make it better, we developed a plow, when we developed manufacturing we look for a way to automate certain processes. As humans we always are looking for ways to make things easier, to produce a consistent output of what we do and to scale what we want to do."* (CCATP #559)
+7. **Everyone can automate** — Apple says "everyone can code," but Sal proposes an intermediate level: *"There's also an intermediate level in there of everyone can automate. Everybody can learn how to use the computer and automate and put pieces together to tell their story, to make the kind of tools that they want to make that serve their needs."* (CCATP #559)
+8. **AppleScript as environmental awareness** — *"The wonderful thing about AppleScript is you can put a lot of intelligence in your scripts. Because AppleScript is so foundational, it can understand the environment that you're in. It knows what application's in the foreground. It knows what application is available. It knows where your documents are, and it can respond to conditions and do things based upon how the current system is set up."* (CCATP #559)
+9. **Never stop learning** — *"When you stop wanting to learn, then you're just marking time. You join God's waiting room. I don't want to be in the waiting room. I want to still be alive."* (CCATP #559)
+10. **Build for yourself first, share second** — On iWorkAutomation.com: *"To tell you honestly, many times I put those examples up there for me so that I can go back later on and go, oh yeah, how did I do that?"* Then: *"I Google for an answer and it's one of my own blog posts."* (CCATP #559)
+11. **Generosity as obligation** — *"Everything I've been able to accomplish in my life is because of others and their generosity and them blazing the path and helping me. And I have a responsibility to return that kindness and share what I know with other people as well."* (CCATP #559)
 
 ### His Departure (November 2016)
 
@@ -166,10 +176,29 @@ Sal doesn't oppose Shortcuts. He *celebrates* it — as long as it's AND, not OR
 
 This repo exists at that intersection — we probe both layers. The `sdef` dictionaries are the depth. The `extract.actionsdata` App Intents are the width. Sal would want both.
 
+### Sal on Siri Shortcuts Architecture (Aug 2018)
+
+From CCATP #559, Sal's detailed breakdown of what "Siri Shortcuts" actually means:
+
+> "The term Siri Shortcuts is actually multiple technologies under one word."
+
+**Technology 1 — App-suggested shortcuts:** Application developers expose functionality to the operating system via NSUserActivity. If Siri sees you repeatedly accessing a certain part of an app, it suggests a shortcut. You assign your own phrase.
+
+**Technology 2 — User-created workflows:** The Workflows app (acquired March 2017) becomes "Siri Shortcuts 2" with the full action-chaining capability intact.
+
+Sal's cooking analogy for the action chain model: *"Cut the carrots, cut the celery, cut the onions, mix them together, heat, and then serve. That would be an automation recipe."*
+
+On the significance: *"This is a big step for Apple... it got its power based upon the concepts that were defined by Automator on the Mac, where you create automation recipes."* And: *"I see that it's really going to make the platform attractive, especially to business and education markets. I think you'll see increased sales of Apple devices because of the automation."*
+
+On Mac vs iOS — *"It's an AND situation, not an OR situation."* He was already building cross-platform scripting at Omni Group: same JavaScript script runs identically on iOS and macOS.
+
+On Swift vs AppleScript: *"With Swift, they put all of the pain up front so you can't actually write the line of code unless you have it right. It won't compile. In AppleScript, you can write stuff that doesn't work correctly, but it'll do something."*
+
 ### Post-Apple Work
 
 - **MacStories guest series** (Jan 2017) — ["App Extensions Are Not a Replacement for User Automation"](https://www.macstories.net/stories/app-extensions-are-not-a-replacement-for-user-automation/)
 - **CMD-D: Masters of Automation Conference** (2017) — his own conference in Santa Clara
+- **Down Home Scripting Boot Camp** (Oct 15–17, 2018) — 3-day hybrid lecture/lab course with Ray Robertson, outside Atlanta. Small class, all meals included, alumni mailing list, evening sessions on Omni Automation. [cmddconf.com](http://cmddconf.com)
 - **Omni Automation** — JavaScript-based automation for OmniFocus/OmniGraffle/OmniOutliner/OmniPlan (macOS + iOS)
 - **Dictation Commands** — hundreds of voice-triggered commands for macOS apps
 
@@ -189,21 +218,66 @@ Plus numerous magazine articles about automation.
 | 1992 | Sal Soghoian | *To Be with You* |
 | 2011 | Blue Indigo | *Catwalk* |
 
-### Key Resources
+### Sal's Web Empire — 7+ Domains, Self-Hosted, No Institutional Backing
+
+Sal built and self-hosts an entire constellation of automation knowledge sites. None are backed by Apple or any institution. They exist because he pays for hosting and believes in the credo. The splash page says it plainly: *"THIS WEBSITE IS NOT HOSTED BY APPLE INC."* and *"It has been created and hosted for the betterment of the automation community."*
+
+On the podcast (CCATP #559), Sal admitted he built iWorkAutomation.com as much for himself as for others: *"Many times I put those examples up there for me so that I can go back later on and go, oh yeah, how did I do that?"* Then: *"I Google for an answer and it's one of my own blog posts."*
+
+**This is fragile knowledge.** One lapsed hosting payment, one health event, one "I'm done maintaining this" — and decades of curated automation knowledge disappears. The Wayback Machine has partial snapshots, but no complete mirror exists.
+
+| Domain | Purpose | Status | Risk |
+|--------|---------|--------|------|
+| [macosxautomation.com](http://macosxautomation.com) | **Hub** — central portal linking all other sites. About page, example tools installer, OS-specific notes (Lion, Mavericks, Yosemite) | Live (Apr 2026) | High — single point of entry |
+| [iworkautomation.com](http://iworkautomation.com) | **iWork scripting** — Keynote, Numbers, Pages. AppleScript examples with "Open in Editor" buttons. Automation Utilities section. References *AppleScript 1-2-3* book | Live, last updated **Oct 2014** | **Critical** — 12 years stale, oldest site, most fragile |
+| [photosautomation.com](http://photosautomation.com) | **Photos app** automation | Live | High |
+| [configautomation.com](http://configautomation.com) | **Apple Configurator** automation — the toolchain Sal designed at Apple | Live | High |
+| [dictationcommands.com](http://dictationcommands.com) | **Voice commands** — hundreds of dictation commands for Mac apps | Live | High |
+| [omni-automation.com](http://omni-automation.com) | **Omni Automation** — JavaScript cross-platform scripting (post-Apple, actively maintained) | Live | Lower — active project |
+| [cmddconf.com](http://cmddconf.com) | **CMD-D Conference** / Down Home Scripting Boot Camp | Live | Medium |
+| [automator.us](http://automator.us) | Automator resources | Live | High |
+| [salsoghoian.com](http://salsoghoian.com) | Personal / music bio | Live | Medium |
+
+**Why this matters to the Apple skill:** These sites ARE the documentation layer that Apple never built. Our `dictionaries/` extracted the machine-readable sdef data. Sal's sites contain the *human-readable teaching layer* on top — the examples, the explanations, the "here's why you'd do this." Together they form the complete picture: we have the depth (sdef), he has the pedagogy.
+
+**Archival priority:**
+1. **iworkautomation.com** — Critical. Last updated 2014. Keynote/Numbers/Pages scripting examples with inline "Open in Editor" buttons. This is what Sal Googles himself for.
+2. **macosxautomation.com** — Hub. If this goes down, all cross-links break.
+3. **dictationcommands.com** — Unique. Hundreds of voice commands not documented elsewhere.
+4. **photosautomation.com** + **configautomation.com** — Sal wrote the Photos and Configurator scripting dictionaries at Apple. These sites are the author's own teaching materials for his own work.
+
+**Action items:**
+- [ ] Wayback-mirror iworkautomation.com (highest risk)
+- [ ] Wayback-mirror macosxautomation.com (hub)
+- [ ] Wayback-mirror dictationcommands.com (unique content)
+- [ ] Wayback-mirror photosautomation.com + configautomation.com
+- [ ] Cross-reference Sal's iWork examples with our `dictionaries/keynote.md`, `dictionaries/numbers.md`, `dictionaries/pages.md`
+
+### Other Resources
 
 | Resource | URL |
 |----------|-----|
 | Wikipedia | [en.wikipedia.org/wiki/Sal_Soghoian](https://en.wikipedia.org/wiki/Sal_Soghoian) |
-| macOS X Automation | [macosxautomation.com](http://macosxautomation.com) |
-| About / FAQ (Nov 2016) | [macosxautomation.com/about.html](http://macosxautomation.com/about.html) |
-| iWork Automation | [iworkautomation.com](http://iworkautomation.com) |
-| Dictation Commands | [dictationcommands.com](http://dictationcommands.com) |
-| Omni Automation | [omni-automation.com](http://omni-automation.com) |
-| CMD-D Conference | [cmddconf.com](http://cmddconf.com) |
 | Twitter/X | [@macautomation](https://x.com/macautomation) |
-| Music Bio | [salsoghoian.com](http://salsoghoian.com) |
-| Automator.us | [automator.us](http://automator.us) |
 | Books | *AppleScript 1-2-3* (2009), *The Quark XTensions Book* (1994) |
+| CCATP #559 (Aug 2018) | Transcript: `/Users/esaruoho/work/whisp/CCATP_2018_08_13.txt` |
+
+### Ray Robertson — Teaching Partner & Ally
+
+**Ray Robertson** — expert AppleScript instructor, met Sal at a Seybold Expo around 1997 (before Sal joined Apple). Went full-time AppleScript shortly after, quitting his day job. Was the first to witness the transformation Sal brought to Apple's automation presence at Moscone.
+
+**Teaching philosophy:** *"Beg, borrow, and borrow."* Beg = ask questions. Borrow = find existing code and learn from it. Teaches creative professionals. *"AppleScript is mainly limited by your imagination."*
+
+**Key contributions:**
+- One-day AppleScript boot camps at CMD-D conference
+- Uses **Script Debugger** (Late Night Software) — free/light version released by 2018
+- **Shane Stanley** (Melbourne, Australia) was longtime teaching partner before Sal
+- Alumni private mailing list for ongoing support
+- Co-taught the Down Home Scripting Boot Camp (Oct 2018) with Sal
+
+On AppleScript's readability: *"Because of its friendly English-like syntax, it has a great appeal to busy people — busy people who may only get to write code once or twice a month, and then they have to go away to their deadline job. They can come back a month later and say, oh, I'm looking at this code and I still understand it."*
+
+Sal on Ray: *"Ray is absolutely one of the finest instructors I've ever seen or worked with."* And: *"I love Ray to death. Ray and Shane are my heroes."*
 
 ### Twitter/X Archive: @macautomation
 

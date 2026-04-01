@@ -17,6 +17,17 @@ This repo picks up where that role left off.
 
 **288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
+## Sal Archive Layout
+
+Sal source preservation now has a dedicated structure:
+
+- [`sources/sal/`](sources/sal/) for verbatim site mirrors and manifests
+- [`scripts/sal/`](scripts/sal/) for normalized runnable code extracted from Sal sites
+- [`analysis/sal/`](analysis/sal/) for page notes, site maps, and concept notes
+- [`indexes/sal-sites.yaml`](indexes/sal-sites.yaml), [`indexes/sal-scripts.yaml`](indexes/sal-scripts.yaml), and [`indexes/sal-concepts.yaml`](indexes/sal-concepts.yaml) for machine-readable lookup data
+
+Use this split to preserve original material while building reusable knowledge on top of it.
+
 ---
 
 ## The Pipeline
@@ -342,6 +353,29 @@ osascript scripts/launchers/activate-logic-pro.applescript
 
 ---
 
+## Thought Multiplier
+
+**Type once, radiate to many, catch every rebound.**
+
+A system built inside [Ray Browser](https://nicedayfor.ai/) that turns a single typed thought into 5 simultaneous outputs — archive, LLM refinement, web publish, email, and visual graph. Combines Ray's AI Agent (18 tools), Agent Scripter (visual pipelines), Studio (app factory), and local Phi-4 inference into a single multiplication pipeline.
+
+Three lineages converge: **Sal Soghoian** (data type chaining), **Walter Russell** (RBI self-multiplication), and **BBS/Cloudcity** (the personal operating system).
+
+```
+Seed Capture → The Fork → 5 parallel branches → Rebound Dashboard
+  (Studio)    (Agent Scripter)  archive/LLM/web/email/graph  (Studio)
+```
+
+| File | What |
+|------|------|
+| [`architecture.md`](thought-multiplier/architecture.md) | Full architecture + RBI mapping |
+| [`studio-prompts.md`](thought-multiplier/studio-prompts.md) | Paste-ready prompts for Ray Studio |
+| [`agent-scripter-pipeline.md`](thought-multiplier/agent-scripter-pipeline.md) | Agent Scripter JSON pipeline specs |
+| [`studio-apps/`](thought-multiplier/studio-apps/) | Working HTML/CSS/JS for all 3 Studio apps |
+| [`bin/thought-archive.py`](bin/thought-archive.py) | CLI archive manager |
+
+---
+
 ## Deep Dives
 
 | Document | What it covers |
@@ -356,6 +390,7 @@ osascript scripts/launchers/activate-logic-pro.applescript
 | [**Spotlight Automation**](spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
 | [**Apple Driver's License**](apple-drivers-license.md) | The user knowledge layer: where your data lives, what you own vs. rent, what breaks when. |
 | [**Loupedeck Guide**](loupedeck-guide.md) | Setup guide for Loupedeck Live, Stream Deck, and hardware controllers. |
+| [**Thought Multiplier**](thought-multiplier/architecture.md) | BBS meets Ray Browser: type once, radiate to 5 destinations, catch every rebound. |
 | [**How It Was Built**](how-it-was-built.md) | One conversation, 167 files — the build story. |
 | [**App Probe Pitch**](app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
 | [**Video Script**](video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
@@ -418,6 +453,32 @@ This is Sal's vision realized differently: instead of Automator's drag-and-drop,
 ## How It All Connects
 
 [**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s -> Automator at Apple -> context-aware relevance filtering -> scripting dictionaries -> departure -> this repo as open-source continuation.
+
+---
+
+## A Note to Sal
+
+Sal, if you ever find this: hello. My name is Esa Ruoho. I'm a software tester and workflow obsessive from Finland. I've been studying your work — the sites, the talks, the patent, the philosophy — and building on it in the open.
+
+This repo contains a [detailed profile of your career and thinking](sal-soghoian.md), sourced from your own websites, your MacStories piece, the Omni Show, the Rebooting interview, and your 2018 conversation with Allison Sheridan and Ray Robertson on Chit Chat Across the Pond. Everything is attributed. Everything links back to you.
+
+I've also been cataloguing your websites — [macosxautomation.com](http://macosxautomation.com), [iworkautomation.com](http://iworkautomation.com), [photosautomation.com](http://photosautomation.com), [configautomation.com](http://configautomation.com), [dictationcommands.com](http://dictationcommands.com), [omni-automation.com](http://omni-automation.com), and [cmddconf.com](http://cmddconf.com) — because they represent decades of automation knowledge that exists on self-hosted infrastructure with no institutional backing. You said it yourself: *"Many times I put those examples up there for me so that I can go back later on."* We'd like to make sure those examples stay findable — for you and for everyone else.
+
+**What this repo does with your legacy:**
+
+- Your 10 automation principles ([WWSD](sal-soghoian.md#what-would-sal-do--the-10-principles)) guide every script we write
+- Your Automator patent's data-type-chaining concept is realized as a [lookup table](data-type-chaining.md) across 31 apps
+- Your iWork scripting dictionaries (which you wrote at Apple) are extracted, structured, and paired with 288 runnable workflow scripts
+- Your "everyone can automate" philosophy drives the pipeline: one command generates scripts, compiles them for Spotlight, and creates Siri Shortcuts — so the barrier to automation keeps dropping
+- Your iWorkAutomation.com examples are being cross-referenced with our machine-readable dictionaries to create the complete picture you always intended: human-readable pedagogy on top of structured data
+
+You said: *"The power of the computer should reside in the hands of the one using it."* You also said: *"Everything I've been able to accomplish in my life is because of others and their generosity and them blazing the path and helping me. And I have a responsibility to return that kindness."*
+
+This repo is that responsibility being returned. If anything here misrepresents your work or your wishes, please reach out — I'll fix it immediately. But I believe you'd approve of making automation knowledge more accessible. That's what you've been doing your whole career.
+
+*"If I have seen further, it is by standing on the shoulders of giants."* — Isaac Newton
+
+— [Esa Ruoho](https://github.com/esaruoho) ([@esaruoho](https://github.com/esaruoho))
 
 ---
 

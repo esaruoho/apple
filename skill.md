@@ -192,6 +192,13 @@ Full profile with all quotes: `sal-soghoian.md`
 - "Solution apps are great, emojis are fun, but there's nothing like really great automation tools."
 - "That goes double for the accessibility community."
 - "I'm dreadfully afraid of a future where MacOS is devolved to iOS's state" — John Gruber
+- "Automation is a fundamental human concept. We always look for ways to automate stuff." (CCATP #559)
+- "Everyone can automate." — his proposed intermediate level between "everyone can code" and just using apps (CCATP #559)
+- "AppleScript is so foundational, it can understand the environment that you're in." (CCATP #559)
+- "When you stop wanting to learn, then you're just marking time. You join God's waiting room." (CCATP #559)
+
+**Sal's Web Empire** (7+ self-hosted domains, no institutional backing):
+macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archival via wayback-mirror is planned.
 
 **10 Principles** (WWSD):
 1. User comes first — empower, don't create dependency
@@ -208,10 +215,11 @@ Full profile with all quotes: `sal-soghoian.md`
 **Primary sources captured in sal-soghoian.md:**
 - Full FAQ from macosxautomation.com/about.html (November 2016)
 - MacStories manifesto: "App Extensions Are Not a Replacement for User Automation" (January 2017)
+- **Chit Chat Across the Pond #559** (August 13, 2018) — Sal + Ray Robertson interview. Berklee details, "sinking ship" origin story, "automation is a fundamental human concept," "everyone can automate," Siri Shortcuts architecture, environmental awareness quote, Ray Robertson profile. Transcript: `~/work/whisp/CCATP_2018_08_13.txt`
 - Omni Show: Shortcuts as "component automation" (October 2021)
 - Rebooting interview: "Shortcuts is just beginning to reach its potential" (2023-24)
 - Community reactions: Gruber, Snell, Cheeseman, Gotow, Weatherhead
-- **Future work**: Scrape @macautomation Twitter/X feed for years of automation tips and commentary
+- **Future work**: Scrape @macautomation Twitter/X feed for years of automation tips and commentary, archive iWorkAutomation.com (Sal's own reference site)
 
 ## HomePod Climate Sensor
 
