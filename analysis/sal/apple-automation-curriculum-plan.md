@@ -151,6 +151,10 @@ Outcomes:
 4. Add a small set of canonical lesson scripts that actually run in this repo.
 5. Create a reading order and project order.
 
+Implemented scaffold:
+- `indexes/sal-curriculum.yaml` for track/category taxonomy
+- `indexes/sal-lessons.yaml` for lesson-level source-page mappings
+
 ## First Module Candidates
 
 1. AppleScript first tutorial

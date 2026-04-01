@@ -1,0 +1,413 @@
+version: 1
+updated: "2026-04-01"
+
+lesson_schema:
+  description: "Machine-readable lesson index connecting preserved Sal source pages to curriculum tracks and modern equivalents in this repo."
+  required_fields:
+    - id
+    - title
+    - track
+    - level
+    - category
+    - source_site
+    - source_page
+    - source_status
+    - goal
+    - allows
+    - modern_equivalent
+
+tracks:
+  foundations:
+    label: "Foundations"
+  workflow-building:
+    label: "Workflow Building"
+  app-automation:
+    label: "App Automation"
+  accessibility-voice:
+    label: "Accessibility And Voice"
+  admin-deployment:
+    label: "Admin And Deployment"
+  modern-translation:
+    label: "Modern Translation Layer"
+
+lessons:
+  - id: foundations-001
+    title: "AppleScript First Tutorial"
+    track: foundations
+    level: 1
+    category: applescript-basics
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/applescript/firsttutorial/index.html"
+    source_status: captured
+    goal: "Introduce the AppleScript mental model through Sal's canonical beginner sequence."
+    allows:
+      - "Recognize tell blocks, results, and application-targeted scripting."
+      - "Establish a beginner reading order for the first tutorial pages."
+    example_workflow:
+      title: "Finder Count Items"
+      path: "scripts/workflows/finder/finder-count-items.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-count-items.applescript"
+      note: "Pairs Sal's introductory scripting model with a simple current repo script."
+
+  - id: foundations-002
+    title: "AppleScript Tutorial Chapter 01"
+    track: foundations
+    level: 1
+    category: applescript-basics
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/applescript/firsttutorial/01.html"
+    source_status: captured
+    goal: "Start the lesson sequence from the first chapter page rather than only the hub index."
+    allows:
+      - "Anchor beginner curriculum to a single stable tutorial page."
+    example_workflow:
+      title: "Safari Current URL"
+      path: "scripts/workflows/safari/safari-current-url.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/safari/safari-current-url.applescript"
+      note: "A small, observable script suitable for first-run instruction."
+
+  - id: foundations-003
+    title: "AppleScript Features"
+    track: foundations
+    level: 1
+    category: applescript-basics
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/applescript/features/index.html"
+    source_status: captured
+    goal: "Move from syntax to common AppleScript feature patterns."
+    allows:
+      - "Connect basic script structure to practical system-oriented tasks."
+    example_workflow:
+      title: "System Events Dark Mode Toggle"
+      path: "scripts/workflows/system-events/system-events-dark-mode-toggle.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/system-events/system-events-dark-mode-toggle.applescript"
+      note: "Useful for showing the jump from syntax to a visible system effect."
+
+  - id: workflow-001
+    title: "Services Overview"
+    track: workflow-building
+    level: 2
+    category: services
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/services.html"
+    source_status: captured
+    goal: "Introduce context-sensitive automation through Services and Quick Actions."
+    allows:
+      - "Understand how automation attaches to user context instead of running as a standalone script."
+    example_workflow:
+      title: "Finder Copy Path"
+      path: "scripts/workflows/finder/finder-copy-path.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-copy-path.applescript"
+      note: "A concrete action that fits the Services mental model."
+
+  - id: workflow-002
+    title: "Services Tutorial 01"
+    track: workflow-building
+    level: 2
+    category: services
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/services/learn/tut01/index.html"
+    source_status: captured
+    goal: "Provide the first structured Services lesson from Sal's own teaching sequence."
+    allows:
+      - "Teach Quick Action construction step by step."
+    example_workflow:
+      title: "Notes New Note From Clipboard"
+      path: "scripts/workflows/notes/notes-new-note-from-clipboard.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/notes/notes-new-note-from-clipboard.applescript"
+      note: "Represents a user-selection or clipboard-driven service outcome."
+
+  - id: workflow-003
+    title: "Automator Overview"
+    track: workflow-building
+    level: 2
+    category: automator
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/automator/index.html"
+    source_status: captured
+    goal: "Introduce action-chaining and reusable workflow composition."
+    allows:
+      - "Explain why Automator mattered as the bridge between scripts and recipes."
+    example_workflow:
+      title: "HomePod Good Night Scene"
+      path: "scripts/workflows/homepod/homepod-good-night-scene.applescript"
+    modern_equivalent:
+      type: shortcut-bridge
+      target: "scripts/workflows/homepod/homepod-good-night-scene.applescript"
+      note: "Demonstrates an AppleScript wrapper around a Shortcut-style automation recipe."
+
+  - id: workflow-004
+    title: "Folder Actions"
+    track: workflow-building
+    level: 2
+    category: folder-actions
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/automator/folder-action/index.html"
+    source_status: captured
+    goal: "Teach filesystem-triggered automation as a recurring pattern."
+    allows:
+      - "Frame folder actions as event-driven automation."
+    example_workflow:
+      title: "Finder Move To Trash"
+      path: "scripts/workflows/finder/finder-move-to-trash.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-move-to-trash.applescript"
+      note: "Not a folder action itself, but a useful filesystem action to pair with the lesson."
+
+  - id: app-001
+    title: "Keynote Overview"
+    track: app-automation
+    level: 3
+    category: keynote
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/keynote/index.html"
+    source_status: captured
+    goal: "Introduce Keynote as a scriptable object model for presentation generation."
+    allows:
+      - "Teach slides, documents, and playback as scriptable objects."
+    example_workflow:
+      title: "Keynote New Presentation"
+      path: "scripts/workflows/keynote/keynote-new-presentation.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/keynote/keynote-new-presentation.applescript"
+      note: "A direct bridge from Sal's Keynote examples to a runnable repo script."
+
+  - id: app-002
+    title: "Keynote Image Slides From Files"
+    track: app-automation
+    level: 3
+    category: keynote
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/keynote/image-slides-from-files.html"
+    source_status: captured
+    goal: "Teach file-to-slide generation as a concrete automation project."
+    allows:
+      - "Show how automation converts a folder of assets into a presentation."
+    example_workflow:
+      title: "Keynote Export PDF"
+      path: "scripts/workflows/keynote/keynote-export-pdf.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/keynote/keynote-export-pdf.applescript"
+      note: "Pairs asset-driven document generation with a current export action."
+
+  - id: app-003
+    title: "Numbers Overview"
+    track: app-automation
+    level: 3
+    category: numbers
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/numbers/index.html"
+    source_status: captured
+    goal: "Introduce tables, rows, columns, and ranges as automation objects."
+    allows:
+      - "Frame spreadsheets as scriptable structures, not only UI surfaces."
+    example_workflow:
+      title: "Numbers Export CSV"
+      path: "scripts/workflows/numbers/numbers-export-csv.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/numbers/numbers-export-csv.applescript"
+      note: "Shows a practical data-exit path from a Numbers document."
+
+  - id: app-004
+    title: "Pages Overview"
+    track: app-automation
+    level: 3
+    category: pages
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/pages/index.html"
+    source_status: captured
+    goal: "Introduce document construction and page-item automation in Pages."
+    allows:
+      - "Use Pages as an example of layout-oriented scripting."
+    example_workflow:
+      title: "Pages Export PDF"
+      path: "scripts/workflows/pages/pages-export-pdf.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/pages/pages-export-pdf.applescript"
+      note: "Pairs Sal's Pages model with a current output-oriented script."
+
+  - id: app-005
+    title: "Photos Workflows"
+    track: app-automation
+    level: 3
+    category: photos
+    source_site: photosautomation
+    source_page: "sources/sal/photosautomation.com/mirror/wayback-20240721/web.archive.org/web/20240721142125/http:/photosautomation.com/workflows.html"
+    source_status: captured-partial
+    goal: "Introduce Photos as a workflow surface rather than only a library browser."
+    allows:
+      - "Teach the action families available in the Photos automation site."
+    example_workflow:
+      title: "Photos Export Selected"
+      path: "scripts/workflows/photos/photos-export-selected.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/photos/photos-export-selected.applescript"
+      note: "A practical match for the export-oriented Photos lessons."
+
+  - id: app-006
+    title: "Photos Selection Actions"
+    track: app-automation
+    level: 3
+    category: photos
+    source_site: photosautomation
+    source_page: "sources/sal/photosautomation.com/mirror/wayback-20240721/web.archive.org/web/20240721142125/http:/photosautomation.com/selection-actions.html"
+    source_status: captured-partial
+    goal: "Teach selection-scoped actions as the basic Photos automation pattern."
+    allows:
+      - "Connect object selection to favorite, export, and slideshow actions."
+    example_workflow:
+      title: "Photos Favorite Selected"
+      path: "scripts/workflows/photos/photos-favorite-selected.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/photos/photos-favorite-selected.applescript"
+      note: "Pairs the action family with a visible selection-based script."
+
+  - id: voice-001
+    title: "Dictation Commands Overview"
+    track: accessibility-voice
+    level: 3
+    category: dictation-commands
+    source_site: dictationcommands
+    source_page: "sources/sal/dictationcommands.com/mirror/wayback-20240424/web.archive.org/web/20240424181821/http:/dictationcommands.com/index.html"
+    source_status: captured-partial
+    goal: "Introduce voice-triggered automation as a first-class accessibility workflow."
+    allows:
+      - "Teach that spoken phrases can act as workflow entry points."
+    example_workflow:
+      title: "HomePod Play Music"
+      path: "scripts/workflows/homepod/homepod-play-music.applescript"
+    modern_equivalent:
+      type: shortcut-bridge
+      target: "scripts/workflows/homepod/homepod-play-music.applescript"
+      note: "A modern voice-adjacent entry point using Shortcuts from AppleScript."
+
+  - id: voice-002
+    title: "How Dictation Commands Work"
+    track: accessibility-voice
+    level: 3
+    category: accessibility
+    source_site: dictationcommands
+    source_page: "sources/sal/dictationcommands.com/mirror/wayback-20240424/web.archive.org/web/20240424181821/http:/dictationcommands.com/how-it-works.html"
+    source_status: captured-partial
+    goal: "Explain the system model behind voice-triggered command routing."
+    allows:
+      - "Place Dictation Commands in the broader accessibility and automation architecture."
+    example_workflow:
+      title: "System Events Get Frontmost App"
+      path: "scripts/workflows/system-events/system-events-get-frontmost-app.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/system-events/system-events-get-frontmost-app.applescript"
+      note: "A useful bridge to the environment-awareness lesson."
+
+  - id: voice-003
+    title: "Speakable Workflows"
+    track: accessibility-voice
+    level: 3
+    category: accessibility
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/mavericks/speakableworkflows/index.html"
+    source_status: captured
+    goal: "Connect pre-Shortcuts voice workflows to Sal's broader automation philosophy."
+    allows:
+      - "Show a lineage from speakable workflows to later voice and shortcut systems."
+    example_workflow:
+      title: "HomePod Lights Off"
+      path: "scripts/workflows/homepod/homepod-lights-off.applescript"
+    modern_equivalent:
+      type: shortcut-bridge
+      target: "scripts/workflows/homepod/homepod-lights-off.applescript"
+      note: "A modern command surface that still fits the speakable-workflow idea."
+
+  - id: admin-001
+    title: "Configurator Overview"
+    track: admin-deployment
+    level: 4
+    category: configurator
+    source_site: configautomation
+    source_page: "sources/sal/configautomation.com/mirror/wayback-20240422/web.archive.org/web/20240422004004/https:/configautomation.com/index.html"
+    source_status: captured-partial
+    goal: "Introduce Apple Configurator workflows as deployment automation rather than consumer scripting."
+    allows:
+      - "Expand the curriculum from personal automation into operational automation."
+    example_workflow:
+      title: "System Events List Running Apps"
+      path: "scripts/workflows/system-events/system-events-list-running-apps.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/system-events/system-events-list-running-apps.applescript"
+      note: "A bridge into system-oriented automation when Configurator-specific scripts are not yet extracted."
+
+  - id: admin-002
+    title: "Configurator Workflow Recipes"
+    track: admin-deployment
+    level: 4
+    category: deployment
+    source_site: configautomation
+    source_page: "sources/sal/configautomation.com/mirror/wayback-20240422/web.archive.org/web/20240422004004/https:/configautomation.com/workflow-recipes.html"
+    source_status: captured-partial
+    goal: "Teach device setup as a sequence of repeatable workflow recipes."
+    allows:
+      - "Present automation as repeatable operational procedure."
+    example_workflow:
+      title: "System Events Spotlight Status"
+      path: "scripts/workflows/system-events/system-events-spotlight-status.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/system-events/system-events-spotlight-status.applescript"
+      note: "A system-management style example from the current repo."
+
+  - id: modern-001
+    title: "AppleScript To Shortcut Bridge"
+    track: modern-translation
+    level: 4
+    category: workflow-modernization
+    source_site: repo
+    source_page: "scripts/workflows/homepod/homepod-good-night-scene.applescript"
+    source_status: native-repo
+    goal: "Show how Sal-era workflow thinking translates into AppleScript wrappers around Shortcuts."
+    allows:
+      - "Preserve AppleScript depth while using Shortcuts for newer surfaces."
+    example_workflow:
+      title: "HomePod Good Night Scene"
+      path: "scripts/workflows/homepod/homepod-good-night-scene.applescript"
+    modern_equivalent:
+      type: shortcut-bridge
+      target: "scripts/workflows/homepod/homepod-good-night-scene.applescript"
+      note: "Represents the repo's modern bridge layer directly."
+
+  - id: modern-002
+    title: "Dictionaries As Curriculum Scaffolding"
+    track: modern-translation
+    level: 4
+    category: workflow-modernization
+    source_site: repo
+    source_page: "dictionaries/"
+    source_status: native-repo
+    goal: "Use extracted dictionaries to connect Sal's pedagogy to machine-readable app structures."
+    allows:
+      - "Move from page-based teaching into object-model exploration."
+    example_workflow:
+      title: "Keynote Dictionary + Keynote Slide Count"
+      path: "dictionaries/keynote.md"
+    modern_equivalent:
+      type: dictionary-plus-workflow
+      target: "scripts/workflows/keynote/keynote-slide-count.applescript"
+      note: "Combines app reference with a runnable example."
