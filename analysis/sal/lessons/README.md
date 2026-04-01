@@ -8,30 +8,24 @@ Each lesson file maps:
 - a runnable repo workflow
 - a modern translation path inside this repo
 
-Current module set:
+Current coverage is organized by track:
 
-1. `foundations-001-applescript-first-tutorial.md`
-2. `foundations-002-applescript-tutorial-chapter-01.md`
-3. `foundations-003-applescript-features.md`
-4. `workflow-001-services-overview.md`
-5. `workflow-002-services-tutorial-01.md`
-6. `workflow-003-automator-overview.md`
-7. `workflow-004-folder-actions.md`
-8. `app-001-keynote-overview.md`
-9. `app-002-keynote-image-slides-from-files.md`
-10. `app-003-numbers-overview.md`
-11. `app-004-pages-overview.md`
-12. `app-005-photos-workflows.md`
-13. `app-006-photos-selection-actions.md`
-14. `voice-001-dictation-commands-overview.md`
-15. `voice-002-how-dictation-commands-work.md`
-16. `voice-003-speakable-workflows.md`
-17. `admin-001-configurator-overview.md`
-18. `admin-002-configurator-workflow-recipes.md`
-19. `modern-001-applescript-to-shortcut-bridge.md`
-20. `modern-002-dictionaries-as-curriculum-scaffolding.md`
+- Foundations
+- Workflow Building
+- App Automation
+- Accessibility And Voice
+- Admin And Deployment
+- Modern Translation Layer
 
-These modules now cover the current lesson index across foundations, workflow building, app automation, accessibility and voice, admin and deployment, and the modern translation layer.
+The exact lesson graph is maintained in `indexes/sal-lessons.yaml`.
+
+Each module is designed to be taught with:
+
+- a preserved Sal page
+- one current repo workflow
+- a modern equivalent or bridge pattern
+
+This keeps the archive usable as a teaching system instead of only a historical mirror.
 
 They should later be paired with:
 - extracted script examples in `scripts/sal/`

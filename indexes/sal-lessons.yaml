@@ -174,6 +174,106 @@ lessons:
       target: "scripts/workflows/finder/finder-move-to-trash.applescript"
       note: "Not a folder action itself, but a useful filesystem action to pair with the lesson."
 
+  - id: workflow-005
+    title: "Services Tutorial 02"
+    track: workflow-building
+    level: 2
+    category: services
+    lesson_module: "analysis/sal/lessons/workflow-005-services-tutorial-02.md"
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/services/learn/tut02/index.html"
+    source_status: captured
+    goal: "Extend the Services sequence with a second structured build that emphasizes input handling."
+    allows:
+      - "Teach how Services become more useful when they are tied to specific input types."
+    example_workflow:
+      title: "Finder Get Selection"
+      path: "scripts/workflows/finder/finder-get-selection.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-get-selection.applescript"
+      note: "A direct way to discuss selection-driven automation."
+
+  - id: workflow-006
+    title: "Services Tutorial 03"
+    track: workflow-building
+    level: 2
+    category: services
+    lesson_module: "analysis/sal/lessons/workflow-006-services-tutorial-03.md"
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/services/learn/tut03/index.html"
+    source_status: captured
+    goal: "Continue the Services sequence with a tutorial centered on transformation workflows."
+    allows:
+      - "Show how Services can take input, transform it, and return a useful result."
+    example_workflow:
+      title: "Safari Search Web"
+      path: "scripts/workflows/safari/safari-search-web.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/safari/safari-search-web.applescript"
+      note: "A practical example of contextual input becoming a new action."
+
+  - id: workflow-007
+    title: "Services Tutorial 04"
+    track: workflow-building
+    level: 2
+    category: services
+    lesson_module: "analysis/sal/lessons/workflow-007-services-tutorial-04.md"
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/services/learn/tut04/index.html"
+    source_status: captured
+    goal: "Bring the Services curriculum to multi-step utility design."
+    allows:
+      - "Frame Services as lightweight applications embedded into user context."
+    example_workflow:
+      title: "Finder Tag Orange"
+      path: "scripts/workflows/finder/finder-tag-orange.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-tag-orange.applescript"
+      note: "A strong example of a small contextual utility with visible effect."
+
+  - id: workflow-008
+    title: "Automator Training Tutorial 01"
+    track: workflow-building
+    level: 2
+    category: automator
+    lesson_module: "analysis/sal/lessons/workflow-008-automator-training-tutorial-01.md"
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/training/automator/tut01/index.html"
+    source_status: captured
+    goal: "Introduce Automator through Sal's training sequence rather than only the overview page."
+    allows:
+      - "Teach the first end-to-end Automator exercise in a curriculum-friendly format."
+    example_workflow:
+      title: "Automator New Workflow"
+      path: "scripts/workflows/automator/automator-new-workflow.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/automator/automator-new-workflow.applescript"
+      note: "Pairs the training lesson with a direct Automator control script."
+
+  - id: workflow-009
+    title: "Automator Training Tutorial 02"
+    track: workflow-building
+    level: 2
+    category: automator
+    lesson_module: "analysis/sal/lessons/workflow-009-automator-training-tutorial-02.md"
+    source_site: macosxautomation
+    source_page: "sources/sal/macosxautomation.com/mirror/training/automator/tut02/index.html"
+    source_status: captured
+    goal: "Follow the next Automator training sequence into reusable execution and composition."
+    allows:
+      - "Show how Automator workflows become repeatable assets rather than demonstrations."
+    example_workflow:
+      title: "Automator Run Workflow"
+      path: "scripts/workflows/automator/automator-run-workflow.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/automator/automator-run-workflow.applescript"
+      note: "Useful for teaching workflow execution and debugging."
+
   - id: app-001
     title: "Keynote Overview"
     track: app-automation
@@ -294,6 +394,126 @@ lessons:
       target: "scripts/workflows/photos/photos-favorite-selected.applescript"
       note: "Pairs the action family with a visible selection-based script."
 
+  - id: app-007
+    title: "Keynote Document Export"
+    track: app-automation
+    level: 3
+    category: keynote
+    lesson_module: "analysis/sal/lessons/app-007-keynote-document-export.md"
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/keynote/document-export.html"
+    source_status: captured
+    goal: "Teach export as a core output pattern in Keynote automation."
+    allows:
+      - "Connect creation workflows to distribution and publishing workflows."
+    example_workflow:
+      title: "Keynote Export PDF"
+      path: "scripts/workflows/keynote/keynote-export-pdf.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/keynote/keynote-export-pdf.applescript"
+      note: "A direct fit for the preserved export material."
+
+  - id: app-008
+    title: "Keynote Presenter Notes"
+    track: app-automation
+    level: 3
+    category: keynote
+    lesson_module: "analysis/sal/lessons/app-008-keynote-presenter-notes.md"
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/keynote/slide-presenter-notes.html"
+    source_status: captured
+    goal: "Show how Keynote automation reaches into presentation metadata, not only visible slides."
+    allows:
+      - "Teach that scripting can manage both audience-facing and presenter-facing content."
+    example_workflow:
+      title: "Keynote Presenter Notes"
+      path: "scripts/workflows/keynote/keynote-presenter-notes.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/keynote/keynote-presenter-notes.applescript"
+      note: "A near-direct pairing with the preserved page."
+
+  - id: app-009
+    title: "Pages Document Export"
+    track: app-automation
+    level: 3
+    category: pages
+    lesson_module: "analysis/sal/lessons/app-009-pages-document-export.md"
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/pages/document-export.html"
+    source_status: captured
+    goal: "Teach Pages output workflows as part of document automation."
+    allows:
+      - "Show how layout automation ends in a shareable exported document."
+    example_workflow:
+      title: "Pages Export PDF"
+      path: "scripts/workflows/pages/pages-export-pdf.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/pages/pages-export-pdf.applescript"
+      note: "Directly reinforces the export path in Pages."
+
+  - id: app-010
+    title: "Pages Mail Merge"
+    track: app-automation
+    level: 3
+    category: pages
+    lesson_module: "analysis/sal/lessons/app-010-pages-mail-merge.md"
+    source_site: iworkautomation
+    source_page: "sources/sal/iworkautomation.com/mirror/pages/examples-mail-merge.html"
+    source_status: captured
+    goal: "Introduce data-driven document generation through Pages examples."
+    allows:
+      - "Connect template thinking, structured data, and final document output."
+    example_workflow:
+      title: "Pages New Document"
+      path: "scripts/workflows/pages/pages-new-document.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/pages/pages-new-document.applescript"
+      note: "A creation-oriented workflow that complements the preserved mail-merge pattern."
+
+  - id: app-011
+    title: "Photos Export Action"
+    track: app-automation
+    level: 3
+    category: photos
+    lesson_module: "analysis/sal/lessons/app-011-photos-export-action.md"
+    source_site: photosautomation
+    source_page: "sources/sal/photosautomation.com/mirror/wayback-20240721/web.archive.org/web/20240721142125/http:/photosautomation.com/export-action.html"
+    source_status: captured-partial
+    goal: "Deepen the Photos curriculum around export as a reusable action family."
+    allows:
+      - "Show how selection, metadata, and file output converge in Photos workflows."
+    example_workflow:
+      title: "Photos Export Selected"
+      path: "scripts/workflows/photos/photos-export-selected.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/photos/photos-export-selected.applescript"
+      note: "A direct current repo counterpart for the export lesson."
+
+  - id: app-012
+    title: "Photos Slideshow Control"
+    track: app-automation
+    level: 3
+    category: photos
+    lesson_module: "analysis/sal/lessons/app-012-photos-slideshow-control.md"
+    source_site: photosautomation
+    source_page: "sources/sal/photosautomation.com/mirror/wayback-20240721/web.archive.org/web/20240721142125/http:/photosautomation.com/slideshow-control.html"
+    source_status: captured-partial
+    goal: "Teach presentation-style control workflows inside Photos."
+    allows:
+      - "Show that media automation includes display and playback control, not only organization."
+    example_workflow:
+      title: "Photos Start Slideshow"
+      path: "scripts/workflows/photos/photos-start-slideshow.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/photos/photos-start-slideshow.applescript"
+      note: "Pairs the action family with a current slideshow script."
+
   - id: voice-001
     title: "Dictation Commands Overview"
     track: accessibility-voice
@@ -354,6 +574,46 @@ lessons:
       target: "scripts/workflows/homepod/homepod-lights-off.applescript"
       note: "A modern command surface that still fits the speakable-workflow idea."
 
+  - id: voice-004
+    title: "Dictation Commands Preparation"
+    track: accessibility-voice
+    level: 3
+    category: accessibility
+    lesson_module: "analysis/sal/lessons/voice-004-dictation-commands-preparation.md"
+    source_site: dictationcommands
+    source_page: "sources/sal/dictationcommands.com/mirror/wayback-20240424/web.archive.org/web/20240424181821/http:/dictationcommands.com/preparation.html"
+    source_status: captured-partial
+    goal: "Teach the setup and environmental prerequisites behind usable voice automation."
+    allows:
+      - "Show that accessibility automation depends on deliberate system preparation, not only commands."
+    example_workflow:
+      title: "Accessibility Open Keyboard Settings"
+      path: "scripts/workflows/accessibility/ax-system-settings-keyboard.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/accessibility/ax-system-settings-keyboard.applescript"
+      note: "A practical bridge to the settings-first nature of dictation setup."
+
+  - id: voice-005
+    title: "Dictation Commands List"
+    track: accessibility-voice
+    level: 3
+    category: dictation-commands
+    lesson_module: "analysis/sal/lessons/voice-005-dictation-commands-list.md"
+    source_site: dictationcommands
+    source_page: "sources/sal/dictationcommands.com/mirror/wayback-20240424/web.archive.org/web/20240424181821/http:/dictationcommands.com/commandslist.html"
+    source_status: captured-partial
+    goal: "Preserve the practical command vocabulary that made Dictation Commands usable."
+    allows:
+      - "Teach that voice automation design includes naming, consistency, and user recall."
+    example_workflow:
+      title: "HomePod Set Volume"
+      path: "scripts/workflows/homepod/homepod-set-volume.applescript"
+    modern_equivalent:
+      type: shortcut-bridge
+      target: "scripts/workflows/homepod/homepod-set-volume.applescript"
+      note: "A good modern analogue for parameterized spoken commands."
+
   - id: admin-001
     title: "Configurator Overview"
     track: admin-deployment
@@ -394,6 +654,66 @@ lessons:
       target: "scripts/workflows/system-events/system-events-spotlight-status.applescript"
       note: "A system-management style example from the current repo."
 
+  - id: admin-003
+    title: "Configurator Script Library"
+    track: admin-deployment
+    level: 4
+    category: configurator
+    lesson_module: "analysis/sal/lessons/admin-003-configurator-script-library.md"
+    source_site: configautomation
+    source_page: "sources/sal/configautomation.com/mirror/wayback-20240422/web.archive.org/web/20240422004004/https:/configautomation.com/script-library.html"
+    source_status: captured-partial
+    goal: "Show how admin automation depends on reusable script components rather than one-off actions."
+    allows:
+      - "Connect Configurator workflows to a library mindset of reusable operations."
+    example_workflow:
+      title: "Automator List Actions"
+      path: "scripts/workflows/automator/automator-list-actions.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/automator/automator-list-actions.applescript"
+      note: "A bridge to the idea of discoverable reusable actions."
+
+  - id: admin-004
+    title: "Configurator Selection Actions"
+    track: admin-deployment
+    level: 4
+    category: deployment
+    lesson_module: "analysis/sal/lessons/admin-004-configurator-selection-actions.md"
+    source_site: configautomation
+    source_page: "sources/sal/configautomation.com/mirror/wayback-20240422/web.archive.org/web/20240422004004/https:/configautomation.com/selection-actions.html"
+    source_status: captured-partial
+    goal: "Teach selection-scoped admin actions as a pattern for operating on device subsets."
+    allows:
+      - "Frame selection as a serious operational concept, not only a Finder convenience."
+    example_workflow:
+      title: "Finder Get Selection"
+      path: "scripts/workflows/finder/finder-get-selection.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/finder/finder-get-selection.applescript"
+      note: "A simple but clear selection-based operation for teaching the pattern."
+
+  - id: admin-005
+    title: "Configurator Information Actions"
+    track: admin-deployment
+    level: 4
+    category: deployment
+    lesson_module: "analysis/sal/lessons/admin-005-configurator-information-actions.md"
+    source_site: configautomation
+    source_page: "sources/sal/configautomation.com/mirror/wayback-20240422/web.archive.org/web/20240422004004/https:/configautomation.com/information-actions.html"
+    source_status: captured-partial
+    goal: "Teach inspection and reporting workflows as part of admin automation."
+    allows:
+      - "Show that operational automation depends on gathering reliable state before changing anything."
+    example_workflow:
+      title: "Disk Utility Disk Info"
+      path: "scripts/workflows/disk-utility/disk-utility-disk-info.applescript"
+    modern_equivalent:
+      type: repo-workflow
+      target: "scripts/workflows/disk-utility/disk-utility-disk-info.applescript"
+      note: "A current repo example of inspection-first automation."
+
   - id: modern-001
     title: "AppleScript To Shortcut Bridge"
     track: modern-translation
@@ -433,3 +753,43 @@ lessons:
       type: dictionary-plus-workflow
       target: "scripts/workflows/keynote/keynote-slide-count.applescript"
       note: "Combines app reference with a runnable example."
+
+  - id: modern-003
+    title: "Automator Dictionary Scaffolding"
+    track: modern-translation
+    level: 4
+    category: workflow-modernization
+    lesson_module: "analysis/sal/lessons/modern-003-automator-dictionary-scaffolding.md"
+    source_site: repo
+    source_page: "dictionaries/automator/automator.md"
+    source_status: native-repo
+    goal: "Use the Automator dictionary to connect Sal's workflow pedagogy to machine-readable app structure."
+    allows:
+      - "Teach learners how to inspect Automator's object model while building workflows."
+    example_workflow:
+      title: "Automator New Workflow"
+      path: "scripts/workflows/automator/automator-new-workflow.applescript"
+    modern_equivalent:
+      type: dictionary-plus-workflow
+      target: "scripts/workflows/automator/automator-new-workflow.applescript"
+      note: "Combines dictionary reference with a direct Automator control script."
+
+  - id: modern-004
+    title: "Photos Dictionary Scaffolding"
+    track: modern-translation
+    level: 4
+    category: workflow-modernization
+    lesson_module: "analysis/sal/lessons/modern-004-photos-dictionary-scaffolding.md"
+    source_site: repo
+    source_page: "dictionaries/photos/photos.md"
+    source_status: native-repo
+    goal: "Use the Photos dictionary corpus to modernize Sal's media-automation lessons."
+    allows:
+      - "Connect preserved Photos pages to a reference-first script exploration workflow."
+    example_workflow:
+      title: "Photos List Albums"
+      path: "scripts/workflows/photos/photos-list-albums.applescript"
+    modern_equivalent:
+      type: dictionary-plus-workflow
+      target: "scripts/workflows/photos/photos-list-albums.applescript"
+      note: "Pairs app reference with a current repo script for exploration."
