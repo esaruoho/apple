@@ -1,0 +1,29 @@
+id: sal-iworkautomation-com-image-01-applescript-and-pages-images-script-01
+title: 'AppleScript and Pages: Images Script 01'
+site: iworkautomation.com
+language: applescript
+source_url: https://iworkautomation.com/pages/image.html
+source_title: 'AppleScript and Pages: Images'
+source_domain: iworkautomation.com
+retrieved_at: '2026-04-01'
+apps:
+- Pages
+automation_layers:
+- applescript
+- app-dictionary
+- shell-bridge
+concepts:
+- pages
+original_format: inline-applescript-url
+normalization_notes:
+- Decoded from applescript:// Script Editor URL embedded in archived HTML.
+- Normalized line endings to LF and preserved one source record per inline example.
+tags:
+- sal
+- archive
+- inline-script
+original_url: https://iworkautomation.com/pages/image.html
+source_archive_path: sources/sal/iworkautomation.com/mirror/pages/image.html
+extractor: bin/sal-extract-inline-applescript.py
+hash_sha256: c5ba5a01621537e2eb58de5ec4384cb365f3390be6b97874acac4fe61768f911
+script_path: scripts/sal/iworkautomation.com/pages/image-01.applescript
