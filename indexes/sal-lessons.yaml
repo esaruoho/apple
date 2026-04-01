@@ -15,6 +15,8 @@ lesson_schema:
     - goal
     - allows
     - modern_equivalent
+  optional_fields:
+    - lesson_module
 
 tracks:
   foundations:
@@ -36,6 +38,7 @@ lessons:
     track: foundations
     level: 1
     category: applescript-basics
+    lesson_module: "analysis/sal/lessons/foundations-001-applescript-first-tutorial.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/applescript/firsttutorial/index.html"
     source_status: captured
@@ -56,6 +59,7 @@ lessons:
     track: foundations
     level: 1
     category: applescript-basics
+    lesson_module: "analysis/sal/lessons/foundations-002-applescript-tutorial-chapter-01.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/applescript/firsttutorial/01.html"
     source_status: captured
@@ -75,6 +79,7 @@ lessons:
     track: foundations
     level: 1
     category: applescript-basics
+    lesson_module: "analysis/sal/lessons/foundations-003-applescript-features.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/applescript/features/index.html"
     source_status: captured
@@ -94,6 +99,7 @@ lessons:
     track: workflow-building
     level: 2
     category: services
+    lesson_module: "analysis/sal/lessons/workflow-001-services-overview.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/services.html"
     source_status: captured
@@ -113,6 +119,7 @@ lessons:
     track: workflow-building
     level: 2
     category: services
+    lesson_module: "analysis/sal/lessons/workflow-002-services-tutorial-01.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/services/learn/tut01/index.html"
     source_status: captured
@@ -132,6 +139,7 @@ lessons:
     track: workflow-building
     level: 2
     category: automator
+    lesson_module: "analysis/sal/lessons/workflow-003-automator-overview.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/automator/index.html"
     source_status: captured
@@ -151,6 +159,7 @@ lessons:
     track: workflow-building
     level: 2
     category: folder-actions
+    lesson_module: "analysis/sal/lessons/workflow-004-folder-actions.md"
     source_site: macosxautomation
     source_page: "sources/sal/macosxautomation.com/mirror/automator/folder-action/index.html"
     source_status: captured
@@ -170,6 +179,7 @@ lessons:
     track: app-automation
     level: 3
     category: keynote
+    lesson_module: "analysis/sal/lessons/app-001-keynote-overview.md"
     source_site: iworkautomation
     source_page: "sources/sal/iworkautomation.com/mirror/keynote/index.html"
     source_status: captured
@@ -189,6 +199,7 @@ lessons:
     track: app-automation
     level: 3
     category: keynote
+    lesson_module: "analysis/sal/lessons/app-002-keynote-image-slides-from-files.md"
     source_site: iworkautomation
     source_page: "sources/sal/iworkautomation.com/mirror/keynote/image-slides-from-files.html"
     source_status: captured
@@ -208,6 +219,7 @@ lessons:
     track: app-automation
     level: 3
     category: numbers
+    lesson_module: "analysis/sal/lessons/app-003-numbers-overview.md"
     source_site: iworkautomation
     source_page: "sources/sal/iworkautomation.com/mirror/numbers/index.html"
     source_status: captured
@@ -406,7 +418,7 @@ lessons:
       - "Move from page-based teaching into object-model exploration."
     example_workflow:
       title: "Keynote Dictionary + Keynote Slide Count"
-      path: "dictionaries/keynote.md"
+      path: "dictionaries/keynote/keynote.md"
     modern_equivalent:
       type: dictionary-plus-workflow
       target: "scripts/workflows/keynote/keynote-slide-count.applescript"
