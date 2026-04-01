@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Pixelmator Pro</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="AppleScript scripts demonstratig automation support in Pixelmator Pro.">
+	<link rel="stylesheet" type="text/css" href="omni-automation-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="stylesheet" type="text/css" href="applescriptcode.css" />
+	<link rel="stylesheet" type="text/css" href="mobile-main.css" />
+	<meta name="keywords" content="AppleScript, Pixelmator, automation">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<style>
+		.script-code-text {
+			padding: 2vw;
+			/* background-color: white; */
+			/* color: black; */
+			font-family: "Menlo", san-serif;
+			font-size: 1vw;
+		}
+		#code
+		{
+			font: 14px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+			font-size: 14px;
+			margin: 12px 0px 12px 0px;
+			color: #fff;
+			background-color: #333;
+			padding: 8px;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div class="banner">
+			<img width="100%" alt="banner image" src="gfx/banner.jpg">
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head" role="heading" aria-level="1">Open Image Location in Maps</p>
+			
+			<p>Since many images are shot using cellphones, they often contain GPS metadata indicating the location coordinates of the camera when the image was captured.</p>
+			
+			<img width="100%" height="auto" alt="pont-du-gard" src="gfx/pont-du-gard.jpg">
+			
+			<p>Using this AppleScript script, you can reveal an image’s location in the Maps application.</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td class="rightside"><p><a href="show-in-maps-demo.zip">DOWNLOAD</a> a zip archive (24mb) containing the Pixelmator example images, and the example AppleScript script file.</p></td>
+				</tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">The AppleScript Script</p>
+			
+			<p>Here are the AppleScript script that automates the process of extracting the location metadata from the image and showing the location in the Maps application.</p>
+			
+			<p id="code"><a href="applescript://com.apple.scripteditor?action=new&name=Show%20Location%20in%20Maps&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20framework%20%22Foundation%22%0Duse%20scripting%20additions%0D%0Dproperty%20zoomLevel%20%3A%2019%20%2D%2D%20between%202%20to%2021%0Dproperty%20mapViewType%20%3A%20%22k%22%20%2D%2D%20m%20%28standard%20view%29%2C%20k%20%28satellite%20view%29%2C%20h%20%28hybrid%20view%29%2C%20r%20%28transit%20view%29%0Dproperty%20shouldIncludeMapPoint%20%3A%20true%0D%0Dtell%20application%20%22Pixelmator%20Pro%203%22%0D%09activate%0D%09tell%20front%20document%0D%09%09set%20pointTitle%20to%20the%20title%20of%20document%20info%20of%20it%0D%09%09if%20pointTitle%20is%20%22%22%20then%0D%09%09%09set%20pointTitle%20to%20the%20name%20of%20it%0D%09%09end%20if%0D%09%09set%20pointTitle%20to%20my%20encodeUsingPercentEncoding%28pointTitle%29%0D%09%09set%20mapCoords%20to%20the%20location%20of%20the%20document%20info%20of%20it%0D%09%09if%20mapCoords%20is%20%7Bmissing%20value%2C%20missing%20value%7D%20then%0D%09%09%09display%20alert%20%22MISSING%20DATA%22%20message%20%22This%20image%20does%20not%20contain%20location%20metadata%2E%22%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0D%09%09%09error%20number%20%2D128%0D%09%09end%20if%0D%09%09copy%20mapCoords%20to%20%7Blatitude%2C%20longitude%7D%0D%09%09if%20shouldIncludeMapPoint%20is%20false%20then%0D%09%09%09set%20mapURL%20to%20%22http%3A%2F%2Fmaps%2Eapple%2Ecom%2F%3Fll%3D%22%20%26%20latitude%20%26%20%22%2C%22%20%26%20longitude%20%26%20%22%26z%3D%22%20%26%20zoomLevel%20%26%20%22%26t%3D%22%20%26%20mapViewType%20as%20string%0D%09%09else%0D%09%09%09set%20mapURL%20to%20%22http%3A%2F%2Fmaps%2Eapple%2Ecom%2F%3Fll%3D%22%20%26%20latitude%20%26%20%22%2C%22%20%26%20longitude%20%26%20%22%26z%3D%22%20%26%20zoomLevel%20%26%20%22%26t%3D%22%20%26%20mapViewType%20%26%20%22%26q%3D%22%20%26%20pointTitle%20as%20string%0D%09%09end%20if%0D%09end%20tell%0Dend%20tell%0Dtell%20application%20%22Maps%22%0D%09activate%0D%09open%20location%20mapURL%0Dend%20tell%0D%0Don%20encodeUsingPercentEncoding%28sourceText%29%0D%09%2D%2D%20DOCUMENTATION%3A%20http%3A%2F%2Fdeveloper%2Eapple%2Ecom%2Flibrary%2Fmac%2Fdocumentation%2FCocoa%2FReference%2FFoundation%2FClasses%2FNSString%5FClass%2FReference%2FNSString%2Ehtml%23%2F%2Fapple%5Fref%2Fdoc%2Fuid%2F20000154%2DBCIBFDCB%0D%09%2D%2D%20DOCUMENTATION%3A%20http%3A%2F%2Fdeveloper%2Eapple%2Ecom%2Flibrary%2Fmac%2Fdocumentation%2FCocoa%2FReference%2FFoundation%2FClasses%2FNSString%5FClass%2FReference%2FNSString%2Ehtml%23%2F%2Fapple%5Fref%2Fdoc%2Fuid%2F20000154%2DSW59%0D%09%2D%2D%20create%20a%20Cocoa%20string%20from%20the%20passed%20AppleScript%20string%2C%20by%20calling%20the%20NSString%20class%20method%20stringWithString%3A%0D%09set%20the%20sourceString%20to%20current%20application%27s%20NSString%27s%20stringWithString%3AsourceText%0D%09%2D%2D%20apply%20the%20indicated%20transformation%20to%20the%20Cooca%20string%0D%09set%20the%20adjustedString%20to%20the%20sourceString%27s%20stringByAddingPercentEscapesUsingEncoding%3A%28current%20application%27s%20NSUTF8StringEncoding%29%0D%09%2D%2D%20coerce%20from%20Cocoa%20string%20to%20AppleScript%20string%0D%09return%20%28adjustedString%20as%20string%29%0Dend%20encodeUsingPercentEncoding%0D"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use framework &quot;Foundation&quot;<BR>
+use scripting additions<BR>
+<BR>
+property zoomLevel : 19 <span class="codecomment">-- between 2 to 21</span><BR>
+property mapViewType : &quot;k&quot; <span class="codecomment">-- m (standard view), k (satellite view), H (hybrid view), r (transit view)</span><BR>
+<b>property</b> shouldIncludeMapPoint : true<BR>
+<BR>
+<b>tell</b> application id &quot;com.pixelmatorteam.pixelmator.x&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> pointTitle <b>to the</b> title <b>of</b> document info <b>of it</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> pointTitle <b>is</b> &quot;&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> pointTitle <b>to the</b> name <b>of it</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> pointTitle <b>to my</b> encodeUsingPercentEncoding(pointTitle)<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> mapCoords <b>to the</b> location <b>of the</b> document info <b>of it</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> mapCoords <b>is</b> {missing value, missing value} <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>display alert &quot;MISSING DATA&quot; message &quot;This image does <b>not</b> contain location metadata.&quot; buttons {&quot;Cancel&quot;} default button 1<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>error</b> number -128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> mapCoords <b>to</b> {latitude, longitude}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> shouldIncludeMapPoint <b>is</b> false <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> mapURL <b>to</b> &quot;http://maps.apple.com/?ll=&quot; &amp; latitude &amp; &quot;,&quot; &amp; longitude &amp; &quot;&z=&quot; &amp; zoomLevel &amp; &quot;&t=&quot; &amp; mapViewType <b>as</b> string<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> mapURL <b>to</b> &quot;http://maps.apple.com/?ll=&quot; &amp; latitude &amp; &quot;,&quot; &amp; longitude &amp; &quot;&z=&quot; &amp; zoomLevel &amp; &quot;&t=&quot; &amp; mapViewType &amp; &quot;&q=&quot; &amp; pointTitle <b>as</b> string<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end tell</b><BR>
+<b>tell</b> application &quot;Maps&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span>open location mapURL<BR>
+<b>end tell</b><BR>
+<BR>
+<b>on</b> encodeUsingPercentEncoding(sourceText)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create <span class="codevariable">a</span> Cocoa string from the passed AppleScript string, by calling the NSString class method stringWithString:</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> sourceString <b>to</b> current application's NSString's stringWithString:sourceText<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- apply the indicated transformation to the Cooca string</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> adjustedString <b>to the</b> sourceString's stringByAddingPercentEscapesUsingEncoding:(current application's NSUTF8StringEncoding)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- coerce from Cocoa string to AppleScript string</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (adjustedString <b>as</b> string)<BR>
+<b>end</b> encodeUsingPercentEncoding<BR>
+</p>
+			
+
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">DEMOS</div>
+			  <p><a href="index.html">Home</a></p>
+			  <p><a href="numbers.html">Numbers &amp; Captions</a></p>
+			  <p><a href="descriptions.html">Description Overlays</a></p>
+			  <p class="active-topic"><a href="maps.html">Open in Maps</a></p>
+			  <p><a href="callouts.html">Callouts</a></p>
+			</nav>	
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

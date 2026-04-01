@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Movie Export Droplet</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for themes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Movie Export Droplet</div>
+		
+			<p>A valuable aspect of automation is its ability to save time. And while it is not overly difficult to open a Keynote presentation and export it to a movie file, sometimes it&rsquo;s very useful to just drag a file onto an AppleScript droplet, have it do that for you, and notify you when it&rsquo;s done!</p>
+			
+			<img class="centered" width="378" height="106" alt="export-notification" src="gfx/export-notification.png">
+				
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>For your convenience, you can <a href="Keynote-Movie-Export-Droplet.zip">DOWNLOAD</a> a completed version of the AppleScript droplet.</p>	
+				
+			<p>Here&rsquo;s the droplet script. Open it in the AppleScript Editor and save it as an AppleScript application. You will then be able to drag Keynote presentation files onto the droplet.</p>	
+				
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Movie Export Droplet</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Movie%20Export%20Droplet&script=property%20destinationFolder%20%3A%20(path%20to%20movies%20folder)%0D%0Don%20run%0D%09--%20TRIGGERED%20WHEN%20USER%20LAUNCHES%20DROPLET.%20PROMPT%20FOR%20PRESENTATION%20FILE(S)%3A%0D%09set%20theseItems%20to%20%C2%AC%0D%09%09(choose%20file%20of%20type%20%22com.apple.iwork.keynote.key%22%20with%20prompt%20%C2%AC%0D%09%09%09%22Pick%20the%20Keynote%20presentation(s)%20to%20export%20to%20movie%3A%22%20with%20multiple%20selections%20allowed)%0D%09open%20theseItems%0Dend%20run%0D%0Don%20open%20theseItems%0D%09--%20TRIGGERED%20WHEN%20USER%20DRAGS%20ITEMS%20ONTO%20THE%20DROPLET%0D%09display%20dialog%20%22This%20droplet%20will%20export%20dragged-on%20Keynote%20presentation%20files%20as%20movies%20to%20the%20Movies%20folder.%22%20%26%20return%20%26%20return%20%26%20%22The%20movies%20will%20be%20encoded%20to%20MPEG%20format%20using%20H.264%20compression.%22%20with%20icon%201%0D%09set%20the%20filesToProcess%20to%20%7B%7D%0D%09--%20filter%20the%20dragged-on%20items%20for%20Keynote%20presentation%20files%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseItems%0D%09%09set%20thisItem%20to%20item%20i%20of%20theseItems%0D%09%09if%20my%20checkForIdentifier(thisItem%2C%20%22com.apple.iwork.keynote.key%22)%20is%20true%20then%0D%09%09%09set%20the%20end%20of%20the%20filesToProcess%20to%20thisItem%0D%09%09end%20if%0D%09end%20repeat%0D%09if%20filesToProcess%20is%20%7B%7D%20then%0D%09%09activate%0D%09%09display%20alert%20%22INCOMPATIBLE%20ITEMS%22%20message%20%22None%20of%20the%20items%20were%20Keynote%20presentations.%22%0D%09else%0D%09%09--%20process%20the%20presentations%0D%09%09my%20exportPresentationsToMovies(filesToProcess)%0D%09end%20if%0Dend%20open%0D%0Don%20checkForIdentifier(thisItem%2C%20thisIdentifier)%0D%09try%0D%09%09--%20uses%20Spotlight%20to%20check%20for%20specified%20item%20type%0D%09%09set%20the%20queryResult%20to%20%C2%AC%0D%09%09%09(do%20shell%20script%20%22mdls%20-name%20kMDItemContentType%20%22%20%26%20%C2%AC%0D%09%09%09%09quoted%20form%20of%20the%20POSIX%20path%20of%20thisItem)%0D%09%09if%20queryResult%20contains%20%22(null)%22%20then%0D%09%09%09return%20false%0D%09%09else%0D%09%09%09set%20x%20to%20the%20length%20of%20%22kMDItemContentType%20%3D%20%5C%22%22%0D%09%09%09set%20the%20indentifierString%20to%20text%20(x%20%2B%201)%20thru%20-2%20of%20queryResult%0D%09%09%09if%20the%20indentifierString%20is%20thisIdentifier%20then%0D%09%09%09%09return%20true%0D%09%09%09end%20if%0D%09%09end%20if%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20checkForIdentifier%0D%0Don%20exportPresentationsToMovies(thesePresentations)%0D%09try%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thesePresentations%0D%09%09%09set%20thisPresentation%20to%20item%20i%20of%20thesePresentations%0D%09%09%09tell%20application%20%22Keynote%22%0D%09%09%09%09activate%0D%09%09%09%09if%20playing%20is%20true%20then%20tell%20front%20document%20to%20stop%0D%09%09%09%09open%20thisPresentation%0D%09%09%09%09set%20the%20documentName%20to%20name%20of%20the%20front%20document%0D%09%09%09%09copy%20my%20deriveFileNameForNewFileInFolder(documentName%2C%20destinationFolder)%20to%20%C2%AC%0D%09%09%09%09%09%7BtargetName%2C%20targetPOSIXpath%7D%0D%09%09%09%09set%20destinationFile%20to%20(targetPOSIXpath%20as%20POSIX%20file)%0D%09%09%09%09with%20timeout%20of%201200%20seconds%20--%2020%20minutes%0D%09%09%09%09%09export%20front%20document%20to%20destinationFile%20%C2%AC%0D%09%09%09%09%09%09as%20QuickTime%20movie%20with%20properties%20%7Bmovie%20format%3Alarge%7D%0D%09%09%09%09end%20timeout%0D%09%09%09%09close%20front%20document%20saving%20no%0D%09%09%09end%20tell%0D%09%09%09display%20notification%20documentName%20with%20title%20%22Keynote%20Movie%20Export%22%0D%09%09end%20repeat%0D%09on%20error%20errorMessage%0D%09%09activate%0D%09%09display%20alert%20%22EXPORT%20ERROR%22%20message%20errorMessage%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20exportPresentationsToMovies%0D%0Don%20deriveFileNameForNewFileInFolder(sourceItemBaseName%2C%20targetFolderHFSAlias)%0D%09--%20UNIX%20routine%20that%20derives%20a%20none-conflicting%20file%20name%0D%09set%20targetFolderPOSIXPath%20to%20(POSIX%20path%20of%20targetFolderHFSAlias)%0D%09set%20incrementSeparator%20to%20%22-%22%0D%09set%20targetExtension%20to%20%22m4v%22%0D%09set%20extensionSeparator%20to%20%22.%22%0D%09%0D%09set%20targetName%20to%20sourceItemBaseName%20%26%20extensionSeparator%20%26%20targetExtension%0D%09set%20targetItemPOSIXPath%20to%20targetFolderPOSIXPath%20%26%20targetName%0D%09set%20the%20fileExistenceStatus%20to%20%C2%AC%0D%09%09(do%20shell%20script%20%22%5B%20-a%20%22%20%26%20(quoted%20form%20of%20targetItemPOSIXPath)%20%26%20%C2%AC%0D%09%09%09%22%20%5D%20%26%26%20echo%20'true'%20%7C%7C%20echo%20'false'%22)%20as%20boolean%0D%09if%20fileExistenceStatus%20is%20true%20then%0D%09%09set%20the%20nameIncrement%20to%201%0D%09%09repeat%0D%09%09%09--%20create%20a%20new%20target%20path%20with%20the%20target%20item%20name%20incremented%0D%09%09%09set%20the%20newName%20to%20%C2%AC%0D%09%09%09%09(the%20sourceItemBaseName%20%26%20incrementSeparator%20%26%20%C2%AC%0D%09%09%09%09%09(nameIncrement%20as%20Unicode%20text)%20%26%20%C2%AC%0D%09%09%09%09%09extensionSeparator%20%26%20targetExtension)%20as%20Unicode%20text%0D%09%09%09set%20targetItemPOSIXPath%20to%20targetFolderPOSIXPath%20%26%20newName%0D%09%09%09set%20the%20fileExistenceStatus%20to%20%C2%AC%0D%09%09%09%09(do%20shell%20script%20%22%5B%20-a%20%22%20%26%20(quoted%20form%20of%20targetItemPOSIXPath)%20%26%20%C2%AC%0D%09%09%09%09%09%22%20%5D%20%26%26%20echo%20'true'%20%7C%7C%20echo%20'false'%22)%20as%20boolean%0D%09%09%09if%20fileExistenceStatus%20is%20true%20then%0D%09%09%09%09set%20the%20nameIncrement%20to%20the%20nameIncrement%20%2B%201%0D%09%09%09else%0D%09%09%09%09set%20the%20targetPOSIXpath%20to%20(targetFolderPOSIXPath%20%26%20newName)%0D%09%09%09%09return%20%7BnewName%2C%20targetPOSIXpath%7D%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09else%0D%09%09set%20the%20targetPOSIXpath%20to%20(targetFolderPOSIXPath%20%26%20targetName)%0D%09%09return%20%7BtargetName%2C%20targetPOSIXpath%7D%0D%09end%20if%0Dend%20deriveFileNameForNewFileInFolder"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">destinationFolder</span> : (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">movies folder</span>)</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codelibrarycommand">run</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- TRIGGERED WHEN USER LAUNCHES DROPLET. PROMPT FOR PRESENTATION FILE(S):</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">theseItems</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;com.apple.iwork.keynote.key&quot; <span class="codelibraryparameter">with prompt</span>  &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>&quot;Pick the Keynote presentation(s) to export to movie:&quot; <b>with</b> <span class="codelibraryparameter">multiple selections allowed</span> )</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">open</span> <span class="codevariable"><span class="codevariable">theseItems</span></span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codelibrarycommand">run</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codelibrarycommand">open</span> <span class="codevariable">theseItems</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- TRIGGERED WHEN USER DRAGS ITEMS ONTO THE DROPLET</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This droplet will export dragged-on Keynote presentation files as movies to the <span class="codeenumeration">movies folder</span>.&quot; &amp; return &amp; return &amp; &quot;The movies will be encoded to MPEG format using H.264 compression.&quot; <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">filesToProcess</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- filter the dragged-on items for Keynote presentation files</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseItems</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisItem</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseItems</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if my</b> <span class="codevariable">checkForIdentifier</span>(<span class="codevariable">thisItem</span>, &quot;com.apple.iwork.keynote.key&quot;) <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">filesToProcess</span> <b>to</b> <span class="codevariable">thisItem</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">filesToProcess</span> <b>is</b> {} <b>then</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;INCOMPATIBLE ITEMS&quot; message &quot;None of the items were Keynote presentations.&quot;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- process the presentations</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">exportPresentationsToMovies</span>(<span class="codevariable">filesToProcess</span>)</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codelibrarycommand">open</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">checkForIdentifier</span>(<span class="codevariable">thisItem</span>, <span class="codevariable">thisIdentifier</span>)</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- uses Spotlight to check for specified item type</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">queryResult</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;mdls -name kMDItemContentType &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codeproperty">quoted form</span> <b>to</b> <b>of the</b> <span class="codeproperty">POSIX path</span> <b>to</b> <b>of</b> <span class="codevariable">thisItem</span>)</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">queryResult</span> <b>contains</b> &quot;(null)&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> <span class="codeproperty">length</span> <b>of</b> &quot;kMDItemContentType = \&quot;&quot;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">indentifierString</span> <b>to</b> <span class="codelibraryclass">text</span> (<span class="codevariable">x</span> + 1) <b>thru</b> -2 <b>of</b> <span class="codevariable">queryResult</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codevariable">indentifierString</span> <b>is</b> <span class="codevariable">thisIdentifier</span> <b>then</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>return</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">checkForIdentifier</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">exportPresentationsToMovies</span>(<span class="codevariable">thesePresentations</span>)</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">thesePresentations</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPresentation</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thesePresentations</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then tell front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>open <span class="codevariable">thisPresentation</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">documentName</span> <b>to</b> <span class="codeproperty">name</span> <b>of the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>copy my</b> <span class="codevariable">deriveFileNameForNewFileInFolder</span>(<span class="codevariable">documentName</span>, <span class="codevariable">destinationFolder</span>) <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codevariable">targetName</span>, <span class="codevariable">targetPOSIXpath</span>}</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">destinationFile</span> <b>to</b> (<span class="codevariable">targetPOSIXpath</span> <b>as</b> POSIX file)</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>with timeout of</b> 1200 <span class="codelibraryclass">seconds</span> <span class="codecomment">-- 20 minutes</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">export</span> <b>front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codevariable">destinationFile</span> &not;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>as</b> <span class="codeenumeration">QuickTime movie</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">movie format</span>:<span class="codeenumeration">large</span>}</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end timeout</b></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">close</span> <b>front</b> <span class="codelibraryparameter">document saving</span> <span class="codeenumeration">no</span></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display notification</span> <span class="codevariable">documentName</span> <span class="codelibraryparameter">with title</span>  &quot;Keynote Movie Export&quot;</td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> tell the front</b> <span class="codelibraryvariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;EXPORT ERROR&quot; message tell the front</b> <span class="codelibraryvariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">exportPresentationsToMovies</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">deriveFileNameForNewFileInFolder</span>(<span class="codevariable">sourceItemBaseName</span>, <span class="codevariable">targetFolderHFSAlias</span>)</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- UNIX routine that derives a none-conflicting file name</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">targetFolderPOSIXpath</span> <b>to</b> (<span class="codeproperty">POSIX path</span> <b>to</b> <b>of</b> <span class="codevariable">targetFolderHFSAlias</span>)</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementSeparator</span> <b>to</b> &quot;-&quot;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">targetExtension</span> <b>to</b> &quot;m4v&quot;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">extensionSeparator</span> <b>to</b> &quot;.&quot;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">targetName</span> <b>to</b> <span class="codevariable">sourceItemBaseName</span> &amp; <span class="codevariable">extensionSeparator</span> &amp; <span class="codevariable">targetExtension</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">targetItemPOSIXpath</span> <b>to</b> <span class="codevariable">targetFolderPOSIXpath</span> &amp; <span class="codevariable">targetName</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">fileExistenceStatus</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;[ -a &quot; &amp; (<span class="codeproperty">quoted form</span> <b>to</b> <b>of</b> <span class="codevariable">targetItemPOSIXpath</span>) &amp; &not;</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>&quot; ] && echo '<span class="codeenumeration">true</span>' || echo '<span class="codeenumeration">false</span>'&quot;) <b>as</b> boolean</td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">fileExistenceStatus</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">nameIncrement</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- create a new target path with the target item name incremented</span></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">newName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(<b>the</b> <span class="codevariable">sourceItemBaseName</span> &amp; <span class="codevariable">incrementSeparator</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>(<span class="codevariable">nameIncrement</span> <b>as</b> Unicode text) &amp; &not;</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codevariable">extensionSeparator</span> &amp; <span class="codevariable">targetExtension</span>) <b>as</b> <span class="codelibraryclass">Unicode text</span></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">targetItemPOSIXpath</span> to <span class="codevariable">targetFolderPOSIXpath</span> &amp; <span class="codevariable">newName</span></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">fileExistenceStatus</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;[ -a &quot; &amp; (<span class="codeproperty">quoted form</span> <b>to</b> <b>of</b> <span class="codevariable">targetItemPOSIXpath</span>) &amp; &not;</td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>&quot; ] && echo '<span class="codeenumeration">true</span>' || echo '<span class="codeenumeration">false</span>'&quot;) <b>as</b> boolean</td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">fileExistenceStatus</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">nameIncrement</span> <b>to the</b> <span class="codevariable">nameIncrement</span> + 1</td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetPOSIXpath</span> to (<span class="codevariable">targetFolderPOSIXpath</span> &amp; <span class="codevariable">newName</span>)</td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>return</b> {<span class="codevariable">newName</span>, <span class="codevariable">targetPOSIXpath</span>}</td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetPOSIXpath</span> to (<span class="codevariable">targetFolderPOSIXpath</span> &amp; <span class="codevariable">targetName</span>)</td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> {<span class="codevariable">targetName</span>, <span class="codevariable">targetPOSIXpath</span>}</td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">deriveFileNameForNewFileInFolder</span></td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-dup-to-images.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-outline.html">New Presentation from Outline</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-image-files.html">New Presentation from Image Files</a></li>
+				<li class="navListSectionItem"><a href="examples-pano-preso.html">Pano to Preso</a></li>
+				<li class="navListSectionItemSelected">Movie Export Droplet</li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItem"><a href="examples-music-helper.html">Music Helper Applet</a></li>
+				<li class="navListSectionItem"><a href="examples-translation-helper-scripts.html">Translation Helper Scripts</a></li>
+				<li class="navListSectionItemSelected"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

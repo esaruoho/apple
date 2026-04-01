@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Script Editor</h2>
+		
+		<p>Since this tutorial is very &ldquo;hands-on,&rdquo; we&rsquo;ll be writing scripts right away. To write a script, you&rsquo;ll use the Script Editor application installed in your system. You can find this application in the AppleScript folder located in the Applications folder on your computer&rsquo;s main hard drive. Navigate to this folder now and double-click the Script Editor icon to launch the application.</p>
+		
+		<p class="note">NOTE: The following description and illustrations are for the Script Editor application included in Mac OSX 10.5. Earlier versions will have a different design.</p>
+
+		<img src="gfx/CH01_image02.jpg" width="186" height="168" align="top" class="across">
+		
+		<p class="imagecaption">The Script Editor application icon.</p>
+
+		<p>After starting up, the Script Editor application displays a multi-paned window known as a script window. This script window comprises two panes, the top pane containing the script text, and the bottom pane containing either the script description, the script result, or the script log, depending on which tab below the pane has been selected.</p>
+		
+		<a href="gfx/CH01_image03.jpg" rel="lightbox" title="A script window in the Script Editor application."><img src="gfx/CH01_image03.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">A script window in the Script Editor application.</p>
+		
+		<p>By default, the script window is rather small, so you may wish expand its size before proceeding with this tutorial. Please note that the Script Editor and other AppleScript tools are covered in detail elsewhere in this book.</p>
+		
+		<h2>Our First Script</h2>		
+		
+		<p>You&rsquo;ll begin the process of learning AppleScript by writing a series a simple script commands in the form of a &ldquo;tell statements.&rdquo; A <span class="inlinecode">tell statement</span> is a single line script beginning with the verb: <span class="inlinecode">tell</span>. This verb is used to direct script actions at a specific application or scriptable object. A <span class="inlinecode">tell statement</span> is composed of two parts:</p> 
+		
+		<ol>
+			<li>A reference to the object to be scripted, and </li>
+			<li>The action to be performed.</li>
+		</ol>
+ 
+		<p>Using this grammatical format or syntax, we can write scripts instructing the Finder to perform whatever actions we desire. Here's our first script:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20close%20every%20window"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="A simple script statement to close all open Finder windows."></a><span class="script-caption">A simple script statement to close all open Finder windows.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> close <b>every</b> window</p>
+		
+		<p>Enter this script in the top pane of the Script Editor script window exactly as show (be sure to encase the word &ldquo;Finder&rdquo; in straight quotes). Click the Compile button on the script window to confirm that it has been written correctly and to prepare the script for use.</p> 
+
+		<p>Next, click the <span class="inlinecode">Run</span> button to play your script. The operating system will read the script and send the appropriate commands to the Finder application, which will then follow the instruction to close any open windows.</p> 
+
+		<p>Congratulations, you&rsquo;ve written and run your first AppleScript script!</p>
+
+		<p>Note that the word &ldquo;Finder&rdquo; is enclosed in quotation marks in the script. Names and textual data are always quoted in scripts. This is done to indicate to the Script Editor that the quoted material is textual data and not to be considered as commands or instructions when the script is compiled in preparation for execution.</p>
+
+		<p>Delete the previous script from the script window, then enter, compile, and run the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20open%20the%20startup%20disk"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to open the hard drive that contains the currently running System folder.<br>&nbsp;<br><br></span>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> open <b>the</b> startup disk</p>
+		
+		<p>A new Finder window will now appear on the desktop displaying the contents of the startup disk. We&rsquo;ll use this newly opened window as we examine the properties of a Finder window.</p>
+		
+		<a href="gfx/CH01_image04.jpg" rel="lightbox" title="Finder windows display the contents of folders or disks."><img src="gfx/CH01_image04.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">Finder windows display the contents of folders or disks.</p>
+		
+		<h3>A Word about Finder Windows</h3>
+	
+		<p>Finder windows are different from other windows used by the Finder application, in that they display the contents of folders and, may contain a Toolbar and Sidebar. The remaining script examples of this chapter we will use the term Finder window instead of the generic term window when referring to Finder windows.</p>
+
+
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li class="hi">The Script Editor</li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

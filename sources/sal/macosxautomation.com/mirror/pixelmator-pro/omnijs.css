@@ -1,0 +1,24 @@
+div.script-content {
+	position: fixed;
+	visibility: hidden;
+	overflow: hidden;
+	border:1px solid #CCC;
+	background-color:#F9F9F9;
+	border:1px solid #333;
+	padding:5px;
+}
+#code-view {
+	margin-left: 18px;
+	margin-top: 18px;
+	padding: 18px;
+	width: 96%;
+	height: 60%;
+	-webkit-user-select: text;
+}
+#statusbar {margin-left: 36px;}
+#statusbar button {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}

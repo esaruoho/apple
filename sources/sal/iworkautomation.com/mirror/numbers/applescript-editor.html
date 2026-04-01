@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting, tables">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: OPEN DICTIONARY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Opening the Numbers Dictionary</div>
+											
+			<p>Every scriptable application on your computer contains a scripting dictionary that details all of the scriptable objects and commands that it understands and supports. To access the dictionary for the Numbers application, do the following:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Launch the <b>AppleScript Editor</b> application from the <b>Utilities</b> folder (found in the Applications folder). From the AppleScript Editor&rsquo;s <b>File</b> menu, select the menu item titled: <b>Open Dictionary&hellip;</b> (&#8679;&#8984;-O). The <b>Open Dictionary</b> dialog will appear. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="centered" alt="open-dictionary-dialog" src="gfx/open-dictionary-dialog.png" width="624">
+			
+			<p>The <b>Open Dictionary</b> dialog <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> displays all of the scriptable applications on your computer. The <b>Numbers</b> application will be in the displayed list.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>To open the <b>Numbers</b> scripting dictionary, select the <b>Numbers</b> application from the list of applications, and click the <b>Choose</b> button. <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span></p>
+			
+		</div>
+		<!-- END SEGMENT: OPEN DICTIONARY -->
+		
+		<!-- BEGIN SEGMENT: DICTIONARY VIEWER -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Dictionary Viewer</div>
+											
+			<p>The <b>Dictionary Viewer</b> window displays an application&rsquo;s scripting terminology. It shows the scripting <i>commands</i>, <i>classes</i> (scriptable objects), and their <i>elements</i> and <i>properties</i>, in a single window. The following callouts describe the various components of the <b>Dictionary Viewer</b>:</p>
+			
+			<img class="centered" alt="dictionary-viewer" src="gfx/dictionary-viewer.png" width="624">
+			
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Suites</b>&nbsp;<img alt="osa_suite" src="gfx/osa_suite.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;For organizational purposes, the terminology in scripting dictionaries is usually divided into sub-sets called <i>suites</i>. There are suites, such as the <i>Standard Suite</i>, that are common to most applications, and there are suites that are unique to the particular application, such as the <i>Numbers &lsquo;09 Compatibility Suite</i> shown selected in the illustration above.</p>
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Commands</b>&nbsp;<img alt="osa_command" src="gfx/osa_command.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;The middle column in the <b>Dictionary Viewer</b> window displays the contents of the suite selected in the left column. At the top of the middle column are the commands (verbs) used to manipulate the classes (objects) of the suite.</p>
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Classes</b>&nbsp;<img alt="osa_class" src="gfx/osa_class.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;Below the commands are the classes (objects) of the selected suite. These are the building-block elements of scripting.</p>
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>Selected Class</b>&nbsp;<img alt="osa_class" src="gfx/osa_class.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;In the illustration above, the <i>table</i> class is selected, displaying its <i>elements</i> and <i>properties</i> in the right column.</p>
+			<p class="caption-callout"><span class="numeric-callout">(5)</span>&nbsp;<b>Elements</b>&nbsp;<img alt="osa_element" src="gfx/osa_element.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;An <i>element</i> is simply a <i>class</i> that is contained by another <i>class</i>. All <i>classes</i>, except the <i>application class</i>, are <i>elements</i> of another <i>class</i>. In the <b>Dictionary Viewer</b> window, the <i>elements</i> of the <i>class</i> selected in the middle column are displayed at the top of the right column.</p>
+			<p class="caption-callout"><span class="numeric-callout">(6)</span>&nbsp;<b>Properties</b>&nbsp;<img alt="osa_property" src="gfx/osa_property.png" width="16" height="16" style="vertical-align:text-top;background-color:white;">&nbsp;<i>Properties</i> are the defining qualities of a <i>class</i>, such as its <i>name</i>, <i>height</i>, <i>width</i>, etc. The <i>properties</i> of the <i>class</i> selected in the middle column are displayed at the bottom of the right column.</p>
+			<p class="caption-callout"><span class="numeric-callout">(7)</span>&nbsp;<b>Definitions</b>&nbsp;&bull;&nbsp;Definitions not only contain the hierarchical information shown in the upper pane of the <b>Dictionary Viewer</b> window, but also contain the specifics about the <i>class</i> or <i>command</i> defined. By default, the definition for the selected <i>class</i> or <i>command</i> appears in the bottom pane of the <b>Dictionary Viewer</b> window.</p>
+		</div>
+		<!-- END SEGMENT: DICTIONARY VIEWER -->
+		
+		<!-- BEGIN SEGMENT: DEFINITIONS -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Definitions</div>	
+			<p>For your convenience, each of the sections on this Numbers scripting website displays any relevant segment of the <b>Numbers</b> dictionary on the first page of the topic. For example, here is the definition for the <b>table</b> class, shown in the illustration above:</p>
+		
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">table</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: A table in a sheet</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">cells</span>, <span class="dictionary-class">columns</span>, <span class="dictionary-class">ranges</span>, <span class="dictionary-class">rows</span>; contained by <span class="dictionary-class">sheets</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">cell range</span> (&nbsp;<span class="dictionary-class">range</span>, r/o&nbsp;) : The range describing every cell in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">column count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of columns in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">filtered</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether the table is currently filtered.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : The table&rsquo;s name.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">row count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of rows in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">selection range</span> (&nbsp;<span class="dictionary-class">range</span>&nbsp;) : The cells currently selected in the table.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span>, <span class="dictionary-verb">sort</span></p>
+			</div>
+			
+			<p>The <i>class</i> (scriptable object) definitions contain (from the top down):</p>
+			
+			<ul>
+				<li>The name of the class, and its definition</li>
+				<li>An optional list of the <span style="font-variant:small-caps;">elements</span> (other classes) contained by the class. For example, a table contains columns, rows, cells, and ranges, and is itself contained by sheets.</li>
+				<li>An optional list of the <span style="font-variant:small-caps;">properties</span> of the class. The name of each property is followed by a description (in parens) of the data type of its value, whether the property&rsquo;s value is read-only (r/o), and a definition of the property. For example, the <i>filtered</i> property has a <i>value</i> that is a <i>boolean</i> (true or false), indicating whether or not the table has had filtering applied to it.</li>
+				<li>A list of the commands (<span style="font-variant:small-caps;">responds to</span>) that can be used to target the class. There may be other relevant commands (verbs) that are not included in this list. For example, the commands <i>get</i> and <i>set</i>, which are used to retrieve and apply the <i>value</i> of the <i>property</i>, are an implied part the AppleScript language, and don&rsquo;t usually appear in the <span style="font-variant:small-caps;">responds to</span> list.</li>
+			</ul>
+		</div>
+		<!-- END SEGMENT: DEFINITIONS -->
+		
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="script-menu.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="hi"><a href="automation-utilities.html">Automation Utilities</a></li>
+				<li class="navListSectionItemSelected">Viewing the Numbers Dictionary</li>
+				<li class="navListSectionItem"><a href="script-menu.html">The Script Menu</a></li>
+				<li class="navListSectionItem"><a href="services-support.html">Numbers &amp; Services</a></li>
+				<li class="navListSectionItem"><a href="application-developers.html">Running Numbers Scripts from 3rd-Party Applications</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

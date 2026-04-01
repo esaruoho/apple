@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Droplets</h2>
+		
+		<p>Droplets are specialized AppleScript applets which are designed to process items dragged onto them. Their icon contains a downward pointing arrow indicating their status as a droplet.</p>
+		
+		<img src="gfx/droplet.png" width="128" height="128" class="across">
+		
+		<p>Droplets are written in a specific manner using the <span class="inlinecode">on open</span> handler. The following examples can be used as templates for easily creating your own droplets.</p>
+		
+		<p class="note">If you prefer, you can <a href="../pkg/droplet-templates.zip" target="_blank"><font color="#6699CC">download</font></a> a complete set of pre-formed script droplet templates for files, folders, images, and movies.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Droplet for Processing Dragged-on Files</h3></a>
+		
+		<p>This droplet will process only files which have been dragged onto its icon. It will not process folders, alias files, or files within folders.</p>
+		
+		<p>To use this sub-routine, put the file types of the files you want to process into the empty <span class="inlinecode">type_list</span> list, the matching name extensions into the empty <span class="inlinecode">extension_list</span> list, the matching type identifiers into the <span class="inlinecode">typeIDs_list</span>,and put your file processing routines within the <span class="inlinecode">process_item</span> sub-routine.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=property%20type_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22PICT%22%2C%20%22JPEG%22%2C%20%22TIFF%22%2C%20%22GIFf%22%7D%20%0Dproperty%20extension_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22txt%22%2C%20%22text%22%2C%20%22jpg%22%2C%20%22jpeg%22%7D%2C%20NOT%3A%20%7B%22%2Etxt%22%2C%20%22%2Etext%22%2C%20%22%2Ejpg%22%2C%20%22%2Ejpeg%22%7D%0Dproperty%20typeIDs_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22public%2Ejpeg%22%2C%20%22public%2Etiff%22%2C%20%22public%2Epng%22%7D%0D%0D%2D%2D%20This%20droplet%20processes%20files%20dropped%20onto%20the%20applet%20%0Don%20open%20these_items%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20these_items%0D%09%09set%20this_item%20to%20item%20i%20of%20these_items%0D%09%09set%20the%20item_info%20to%20info%20for%20this_item%0D%09%09try%0D%09%09%09set%20this_extension%20to%20the%20name%20extension%20of%20this_info%0D%09%09on%20error%0D%09%09%09set%20this_extension%20to%20%22%22%0D%09%09end%20try%0D%09%09try%0D%09%09%09set%20this_filetype%20to%20the%20file%20type%20of%20this_info%0D%09%09on%20error%0D%09%09%09set%20this_filetype%20to%20%22%22%0D%09%09end%20try%0D%09%09try%0D%09%09%09set%20this_typeID%20to%20the%20type%20identifier%20of%20this_info%0D%09%09on%20error%0D%09%09%09set%20this_typeID%20to%20%22%22%0D%09%09end%20try%0D%09%09if%20%28folder%20of%20the%20item_info%20is%20false%29%20and%20%28alias%20of%20the%20item_info%20is%20false%29%20and%20%28%28this_filetype%20is%20in%20the%20type_list%29%20or%20%28this_extension%20is%20in%20the%20extension_list%29%20or%20%28this_typeID%20is%20in%20typeIDs_list%29%29%20then%0D%09%09%09process_item%28this_item%29%0D%09%09end%20if%0D%09end%20repeat%0Dend%20open%0D%0D%2D%2D%20this%20sub%2Droutine%20processes%20files%20%0Don%20process_item%28this_item%29%0D%09%2D%2D%20NOTE%20that%20the%20variable%20this_item%20is%20a%20file%20reference%20in%20alias%20format%20%0D%09%2D%2D%20FILE%20PROCESSING%20STATEMENTS%20GOES%20HERE%20%0Dend%20process_item"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A droplet that will process dragged-on files of specified tyes:<br>&nbsp;<br><br></span>property <span class="codevariable">type_list</span> : {} <span class="codecomment">-- eg: {&quot;PICT&quot;, &quot;JPEG&quot;, &quot;TIFF&quot;, &quot;GIFf&quot;} </span><BR>
+		property <span class="codevariable">extension_list</span> : {} <span class="codecomment">-- eg: {&quot;txt&quot;, &quot;text&quot;, &quot;jpg&quot;, &quot;jpeg&quot;}, NOT: {&quot;.txt&quot;, &quot;.text&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;}</span><BR>
+		property <span class="codevariable">typeIDs_list</span> : {} <span class="codecomment">-- eg: {&quot;public.jpeg&quot;, &quot;public.tiff&quot;, &quot;public.png&quot;}</span><BR>
+		<BR>
+		<span class="codecomment">-- This droplet processes files dropped onto the applet </span><BR>
+		<b>on</b> open <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_info</span> <b>to</b> info for <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to the</b> name extension <b>of</b> <span class="codevariable">this_info</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to the</b> file type <b>of</b> <span class="codevariable">this_info</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to the</b> type identifier <b>of</b> <span class="codevariable">this_info</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> (folder <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> false) and (alias <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> false) and &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>((<span class="codevariable">this_filetype</span> <b>is in the</b> <span class="codevariable">type_list</span>) or (<span class="codevariable">this_extension</span> <b>is in the</b> <span class="codevariable">extension_list</span>) or &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>(<span class="codevariable">this_typeID</span> <b>is in</b> <span class="codevariable">typeIDs_list</span>)) <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">process_item</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<b>end</b> open<BR>
+		<BR>
+		<span class="codecomment">-- this sub-routine processes files </span><BR>
+		<b>on</b> <span class="codevariable">process_item</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- NOTE that the variable <span class="codevariable">this_item</span> is a file reference in alias format </span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- FILE PROCESSING STATEMENTS GOES HERE </span><BR>
+		<b>end</b> <span class="codevariable">process_item</span></p>
+		
+		<hr><a id="1001" name="1001" title="1001"><h3>Droplet for Processing Dragged-on Files and Folder Containing Files and Folders</h3></a>
+		
+		<p>This droplet will process files which have been dragged onto its icon, as well as look inside folders and folders within folders for files which match the indicated file types.</p>
+
+		<p>To use this sub-routine, put the file types of the files you want to process into the empty <span class="inlinecode">type_list</span> list, the matching name extensions into the empty <span class="inlinecode">extension_list</span> list, the matching type identifiers into the <span class="inlinecode">typeIDs_list</span>,and put your file processing routines within the <span class="inlinecode">process_item</span> sub-routine.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=property%20type_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22PICT%22%2C%20%22JPEG%22%2C%20%22TIFF%22%2C%20%22GIFf%22%7D%20%0Dproperty%20extension_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22txt%22%2C%20%22text%22%2C%20%22jpg%22%2C%20%22jpeg%22%7D%2C%20NOT%3A%20%7B%22%2Etxt%22%2C%20%22%2Etext%22%2C%20%22%2Ejpg%22%2C%20%22%2Ejpeg%22%7D%0Dproperty%20typeIDs_list%20%3A%20%7B%7D%20%2D%2D%20eg%3A%20%7B%22public%2Ejpeg%22%2C%20%22public%2Etiff%22%2C%20%22public%2Epng%22%7D%0D%0D%2D%2D%20This%20droplet%20processes%20files%20dropped%20onto%20the%20applet%20%0Don%20open%20these_items%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20these_items%0D%09%09set%20this_item%20to%20item%20i%20of%20these_items%0D%09%09set%20the%20item_info%20to%20info%20for%20this_item%0D%09%09if%20folder%20of%20the%20item_info%20is%20true%20then%0D%09%09%09process_folder%28this_item%29%0D%09%09else%0D%09%09%09try%0D%09%09%09%09set%20this_extension%20to%20the%20name%20extension%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_extension%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09try%0D%09%09%09%09set%20this_filetype%20to%20the%20file%20type%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_filetype%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09try%0D%09%09%09%09set%20this_typeID%20to%20the%20type%20identifier%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_typeID%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09if%20%28folder%20of%20the%20item_info%20is%20false%29%20and%20%28alias%20of%20the%20item_info%20is%20false%29%20and%20%28%28this_filetype%20is%20in%20the%20type_list%29%20or%20%28this_extension%20is%20in%20the%20extension_list%29%20or%20%28this_typeID%20is%20in%20typeIDs_list%29%29%20then%0D%09%09%09%09process_item%28this_item%29%0D%09%09%09end%20if%0D%09%09end%20if%0D%09end%20repeat%0Dend%20open%0D%0D%2D%2D%20this%20sub%2Droutine%20processes%20folders%20%0Don%20process_folder%28this_folder%29%0D%09set%20these_items%20to%20list%20folder%20this_folder%20without%20invisibles%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20these_items%0D%09%09set%20this_item%20to%20alias%20%28%28this_folder%20as%20Unicode%20text%29%20%26%20%28item%20i%20of%20these_items%29%29%0D%09%09set%20the%20item_info%20to%20info%20for%20this_item%0D%09%09if%20folder%20of%20the%20item_info%20is%20true%20then%0D%09%09%09process_folder%28this_item%29%0D%09%09else%0D%09%09%09try%0D%09%09%09%09set%20this_extension%20to%20the%20name%20extension%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_extension%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09try%0D%09%09%09%09set%20this_filetype%20to%20the%20file%20type%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_filetype%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09try%0D%09%09%09%09set%20this_typeID%20to%20the%20type%20identifier%20of%20item_info%0D%09%09%09on%20error%0D%09%09%09%09set%20this_typeID%20to%20%22%22%0D%09%09%09end%20try%0D%09%09%09if%20%28alias%20of%20the%20item_info%20is%20false%29%20and%20%28%28this_filetype%20is%20in%20the%20type_list%29%20or%20%28this_extension%20is%20in%20the%20extension_list%29%20or%20%28this_typeID%20is%20in%20typeIDs_list%29%29%20then%0D%09%09%09%09process_item%28this_item%29%0D%09%09%09end%20if%0D%09%09end%20if%0D%09end%20repeat%0Dend%20process_folder%0D%0D%2D%2D%20this%20sub%2Droutine%20processes%20files%20%0Don%20process_item%28this_item%29%0D%09%2D%2D%20NOTE%20that%20the%20variable%20this_item%20is%20a%20file%20reference%20in%20alias%20format%20%0D%09%2D%2D%20FILE%20PROCESSING%20STATEMENTS%20GOES%20HERE%20%0Dend%20process_item"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script droplet that processes recursively through folder hierarchies:<br>&nbsp;<br><br></span>property <span class="codevariable">type_list</span> : {} <span class="codecomment">-- eg: {&quot;PICT&quot;, &quot;JPEG&quot;, &quot;TIFF&quot;, &quot;GIFf&quot;} </span><BR>
+		property <span class="codevariable">extension_list</span> : {} <span class="codecomment">-- eg: {&quot;txt&quot;, &quot;text&quot;, &quot;jpg&quot;, &quot;jpeg&quot;}, NOT: {&quot;.txt&quot;, &quot;.text&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;}</span><BR>
+		property <span class="codevariable">typeIDs_list</span> : {} <span class="codecomment">-- eg: {&quot;public.jpeg&quot;, &quot;public.tiff&quot;, &quot;public.png&quot;}</span><BR>
+		<BR>
+		<span class="codecomment">-- This droplet processes files dropped onto the applet </span><BR>
+		<b>on</b> open <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_info</span> <b>to</b> info for <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> folder <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> true <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">process_folder</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to the</b> name extension <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to the</b> file type <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to the</b> type identifier <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> (folder <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> false) and (alias <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> false) and &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>((<span class="codevariable">this_filetype</span> <b>is in the</b> <span class="codevariable">type_list</span>) or (<span class="codevariable">this_extension</span> <b>is in the</b> <span class="codevariable">extension_list</span>) or &not;<BR>
+		<span style="float:left; width:50px;">&nbsp;</span>(<span class="codevariable">this_typeID</span> <b>is in</b> <span class="codevariable">typeIDs_list</span>)) <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codevariable">process_item</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<b>end</b> open<BR>
+		<BR>
+		<span class="codecomment">-- this sub-routine processes folders </span><BR>
+		<b>on</b> <span class="codevariable">process_folder</span>(<span class="codevariable">this_folder</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">these_items</span> <b>to</b> list folder <span class="codevariable">this_folder</span> <b>without</b> invisibles<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">these_items</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> alias ((<span class="codevariable">this_folder</span> <b>as</b> Unicode text) &amp; (item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">these_items</span>))<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_info</span> <b>to</b> info for <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> folder <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> true <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">process_folder</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to the</b> name extension <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_extension</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to the</b> file type <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_filetype</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to the</b> type identifier <b>of</b> <span class="codevariable">item_info</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_typeID</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> (alias <b>of the</b> <span class="codevariable">item_info</span> <b>is</b> false) and ((<span class="codevariable">this_filetype</span> <b>is in the</b> <span class="codevariable">type_list</span>) or &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>(<span class="codevariable">this_extension</span> <b>is in the</b> <span class="codevariable">extension_list</span>) or (<span class="codevariable">this_typeID</span> <b>is in</b> <span class="codevariable">typeIDs_list</span>)) <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codevariable">process_item</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<b>end</b> <span class="codevariable">process_folder</span><BR>
+		<BR>
+		<span class="codecomment">-- this sub-routine processes files </span><BR>
+		<b>on</b> <span class="codevariable">process_item</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- NOTE that the variable <span class="codevariable">this_item</span> is <span class="codevariable">a</span> file reference in alias format </span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- FILE PROCESSING STATEMENTS GOES HERE </span><BR>
+		<b>end</b> <span class="codevariable">process_item</span></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li class="hi">Finder Droplets</li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+				<li><a href="../pkg/Localizable_Applet.zip">Localized Applet Bundle</a></li>
+				<li><a href="../pkg/Mail_IP.zip">Mail Computer's IP Address</a></li>
+				<li><a href="../pkg/database_events.zip">Database Events Examples</a></li>
+				<li><a href="../pkg/prefsexample.zip">Using UNIX Application Defaults with Scripts</a></li>
+			</ul>
+		</div>
+
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

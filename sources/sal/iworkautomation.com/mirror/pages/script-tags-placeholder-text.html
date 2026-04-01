@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Placeholder Text</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for using script tags with placeholder text in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Placeholder Text &amp; Script Tags</div>
+			<p>In the world of business, companies and organizations often create and distribute documents created from templates possessing a design esthetic that reflects the company&rsquo;s brand identity. Template-based publishing enables staff to produce quality documentation in a timely and efficient manner. An essential element of template design is in the use of text placeholders that are replaced with custom data when the template is exported.</p>
+			
+			<p>To enable template publishing, Pages includes scripting support for quickly locating and replacing text placeholders within a document. This support is exposed through the <span class="dictionary-class">placeholder text</span> class.</p>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Placeholder Text Class</p>
+							
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">placeholder text</span> <span style="font-size: 12px;"><i>n&nbsp;</i> : A contiguous range of text, identified as a selectable entity, that can be replaced by the user or a script.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">documents</span>, <span class="codelibraryclass">rich text</span>, and <span class="codelibraryclass">paragraphs</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">tag</span> (<span class="dictionary-class">rich text</span> ) r/o: A user-supplied text string that can identify a specific placeholder to a script. NOTE: if no tag is assigned to the placeholder, its text will be used as its tag.</p>
+			</div>
+			
+			<p>An instance of the <span class="dictionary-class">placeholder text</span> class is a temporary entity in that once its contents have been replaced, it ceases to exist. Since text placeholders have no contents property, their text can be changed through simple use of the <span class="codelibrarycommand">set</span> verb.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: Text placeholders used within tables or charts are not &ldquo;visible&rdquo; to scripts.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Script Examples</p>
+									
+			<p>This example script will create and populate the text and image for a new Tab Flyer document. It uses the <span class="codeproperty">tag</span> property of the <span class="codelibraryclass">placeholder text</span> object to prompt the user to supply the replacement text for each of the placeholders. Once the placeholders are replaced, the script prompts the user for the replacement image file.</p>
+			
+			<video style="margin-bottom:24px;" width="624" height="436" controls poster="gfx/tab-flyer-movie-placeholder.jpg">
+			  <source src="Tab-Flyer-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+			
+			<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Tab Flyer Builder</td></tr>
+			<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%7Bdocument%20template%3Atemplate%20%22Tab%20Flyer%22%7D%0D%09tell%20thisDocument%0D%09%09--%20GET%20ALL%20TAGS%0D%09%09set%20theseTags%20to%20the%20tag%20of%20every%20placeholder%20text%0D%09%09%0D%09%09--%20FILTER%20FOR%20UNIQUE%20TAGS%0D%09%09set%20uniqueTags%20to%20%7B%7D%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseTags%0D%09%09%09set%20thisTag%20to%20item%20i%20of%20theseTags%0D%09%09%09if%20thisTag%20is%20not%20in%20uniqueTags%20then%0D%09%09%09%09set%20the%20end%20of%20uniqueTags%20to%20thisTag%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09%0D%09%09--%20PROMPT%20USER%20FOR%20REPLACEMENT%20TEXT%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20uniqueTags%0D%09%09%09set%20thisTag%20to%20item%20i%20of%20uniqueTags%0D%09%09%09display%20dialog%20%22Enter%20the%20replacement%20text%20for%20this%20tag%3A%22%20%26%20%C2%AC%0D%09%09%09%09return%20%26%20return%20%26%20thisTag%20default%20answer%20%22%22%20buttons%20%C2%AC%0D%09%09%09%09%7B%22Cancel%22%2C%20%22Skip%22%2C%20%22OK%22%7D%20default%20button%203%0D%09%09%09copy%20the%20result%20to%20%7Bbutton%20returned%3AbuttonPressed%2C%20text%20returned%3AreplacementString%7D%0D%09%09%09if%20buttonPressed%20is%20%22OK%22%20then%0D%09%09%09%09set%20(every%20placeholder%20text%20whose%20tag%20is%20thisTag)%20to%20replacementString%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09%0D%09%09--%20PROMPT%20USER%20FOR%20REPLACEMENT%20IMAGE%0D%09%09set%20thisImage%20to%20the%20first%20image%0D%09%09set%20thisImageFile%20to%20%C2%AC%0D%09%09%09(choose%20file%20of%20type%20%22public.image%22%20with%20prompt%20%C2%AC%0D%09%09%09%09%22Pick%20the%20flyer%20image%3A%22%20default%20location%20(path%20to%20pictures%20folder))%0D%09%09set%20file%20name%20of%20thisImage%20to%20thisImageFile%0D%09end%20tell%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codelibraryclass">document template</span>:<span class="codelibraryclass">template</span> &quot;Tab Flyer&quot;}</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- GET ALL TAGS</span></td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseTags</span> <b>to the</b> <span class="codelibraryclass">tag</span> <b>of every</b> <span class="codelibraryclass">placeholder text</span></td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- FILTER FOR UNIQUE TAGS</span></td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">uniqueTags</span> <b>to</b> {}</td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseTags</span></td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTag</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseTags</span></td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTag</span> <b>is not in</b> <span class="codevariable">uniqueTags</span> <b>then</b></td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">uniqueTags</span> <b>to</b> <span class="codevariable">thisTag</span></td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- PROMPT USER FOR REPLACEMENT TEXT</span></td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">uniqueTags</span></td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTag</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">uniqueTags</span></td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Enter the replacement text for this tag:&quot; &amp; &not;</td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; <span class="codevariable">thisTag</span> <span class="codelibraryparameter">default answer</span> &quot;&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Skip&quot;, &quot;OK&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>copy the</b> <span class="codelibraryclass">result</span> <b>to</b> {<span class="codelibraryparameter">button returned</span>:<span class="codevariable">buttonPressed</span>, <span class="codelibraryparameter">text returned</span>:<span class="codevariable">replacementString</span>}</td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">buttonPressed</span> <b>is</b> &quot;OK&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> (<b>every</b> <span class="codelibraryclass">placeholder text</span> <b>whose</b> <span class="codelibraryclass">tag</span> <b>is</b> <span class="codevariable">thisTag</span>) <b>to</b> <span class="codevariable">replacementString</span></td></tr>
+			<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">29</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- PROMPT USER FOR REPLACEMENT IMAGE</span></td></tr>
+			<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to the first</b> <span class="codelibraryclass">image</span></td></tr>
+			<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;public.image&quot; <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+			<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;Pick the flyer image:&quot; <span class="codelibraryparameter">default location</span> (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">pictures folder</span>))</td></tr>
+			<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">file name</span> <b>of</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codevariable">thisImageFile</span></td></tr>
+			<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="script-tags-data-merge.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi"><a href="text-item.html">Text Item</a></li>
+				<li class="navListSectionItemSelected">Placeholder Text</li>
+				<li class="navListSectionItem"><a href="script-tags-data-merge.html">Data Merge</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

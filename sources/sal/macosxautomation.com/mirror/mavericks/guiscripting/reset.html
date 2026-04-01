@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS X: Reset Accessibility Access List</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Mavericks, UI Scripting, GUI Scripting, Accessibility">
+	<META NAME="Description" CONTENT="Free script for resetting the Accessibility Access List in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: APPLET -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The Reset Accessibility List Applet</div>
+		
+			<p>As a script developer, who creates numerous test  and example applets, you may find that the Accessibility Access List becomes cluttered with items that are no longer in active use. Since this system preference contains no options for deleting items from the list, you may need to use the tool provided on this page, to reset and clear the list.</p>
+			
+			<p class="segment-note"><b>IMPORTANT</b>: The <b>Accessibility Access List</b> should only be reset if absolutely necessary. If you&rsquo;re not sure it is necessary, then don&rsquo;t reset.</p>
+
+			<p class="segment-note"><a href="reset-accessibility-access.zip"><b>Download</b></a> and launch the <b>Reset Accessibility List</b> applet.</p>
+			
+			<p>Once launched, the applet displays the following dialog:</p>
+		
+			<img alt="tccresetsplash" class="centered" src="gfx/tccresetsplash.png" width="534" height="312">
+			
+			<p>Click the <b>Reset</b> button in the dialog, and the Accessibility Access List will cleared to contain no default items: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="emptyaccessibilitylist" src="gfx/emptyaccessibilitylist.png" width="624" height="508">
+			
+		</div>
+		<!-- BEGIN SEGMENT: APPLET -->
+
+		<!-- BEGIN SEGMENT: APPLET -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The Setup Automation Accessibility Applet</div>
+			<p>If you plan on using AppleScript and System Events to query and control the user interface, you&rsquo;ll want to add the relevant OS automation tools to the accessibility access list. The process of adding an application to the access list, involves the action of dragging the icon of an application into the list view. For security reasons, this must be performed manually by a user with administrative access.</p>
+			
+			<p>To make it easier to locate, select, and add the built-in OS automation tools, the <b>Setup Automation Accessibility Applet</b> will open the Accessibility section of the Privacy preference pane, and reveal the automation application files on the desktop, ready for you to add to the list.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;<a href="add-automation-applet.zip">Download</a> and run the <b>Setup Automation Accessibility</b> applet.</p>
+			
+			<p>Upon launching, the applet will display the following dialog, listing the automation applications capable of implementing user-interface (UI) scripting:</p>
+		
+			<img alt="revealautomationappssplash" class="centered" src="gfx/revealautomationappssplash.png" width="534" height="340">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the <b>Continue</b> button and the applet will open the <b>System Preferences</b> application and display the following dialog:</p>
+			
+			<img alt="accessibilityaddlistsplash" class="centered" src="gfx/accessibilityaddlistsplash.png" width="534" height="480">
+			
+			<p>Click the <b>OK</b> button in the dialog <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> and a new window containing the icons of the automation applications, will be displayed in the Finder: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="finderwindow" src="gfx/finderwindow.png" width="440">
+			
+			<p>To add the automation applications to the Accessibility Access List, select the applications in the Finder window, and drag their icons into system preferences window: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="dragapps" src="gfx/dragapps.png" width="624" height="508">
+			
+			<p>Release the cursor press, and the automation applications will now appear in the Accessibility Access List. The final step, is to secure the preference pane by clicking the lock icon in the lower left of the preferences window: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+		
+			<img class="centered" alt="drag-complete" src="gfx/drag-complete.png" width="624" height="508">
+		</div>
+		<!-- BEGIN SEGMENT: APPLET -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li class="hi">GUI Scripting</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li class="hi">Reset Accessibility Access List</li>
+				</ol>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

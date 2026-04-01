@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Position Property</h2>
+		
+		<p>The value of the <span class="dictionary-term">position</span> property indicates where a Finder window is placed on the desktop. Its value is displayed as a list of two numbers describing the position of the top left corner of the Finder window in relation to the top left corner of the desktop display. The value of the position property can be both read and edited.</p>
+		
+		<p>Delete the previous script from the script window, then enter, compile, and run the following script:</p>
+		
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20position%20of%20the%20front%20Finder%20window"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to extract the position of the front Finder window.<br>&nbsp;<br>&nbsp;<br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> position <b>of the front</b> Finder window<BR><span class="codecomment">--> returns a list of two numbers, similar to: {97, 364}</span></p>
+		
+		<p>The result of the script is a list of two numbers describing the window’s position relative to the top left point of the desktop display.</p>
+
+		<p>In AppleScript, lists are enclosed in curly braces with each list item separated by a comma. Lists begin with the open brace &ldquo;{&rdquo; character and end with the close brace &ldquo;}&rdquo; character. AppleScript lists can contain any kind of information, such as text strings, numbers, references, or any combination of data types.</p>
+		
+
+		<p>In a position list, the first list item is a number describing the horizontal distance in pixels from the left side of the desktop display. The second list item is a number describing the vertical distance in pixels from the top of the desktop display. Together, these two numbers describe the specific point on the screen where the top left of the window begins.</p>
+		
+		<p>Let&rsquo;s change the value of the position property of the front Finder window to move the window near the top left of the screen.</p>
+		
+		<p>Delete the previous script from the script window, then enter, check, and run the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B94%2C%20134%7D"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> position <b>of the front</b> Finder window <b>to</b> {94, 134}</p>
+		
+		<p>The front Finder window has been moved so that its top-left corner is now 94 pixels from the left side of the Desktop and 134 pixels from the top of the Desktop.</p>
+		
+		<p>To move the window toward the right side of the Desktop, increase the horizontal offset by adding to the first value in the position list, as shown in this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B300%2C%20134%7D"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> position <b>of the front</b> Finder window <b>to</b> {300, 134}</p>
+		
+		<p>To move the window toward the bottom of the Desktop, increase the vertical offset by adding to the second value in the position list, as shown in this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B300%2C%20240%7D"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> position <b>of the front</b> Finder window <b>to</b> {300, 240}</p>
+		
+		<h3>Vertical Offset Exception</h3>
+		
+		<p>Unlike most other scriptable applications that use the distance from the top of the screen to the top of a window to determine its vertical position, the Finder uses the distance from the top of the screen to just below the title bar of the window, thus adding the height of the title bar, an extra 22 pixels, to the measurement. This applies whether the Finder window is displaying its toolbar or not. This exception applies only to the Finder application.</p>
+		
+		<p>In the figure below, the vertical offset of both Finder windows is 44, which consists of 22 pixels for the height of the Desktop’s menu bar plus 22 pixels for the height of the Finder window’s title bar, for a total vertical offset of 44 pixels. As shown, the tops of the two windows are located in the same position vertically, immediately below the bottom of the menu bar.</p>
+		
+		<a href="gfx/CH01_image19.jpg" title="The vertical offset of a Finder window must include the height of its title bar, which is 22 pixels." rel="lightbox"><img src="gfx/CH01_image19.jpg" width="450" class="across"></a>
+		
+		
+		
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="11.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li class="hi">The Position Property</li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

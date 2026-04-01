@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="index.html">Lion Release Notes</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Terminal Application</h2>
+		
+		<p>If you use the Terminal application on a regular basis, Mac&nbsp;OS&nbsp;X Lion just became your favorite platform for showing off your UNIX prowess.</p>
+							
+		<hr>
+		
+		<h3>Enhanced Drag and Drop Support</h3>
+		
+		<p>In Lion, the document proxy icon in a Terminal window now represents the current directory, which is displayed to the right of the icon. This proxy functions in the same manner as proxy icons in other application windows.</p>
+		
+		<img src="gfx/terminalproxyicon.jpg" width="640" height="288" align="top" class="across">
+		
+		<img src="gfx/terminalproxyiconmenu.jpg" width="640" height="288" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:24px;">(above) In Lion, the proxy icon in a Terminal window is an alias to the current directory, whose path hierarchy can be displayed by clicking on the title bar while holding down the <b>Command</b> (&#8984;) key.</p>
+		
+		<p>The Terminal in Lion now supports drag and drop for creating new Terminal sessions targeting specific directories.</p>
+		
+		<p>To create a new Terminal session via drag and drop, you can:</p>
+		
+		<ol>
+			<li>Drag a folder from the Finder to the Terminal icon</li>
+			<li>Drag a folder from the Finder to the Terminal window tab bar</li>
+			<li>Drag the Terminal window document proxy icon from the window's title bar to the tab bar in the same window, or another window</li>
+			<li>Drag a path from a Terminal window to the tab bar</li>
+		</ol>
+
+		
+		<img src="gfx/terminaldragfromFinder.jpg" width="640" height="485" align="top" class="across">
+		
+		<img src="gfx/terminalnewwindow.jpg" width="640" height="200" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:24px;">(above-top) In the Finder, drag a folder icon onto the Terminal icon to open a new Terminal session window to the dragged-on directory. (above-bottom)</p>
+		
+		<img src="gfx/terminalproxydrag.jpg" width="640" height="288" align="top" class="across">
+		
+		<img src="gfx/terminalproxydragresults.jpg" width="640" height="288" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:24px;">(above-top) Drag the document proxy icon to the tab bar, in the current window or another window, to create a new tab to the current directory (above-bottom). You can also drag the document proxy icon to the code within a window as well.</p>
+		
+		<img src="gfx/terminalpathdrag.jpg" width="640" height="200" align="top" class="across">
+		<img src="gfx/terminalpathdragresults.jpg" width="640" height="200" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:24px;">(above-top) Dragging a selected path to the tab bar to create a new Terminal session to the path. (above-bottom)</p>
+		
+		<hr>
+		
+		<h3>Expanded Appearance Controls</h3>
+		
+		<p>The new appearance controls include editable ANSI colors in preferences, support for 256 colors and BCE (background color erase). The default TERM value is now xterm-256color. Windows now support background images (including randomized images from folders), hidden scroll bars, and a new translucent view. And to achieve master-geek status, try the new full-screen mode (&#8984;-Option-F).</p>
+		
+		<img src="gfx/terminalimagebackground.jpg" width="640" height="471" align="top">
+		
+		<p class="imagecaption" style="margin-top:-6px;margin-bottom:24px;">In Lion, Terminal windows can display images as their backgrounds. This is done via the image picker in the settings window properties tab. (above)</p>
+		
+		<img src="gfx/terminalwindowcolorpalette.jpg" width="640" height="540" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:36px;">Color, blur, and opacity options are available  for Terminal windows. These are accessed on the color picker palette, summoned by clicking on the color well in the (above)</p>
+		
+		<img src="gfx/terminalaeorgel.jpg" width="640" height="481" align="top">
+		
+		<p class="imagecaption" style="margin-top:0px;margin-bottom:24px;">The standard Terminal window settings include a new translucent setting named <b>Aerogel</b>. (above)</p>
+		
+		<hr>
+		
+		<h3>Built-in Terminal Services</h3>
+		
+		<p>The new Terminal application in Lion contains four built-in services. By default these services are not active, and must be turned on in the Keyboard Shortcuts system preference pane.</p>
+		
+		<img src="gfx/terminalservices.jpg" width="640" height="433" align="top" class="across">
+		
+		<ul>
+			<li><b>New Terminal at Folder</b> &bull; This new service in Finder will open a new Terminal window cd'd to the selected folder</li>
+			<li><b>New Terminal Tab at Folder</b> &bull; This new service in Finder will open a new tab, cd'd to the selected folder, in the current Terminal window</li>
+			<li><b>Search Man Pages in Terminal</b> &bull; This service will use the current selection in the Terminal as a search string to find and display a list of corresponding man pages</li>
+			<li><b>Open Man Pages in Terminal</b> &bull; This service will open a man page in Terminal for the selected termTerminal </li>
+		</ul>
+		
+		<hr>
+		
+		<h3>New status controls</h3>
+		
+				<p>New status controls includes display in tabs and minimized windows; and the showing of live content, with unread text, busy, and bell count indicators.</p>
+
+			
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

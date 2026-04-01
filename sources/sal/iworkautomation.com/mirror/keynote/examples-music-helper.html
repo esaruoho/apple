@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Music Helper Applet</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="Using Applescript to trigger and control track playback in iTunes based on the current displaying slide in Keynote.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Music Helper Applet</div>
+		
+		<p>Although Keynote offers the ability to assign an audio track to be played during a presentation, it is currently not possible to assign individual audio tracks to specific slides, or to have an audio track play during the presentation of a series of slides.</p>
+		
+		<p>For those creative types who are looking for new ways to maximize the effectiveness of Keynote, here’s an Applescript script to trigger and control the playing of tracks in iTunes based upon the current slide being presented in Keynote.</p>
+			
+		<p>Using this script, you can have a specified iTunes track play through multiple slides, or have a track play only for a specific slide.</p>
+		
+		<p class="segment-note"><b>NOTE</b>: Requires Keynote 6.5+ and OS&nbsp;X 10.10+</p>
+		
+		<video id="sampleMovie3" width="624" height="410" controls preload poster="gfx/music-helper-video.jpg">
+			<source src="Keynote-Music-Helper-720P.mov" />
+		</video>
+		
+		<p class="segment-note"><a href="Keynote-Music-Helper.zip" style="font-weight:700;">DOWNLOAD&nbsp;</a>&nbsp;the completed helper applet. <b>NOTE</b>: Before launching the applet, make sure that iTunes and Keynote are open.</p>
+		
+		<p class="content-subhead" role="heading" aria-level="2">The Helper Script Application</p>
+		
+		<p>This script is designed to be saved as an application that stays open after launch. This accomplished by selecting the &ldquo;Stay open after run handler&rdquo; checkbox in the script’s Save dialog.</p>
+		
+		<p>When the script application is launched, it queries the iTunes application to get a list of names of all user playlists. The script then presents the list to the user so they can choose the playlist containing the tracks whose titles are placed in the presenter notes of the presentation slides.</p>
+		
+		<p>The interactive power of the script is accomplished through its use of an <b>idle</b> handler. Once the script has been launched, the <b>idle</b> handler is triggered after the specified idle interval (in seconds), executing the script statements within the handler. The script queries Keynote as to the contents of the presenter notes of the current slide, and based upon the reply, takes the following actions:</p>
+		
+		<ul style="margin-bottom:24px;">
+			<li>If the contents of the current slide’s presenter notes is the name of a track in the chosen playlist, the track will be played, unless it is already the currently playing track in iTunes—in which case, the track continues uninterrupted.</li>
+			<li>If the contents of the current slide’s presenter notes is nothing, then the script tells iTunes to stop playing.</li>
+			<li>If the Keynote presentation is halted, the script will close itself and quit.</li>
+			<li>If either Keynote or iTunes is closed, the script will close itself and quit.</li>
+		</ul>
+		
+		<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Keynote Music Helper</td></tr>
+			<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Keynote%20Music%20Helper&script=property%20idleTimeInSeconds%20%3A%201%0D%0Dglobal%20playlistTitle%2C%20hasPlayed%2C%20startFlag%0D%0Don%20run%0D%09if%20running%20of%20application%20%22iTunes%22%20is%20false%20then%0D%09%09tell%20application%20%22iTunes%22%20to%20launch%0D%09end%20if%0D%09tell%20application%20%22iTunes%22%0D%09%09set%20thesePlaylistTitles%20to%20the%20name%20of%20every%20user%20playlist%0D%09end%20tell%0D%09activate%0D%09set%20the%20beginning%20of%20thesePlaylistTitles%20to%20%22USE%20MUSIC%20LIBRARY%22%0D%09set%20chosenPlaylistTitle%20to%20%C2%AC%0D%09%09(choose%20from%20list%20thesePlaylistTitles%20with%20prompt%20%22Choose%20the%20playlist%20to%20use%3A%22)%0D%09if%20chosenPlaylistTitle%20is%20false%20then%20tell%20me%20to%20quit%0D%09set%20chosenPlaylistTitle%20to%20chosenPlaylistTitle%20as%20string%0D%09if%20chosenPlaylistTitle%20is%20%22USE%20MUSIC%20LIBRARY%22%20then%0D%09%09set%20playlistTitle%20to%20missing%20value%0D%09else%0D%09%09set%20playlistTitle%20to%20chosenPlaylistTitle%0D%09end%20if%0D%09set%20hasPlayed%20to%20false%0D%09display%20dialog%20%22Applet%20is%20active%20and%20ready%20for%20presentation%20to%20begin!%22%20buttons%20%7B%22Switch%20to%20Keynote%22%2C%20%22OK%22%7D%20default%20button%202%0D%09if%20button%20returned%20of%20the%20result%20is%20%22Switch%20to%20Keynote%22%20then%0D%09%09tell%20application%20%22Keynote%22%0D%09%09%09activate%0D%09%09end%20tell%0D%09%09set%20startFlag%20to%20true%0D%09else%0D%09%09set%20startFlag%20to%20false%0D%09end%20if%0Dend%20run%0D%0Don%20idle%0D%09if%20startFlag%20is%20true%20then%0D%09%09set%20startFlag%20to%20false%0D%09%09return%201%0D%09end%20if%0D%09if%20running%20of%20application%20%22Keynote%22%20is%20true%20then%0D%09%09tell%20application%20%22Keynote%22%0D%09%09%09if%20playing%20is%20true%20then%0D%09%09%09%09activate%0D%09%09%09%09set%20hasPlayed%20to%20true%0D%09%09%09%09set%20trackTitle%20to%20the%20presenter%20notes%20of%20current%20slide%20of%20front%20document%0D%09%09%09%09if%20trackTitle%20is%20%22%22%20then%0D%09%09%09%09%09my%20stopPlaying()%0D%09%09%09%09else%0D%09%09%09%09%09my%20playThisTrack(trackTitle%2C%20missing%20value)%0D%09%09%09%09end%20if%0D%09%09%09else%0D%09%09%09%09--%20stop%20iTunes%20if%20it%20playing%0D%09%09%09%09my%20stopPlaying()%0D%09%09%09%09--%20quit%20the%20applet%20if%20the%20presentation%20has%20been%20played%0D%09%09%09%09if%20hasPlayed%20is%20true%20then%0D%09%09%09%09%09tell%20me%20to%20quit%0D%09%09%09%09end%20if%0D%09%09%09end%20if%0D%09%09end%20tell%0D%09else%0D%09%09say%20%22Keynote%20is%20not%20open.%20Quiting%20applet.%22%0D%09%09tell%20me%20to%20quit%0D%09end%20if%0D%09if%20running%20of%20application%20%22iTunes%22%20is%20false%20then%0D%09%09say%20%22iTunes%20is%20not%20open.%20Quiting%20applet.%22%0D%09%09tell%20me%20to%20quit%0D%09end%20if%0D%09return%20idleTimeInSeconds%0Dend%20idle%0D%0Don%20playThisTrack(trackTitle%2C%20playlistTitle)%0D%09--%20check%20to%20see%20if%20iTunes%20is%20open%0D%09if%20running%20of%20application%20%22iTunes%22%20is%20true%20then%0D%09%09try%0D%09%09%09tell%20application%20%22iTunes%22%0D%09%09%09%09--%20check%20to%20see%20if%20iTunes%20is%20playing%0D%09%09%09%09if%20player%20state%20is%20playing%20then%0D%09%09%09%09%09--%20if%20the%20current%20track%20is%20not%20the%20current%20track%20then%20play%20new%20track%0D%09%09%09%09%09if%20the%20name%20of%20current%20track%20is%20not%20trackTitle%20then%0D%09%09%09%09%09%09if%20playlistTitle%20is%20missing%20value%20then%0D%09%09%09%09%09%09%09tell%20user%20playlist%20%22Music%22%0D%09%09%09%09%09%09%09%09play%20(first%20track%20whose%20name%20is%20trackTitle)%0D%09%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09%09else%0D%09%09%09%09%09%09%09if%20exists%20user%20playlist%20playlistTitle%20then%0D%09%09%09%09%09%09%09%09tell%20user%20playlist%20playlistTitle%0D%09%09%09%09%09%09%09%09%09play%20(first%20track%20whose%20name%20is%20trackTitle)%0D%09%09%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09%09%09else%0D%09%09%09%09%09%09%09%09say%20%22No%20matching%20playlist%20in%20iTunes.%20Quitting%20applet.%22%0D%09%09%09%09%09%09%09%09tell%20me%20to%20quit%0D%09%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09end%20if%0D%09%09%09%09else%0D%09%09%09%09%09--%20play%20new%20track%0D%09%09%09%09%09tell%20user%20playlist%20%22Music%22%0D%09%09%09%09%09%09play%20(first%20track%20whose%20name%20is%20trackTitle)%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09%09return%20true%0D%09%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09%09if%20errorNumber%20is%20-1728%20then%0D%09%09%09%09--%20no%20matching%20track%0D%09%09%09%09say%20%22No%20matching%20track%20in%20the%20iTunes%20music%20library.%22%0D%09%09%09else%0D%09%09%09%09--%20do%20nothing%0D%09%09%09end%20if%0D%09%09%09return%20false%0D%09%09end%20try%0D%09else%0D%09%09say%20%22iTunes%20is%20not%20running%22%0D%09%09return%20false%0D%09end%20if%0Dend%20playThisTrack%0D%0Don%20stopPlaying()%0D%09if%20running%20of%20application%20%22iTunes%22%20is%20true%20then%0D%09%09tell%20application%20%22iTunes%22%0D%09%09%09if%20player%20state%20is%20playing%20then%20stop%0D%09%09end%20tell%0D%09end%20if%0Dend%20stopPlaying%0D%0Don%20quit%0D%09continue%20quit%0Dend%20quit"><button type="button">Open in Script Editor</button></a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">idleTimeInSeconds</span> : 1</td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>global</b> <span class="codevariable">playlistTitle</span>, <span class="codevariable">hasPlayed</span>, <span class="codevariable">startFlag</span></td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codelibrarycommand">run</span></td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">running</span> <b>of</b> application &quot;iTunes&quot; <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot; <b>to</b> <span class="codelibrarycommand">launch</span></td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot;</td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thesePlaylistTitles</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">user playlist</span></td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the beginning of</b> <span class="codevariable">thesePlaylistTitles</span> <b>to</b> &quot;USE MUSIC LIBRARY&quot;</td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenPlaylistTitle</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">thesePlaylistTitles</span> <span class="codelibraryparameter">with prompt</span>  &quot;Choose the playlist to use:&quot;)</td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenPlaylistTitle</span> <b>is</b> <span class="codeenumeration">false</span> <b>then tell me to</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenPlaylistTitle</span> <b>to</b> <span class="codevariable">chosenPlaylistTitle</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenPlaylistTitle</span> <b>is</b> &quot;USE MUSIC LIBRARY&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">playlistTitle</span> <b>to</b> <span class="codelibraryclass">missing value</span></td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">playlistTitle</span> <b>to</b> <span class="codevariable">chosenPlaylistTitle</span></td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">hasPlayed</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Applet is active and ready for presentation to begin!&quot; <span class="codelibraryparameter">buttons</span> {&quot;Switch to Keynote&quot;, &quot;OK&quot;} <span class="codelibraryparameter">default button</span> 2</td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span> <b>is</b> &quot;Switch to Keynote&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+			<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">startFlag</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+			<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">startFlag</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codelibrarycommand">run</span></td></tr>
+			<tr><td class="line-count">34</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codelibrarycommand">idle</span></td></tr>
+			<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">startFlag</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">startFlag</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> 1</td></tr>
+			<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibrarycommand">application</span> &quot;Keynote&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+			<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">hasPlayed</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+			<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">trackTitle</span> <b>to the</b> <span class="codeproperty">presenter notes</span> <b>of</b> <span class="codeproperty">current slide</span> <b>of front</b> <span class="codelibraryclass">document</span></td></tr>
+			<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">trackTitle</span> <b>is</b> &quot;&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>my</b> <span class="codevariable">stopPlaying</span>()</td></tr>
+			<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>my</b> <span class="codevariable">playThisTrack</span>(<span class="codevariable">trackTitle</span>, <span class="codelibraryclass">missing value</span>)</td></tr>
+			<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- stop iTunes if it playing</span></td></tr>
+			<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>my</b> <span class="codevariable">stopPlaying</span>()</td></tr>
+			<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- quit the applet if the presentation has been played</span></td></tr>
+			<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">hasPlayed</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell me to</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">say</span> &quot;Keynote is not open. Quiting applet.&quot;</td></tr>
+			<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell me to</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot; <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+			<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">say</span> &quot;iTunes is not open. Quiting applet.&quot;</td></tr>
+			<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell me to</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">idleTimeInSeconds</span></td></tr>
+			<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codelibrarycommand">idle</span></td></tr>
+			<tr><td class="line-count">70</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">playThisTrack</span>(<span class="codevariable">trackTitle</span>, <span class="codevariable">playlistTitle</span>)</td></tr>
+			<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- check to see if iTunes is open</span></td></tr>
+			<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot;</td></tr>
+			<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- check to see if iTunes is playing</span></td></tr>
+			<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codeproperty">player state</span> <b>is</b> <span class="codeenumeration">playing</span> <b>then</b></td></tr>
+			<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- if the current track is not the current track then play new track</span></td></tr>
+			<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>if the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codeproperty">current track</span> <b>is not</b> <span class="codevariable">trackTitle</span> <b>then</b></td></tr>
+			<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>if</b> <span class="codevariable">playlistTitle</span> <b>is</b> <span class="codelibraryclass">missing value</span> <b>then</b></td></tr>
+			<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>tell</b> user playlist &quot;Music&quot;</td></tr>
+			<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><span class="codelibrarycommand">play</span> (<b>first</b> <span class="codelibraryclass">track</span> <b>whose</b> <span class="codeproperty">name</span> <b>is</b> <span class="codevariable">trackTitle</span>)</td></tr>
+			<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>if</b> <span class="codelibrarycommand">exists</span> <span class="codelibraryclass">user playlist</span> <span class="codevariable">playlistTitle</span> <b>then</b></td></tr>
+			<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">user playlist</span> <span class="codevariable">playlistTitle</span></td></tr>
+			<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:90px;">&nbsp;</span><span class="codelibrarycommand">play</span> (<b>first</b> <span class="codelibraryclass">track</span> <b>whose</b> <span class="codeproperty">name</span> <b>is</b> <span class="codevariable">trackTitle</span>)</td></tr>
+			<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span>say &quot;No matching playlist in iTunes. Quitting applet.&quot;</td></tr>
+			<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>tell me to</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- play new track</span></td></tr>
+			<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">user playlist</span> &quot;Music&quot;</td></tr>
+			<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codelibrarycommand">play</span> (<b>first</b> <span class="codelibraryclass">track</span> <b>whose</b> <span class="codeproperty">name</span> <b>is</b> <span class="codevariable">trackTitle</span>)</td></tr>
+			<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="codeenumeration">true</span></td></tr>
+			<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+			<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> -1728 <b>then</b></td></tr>
+			<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- no matching track</span></td></tr>
+			<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>say &quot;No matching track in the iTunes music library.&quot;</td></tr>
+			<tr><td class="line-count">107</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- do nothing</span></td></tr>
+			<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">111</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">112</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">113</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">say</span> &quot;iTunes <b>is not</b> <span class="codeproperty">running</span>&quot;</td></tr>
+			<tr><td class="line-count">114</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">115</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">116</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">playThisTrack</span></td></tr>
+			<tr><td class="line-count">117</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">118</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">stopPlaying</span>()</td></tr>
+			<tr><td class="line-count">119</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">120</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iTunes&quot;</td></tr>
+			<tr><td class="line-count">121</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">player state</span> <b>is</b> <span class="codeproperty">playing</span> <b>then</b> <span class="codelibrarycommand">stop</span></td></tr>
+			<tr><td class="line-count">122</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">123</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">124</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">stopPlaying</span></td></tr>
+			<tr><td class="line-count">125</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">126</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">127</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>continue</b> <span class="codelibrarycommand">quit</span></td></tr>
+			<tr><td class="line-count">128</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codelibrarycommand">quit</span></td></tr>
+		</table>		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-translation-helper-scripts.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-outline.html">New Presentation from Outline</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-image-files.html">New Presentation from Image Files</a></li>
+				<li class="navListSectionItem"><a href="examples-pano-preso.html">Pano to Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-movie-export-droplet.html">Movie Export Droplet</a></li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItemSelected">Music Helper Applet</li>
+				<li class="navListSectionItem"><a href="examples-translation-helper-scripts.html">Translation Helper Scripts</a></li>
+				<li class="navListSectionItemSelected"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h1>Welcome to Online Training for AppleScript!</h1>
+		
+	<p class="note">The following beginner's tutorial is excerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank"><font color="#FF0000">AppleScript&nbsp;1-2-3</font></a>. These interactive materials are meant to be a &ldquo;Hands-On&rdquo; experience, taking about 30-40 minutes to complete. A <a href="javascript:window.open('video/intro-seminar.html','viewer-window-00','width=644,height=420');">video walk-through</a> is provided, should you want to follow along.<br><br>So grab your laptop, make yourself comfortable, and begin the process of changing your computer life forever.</p>
+
+		<h2>The First Step</h2>
+		
+		<p>Consider this chapter a &ldquo;book within a book.&rdquo; If you don't read any other chapter, read this one. It has been designed to give you a quick but thorough introduction to AppleScript through a short, fun, hands-on tutorial. In 25 minutes you&rsquo;ll learn what AppleScript is, how it works, and how to write basic, functional AppleScript scripts with confidence.</p>
+		
+		<p>To accomplish this goal, you&rsquo;ll learn the fundamentals of AppleScript, and then put them to use as we step through the creation of a Finder Toolbar script, that you can use to instantly reset a cluttered desktop window display to a predefined window set.</p> 
+
+		<h2>What is AppleScript?</h2>
+		
+		<p>AppleScript is a language used to automate the actions of the Macintosh Operating System and many of its applications.</p> 
+
+		<p>Whether a task is as simple as copying a file or as complex as building a real estate catalog, AppleScript can perform the requisite actions for you with &ldquo;intelligence,&rdquo; controlling applications and making decisions based on its observations or from information provided by its interaction with the person running the script.</p>
+		
+		<p>Every day, businesses and individuals alike use AppleScript to create newspapers and books, manage networks, build DVDs, process images, generate web pages, backup files and folders, make videos, and much more. AppleScript is the most powerful, easy-to-use, automation tool available on any platform. And best of all, this technology is free and is built into every copy of the Mac OS!</p>
+		
+		<h3>How it works...</h3>
+
+		<p>To automate the actions of applications, the computer reads the sequential instructions contained in AppleScript &ldquo;scripts,&rdquo; and then communicates those instructions to targeted applications. The targeted applications interpret the communicated instructions, and then perform the actions listed in the scripts.</p>
+
+		<p>AppleScript scripts are composed, by motivated users like yourself, in AppleScript, an English-like language containing many of the verbs, nouns, adjectives, articles and other English language elements we use every day. The AppleScript language is designed to be easily understandable, and has a syntax or grammatical structure similar to the one we use to create normal sentences.</p>
+
+		<p>Scripts are written in the Script Editor application, a free utility included with every copy of the Mac OS. Scripts can be &ldquo;run&rdquo; from within the Script Editor application or saved as either script files or script applications, available for use at any time, and from within any application.</p> 
+
+		<p>Script files are launched from an application&rsquo;s script menu or from the Mac OS system-wide Script Menu utility. Script applications, or &ldquo;applets,&rdquo; are launched like other applications by double-clicking their icons in the Finder or by clicking their Dock or Finder Toolbar and Sidebar icons.</p>
+		
+		<h3>The Big Picture</h3>
+
+		<p>AppleScript is based on the concept of scriptable objects belonging to or being contained in other scriptable objects, such as a file being in a folder that belongs to the hard disk, or a word being part of a paragraph belonging to a story. Understanding the relationship between scriptable objects is essential to learning how to write scripts, and can be summarized in the following statements:</p>
+	
+		<p class="principle">On the Macintosh computer everything is an object.</p>
+
+		<p>The computer, the desktop, the disks it displays, the folders on the disks and the files in those folders &mdash; all of these items are objects. So are applications, their documents, and the data in those documents.</p>
+	
+		<p class="principle">Everything belongs to, is related to, is contained in, or is part of something else.</p>
+
+		<p>The file is in the folder that is in the disk that is on the desktop that is on the computer. This same relationship can apply to text as well. The character is in the word that is in the line that is part of the paragraph that is contained in the story.</p>
+
+		<p>This relationship between objects is referred to as being hierarchical or, in military terms, follows a &ldquo;Chain of Command.&rdquo; AppleScript uses this hierarchical containment structure to identify specific scriptable objects. All the scripts you write will contain hierarchical references.</p> 
+
+		<p>Just remember this:</p>
+	
+		<p class="principle">In scripts, objects are described in terms of their position in their hierarchical structure, or where they are in their &ldquo;Chain of Command.&rdquo;</p>
+		
+		<p class="note"><b>NOTE</b>: Don&rsquo;t be put off by the term hierarchical. We often use hierarchical references to identify objects in our lives. For example, you refer to your home as being on a specific street, in a specific city, in a specific county, in a specific state, in a specific country. Or your advanced pottery class as being in room 128, on the third floor, of the west wing, of the Creative Arts building. Object references in AppleScript work the same way.</p>
+
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li class="hi">The First Step</li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<a href="javascript:window.open('video/intro-seminar.html','viewer-window-00','width=644,height=420');"><h2>SEMINAR VIDEO &#149; 44:54</h2></a>
+			<a href="javascript:window.open('video/intro-seminar.html','viewer-window-00','width=644,height=420');"><img src="video/gfx/movie32x32.png" width="32" height="32" class="left"></a>
+			<p>This video covers much of the material contained in this online tutorial, which is exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank"><font color="#FF0000">AppleScript&nbsp;1-2-3</font></a>.</p>
+		</div>
+		<div class="box">
+			<h2>SCRIPTS</h2>
+			<p>Click <a href="applescript://com.apple.scripteditor?action=new&script=%2D%2D%20SETUP%0Dtell%20application%20%22Finder%22%20to%20close%20every%20window%0D%0Dtell%20application%20%22Finder%22%20to%20open%20the%20startup%20disk%0D%0D%2D%2D%20NAME%20PROPERTY%0Dtell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20close%20Finder%20window%20%22Macintosh%20HD%22%0D%0D%2D%2D%20INDEX%20PROPERTY%0Dtell%20application%20%22Finder%22%20to%20open%20the%20startup%20disk%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20Finder%20window%20%22Macintosh%20HD%22%0D%0Dtell%20application%20%22Finder%22%20to%20open%20home%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20Finder%20window%20%22Macintosh%20HD%22%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20Finder%20window%201%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20Finder%20window%202%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20first%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20second%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%201st%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%202nd%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20back%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20last%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20Finder%20window%20before%20the%20last%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20Finder%20window%20after%20the%20front%20Finder%20window%0D%0D%2D%2D%20INDEX%20%28set%29%0Dtell%20application%20%22Finder%22%20to%20set%20the%20index%20of%20the%20last%20Finder%20window%20to%201%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20index%20of%20the%20last%20Finder%20window%20to%20the%20index%20of%20the%20first%20Finder%20window%0D%0D%2D%2D%20TARGET%0Dtell%20application%20%22Finder%22%20to%20get%20the%20target%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20front%20Finder%20window%20to%20the%20startup%20disk%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20last%20Finder%20window%20to%20home%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20front%20Finder%20window%20to%20folder%20%22Smith%20Project%22%20of%20folder%20%22Documents%22%20of%20home%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20front%20Finder%20window%20to%20the%20startup%20disk%0D%0D%2D%2D%20TOOLBAR%20VISIBLE%0Dtell%20application%20%22Finder%22%20to%20get%20toolbar%20visible%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20false%0D%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0D%0D%2D%2D%20STATUS%20BAR%20VISIBLE%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20false%0D%0Dtell%20application%20%22Finder%22%20to%20set%20statusbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0D%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0D%0D%2D%2D%20SIDEBAR%20WIDTH%0Dtell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20the%20front%20Finder%20window%20to%200%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20the%20second%20Finder%20window%20to%200%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20every%20Finder%20window%20to%20128%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20Finder%20window%202%20to%20the%20sidebar%20width%20of%20Finder%20window%201%0D%0D%2D%2D%20CURRENT%20VIEW%20%0Dtell%20application%20%22Finder%22%20to%20get%20the%20current%20view%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20list%20view%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20column%20view%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20icon%20view%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20flow%20view%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20window%20of%20every%20folder%20of%20home%20to%20icon%20view%0D%0D%2D%2D%20POSITION%0Dtell%20application%20%22Finder%22%20to%20get%20the%20position%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B94%2C%20134%7D%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B300%2C%20134%7D%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20position%20of%20the%20front%20Finder%20window%20to%20%7B300%2C%20240%7D%0D%0D%2D%2D%20BOUNDS%20PROPERTY%0Dtell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20front%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B24%2C%2096%2C%20524%2C%20396%7D%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20window%20of%20the%20desktop%0D%0D%2D%2D%20VERBS%0Dtell%20application%20%22Finder%22%20to%20select%20the%20last%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%20to%20set%20the%20index%20of%20the%20last%20Finder%20window%20to%201%0D%0D%2D%2D%20TELL%20BLOCK%0Dtell%20application%20%22Finder%22%20to%20close%20every%20window%0Dtell%20application%20%22Finder%22%20to%20open%20home%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0Dtell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20the%20front%20Finder%20window%20to%20135%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20column%20view%0Dtell%20application%20%22Finder%22%20to%20set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B36%2C%20116%2C%20511%2C%20674%7D%0Dtell%20application%20%22Finder%22%20to%20open%20folder%20%22Documents%22%20of%20home%0Dtell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20false%0Dtell%20application%20%22Finder%22%20to%20set%20statusbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0Dtell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20flow%20view%0Dtell%20application%20%22Finder%22%20to%20set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B528%2C%20116%2C%201016%2C%20674%7D%0Dtell%20application%20%22Finder%22%20to%20select%20the%20last%20Finder%20window%0D%0Dtell%20application%20%22Finder%22%0D%09close%20every%20window%0D%09open%20home%0D%09set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0D%09set%20the%20sidebar%20width%20of%20the%20front%20Finder%20window%20to%20135%0D%09set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20column%20view%0D%09set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B36%2C%20116%2C%20511%2C%20674%7D%0D%09open%20folder%20%22Documents%22%20of%20home%0D%09set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20false%0D%09set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20flow%20view%0D%09set%20the%20bounds%20of%20front%20Finder%20window%20to%20%7B528%2C%20116%2C%201016%2C%20674%7D%0D%09select%20the%20last%20Finder%20window%0Dend%20tell%0D%0Dtell%20application%20%22Finder%22%0D%09close%20every%20window%0D%09open%20home%0D%09tell%20the%20front%20Finder%20window%0D%09%09set%20toolbar%20visible%20to%20true%0D%09%09set%20the%20sidebar%20width%20to%20135%0D%09%09set%20the%20current%20view%20to%20column%20view%0D%09%09set%20the%20bounds%20to%20%7B36%2C%20116%2C%20511%2C%20674%7D%0D%09end%20tell%0D%09open%20folder%20%22Documents%22%20of%20home%0D%09tell%20the%20front%20Finder%20window%0D%09%09set%20toolbar%20visible%20to%20false%0D%09%09set%20the%20current%20view%20to%20flow%20view%0D%09%09set%20the%20bounds%20to%20%7B528%2C%20116%2C%201016%2C%20674%7D%0D%09end%20tell%0D%09select%20the%20last%20Finder%20window%0Dend%20tell%0D%0D%2D%2D%20SAFARI%0Dtell%20application%20%22Safari%22%20to%20close%20every%20window%0D%0Dtell%20application%20%22Safari%22%20to%20open%20location%20%22http%3A%2F%2Fsal%2Elocal%2F%7Esal%2FApple%2DAppleScript%2F%22%0D%0Dtell%20application%20%22Safari%22%20to%20get%20the%20position%20of%20the%20front%20window%0D%0Dtell%20application%20%22Safari%22%20to%20get%20the%20bounds%20of%20window%201%0D%0Dtell%20application%20%22Safari%22%20to%20set%20the%20bounds%20of%20the%20front%20window%20to%20%7B0%2C%2022%2C%20800%2C%201024%7D%0D%0Dtell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20window%20of%20the%20desktop%0Dtell%20application%20%22Safari%22%20to%20set%20the%20bounds%20of%20the%20front%20window%20to%20%7B0%2C%2022%2C%20%283rd%20item%20of%20the%20result%29%2C%20%284th%20item%20of%20the%20result%29%7D%0D%0D%2D%2D%20QUICKTIME%20PLAYER%0Dtell%20application%20%22QuickTime%20Player%22%20to%20get%20the%20name%20of%20the%20front%20document%0D%0Dtell%20application%20%22QuickTime%20Player%22%20to%20get%20the%20duration%20of%20the%20front%20document%0D%0Dtell%20application%20%22QuickTime%20Player%22%20to%20set%20the%20current%20time%20of%20the%20front%20document%20to%2094900%0D%0Dtell%20application%20%22QuickTime%20Player%22%20to%20play%20the%20front%20document%0D%0Dtell%20application%20%22QuickTime%20Player%22%20to%20stop%20the%20front%20document%0D%0D%2D%2D%20ITUNES%0Dtell%20application%20%22iTunes%22%20to%20get%20the%20name%20of%20the%20last%20track%20of%20the%20first%20library%20playlist%0D%0Dtell%20application%20%22iTunes%22%20to%20get%20the%20duration%20of%20the%20last%20track%20of%20the%20first%20library%20playlist%0D%0Dtell%20application%20%22iTunes%22%20to%20get%20the%20artist%20of%20the%20first%20track%20of%20the%20first%20library%20playlist%0D%0Dtell%20application%20%22iTunes%22%20to%20play%20the%20first%20track%20of%20the%20first%20library%20playlist%0D%0Dtell%20application%20%22iTunes%22%20to%20stop">here</a> to open all of the scripts from this chapter into a single Script Editor script window.</p>
+		</div>
+		<div class="box">
+			<a href="http://www.macosxautomation.com/applescript" target="_blank"><h2>APPLESCRIPT WEBSITE</h2></a>
+			<p>Click <a href="http://www.macosxautomation.com/applescript" target="_blank">here</a> to visit the AppleScrpt website to access more instructional materials, downloads, and links to other sources of information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

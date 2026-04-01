@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: Simple Formatted EPUB Demo</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+  <style type="text/css">
+    #formatted-container p.p1 {margin: 0.0px 0.0px 12.0px 0.0px; font: 14.0px 'Times New Roman'; color: #606060}
+    #formatted-container p.p2 {margin: 0.0px 0.0px 12.0px 0.0px; font: 14.0px 'Times New Roman'; color: #fc1514}
+    #formatted-container p.p3 {margin: 0.0px 0.0px 12.0px 0.0px; text-align: center; font: 14.0px 'Times New Roman'; color: #fc1514}
+    #formatted-container span.s1 {color: #fc1514}
+    #formatted-container span.s2 {color: #606060}
+    #formatted-container
+    {
+    	user-select: text;
+    	-moz-user-select: text;
+    	-webkit-user-select: text;
+    	-ms-user-select: text;
+    	background-color: white;
+    	padding: 10px;
+    	-moz-border-radius: 12px;
+    	-webkit-border-radius: 12px;
+    	margin: 8px;
+    }
+  </style>
+	<style type="text/css">
+		.firstLetter
+		{
+			display: block;
+			float: left;
+			margin-top: -0.6em;
+			/* use -0.205em for two lines */
+			margin-left: -0.56em;
+			margin-right: 0.5em;
+			height: 3em;
+		}
+		.firstLetter span
+		{
+			font-size: 4.35em;
+			/* use 3.33em for two lines */
+			line-height: 1.0em;
+		}
+	
+		.firstLetter + span { margin-left: -0.0em; }
+	</style>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SIMPLE BOOK DEMO -->
+		<div class="content-segment">
+			<div class="segment-header" >Simple Formatted EPUB Document Demo</div>
+			
+			<p>Now that you have installed the EPUB services, you are ready to learn how to create digital publications by first constructing a simple formatted digital publication.</p>
+			
+			<p>Just follow the step-by-step instructions <b>displayed in the right hand column</b>.</p>
+		
+			<div id="formatted-container"  style="user-select:text;-webkit-user-select:text;background-color:white;">
+				<p class="p1">There was a table set out under a tree in front of the house, and the March Hare and the Hatter were having tea at it: a Dormouse was sitting between them, fast asleep, and the other two were using it as a cushion, resting their elbows on it, and talking over its head. <span class="s1"><i>&ldquo;Very uncomfortable for the Dormouse,&rdquo; </i></span>thought Alice; <span class="s1"><i>&ldquo;only, as it&rsquo;s asleep, I suppose it doesn&rsquo;t mind.&rdquo;</i></span></span></p>
+				<p class="p1">The table was a large one, but the three were all crowded together at one corner of it: <span class="s1"><i>&ldquo;No room! No room!&rdquo;</i> </span>they cried out when they saw Alice coming. <span class="s1"><i>&ldquo;There&rsquo;s PLENTY of room!&rdquo; </i></span>said Alice indignantly, and she sat down in a large arm-chair at one end of the table.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;Have some wine,&rdquo; </i></span>the March Hare said in an encouraging tone.</p>
+				<p class="p1">Alice looked all round the table, but there was nothing on it but tea.</p>
+				<p class="p2"><i>&ldquo;I don&rsquo;t see any wine,&rdquo;</i> <span class="s2">she remarked.</span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;There isn&rsquo;t any,&rdquo;</i> </span>said the March Hare.</p>
+				<p class="p2"><i>&ldquo;Then it wasn&rsquo;t very civil of you to offer it,&rdquo;</i> <span class="s2">said Alice angrily.</span></p>
+				<p class="p2"><i>&ldquo;It wasn't very civil of you to sit down without being invited,&rdquo; </i><span class="s2">said the March Hare.</span></p>
+				<p class="p2"><i>&ldquo;I didn't know it was YOUR table,&rdquo;</i> <span class="s2">said Alice; </span><i>&ldquo;it&rsquo;s laid for a great many more than three.&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Your hair wants cutting,&rdquo;</i></span> said the Hatter. He had been looking at Alice for some time with great curiosity, and this was his first speech.</p>
+				<p class="p2"><i>&ldquo;You should learn not to make personal remarks,&rdquo;</i><span class="s2"> Alice said with some severity; </span><i>&ldquo;it&rsquo;s very rude.&rdquo;</i></p>
+				<p class="p1">The Hatter opened his eyes very wide on hearing this; but all he SAID was, <span class="s1"><i>&ldquo;Why is a raven like a writing-desk?&rdquo;</i></span></p>
+				<p class="p2"><i>&ldquo;Come, we shall have some fun now!&rdquo;</i><span class="s2"> thought Alice. </span><i>&ldquo;I&rsquo;m glad they&rsquo;ve begun asking riddles.—I believe I can guess that,&rdquo;</i><span class="s2"> she added aloud.</span></p>
+				<p class="p2"><i>&ldquo;Do you mean that you think you can find out the answer to it?&rdquo;</i><span class="s2"> said the March Hare.</span></p>
+				<p class="p2"><i>&ldquo;Exactly so,&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p2"><i>&ldquo;Then you should say what you mean,&rdquo;</i><span class="s2"> the March Hare went on.</span></p>
+				<p class="p2"><i>&ldquo;I do,&rdquo;</i><span class="s2"> Alice hastily replied; </span><i>&ldquo;at least—at least I mean what I say—that&rsquo;s the same thing, you know.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Not the same thing a bit!&rdquo;</i><span class="s2"> said the Hatter. </span><i>&ldquo;You might just as well say that ‘I see what I eat&rsquo; is the same thing as ‘I eat what I see!&rsquo;&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;You might just as well say,&rdquo;</i><span class="s2"> added the March Hare, </span><i>&ldquo;that ‘I like what I get&rsquo; is the same thing as ‘I get what I like&rsquo;!&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;You might just as well say,&rdquo;</i><span class="s2"> added the Dormouse, who seemed to be talking in his sleep, </span><i>&ldquo;that &lsquo;I breathe when I sleep&rsquo; is the same thing as &lsquo;I sleep when I breathe&rsquo;!&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;It IS the same thing with you,&rdquo;</i></span> said the Hatter, and here the conversation dropped, and the party sat silent for a minute, while Alice thought over all she could remember about ravens and writing-desks, which wasn&rsquo;t much.</p>
+				<p class="p1">The Hatter was the first to break the silence. <span class="s1"><i>&ldquo;What day of the month is it?&rdquo;</i></span> he said, turning to Alice: he had taken his watch out of his pocket, and was looking at it uneasily, shaking it every now and then, and holding it to his ear.</p>
+				<p class="p1">Alice considered a little, and then said <span class="s1"><i>&ldquo;The fourth.&rdquo;</i></span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Two days wrong!&rdquo;</i></span> sighed the Hatter. <span class="s1"><i>&ldquo;I told you butter wouldn&rsquo;t suit the works!&rdquo;</i></span> he added looking angrily at the March Hare.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;It was the BEST butter,&rdquo;</i></span> the March Hare meekly replied.</p>
+				<p class="p2"><i>&ldquo;Yes, but some crumbs must have got in as well,&rdquo;</i><span class="s2"> the Hatter grumbled: </span><i>&ldquo;you shouldn&rsquo;t have put it in with the bread-knife.&rdquo;</i></p>
+				<p class="p1">The March Hare took the watch and looked at it gloomily: then he dipped it into his cup of tea, and looked at it again: but he could think of nothing better to say than his first remark, <span class="s1"><i>&ldquo;It was the BEST butter, you know.&rdquo;</i></span></p>
+				<p class="p2"><span class="s2">Alice had been looking over his shoulder with some curiosity. </span><i>&ldquo;What a funny watch!&rdquo;</i><span class="s2"> she remarked. </span><i>&ldquo;It tells the day of the month, and doesn&rsquo;t tell what o&rsquo;clock it is!&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Why should it?&rdquo;</i><span class="s2"> muttered the Hatter. </span><i>&ldquo;Does YOUR watch tell you what year it is?&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Of course not,&rdquo;</i><span class="s2"> Alice replied very readily: </span><i>&ldquo;but that&rsquo;s because it stays the same year for such a long time together.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Which is just the case with MINE,&rdquo;</i><span class="s2"> said the Hatter.</span></p>
+				<p class="p1">Alice felt dreadfully puzzled. The Hatter&rsquo;s remark seemed to have no sort of meaning in it, and yet it was certainly English. <span class="s1"><i>&ldquo;I don&rsquo;t quite understand you,&rdquo;</i></span> she said, as politely as she could.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;The Dormouse is asleep again,&rdquo;</i></span> said the Hatter, and he poured a little hot tea upon its nose.</p>
+				<p class="p1">The Dormouse shook its head impatiently, and said, without opening its eyes, <span class="s1"><i>&ldquo;Of course, of course; just what I was going to remark myself.&rdquo;</i></span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Have you guessed the riddle yet?&rdquo;</i></span> the Hatter said, turning to Alice again.</p>
+				<p class="p2"><i>&ldquo;No, I give it up,&rdquo;</i><span class="s2"> Alice replied: </span><i>&ldquo;what&rsquo;s the answer?&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;I haven&rsquo;t the slightest idea,&rdquo;</i><span class="s2"> said the Hatter.</span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Nor I,&rdquo;</i></span> said the March Hare.</p>
+				<p class="p2"><span class="s2">Alice sighed wearily. </span><i>&ldquo;I think you might do something better with the time,&rdquo;</i><span class="s2"> she said, </span><i>&ldquo;than waste it in asking riddles that have no answers.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;If you knew Time as well as I do,&rdquo;</i><span class="s2"> said the Hatter, </span><i>&ldquo;you wouldn&rsquo;t talk about wasting IT. it&rsquo;s HIM.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;I don&rsquo;t know what you mean,&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p2"><i>&ldquo;Of course you don&rsquo;t!&rdquo;</i><span class="s2"> the Hatter said, tossing his head contemptuously. </span><i>&ldquo;I dare say you never even spoke to Time!&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Perhaps not,&rdquo;</i><span class="s2"> Alice cautiously replied: </span><i>&ldquo;but I know I have to beat time when I learn music.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Ah! that accounts for it,&rdquo;</i><span class="s2"> said the Hatter. </span><i>&ldquo;He won&rsquo;t stand beating. Now, if you only kept on good terms with him, he&rsquo;d do almost anything you liked with the clock. For instance, suppose it were nine o&rsquo;clock in the morning, just time to begin lessons: you&rsquo;d only have to whisper a hint to Time, and round goes the clock in a twinkling! Half-past one, time for dinner!&rdquo;</i></p>
+				<p class="p1">(<span class="s1"><i>&ldquo;I only wish it was,&rdquo;</i></span> the March Hare said to itself in a whisper.)</p>
+				<p class="p2"><i>&ldquo;That would be grand, certainly,&rdquo;</i><span class="s2"> said Alice thoughtfully: </span><i>&ldquo;but then—I shouldn't be hungry for it, you know.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Not at first, perhaps,&rdquo;</i><span class="s2"> said the Hatter: </span><i>&ldquo;but you could keep it to half-past one as long as you liked.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Is that the way YOU manage?&rdquo;</i><span class="s2"> Alice asked.</span></p>
+				<p class="p2"><span class="s2">The Hatter shook his head mournfully. </span><i>&ldquo;Not I!&rdquo;</i><span class="s2"> he replied. </span><i>&ldquo;We quarreled last March—just before HE went mad, you know—(pointing with his tea spoon at the March Hare,)—it was at the great concert given by the Queen of Hearts, and I had to sing:</i></p>
+				<p class="p3"><i>‘Twinkle, twinkle, little bat!</i></p>
+				<p class="p3"><i>How I wonder what you&rsquo;re at!&rsquo;</i></p>
+				<p class="p2"><i>You know the song, perhaps?&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;I&rsquo;ve heard something like it,&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p2"><i>&ldquo;It goes on, you know,&rdquo;</i><span class="s2"> the Hatter continued, </span><i>&ldquo;in this way:—</i></p>
+				<p class="p3"><i>‘Up above the world you fly,</i></p>
+				<p class="p3"><i>Like a tea-tray in the sky.</i></p>
+				<p class="p3"><i>Twinkle, twinkle—&rsquo;&rdquo;</i></p>
+				<p class="p1">Here the Dormouse shook itself, and began singing in its sleep <span class="s1"><i>&ldquo;Twinkle, twinkle, twinkle, twinkle—&rdquo;</i></span> and went on so long that they had to pinch it to make it stop.</p>
+				<p class="p2"><i>&ldquo;Well, I&rsquo;d hardly finished the first verse,&rdquo;</i><span class="s2"> said the Hatter, </span><i>&ldquo;when the Queen jumped up and bawled out, ‘He&rsquo;s murdering the time! Off with his head!&rsquo;&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;How dreadfully savage!&rdquo;</i><span class="s2"> exclaimed Alice.</span></p>
+				<p class="p2"><i>&ldquo;And ever since that,&rdquo;</i><span class="s2"> the Hatter went on in a mournful tone, </span><i>&ldquo;he won&rsquo;t do a thing I ask! it&rsquo;s always six o&rsquo;clock now.&rdquo;</i></p>
+				<p class="p2"><span class="s2">A bright idea came into Alice&rsquo;s head. </span><i>&ldquo;Is that the reason so many tea-things are put out here?&rdquo;</i><span class="s2"> she asked.</span></p>
+				<p class="p2"><i>&ldquo;Yes, that&rsquo;s it,&rdquo;</i><span class="s2"> said the Hatter with a sigh: </span><i>&ldquo;it&rsquo;s always tea-time, and we&rsquo;ve no time to wash the things between whiles.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Then you keep moving round, I suppose?&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p2"><i>&ldquo;Exactly so,&rdquo;</i><span class="s2"> said the Hatter: </span><i>&ldquo;as the things get used up.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;But what happens when you come to the beginning again?&rdquo;</i><span class="s2"> Alice ventured to ask.</span></p>
+				<p class="p2"><i>&ldquo;Suppose we change the subject,&rdquo;</i><span class="s2"> the March Hare interrupted, yawning. </span><i>&ldquo;I&rsquo;m getting tired of this. I vote the young lady tells us a story.&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;I&rsquo;m afraid I don&rsquo;t know one,&rdquo;</i></span> said Alice, rather alarmed at the proposal.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;Then the Dormouse shall!&rdquo;</i></span> they both cried. <span class="s1"><i>&ldquo;Wake up, Dormouse!&rdquo; </i></span>And they pinched it on both sides at once.</p>
+				<p class="p1">The Dormouse slowly opened his eyes. <span class="s1"><i>&ldquo;I wasn&rsquo;t asleep,&rdquo;</i></span> he said in a hoarse, feeble voice: <span class="s1"><i>&ldquo;I heard every word you fellows were saying.&rdquo;</i></span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Tell us a story!&rdquo;</i></span> said the March Hare.</p>
+				<p class="p2"><i>&ldquo;Yes, please do!&rdquo;</i><span class="s2"> pleaded Alice.</span></p>
+				<p class="p2"><i>&ldquo;And be quick about it,&rdquo;</i><span class="s2"> added the Hatter, </span><i>&ldquo;or you&rsquo;ll be asleep again before it's done.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Once upon a time there were three little sisters,&rdquo;</i><span class="s2"> the Dormouse began in a great hurry; </span><i>&ldquo;and their names were Elsie, Lacie, and Tillie; and they lived at the bottom of a well—&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;What did they live on?&rdquo;</i></span> said Alice, who always took a great interest in questions of eating and drinking.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;They lived on treacle,&rdquo;</i></span> said the Dormouse, after thinking a minute or two.</p>
+				<p class="p2"><i>&ldquo;They couldn't have done that, you know,&rdquo;</i><span class="s2"> Alice gently remarked; </span><i>&ldquo;they&rsquo;d have been ill.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;So they were,&rdquo;</i><span class="s2"> said the Dormouse; </span><i>&ldquo;VERY ill.&rdquo;</i></p>
+				<p class="p1">Alice tried to fancy to herself what such an extraordinary ways of living would be like, but it puzzled her too much, so she went on: <span class="s1"><i>&ldquo;But why did they live at the bottom of a well?&rdquo;</i></span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Take some more tea,&rdquo;</i></span> the March Hare said to Alice, very earnestly.</p>
+				<p class="p2"><i>&ldquo;I&rsquo;ve had nothing yet,&rdquo;</i><span class="s2"> Alice replied in an offended tone, </span><i>&ldquo;so I can&rsquo;t take more.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;You mean you can&rsquo;t take LESS,&rdquo;</i><span class="s2"> said the Hatter: </span><i>&ldquo;it&rsquo;s very easy to take MORE than nothing.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Nobody asked YOUR opinion,&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p2"><i>&ldquo;Who&rsquo;s making personal remarks now?&rdquo;</i><span class="s2"> the Hatter asked triumphantly.</span></p>
+				<p class="p1">Alice did not quite know what to say to this: so she helped herself to some tea and bread-and-butter, and then turned to the Dormouse, and repeated her question. <span class="s1"><i>&ldquo;Why did they live at the bottom of a well?&rdquo;</i></span></p>
+				<p class="p1">The Dormouse again took a minute or two to think about it, and then said, <span class="s1"><i>&ldquo;It was a treacle-well.&rdquo;</i></span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;There&rsquo;s no such thing!&rdquo;</i></span> Alice was beginning very angrily, but the Hatter and the March Hare went <span class="s1"><i>&ldquo;Sh! sh!&rdquo;</i></span> and the Dormouse sulkily remarked, <span class="s1"><i>&ldquo;If you can&rsquo;t be civil, you&rsquo;d better finish the story for yourself.&rdquo;</i></span></p>
+				<p class="p2"><i>&ldquo;No, please go on!&rdquo;</i><span class="s2"> Alice said very humbly; </span><i>&ldquo;I won&rsquo;t interrupt again. I dare say there may be ONE.&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;One, indeed!&rdquo;</i><span class="s2"> said the Dormouse indignantly. However, he consented to go on. </span><i>&ldquo;And so these three little sisters—they were learning to draw, you know—&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;What did they draw?&rdquo;</i></span> said Alice, quite forgetting her promise.</p>
+				<p class="p1"><span class="s1"><i>&ldquo;Treacle,&rdquo;</i></span> said the Dormouse, without considering at all this time.</p>
+				<p class="p2"><i>&ldquo;I want a clean cup,&rdquo;</i><span class="s2"> interrupted the Hatter: </span><i>&ldquo;let&rsquo;s all move one place on.&rdquo;</i></p>
+				<p class="p1">He moved on as he spoke, and the Dormouse followed him: the March Hare moved into the Dormouse&rsquo;s place, and Alice rather unwillingly took the place of the March Hare. The Hatter was the only one who got any advantage from the change: and Alice was a good deal worse off than before, as the March Hare had just upset the milk-jug into his plate.</p>
+				<p class="p1">Alice did not wish to offend the Dormouse again, so she began very cautiously: <span class="s1"><i>&ldquo;But I don&rsquo;t understand. Where did they draw the treacle from?&rdquo;</i></span></p>
+				<p class="p2"><i>&ldquo;You can draw water out of a water-well,&rdquo;</i><span class="s2"> said the Hatter; </span><i>&ldquo;so I should think you could draw treacle out of a treacle-well—eh, stupid?&rdquo;</i></p>
+				<p class="p1"><span class="s1"><i>&ldquo;But they were IN the well,&rdquo;</i></span> Alice said to the Dormouse, not choosing to notice this last remark.</p>
+				<p class="p2"><i>&ldquo;Of course they were,&rdquo;</i><span class="s2"> said the Dormouse; </span><i>&ldquo;—well in.&rdquo;</i></p>
+				<p class="p1">This answer so confused poor Alice, that she let the Dormouse go on for some time without interrupting it.</p>
+				<p class="p2"><i>&ldquo;They were learning to draw,&rdquo;</i><span class="s2"> the Dormouse went on, yawning and rubbing its eyes, for it was getting very sleepy; </span><i>&ldquo;and they drew all manner of things—everything that begins with an M—&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Why with an M?&rdquo;</i><span class="s2"> said Alice.</span></p>
+				<p class="p1"><span class="s1"><i>&ldquo;Why not?&rdquo;</i></span> said the March Hare.</p>
+				<p class="p1">Alice was silent.</p>
+				<p class="p2"><span class="s2">The Dormouse had closed its eyes by this time, and was going off into a doze; but, on being pinched by the Hatter, it woke up again with a little shriek, and went on: </span><i>&ldquo;—that begins with an M, such as mouse-traps, and the moon, and memory, and muchness—you know you say things are ‘much of a muchness&rsquo;—did you ever see such a thing as a drawing of a muchness?&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Really, now you ask me,&rdquo;</i><span class="s2"> said Alice, very much confused, </span><i>&ldquo;I don&rsquo;t think—&rdquo;</i></p>
+				<p class="p2"><i>&ldquo;Then you shouldn't talk,&rdquo;</i><span class="s2"> said the Hatter.</span></p>
+				<p class="p1">This piece of rudeness was more than Alice could bear: she got up in great disgust, and walked off; the Dormouse fell asleep instantly, and neither of the others took the least notice of her going, though she looked back once or twice, half hoping that they would call after her: the last time she saw them, they were trying to put the Dormouse into the teapot.</p>
+				<p class="p2"><i>&ldquo;At any rate I&rsquo;ll never go THERE again!&rdquo;</i><span class="s2"> said Alice as she picked her way through the wood. </span><i>&ldquo;it&rsquo;s the stupidest tea-party I ever was at in all my life!&rdquo;</i></p>
+				<p class="p1">Just as she said this, she noticed that one of the trees had a door leading right into it. <span class="s1"><i>&ldquo;That&rsquo;s very curious!&rdquo;</i></span> she thought. <span class="s1"><i>&ldquo;But everything&rsquo;s curious today. I think I may as well go in at once.&rdquo;</i></span> And in she went.</p>
+				<p class="p1">Once more she found herself in the long hall, and close to the little glass table. <span class="s1"><i>&ldquo;Now, I&rsquo;ll manage better this time,&rdquo;</i></span> she said to herself, and began by taking the little golden key, and unlocking the door that led into the garden. Then she went to work nibbling at the mushroom (she had kept a piece of it in her pocket) till she was about a foot high: then she walked down the little passage: and THEN—she found herself at last in the beautiful garden, among the bright flower-beds and the cool fountains.</p>
+			</div>
+		</div>
+		<!-- END SEGMENT: SIMPLE BOOK DEMO -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">The Text to EPUB Services</a></li>
+				<li><a href="02.html">The Action Interface</a></li>
+				<li class="hi">Formatted EPUB Demo</li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li><a href="05.html">Multiple Chapter EPUB Demo</a></li>
+				<li><a href="06.html">Add Media to the Book</a></li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">INSTRUCTIONS</h2>
+		
+			<p>The text displayed in the white container to the left, is Chapter 7: <b>A Mad Tea-Party</b>, from <i>Alice&rsquo;s Adventures in Wonderland</i>, by Lewis Carroll. Use this text and the cover image (shown below) as source material for creating example EPUB documents.</p>
+						
+			<p>Follow these steps to convert the example text into an EPUB document:</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> If you haven&rsquo;t already, <a href="services.html" style="font-weight:bold;">DOWNLOAD</a> and install the <b>Text to EPUB</b> services.</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> If you haven&rsquo;t already, download the cover image for the EPUB document (shown below). Follow the instructions beneath the image on the right to save the image file to your desktop.</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> Select the text to be used as the source input by the EPUB service. Double-click the first word &ldquo;There&rdquo; in the chapter, and then choose <b>Select All</b> from the <b>Edit</b> menu, or type <b>Command-A</b> (&#8984;-A).</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> Right-click the cursor in the selected text to summon the contextual menu and select &ldquo;<b>Create Formatted EPUB Book with Selected Text</b>&rdquo; from the forthcoming contextual menu.</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><img src="gfx/cmenu.png" width="200"></p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> On the left side of the action view (see below), enter &ldquo;A Mad Tea Party&rdquo; in the title field <span class="numeric-callout">&nbsp;1&nbsp;</span>, &ldquo;Lewis Carroll&rdquo; in the Author field <span class="numeric-callout">&nbsp;2&nbsp;</span>, &ldquo;teaparty.epub&rdquo; as the file name in the &ldquo;Save As&rdquo; field <span class="numeric-callout">&nbsp;3&nbsp;</span>, and select the &ldquo;Desktop&rdquo; folder as the destination folder from the popup menu <span class="numeric-callout">&nbsp;4&nbsp;</span>.</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><img src="gfx/action-view-left.png" width="200"></p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> On the right side of the action view (see below), select &ldquo;Other…&rdquo; from the &ldquo;Cover Image&rdquo; popup menu <span class="numeric-callout">&nbsp;5&nbsp;</span>, and navigate to and select the cover image you downloaded in step two. Leave the other controls <span class="numeric-callout">&nbsp;6&nbsp;</span>, <span class="numeric-callout">&nbsp;7&nbsp;</span>, <span class="numeric-callout">&nbsp;8&nbsp;</span>, <span class="numeric-callout">&nbsp;9&nbsp;</span> as they are.</p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><img src="gfx/action-view-right.png" width="200"></p>
+			
+			<p style="margin-left:12px;margin-right:6px;"><span class="do-this">DO THIS &#9658;</span> In the action view, click the &ldquo;Continue&rdquo; button and a new EPUB document will be created in the chosen destination.</p>
+		
+			<p>The created EPUB book will automatically open in iBooks.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">COVER IMAGE</h2>
+			
+			<img src="gfx/Tea-Party-Cover.jpg" width="224">
+			
+			<p>To retrieve this image for use as the cover for your EPUB document, right-click the image and choose the saving option from the contextual menu, or drag the image from the browser window to the desktop.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees create a simple digital document containing a single chapter of formatted text and a cover image.</p> 
+			
+			<p>After confirming that all attendees have previously downloaded and installed the Text to EPUB Services, begin the tutorial by demonstrating how to download the cover image to the computer desktop, and then proceed with the process outlined in the steps above.</p>
+												
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol start="1">
+				<li>Services expose the power of Automator through contextual menus, available when text and other types of data are selected.</li>
+			
+				<li>The Text to EPUB action is designed to easily create digital books. This is accomplished by limiting some of the layout options, such as the number of media items displayed per chapter. If an attendee requires greater layout control, then  <a href="http://www.apple.com/iwork/pages/" target="_blank">Pages</a> or <a href="http://www.apple.com/ibooks-author/" target="_blank">iBooks Author</a> are excellent tools for creating more precise digital publications.</li>
+				
+			</ol>
+			
+			
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

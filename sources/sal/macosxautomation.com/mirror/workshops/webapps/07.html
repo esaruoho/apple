@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" >Sharing Web-Apps</div>
+			
+			<p class="content-subhead">Viewing Web-Apps</p>
+			
+			<p>As you&rsquo;ve experienced by following the guided examples in this workshop, creating web-applications from selected text content is an easy process: <i>simply select some text, and run a system service</i>.</p>
+			
+			<p>Once the folder containing the web-application has been created, the web-app can be viewed by either:</p>
+			
+			<ol>
+				<li>Opening the file <b>index.html</b>, found within the web-app&rsquo;s folder (see below), using a web browser application, such as Safari; or</li>
+			</ol>
+				
+			<img class="centered" alt="webappcontents" src="gfx/webappcontents.png" width="624" height="446">
+			<ol start="2">	
+				<li>Placing the web-application folder on an internet server, and sharing and opening a link to the main HTML file (found in the web-app folder), with a web browser application running on your computer or mobile device. Such a link would look something like this:<br><br>http://<span style="font-family:'Times New Roman',serif;font-style:italic;color:maroon;font-size:large;">your.internet.server.address</span>/<span style="font-family:'Times New Roman',serif;font-style:italic;color:maroon;font-size:large;">web-app-folder-name</span>/index.html</li>
+				<li>Or by using the <b>WebKit Viever Applet</b> to host and display the web content in its own broswer window.</li>
+			</ol>			
+			</div>
+			
+		<div class="content-segment">
+			<div class="segment-header" >Turning Web-Apps into Desktop Apps</div>
+			
+			<p>While web-apps are easy to create, internet access might not be available, or the preferred means for sharing content. You may wish to simply create content and share it with other Mac users without needing a network.</p>
+			
+			<p>This can easily accomplished, by using a special droplet application, provided with this workshop. The <b>WebKit Viewer</b> AppleScript applet is a desktop-application that hosts and displays the contents of a web-application folder. (see below)</p>
+			
+			<img alt="webkit-viewer-squirrel" src="gfx/webkit-viewer-squirrel.png" width="624" height="571" class="across">
+			
+			<p class="content-subhead">Try It Yourself!</p>
+			
+			<p>The following instructions detail how to download, install, and use the <b>WebKit Viewer</b> AppleScript droplet.</p>
+			
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >Installation of the Droplet</div>
+			<p>The first step is to download and install the AppleScript droplet.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;<a href="webkitviewer.zip">DOWNLOAD</a> the ZIP archive containing the <b>WebKit Viewer Applet</b>.</p>
+		
+			<p>Unpack the ZIP archive to create a new copy of the <b>WebKit Viewer Applet</b>. Place the droplet on the desktop.
+		
+			<img alt="droplet" src="gfx/droplet.png" width="256" height="256" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;To confirm the installation, double-click the droplet icon to summon its instructions dialog (shown below).</p>
+						
+			<img class="centered" alt="webkit-viewer-default-window" src="gfx/webkit-viewer-default-window.png" width="624" height="570">
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >Gatekeeper and the Installation Process</div>
+			<p>Should a security dialog (shown below) appear instead of the droplet&rsquo;s instructions dialog (shown above), then a few extra steps are required to allow the droplet to run on your computer. Otherwise, if no security dialog appeared, skip this section and begin the section titled <b>Using the Droplet to Create a Desktop App</b>.</p>
+			
+			<img class="centered" alt="unkown-developer-dialog" src="gfx/unkown-developer-dialog.png" width="534" height="273">
+			
+			<p class="content-subhead">Gatekeeper</p>
+			
+			<p>OS&nbsp;X includes a security feature named <b>Gatekeeper</b>. Found in the <b>Security &amp; Privacy</b> preference pane of the <b>System Preferences</b> application, Gatekeeper controls which applications are allowed to run on your computer.</p>
+			
+			<p>The security dialog you encountered when trying to run the downloaded droplet (shown above), indicates that the current Gatekeeper settings are performing as they should, blocking the execution of an application (a droplet is a type of application) that is not from Apple, or &ldquo;signed&rdquo; by a registered Apple developer.</p>
+			
+			<p>Gatekeeper offers three user-configurable settings for determining which applications can be downloaded and run on your computer (see below):</p>
+			
+			<ol>
+				<li><b>Mac App Store</b> – Only apps that came from the Mac App Store can open.</li>
+				<li><b>Mac App Store and identified developers</b> (default in OS X Mountain Lion) – Only allow apps that came from the Mac App Store and developers using Gatekeeper can open.</li>
+				<li><b>Anywhere</b> – Allow applications to run regardless of their source on the Internet (default in OS X Lion v10.7.5); Gatekeeper is effectively turned off. Note: Developer ID-signed apps that have been inappropriately altered will not open, even with this option selected.</li>
+			</ol>
+			
+			<img class="centered" alt="gatekeepersettings" src="gfx/gatekeepersettings.jpg" width="624" height="118" style="margin-bottom:0;">
+			<p class="imagecaption">The Gatekeeper settings in the Security &amp; Privacy system preference pane.</p>
+			
+			<p>(<a href="http://support.apple.com/kb/ht5290" target="_blank">More information about Gatekeeper</a>)</p>
+						
+			<p>Gatekeeper serves an important security function in OS&nbsp;X and should not be disabled unless you have a valid need to do so. <b>IMPORTANT: It is not necessary to disable Gatekeeper to use the downloaded droplet</b>. A simple exemption procedure (detailed below) is provided in OS&nbsp;X to allow you to run unsigned applications from trusted sources.</p>
+			
+			<p class="content-subhead">Exempting the Droplet</p>
+			
+			<p>Follow these steps to assign the droplet permanent permission to run on your computer:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the Finder, Control-click or right click the icon of the droplet to summon the Finder contextual menu (see below). Select the <b>Open</b> menu item from the top of contextual menu.</p>
+			
+			<img class="centered" alt="contextual-open-menu" src="gfx/contextual-open-menu.png" width="285" height="443">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the forthcoming confirmation dialog (shown below), click the <b>Open</b> button to launch the droplet.</p>
+			
+			<img class="centered" alt="confirm-with-open-option" src="gfx/confirm-with-open-option.png" width="534" height="290">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Exempting an application from Gatekeeper requires valid approval. In the forthcoming security dialog (see below), enter an administrative user name and password for this computer in the corresponding input fields, and click the <b>Modify Settings</b> button:</p>
+			
+			<img class="centered" alt="adminpasswordentry" src="gfx/adminpasswordentry.png" width="557" height="353">
+			
+			<p>Once exempted, the droplet will launch, displaying its information dialog. No further approval is necessary to use the droplet on this computer. It will run uninterrupted each time it is used.</p>
+			
+			<img class="centered" alt="webkit-viewer-default-window" src="gfx/webkit-viewer-default-window.png" width="624" height="570">
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >Using the Droplet to Create a Desktop App</div>
+			
+			<p>Creating a stand-alone self-running desktop application from the web-app generated by the <b>Multi-Column</b> and <b>Single-Page</b> services is an easy process.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Drag one of the folders containing the example web-apps you created, onto the droplet icon. A confirmation dialog will be displayed: (see below)</p>
+		
+			<img alt="approval-dialog" src="gfx/approval-dialog.png" width="534" height="263" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Continue</b> button in the dialog (see above) to begin the process of converting the folder contents into a self-running application. A web-view browser will appear displaying the new content when the processing has completed.</p>
+						
+			<img alt="webkit-viewer-squirrel" src="gfx/webkit-viewer-squirrel.png" width="624" height="571" class="across">
+			
+		</div>
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >Example Desktop Apps</div>
+			
+			<p>Click <a href="4viewers.zip">HERE</a> to download desktop web-apps for all of the examples in this workshop.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, we&rsquo;ll review.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="08.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Multi-Column Article</a></li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li><a href="03.html">Multi-Column Article: Demo</a></li>
+				<li><a href="04.html">Single-Page Web App</a></li>
+				<li><a href="05.html">Single-Page Web-App: Interface</a></li>
+				<li><a href="06.html">Single-Page Web-App: Demo</a></li>
+				<li class="hi">Desktop Web-Apps</li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, the attendees learn how to create desktop-application versions of the web-applications they created in the prior workshop segments.</p>
+			
+			<p>The first section reviews how to view and share a web-application, followed by a short explanation of how created desktop-applications can be shared locally between computers.</p>
+			
+			<p>The second section details how to download and install the provided droplet application that will be used to create desktop-applications from web-applications. Should the security preferences on an attendee&rsquo;s computer block the running of the downloaded droplet application, the next section details the steps required to exempt the droplet from further Gatekeeper scrutiny.</p>
+			
+			<p>The final section of this segment outlines how to use the droplet to create desktop-applications from the HTML content of a web-application created using the featured multi-page and single-page system services.</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+						
+			<ol type="1">
+				<li>Discuss the difference between web-apps and desktop-apps, especially that web-apps sometimes require network access to be installed and run, while desktop-applications can be shared between computers through other methods like AirDrop or &ldquo;Sneaker-Net.&rdquo;</li>
+				<li>Discuss Gatekeeper, general security practices, and the concept of trusted sources.</li>
+				<li>As a time-saver, you may wish to <a href="4viewers.zip">download</a> the completed examples of desktop-applications.</li>
+				<li>As an additional topic, you can discuss how to use AirpDrop to share the created desktop applets. Refer to the <a href="../sharing/01.html">AirDrop section</a> of the <a href="../sharing/index.html">Sharing Workshop</a>.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

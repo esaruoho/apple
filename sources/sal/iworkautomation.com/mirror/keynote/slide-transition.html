@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Slide Transitions</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for applying transitions to slides in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Slide Transitions</div>			
+			<p>Transitions are visual effects that play as a presentation moves from one slide to the next. Subtle or dramatic, transitions really impact how a presentation is received by its audience.</p>
+			
+			<p>The Keynote scripting dictionary contains no specific <span class="codelibraryclass">transition</span> class. Instead, transitions are implemented as a <span class="codelibraryclass">slide</span> property whose name is <span class="codeproperty">transition properties</span>. The value of the <span class="codeproperty">transition properties</span> property is an AppleScript record, called <span class="codeproperty">transition settings</span>, listing the transition’s parameters and their corresponding values.</p>
+			
+			<p>To apply a transition to a slide, you simply change the <span class="codeproperty">transition settings</span> of the <span class="codeproperty">transition properties</span> property (try saying <i>that</i> over and over). You can change one, two, three, or all of the transition settings in one statement.</p>
+			
+			<p>Here’s an example script statement for setting a transition for a slide:</p>			
+			
+			<p class="code" style="text-indent:-64px;padding-left:64px;">&nbsp;&nbsp;<b>set the</b> <span class="codeproperty">transition properties</span> <b>of the</b> <span class="codeproperty">current slide</span> <b>to</b> {<span class="codeproperty">transition effect</span>:<span class="codeenumeration">wipe</span>, <span class="codeproperty">transition duration</span>:2.0, <span class="codeproperty">transition delay</span>:0, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">false</span>}</p>	
+
+			<p>An here are the relevant excerpts from the Keynote scripting dictionary:</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Transition Properties Property (Excerpt from Slide Class)</p>
+			<div class="dictionary" style="-webkit-user-select:text;">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">slide</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [<i>inh</i>. <span class="dictionary-class">iWork container</span>; see also <span class="dictionary-suite">Compatibility Suite</span>] :  A slide in a presentation document.</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">transition properties</span> (&nbsp;<span class="dictionary-class">transition settings</span>&nbsp;) : The transition settings to apply to the slide.</p>
+			</div>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Slide Transition Settings</p>
+			<div class="dictionary"">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">transition settings</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: Properties common to all transitions.</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">automatic transition</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Should the transition begin automatically? A value of false indicates to transition on click.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">transition delay</span> (&nbsp;<span class="dictionary-class">real</span>&nbsp;) : The number of seconds to wait until beginning the transition.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">transition duration</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : The number of seconds allocated for the transition to occur.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">transition effect</span> (&nbsp;<span&nbsp;class="dictionary-enumeration">no&nbsp;transition&nbsp;effect</span>/<span&nbsp;class="dictionary-enumeration">magic&nbsp;move</span>/<span&nbsp;class="dictionary-enumeration">shimmer</span>/<span&nbsp;class="dictionary-enumeration">sparkle</span>/<span&nbsp;class="dictionary-enumeration">swing</span>/<span&nbsp;class="dictionary-enumeration">object&nbsp;cube</span>/<br><span&nbsp;class="dictionary-enumeration">object&nbsp;flip</span>/<span&nbsp;class="dictionary-enumeration">object&nbsp;pop</span>/<span&nbsp;class="dictionary-enumeration">object&nbsp;push</span>/<span&nbsp;class="dictionary-enumeration">object&nbsp;revolve</span>/<span&nbsp;class="dictionary-enumeration">object&nbsp;zoom</span>/<span&nbsp;class="dictionary-enumeration">perspective</span>/<span&nbsp;class="dictionary-enumeration">clothesline</span>/<br><span&nbsp;class="dictionary-enumeration">confetti</span>/<span&nbsp;class="dictionary-enumeration">dissolve</span>/<span&nbsp;class="dictionary-enumeration">drop</span>/<span&nbsp;class="dictionary-enumeration">droplet</span>/<span&nbsp;class="dictionary-enumeration">fade&nbsp;through&nbsp;color</span>/<span&nbsp;class="dictionary-enumeration">grid</span>/<span&nbsp;class="dictionary-enumeration">iris</span>/<span&nbsp;class="dictionary-enumeration">move&nbsp;in</span>/<span&nbsp;class="dictionary-enumeration">push</span>/<span&nbsp;class="dictionary-enumeration">reveal</span>/<span&nbsp;class="dictionary-enumeration">switch</span>/<br><span&nbsp;class="dictionary-enumeration">wipe</span>/<span&nbsp;class="dictionary-enumeration">blinds</span>/<span&nbsp;class="dictionary-enumeration">color&nbsp;planes</span>/<span&nbsp;class="dictionary-enumeration">cube</span>/<span&nbsp;class="dictionary-enumeration">doorway</span>/<span&nbsp;class="dictionary-enumeration">fall</span>/<span&nbsp;class="dictionary-enumeration">flip</span>/<span&nbsp;class="dictionary-enumeration">flop</span>/<span&nbsp;class="dictionary-enumeration">mosaic</span>/<span&nbsp;class="dictionary-enumeration">page&nbsp;flip</span>/<span&nbsp;class="dictionary-enumeration">pivot</span>/<span&nbsp;class="dictionary-enumeration">reflection</span>/<br><span&nbsp;class="dictionary-enumeration">revolving&nbsp;door</span>/<span&nbsp;class="dictionary-enumeration">scale</span>/<span&nbsp;class="dictionary-enumeration">swap</span>/<span&nbsp;class="dictionary-enumeration">swoosh</span>/<span&nbsp;class="dictionary-enumeration">twirl</span>/<span&nbsp;class="dictionary-enumeration">twist</span>&nbsp;) : The transition effect to apply between the current and following slides.</p>
+			</div>
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> Transition Settings Controls &bull; The transition settings properties match the controls in the Keynote interface: Transition Effect <span class="numeric-callout">&nbsp;1&nbsp;</span> ; Transition Duration <span class="numeric-callout">&nbsp;2&nbsp;</span> ; Automatic Transition <span class="numeric-callout">&nbsp;3&nbsp;</span> ; Transition Delay <span class="numeric-callout">&nbsp;4&nbsp;</span> .</p>
+			
+			<img class="across" width="640" height="389" alt="transition-settings" src="gfx/transition-settings.png">
+			
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: NEW SLIDE WITH MASTER -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Slide Transition Example Script</div>			
+			
+			<p>The following example script demonstrates how to apply transitions to existing and created slides:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Slide Transition Example Script</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09set%20thisDocument%20to%20%C2%AC%0D%09%09%09make%20new%20document%20with%20properties%20%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3A1024%2C%20height%3A768%7D%0D%09%09%0D%09%09tell%20thisDocument%0D%09%09%09%0D%09%09%09tell%20the%20first%20slide%0D%09%09%09%09set%20the%20base%20slide%20to%20master%20slide%20%22Title%20%26%20Subtitle%22%20of%20thisDocument%0D%09%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%09%7Btransition%20effect%3Adoorway%2C%20transition%20duration%3A2.0%2C%20transition%20delay%3A1.5%2C%20automatic%20transition%3Atrue%7D%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22My%20Presentation%22%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%22Fun%20Stuff%20for%20You%20to%20Know%22%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Title%20%26%20Bullets%22%7D%0D%09%09%09tell%20thisSlide%0D%09%09%09%09set%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%09%7Btransition%20effect%3Adissolve%2C%20transition%20duration%3A2.0%2C%20transition%20delay%3A1.5%2C%20automatic%20transition%3Atrue%7D%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Main%20Topic%22%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%C2%AC%0D%09%09%09%09%09%22Bullet%20Point%201%22%20%26%20return%20%26%20%22Bullet%20Point%202%22%20%26%20return%20%26%20%22Bullet%20Point%203%22%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20PLAY%20THE%20PRESENTATION%0D%09%09start%20thisDocument%20from%20the%20first%20slide%20of%20thisDocument%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(%22ERROR%20%22%20%26%20errorNumber)%20as%20string%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;, <span class="codeproperty">width</span>:1024, <span class="codeproperty">height</span>:768}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title &amp; Subtitle&quot; <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">doorway</span>, <span class="codeproperty">transition duration</span>:2.0, <span class="codeproperty">transition delay</span>:1.5, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;My Presentation&quot;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &quot;Fun Stuff for You to Know&quot;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Title &amp; Bullets&quot;}</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">dissolve</span>, <span class="codeproperty">transition duration</span>:2.0, <span class="codelibraryparameter">transition delay</span>:1.5, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Main Topic&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot;Bullet Point 1&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 2&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 3&quot;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- PLAY THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (&quot;ERROR &quot; & <span class="codevariable">errorNumber</span>) <b>as</b> <span class="codelibraryclass">string</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: NEW SLIDE WITH MASTER -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="slide-skipped.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="slide.html">Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-make.html">Making Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-duplicate.html">Duplicating Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-move.html">Moving Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-masters.html">Applying Master Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-default-text.html">Default Text Items</a></li>
+				<li class="navListSectionItemSelected">Slide Transitions</li>
+				<li class="navListSectionItem"><a href="slide-skipped.html">Show|Hide Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-delete.html">Deleting Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-presenter-notes.html">Presenter Notes</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

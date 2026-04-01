@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>The &ldquo;use statement&rdquo;: Frameworks</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Code signing support in OS X Automation editor applications">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">use (framework)</div>
+			<p>Declares a required framework for use with AppleScript/Objective-C.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: The importation of frameworks via the <b>use statement</b> is only supported in script libraries, not in other scripts or applets.</b></p>
+			
+			<p class="dictionary" style="width:604px;">
+			
+				<span style="font-weight:bold;font-size:large;">Syntax</span><br><br>
+			
+				<b>use</b> framework <span class="codelibraryclass">specifier</span><br><br>
+			
+			<span style="font-weight:bold;font-size:large;">Placeholders</span><br><br>
+			
+			<span class="codelibraryclass"><b>specifier</b></span><br>
+			<span class="dictionary-definition">Specifier data for the resource. This may be a base name (&quot;AppKit&quot;), a full name ("AppKit.framework"), or a POSIX path (&quot;/System/Library/Frameworks/AppKit.framework&quot;).</span><br><br>
+						
+			</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: EXAMPLES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Examples</div>
+			<p>Most script libraries that use AppleScript/Objective-C, should have at least one of these two <b>use statements</b>:</p>
+			
+			<p class="code"><b>use</b> <span class="codelibraryclass">framework</span> &quot;Foundation&quot;<br>
+			<b>use</b> <span class="codelibraryclass">framework</span> &quot;AppKit&quot;</p>
+			
+			<p>You can also import other frameworks, such as MapKit:</p>
+			
+			<p class="code"><b>use</b> <span class="codelibraryclass">framework</span> &quot;MapKit&quot;</p>
+						
+		</div>
+		<!-- END SEGMENT: EXAMPLES -->
+		
+		<!-- BEGIN SEGMENT: DISCUSSION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Discussion</div>
+			<p>When you declare a required framework, AppleScript ensures the framework is loaded before running your script. To ensure that your AppleScript/Objective-C script libraries work correctly in any application, declare all needed frameworks explicitly; otherwise, there is no guarantee that a given framework will be available, and your script may encounter errors.</p>
+			<p class="segment-note">NOTE: The <b>version</b> parameter is not supported for frameworks; to check whether or not a framework supports a certain feature, use <span class="inlinecode">NSClassFromString</span> or <span class="inlinecode">-respondsToSelector:</span>.</p>
+		</div>
+		<!-- END SEGMENT: DISCUSSION -->
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li class="hi">The &ldquo;use&rdquo; Statement</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li><a href="01.html">Scripting Additions</a></li>
+					<li><a href="02.html">Applications and Libraries</a></li>
+					<li class="hi">Frameworks</li>
+				</ol>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

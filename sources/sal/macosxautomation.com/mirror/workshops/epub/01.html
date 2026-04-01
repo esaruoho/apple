@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: The Text to EPUB Services</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRO TO TEXT TO EPUB SERVICES -->
+		<div class="content-segment">
+			<div class="segment-header" >The Text to EPUB Services</div>
+			<p>As stated in the introduction, OS&nbsp;X includes an Automator action named <b>Text to EPUB</b> that enables the creation of digital publications from various sources of text, graphics, and media. The power of this Automator action is made available for your use through contextual system services, which are enabled when you have text or text files selected.</p>
+			
+			<p>During this workshop, you will download and install a set of system services that will be used to create digital publications from provided media and text files.</p>
+			
+			<p class="segment-note"><b>TIP</b>: For an overview of Services, <a href="http://www.macosxautomation.com/services/video/services-001HD.html"><font color="#FF0000">watch this short movie</font></a>.</p>
+			
+			
+			<p>The <b>Text to EPUB Services</b> collection contains four Automator services you will use for converting text into digital books:</p>
+			<ol>
+				<li><b>Create EPUB Book with Selected Text</b> &bull; This service creates a standard EPUB book using the text selected when the service is activated. Works in most applications.</li>
+				
+				<li><b>Create Formatted EPUB Book with Selected Text</b> &bull; As with the previous service, this service creates an EPUB document from the selected text in an application, while retaining formatting such as font color, style, indenting, etc.</li>
+				
+				<li><b>Create EPUB Book with Selected Files</b> &bull; This service creates an EPUB document using text files selected in the Finder as the input text. Each file becomes a chapter in the book.</li>
+				
+				<li><b>Create EPUB Book with Contents of Clipboard</b> &bull; This service creates a digital publication using text placed on the clipboard as the source.</li>
+			</ol>
+			
+			<p>Additionally, each publication can contain images, audio files, and video files, chosen by the user when the service is run.</p>
+		</div>
+		<!-- END SEGMENT: INTRO TO TEXT TO EPUB SERVICES -->
+		
+		<!-- BEGIN SEGMENT: INSTALLING THE SERVICES -->
+		<div class="content-segment">
+			<div class="segment-header" >Download and Install the Services</div>
+	
+			<p>Installation of Automator-based services is easy, just follow these steps:</p>  
+			
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="EPUBservices.zip" style="font-weight:bold;">DOWNLOAD</a> and unpack the zip archive containing the Automator service workflow files.</p>
+				
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the folder containing the services, and double-click the <b>Automator Service Installer</b> applet. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+				
+				<img src="gfx/servicesandinstaller.png" width="624" class="centered">
+				
+				<p>A security dialog will display <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> informing you that the <b>Automator Service Installer</b> applet was downloaded from this website, and asking you to confirm your intention to launch the applet.</p>
+				
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the <b>Open</b> button in the security dialog to launch the <b>Automator Service Installer</b> applet.</p>
+			
+			<img src="gfx/internetdownloaddialog.png" width="624" class="centered">
+				
+			<p>The <b>Automator Service Installer</b> dialog will display <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img src="gfx/installerappletdialog.png" width="474" class="centered" alt="installerappletdialog" height="326">
+			
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the <b>Continue</b> button in the applet dialog (see above), and then enter an administrator name and password in the forthcoming security dialog <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img src="gfx/namepassworddialog.png" width="557" class="centered" alt="namepassworddialog" height="353">
+			
+			
+			<p>Once the <b>Automator Service Installer</b> has completed the installation of the Automator service workflows, it will display a confirmation dialog <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+				
+			</ol>		
+			
+			<img src="gfx/installercompletiondialog.png" width="474" class="centered" alt="installercompletiondialog" height="259">
+		</div>
+		<!-- END SEGMENT: INSTALLING THE SERVICES -->
+		
+		<!-- BEGIN SEGMENT: EXAMINING THE SERVICE WORKFLOWS -->
+		<div class="content-segment">
+			<div class="segment-header" >The Service Workflows (optional)</div>
+			
+			<p>For those interested in how the <b>Text to EPUB</b> action is used in the construction of the Automator service workflows, the following is a brief explanation of the design of each service workflow. Otherwise, skip ahead to the <a href="02.html">next workshop segment</a>.</p>
+			
+			<p class="segment-note"><b>TIP</b>: For a thorough introduction to Automator, <a href="http://www.macosxautomation.com/automator/video/automator-001A.html"><font color="#FF0000">watch this short movie</font></a>.</p>
+
+			<ol start="1">
+				<li><b>Create EPUB Book with Selected Text</b> &bull; This service is designed to create an EPUB document from the text selected in an application. Therefore the data input settings of the service workflow (located at the top of the workflow, before any actions) are set to accept text selected in any application. The data input bar is followed by an action that accepts the selected text and turns it into a text file on disk. The created text file is then used as input for the <b>Text to EPUB</b> action, which is set to display its action view to the user during the execution of the service, allowing the user to enter the name and location for the created file, as well as add any image, audio, or video files to the document.</li>
+			</ol>
+			
+			<img src="gfx/workflow-bookwithselectedtext.png" width="640" class="across">
+			
+			<ol start="2">
+				<li><b>Create Formatted EPUB Book with Selected Text</b> &bull; This service is designed to create an EPUB document from the text selected in an application while preserving some of the formatting of the source text in the new document. Therefore the data input settings of the service workflow (located at the top of the workflow, before any actions) are set to accept rich text selected in any application. The data input bar is followed by an action that accepts the selected text and turns it into a rich text file on disk. The created RTF file is then used as input for the <b>Text to EPUB</b> action, which is set to display its action view to the user during the execution of the service, allowing the user to enter the name and location for the created file, as well as add any image, audio, or video files to the document.</li>
+			</ol>
+			
+			<img src="gfx/workflow-formattedbookwithselectedtext.png" width="640" class="across">
+			
+			<ol start="3">
+				<li><b>Create EPUB Book with Selected Files</b>  &bull; This service is designed to create a multiple-chapter EPUB book using text files selected in the Finder as its input. Therefore the data input settings of the service workflow (located at the top of the workflow, before any actions) are set to accept documents in the Finder. The data input bar is followed by an action that sorts  the files into alphabetical order. The alphabetically sorted list of files is then passed as input to the <b>Text to EPUB</b> action, which is set to display its action view to the user during the execution of the service, allowing the user to enter the name and location for the created file, as well as add any image, audio, or video files to the document.</li>
+			</ol>
+			
+			<img src="gfx/workflow-bookwithselectedfiles.png" width="640" class="across">
+			
+			<ol start="4">
+				<li><b>Create EPUB Book with Contents of Clipboard</b> &bull; This service is designed to create an EPUB book using the contents of the clipboard. Therefore the data input settings of the service workflow (located at the top of the workflow, before any actions) are set to not accept input but be available to the user from within any application. The data input bar is followed by an action that retrieves the contents of the clipboard, which  is then passed as input to the <b>Text to EPUB</b> action that is set to display its action view to the user during the execution of the service, thereby allowing the user to enter the name and location for the created file, as well as add any image, audio, or video files to the document.</li>
+			</ol>
+			
+			<img src="gfx/workflow-bookwithclipboardcontents.png" width="640" class="across">
+		
+		</div>
+		<!-- END SEGMENT: EXAMINING THE SERVICE WORKFLOWS -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li class="hi">The Text to EPUB Services</li>
+				<li><a href="02.html">The Action Interface</a></li>
+				<li><a href="03.html">Formatted EPUB Demo</a></li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li><a href="05.html">Multiple Chapter EPUB Demo</a></li>
+				<li><a href="06.html">Add Media to the Book</a></li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>Some of the workshop participants may be unfamiliar with Automator and Services. Although the segments of this specific workshop do not involve user participation in the creation of Automator workflows and services, a short explanation of Automator and Service architecture may be useful nonetheless as background information for attendees.</p>
+			
+			<p>If time allows, the attendees can watch short introductory videos about:</p>
+			<ul>
+				<li><a href="http://www.macosxautomation.com/automator/video/automator-001A.html">Automator</a> (7:15)</li>
+				<li><a href="http://www.macosxautomation.com/services/video/services-001HD.html">Services</a> (5:10)</li>
+			</ul>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Automator is an application, included with OS, used to create reusable &ldquo;automaton recipes&rdquo; by linking together &ldquo;actions&rdquo; that deliver the functionality of various installed applications and frameworks.</li>
+				<li>Services expose the power of Automator through contextual menus, available when text and other types of data are selected. 
+				<li>Automator actions and services are very powerful tools, providing direct access to the functions of applications and OS frameworks. It is strongly suggested that actions and services be download and installed ONLY FROM TRUSTED SOURCES.</li>
+			</ol>
+		</div>
+		
+<!-- 
+		<div class="box">
+			<h2 style="text-align:center;">EPUB SERVICES</h2>
+			<p>The <b>Text to EPUB Services</b> collection contains four Automator services for converting text into digital books:</p>
+			<ol>
+				<li>Create EPUB Book with Selected Text</li>
+				<li>Create Formatted EPUB Book with Selected Text</li>
+				<li>Create EPUB Book with Selected Files</li>
+				<li>Create EPUB Book with Contents of Clipboard</li>
+			</ol>
+			<p>(<a href="EPUBservices.zip" style="font-weight:bold;">DOWNLOAD</a>)</p>
+		</div>
+ -->
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

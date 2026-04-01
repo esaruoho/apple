@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Quick Actions: Assistive Access</title>
+	<link rel="apple-touch-icon" href="automator-nav.png">
+	<meta name="description" content="Welcome to OMNI-AUTOMATION.COM, a resource for information about the new dual-platform automation support (macOS/iOS) in the apps from The Omni Group.">
+	<link rel="stylesheet" type="text/css" href="automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="index.html"><img class="nav-icon" alt="Automator" src="gfx/automator-nav.png"></a>
+			<a href="workflow/index.html"><img class="nav-icon" alt="Workflows" src="gfx/workflow-nav.png"></a>
+			<a href="application/index.html"><img class="nav-icon" alt="Applications" src="gfx/application-nav.png"></a>
+			<a href="services/index.html"><img class="nav-icon" alt="Quick Actions" src="gfx/services-nav.png"></a>
+			<a href="print/index.html"><img class="nav-icon" alt="Print Plugins" src="gfx/print-plugin-nav.png"></a>
+			<a href="folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="gfx/folder-action-nav.png"></a>
+			<a href="calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="gfx/calendar-alarm-nav.png"></a>
+			<a href="image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="gfx/image-capture-plugin-nav.png"></a>
+			<a href="dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="gfx/dictation-command-nav.png"></a>
+			<a href="utilities/index.html"><img class="nav-icon" alt="Utilities" src="gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Enabling Assistive Access</p>
+			
+			<p>Sometimes it may be necessary to control apps by manipulating their user interfaces via special AppleScript and JavaScript scripts that mimic an active user through the system&rsquo;s accessibility frameworks.</p>
+			
+			<p>Following the <b>Trusted Event Dispatching</b> protocols of macOS, script commands that direct the accessibility architecture require specific user approval to execute.</p>
+			
+			
+		<img width="573" style="display:block;margin-left:auto;margin-right:auto;" alt="servicesui-granting-dialog" src="gfx/servicesui-granting-dialog.png">
+			
+			
+			<p>The following steps detail how to enable &ldquo;User Interface Scripting&rdquo; for scripts placed within an Automator workflow.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">The &ldquo;Security &amp; Privacy&rdquo; system preference pane</p>
+			
+			<p>Preferences for enabling scripting access to the Accessibility frameworks are available in the <a href="x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility">&ldquo;Security &amp; Privacy&rdquo; system preference pane</a>.</p>
+			
+			<p>To access the &ldquo;Security &amp; Privacy&rdquo; system preference pane, open the System Preferences app by selecting &ldquo;System Preferences&hellip;&rdquo; from the Apple menu (&#63743;), and then choose &ldquo;Security &amp; Privacy&rdquo; from the app&rsquo;s &ldquo;View&rdquo; menu.</p>
+									
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/accessibility-01.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Security &amp; Privacy</b> system preference pane in the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Privacy</b> tab is selected in the <b>Security &amp; Privacy</b> system preference pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Accessibility</b> category is selected in the privacy categories list.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>lock|unlock</b> button for enabling access to the accessibility parameters. Access requires an administrative password.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The Accessibility Access List is a list of applications identified for access to the accessibility frameworks. Accessibility access for the applications in this list is controlled by selecting|deselecting the checkbox before the application&rsquo;s title. TIP: if you control-click an application in the list, a popup menu for <b>Show in Finder</b> will become available.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The plus (+) and minus (-) buttons for adding or removing applications from the list. These buttons are only enabled while the preference pane is unlocked.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Adding the ServicesUIAgent Application to the Accessibility Access List</p>
+			
+			<p>Automator actions that contain scripts targeting the Accessibility frameworks, are executed by the <b>ServicesUIAgent</b> application, a special system process whose use must be authorized by an administrative user of the computer.</p>
+			
+			<p>To add and authorize this application, click the plus (+) button and a standard file chooser sheet will be displayed over the preference window.</p>
+			
+			<p>Since the ServicesUIAgent application is a system process, its bundle resides within the System folder of the computer. To locate the application, we&rsquo;ll use the chooser dialog&rsquo;s optional path input. Type Shift-Command-G (&#8679;&#8984;G) to summon the path input dialog over the sheet:</p>
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/accessibility-02.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Security &amp; Privacy</b> system preference pane in the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The file chooser sheet displayed over the preference pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The optional path input dialog summoned by typing <b>Shift-Command-G</b> (&#8679;&#8984;G). This dialog will accept the path to the folder or file you wish to reveal in the file chooser dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>ServicesUIAgent</b> application resides within the <b>CoreServices</b> folder of the <b>System Library</b> folder, so enter the following UNIX path to that folder: <span class="keyEnum">/System/Library/CoreServices/</span></p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Press the <b>Go</b> button to display the contents of the <b>CoreServices</b> folder in the file chooser dialog window.</p>
+			</div>
+
+			<p>Once the <b>Go</b> button is pressed in the optional path input dialog, the contents of the <b>CoreServices</b> folder will be displayed in the file chooser dialog window. We’ll enter a search term in the dialog to filter the contents of the <b>CoreServices</b> folder for items whose name contains the term &ldquo;Services.&rdquo;</p>
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/accessibility-03.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Security &amp; Privacy</b> system preference pane in the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The file chooser sheet displayed over the preference pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Enter the term &ldquo;<b>Services</b>&rdquo; in the dialog’s search field.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;focus the search specifically to the <b>CoreServices</b> folder by selecting the search domain button labeled &ldquo;<b>CoreServices</b>.&rdquo;</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Select the <b>ServicesUIAgent</b> application icon in the dialog view.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;Click the <b>Open</b> button to complete the selection process.</p>
+			</div>
+
+			<p>The <b>ServicesUIAgent</b> application will now appear in the <b>Accessibility Access List</b> as an application approved to access and use the Accessibility frameworks of the system. Automator workflows containing scripts for controlling the user interface will now be unimpeded in their function.</p>
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/accessibility-04.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Security &amp; Privacy</b> system preference pane in the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Privacy</b> tab is selected in the <b>Security &amp; Privacy</b> system preference pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Accessibility</b> category is selected in the privacy categories list.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>ServicesUIAgent</b> application is approved for access to the Accessibility frameworks.</p>
+				<!-- <p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p> -->
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Resetting the Privacy Database</p>
+			
+			<p><b>ADVANCED USER TIP</b>: should you wish to clear the current settings of the privacy database for a category, such as for the Accessibility category, you can enter and run any of the following commands in the Terminal application. NOTE: these commands cannot be undone.</p>
+			
+			<p>The <b>tccutil</b> command manages the macOS privacy database, which stores decisions the user has made about which applications may access personal data.</p>
+			
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Reset the Privacy Database</td></tr>
+<!-- 
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('XXXXX');">Copy Script</button>&nbsp;<button style="padding:4px;" onClick="openScriptLink('XXXXXX');">Run Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+ -->
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset AddressBook</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Calendar</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Reminders</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Photos</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Camera</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset AppleEvents</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Microphone</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Accessibility</td></tr>
+			</table>
+
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="index.html">Automator</a></p>
+			  <p class="sub-topic"><a href="workflow/index.html">Workflow</a></p>
+			  <p class="sub-topic"><a href="application/index.html">Application</a></p>
+			  <p class="sub-topic"><a href="services/index.html">Quick Actions</a></p>
+			  <p class="sub-topic"><a href="print/index.html">Print Plugins</a></p>
+			  <p class="sub-topic"><a href="folder-action/index.html">Folder Actions</a></p>
+			  <p class="sub-topic"><a href="calendar/index.html">Calendar Alarms</a></p>
+			  <p class="sub-topic"><a href="image-capture/index.html">Image Capture Plugins</a></p>
+			  <p class="sub-topic"><a href="dictation/index.html">Dictation Commands</a></p>
+			  <p class="sub-topic"><a href="utilities/index.html">Utilities</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="security.html">Automation Security</a></p>
+			  <p class="active-topic">Assistive Access</p>
+			  <p class="topic"><a href="3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

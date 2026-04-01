@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: The Text to EPUB Action Interface</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: ASSIGN SHORTCUTS TO SERVICES -->
+		<div class="content-segment">
+		<div class="segment-header" >The Text to EPUB Action Interface</div>
+		
+			<p>The <b>Text to EPUB</b> action is the tool that turns selected text and media into digital publications. The action&rsquo;s interface is often displayed during the execution of Automator workflows and services that contain the action. The content of this workshop segment will describe the various elements of the action interface, and their functions. You will use this information in the next workshop segment, where you interact with the action interface during the creation of a digital publication from text selected on a webpage.</p>
+			
+			<p><b>The Action Interface</b>
+			
+			<p>The <b>Text to EPUB</b> action interface, or &ldquo;action view,&rdquo; is divided into two sections, a left section and a right section, separated by a vertical line:</p>
+			
+			<ol>
+				<li>On the left side of the action view are the input fields for determining the created file name and location.</li>
+				
+				<li>On the right side of the action view are the controls for adding related images, audio files, or movies.</li>
+			</ol>
+			
+			<p>The following are descriptions for the controls and inputs of each section.</p>
+			
+			<a name="action-interface" id="action-interface"></a>
+			
+			<p><b>Document Parameters and Metadata</b>: (NOTE: all of these controls will accept Automator workflow variables as input)</p>
+			
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Title</b> - Enter the title of the book in this text field.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Author</b> - Enter the author of the book in this text field. By default, the name of the current user will be used.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>File Name</b> - Enter the name for the created EPUB document in this text field. EPUB file names must end with a name extension of &quot;epub&quot; like: <i>My Story.epub</i></p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>File Destination</b> - Choose the folder that will contain the created EPUB document from this popup menu.</p>				
+			
+			<a href="02A.html"><img src="gfx/epub-action-interface-1280.png" width="640" height="369" class="across" alt="epub-action-interface-1280"></a>
+			
+			<p><b>Optional Media</b>:</p>
+			
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Cover Image</b> - Optionally, the EPUB book can have a custom cover image. Select the image file to be used as the  cover image from this popup menu.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Media Placement</b> - Images, audio (.m4a), or video (.m4v) files added to the book are placed one per chapter at either the beginning or end of each chapter. Select the insertion location from this popup menu.<br><br><b>NOTE</b>: additional media files (those unassigned to chapters) will be placed as a group at the end of the book in a chapter titled &quot;Illustrations.&quot; For example, if seven images are added to a book containing three chapters, the first three images in the list will be placed one-per-chapter and the remaining four images will be placed in an illustrations chapter at the end of the book.</p>
+			
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Scale Images</b> - Select this checkbox if you want to reduce the file size of the EPUB document by scaling the images added to the book to fit within 1024 pixels.</p>
+			
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;<b>Media List</b> - A list of the added media files. Files can be added or removed using the controls beneath the list view  <span class="numeric-callout">&nbsp;9&nbsp;</span></p>
+		
+		</div>
+		<!-- END SEGMENT: ASSIGN SHORTCUTS TO SERVICES -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">The Text to EPUB Services</a></li>
+				<li class="hi">The Action Interface</li>
+				<li><a href="03.html">Formatted EPUB Demo</a></li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li><a href="05.html">Multiple Chapter EPUB Demo</a></li>
+				<li><a href="06.html">Add Media to the Book</a></li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees will learn about the various elements and options of the Text to EPUB action. In the next segment, they will build a digital publication using the action.</p>
+			
+			<p>In addition to describing the action&rsquo;s interface elements and their function, you will want to also mention these points:</p>
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>The Text to EPUB action is designed to easily create digital books. This is accomplished by limiting some of the layout options, such as the number of media items displayed per chapter. If an attendee requires greater layout control, then  <a href="http://www.apple.com/iwork/pages/" target="_blank">Pages</a> or <a href="http://www.apple.com/ibooks-author/" target="_blank">iBooks Author</a> are excellent tools for creating more precise digital publications.</li>
+				
+				<li>Services expose the power of Automator through contextual menus, available when text and other types of data are selected.</li>
+				
+				<li>Automator actions and services are very powerful tools, providing direct access to the functions of applications and OS frameworks. It is strongly suggested that actions and services be download and installed ONLY FROM TRUSTED SOURCES.</li>
+				
+				<li>When discussing the interface elements of the action, you may want to display a larger image of the action view by clicking <a href="02A.html">here</a>.</li>
+			</ol>
+			
+			
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Themes</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for themes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Keynote Themes</div>
+			<p>The <span class="codelibraryclass">theme</span> class is a top-level element of the <b>Keynote</b> application. It contains no other elements, and has two properties. The choice of <span class="codelibraryclass">theme</span> determines the overall look of a presentation, as well as the document dimensions, and selection of <span class="codelibraryclass">master pages</span>.</p>
+						
+			<p class="content-subhead" role="heading" aria-level="2">The Keynote Suite Theme Class</p>
+							
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">theme</span> <span style="font-size: 12px;"><i>n&nbsp;</i> : A collection of master slides, with shared design intents and elements.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">application.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">id</span> (<span class="dictionary-class">text</span>, r/o) : The unique identifier for this application element.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (<span class="dictionary-class">text</span>, r/o) : The name of the theme, as it is displayed in the application&rsquo;s user interface.</p>
+			</div>
+			
+			<p>The pages of this topic section detail how to access the properties of all installed <span class="codelibraryclass">themes</span>, all application <span class="codelibraryclass">themes</span>, and all user-created <span class="codelibraryclass">themes</span>. Example scripts detail how to create documents using a specified <span class="codelibraryclass">theme</span>.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+		<!-- BEGIN SEGMENT: ID PROPERTY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Theme ID Property</div>
+			
+			<p>The <span class="dictionary-property">id</span> property of a <span class="codelibraryclass">theme</span> is a text string that uniquely identifies the <span class="codelibraryclass">theme</span> to the <b>Keynote</b> application.</p>
+			
+			<p>The following script retrieves the <span class="codeproperty">id</span> of every <span class="codelibraryclass">theme</span>:</p>
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the ID of Every Theme</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Get%20the%20ID%20of%20Every%20Theme&script=tell%20application%20%22Keynote%22%0D%09set%20the%20themeIDs%20to%20the%20id%20of%20every%20theme%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>get the</b> <span class="codeproperty">id</span> <b>of every</b> <span class="codelibraryclass">theme</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Application/Black/Standard&quot;, &quot;Application/White/Standard&quot;, &quot;Application/Gradient/Standard&quot;, &quot;Application/New_Template1/Standard&quot;, &quot;Application/New_Template4/Standard&quot;, &quot;Application/New_Template2/Standard&quot;, &quot;Application/New_Template3/Standard&quot;, &quot;Application/New_Template5/Standard&quot;, &quot;Application/New_Template6/Standard&quot;, &quot;Application/Showroom/Standard&quot;, &quot;Application/Renaissance/Standard&quot;, &quot;Application/PhotoPortfolio/Standard&quot;, &quot;Application/Editorial/Standard&quot;, &quot;Application/Kyoto/Standard&quot;, &quot;Application/BrushedCanvas/Standard&quot;, &quot;Application/Typeset/Standard&quot;, &quot;Application/Moroccan/Standard&quot;, &quot;Application/Craft/Standard&quot;, &quot;Application/Industrial/Standard&quot;, &quot;Application/ModernPortfolio/Standard&quot;, &quot;Application/Harmony/Standard&quot;, &quot;Application/GraphPaper/Standard&quot;, &quot;Application/Blueprint/Standard&quot;, &quot;Application/Formal/Standard&quot;, &quot;Application/LeatherBook/Standard&quot;, &quot;Application/Vintage/Standard&quot;, &quot;Application/HardCover/Standard&quot;, &quot;Application/LinenBook/Standard&quot;, &quot;Application/Chalkboard/Standard&quot;, &quot;Application/Parchment/Standard&quot;, &quot;User/C34CF6EC-2BC4-4DE0-9A3B-35BA88F15B2C&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>			
+			
+			<p>In <b>Keynote</b>, there are two kinds of themes: those that come with the application, and those created and saved by the user.<p>
+
+			<p>The <span class="codeproperty">id</span> for an application <span class="dictionary-term">theme</span> begins with the term: &ldquo;Application&rdquo;</p>
+			
+			<p class="code">&quot;Application/ModernPortfolio/Standard&quot;</p>
+			
+			<p>The <span class="codeproperty">id</span> for a user-created <span class="dictionary-term">theme</span> begins with the term: &ldquo;User&rdquo;</p>
+			
+			<p class="code">&quot;User/C34CF6EC-2BC4-4DE0-9A3B-35BA88F15B2C&quot;</p>
+							
+			<p>The design of <span class="codelibraryclass">theme</span> <span class="codeproperty">id</span>s allows for specialized searches, as shown later on this page.</p>
+		
+		</div>
+		<!-- END SEGMENT: ID PROPERTY -->
+					
+		<!-- BEGIN SEGMENT: NAME PROPERTY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Theme Name Property</div>
+			
+			<p>The <span class="dictionary-property">name</span> property of a <span class="codelibraryclass">theme</span> is a text string that is the name of the <span class="codelibraryclass">theme</span> as it is displayed in the <b>Keynote</b> application interface.</p>
+		
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every <span class="codelibraryclass">theme</span>:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of Every Theme</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Get%20the%20Name%20of%20Every%20Theme&script=tell%20application%20%22Keynote%22%0D%09set%20the%20themeNames%20to%20the%20name%20of%20every%20theme%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>get the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">theme</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Black&quot;, &quot;White&quot;, &quot;Gradient&quot;, &quot;Photo Essay&quot;, &quot;Classic&quot;, &quot;Slate&quot;, &quot;Cream Paper&quot;, &quot;Artisan&quot;, &quot;Improv&quot;, &quot;Showroom&quot;, &quot;Renaissance&quot;, &quot;Photo Portfolio&quot;, &quot;Editorial&quot;, &quot;Kyoto&quot;, &quot;Brushed Canvas&quot;, &quot;Typeset&quot;, &quot;Moroccan&quot;, &quot;Craft&quot;, &quot;Industrial&quot;, &quot;Modern Portfolio&quot;, &quot;Harmony&quot;, &quot;Graph Paper&quot;, &quot;Blueprint&quot;, &quot;Formal&quot;, &quot;Leather Book&quot;, &quot;Vintage&quot;, &quot;Hard Cover&quot;, &quot;Linen Book&quot;, &quot;Chalkboard&quot;, &quot;Parchment&quot;, &quot;Sal Theme&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: NAME PROPERTY -->
+		
+		<!-- BEGIN SEGMENT: APPLICATION-USER THEMES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Application|User Themes</div>
+			
+			<p>A script can use the unique design of the <span class="codeproperty">id</span> property to retrieve only <span class="codelibraryclass">themes</span> of a specific type.</p>
+		
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every application <span class="codelibraryclass">theme</span>:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of All Application Themes</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Get%20the%20Name%20of%20All%20Application%20Themes&script=tell%20application%20%22Keynote%22%0D%09set%20applicationThemeNames%20to%20the%20name%20of%20every%20theme%20whose%20id%20of%20it%20begins%20with%20%22Application%2F%22%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">applicationThemeNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">theme</span> <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;Application/&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Black&quot;, &quot;White&quot;, &quot;Gradient&quot;, &quot;Photo Essay&quot;, &quot;Classic&quot;, &quot;Slate&quot;, &quot;Cream Paper&quot;, &quot;Artisan&quot;, &quot;Improv&quot;, &quot;Showroom&quot;, &quot;Renaissance&quot;, &quot;Photo Portfolio&quot;, &quot;Editorial&quot;, &quot;Kyoto&quot;, &quot;Brushed Canvas&quot;, &quot;Typeset&quot;, &quot;Moroccan&quot;, &quot;Craft&quot;, &quot;Industrial&quot;, &quot;Modern Portfolio&quot;, &quot;Harmony&quot;, &quot;Graph Paper&quot;, &quot;Blueprint&quot;, &quot;Formal&quot;, &quot;Leather Book&quot;, &quot;Vintage&quot;, &quot;Hard Cover&quot;, &quot;Linen Book&quot;, &quot;Chalkboard&quot;, &quot;Parchment&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every user <span class="codelibraryclass">theme</span>:</p>
+						
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of All User Themes</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Get%20the%20Name%20of%20All%20User%20Themes&script=tell%20application%20%22Keynote%22%0D%09set%20userThemeNames%20to%20the%20name%20of%20every%20theme%20whose%20id%20of%20it%20begins%20with%20%22User%2F%22%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">userThemeNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> theme <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;User/&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Sal Theme&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: APPLICATION-USER THEMES -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Check for Theme</div>
+
+			<p>A principle of good &ldquo;defensive&rdquo; script writing is to never assume anything, always check for resources. Here&rsquo;s a script that checks to make sure a specific theme is intalled:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Check for Theme</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Check%20for%20Theme&script=property%20thisThemeName%20%3A%20%22Black%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09--%20GET%20THE%20THEME%20NAMES%0D%09%09set%20the%20themeNames%20to%20the%20name%20of%20every%20theme%0D%09%09%0D%09%09--%20CHECK%20FOR%20THEME%0D%09%09if%20thisThemeName%20is%20not%20in%20the%20themeNames%20then%0D%09%09%09error%20%22The%20theme%20%E2%80%9C%22%20%26%20thisThemeName%20%26%20%22%E2%80%9D%20is%20not%20installed%20on%20this%20computer.%22%0D%09%09end%20if%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(%22ERROR%20%22%20%26%20errorNumber)%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">thisThemeName</span> : &quot;Black&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- GET THE THEME NAMES</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">themeNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">theme</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHECK FOR THEME</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisThemeName</span> <b>is not in the</b> <span class="codevariable">themeNames</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;The theme &ldquo;&quot; &amp; <span class="codevariable">thisThemeName</span> &amp; &quot;&rdquo; is not installed on this computer.&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (&quot;<b>ERROR</b> &quot; &amp; <span class="codevariable">errorNumber</span>) <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+
+
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="theme-doc-make.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li class="hi">Theme</li>
+				<li class="navListSectionItem"><a href="theme-doc-make.html">New Document with Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

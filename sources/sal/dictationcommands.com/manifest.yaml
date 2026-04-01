@@ -1,0 +1,40 @@
+site:
+  slug: dictationcommands
+  domain: dictationcommands.com
+  owner: Sal Soghoian
+  role: Voice-triggered accessibility and automation commands
+  status: captured-partial
+capture:
+  first_planned_at: '2026-04-01'
+  captured_at: '2026-04-01T13:19:19Z'
+  method: direct-wayback-snapshot:http-20240424
+  preferred_mode: wayback
+  mirrored_by: merlib-mirror
+  mirror_root: sources/sal/dictationcommands.com/mirror
+  asset_root: sources/sal/dictationcommands.com/assets
+origin:
+  home: http://dictationcommands.com/
+  live_domain_status: compromised
+  archival_source: web.archive.org
+  archived_via: web.archive.org
+  capture_blocker: CDX query instability after initial successful discovery
+  snapshot_url: http://web.archive.org/web/20240424181821/http://dictationcommands.com/
+content:
+  priorities:
+  - Dictation command catalogs
+  - Accessibility-oriented workflows
+  - Command phrase to action mappings
+  expected_formats:
+  - html
+  - scpt
+  - txt
+  - images
+extraction:
+  scripts_target: scripts/sal/dictationcommands
+  notes_target: analysis/sal/page-notes
+  concept_target: analysis/sal/concept-notes
+  status: mirrored-partial
+  asset_count: 0
+licensing:
+  status: unknown
+  notes: Command phrase inventories should be indexed separately from scripts. Direct snapshot crawl captured 13 files under mirror/wayback-20240424 including HTML pages, CSS, images, and mp4 demos.

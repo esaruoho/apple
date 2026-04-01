@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>The &ldquo;use statement&rdquo;: Applications and Libraries</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Code signing support in OS X Automation editor applications">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">use (application or script library)</div>
+			<p>A <b>use statement</b> can declare a required application or script library, and may import the declared items&rsquo;s terms for use later in the script. There are two optional parameters available for a <b>use statement</b> targeting an application or script library: <b>version</b>, and <b>importing</b></p>
+			
+			<p class="dictionary" style="width:604px;">
+			
+				<span style="font-weight:bold;font-size:large;">Syntax</span><br><br>
+			
+				<b>use</b> [<span class="codevariable">identifier</span>:] <span class="codelibraryclass">specifier</span> ( <span class="dictionary-term">script</span> | <span class="dictionary-term">application</span> )<br>
+				<span class="dictionary-indent-01">[<b>version</b></span> <span class="codevariable">versionText</span>]<br>
+				<span class="dictionary-indent-01">[<b>importing</b> <span class="codelibraryclass">boolean</span> (<b>with</b> <span class="dictionary-term">importing</span>|<b>without</b> <span class="dictionary-term">importing</span>)]</span><br><br>
+			
+			<span style="font-weight:bold;font-size:large;">Placeholders</span><br><br>
+			
+			<span class="codevariable"><b>identifier</b></span><br>
+			<span class="dictionary-definition">An optional identifier (property variable) for the imported resource.</span><br><br>
+			
+			<span class="codelibraryclass"><b>specifier</b></span><br>
+			<span class="dictionary-definition">The item whose terminology is to be imported. This is typically an application or script library name, as in <span class="inlinecode">use application "Finder"</span> or <span class="inlinecode">use script "My Library"</span>, but may be any valid specifier form, such as by ID, as in <span class="inlinecode">use application id "com.apple.mail"</span>.</span><br><br>
+			
+			<span class="codevariable"><b>versionText</b></span><br>
+			<span class="dictionary-definition">The required minimum version of the resource as version number, such as &quot;2.3.2&quot;. This value is always text, not a number, and is compared as if considering numeric strings is in effect. For example, &quot;2.10&quot; is greater than &quot;2.5&quot;, because 10 is greater than 5.</span><br><br>
+			
+			<span class="codelibraryclass"><b>boolean</b></span><br>
+			<span class="dictionary-definition">A boolean value, <b>true</b> or <b>false</b>. AppleScript will recompile this to <span class="inlinecode"><b>with</b> importing</span> or <span class="inlinecode"><b>without</b> importing</span>.</span><br><br>
+			
+			</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: EXAMPLES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Examples</div>
+			<p>A <b>use statement</b> may refer to an application:</p>
+			
+			<p class="code"><b>use</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;</p>
+			
+			<p>or a script library:</p>
+			
+			<p class="code"><b>use</b> <span class="codelibraryclass">script</span> &quot;Text Utilities&quot;</p>
+			
+			<p>If an optional identifier is given, it defines a property whose value is the required resource. This can make it more convenient to refer to the resource, as in the following example where the <b>get</b> statement uses the identifier <span class="codevariable">Safari</span> instead of the full specifier <span class="codevariable">application</span> &quot;Safari&quot;.</p>
+			
+			<p class="code"><b>use</b> <span class="codevariable">Safari</span>: <span class="codelibraryclass">application</span> "Safari"<br><br>
+			<b>get the</b> <span class="codelibraryclass">name</span> <b>of</b> <span class="codevariable">Safari</span>'s <b>front</b> <span class="codelibraryclass">window</span></p>
+			
+			<p>By using <b>use statements</b> with multiple applications, you can combine terms from different sources in ways impossible using standard <b>tell</b> statements or <b>tell</b> blocks, because the <b>tell</b> construct only makes one terminology source available at a time.</p>
+			
+			<p>For example, the following script, in one statement, uses Mail and Safari to search the web for the sender of the currently selected mail message. The <b>get</b> event is sent to Mail because it defines Mail&rsquo;s <span class="codelibrarycommand">message viewer</span> window, while the <span class="codelibrarycommand">search the web</span> event is sent to Safari.</p>
+			
+			<p class="code"><b>use</b> <span class="codelibraryclass">application</span> "Mail"<br>
+<b>use</b> <span class="codelibraryclass">application</span> "Safari"<br><br>
+<span class="codelibrarycommand">search the web</span> <b>for the</b> <span class="codelibraryclass">sender</span> <b>of the first</b> <span class="codelibraryclass">item</span> <b>of</b> &not;<br>
+   <span class="dictionary-indent-01">(<b>get</b> <span class="codelibraryclass">selected messages</span> <b>of the front</b> <span class="codelibraryclass">message viewer</span>)</span></p>
+			
+		</div>
+		<!-- END SEGMENT: EXAMPLES -->
+		
+		<!-- BEGIN SEGMENT: DISCUSSION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Discussion</div>
+		<p>In addition to declaring a script requirement, by default, the <b>use command</b> imports terminology and makes the terms available throughout the script without requiring the use of <b>tell</b> or <b>using terms from</b>. It does so by tracking where a term was imported from, and sends events that use those terms to that target, as shown in the example above.</p>
+		
+		<p>Ordinarily, commands are sent to the current target. Imported terminology overrides this policy, if one of these conditions is met:</p>
+		
+		<ol>
+			<li>the event identifier is imported</li>
+			<li>the direct parameter is an imported class or enumeration identifier</li>
+			<li>the direct parameter is an object specifier ending with an imported term</li>
+		</ol>
+		
+		<p>Under these conditions, the command is sent to the import source instead. This happens even if the command is inside a <b>tell</b> block for a different application.</p>
+		
+		<p>You can also &ldquo;use&rdquo; objects without importing their terms, so as to declare requirements without making terms available globally. In the following example, AppleScript will ensure that Safari version 7.0 or later is available:</p>
+		
+		<p class="code"><b>use</b> <span class="codelibraryclass">application</span> "Safari" <span class="codeenumeration">version</span> "7.0" <b>without</b> <span class="codeenumeration">importing</span></p>
+		
+		<p>NOTE: In the example above, because Safari&rsquo;s terms are not imported, the script will need to use <b>tell</b> statements to send it events.</p>
+		
+		</div>
+		<!-- END SEGMENT: DISCUSSION -->
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li class="hi">The &ldquo;use&rdquo; Statement</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li><a href="01.html">Scripting Additions</a></li>
+					<li class="hi">Applications and Libraries</li>
+					<li><a href="03.html">Frameworks</a></li>
+				</ol>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS X: GUI Scripting - Accessibility Access Controls</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Mavericks, GUI Scripting, UI Scripting, OS X security, accessibility">
+	<META NAME="Description" CONTENT="Tools for resetting the Accessibility preferences in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Accessibility Preferences and GUI Scripting</div>
+			
+			<p class="content-intro">Developers have often relied upon AppleScript’s ability to control the user-interface, to provide an automation solution when no direct scripting support of an application or process was available. While this valued ability continues to be fully supported in Mavericks, the enhanced security focus of the new OS requires a few changes in how scripters access and apply the Accessibility frameworks.<p>
+			
+			<p>In versions of OS&nbsp;X prior to Mavericks (v10.9), the ability to control the user-interface via AppleScript was determined by the state of a checkbox located in the Accessibility system preference pane. <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+		<img class="centered" alt="oldaccessibilityprefs" src="gfx/oldaccessibilityprefs.png" width="624" height="508">
+		
+			<p class="imagecaption" style="width:608px;"><span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> The Accessibility system preference pane in OS&nbsp;X Mountain Lion (v10.8). Note the checkbox for enabling control of the user-interface via the accessibility frameworks.</p>
+		
+			<p>If the checkbox titled &ldquo;Enable access for assistive devices&rdquo; <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> was selected, you could run AppleScript scripts, applets, and droplets that would simulate a user&rsquo;s actions, such as selecting a menu item, or pressing a dialog button.</p>
+			
+			<p>In OS&nbsp;X Mavericks, security controls are more granular, requiring the individual addition of applications, or automation applets that script the accessibility frameworks, to an approval list, displayed in the <b>Security &amp; Privacy</b> system preference pane. <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+		
+		<img class="centered" alt="accessibilitylistprefpane" src="gfx/accessibilitylistprefpane.png" width="624" height="508">
+		
+			<p class="imagecaption" style="width:608px;"><span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> The <b>Accessibility Access List</b> located in Security &amp; Privacy system preference pane of OS&nbsp;X Mavericks (v10.9).</p>
+		
+		<p>Applications (scripts, applets, etc.) are added to the list either through an integrated approval process, triggered when they first attempt to execute, or by an administrative user proactively dragging their icons into the list.</p>		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: APPLET -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The New Security Protocols</div>
+		
+			<p>The following is an example of how the new security protocols for accessing the Accessibility frameworks via AppleScript, are implemented.</p>
+			
+			<p>In this example, an AppleScript applet titled <b>GUI Scripting Applet</b> contains AppleScript statements for controlling the user-interface of OS&nbsp;X. When the applet is launched, the following dialog will appear: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-01" src="gfx/accessibilityexample-01.png" width="588" height="260">
+			
+			<p>The error dialog <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> indicates that access by the applet to the assistive frameworks has been denied. Click the <b>OK</b> button and a second dialog appears: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-02" src="gfx/accessibilityexample-02.png" width="575" height="289">
+			
+			<p>The second dialog <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> announces that the applet you attempted to run, contains code that targets the accessibility frameworks, and that such access can be granted in the <b>Security &amp; Privacy</b> system preference pane. The dialog provides button options to either:</p>
+			
+			<ol>
+				<li>refuse access to the applet, by clicking the <b>Deny</b> button in the dialog; or&hellip;</li>
+				<li>to begin the process of granting access for the applet, by clicking the <b>Open System Preferences</b> button.</li>
+			</ol>
+			
+			<p>Clicking the <b>Open System Preferences</b> button in the dialog (see above), will open the <b>System Preferences</b> application and display the <b>Accessibility</b> section in the <b>Security &amp; Privacy</b> <b>preference</b> pane. Note that the applet will be already added to the access list, but the checkbox next to its name is not selected. <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-03" src="gfx/accessibilityexample-03.png" width="624">
+			
+			<p>In order to add items to the access list, or to edit the status of items already in the access list, you must provide an administrative user name and password. Click the lock icon at the lower left of the System Preferences window <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> to summon the system authentication dialog: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-04" src="gfx/accessibilityexample-04.png" width="557" height="353">
+			
+			<p>Enter an administrative unser name and password in the dialog, click the <b>Unlock</b> button, and the preference pane will be ready for editing: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-05" src="gfx/accessibilityexample-05.png" width="624" height="508">
+			
+			<p>To grant access by the applet to the accessibility frameworks, select the checkbox next to applet&rsquo;s name: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-06" src="gfx/accessibilityexample-06.png" width="624" height="508">
+			
+			<p>And finally, click the lock icon again, to secure the preference pane: <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+			
+			<img class="centered" alt="accessibilityexample-07" src="gfx/accessibilityexample-07.png" width="624" height="508">
+			
+		</div>
+		<!-- BEGIN SEGMENT: APPLET -->
+		
+		<!-- BEGIN SEGMENT: PROPERTIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Applets, Accessibility, and Properties</div>
+			<p>In OS X Mavericks, AppleScript applications ("applets") that use Accessibility features may ask for the same information each time you use them, appearing not to remember the settings you previously entered.</p>
+
+			<p>This repetition occurs because, by default, applets that use Accessibility features in OS X Mavericks do not save their properties when run. Applets that save their properties modify their own contents in order to save that information. This self-modification makes the applet appear to OS X as a different app each time it is executed, thereby triggering the authorization process repeatedly.</p>
+
+			<p>If you have an applet that requires both access to the Accessibility frameworks, and persistent property values, follow these instructions to sign the applet so that it works without requiring repeated re-authorization.</p>
+
+			<p class="segment-note"><b>Important</b>: Signing an applet using the following method introduces a security vulnerability that could allow malicious software to use Accessibility without user permission.</p>
+			
+			<p class="content-subhead">Download and install a property list file:</p>
+			
+			<ol>
+				<li>Click this link to download an archive of a special property list file (plist): <a href="ResourceRules-ignoring-Scripts.zip">ResourceRules-ignoring-Scripts.plist</a></li>
+				<li>Unpack the archive, and place the downloaded property list file in the Preferences folder in your Library folder: (~/Library/Preferences)<br><br>
+				<b>Tip</b>: To access your Library folder, switch to the Finder, and hold down the Option key on your keyboard, and select <b>Library</b> from the <b>Go</b> menu.</li>
+			</ol>
+			
+			<p class="content-subhead">Use the Terminal application to sign and register the applet:</p>
+
+			<ol>
+				<li>Launch the Terminal application</li>
+				<li>Enter and execute the following command, substituting the correct actual path for both the property list file and the targeted AppleScript applet:</li>
+				<p class="code" style="width:530px;">codesign -s - --resource-rules=/Users/YourUserNameHere/Library/Preferences/ResourceRules-ignoring-Scripts.plist /path/to/applet.app</p>
+				<p style="width:530px;"><b>NOTE</b>: If you have your own signing identity, you may use that identity in place of “-” for the -s option.</p>
+			</ol>
+
+			<img class="centered" alt="terminal" src="gfx/terminal.png" width="624">			
+			<p class="imagecaption" style="width:608px;"><span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> The signing command string in a Terminal window. Note the use of the backslash character (\) to escape the space in the applet name. All spaces within paths must be escaped in the command string.</p>
+		</div>
+		<!-- BEGIN SEGMENT: PROPERTIES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="reset.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li class="hi">GUI Scripting</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li class="hi">Overview</li>
+					<li><a href="reset.html">Reset Accessibility Access List</a></li>
+				</ol>
+			</ol>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

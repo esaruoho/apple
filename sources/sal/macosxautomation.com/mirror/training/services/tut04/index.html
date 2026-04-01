@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: Services</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="http://www.macosxautomation.com/css/lightbox.css" type="text/css" media="screen" />
+	<script src="http://www.macosxautomation.com/js/prototype.js" type="text/javascript"></script>
+	<script src="http://www.macosxautomation.com/js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="http://www.macosxautomation.com/js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://www.macosxautomation.com/">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<a href="../../index.html"><img src="../gfx/services-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td width="72"><a href="../intro.html">HOME</a></td>
+			<td><a href="../../applescript/intro.html">LEARN APPLESCRIPT</a></td>
+			<td><a href="../intro.html">LEARN SERVICES</a></td>
+			<td><a href="../../automator/intro.html">LEARN AUTOMATOR</a></td>
+			<td width="72"><a href="../../video/index.html">VIDEOS</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Quick Twitter Palette</h2>
+		<p><b><font color="#CC0033">REQUIRES MAC OS X v10.7 or newer</font></b></p>
+
+		<p>Here's an easy-to-create service that will present a floating HUD palette displaying the mobile (iPhone) version of the Twitter website, allowing you to instantly access and contribute to your Twitter account!</p>
+		
+		<!-- <p class="note"><b>BEFORE YOU BEGIN</b>: This service workflow requires the installation of the <b>Website Popup</b> Automator action. <a href="../pkg/WebsitePopupActionInstaller.zip">Download</a> the installer for this Automator action. NOTE: Installation requires an administrative password.</p> -->
+
+		<h3>STEP 1 &#149; Open a New Services Workflow</h3>
+		
+		<p>New services are created using the Automator application located in the Applications folder on your computer. Double-click the icon of Otto the automation robot to open Automator. Select the Services template from the template chooser sheet in the forthcoming workflow window.</p>
+		
+		<img src="gfx/templatechoosertrimmed.jpg" width="516" height="277" align="top" class="across">
+		
+		<p>Click the OK button in the sheet, and a service workflow will be opened.</p>
+		
+		<h3>STEP 2 &#149; Set the Input Settings</h3>
+		
+		<p>A gray bar will be displayed across the top of the workflow area of the Automator window. This bar displays the settings that indicate <b>(1)</b> the type of data to be processed by the workflow, <b>(2)</b> the application in which the service will be available, and <b>(3)</b> whether or not to replace any selected text with the result of the service workflow.</p>
+		
+		<img src="gfx/inputsettingsannotated-01.jpg" width="640" align="top" class="across" height="69">
+		
+		<p>For this example, the workflow will present a floating HUD window displaying the mobile version of the Twitter website. The service will require no input and should be available any time and from within any application. Accordingly, these should be the settings for the input dialog in the workflow:</p>
+		
+		<img src="gfx/inputdialog-01.jpg" width="640" align="top" class="across" height="80">
+
+		<h3>STEP 3 &#149; Add Actions</h3>
+		
+		<p>Now that the input settings have been applied, you can build the service by adding Automator actions to the workflow. The first         action should be one for providing the Internet address or URL of the Twitter website to the workflow. Locate the appropriate Automator action for this task, by entering the keywords &ldquo;web&rdquo; and &ldquo;URL&rdquo; into the search field to the left of the data input bar. A list of internet-related actions will be displayed in the action list below the search field. Drag the title of the <b>Get Specified URLs</b> action to the area after the data settings bar, and release the mouse to add the action.</p>
+		
+		<img src="gfx/dragaction.jpg" width="640" align="top" class="across" height="205">
+		
+		<p>Once the mouse is released, the action will be added to the end of the workflow, and its action view will be displayed. The action view contains any setable parameters used by the action to perform its role in the workflow. The <b>Get Specified URLs</b> provides the workflow with a list of URLs entered in its action view. By default, a single URL to the Apple website is provided. You can edit this URL by double-clicking on the existing URL and replacing it with the full URL of the Twitter website, which is: http://twitter.com</p>
+		
+		<img src="gfx/editfirstaction.jpg" width="640" align="top" class="across" height="305">
+
+		
+		<p>The next action in the workflow will be one that displays the URL provided by the <b>Get Specified URLs</b> action. Locate the appropriate Automator action for this task, by entering the keyword &ldquo;website&rdquo; into the search field to the left of the data input bar. A list of related actions will be displayed in the action list below the search field. Drag the title of the <b>Website Popup</b> action to the area at the end of the workflow, and release the mouse to add the action.</p>
+		
+		<img src="gfx/dragsecondaction.jpg" width="640" align="top" class="across" height="381">
+		
+		
+		<p>The <b>Website Popup</b> is designed to display a floating HUD window, showing the website whose URL is passed from the previous action in the workflow. Its action view contains parameters for: <b><font color="#FF0000">(1)</font></b> indicating the size of the floating window; <b><font color="#FF0000">(2)</font></b> whether the content of the website is viewed as from within Safari, or from within the iPhone; <b><font color="#FF0000">(3)</font></b> the HUD's default postion on the screen; and <b><font color="#FF0000">(4)</font></b> what type of information is returned by the action after the HUD is closed or dismissed.</p>
+		
+		<img src="gfx/editsecondaction-02.jpg" width="640" align="top" class="across" height="391">
+		
+		<p>Set the action's parameters to display the website content as an iPhone, in a centered floating HUD whose dimensions are the same as the screen resolution of an iPhone. Since the input for this service workflow does not require text input, leave the data type for the action result as: <b>Selected Text</b></p>
+		
+		
+		<h3>STEP 4 &#149; Save the Service</h3>
+		
+		<p>Choose Save from Automator's File menu and in the drop-down naming sheet, enter the name for this service: <b>Quick Tweet</b></p>
+		
+		<img src="gfx/savesheet.png" width="406" height="104" align="top" class="across">
+		
+		<p>The service is automatically installed into the Services framework for the current user. You may now close the automator window and quit Automator. </p>
+		
+		<h3>STEP 5 &#149; Assign Keyboard Sortcut</h3>
+		
+		<p>The final step in creating and setting up this workflow, is to assign a keystroke combination to the newly created service. Open the System Preferences application and navigate to the Keyboard preference pane, and select the Keyboard Shortcuts tab. From the list on the left of the preference pane, select the Services category. A list of the installed services will be displayed to the right. Locate the Quick Tweet service in the list, select it, and press the <b>Return</b> key to activate the keyboard input cell. Type the key combination you wish to assign to the service (maybe: Control-Shift-T), then quit the System Preferences application.</p>
+		
+		<img src="gfx/prefspane-01.png" width="640" height="579" align="top" class="across">
+
+
+		<h3>STEP 6 &#149; Using the Service</h3>
+		
+		<p>This service is designed to give you quick access to Twitter without the need for relying on a full-sized web-browsing application. To summon the HUD, simply type the keyboard shortcut you assigned to the service, and login when the mobile version of Twitter appears:</p>
+		
+		<img src="gfx/HUD-twitter.png" width="316" align="left" height="471">
+		
+		<img src="gfx/HUD-twitter-02.png" width="316" align="right" height="471">
+		
+		<p class="imagecaption" style="margin-top:486px;">(left) Twitter mobile log-in page. (right) Active Twitter session.</p>
+						
+		<p class="note">NOTE: Once you have logged into your Twitter or Facebook accounts, you remain logged in even if the HUD is dismissed. If you summon the HUD after is has been previously dismissed, your session will still be active. To stop the current session, log out in the HUD window.</p>
+		
+		<p>The design of this service can also be used with other social-media websites, such as Facebook. To create a quick viewer for Facebook, copy the steps used to create this service, replacing the URL for Twitter with the URL for Facebook:</p>
+		
+		<img src="gfx/HUD-facebook.png" width="316" align="left" height="471">
+				
+		<img src="gfx/HUD-facebook-02.png" width="316" align="right" height="471">
+		
+		<p class="imagecaption" style="margin-top:486px;">(left) Facebook mobile log-in page. (right) Active Facebook session.</p>
+		
+		<h3 >Summary</h3>
+		
+		<p>Congratulations! You've created a service for that keep you in touch with the world. Oh you Power-User you ;-)</p>
+
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>SERVICE TUTORIALS</h2>
+			<ul class="square last">
+				<li><a href="../intro.html">Introduction</a></li>
+				<li><a href="../tut01/index.html">Application Launcher</a></li>
+				<li><a href="../tut02/index.html">Rotate Image</a></li>
+				<li><a href="../tut03/index.html">Sort Selected Paragraphs</a></li>
+				<li class="hi">Quick Tweet</li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>DISCLAIMER</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+ 	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

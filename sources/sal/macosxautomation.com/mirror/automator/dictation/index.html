@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Dictation Commands</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Welcome to OMNI-AUTOMATION.COM, a resource for information about the new dual-platform automation support (macOS/iOS) in the apps from The Omni Group.">
+	<meta property="og:image" content="http://omni-automation.com/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav-active.png">
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Dictation Commands</p>
+			
+			<p>Maecenas faucibus mollis interdum. Nullam id dolor id nibh ultricies vehicula ut id elit. Cras mattis consectetur purus sit amet fermentum. Nulla vitae elit libero, a pharetra augue. Curabitur blandit tempus porttitor. Nulla vitae elit libero, a pharetra augue. Donec ullamcorper nulla non metus auctor fringilla.</p>
+			
+			
+		
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <!-- <p class="active-sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Image Capture Plugins</a></p> -->
+			  <p class="active-sub-topic">Dictation Commands</p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

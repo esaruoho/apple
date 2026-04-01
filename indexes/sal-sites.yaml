@@ -1,0 +1,61 @@
+# Sal site registry
+# Canonical machine-readable map of Sal-owned or Sal-authored source sites.
+
+version: 1
+updated: "2026-04-01"
+
+sites:
+  - slug: macosxautomation
+    domain: macosxautomation.com
+    owner: "Sal Soghoian"
+    role: "Primary hub"
+    manifest: "sources/sal/macosxautomation.com/manifest.yaml"
+    scripts_root: "scripts/sal/macosxautomation"
+    priority: high
+    status: planned
+    topics: ["applescript", "automator", "macos automation", "system events", "teaching"]
+  - slug: iworkautomation
+    domain: iworkautomation.com
+    owner: "Sal Soghoian"
+    role: "iWork automation"
+    manifest: "sources/sal/iworkautomation.com/manifest.yaml"
+    scripts_root: "scripts/sal/iworkautomation"
+    priority: critical
+    status: planned
+    topics: ["keynote", "numbers", "pages", "applescript", "productivity"]
+  - slug: photosautomation
+    domain: photosautomation.com
+    owner: "Sal Soghoian"
+    role: "Photos automation"
+    manifest: "sources/sal/photosautomation.com/manifest.yaml"
+    scripts_root: "scripts/sal/photosautomation"
+    priority: high
+    status: planned
+    topics: ["photos", "applescript", "media workflows"]
+  - slug: configautomation
+    domain: configautomation.com
+    owner: "Sal Soghoian"
+    role: "Apple Configurator automation"
+    manifest: "sources/sal/configautomation.com/manifest.yaml"
+    scripts_root: "scripts/sal/configautomation"
+    priority: medium
+    status: planned
+    topics: ["configurator", "deployment", "devices"]
+  - slug: dictationcommands
+    domain: dictationcommands.com
+    owner: "Sal Soghoian"
+    role: "Dictation Commands"
+    manifest: "sources/sal/dictationcommands.com/manifest.yaml"
+    scripts_root: "scripts/sal/dictationcommands"
+    priority: high
+    status: planned
+    topics: ["accessibility", "voice control", "dictation", "commands"]
+  - slug: omni-automation
+    domain: omni-automation.com
+    owner: "Sal Soghoian"
+    role: "Post-Apple Omni Automation"
+    manifest: "sources/sal/omni-automation.com/manifest.yaml"
+    scripts_root: "scripts/sal/omni-automation"
+    priority: medium
+    status: planned
+    topics: ["javascript", "omnijs", "omni", "cross-platform automation"]

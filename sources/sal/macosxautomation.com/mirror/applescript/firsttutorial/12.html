@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Verbs Used with Windows</h2>
+		
+		<p>In addition to properties, Finder windows respond to a specific set of verbs or commands. Some of these have been incorporated into our previous scripts:</p>
+		
+		<p class="dictionary"><span class="dictionary-term">get</span>: used to access the current values of a window property<br>
+		<span class="dictionary-term">set</span>: used to apply a new value to a window property<br>
+		<span class="dictionary-term">open</span>: causes a window to display in the Finder<br>
+		<span class="dictionary-term">close</span>: causes a window to close</p>
+		
+		<p>With these commands we&rsquo;ve been able to manipulate the size, position, and display of Finder windows. Now we&rsquo;ll add another command for controlling windows to our vocabulary: <span class="dictionary-term">select</span></p>
+		
+		<p>Although the <span class="dictionary-term">select</span> verb can be applied to other scriptable objects, it can be used to make a window active so that it moves in front of any other open windows:</p>
+		
+		<p class="dictionary"><span class="dictionary-term">select</span>: causes a window to come to the front</p>
+		
+		<p>Delete the previous script from the script window, and then enter, compile, and the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20select%20the%20last%20Finder%20window"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> select <b>the last</b> Finder window</p>
+		
+		<p>The Finder window that was behind the front Finder window now moves to the front of the open windows.</p>
+		
+		<p>NOTE: you could accomplish the same result by using the <span class="dictionary-term">set</span> verb to change the value of the <span class="dictionary-term">index</span> property of the last Finder window:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20index%20of%20the%20last%20Finder%20window%20to%201"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> index <b>of the last</b> Finder window <b>to</b> 1</p>
+		
+		
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="13.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li class="hi">Verbs Used with Windows</li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

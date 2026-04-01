@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Movies and Audio Clips</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for movies and audio clips in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Media Items (Movie &amp; Audio Clips)</div>
+			
+			<p>Documents created by any of the iWork applications, Pages, Numbers, or Numbers, can incorporate a common set of elements, including <span class="codelibraryclass">images</span>, <span class="codelibraryclass">shapes</span>, <span class="codelibraryclass">lines</span>, <span class="codelibraryclass">tables</span>, <span class="codelibraryclass">charts</span>, <span class="codelibraryclass">movies</span>, and <span class="codelibraryclass">audio clips</span>. To AppleScript and the built-in scripting support of the iWork applications, these elements are considered <span class="codelibraryclass">iWork Items</span>, and share a common set of properties, detailed in the <span class="codelibraryclass">iWork Item</span> class from the <span class="dictionary-suite">iWork Suite</span>:</p>
+									
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">iWork item</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">iWork item</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An item which supports formatting.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">height</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The height of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">locked</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether the object is locked.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">parent</span> (&nbsp;<span class="dictionary-class">iWork container</span> r/o&nbsp;) : The <span class="codelibraryclass">iWork container</span> containing this <span class="codelibraryclass">iWork item</span>.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">position</span> (&nbsp;<span class="dictionary-class">point</span>&nbsp;) : The horizontal and vertical coordinates of the top left point of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">width</span> (&nbsp;<span class="codelibraryclass">integer</span>&nbsp;) : The width of the iWork item.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span></p>
+			</div>
+
+			<p>The properties in the <span class="codelibraryclass">iWork item</span> class can be accessed and changed for any of the common iWork elements. For example, a script can <span class="codelibrarycommand">get</span> or <span class="codelibrarycommand">set</span> the <span class="codeproperty">position</span> of a <span class="codelibraryclass">movie</span>, or <span class="codelibraryclass">image</span>, or <span class="codelibraryclass">shape</span>, or any of the common elements.</p>
+			
+			<p>In addition to sharing a common set of properties with the other iWork elements, each iWork element has its own set of properties, particular to that element. For example, the element-specific properties of an <span class="codelibraryclass">audio clip</span> are detailed in its dictionary listing, found in the <span class="dictionary-suite">iWork Suite</span>: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">audio clip</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">audio clip</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An audio clip</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">clip volume</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The volume setting for the audio clip, from 0 (none) to 100 (full volume).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;r/o) : The name of the audio file.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">repetition method</span> (&nbsp;<span class="dictionary-enumeration">none</span>/‌<span class="dictionary-enumeration">loop</span>/‌<span class="dictionary-enumeration">loop back and forth</span>&nbsp;) : If or how the audio clip repeats.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span></p>
+			</div>
+			
+			<p class="segment-note"><b>NOTE:</b> In the current version of <b>Numbers</b> the <span class="codelibraryclass">audio clip</span> class does not support the use of the <span class="codelibrarycommand">make</span> command. See the documentation (linked in sidebar) for details on how to import an audio clip.</p>
+			
+			<p>The element-specific properties of a <span class="codelibraryclass">movie</span> are detailed in its dictionary listing, found in the <span class="dictionary-suite">iWork Suite</span>: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+											
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">movie</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">movie</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : A movie on a slide in a document.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;r/o) : The name of the movie file.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">movie volume</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The volume setting for the movie, from 0 (none) to 100 (full volume).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">opacity</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The opacity of the object, in percent.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the movie displaying a reflection?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection value</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The percentage of reflection of the movie, from 0 (none) to 100 (full).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">repetition method</span> (&nbsp;<span class="dictionary-enumeration">none</span>/‌<span class="dictionary-enumeration">loop</span>/‌<span class="dictionary-enumeration">loop back and forth</span>&nbsp;) : If or how the audio clip repeats.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">rotation</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The rotation of the iWork item, in degrees from 0 to 359.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span></p>
+			</div>
+			
+			<p class="segment-note"><b>NOTE:</b> In the current version of <b>Numbers</b> the <span class="codelibraryclass">movie</span> class does not support the use of the <span class="codelibrarycommand">make</span> command.  See the documentation (linked in sidebar) for details on how to import a movie.</p>
+		
+			<p>The pages in this topic explore how to create and manipulate the iWork media items: <span class="codelibraryclass">movie</span> and <span class="codelibraryclass">audio clip</span>.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="#" target="_self">CONTINUE</a></p>
+	</div>
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi">Media Items</li>
+				<li class="navListSectionItem"><a href="media-items-audio-clip.html">Audio Clip</a></li>
+				<li class="navListSectionItem"><a href="media-items-movie.html">Movie</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

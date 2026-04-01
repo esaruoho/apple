@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Templates</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for templates in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Numbers Templates</div>
+			<p>The <span class="codelibraryclass">template</span> class is a top-level element of the <b>Numbers</b> application. It contains no other elements, and has two properties. The choice of <span class="codelibraryclass">template</span> determines the overall look of a document.</p>
+						
+			<p class="content-subhead" role="heading" aria-level="2">The Numbers Suite Template Class</p>
+							
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">template</span> <span style="font-size: 12px;"><i>n&nbsp;</i> : A styled document layout.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">application.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">id</span> (<span class="dictionary-class">text</span>, r/o) : The unique identifier for this application element.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (<span class="dictionary-class">text</span>, r/o) : The name of the template, as it is displayed in the application&rsquo;s user interface.</p>
+			</div>
+			
+			<p>The pages of this topic section detail how to access the properties of all installed <span class="codelibraryclass">templates</span>, all application <span class="codelibraryclass">templates</span>, and all user-created <span class="codelibraryclass">templates</span>. Example scripts detail how to create documents using a specified <span class="codelibraryclass">template</span>.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+		<!-- BEGIN SEGMENT: ID PROPERTY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Template ID Property</div>
+			
+			<p>The <span class="dictionary-property">id</span> property of a <span class="codelibraryclass">template</span> is a text string that uniquely identifies the <span class="codelibraryclass">template</span> to the <b>Numbers</b> application.</p>
+			
+			<p>The following script retrieves the <span class="codeproperty">id</span> of every <span class="codelibraryclass">template</span>:</p>
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the ID of Every Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09set%20the%20templateIDs%20to%20the%20id%20of%20every%20template%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>get the</b> <span class="codeproperty">id</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Application/Blank/Traditional&quot;, &quot;Application/08_Checklist/Traditional&quot;, &quot;Application/08_SumChecklist/Traditional&quot;, &quot;Application/01_Simple_Charts/Traditional&quot;, &quot;Application/05_Personal_Budget/Traditional&quot;, &quot;Application/05_Personal_Savings/Traditional&quot;, &quot;Application/05_Net_Worth/Traditional&quot;, &quot;Application/05_Retirement_Savings/Traditional&quot;, &quot;Application/04_LoanComparison/Traditional&quot;, &quot;Application/04_MortgageCalculator/Traditional&quot;, &quot;Application/07_Calendar/Traditional&quot;, &quot;Application/07_Schedule/Traditional&quot;, &quot;Application/01_Running_Log/Traditional&quot;, &quot;Application/08_Home_Improvement/Traditional&quot;, &quot;Application/TeamOrganization/Traditional&quot;, &quot;Application/09_Baby_Record/Traditional&quot;, &quot;Application/08_Travel_Planner/Traditional&quot;, &quot;Application/08_Party_Planner/Traditional&quot;, &quot;Application/04_Meal_Planner/Traditional&quot;, &quot;Application/04_Recipe/Traditional&quot;, &quot;Application/02_EmployeeSchedule/Traditional&quot;, &quot;Application/02_Invoice/Traditional&quot;, &quot;Application/02_ROI/Traditional&quot;, &quot;Application/02_Financial_Statement/Traditional&quot;, &quot;Application/02_BreakEvenAnalysis/Traditional&quot;, &quot;Application/06_AttendanceSheet/Traditional&quot;, &quot;Application/06_GradeBook/Traditional&quot;, &quot;Application/04_GPA/Traditional&quot;, &quot;Application/06_Dice_Lab/Traditional&quot;, &quot;Application/06_Correlation_Lab/Traditional&quot;, &quot;Application/05_School_Savings/Traditional&quot;, &quot;User/F7CFF09C-4D49-4F40-9DBF-8AA822EB9322&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>			
+			
+			<p>In <b>Numbers</b>, there are two kinds of templates: those that come with the application, and those created and saved by the user.<p>
+
+			<p>The <span class="codeproperty">id</span> for an application <span class="dictionary-term">template</span> begins with the term: &ldquo;Application&rdquo;</p>
+			
+			<p class="code">&quot;Application/Blank/Traditional&quot;</p>
+			
+			<p>The <span class="codeproperty">id</span> for a user-created <span class="dictionary-term">template</span> begins with the term: &ldquo;User&rdquo;</p>
+			
+			<p class="code">&quot;User/C34CF6EC-2BC4-4DE0-9A3B-35BA88F15B2C&quot;</p>
+							
+			<p>The design of <span class="codelibraryclass">template</span> <span class="codeproperty">id</span>s allows for specialized searches, as shown later on this page.</p>
+		
+		</div>
+		<!-- END SEGMENT: ID PROPERTY -->
+					
+		<!-- BEGIN SEGMENT: NAME PROPERTY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Template Name Property</div>
+			
+			<p>The <span class="dictionary-property">name</span> property of a <span class="codelibraryclass">template</span> is a text string that is the name of the <span class="codelibraryclass">template</span> as it is displayed in the <b>Numbers</b> application interface.</p>
+		
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every <span class="codelibraryclass">template</span>, including user-created <span class="codelibraryclass">templates</span>:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of Every Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09set%20the%20templateNames%20to%20the%20name%20of%20every%20template%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>get the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Blank&quot;, &quot;Checklist&quot;, &quot;Checklist Total&quot;, &quot;Charting Basics&quot;, &quot;Personal Budget&quot;, &quot;Personal Savings&quot;, &quot;Net Worth&quot;, &quot;Retirement Savings&quot;, &quot;Loan Comparison&quot;, &quot;Mortgage Calculator&quot;, &quot;Calendar&quot;, &quot;Schedule&quot;, &quot;Running Log&quot;, &quot;Home Improvement&quot;, &quot;Team Organization&quot;, &quot;Baby Record&quot;, &quot;Travel Planner&quot;, &quot;Party Planner&quot;, &quot;Meal Planner&quot;, &quot;Recipe&quot;, &quot;Employee Schedule&quot;, &quot;Invoice&quot;, &quot;<b>Return on</b> Investment&quot;, &quot;Financials&quot;, &quot;Break-Even Analysis&quot;, &quot;Attendance&quot;, &quot;Grade Book&quot;, &quot;GPA&quot;, &quot;Probability Lab&quot;, &quot;Correlation Project&quot;, &quot;School Savings&quot;, &quot;ACME Widget Template&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: NAME PROPERTY -->
+		
+		<!-- BEGIN SEGMENT: APPLICATION-USER THEMES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Application|User Templates</div>
+			
+			<p>A script can use the unique design of the <span class="codeproperty">id</span> property to retrieve only <span class="codelibraryclass">templates</span> of a specific type.</p>
+		
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every application <span class="codelibraryclass">template</span>:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of All Application Templates</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09set%20applicationTemplateNames%20to%20the%20name%20of%20every%20template%20whose%20id%20of%20it%20begins%20with%20%22Application%2F%22%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">applicationTemplateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span> <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;Application/&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Blank&quot;, &quot;Checklist&quot;, &quot;Checklist Total&quot;, &quot;Charting Basics&quot;, &quot;Personal Budget&quot;, &quot;Personal Savings&quot;, &quot;Net Worth&quot;, &quot;Retirement Savings&quot;, &quot;Loan Comparison&quot;, &quot;Mortgage Calculator&quot;, &quot;Calendar&quot;, &quot;Schedule&quot;, &quot;Running Log&quot;, &quot;Home Improvement&quot;, &quot;Team Organization&quot;, &quot;Baby Record&quot;, &quot;Travel Planner&quot;, &quot;Party Planner&quot;, &quot;Meal Planner&quot;, &quot;Recipe&quot;, &quot;Employee Schedule&quot;, &quot;Invoice&quot;, &quot;Return on Investment&quot;, &quot;Financials&quot;, &quot;Break-Even Analysis&quot;, &quot;Attendance&quot;, &quot;Grade Book&quot;, &quot;GPA&quot;, &quot;Probability Lab&quot;, &quot;Correlation Project&quot;, &quot;School Savings&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The following script retrieves the <span class="codeproperty">name</span> of every user <span class="codelibraryclass">template</span>:</p>
+						
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Get the Name of All User Templates</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09set%20userTemplateNames%20to%20the%20name%20of%20every%20template%20whose%20id%20of%20it%20begins%20with%20%22User%2F%22%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">userTemplateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> template <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;User/&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;ACME Widget Template&quot;}</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: APPLICATION-USER THEMES -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Check for Template</div>
+
+			<p>A principle of good &ldquo;defensive&rdquo; script writing is to never assume anything, always check for resources. Here&rsquo;s a script that checks to make sure a specific template is intalled:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Check for Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20thisTemplateName%20%3A%20%22Travel%20Expense%20Report%22%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09--%20GET%20THE%20TEMPLATE%20NAMES%0D%09%09set%20the%20templateNames%20to%20the%20name%20of%20every%20template%0D%09%09%0D%09%09--%20CHECK%20FOR%20TEMPLATE%0D%09%09if%20thisTemplateName%20is%20not%20in%20the%20templateNames%20then%0D%09%09%09error%20%22The%20template%20%E2%80%9C%22%20%26%20thisTemplateName%20%26%20%22%E2%80%9D%20is%20not%20installed%20on%20this%20computer.%22%0D%09%09end%20if%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(%22ERROR%20%22%20%26%20errorNumber)%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">thisTemplateName</span> : &quot;Travel Expense Report&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- GET THE TEMPLATE NAMES</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">templateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHECK FOR TEMPLATE</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTemplateName</span> <b>is not in the</b> <span class="codevariable">templateNames</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;The template &ldquo;&quot; &amp; <span class="codevariable">thisTemplateName</span> &amp; &quot;&rdquo; is not installed on this computer.&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (&quot;<b>ERROR</b> &quot; &amp; <span class="codevariable">errorNumber</span>) <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+
+
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="template-doc-make.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li class="hi">Template</li>
+				<li class="navListSectionItem"><a href="template-doc-make.html">New Document with Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

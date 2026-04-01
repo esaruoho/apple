@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Images from URLs</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="A detailed description of how to use the AppleScript support for images in the iWork Keynote application, to download and import images from URLs used as descriptions for placeholder images.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Images from URLs</div>
+					
+			<p>This short tutorial demonstrates a useful technique for creating a presentation that incorporates images from online sources. Using this technique, linked images in a presentation can be updated periodically throughout the presentation development process.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: The online images used with the technique demonstrated below, can be from your company&rsquo;s website, or servers, or from a website that provides royalty-free images to the public, such as <a href="http://hubblesite.org" target="_blank">HubbleSite.org</a>. Be sure that you have checked the assigned rights of the images you use in your presentations.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Tagged Placeholders</p>
+			
+			<p>The following describes how image placeholders in slides can be tagged with URLs to online source images.</p>
+		
+			<img class="across" width="640" height="389" alt="placeholder-URL" src="gfx/placeholder-URL.png">
+		
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Image Placeholder</b> &bull; The image placeholder selected in the slide. Placeholders are identified with by their circular icon overlay of an image.</p>
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Format Pane &gt; Image Settings Tab</b> &bull; The <b>Image Settings</b> tab is selected in the <b>Format</b> pane.</p>
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Image Description</b> &bull; The Description field usually contains the text to be read by the <b>VoiceOver</b> application. For the purposes of this presentation development technique, the description is replaced with a URL to the image file to be downloaded to the computer, and then used as the replacement for the placeholder. <b>NOTE</b>: the example script provides the option to replace the image URL with the embedded description from the replacement image file (if it has one).</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Example Tutorial</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="iPhone-5S-Colors.zip" style="font-weight:bold;">DOWNLOAD</a> and open the example <b>Keynote</b> presentation <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> that has been pre-tagged with image URLs.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>With an active internet connection, open the example script <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> in the <b>AppleScript Editor</b> application and run it.</p>
+		
+			<p>The example script provided below is designed to examine each slide of a presentation for images whose description is a URL. If a URL is found by the script, it will attempt to download the online image to disk and then replace the placeholder image with the downloaded file.</p> 
+			
+			<p class="segment-note"><b>NOTE</b>: If the script property <span class="codevariable">replaceDescriptionWithURL</span> is set to <span class="dictionary-enumeration">true</span>, then the script can be run over and over to get the latest version of the image from its URL.</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Replace Placeholders with Images from URLs</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=--%20The%20value%20of%20this%20property%20deternines%20whether%20the%20description%20for%20the%20new%20image%20should%20be%20its%20source%20URL%20or%20embedded%20description%20metadata%20(if%20any)%0Dproperty%20replaceDescriptionWithURL%20%3A%20true%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20front%20document)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09--%20check%20each%20slide%20for%20images%20whose%20description%20is%20a%20URL%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09tell%20slide%20i%0D%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20images%0D%09%09%09%09%09tell%20image%20q%0D%09%09%09%09%09%09set%20currentDescription%20to%20the%20description%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09if%20currentDescription%20contains%20%22%3A%2F%2F%22%20then%0D%09%09%09%09%09%09set%20newImageFile%20to%20my%20fileFromURL(currentDescription)%0D%09%09%09%09%09%09if%20newImageFile%20is%20not%20false%20then%0D%09%09%09%09%09%09%09set%20file%20name%20of%20image%20q%20to%20newImageFile%0D%09%09%09%09%09%09%09if%20replaceDescriptionWithURL%20is%20true%20then%0D%09%09%09%09%09%09%09%09set%20description%20of%20image%20q%20to%20currentDescription%0D%09%09%09%09%09%09%09else%20--%20attempt%20to%20retrieve%20embedded%20description%0D%09%09%09%09%09%09%09%09set%20embeddedDescription%20to%20my%20extractkMDItemDescription(newImageFile)%0D%09%09%09%09%09%09%09%09set%20description%20of%20image%20q%20to%20embeddedDescription%0D%09%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09end%20if%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0D%09start%20the%20front%20document%20from%20the%20first%20slide%20of%20the%20front%20document%0Dend%20tell%0D%0Don%20fileFromURL(currentDescription)%0D%09try%0D%09%09--%20get%20the%20name%20of%20the%20file%20from%20the%20URL%0D%09%09set%20the%20fileName%20to%20do%20shell%20script%20%22basename%20%22%20%26%20currentDescription%0D%09%09--%20derive%20a%20path%20to%20the%20temp%20folder%20into%20which%20the%20image%20will%20be%20downloaded%0D%09%09set%20the%20temporaryItemsFolder%20to%20%C2%AC%0D%09%09%09the%20POSIX%20path%20of%20(path%20to%20the%20temporary%20items%20folder)%0D%09%09set%20the%20targetFile%20to%20(temporaryItemsFolder%20%26%20fileName)%0D%09%09--%20download%20the%20image%0D%09%09do%20shell%20script%20%22curl%22%20%26%20space%20%26%20currentDescription%20%26%20space%20%26%20%22-o%22%20%26%20%C2%AC%0D%09%09%09space%20%26%20quoted%20form%20of%20targetFile%0D%09%09--%20return%20an%20HFS%20alias%20file%20reference%20to%20the%20image%20file%0D%09%09return%20targetFile%20as%20POSIX%20file%20as%20alias%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20fileFromURL%0D%0Don%20extractkMDItemDescription(thisImageFile)%0D%09--%20uses%20Spotlight%20to%20retrieve%20embedded%20description%20metadata%20(if%20any)%0D%09try%0D%09%09set%20thisImagePOSIXPath%20to%20the%20POSIX%20path%20of%20thisImageFile%0D%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09do%20shell%20script%20%22mdls%20-name%20kMDItemDescription%20%22%20%26%20%C2%AC%0D%09%09%09%09(quoted%20form%20of%20thisImagePOSIXPath)%0D%09%09if%20embeddedDescription%20is%20%22kMDItemDescription%20%3D%20(null)%22%20then%0D%09%09%09set%20embeddedDescription%20to%20%22%22%0D%09%09else%0D%09%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09%09(text%20from%20((length%20of%20%22kMDItemDescription%20%3D%20%5C%22%22)%20%2B%201)%20to%20%C2%AC%0D%09%09%09%09%09-2%20of%20embeddedDescription)%0D%09%09end%20if%0D%09%09return%20embeddedDescription%0D%09on%20error%0D%09%09return%20%22%22%0D%09end%20try%0Dend%20extractkMDItemDescription"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span class="codecomment">-- The value of this property deternines whether the description for the new image should be its source URL or embedded description metadata (if any)</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><b>property</b> <span class="codevariable">replaceDescriptionWithURL</span> : <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <b>front</b> <span class="codelibraryclass">document</span>) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> document</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- check each slide for images whose description is a URL</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">images</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">image</span> <span class="codevariable">q</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">currentDescription</span> <b>to the</b> <span class="codeproperty">description</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">currentDescription</span> <b>contains</b> &quot;://&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageFile</span> <b>to my</b> <span class="codevariable">fileFromURL</span>(<span class="codevariable">currentDescription</span>)</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>if</b> <span class="codevariable">newImageFile</span> <b>is not</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">file name</span> <b>of</b> <span class="codelibraryclass">image</span> <span class="codevariable">q</span> <b>to</b> <span class="codevariable">newImageFile</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>if</b> <span class="codevariable">replaceDescriptionWithURL</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set</b> description <b>of</b> <span class="codelibraryclass">image</span> <span class="codevariable">q</span> <b>to</b> <span class="codevariable">currentDescription</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>else</b> <span class="codecomment">-- attempt to retrieve embedded description</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set</b> <span class="codevariable">embeddedDescription</span> <b>to my</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">newImageFile</span>)</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set</b> description <b>of</b> <span class="codelibraryclass">image</span> <span class="codevariable">q</span> <b>to</b> <span class="codevariable">embeddedDescription</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <b>the front</b> <span class="codelibraryclass">document</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">fileFromURL</span>(<span class="codevariable">currentDescription</span>)</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get the name of the file from the URL</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> fileName <b>to</b> <span class="codelibrarycommand">do shell script</span> &quot;basename &quot; &amp; <span class="codevariable">currentDescription</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- derive a path to the temp folder into which the image will be downloaded</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">temporaryItemsFolder</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> (<span class="codelibrarycommand">path to</span> <b>the</b> <span class="codeenumeration">temporary items folder</span>)</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetFile</span> <b>to</b> (<span class="codevariable">temporaryItemsFolder</span> &amp; <span class="codevariable">fileName</span>)</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- download the image</span></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;curl&quot; &amp; space &amp; <span class="codevariable">currentDescription</span> &amp; space &amp; &quot;-o&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>space &amp; quoted form <b>of</b> <span class="codevariable">targetFile</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- return an HFS alias file reference to the image file</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">targetFile</span> <b>as</b> <span class="codelibraryclass">POSIX file</span> <b>as</b> <span class="codelibraryclass">alias</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">fileFromURL</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- uses Spotlight to retrieve embedded description metadata (if any)</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImagePOSIXpath</span> <b>to the</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisImageFile</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;mdls -name kMDItemDescription &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImagePOSIXPath</span>)</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">embeddedDescription</span> <b>is</b> &quot;kMDItemDescription = (null)&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codelibraryclass">text</span> <b>from</b> ((<span class="codeproperty">length</span> <b>of</b> &quot;kMDItemDescription = \&quot;&quot;) + 1) <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>-2 <b>of</b> <span class="codevariable">embeddedDescription</span>)</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">embeddedDescription</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">extractkMDItemDescription</span></td></tr>
+			</table>
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>A slide with the imported images:</p>
+			<img class="centered" width="624" alt="iphones-slide" src="gfx/iphones-slide.jpg">	
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image-slides-from-files.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li class="hi"><a href="image.html">Image</a></li>
+				<li class="navListSectionItem"><a href="image-properties.html">Image Properties</a></li>
+				<li class="navListSectionItem"><a href="image-placeholder.html">Importing vs Replacing</a></li>
+				<li class="navListSectionItemSelected">Images from URLs</li>
+				<li class="navListSectionItem"><a href="image-slides-from-files.html">Image Slides from Files</a></li>
+				<li class="navListSectionItem"><a href="image-add-descriptions.html">Add Image Descriptions</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

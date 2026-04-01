@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Defining and Selecting Ranges</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Range Coordinates</div>
+						
+			<p>In <b>Numbers</b>, a <span class="codelibraryclass">range</span> is defined and represented by its <i>coordinates</i>. A range&rsquo;s coordinates are typically represented as a text string of two cell names (addresses), delimited by a colon character. For example: &quot;C4:G7&quot;. A coordinate pairing means: a range encompassing every contiguous cell from the first cell of the pairing to the last cell of the pairing.</p>
+			
+			<p>A range can be selected in a table by assigning the range as the value of table&rsquo;s <span class="codeproperty">selection range</span> property.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>set</b> <span class="codeproperty">selection range</span> <b>of</b> <span class="dictionary-class">table</span> 1 <b>to</b> <span class="codelibraryclass">range</span> "H5:K8"</p>
+						
+			<p>This will cause the defined range to become the selection of the targeted table. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="centered" alt="example-range-selection" src="gfx/example-range-selection.jpg" width="624">
+			
+			<p class="segment-note"><b>IMPORTANT</b>: Although a table selection may be useful to provide feedback to the script user, it is not necessary to actually have the script select a range first, in order to modify its contents, or change the values of its properties. Such tasks can be accomplished by simply targeting the defined range in a script. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>set the</b> <span class="codeproperty">color</span> <b>of</b> <span class="codelibraryclass">range</span> "H5:K8" <b>of</b> <span class="dictionary-class">table</span> 1 <b>to</b> {65535, 0, 0}</p>			
+		</div>	
+			
+			
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Deriving Ranges</div>
+			<p>Range coordinates can be derived by scripts, using any of the following methods.</p>
+						
+			<p class="content-subhead" role="heading" aria-level="2">1) Opposing Corners</p>
+			
+			<p>Combining the name of the top left cell of the range, a colon character (:) delimiter, and the name of the bottom right cell of the range, and preceding the combined text string with the class name <span class="codelibraryclass">range</span>. For example: <span class="codelibraryclass">range</span> &quot;C4:G7&quot;</p>
+			
+			<p class="segment-note">All of the following script examples use the assume that a reference to a specific table is contained by the variable <span class="codevariable">thisTable</span>:</p>
+			
+			<p class="code"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">range</span> &quot;C4:G7&quot;<BR>
+			<b>end tell</b></p>
+
+			
+			 <p>(<i>the corner cells have been colorized for visual effect</i>)</p>
+			
+			<img class="centered" alt="range-selection-01" src="gfx/range-selection-01.jpg" width="624">
+			
+			<p class="content-subhead" role="heading" aria-level="2">2) Row Reference</p> 
+			
+			<p>To target a whole single row, use the value of the row <span class="codeproperty">name</span> or <span class="codeproperty">index</span> properties to address the range of cells contained by the row.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">row</span> &quot;5&quot;<BR>
+			<b>end tell</b></p>
+						
+			<img class="centered" alt="single-row-selected" src="gfx/single-row-selected.jpg" width="624">
+			
+			<p class="content-subhead" role="heading" aria-level="2">3) Column Reference</p>
+			
+			<p>To target a whole single column, use the value of the column <span class="codeproperty">name</span> or <span class="codeproperty">index</span> properties to address the range of cells contained by the column.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">column</span> &quot;H&quot;<BR>
+			<b>end tell</b></p>
+						
+			<img class="centered" alt="single-column-selected" src="gfx/single-column-selected.jpg" width="624">
+		
+			<p class="content-subhead" role="heading" aria-level="2">4) Multiple Columns</p>
+			
+			<p>To target a multiple contiguous columns, use the opposing corners technique, referencing the two corner cells by their relative position in their columns.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRangeName</span> <b>to</b> &not;<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>((<span class="codeproperty">name</span> <b>of the first</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">column</span> &quot;C&quot;) &amp; &quot;:&quot; &amp; &not;<BR>
+			<span style="float:left; width:30px;">&nbsp;</span>(<span class="codeproperty">name</span> <b>of the last</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">column</span> &quot;E&quot;))<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">range</span> <span class="codevariable">thisRangeName</span><BR>
+			<b>end tell</b></p>
+			
+			<p>You can also create a range for a contiguous group of full columns by using their names, like this:</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRangeName</span> <b>to</b> &quot;C:E&quot;<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">range</span> <span class="codevariable">thisRangeName</span><BR>
+			<b>end tell</b></p>
+
+						
+			<img class="centered" alt="select-contiguous-columns" src="gfx/select-contiguous-columns.jpg" width="624">
+
+			<p class="content-subhead" role="heading" aria-level="2">5) Multiple Rows</p>
+			
+			<p>To target a multiple contiguous rows, use the opposing corners technique, referencing the two corner cells by their relative position in their rows.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRangeName</span> <b>to</b> &not;<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>((<span class="codeproperty">name</span> <b>of first</b> <span class="codelibraryclass">cell</span> <b>of</b> row &quot;4&quot;) &amp; &quot;:&quot; &amp; (<span class="codeproperty">name</span> <b>of last</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">row</span> &quot;6&quot;))<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">range</span> <span class="codevariable">thisRangeName</span><BR>
+			<b>end tell</b></p>
+			
+			<p>You can also create a range for a contiguous group of full rows by using their names, like this:</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRangeName</span> <b>to</b> &quot;4:6&quot;<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codelibraryclass">range</span> <span class="codevariable">thisRangeName</span><BR>
+			<b>end tell</b></p>
+
+						
+			<img class="centered" alt="select-contiguous-rows" src="gfx/select-contiguous-rows.jpg" width="624">
+			
+			<p class="content-subhead" role="heading" aria-level="2">6) Entire Table</p>
+			
+			<p>To target all of the table&rsquo;s cells, set the value of the table&rsquo;s <span class="codeproperty">selection range</span> property to the value of the table&rsquo;s <span class="codeproperty">cell range</span> property.</p>
+			
+			<p class="code" style="-webkit-user-select:text;"><b>tell</b> <span class="codevariable">thisTable</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to the</b> <span class="codeproperty">cell range</span><BR>
+			<b>end tell</b></p>
+						
+			<img class="centered" alt="all-cells-selected" src="gfx/all-cells-selected.jpg" width="624">
+		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="range-merge.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li class="hi"><a href="range.html">Range</a></li>
+				<li class="navListSectionItemSelected">Selecting a Range</li>
+				<li class="navListSectionItem"><a href="range-merge.html">Merging a Range</a></li>
+				<li class="navListSectionItem"><a href="range-clear.html">Clearing a Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

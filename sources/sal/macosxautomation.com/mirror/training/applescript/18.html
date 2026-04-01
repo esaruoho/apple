@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Principles Remain the Same</h2>
+		
+		<p>In this chapter, you’ve been introduced to the fundamental principles and structures of the AppleScript language. These principles include the following essential concepts: </p>
+		
+		<ul class="square">
+			<li>Scriptable objects have properties with corresponding values.</li>
+			<li>Scriptable objects can also contain other scriptable objects that also have properties with corresponding values. </li>
+			<li>The values of the properties of scriptable objects can be read and sometimes altered.</li>
+		</ul>
+		
+		<p>In learning to apply these principles, you wrote scripts to control the appearance of Finder windows in the Finder application by accessing and changing the values of their properties and by using standard verbs, such as close and open, to control their display. As stated earlier in this chapter, the principles used in those scripts apply to all scriptable applications, not just the Finder application.</p>
+ 
+		<p>Let&rsquo;s see whether that statement is indeed true.</p>
+		
+		<p>In a new Finder window, navigate to your Applications folder, and launch the Safari application. After it has finished starting up, enter, compile, and run the following script in a new script window in Script Editor.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Safari%22%20to%20close%20every%20window"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Safari&quot; <b>to</b> close <b>every</b> window</p>
+		
+		<p>Any open browser windows in the Safari application are immediately closed. As with the scripts you used with the Finder, note that this script is a <span class="dictionary-term">tell statement</span> containing the necessary two elements: a reference to the targeted objects (in this case the open browser windows) and the action to be performed (close).</p>
+		
+		<p>Next, let&rsquo;s use the <span class="dictionary-term">open location</span> command to open a Web page with the following script (assuming your computer is connected to the Internet).</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Safari%22%20to%20open%20location%20%22http%3A%2F%2Fautomator%2Eus%22"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Safari&quot; <b>to</b> open location &quot;http://automator.us&quot;</p>
+		
+		<p>A new browser window containing the specified Web site is displayed. Let&rsquo;s see whether we can use the properties of the browser window to control where the window appears on the screen. Enter and run the following script to get the <span class="dictionary-term">position</span> coordinates of the new window.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Safari%22%20to%20get%20the%20position%20of%20the%20front%20window"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Safari&quot; <b>to get the</b> position <b>of the front</b> window</p>
+		
+		<p>Instead of getting a list of the horizontal and vertical offsets of the window, the Script Editor selects the word <span class="dictionary-term">position</span> and displays an error message in this dialog:</p>
+		
+		<a href="gfx/CH01_image26.jpg" title="An error dialog displayed as a sheet attached to a script window in Script Editor." rel="lightbox"><img src="gfx/CH01_image26.jpg" width="450" class="across"></a>
+		
+		<p class="imagecaption">An error dialog displayed as a sheet attached to a script window in Script Editor.</p>
+		
+		<p>The error message states (in a slightly convoluted way) that a script can&rsquo;t refer to the <span class="dictionary-term">position</span> of a window in Safari. This is because, like many Mac OS X applications, Safari does not support the use of the <span class="dictionary-term">position</span> property for windows in the same manner as the Finder does. Instead, try using the <span class="dictionary-term">bounds</span> property to get the coordinates of the browser window. Enter and run this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Safari%22%20to%20get%20the%20bounds%20of%20window%201"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Safari&quot; <b>to get the</b> bounds <b>of</b> window 1<BR><span class="codecomment">--> returns something like: {184, 36, 924, 857}</span></p>
+		
+		<p>Most scriptable Mac&nbsp;OS&nbsp;X applications support the <span class="dictionary-term">bounds</span> property for getting and setting window dimensions. You can use it to change the position and shape of the browser window. Try this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Safari%22%20to%20set%20the%20bounds%20of%20the%20front%20window%20to%20%7B0%2C%2022%2C%20800%2C%201024%7D"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Safari&quot; <b>to set the</b> bounds <b>of the front</b> window <b>to</b> {0, 22, 800, 1024}</p>
+		
+		<p>The Safari browser window is now sized and positioned to fit in the left section of the computer screen. Note that if you provide a vertical coordinate that is larger than the screen is tall, Safari automatically adjusts the vertical display of a browser window so that it doesn’t go below the Dock or the bottom of the screen. Very convenient.</p>
+
+		<p>So as you&rsquo;ve now seen, you can use AppleScript to close, open, and resize Safari windows. And the point is?</p>
+		
+		<p class="principle">The principles you learned scripting Finder windows apply to other scriptable applications and objects as well.</p>
+
+		<p>Just as the Finder application has scriptable window elements, so does the Safari application. And as with Finder windows, windows in Safari have properties that have corresponding values that can be read and sometimes changed. A browser window has a bounds property, just like a Finder window, whose value is a list of four numbers describing the location of its top-left corner and bottom-right corner on the screen.</p>
+		 
+		<p>TIP: If you’ve ever wanted to be able to make your browser window fill your computer’s display, here’s a script that uses the <span class="dictionary-term">result</span> of a <span class="dictionary-term">tell statement</span> that gets the <span class="dictionary-term">bounds</span> of the Finder Desktop to resize the frontmost Safari window to fill the screen:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20window%20of%20the%20desktop%0Dtell%20application%20%22Safari%22%20to%20set%20the%20bounds%20of%20the%20front%20window%20to%20%7B0%2C%2022%2C%20%283rd%20item%20of%20the%20result%29%2C%20%284th%20item%20of%20the%20result%29%7D"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that sizes the open Safari browser window to fill the screen.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> bounds <b>of the</b> window <b>of the</b> desktop<BR>
+<b>tell</b> application &quot;Safari&quot; <b>to set the</b> bounds <b>of the front</b> window <b>to</b> &not;<BR><span style="float:left; width:10px;">&nbsp;</span>{0, 22, (3rd item <b>of the</b> result), (4th item <b>of the</b> result)}</p>
+		
+		<p>You&rsquo;ll learn more about how to pass information between script statements in <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">Chapter 8, Data Containers, Operators, and Coercions</a>.</p>
+		
+		<h2>Principles Remain Constant?</h2>
+		
+		<p>Let&rsquo;s continue validating the universal nature of AppleScript principles. Navigate to the Applications folder, and open the QuickTime Player application.</p>
+		
+		<p>Next, open a movie file by choosing Open Movie in New Player from the File menu and locating a movie file on your computer. Any standard QuickTime movie will do.</p>
+		
+		<p>Like the Finder application, QuickTime Player contains other scriptable elements besides windows, one of which is the movie object. As with the scripts you wrote to query Finder windows, you can use the <span class="dictionary-term">get</span> verb to access the values of the properties of the scriptable objects or elements of QuickTime Player.</p>
+
+		<p class="note">NOTE: The terms object and element are used interchangeably in describing scriptable items that belong to other scriptable items, such as Finder windows belonging to the Finder application or movie windows belonging to the QuickTime Player application.</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22QuickTime%20Player%22%20to%20get%20name%20of%20the%20front%20document"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;QuickTime Player&quot; <b>to get</b> name <b>of the front</b> document<BR><span class="codecomment">-->returns: &quot;New iMac Ad&quot; (or the name of the movie you opened)</span></p>
+		
+		<p class="note">NOTE: In QuickTime 7.2 the term <span class="dictionary-term">movie</span> was replaced by the term <span class="dictionary-term">document</span>, and any scripts written using <span class="dictionary-term">movie</span> will be changed when they are compiled. They will run the same, but the term <span class="dictionary-term">document</span> will appear instead of <span class="dictionary-term">movie</span>. For compatibility with Tiger, the term <span class="dictionary-term">movie</span> is used in these example scripts.</p>
+		
+		<p>The result of the script is the value of the <span class="dictionary-term">name</span> property of a movie. Now, try this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22QuickTime%20Player%22%20to%20get%20the%20duration%20of%20the%20front%20document"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;QuickTime Player&quot; <b>to get the</b> duration <b>of the front</b> document<BR><span class="codecomment">-->returns: 17998 (the number of frames comprising the movie)</span></p>
+		
+		<p>The result of the script is the value of the <span class="dictionary-term">duration</span> property of a movie expressed as a number indicating the number of frames in the movie.</p>
+		
+		<p>As with other scriptable applications, you can use the <span class="dictionary-term">set</span> verb to change the value of the property of an object. The following script changes the value of the <span class="dictionary-term">current time</span> property of a movie to move the playback cursor to a specified point in the movie.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22QuickTime%20Player%22%20to%20set%20the%20current%20time%20of%20the%20front%20document%20to%2094900"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;QuickTime Player&quot; <b>to set the</b> current time <b>of the front</b> document <b>to</b> 94900</p>
+		
+		<p>QuickTime Player also responds to these commands for controlling the playback of movies:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22QuickTime%20Player%22%20to%20play%20the%20front%20document"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;QuickTime Player&quot; <b>to</b> play <b>the front</b> movie</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22QuickTime%20Player%22%20to%20stop%20the%20front%20document"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;QuickTime Player&quot; <b>to</b> stop <b>the front</b> movie</p>
+		
+		<p>The AppleScript principles that work with the Finder application work for the QuickTime Player application as well. Let&rsquo;s try applying them to one more application.</p>
+		
+		<h3>iTunes</h3>
+		
+		<p>Quit QuickTime Player without saving any changes, and open the iTunes application.</p>
+		
+		<p>Like the other scriptable applications, iTunes contains scriptable elements or objects that contain other scriptable elements. If you are familiar with iTunes, you know the application has <span class="dictionary-term">playlists</span>, which are collections of <span class="dictionary-term">tracks</span> or songs. The master playlist for the application, containing all tracks, is the <span class="dictionary-term">library playlist</span>.</p>
+		
+		<p>Here&rsquo;s the basic object hierarchy for the iTunes application:</p>
+		
+		<span class="indentscripthilite">iTunes Application > playlist > track</span>
+
+		<p>In other words, tracks are contained in playlists that are contained in the iTunes application.</p>
+
+		<p>As with the Finder and QuickTime Player applications, each one of the scriptable elements of iTunes has properties with corresponding values. Let&rsquo;s try accessing some of the properties of the track object with the <span class="inlinecode">tell statement</span> shown in the follwoing script:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22iTunes%22%20to%20get%20the%20name%20of%20the%20last%20track%20of%20the%20first%20library%20playlist"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;iTunes&quot; <b>to get the</b> name <b>of the last</b> track <b>of the first</b> library playlist<BR><span class="codecomment">--> returns: &quot;Ave Maria&quot; (whatever you have in your iTunes database)</span></p>
+		
+		<p>Remember, a <span class="inlinecode">tell statement</span> has two components: a reference to the target object and the action to be performed. In this example, the target object is the last <span class="inlinecode">track</span> of the first <span class="inlinecode">library playlist</span>, and the action to be performed is to get the value of its <span class="inlinecode">name</span> property.</p>
+		
+		<p>Now extract the value of other track properties using the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22iTunes%22%0D%09tell%20the%20first%20library%20playlist%0D%09%09get%20the%20duration%20of%20the%20last%20track%0D%09%09%2D%2D%3E%20returns%3A%20281%20%28the%20length%20of%20the%20track%20in%20seconds%29%0D%09end%20tell%0Dend%20tell%0D%0Dtell%20application%20%22iTunes%22%0D%09tell%20the%20first%20library%20playlist%0D%09%09get%20the%20artist%20of%20the%20last%20track%0D%09%09%2D%2D%3E%20returns%3A%20%22Aaron%20Neville%22%0D%09end%20tell%0Dend%20tell"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Two versions of a script for extracting the value of an iTunes property.<br>&nbsp;<br><br></span><b>tell</b> application &quot;iTunes&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the first</b> library playlist<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>get the</b> duration <b>of the last</b> track<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> returns: 281 (the length of the track in seconds)</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end tell</b><BR>
+<BR>
+<b>tell</b> application &quot;iTunes&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the first</b> library playlist<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>get the</b> artist <b>of the last</b> track<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> returns: &quot;Aaron Neville&quot;</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end tell</b></p>
+
+		<p>As these examples demonstrate, <span class="inlinecode">playlists</span> contain <span class="inlinecode">tracks</span> that have properties, such as <span class="inlinecode">name</span>, <span class="inlinecode">duration</span>, <span class="inlinecode">artist</span>, <span class="inlinecode">album</span>, and so on.</p>
+
+		<p>The iTunes application, like the Finder and QuickTime Player, responds to AppleScript commands to perform actions with its scriptable objects. See, for example, the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22iTunes%22%20to%20play%20the%20last%20track%20of%20the%20first%20library%20playlist"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for playing a specific track in iTunes.<br>&nbsp;<br><br></span><b>tell</b> application &quot;iTunes&quot; <b>to</b> play <b>the last</b> track <b>of the first</b> library playlist</p>
+
+		<p>In this example, the verb <span class="inlinecode">play</span> is used to initiate the playing of the track referenced as its target. To stop the iTunes application, use the <span class="inlinecode">stop</span> verb. It doesn’t require a reference to a particular track because it targets the iTunes application, which only one track can play at a time.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22iTunes%22%20to%20stop"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;iTunes&quot; <b>to</b> stop</p>
+		
+		<h2>What&rsquo;s Next?</h2>
+		
+		<p>Congratulations on completing your introduction to the world of AppleScript. As you&rsquo;ve seen, it&rsquo;s an easy but powerful way to control the actions of applications.</p>
+
+		<p>If you&rsquo;ve understood the concepts presented in this chapter, you’re well on your way to becoming a powerful scripter, because the lessons presented here will be used to create even more interesting and useful automation tools.</p>
+
+		<p>In the next chapter, you&rsquo;ll discover how to access all of the scriptable objects, properties, and commands of any scriptable application by reading its terminology dictionary. See you <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">there</a>!</p>
+		
+
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+<div class="navbox">
+	<h2>Chapter 01</h2>
+	<ul class="square last">
+		<li><a href="index.html">The First Step</a></li>
+		<li><a href="01.html">Properties and Values</a></li>
+		<li><a href="02.html">The Script Editor</a></li>
+		<li><a href="03.html">The Name Property</a></li>
+		<li><a href="04.html">The Index Property</a></li>
+		<li><a href="05.html">The Target Property</a></li>
+		<li><a href="06.html">The Toolbar Visible Property</a></li>
+		<li><a href="07.html">The Statusbar Visible Property</a></li>
+		<li><a href="08.html">The Sidebar Width Property</a></li>
+		<li><a href="09.html">The Current View Property</a></li>
+		<li><a href="10.html">The Position Property</a></li>
+		<li><a href="11.html">The Bounds Property</a></li>
+		<li><a href="12.html">Verbs Used with Windows</a></li>
+		<li><a href="13.html">The Desktop Setup Script</a></li>
+		<li><a href="14.html">The Tell Block</a></li>
+		<li><a href="15.html">Nested Tell Blocks</a></li>
+		<li><a href="16.html">Saving the Setup Script</a></li>
+		<li><a href="17.html">Chapter Review</a></li>
+		<li class="hi">The Principles Remain the Same</li>
+	</ul>
+</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

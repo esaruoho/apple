@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../index.html">Lion Release Notes</a> | <a href="../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+	
+			<h1 style="margin-top: 0;">The EPUB Demo Kit and Tutorial</h1>
+			
+			<p>To demonstrate how to use the EPUB service, a demo kit has been provided, containing materials to enable the creation of many variations of digital publications.</p>
+			
+			<p>The minimum requirement for creating an EPUB book with this service is the <b>text</b> for the book, passed to the service as either as text selected in a document, or as text files that will become individual chapters in the digital book. Images, audio and/or video clips, are optional media that can be added to a book using the service's interface when the service workflow is run.</p>
+			
+			<p>The digital publication created by the following tutorial, is one that includes optional media, namely spoken narration audio clips (provided by <a href="http://librivox.org" target="_blank">Librivox</a>) placed at the beginning of each chapter, and a <a href="http://www.alice-in-wonderland.net/alice2a.html" target="_blank">collection of images</a> from the original Alice in Wonderland book placed in an illustrations chapter at the end of the book. In addition, the digital book is assigned a cover image that will appear as the book's cover in the iBooks library.</p>
+			
+			<p>You can <a href="AIWexcerpt.epub.zip">download the completed example</a> EPUB document, or begin the tutorial by <a href="EPUB-Demo-Kit.zip">downloading the demo kit</a> and open it on your desktop:</p>
+			
+			<p style="color: #F00;font-weight: bold;font-size: 1.25em;">Before you begin, if you haven't already, <a href="agreement.html">install the services</a> used in this tutorial.</p>
+			
+			<img src="gfx-demo/01.jpg" width="640" height="364" class="across">
+			
+			<p>The demo kit contains three chapters, as text files (.txt), from Alice in Wonderland; a cover image (.jpg); the three audio narration files (.m4a), and the original book illustrations (.jpg). [NOTE: audio files to be included in an EPUB document must be saved in MPEG (.m4a) format. Video files must be saved in MPEG (.m4v) format. The EPUB service installers include extra services for performing desktop encoding of audio and video files in preparation for inclusion in EPUB documents.]</p> 
+			
+			<p>Open the folder named &quot;Chapters,&quot; select the three text files, and then choose the &quot;Create Digital Book from the Selected Files&quot; service from the Finder action menu:</p> 			
+			
+			<img src="gfx-demo/02.jpg" width="640" height="458" class="across">
+			
+			<p>The &quot;Text to EPUB&quot; dialog will appear. The dialog is the view for the Automator action that does the work of creating the publication. The left side of the dialog is for entering information about the publication and determining the name and location for the created EPUB document. The right side of the dialog is for identifying any optional media you wish to add to the publication.</p>
+			
+			<p>Enter a title for the example publication, the author’s name, and a name for the EPUB document. Be sure to end the EPUB file name with the name extension: .epub</p>
+
+			<img src="gfx-demo/03.png" width="640" height="355" class="across">
+			
+			<p>Next, add the cover image by selecting &quot;Other&hellip;&quot; from the cover image popup menu on the right side of the dialog:</p>
+			
+			<img src="gfx-demo/04.jpg" width="640" height="355" class="across">
+			
+			<p>In the choose dialog sheet, navigate to the Cover folder in the Demo Kit and select the cover image:</p>
+			
+			<img src="gfx-demo/05.jpg" width="640" height="421" class="across">
+			
+			<p>Click the Choose button to add the cover image.</p>
+			
+			<p>Next, you'll add add the audio clips to the book. By default, one media item (image, audio file, or video file) will be inserted at the beginning (or end) of each chapter. Since there are three chapters, we'll add three corresponding audio files, which will be inserted one per chapter. Click the &quot;Add&hellip;&quot; beneath the media list area to summon a dialog for selecting media files:</p>
+			
+			<img src="gfx-demo/06.png" width="640" height="355" class="across">
+			
+			<p>Navigate to the Audio folder, and select the three audio clips:</p>
+			
+			<img src="gfx-demo/07.jpg" width="640" height="427" class="across">
+			
+			<p>Click the &quot;Add&quot; button to add the selected audio clips to the media list:</p>
+			
+			<img src="gfx-demo/08.png" width="640" height="355" class="across">
+			
+			<p>Next, we’ll add the illustrations to the media list. By default, the action will place any media not assigned to a chapter, in a chapter at the end of the book named &quot;Illustrations.&quot; Click the &quot;Add&hellip;&quot; beneath the media list to summon the picker dialog, then navigate the the Illustrations folder in the demo kit, select all the illustration images, and Click the &quot;Add&quot; button:</p>
+			
+			<img src="gfx-demo/09.jpg" width="640" height="427" class="across">
+			
+			<p>All the book components have beed identified and the book is ready to be constructed. Click the &quot;Continue&quot; button to begin the construction of the digital book.</p>
+			
+			<img src="gfx-demo/10.png" width="640" height="355" class="across">
+			
+			<p>A temporary folder containing the components of the book will be created in the indicated destination folder. Once the processing of the book items has completed, the folder will be converted into an EPUB document, which is ready to be added to iTunes and then transfered to your iPad.</p>
+			
+			<img src="gfx-demo/11.jpg" width="225" height="215" class="across">
+			
+			<h3>The Book on the iPad</h3>
+			
+			<p>The following images show how the completed EPUB document looks when transfered to the iPad and viewed in iBooks.</p>
+			
+			<p>The book cover on the iBooks library shelf (left):</p>
+			
+			<img src="gfx-demo/cover.jpg" width="314" height="269" class="across">
+			
+			<p>The Table of Contents. [Note that the names of the source text files are used as the names of the book chapters]:</p>
+			
+			<img src="gfx-demo/toc.jpg" width="640" height="480" class="across">
+			
+			<p>The narration audio clip placed at the beginning of the first chapter:</p>
+			
+			<img src="gfx-demo/audio.jpg" width="640" height="460" class="across">
+			
+			<p>Facing pages displaying two of the illustrations:</p>
+			
+			<img src="gfx-demo/illustrations.jpg" width="640" height="480" class="across">
+						
+			
+		</div>
+	<div id="sidebar" class="column">
+			<div class="box">
+				<h2>EPUB DEMO KIT</h2>
+				<p>Text, image, and audio files for creating an abreviated version of Lewis Carroll's Alice in Wonderland.</p>  			
+				<p>(<a href="EPUB-Demo-Kit.zip">Download</a>) 15MB</p>
+			</div>
+			<div class="box">
+				<h2>VIEW EXAMPLE IN iBOOKS</h2>
+				<p><a href="AliceinWonderland.epub"><img src="gfx/ibooks36x36.png" width="36" height="36" align="left" style="margin-right:6px;margin-bottom:24px;"></a>If you are viewing this page on an iPad, tap <a href="AliceinWonderland.epub"><b>HERE</b></a> to download and open the completed example digital book in iBooks. (8.2MB)</p>
+			</div>
+			<div class="box">
+				<h2>What is EPUB?</h2>
+				<img src="gfx/epub_logo_color.jpg" width="72" hspace="4" align="left" height="99">
+				<p>The <a href="http://www.idpf.org" target="_blank">International Digital Publishing Forum</a> (IDPF) is the trade and standards association for the digital publishing industry. &quot;.epub&quot; is the file extension of an XML format for reflowable digital books and publications. &quot;.epub&quot; is composed of three open standards, the Open Publication Structure (OPS), Open Packaging Format (OPF) and Open Container Format (OCF), produced by the IDPF. &quot;EPUB&quot; allows publishers to produce and send a single digital publication file through distribution and offers consumers interoperability between software/hardware for unencrypted reflowable digital books and other publications.</p>
+			</div>
+			<div class="box">
+				<h2>EDITING EPUB DOCUMENTS</h2>
+				<p>Essentially, EPUB documents are saved as archived folders containing editable files and media.</p>  
+				
+				<p>To make changes to an EPUB document, first drag it onto the <b>Unpack EPUB</b> dropet and an unpacked copy of the digital book will be placed on the desktop.</p> 
+				
+				<p>To re-pack the edited EPUB folder, launch the <b>Re-Package EPUB</b> script and choose the edited folder to be reconstituted and a repackaged EPUB document will be created.</p> 
+			
+				<p>(<a href="EPUBscripts.zip">Download Scripts</a>)</p>
+			</div>
+			<div class="box">
+				<h2>DISCLAIMER</h2>
+				<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

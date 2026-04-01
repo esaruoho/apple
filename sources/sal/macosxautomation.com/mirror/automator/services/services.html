@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Quick Actions: Services</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Welcome to OMNI-AUTOMATION.COM, a resource for information about the new dual-platform automation support (macOS/iOS) in the apps from The Omni Group.">
+	<meta property="og:image" content="http://omni-automation.com/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav-active.png">
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">System Services</p>
+			
+			<p>The contextual System Service architecture has been an integral component of the Mac’s operating system since the very first iterations of Mac OS X, continuing with the latest versions of macOS. System Services have enabled Mac applications to publish functionality that is contextually available for use with the pasteboard selection of other applications.</p>
+			
+			<p>In addition, since Mac OS X Snow Leopard, Automator has included the ability to publish its workflows as contextual System Services, available from the Services menu and application contextual menus throughout the OS. This practice continues with the current versions of macOS. Quick Action workflows are also considered to be System Services workflows, accessible from the following service access points.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Application Services Sub-Menu</p>
+			
+			<p>Many, if not most of macOS applications, include the <b>Services</b> sub-menu item on their <b>Application</b> menus. From this sub-menu, you can see and access the services installed on the computer, as well as access the <a href="keyboard.html#services-prefs">Services preferences</a> in the System Preferences application.</p>
+			
+			<img width="100%" alt="app-services-menu" src="gfx/app-services-menu.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The application menu appears below the title of the frontmost (current) application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Services</b> sub-menu that displays the services contextually available for the current application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;An available service whose input requirements have been met.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;This service has a key combination assigned to it by the user so that it can be triggered from the computer keyboard.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;A menu option for opening the <a href="keyboard.html#services-prefs" style="color:LightBlue;">Services</a> tab in the Keyboard pane of the System Preferences application.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Finder Contextual Menu</p>
+			
+			<p>The Finder displays a contextual action options for selected items by either control-clicking the objects to summon the contextual menu overlay, or by pressing the Action menu control in the toolbar of a Finder window.</p>
+			
+			<p>At the bottom of the Finder contextual menus are available services or the Services sub-menu, which (by default) is displayed if more than five (5) services are available for the current selection.</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td><p>To adjust the number of service items at which a sub-menu is displayed, <a href="scmiu.zip">DOWNLOAD</a> and run the <b>Services Contextual Menu Item Utility</b> applet provided by this website. <b>NOTE</b>: use of this applet requires a system restart.<br><img width="48%" alt="Services Contextual Menu Item Utility" src="gfx/scmiu-01.png"><img width="48%" alt="Services Contextual Menu Item Utility" src="gfx/scmiu-02.png"></p></td>
+				</tr>
+			</table>
+						
+			<p>The Finder Action contextual menu:</p>
+		
+			<img width="100%" alt="app-services-menu" src="gfx/finder-contextual-menu.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;A Finder window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;An item selected in the Finder window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The Action menu control.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The Finder’s contextual menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The Services sub-menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;A selected system service for processing the selected Finder item.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Text Contextual Menu</p>
+			
+			<p>System Services may also be available for processing text selections within applications that support its use, such as TextEdit (show below).</p>
+			
+			<p><b>NOTE</b>: not all applications support the display of the System Services menu on their contextual menus. In those instances, the system service may be still accessed from the Services sub-menu in the Application menu.</p>
+			
+			<img width="100%" alt="text-service" src="gfx/text-service.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;A text selection within an application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The contextual menu, typically summoned by control-clicking in the text seletion.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The Services sub-menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;A system service for processing the selected text.</p>
+			</div>
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <p class="sub-topic"><a href="index.html">Quick Actions</a></p>
+			  <p class="sub-sub-topic"><a href="extensions.html">Extensions</a></p>
+			  <p class="active-sub-sub-topic">Services</p>
+			  <p class="sub-sub-topic"><a href="keyboard.html">Keyboard Settings</a></p>
+			  <p class="sub-sub-topic"><a href="https://support.apple.com/en-us/HT207055" target="_blank">&#63743; Using Touch Bar</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+<!-- 
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+ -->
+			</nav>
+
+			<aside style="font-size:75%;margin-bottom:72px;">
+				<h3>Videos from MacBreak</h3>
+
+				<p>Here are links to podcast videos with <a href="https://twitter.com/alexlindsay" target="_blank">Alex Lindsey</a> about Services.</p>
+				<ul>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkv_235_540p_h264.mov">Services in Snow Leopard</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_012_540p_h264.mov">Services and Apple Remote Desktop</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_013_540p_h264.mov">Creating Automator Actions</a></p></li>
+				</ul>
+			</aside>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

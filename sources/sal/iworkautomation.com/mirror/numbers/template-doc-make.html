@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Templates</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for templates in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Using Templates in Document Creation</div>
+
+			<p>The ability to create a <b>Numbers</b> document using a specific template is enabled by the inclusion of the <span class="codeproperty">document template</span> property of the <span class="codelibraryclass">document</span> class. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Numbers Suite Document Class</p>
+							
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">document</span> <span style="font-size: 12px;"><i>n&nbsp;</i> : The Numbers document.  <i>syn</i> <span class="codelibraryclass">spreadsheet</span></span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="codelibraryclass">sheets</span>; contained by <span class="dictionary-class">application.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">active sheet</span> (<span class="dictionary-class">sheet</span> ) : The active sheet in the document.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">document template</span> (<span class="dictionary-class">template</span>, r/o) : The template assigned to the document. This property’s value can be set during document creation.</p>
+			</div>
+			
+			<p>The <span class="codelibraryclass">value</span> of the <span class="codeproperty">document template</span> property <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> is the <span class="codelibraryclass">template</span> currently used (or to be used) by the <span class="codelibraryclass">document</span> in the display of its contents.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: The <span class="codeproperty">document template</span> property is currently <b>read only</b> (except when used with the <span class="codelibrarycommand">make</span> command) and cannot be used to change the current template of a <b>Numbers</b> document.</p>
+			
+			<p>The script below demonstrates the use of the <span class="codelibrarycommand">make</span> command to create a new <span class="codelibraryclass">document</span> with a <span class="codelibraryclass">template</span> chosen by the script user:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Document with Chosen Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09--%20get%20template%20names%0D%09%09set%20the%20templateNames%20to%20the%20name%20of%20every%20template%0D%09%09%0D%09%09--%20prompt%20user%20to%20pick%20a%20template%0D%09%09set%20thisTemplateName%20to%20%C2%AC%0D%09%09%09(choose%20from%20list%20templateNames%20with%20prompt%20%22Choose%20a%20template%3A%22)%0D%09%09if%20thisTemplateName%20is%20false%20then%20error%20number%20-128%0D%09%09%0D%09%09--%20convert%20resulting%20list%20into%20a%20string%3A%20%7B%22Black%22%7D%20to%20%22Black%22%0D%09%09set%20thisTemplateName%20to%20thisTemplateName%20as%20string%0D%09%09%0D%09%09--%20create%20a%20default%20document%2C%20styled%20with%20the%20chosen%20template%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20template%3Atemplate%20thisTemplateName%7D%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20%22TEMPLATE%20ISSUE%22%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get template names</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">templateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- prompt user to pick a template</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTemplateName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">templateNames</span> <span class="codelibraryparameter">with prompt</span> &quot;Choose template:&quot;)</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTemplateName</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- convert resulting list into string: {&quot;Black&quot;} to &quot;Black&quot;</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTemplateName</span> <b>to</b> <span class="codevariable">thisTemplateName</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- create default document, styled with the chosen template</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">thisTemplateName</span>}</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;TEMPLATE ISSUE&quot; <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>		
+			
+			<p>The following script, a variation of the previous script, creates a new <b>Numbers</b> <span class="codelibraryclass">document</span> using the application <span class="codelibraryclass">template</span> chosen by the script user:</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Document with Chosen Application Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09--%20get%20application%20template%20names%0D%09%09set%20theseApplicationTemplateNames%20to%20%C2%AC%0D%09%09%09the%20name%20of%20every%20template%20whose%20id%20of%20it%20begins%20with%20%22Application%2F%22%0D%09%09%0D%09%09--%20prompt%20user%20to%20pick%20a%20template%0D%09%09set%20thisTemplateName%20to%20%C2%AC%0D%09%09%09(choose%20from%20list%20theseApplicationTemplateNames%20with%20prompt%20%22Choose%20a%20template%3A%22)%0D%09%09if%20thisTemplateName%20is%20false%20then%20error%20number%20-128%0D%09%09%0D%09%09--%20convert%20resulting%20list%20into%20a%20string%3A%20%7B%22Black%22%7D%20to%20%22Black%22%0D%09%09set%20thisTemplateName%20to%20thisTemplateName%20as%20string%0D%09%09%0D%09%09--%20create%20a%20default%20document%2C%20styled%20with%20the%20chosen%20template%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20template%3Atemplate%20thisTemplateName%7D%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20%22TEMPLATE%20ISSUE%22%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get application template names</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseApplicationTemplateNames</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span> <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;Application/&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- prompt user to pick a template</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTemplateName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">theseApplicationTemplateNames</span> <span class="codelibraryparameter">with prompt</span> &quot;Choose a template:&quot;)</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTemplateName</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- convert resulting list into a string: {&quot;Black&quot;} to &quot;Black&quot;</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTemplateName</span> <b>to</b> <span class="codevariable">thisTemplateName</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- create a default document, styled with the chosen template</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">thisTemplateName</span>}</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;TEMPLATE ISSUE&quot; <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The following script is designed to create a new <b>Numbers</b> <span class="codelibraryclass">document</span> using a specific user <span class="codelibraryclass">template</span>. If the user <span class="codelibraryclass">template</span> is not installed on the computer running the script, the script will prompt the script user to download the specified user template from the company website, and will display the company-hosted website page containing the <span class="codelibraryclass">template</span> if the user desires.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Document with Specific User Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09--%20get%20application%20template%20names%0D%09%09set%20theseUserTemplateNames%20to%20%C2%AC%0D%09%09%09the%20name%20of%20every%20template%20whose%20id%20of%20it%20begins%20with%20%22User%2F%22%0D%09%09%0D%09%09--%20check%20for%20installation%20of%20user%20template%0D%09%09set%20thisUserTemplateName%20to%20%22Official%20Corporate%20Template%22%0D%09%09if%20thisUserTemplateName%20is%20not%20in%20theseUserTemplateNames%20then%0D%09%09%09--%20notify%20user%20of%20missing%20resource%0D%09%09%09set%20thisMessage%20to%20%22The%20Numbers%20template%20%E2%80%9C%22%20%26%20thisUserTemplateName%20%26%20%22%E2%80%9D%20%22%20%26%20%C2%AC%0D%09%09%09%09%22is%20not%20installed%20on%20this%20computer.%22%20%26%20return%20%26%20return%20%26%20%C2%AC%0D%09%09%09%09%22Download%20the%20template%20from%20the%20company%20webiste.%22%0D%09%09%09display%20alert%20%22MISSING%20TEMPLATE%22%20message%20thisMessage%20%C2%AC%0D%09%09%09%09buttons%20%7B%22Download%22%2C%20%22Cancel%22%7D%20default%20button%202%0D%09%09%09if%20button%20returned%20of%20the%20result%20is%20%22Download%22%20then%0D%09%09%09%09open%20location%20%22https%3A%2F%2Fmycompanyname.com%2Fcommunications%2Ftemplates%22%0D%09%09%09end%20if%0D%09%09else%0D%09%09%09--%20create%20a%20default%20document%2C%20styled%20with%20the%20template%0D%09%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bdocument%20template%3Atemplate%20thisUserTemplateName%7D%0D%09%09end%20if%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(%22ERROR%20%22%20%26%20errorNumber)%20as%20string%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get application template names</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseUserTemplateNames</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span> <b>whose</b> <span class="codeproperty">id</span> <b>of it begins with</b> &quot;User/&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- check for installation of user template</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisUserTemplateName</span> <b>to</b> &quot;Official Corporate Template&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisUserTemplateName</span> <b>is not in</b> <span class="codevariable">theseUserTemplateNames</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- notify user of missing resource</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMessage</span> <b>to</b> &quot;The Numbers template &ldquo;&quot; &amp; <span class="codevariable">thisUserTemplateName</span> &amp; &quot;&rdquo; &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>&quot;is not installed on this computer.&quot; &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>&quot;Download the template from the company webiste.&quot;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;MISSING TEMPLATE&quot; <span class="codelibraryparameter">message</span> <span class="codevariable">thisMessage</span> &not;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryparameter">buttons</span> {&quot;Download&quot;, &quot;Cancel&quot;} <span class="codelibraryparameter">default button</span> 2</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codeproperty">result</span> <b>is</b> &quot;Download&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">open location</span> &quot;https://mycompanyname.com/communications/templates&quot;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- create a default document, styled with the template</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">thisUserTemplateName</span>}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (&quot;ERROR &quot; &amp; <span class="codevariable">errorNumber</span>) <b>as</b> <span class="codelibraryclass">string</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+	
+		
+		</div>
+		<!-- END SEGMENT: ID PROPERTY -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li class="hi"><a href="template.html">Template</a></li>
+				<li class="navListSectionItemSelected">New Document with Template</li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

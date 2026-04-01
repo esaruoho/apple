@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Sharing Content Locally</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Share, Personal Web-Sharing, OS X">
+	<META NAME="Description" CONTENT="How to restore and control Personal Web-Sharing in OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Sharing Content</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: PUBLIC FOLDER -->
+		<div class="content-segment">
+		<div class="segment-header" >Personal Web-Sharing</div>
+			<img src="gfx/sites-folder-512.png" alt="sites-folder-512" width="128" height="128" class="left">
+			<p class="content-intro">In addition to using AirDrop and Public folder file sharing, OS&nbsp;X offers another way to share files and documents with other computers and devices: Personal Web-Sharing. Because, by design, every copy of OS&nbsp;X comes with its own built-in web server application!</p>
+			
+			<p>An essential component of the UNIX foundation of OS&nbsp;X is the <a href="http://httpd.apache.org" target="_blank">Apache HTTP Server</a> application, an open-source professional web server project developed and maintained by the <a href="http://www.apache.org">Apache Software Foundation</a>. The goal of this project is to provide a secure, efficient and extensible server that provides HTTP services in sync with the current HTTP standards. <b>Apache httpd</b> has been the most popular web server on the Internet since April 1996, and celebrated its 17th birthday as a project in February 2013.</p>
+						
+			<p>The following steps detail how to enable the Apache web server, already installed on your computer, allowing you to easily share files with other computers and iOS devices.</p>
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Simplify Your Sharing Address</div>
+		
+			<p>Every computer running OS&nbsp;X has a <b>local network address</b> that is used by other people on your local network to locate and identify your computer. When you use your computer as a web-server, you want your local network address to be easy for others to remember and enter in their browsers. This content segment will show you how to edit and simplify your local network address (dont&rsquo;t worry, it&rsquo;s really easy to do).</p>
+			
+			<p>Your computer&rsquo;s local network address can be viewed and edited in the Sharing preference pane in the System Preferences application (see below).</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the Sharing preferences pane in the System Preferences application.</p>
+		
+			<img alt="sharing-prefs-pane" src="gfx/sharing-prefs-pane.png" width="624" height="528" class="centered">
+			
+			<p>The parameters in the preference pane related to web-sharing are these:</p> 
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Computer Name</b> - This text field contains the name currently assigned to your computer. Unless it has been previously altered, the name showing, was automatically generated when your computer was first setup.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Local Network Address</b> - Your current local network address is displayed below the computer name field.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Edit Button</b> - Pressing this button will display an editing sheet for changing the local network address.</p>
+			
+			<p>Although the computer name is editable by an administrative user, it is not necessary to change the computer name to achieve a simpler local network address.</p>
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>To summon the editing sheet for the local network address, press the <b>Edit&hellip;</b> button located to the right of the computer name field <span class="numeric-callout">&nbsp;3&nbsp;</span> (see above).</p>
+			
+			<p>A drop-down sheet will be displayed in the preferences window, with the current local network address selected for editing (see below).</p>
+			
+			<img alt="sharing-host-sheet-01" src="gfx/sharing-host-sheet-01.png" width="624" height="243" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Using all lower case letters (numbers are allowed as well), enter a short but unique name for network address. For example, <i>Johnnys-MacBook-Pro</i> could become <i>john89</i>. <b>NOTE</b>: its important that your new local network address not be used by others in your local network.</p>
+			
+			<img alt="sharing-host-sheet-02" src="gfx/sharing-host-sheet-02.png" width="624" height="257" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>After you&rsquo;ve entered a new local network address, press the <b>OK</b> button to apply the changes (see above).</p>
+			
+			<p>The simpler local network name will now be displayed below the computer name in the preference pane <span class="numeric-callout">&nbsp;4&nbsp;</span>.</p>
+			
+			<img alt="sharing-host-sheet-03" src="gfx/sharing-host-sheet-03.png" width="624" height="257" class="centered">
+			
+			<p>You can now close the System Preferences application. The next steps will be to download and run special AppleScript applets that will perform all of the &ldquo;behind the scenes&rdquo; tasks to activate web-sharing on your computer.</p>
+
+		</div>			
+
+		<div class="content-segment">
+		<div class="segment-header" >Download Setup Applets</div>			
+		
+			<p>Activating personal web-sharing on your computer involves the creation of special files and directories, and setting access permissions in specific ways. Fortunately for you, this is just the kind of task that&rsquo;s perfect for automation to do for you!</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>To enable Personal Web-Sharing, first <a href="WebSharingApplets.zip">download</a> two AppleScript applets you will use to enable and control the built-in server in OS&nbsp;X.</p>
+		
+			<p>In the unarchived folder named &ldquo;WebSharingApplets&rdquo; will be two AppleScript applets:</p>
+			
+			<img alt="applets" src="gfx/applets.png" width="314" class="centered">
+			
+			<ol>
+				<li><b>Enable Personal WebSharing</b> - When this applet is launched, it will create the necessary system server files, add a new Sites folder in your Home directory, start the web server built into OS&nbsp;X, and enable Personal Web-Sharing. <b>NOTE</b>: <i>use of this applet requires an administrator name and password</i>.</li>
+				
+				<li><b>Control Personal Web Server</b> - After running the Enable Personal WebSharing applet to enable personal web-sharing on your computer, this applet can be used to turn the built-in server off or on. By default, the enabled web server will remain active after a computer restart. <b>NOTE</b>: <i>use of this applet requires an administrator name and password</i>.</li>
+			</ol>
+			
+			<p class="do-this" style="margin-bottom:24px;"><span class="do-this">DO THIS &#9658;</span>If necessary unpack the ZIP archive containing the two applets, then move the downloaded applets into the <b>Utilities</b> folder located within the <b>Applications</b> folder.</p>
+						
+		</div>
+			
+		<div class="content-segment">
+		<div class="segment-header" >Enabling Personal Web-Sharing</div>			
+			
+			<p>Now that you&rsquo;ve downloaded and put away the AppleScript applets, you&rsquo;re ready to enable personal web-sharing on your computer.</p>
+	
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Launch the <b>Enable Personal WebSharing</b> applet you placed in the Utilities folder.</p>
+			
+			<p>Because the applet has been downloaded from an internet website, a security alert dialog will appear, prompting you to decide if you want to open a downloaded application (see below).</p>
+			
+			<img alt="websharequarantinedialog" src="gfx/websharequarantinedialog.png" width="595" height="323" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Approve the launching of the applet by pressing the <b>Open</b> button (see above).</p>
+			
+			<p>An opening dialog for the <b>Enable Personal WebSharing</b> applet will display informing you the use of the applet requires an administrative name and password (see below).</p>
+			
+			<img alt="websharesetupdialog" src="gfx/websharesetupdialog.png" width="474" height="387" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Press the <b>Continue</b> button (see above) to begin the process of activating personal web-sharing. In the forthcoming security dialog, enter an administrative name and password</p>
+			
+			<p>The applet will provide spoken alerts as it performs the setup tasks. When the installation has finished, a completion dialog will be displayed (see below).</p>
+			
+			<img alt="websharing-install-complete" src="gfx/websharing-install-complete.png" width="522" height="403" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the completion dialog, press the <b>Create Local Link File</b> button (see above), and an internet location file to your built-in website folder will be created (see below).</p>
+			
+			<img alt="websharing-link" src="gfx/websharing-link.png" width="153" height="204" class="centered" style="margin-top:24px;">
+			
+			<p>You can share this internet location file with others, via AirDrop, File Sharing, eMail, or even chats. When the recipient clicks the location file, the default website on your computer will be displayed in their browser!</p>
+			
+			<img alt="default-website" src="gfx/default-website.png" width="597" height="394" class="centered">
+			
+		</div>	
+					
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">AirDrop</a></li>
+				<li><a href="02.html">Public Folder</a></li>
+				<li class="hi">Personal Web-Sharing (setup)</li>
+				<li style="list-style:none;"><a href="04.html">Personal Web-Sharing (use)</a></li>
+				<li><a href="05.html">Sharing Scenarios</a></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees will learn about how to publish web-content using the Personal Web-Sharing feature of OS&nbsp;X.</p>
+			
+			<p>You will guide them through the process of setting up personal web-sharing on their computers, and how to publish and view content over the local network.</p>
+			
+			<p class="sidebar-subhead">Guided Tutorial</p>
+			
+			<ol style="margin-bottom:18px;">
+				<li>The first step involves having all attendees simplify the local network address of their computers. Have each attendee open the Sharing system preference pane in the System Preferences application.</li>
+				
+				<li>Explain how each computer on the network has a <b>local network address</b> that is used to identify their computer on the local network. By default, their local network address is automatically generated during the setup of their computer, and is based on the computer&rsquo;s name.</li>
+
+				<li>Explain to the attendees, that to simplify the URL representing their computers to other local network users, it is not necessary to edit the value of <b>Computer Name</b> of their computers. Instead, simplification can be accomplished easily by editing the value of their local network address using the provided custom controls.</li>
+				
+				<li>Guide the attendees through the process of renaming their local network address, stressing that although the new chosen addresses should be simple to use, they must still be each be unique.</li>
+				
+				<li>Next, have the attendees <a href="WebSharingApplets.zip">download</a> the WebSharing Applets.</li>
+				
+				<li>Instruct the attendees to run the <b>Enable Personal Web-Sharing</b> applet, and to choose the option for creating a link file to their computers, placed on the desktop.</li>
+				
+				<li>Have the attendees use AirDrop and their Public folders to share their web-link files with other attendees.</li>
+				
+				
+			</ol>
+			
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Discuss web servers, what they are, and how the internet is based on their use.</li>
+			
+				<li>Discuss how every Mac comes with a web server, and that Personal Web-Sharing uses the built-in Apache web server application to broadcast and share web-content with others on the local network.</li>
+				
+				<li>Note that once enabled, the Apache web server can be toggled on or off using the provided <b>Control Personal Web Server</b> applet.</li>
+			</ol>
+			
+			
+		</div>
+		
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

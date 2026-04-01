@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: SQLite</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for using SQLite with the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">SQLite &amp; Numbers</div>
+		
+			<a href="https://sqlite.org" target="_blank"><img class="left" width="200" alt="sqlite-logo" src="gfx/sqlite-logo.png" style="margin-bottom:0px;"></a>
+			
+			<p><a href="https://sqlite.org" target="_blank">SQLite</a> is an in-process library that implements a self-contained, serverless, zero-configuration, transactional SQL database engine. The code for SQLite is in the public domain and is thus free for use for any purpose, commercial or private. Its robust flexibility makes it a favorite database tool for businesses. And best of all, SQLite is a default component of OS&nbsp;X, ready to be used for your data-storage needs.</p>
+											
+			<p>In addition to providing built-in support for SQLite, OS&nbsp;X also includes the <b>Database Events</b> application, an AppleScript interface for building and querying SQLite database files. Using the <b>Database Events</b> application and AppleScript you can easily transfer data between Numbers spreadsheets and SQLite databases!</p>
+						
+			<p class="content-subhead" role="heading" aria-level="2">The Database Events Dictionary</p>
+			
+			<p>The scripting dictionary for Database Events is a simple but powerful scripting interface that includes all the elements necessary for creating and querying SQLite database files. It contains three classes: <span class="dictionary-class">databases</span>, <span class="dictionary-class">records</span>, and <span class="dictionary-class">fields</span></p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">database</span> <span style="font-size: 12px;"><i>n&nbsp;</i> [inh. <span class="dictionary-class">item</span> ]: A collection of records, residing at a location in the file system.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">records</span>; contained by <span class="dictionary-class">application</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">location</span> (&nbsp;<span class="dictionary-class">alias</span>&nbsp;, r/o ) : The folder that contains the database.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>, r/o&nbsp;) : The name of the database.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">close</span>, <span class="dictionary-verb">make</span>, <span class="dictionary-verb">save</span>.</p>
+			</div>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">field</span> <span style="font-size: 12px;"><i>n&nbsp;</i> [inh. <span class="dictionary-class">item</span> ]: A named piece of data, residing in a record.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">records</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">id</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;, r/o ) : The unique id of the field.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>, r/o&nbsp;) : The name of the field.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">value</span> (&nbsp;<span class="dictionary-class">any</span>&nbsp;) : The value of the field.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span>.</p>
+			</div>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">record</span> <span style="font-size: 12px;"><i>n&nbsp;</i> [inh. <span class="dictionary-class">item</span> ]: A collection of fields, residing in a database.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">fields</span>; contained by <span class="dictionary-class">databases</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">id</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;, r/o ) : The unique id of the record.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>, r/o&nbsp;) : The name of the record, equivalent to the value of the field named “name”.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span>.</p>
+			</div>
+			
+			<p>Using these classes you can use AppleScript statements to query SQLite database files, like this:</p>
+
+			<table class="script-table" role="presentation"></td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Database Events&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">database</span> &quot;/Users/Johnny/Documents/Databases/U.S. Presidents.dbev&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get the last name of every American president who served between 1800 and 1900</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>get the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">field</span> &quot;Last Name&quot; <b>of</b> (<b>every</b> <span class="codelibraryclass">record</span> <b>whose</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">field</span> &quot;Start Year&quot; <b>is greater than or equal to</b> 1800 <b>and</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">field</span> &quot;Start Year&quot; <b>is less than or equal to</b> 1900)</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> {&quot;Adams&quot;, &quot;Arthur&quot;, &quot;Buchanan&quot;, &quot;Cleveland&quot;, &quot;Cleveland&quot;, &quot;Fillmore&quot;, &quot;Garfield&quot;, &quot;Grant&quot;, &quot;Harrison&quot;, &quot;Harrison&quot;, &quot;Hayes&quot;, &quot;Jackson&quot;, &quot;Jefferson&quot;, &quot;Johnson&quot;, &quot;Lincoln&quot;, &quot;Madison&quot;, &quot;McKinley&quot;, &quot;Monroe&quot;, &quot;Pierce&quot;, &quot;Polk&quot;, &quot;Taylor&quot;, &quot;Tyler&quot;, &quot;Van Buren&quot;}</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>This section provides script examples for creating SQLite databases from Numbers tables, and for creating Numbers tables using the data in SQLite databases.</p>
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="sqlite-make.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li class="hi">SQLite &amp; Numbers</li>
+				<li class="navListSectionItem"><a href="sqlite-make.html">Table to Database</a></li>
+				<li class="navListSectionItem"><a href="sqlite-read.html">Database to Table</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

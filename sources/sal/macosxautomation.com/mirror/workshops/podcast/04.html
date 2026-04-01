@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- START MOVIE PLAYER SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE PLAYER SCRIPT -->
+	<script type="text/javascript">
+		function SelectAll(id)
+			{
+				document.getElementById(id).focus();
+				document.getElementById(id).select();
+			}
+	</script>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: PLAY AND RENDER -->
+		<div class="content-segment">
+			<div class="segment-header">Play and Render the First Narration Clip</div>
+			
+			<p>Now that the services have been created and installed, we can use them to create the rendered narration audio clips that are added to the GarageBand slideshow project.</p>
+			
+			<p class="content-subhead">Preview the Narration</p>
+			
+			<p>The first step in creating a rendered track is to preview the the narration with the voice you want to use for rendering.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the text for the first narration clip by clicking anywhere within the text area below.</p>
+			
+			<p class="dialog-marker">01-MALE:</p>
+			
+			<textarea rows="1" id="txtarea01" class="dialog-item" onClick="SelectAll('txtarea01');" >Welcome to the Alaskan Adventure Pod cast. I’m your host, Alexander Smart.</textarea>
+			
+			
+<!-- 
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Locate and open the &ldquo;Podcast Dialog&rdquo; text file that comes with the Workshop Session Kit you downloaded. In the opened file, select the text of the first narration entry (the one for the male voice Alex).</p>
+			
+			<img src="gfx/selection.png" width="640" height="248" align="top" class="across">
+ -->
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>With the text selected, type the keystroke combination you assigned for reading the text with a male voice: Control-2 (&#8963;2)</p>
+			
+			<p>The selected text will be read using the chosen male voice.</p>
+			
+			<p class="content-subhead">Render the Narration</p>
+			
+			<p>The next step is to render the selected text into an audio file and open the rendered file in QuickTime Player application.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>With the text selected, type the keystroke combination you assigned for rendering the text with a male voice: Control-Option-2 (&#8963;&#8997;2)</p>
+			
+			<p>The selected text will be rendered into an audio file and opened in the QuickTime Player application.</p> 
+			
+			<p class="content-subhead">Play the Rendered Narration</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Play the audio clip to confirm that the text was rendered properly.</p>
+<!-- 
+			<img src="gfx/accessservice01.jpg" width="624" height="800" class="centered">
+			
+			<img src="gfx/accessservice02.jpg" width="624" height="800" class="centered">
+ -->
+			
+			<img src="gfx/clip.jpg" width="624" height="204" class="centered">
+			
+			<p>Congratulations, using the Automator servics you created, you easily turned selected text into a narrated audio file! Next, you&rsquo;ll learn how to add the audio clip to the GarageBand project template.</p>
+		</div>
+		<!-- END SEGMENT: PLAY AND RENDER -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="05.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li class="hi">Render First Narration</li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, the attendees use the new services they created to preview selected text and render it to an audio file.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Once services are created, they become useful tools, available whenever you need them.</li>
+				<li>Services can be activated not only via assigned keystroes but also through the use of application and contextual menus. </li>
+				<li>Show how services can also be accessed by Control-clicking in the text seletion to call up the application&rsquo;s contextual menu containing the created services. (<a href="javascript:void(0);" onclick="PopupCenter('gfx/accessservice02.jpg', 'viewer-podcast',624,800);">view</a>)</li>
+				<li>Show how services can also be accessed from an applicaation&rsquo;s Services menu. (<a href="javascript:void(0);" onclick="PopupCenter('gfx/accessservice01.jpg', 'viewer-podcast',624,800);">view</a>)</li>
+			</ol>
+			
+			<p>Mention that the purpose of auditioning the selected text with a voice is to ensure that the text is written correctly and that it contains realistic pauses and inflections. Some of the narration dialog will contain phonetic spelling to force the speech software to speak the words in specific ways.</p>
+			
+			<p>Also, narration text may contain commas, semi-colons, and speech tags to add pauses at important points in the text. For example, the tag <span class="inlinecode">[[slnc 500]]</span> is not spoken by the speech engine, but is instead read as an instruction to pause one-half second (500 milliseconds) before continuing to speak the selected text.</p>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

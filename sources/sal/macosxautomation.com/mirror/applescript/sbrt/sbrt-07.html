@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>List Manipulation Routines</h2>
+		
+		<p>Working with lists is one of the most common procedures performed in scripts. However, the current version of AppleScript does not support the use of <span class="inlinecode">every...whose</span> clauses when targeting lists. For example, the following statement will not work:</p>
+		
+		<p class="code"><b>set the</b> <span class="codevariable">name_list</span> <b>to</b> {&quot;Bob&quot;, &quot;Sal&quot;, &quot;Wanda&quot;, &quot;Sue&quot;}<BR>
+		<b>set every</b> item <b>of the</b> <span class="codevariable">name_list</span> <b>where it is</b> &quot;Bob&quot; <b>to</b> &quot;Carl&quot;<BR>
+		<span class="codecomment">--> Can't set {&quot;Bob&quot;, &quot;Sal&quot;, &quot;Wanda&quot;, &quot;Sue&quot;} whose it = &quot;Bob&quot; to &quot;Carl&quot;.</span></p>
+		
+		<p>The following sub-routines are designed to resolve these issues and make working with lists easier.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Determining if a List Contains a Specific Item</h3></a>
+		
+		<p>No special sub-routine is needed to determine if a list contains a specific item. The following syntax will return a value of either <span class="inlinecode">true</span> or <span class="inlinecode">false</span> to indicate the presence of an item in the list:</p>
+			
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">this_list</span> <b>contains</b> &quot;Bill&quot;<BR>
+		<span class="codecomment">--> false</span></p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_list%20to%20%7B%22Sal%22%2C%20%22Sue%22%2C%20%22Bob%22%2C%20%22Carl%22%2C%20%22Sue%22%7D%0Dif%20this_list%20does%20not%20contain%20%22Wanda%22%20then%0D%09set%20the%20end%20of%20this_list%20to%20%22Wanda%22%0Dend%20if%0Dreturn%20this_list%0D%2D%2D%3E%20returns%3A%20%7B%22Sal%22%2C%20%22Sue%22%2C%20%22Bob%22%2C%20%22Carl%22%2C%20%22Sue%22%2C%20%22Wanda%22%7D"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Using the contains operator to determine whether an item is in a list:<br>&nbsp;<br><br></span><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<b>if</b> <span class="codevariable">this_list</span> <b>does not contain</b> &quot;Wanda&quot; <b>then</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">this_list</span> <b>to</b> &quot;Wanda&quot;<BR>
+		<b>end if</b><BR>
+		<b>return</b> <span class="codevariable">this_list</span><BR>
+		<span class="codecomment">--> returns: {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;, &quot;Wanda&quot;}</span></p>
+		
+		<hr><a id="1001" name="1001" title="1001"><h3>Offset of an Item in a List</h3></a>
+		
+		<p>The following sub-routine is used when it is necessary to determine an item's numeric position in a list.:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<span class="codevariable">list_position</span>(&quot;Carl&quot;, <span class="codevariable">this_list</span>)<BR>
+		<span class="codecomment">--> 4</span></p>
+		
+		<p>Here's the sub-routine called in the previous example:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20list_position%28this_item%2C%20this_list%29%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09%09if%20item%20i%20of%20this_list%20is%20this_item%20then%20return%20i%0D%09end%20repeat%0D%09return%200%0Dend%20list_position"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for getting the offset of an item in a list:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">list_position</span>(<span class="codevariable">this_item</span>, <span class="codevariable">this_list</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_list</span> <b>is</b> <span class="codevariable">this_item</span> <b>then return</b> i<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> 0<BR>
+		<b>end</b> <span class="codevariable">list_position</span></p>
+		
+		<p>The above sub-routine can be used to cross-reference data between corresponding lists. In the example script below the variable <span class="inlinecode">name_list</span> contains a list of names while the second variable, <span class="inlinecode">phone_list</span>, contains phone numbers corresponding to the individuals in the first list. The script uses the previous sub-routine to determine the list position of the name chosen by the user and then locates the phone number occupying the same position in the second list:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20name_list%20to%20%7B%22Sal%22%2C%20%22Sue%22%2C%20%22Bob%22%2C%20%22Carl%22%7D%0Dset%20the%20phone_list%20to%20%7B%225%2D5874%22%2C%20%225%2D2435%22%2C%20%225%2D9008%22%2C%20%225%2D1037%22%7D%0Dset%20the%20chosen_person%20to%20choose%20from%20list%20the%20name_list%20with%20prompt%20%22Choose%20a%20person%3A%22%0Dif%20the%20chosen_person%20is%20false%20then%20return%20%22user%20cancelled%22%0Dset%20the%20phone_number%20to%20item%20%28list_position%28%28chosen_person%20as%20string%29%2C%20name_list%29%29%20of%20the%20phone_list%0Ddisplay%20dialog%20%22The%20phone%20extension%20for%20%22%20%26%20chosen_person%20%26%20%22%20is%20%22%20%26%20phone_number%20%26%20%22%2E%22%20buttons%20%7B%22OK%22%7D%20default%20button%201%0D%0Don%20list_position%28this_item%2C%20this_list%29%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09%09if%20item%20i%20of%20this_list%20is%20this_item%20then%20return%20i%0D%09end%20repeat%0D%09return%200%0Dend%20list_position"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Using the previous sub-routine to cross-reference corresponding lists:<br>&nbsp;<br><br></span><b>set the</b> <span class="codevariable">name_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set the</b> <span class="codevariable">phone_list</span> <b>to</b> {&quot;5-5874&quot;, &quot;5-2435&quot;, &quot;5-9008&quot;, &quot;5-1037&quot;}<BR>
+		<b>set the</b> <span class="codevariable">chosen_person</span> <b>to</b> choose <b>from</b> list <b>the</b> <span class="codevariable">name_list</span> <b>with</b> prompt &quot;Choose <span class="codevariable">a</span> person:&quot;<BR>
+		<b>if the</b> <span class="codevariable">chosen_person</span> <b>is</b> false <b>then return</b> &quot;user cancelled&quot;<BR>
+		<b>set the</b> <span class="codevariable">phone_number</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>item (<span class="codevariable">list_position</span>((<span class="codevariable">chosen_person</span> <b>as</b> string), <span class="codevariable">name_list</span>)) <b>of the</b> <span class="codevariable">phone_list</span><BR>
+		display dialog &quot;The phone extension for &quot; &amp; <span class="codevariable">chosen_person</span> &amp; &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>&quot; <b>is</b> &quot; &amp; <span class="codevariable">phone_number</span> &amp; &quot;.&quot; buttons {&quot;OK&quot;} default button 1</p>
+
+		<p>The following sub-routine is a variation of the previous sub-routine that will return the offset of multiple occurrences of an item within a list:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20list_positions%28this_list%2C%20this_item%2C%20list_all%29%0D%09set%20the%20offset_list%20to%20%7B%7D%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09%09if%20item%20i%20of%20this_list%20is%20this_item%20then%0D%09%09%09set%20the%20end%20of%20the%20offset_list%20to%20i%0D%09%09%09if%20list_all%20is%20false%20then%20return%20item%201%20of%20offset_list%0D%09%09end%20if%0D%09end%20repeat%0D%09if%20list_all%20is%20false%20and%20offset_list%20is%20%7B%7D%20then%20return%200%0D%09return%20the%20offset_list%0Dend%20list_positions"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for returning a list of offsets of an item in a list:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">list_positions</span>(<span class="codevariable">this_list</span>, <span class="codevariable">this_item</span>, <span class="codevariable">list_all</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">offset_list</span> <b>to</b> {}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_list</span> <b>is</b> <span class="codevariable">this_item</span> <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">offset_list</span> <b>to</b> i<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">list_all</span> <b>is</b> false <b>then return</b> item 1 <b>of</b> <span class="codevariable">offset_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">list_all</span> <b>is</b> false and <span class="codevariable">offset_list</span> <b>is {} then return</b> 0<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">offset_list</span><BR>
+		<b>end</b> <span class="codevariable">list_positions</span></p>
+		
+		<p>By passing a boolean value of <span class="inlinecode">true</span> or <span class="inlinecode">false</span> as the third passed parameter, you can use the sub-routine to retrieve all of the offsets of an item in a list:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">list_positions</span>(<span class="codevariable">this_list</span>, &quot;Sue&quot;, true)<BR>
+		<span class="codecomment">--> {2, 5}</span></p>
+
+		<p>Or to retrieve the offset of the first matching item:</p>
+
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">list_positions</span>(<span class="codevariable">this_list</span>, &quot;Sue&quot;, false)<BR>
+		<span class="codecomment">--> 2</span></p>
+
+		<hr><a id="1002" name="1002" title="1002"><h3>Counting Occurrences of an Item in a List</h3></a>
+		
+		<p>The following sub-routine can be used to count how many times an item is in a specified list:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">count_matches</span>(<span class="codevariable">this_list</span>, &quot;Sue&quot;)<BR>
+		<span class="codecomment">--> 2</span></p>
+
+		<p>And here's the sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20count_matches%28this_list%2C%20this_item%29%0D%09set%20the%20match_counter%20to%200%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09%09if%20item%20i%20of%20this_list%20is%20this_item%20then%20set%20the%20match_counter%20to%20the%20match_counter%20%2B%201%0D%09end%20repeat%0D%09return%20the%20match_counter%0Dend%20count_matches"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine to count the instances of an item in a list:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">count_matches</span>(<span class="codevariable">this_list</span>, <span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">match_counter</span> <b>to</b> 0<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_list</span> <b>is</b> <span class="codevariable">this_item</span> <b>then</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">match_counter</span> <b>to the</b> <span class="codevariable">match_counter</span> + 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">match_counter</span><BR>
+		<b>end</b> <span class="codevariable">count_matches</span></p>
+
+		<hr><a id="1003" name="1003" title="1003"><h3>Insert Item(s) Into List by Position</h3></a>
+		
+		<p>The following sub-routine can be used to insert an item into a list. The passed parameters include the list to edit, the item to add, and the desired list position for the added item. Note that the item position can be specified in relation to the end of the list by passing a negative number as the offset from the end of the list:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, &quot;Wanda&quot;, 3)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Wanda&quot;, &quot;Bob&quot;, &quot;Carl&quot;}</span><BR>
+		<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, {&quot;Wanda&quot;, &quot;Alberta&quot;}, 3)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Wanda&quot;, &quot;Alberta&quot;, &quot;Bob&quot;, &quot;Carl&quot;}</span><BR>
+		<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, {{&quot;Wanda&quot;, &quot;Alberta&quot;}}, 3)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, {&quot;Wanda&quot;, &quot;Alberta&quot;}, &quot;Bob&quot;, &quot;Carl&quot;}</span><BR>
+		<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, &quot;Wanda&quot;, -1)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Wanda&quot;}</span><BR>
+		<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, &quot;Wanda&quot;, -2)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Wanda&quot;, &quot;Carl&quot;}</span><BR>
+		<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, &quot;Wanda&quot;, 5)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Wanda&quot;}</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20insert_listitem%28this_list%2C%20this_item%2C%20list_position%29%0D%09set%20the%20list_count%20to%20the%20count%20of%20this_list%0D%09%2D%2D%20THE%20LIST%20POSITION%20INDICATES%20THE%20POSITION%20IN%20THE%20LIST%20%0D%09%2D%2D%20YOU%20WANT%20THE%20ADDED%20ITEM%20TO%20OCCUPY%0D%09if%20the%20list_position%20is%200%20then%0D%09%09return%20false%0D%09else%20if%20the%20list_position%20is%20less%20than%200%20then%0D%09%09if%20%28the%20list_position%20%2A%20%2D1%29%20is%20greater%20than%20the%20list_count%20%2B%201%20then%20return%20false%0D%09else%0D%09%09if%20the%20list_position%20is%20greater%20than%20the%20list_count%20%2B%201%20then%20return%20false%0D%09end%20if%0D%09if%20the%20list_position%20is%20less%20than%200%20then%0D%09%09if%20%28the%20list_position%20%2A%20%2D1%29%20is%20the%20list_count%20%2B%201%20then%0D%09%09%09set%20the%20beginning%20of%20this_list%20to%20this_item%0D%09%09else%0D%09%09%09set%20this_list%20to%20the%20reverse%20of%20this_list%0D%09%09%09set%20the%20list_position%20to%20%28list_position%20%2A%20%2D1%29%0D%09%09%09set%20this_list%20to%20%28items%201%20thru%20%28list_position%20%2D%201%29%20of%20this_list%29%20%26%20this_item%20%26%20%28items%20list_position%20thru%20%2D1%20of%20this_list%29%0D%09%09%09set%20this_list%20to%20the%20reverse%20of%20this_list%0D%09%09end%20if%0D%09else%0D%09%09if%20the%20list_position%20is%201%20then%0D%09%09%09set%20the%20beginning%20of%20this_list%20to%20this_item%0D%09%09else%20if%20the%20list_position%20is%20%28the%20list_count%20%2B%201%29%20then%0D%09%09%09set%20the%20end%20of%20this_list%20to%20this_item%0D%09%09else%0D%09%09%09set%20this_list%20to%20%28items%201%20thru%20%28list_position%20%2D%201%29%20of%20this_list%29%20%26%20this_item%20%26%20%28items%20list_position%20thru%20%2D1%20of%20this_list%29%0D%09%09end%20if%0D%09end%20if%0D%09return%20this_list%0Dend%20insert_listitem"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for inserting items into a list:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">insert_listitem</span>(<span class="codevariable">this_list</span>, <span class="codevariable">this_item</span>, <span class="codevariable">list_position</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">list_count</span> <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- THE LIST POSITION INDICATES THE POSITION IN THE LIST </span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- YOU WANT THE ADDED ITEM TO OCCUPY</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">list_position</span> <b>is</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else if the</b> <span class="codevariable">list_position</span> <b>is less than</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if (the</b> <span class="codevariable">list_position</span> * -1) <b>is greater than the</b> <span class="codevariable">list_count</span> + 1 <b>then</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">list_position</span> <b>is greater than the</b> <span class="codevariable">list_count</span> + 1 <b>then return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">list_position</span> <b>is less than</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if (the</b> <span class="codevariable">list_position</span> * -1) <b>is the</b> <span class="codevariable">list_count</span> + 1 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the beginning of</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_list</span> <b>to the</b> reverse <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">list_position</span> <b>to</b> (<span class="codevariable">list_position</span> * -1)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_list</span> <b>to</b> (items 1 <b>thru</b> (<span class="codevariable">list_position</span> - 1) <b>of</b> <span class="codevariable">this_list</span>) &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codevariable">this_item</span> &amp; (items <span class="codevariable">list_position</span> <b>thru</b> -1 <b>of</b> <span class="codevariable">this_list</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_list</span> <b>to the</b> reverse <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">list_position</span> <b>is</b> 1 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the beginning of</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> <span class="codevariable">list_position</span> <b>is (the</b> <span class="codevariable">list_count</span> + 1) <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">this_list</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_list</span> <b>to</b> (items 1 <b>thru</b> (<span class="codevariable">list_position</span> - 1) <b>of</b> <span class="codevariable">this_list</span>) &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codevariable">this_item</span> &amp; (items <span class="codevariable">list_position</span> <b>thru</b> -1 <b>of</b> <span class="codevariable">this_list</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_list</span><BR>
+		<b>end</b> <span class="codevariable">insert_listitem</span></p>
+		
+		<hr><a id="1004" name="1004" title="1004"><h3>Replacing List Items</h3></a>
+		
+		<p>You can replace an item in a list using the following syntax if you know the offset of the target item:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;}<BR>
+		<b>set</b> item 3 <b>of</b> <span class="codevariable">this_list</span> <b>to</b> &quot;Wanda&quot;<BR>
+		<b>return</b> <span class="codevariable">this_list</span><BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Wanda&quot;, &quot;Carl&quot;}</span></p>
+		
+		<a id="1005" name="1005" title="1005"><h3>Replacing List Items by Matching</h3></a>
+		
+		<p>Use the following sub-routine to replace an item in a list if the position of the item to be replaced is not known. Note that the sub-routine has a passed parameter for indicating whether all matching items should be replaced or just the first occurrence:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">replace_matches</span>(<span class="codevariable">this_list</span>, &quot;Sue&quot;, &quot;Wanda&quot;, false)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Wanda&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}</span><BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">replace_matches</span>(<span class="codevariable">this_list</span>, &quot;Sue&quot;, &quot;Wanda&quot;, true)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Wanda&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Wanda&quot;}</span><BR>
+		<b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}<BR>
+		<span class="codevariable">replace_matches</span>(<span class="codevariable">this_list</span>, &quot;Bill&quot;, &quot;Wanda&quot;, true)<BR>
+		<span class="codecomment">--> {&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Sue&quot;}</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20replace_matches%28this_list%2C%20match_item%2C%20replacement_item%2C%20replace_all%29%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09%09set%20this_item%20to%20item%20i%20of%20this_list%0D%09%09if%20this_item%20is%20the%20match_item%20then%0D%09%09%09set%20item%20i%20of%20this_list%20to%20the%20replacement_item%0D%09%09%09if%20replace_all%20is%20false%20then%20return%20this_list%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20this_list%0Dend%20replace_matches"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for replacing items in a list by matching:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">replace_matches</span>(<span class="codevariable">this_list</span>, <span class="codevariable">match_item</span>, <span class="codevariable">replacement_item</span>, <span class="codevariable">replace_all</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_item</span> <b>is the</b> <span class="codevariable">match_item</span> <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_list</span> <b>to the</b> <span class="codevariable">replacement_item</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">replace_all</span> <b>is</b> false <b>then return</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_list</span><BR>
+		<b>end</b> <span class="codevariable">replace_matches</span></p>
+		
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li class="hi">Working With Lists</li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

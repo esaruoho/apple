@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Replace Image on Slide&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Replace Image on Slide&rdquo; Automator action is used to replace a placeholder image with an image file.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;Replace Image on Slide&rdquo; Action</div>
+			<p>The &ldquo;Replace Image on Slide&rdquo; Automator action is used to replace a placeholder image with an image file.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>			
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">AppleScript reference(s) to the slide(s) containing the image(s) to replace</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">AppleScript reference(s) to the slide(s) containig the image(s) that were replaced</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Open only the first Keynote document passed to the action as input</p></li>
+						<li><p>Make Keynote the frontmost application when action is run</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Note:</td><td class="data-value"><p>Important items to note:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>If the option for identifying a placeholder image is by stack index, a help button will be displayed. Click this button and the stack index of each image on the slide will be identified.</p></li>
+						<li><p>URLs linked to image files to be downloaded must be HTTP-based. Other protocols are not supported.</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that often precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Get Specified Slide</p></li>
+					</ul>
+				</td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Video Overview</p>
+			<p>The following video (10:06) demonstrates how to use this Automator action:</p>
+			
+			<video width="624" height="436" controls>
+			  <source src="Replace-Image-Action-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			
+			<p>The view for this action is divided into three groups:</p>
+			
+			<ul>
+				<li>The parameters at the top are used to indicate how the action will identify the images to be replaced.</li>
+				<li>The “Replacement” parameter in the middle of the view is used to determine the source of the replacement image(s)</li>
+				<li>The parameters at the bottom of the view are used to indicate how any caption data embedded in the replacement images should be used.</li>
+			</ul>
+						
+			<p class="content-subhead" role="heading" aria-level="2">Identifying Image(s) to Be Replaced</p>
+			
+			<p>The first section of the action interface contains controls for identifying the image(s) to be replaced:</p>
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The image to be replaced is set be identified by its file name.</p>
+			<img class="action-interface" alt="The image to be replaced is set to be identified by name." src="gfx/replace-images-01.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Image Identification Method</b>&nbsp;&bull;&nbsp;Choose to identify the image to be replaced by name or its position in the stack of images on the slide.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Replace All Images</b>&nbsp;&bull;&nbsp;Select to replace all images on the slide. If chosen, the Image Identification Method popup menu <span class="numeric-callout">&nbsp;1&nbsp;</span> becomes disabled.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Target Image Name</b>&nbsp;&bull;&nbsp;If &ldquo;Identify by name&rdquo; is selected from Image Identification Method popup menu <span class="numeric-callout">&nbsp;1&nbsp;</span> a text input appears for entering the name of the image to be replaced.</p>
+		
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The image to be replaced is set be identified by its position in the stacking order of images on the targeted slide(s).</p>
+			<img class="action-interface" alt="The image to be replaced is set to be identified by its position in the image stack." src="gfx/replace-images-02.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Target Image Index</b>&nbsp;&bull;&nbsp;If &ldquo;Identify by stacking order&rdquo; is selected from Image Identification Method popup menu <span class="numeric-callout">&nbsp;1&nbsp;</span> a stepper control appears to enter the index of the image to be replaced.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Show Stacking Order</b>&nbsp;&bull;&nbsp;Click this button to view the stacking order of the images on the current slide <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;&ldquo;image stack position&rdquo; below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Identifying the Replacement Image</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Replacement Image</b>&nbsp;&bull;&nbsp;This popup menu offers three options for selecting the replacement image: choose an image file, download an image file from the internet, or be prompted to select an image file when the parent workflow is executed.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>File Picker Menu</b>&nbsp;&bull;&nbsp;Select &ldquo;Other&hellip;&rdquo; to summon a file picker dialog, or choose &ldquo;New Variable&hellip;&rdquo; to create a new Automator workflow variable.</p>
+			
+			<img class="centered" width="240" alt="chooseimagefile" src="gfx/chooseimagefile.png">
+		
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The replacement image is indicated to be located by an HTTP-based URL found in the description field of the image to be replaced.</p>
+			<img class="action-interface" alt="The image to be replaced is set to be identified by name." src="gfx/replace-images-03.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;<b>Replace with File from URL</b>&nbsp;&bull;&nbsp;With this option selected, the action will attempt to download the image file whose URL is placed in the image description field in Keynote. Select the adjacent checkbox to ignore any image placeholders without URLs in their description fields.</p>
+		
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The replacement image is indicated to be located by prompting the user to locate it within a choose file dialog, when the workflow containing the action is executed.</p>
+			<img class="action-interface" alt="The image to be replaced is set to be identified by name." src="gfx/replace-images-04.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;9&nbsp;</span>&nbsp;<b>Prompt when Run</b>&nbsp;&bull;&nbsp;Select this option to have the action highlight the image to be replaced and display a file chooser dialog when the parent workflow is executed.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;10&nbsp;</span>&nbsp;<b>Metadata</b>&nbsp;&bull;&nbsp;Select either or both of these options to have the action extract embedded caption metadata from the replacement image file and use that data for the image description or slide presenter notes.</p>
+		
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Image Stack Position</div>
+			<p>In Keynote, items added to a slide, whether text, images, movies, audio clips, or shapes, occupy their own layer and will be either above or below other items on the slide.</p>
+			
+			<p>You can identify a specific slide item by referring to it using its numeric position in the &ldquo;stack&rdquo; of items on the slide, such as &ldquo;image 2&rdquo; or &ldquo;image 1&rdquo;. Items &ldquo;higher&rdquo; in the stack of slide items have larger numeric indexes than items &ldquo;lower&rdquo; in the stack of slide items. The item with the lowest &ldquo;index&rdquo; value is always the one at the botton or back of the stack.</p>
+			
+			<p>When working with images, you can ignore other types of slide items, and refer to a specific image by its position in the stack of images on the slide, rather than its positon in the stack of items on the slide. This action uses this method in identifying a specific image placeholder. To view the image stack position of the images on the currently selected slide, click the Question-Mark button <span class="numeric-callout">&nbsp;5&nbsp;</span> in the action interface <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img width="312" alt="image-stack.001" src="gfx/image-stack.001.jpg" height="234" style="float:left;">
+			<img width="312" height="234" alt="image-stack.003" src="gfx/image-stack.003.jpg">
+			<p class="imagecaption" style="margin-bottom:0;"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>As images on a slide are moved forward or backward, their position in the stack of slide images changes. The image on the bottom of the stack always has a stack index of 1.</p>
+			<p class="imagecaption" style="margin-top:0;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>When the help button in the action interface is pressed, the stack index for each of a slide’s images is momentarily displayed.</p>
+			<img class="across" width="640" height="510" alt="stack-identity" src="gfx/stack-identity.png">
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+				
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-actions-03.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="#">Automator Quick-Start</a></li>
+				<hr>
+				<li><a href="document-actions-01.html">Document Actions</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li class="hi">Image Actions</li>
+				<li class="navListSectionItem"><a href="image-actions-01.html">New Image Slide from File</a></li>
+				<li class="navListSectionItemSelected">Replace Image on Slide</li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">EXAMPLE IMAGES</h2>
+			<p>These photos are from a collection provided for public use by the <a href="http://images.nrel.gov/albums.php" target="_blank">National Renewable Energy Laboratory</a> &mdash; thank you NREL!</p><p>To use these images as examples for embedded download links in Keynote, right-click an image thumbnail and choose <b>Copy Link</b> from the browser contextual popup menu. the copied link will be to a high-res version of the chosen image.</p>
+			<div style="padding:6px;">
+				<a href="nrel/15407.jpg" target="_blank"><img width="104" alt="15407" src="nrel/15407-TH.jpg"></a>
+				<a href="nrel/16053.jpg" target="_blank"><img width="104" alt="16053" src="nrel/16053-TH.jpg"></a>
+				<a href="nrel/16051.jpg" target="_blank"><img width="212" alt="16051" src="nrel/16051-TH.jpg"></a>
+				<a href="nrel/16052.jpg" target="_blank"><img width="212" alt="16052" src="nrel/16052-TH.jpg"></a>
+				<a href="nrel/16698.jpg" target="_blank"><img width="104" alt="16698" src="nrel/16698-TH.jpg"></a>
+				<a href="nrel/21207.jpg" target="_blank"><img width="104" alt="21207" src="nrel/21207-TH.jpg"></a>
+				<a href="nrel/18207.jpg" target="_blank"><img width="212" alt="18207" src="nrel/18207-TH.jpg"></a>
+				<a href="nrel/16692.jpg" target="_blank"><img width="212" alt="16692" src="nrel/16692-TH.jpg"></a>
+				<a href="nrel/18456.jpg" target="_blank"><img width="212" alt="18456" src="nrel/18456-TH.jpg"></a>
+				<a href="nrel/16707.jpg" target="_blank"><img width="212" alt="16707" src="nrel/16707-TH.jpg"></a>
+			</div>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

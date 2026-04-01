@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>AppleScript CGI</h2>
+		
+		<p>AppleScript is often used to create CGI tools for server software. A CGI is a tool which processes submitted HTML form data and returns the results, in HTML form, back to the server.</p>
+		
+		<p class="note"><b>NOTE</b>: In the current version of Mac OS X, AppleScript CGI applications require the installation of the <a href="http://www.sentman.com/acgi/" target="_blank"><span class="inlinecode">ACGI Dispatcher</span></a>  in order to receive CGI messages from the built-in Apache server which is activated when Personal Web Sharing is turned on.</p>
+		
+		<p>The following script is a full-functioning CGI and requires no extra scripting additions in order to parse POST data from a submitted HTML form like the example below.</p>
+		
+		<FONT FACE="Lucida Grande,Geneva,Verdana,Arial,Helvetica,sans-serif" SIZE=2 CLASS="L12"><PRE>
+&lt;HTML&gt;
+	&lt;HEAD&gt;
+		&lt;TITLE&gt;Simple Form&lt;/TITLE&gt;
+	&lt;/HEAD&gt;
+	&lt;BODY BGCOLOR="#FFFFFF"&gt;
+		&lt;FONT FACE="Geneva" SIZE="2"&gt;Pick a color:&lt;/FONT&gt;
+		&lt;FORM ACTION="process.app" METHOD="POST"&gt;
+			&lt;SELECT NAME="CHOSEN COLOR"&gt;
+			&lt;OPTION VALUE="Red" SELECTED&gt;Red
+			&lt;OPTION VALUE="Blue"&gt;Blue
+			&lt;OPTION VALUE="Green"&gt;Green
+			&lt;OPTION VALUE="Yellow"&gt;Yellow
+			&lt;/SELECT&gt;&lt;BR&gt;
+			&lt;INPUT TYPE="submit" VALUE="Submit"&gt;
+		&lt;/FORM&gt;
+	&lt;/BODY&gt;
+&lt;/HTML&gt;
+</PRE></FONT>
+
+		<p>When this form is submitted, the CGI application would return a webpage containing:</p>
+		
+		<p class="code">CHOSEN COLOR: Red</p>
+		
+		<p>Here's the script:</p>
+		
+		<a href="applescript://com.apple.scripteditor?action=new&script=%2D%2D%20carriage%20return%20and%20line%20feed%20%0Dproperty%20crlf%20%3A%20%28ASCII%20character%2013%29%20%26%20%28ASCII%20character%2010%29%0D%2D%2D%20this%20builds%20the%20normal%20HTTP%20header%20for%20regular%20accrss%20%0Dproperty%20http_header%20%3A%20%22HTTP%2F1%2E0%20200%200K%22%20%26%20crlf%20%26%20%22Server%3A%20MacHTTP%22%20%26%20crlf%20%26%20%22MIME%2DVersion%3A%201%2E0%22%20%26%20crlf%20%26%20%22Content%2Dtype%3A%20text%2Fhtml%22%20%26%20crlf%20%26%20crlf%0D%2D%2D%20the%20HTML%20opening%20%0Dproperty%20HTML_opening%20%3A%20%22%3CHTML%3E%22%20%26%20return%20%26%20%22%3CHEAD%3E%3CTITLE%3ECGI%20Results%3C%2FTITLE%3E%3C%2FHEAD%3E%22%20%26%20return%20%26%20%22%3CBODY%20BGCOLOR%3D%5C%22%23FFFFFF%5C%22%3E%3CFONT%20FACE%3D%5C%22Geneva%5C%22%20SIZE%3D%5C%22%2D1%5C%22%3E%22%20%26%20return%0D%2D%2D%20the%20HTML%20closing%20%0Dproperty%20HTML_closing%20%3A%20%22%3C%2FFONT%3E%3C%2FBODY%3E%22%20%26%20return%20%26%20%22%3C%2FHTML%3E%22%0D%0Don%20handle%20CGI%20request%20this_request%20searching%20for%20search_string%20with%20posted%20data%20post_arguments%20using%20access%20method%20GET_or_POST%20from%20address%20this_client%20from%20user%20user_name%20using%20password%20user_password%20with%20user%20info%20user_information%20from%20server%20server_application%20via%20port%20server_IP_port%20executing%20by%20this_script_path%20of%20content%20type%20MIME_type%20referred%20by%20referring_page%20from%20browser%20client_browser%20using%20action%20CGI_path%20of%20action%20type%20action_type%20with%20full%20request%20request_data%20from%20client%20IP%20address%20client_address%20with%20connection%20ID%20server_connection%20from%20virtual%20host%20root_URL%0D%09%0D%09set%20the%20form_contents%20to%20my%20process_arguments%28post_arguments%29%0D%09%2D%2D%20returns%20a%20list%20of%20form%20items%20and%20their%20values%20%0D%09%2D%2D%20%7B%7B%22FORMITEM1%22%2C%20%22FORMITEM1VALUE%22%7D%2C%20%7B%22FORMITEM2%22%2C%20%22FORMITEM2VALUE%22%7D%2Cetc%2E%7D%20%0D%09%0D%09%2D%2D%20ACTIONS%20WITH%20PROCESSED%20FORM%20DATA%20GO%20HERE%20%0D%09%2D%2D%20this%20example%20returns%20the%20form%20items%20and%20their%20values%20%0D%09set%20the%20body_content%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20form_contents%0D%09%09copy%20item%20i%20of%20the%20form_contents%20to%20%7Bform_item%2C%20item_value%7D%0D%09%09set%20the%20body_content%20to%20the%20body_content%20%26%20form_item%20%26%20%22%3A%20%22%20%26%20item_value%20%26%20%22%3CBR%3E%22%20%26%20return%0D%09end%20repeat%0D%09%0D%09%2D%2D%20return%20HTML%20to%20the%20user%20%0D%09return%20http_header%20%26%20HTML_opening%20%26%20body_content%20%26%20HTML_closing%0Dend%20handle%20CGI%20request%0D%0Don%20process_arguments%28arguments_string%29%0D%09if%20the%20arguments_string%20contains%20%22%26%22%20then%20%2D%2D%20more%20than%20one%20passed%20parameter%20%0D%09%09set%20the%20parameters_list%20to%20my%20convert2list%28arguments_string%2C%20%22%26%22%29%0D%09else%20%2D%2D%20single%20passed%20parameter%20%0D%09%09set%20the%20parameters_list%20to%20the%20arguments_string%20as%20list%0D%09end%20if%0D%09%2D%2D%7B%22PARAMETER%3DPARAMETER1VALUE%22%2C%20%22PARAMETER2%3DPARAMETER2VALUE%22%7D%20%0D%09set%20parameters_list%20to%20my%20convert_list_elements%28parameters_list%2C%20%22%3D%22%29%0D%09%2D%2D%20%7B%7B%22PARAMETER1%22%2C%20%22PARAMETER1VALUE%22%7D%2C%20%7B%22PARAMETER2%22%2C%20%22PARAMETER2VALUE%22%7D%7D%20%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20parameters_list%0D%09%09copy%20item%20i%20of%20the%20parameters_list%20to%20%7Bthis_parameter%2C%20this_value%7D%0D%09%09set%20this_parameter%20to%20decode_text%28this_parameter%29%0D%09%09set%20this_value%20to%20decode_text%28this_value%29%0D%09%09set%20this_parameter%20to%20replace_chars%28this_parameter%2C%20%22%2B%22%2C%20%22%20%22%29%0D%09%09set%20this_value%20to%20replace_chars%28this_value%2C%20%22%2B%22%2C%20%22%20%22%29%0D%09%09set%20item%20i%20of%20the%20parameters_list%20to%20%7Bthis_parameter%2C%20this_value%7D%0D%09end%20repeat%0D%09return%20parameters_list%0Dend%20process_arguments%0D%0Don%20convert2list%28this_string%2C%20this_delimiter%29%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20this_delimiter%0D%09set%20the%20item_list%20to%20every%20text%20item%20of%20this_string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20item_list%0Dend%20convert2list%0D%0Don%20convert_list_elements%28this_list%2C%20this_delimiter%29%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20this_delimiter%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20this_list%0D%09%09set%20this_item%20to%20item%20i%20of%20the%20this_list%0D%09%09set%20this_item%20to%20every%20text%20item%20of%20this_item%0D%09%09set%20item%20i%20of%20the%20this_list%20to%20this_item%0D%09end%20repeat%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20this_list%0Dend%20convert_list_elements%0D%0Don%20list2string%28this_list%2C%20this_delimiter%29%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20this_delimiter%0D%09set%20this_string%20to%20this_list%20as%20string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20this_string%0Dend%20list2string%0D%0Don%20decode_text%28this_text%29%0D%09set%20flag_A%20to%20false%0D%09set%20flag_B%20to%20false%0D%09set%20temp_char%20to%20%22%22%0D%09set%20the%20character_list%20to%20%7B%7D%0D%09repeat%20with%20this_char%20in%20this_text%0D%09%09set%20this_char%20to%20the%20contents%20of%20this_char%0D%09%09if%20this_char%20is%20%22%25%22%20then%0D%09%09%09set%20flag_A%20to%20true%0D%09%09else%20if%20flag_A%20is%20true%20then%0D%09%09%09set%20the%20temp_char%20to%20this_char%0D%09%09%09set%20flag_A%20to%20false%0D%09%09%09set%20flag_B%20to%20true%0D%09%09else%20if%20flag_B%20is%20true%20then%0D%09%09%09set%20the%20end%20of%20the%20character_list%20to%20my%20decode_chars%28%28%22%25%22%20%26%20temp_char%20%26%20this_char%29%20as%20string%29%0D%09%09%09set%20the%20temp_char%20to%20%22%22%0D%09%09%09set%20flag_A%20to%20false%0D%09%09%09set%20flag_B%20to%20false%0D%09%09else%0D%09%09%09set%20the%20end%20of%20the%20character_list%20to%20this_char%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20character_list%20as%20string%0Dend%20decode_text%0D%0D%2D%2D%20this%20sub%2Droutine%20is%20used%20to%20decode%20a%20hex%20string%20%0Don%20decode_chars%28these_chars%29%0D%09copy%20these_chars%20to%20%7Bindentifying_char%2C%20multiplier_char%2C%20remainder_char%7D%0D%09set%20the%20hex_list%20to%20%22123456789ABCDEF%22%0D%09if%20the%20multiplier_char%20is%20in%20%22ABCDEF%22%20then%0D%09%09set%20the%20multiplier_amt%20to%20the%20offset%20of%20the%20multiplier_char%20in%20the%20hex_list%0D%09else%0D%09%09set%20the%20multiplier_amt%20to%20the%20multiplier_char%20as%20integer%0D%09end%20if%0D%09if%20the%20remainder_char%20is%20in%20%22ABCDEF%22%20then%0D%09%09set%20the%20remainder_amt%20to%20the%20offset%20of%20the%20remainder_char%20in%20the%20hex_list%0D%09else%0D%09%09set%20the%20remainder_amt%20to%20the%20remainder_char%20as%20integer%0D%09end%20if%0D%09set%20the%20ASCII_num%20to%20%28multiplier_amt%20%2A%2016%29%20%2B%20remainder_amt%0D%09return%20%28ASCII%20character%20ASCII_num%29%0Dend%20decode_chars%0D%0Don%20replace_chars%28this_text%2C%20search_string%2C%20replacement_string%29%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20the%20search_string%0D%09set%20the%20item_list%20to%20every%20text%20item%20of%20this_text%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20the%20replacement_string%0D%09set%20this_text%20to%20the%20item_list%20as%20string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20this_text%0Dend%20replace_chars"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;<br><br></span>
+		
+		<p>Save it as an application (not an application bundle) with the Stay Open option checked. On Mac OS X, CGIs are usually placed in the Library &gt; WebServer &gt; CGI-Executables folder.</p>
+		
+		<img src="gfx/cgi.jpg" width="640" class="across">
+		<p class="imagecaption">To create an AppleScript CGI, save the script as an application (not in bundle format) with the Stay Open option checked.</p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li class="hi">AppleScript CGI</li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

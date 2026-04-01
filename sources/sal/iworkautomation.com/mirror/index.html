@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>iWork and Automation</title>
+<link rel="stylesheet" type="text/css" href="iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, tables, slides">
+	<meta name="Description" content="An overview of the AppleScript support in the iWork applications.">
+	<link rel="home" href="https://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 00:00:00 GMT"/>
+<!-- END META INFO -->
+		<!-- BEGIN LIGHTBOX -->
+			<link rel="stylesheet" href="lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+			<script src="lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+		<!-- END LIGHTBOX -->
+		<!-- BEGIN FIRST RUN CHECK AND DISPLAY -->
+			<script type="text/javascript">
+				function checkFirstRunStatus() {
+					var x = getCookie('configAutomationVisitationStatus')
+					if (x != "" && x != null) {
+						// do nothing, let the page be displayed
+					} else {
+						document.cookie = "configAutomationVisitationStatus=true";
+						lightboxDisclaimerImage();
+					}
+				}
+				function getCookie(cname) {
+					var name = cname + "=";
+					var ca = document.cookie.split(';');
+					for (var i=0; i<ca.length; i++) {
+						var c = ca[i].trim();
+						if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+					}
+					return "";
+				}
+			</script>
+		<!-- END FIRST RUN CHECK AND DISPLAY -->
+</head>
+<body onLoad="checkFirstRunStatus();">
+<table align="center" border="0" cellpadding="0" role="presentation" style="position:relative;z-index:1;">
+	<caption>
+		<div style="position:relative;float:left;"><a href="javascript:var baseURL=document.location.toString().replace(/^https?:\/\//, '');newURL='https://'+baseURL;document.location=newURL;" title="Switch page to secure HTTPS">&#128274;</a></div>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="https://macosxautomation.com">Automation</a> | <a href="https://iworkautomation.com/index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="iWork-Automation-Banner" src="gfx/iWork-Automation-Banner.001.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<!-- <td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td> -->
+			<td><a href="about.html">About</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://macosxautomation.com/applescript">AppleScript</a></td>
+			<td><a href="https://macosxautomation.com/automator">Automator</a></td>
+			<!-- <td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td> -->
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">iWork &amp; Automation: Productivity Enhanced</div>
+			
+			<!-- <img class="across" width="640" alt="iwork-apps-icons" src="gfx/iwork-apps-icons.png"> -->
+			
+			<p class="content-intro" style="margin-top:28px;"><span style="float:left;color:#660099;font-size: 75px;line-height:120px;margin-left:-36px;margin-bottom:-48px;padding-top:4px;padding-right:8px;padding-left:0px; font-family:Zapfino,'Times New Roman';background-color:transparent;">T</span>he whole point of using a productivity suite is to be, well&hellip; productive. And the more time you invest in performing repetitive or complex processes, the less productive and creative you become. The iWork suite of applications are designed to eliminate the drudgery, with elements, tools, and media libraries, shared by every application in the suite. And now there&rsquo;s one more thing they have in common on OS&nbsp;X: automation with AppleScript and Automator.</p>
+											
+			<p>For professionals, creatives, and business mavens alike, Automation is <b>the</b> essential element for success. Because, when your workflow processes are automated, you gain:</p>
+			
+			<ul>
+				<li><b>Speed</b>. It takes less time to accomplish complex multi-step procedures.</li>
+				<li><b>Accuracy</b>. With automation, the chances of making mistakes because of human error are minimized.</li>
+				<li><b>Consistency</b>. Automation produces data of reliable quality.</li>
+				<li><b>Scalability</b>. If you want to do more, in a shorter time, while maintaining quality, automation is the best way to expand your business.</li>
+			</ul>
+			
+			<p>Using automation frees you from the &ldquo;grunge work,&rdquo; to focus on the creative and analytical aspects of what you do — you know, that stuff you were actually hired and like to do! And when it comes to automating, AppleScript is your best friend.</p>
+			
+			<p>So, if you are currently using another productivity suite and are interested in learning about the unique features of the iWork suite of applications; or are an iWork user who wants to take the suite to the next level of functionality; automating iWork with AppleScript is something you really should explore.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">What is covered in this overview of iWork AppleScript support?</p>
+			
+			<p>The following pages describe and demonstrate how AppleScript can be used to access, query, control, make, style, and delete the elements of the iWork applications, with specific focus on enabling and creating workflows that span the applications of OS&nbsp;X and the iWork suite.</p>
+			
+			<p>If you are familiar with AppleScript &mdash; great. If not, no problem. You can easily pick up this unique English-like scripting language from the <a href="http://macosxautomation.com/applescript/firsttutorial/index.html" target="_blank">tutorials</a> on this website, or from reading one of the many great AppleScript books on the subject, including Apple&rsquo;s own <a href="http://www.peachpit.com/store/apple-training-series-applescript-1-2-3-9780321149312" target="_blank">AppleScript 1-2-3</a>.</p>
+			
+			<p>And everything you need to automate Numbers with AppleScript is already installed in OS&nbsp;X. For starters, all of the example scripts on these pages can be viewed in the <b>AppleScript Editor</b> application (which can be found in your <b>Utilities</b> folder) automatically, by just clicking the <b>Open in AppleScript Editor</b> button located above each of the example scripts, that are placed inline throughout the documentation on this site.</p>
+			
+			<p>So what are you waiting for? Use the purple navigation box on the upper right side of this page to begin the process of becoming a &ldquo;Master of iWorkAutomation!&rdquo;</p>
+						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<!-- <p class="more"><a href="#" target="_self">TOP</a> | <a href="#" target="_self">CONTINUE</a></p> -->
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox" style="background-color:#660099">
+			<h2 style="text-align:center;">iWORK &amp; AUTOMATION</h2>
+			<ul>
+				<li class="hi">Overview</li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="https://iworkautomation.com/keynote/index.html">Keynote</a></li>
+				<!-- <li><a href="keynote/automator/index.html">Keynote &amp; Automator</a></li> -->
+				<li><a href="https://iworkautomation.com/numbers/index.html">Numbers</a></li>
+				<li><a href="https://iworkautomation.com/pages/index.html">Pages</a></li>
+<!-- 
+				<hr>
+				<li><a href="#">iWork Suites</a></li>
+				<li><a href="#">iWork Examples</a></li>
+ -->
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">START HERE VIDEO</h2>
+			<p>New to <b>iworkautomation.com</b>? Watch <a href="welcome.html">this short video</a> to learn what this site contains and how to navigate its content. Enjoy!</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="https://macosxautomation.com/automator/photos/index.html" target="_blank"><img src="gfx/photos-automator-sidebar.jpg" width="100%" align="top" alt="photos-automator-sidebar"></a>
+		</div>				
+
+		<div class="box" style="padding:0;">
+			<a href="https://iworkautomation.com/keynote/automator/index.html" target="_blank"><img src="gfx/Keynote-Automator-Rectangle.jpg" width="100%" align="top" alt="keynote-automator-sidebar"></a>
+		</div>				
+		
+		<div class="box" style="padding:0;">
+			<a href="https://macosxautomation.com/yosemite/index.html" target="_blank"><img src="gfx/yosemite-rectangle.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="https://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WEBSITE HISTORY</h2>
+			<p>10-16-14 &bull; <a href="keynote/automator/index.html">Keynote &amp; Automator</a> website.</p>
+			<p>10-01-14 &bull; This website now supports HTTPS! Click the lock icon in the top left to switch to SSL secure viewing.</p>
+			<p>04-18-14 &bull; Added <a href="keynote/image-slides-from-files.html">Image Slides from Files</a>.</p>
+			<p>04-18-14 &bull; Added <a href="welcome.html">Start Here</a> video.</p>
+			<p>04-09-14 &bull; Updated <a href="contacts-import-csv.html">example CSV file</a> to include address info</p>
+			<p>04-01-14 &bull; RELEASE.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">&nbsp;</h2>
+			<p style="text-align:center;"><script type="text/javascript">
+				
+				  <!--
+				
+				  var contact = "CONTACT"
+				
+				  var x = "macosxautomation"
+				
+				  var y = "me.com"
+				
+				  document.write("<a href=" + "mail" + "to:" + x + "@" + y + "?" + "sub" + "ject=IWORK-COMMENT>" + "Co" + "mm" + "en" + "ts" + "<\/a>")
+				
+				  //-->
+				
+				</script>&nbsp;</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+<!-- 
+<tr><td><a href="https://iworkautomation.com/index.html" target="_self"><img width="72" alt="HTTPS icon link" title="Click this icon to activate an SSL connection to this website." src="gfx/HTTPS.png" style="position:absolute;float:left;left:-12px;top:0px;z-index:100;"></a></td></tr>
+ -->
+</table>
+</body>
+</html>

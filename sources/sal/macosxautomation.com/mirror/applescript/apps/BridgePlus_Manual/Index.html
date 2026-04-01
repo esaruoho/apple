@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+}
+	code {
+		font-family: monospace;
+	font-size: 125%;
+}
+
+</style>
+</head>
+<body>
+<p><a href="../BridgePlus.html">Main Page</a></p>
+<h2>BridgePlus.framework, SMSForder Class Methods</h2>
+
+<p>
+The <b>BridgePlus.scptd</b> bundle contains a framework that includes many methods useful to scripters. The library does not contain terminology for these methods, but by including <b>use script "BridgePlus"</b> in your scripts, you can access these methods directly.
+</p>
+<p>
+This is a list of the available methods, all of which are class methods of the <b>SMSForder</b> class. You should generally use the BridgePlus.scpt library's <b>ASify from</b> command to convert the results to AppleScript classes. Also note that all indexes are zero-based.
+</p>
+<p>
+These pages are a work in progress. Special thanks to Takaaki Naganoya and Yvan Koenig for their valuable testing and feedback.
+</p>
+
+
+<h3>House-keeping methods</h3>
+<p><code><a href="Pages/frameworkVersion.html">frameworkVersion</a></code></p>
+<p><code><a href="Pages/frameworkDate.html">frameworkDate</a></code></p>
+<h3>List manipulation methods</h3>
+<p><code><a href="Pages/subarraysIn_paddedWith_error_.html">subarraysIn:paddedWith:error:</a></code></p>
+<p><code><a href="Pages/colsToRowsIn_error_.html">colsToRowsIn:error:</a></code></p>
+<p><code><a href="Pages/arrayByFlattening_.html">arrayByFlattening:</a></code></p>
+<p><code><a href="Pages/arrayByFullyFlattening_.html">arrayByFullyFlattening:</a></code></p>
+<p><code><a href="Pages/subarraysFrom_groupedBy_error_.html">subarraysFrom:groupedBy:error:</a></code></p>
+<p><code><a href="Pages/subarraysIn_withItems_insertedAtIndex_error_.html">subarraysIn:withItems:insertedAtIndex:error:</a></code></p>
+<p><code><a href="Pages/arrayByInsertingItems_inArray_atIndex_error_.html">arrayByInsertingItems:inArray:atIndex:error:</a></code></p>
+<p><code><a href="Pages/arrayByMovingItemAt_toIndex_inArray_error_.html">arrayByMovingItemAt:toIndex:inArray:error:</a></code></p>
+<p><code><a href="Pages/arrayByDeletingBlanksIn_.html">arrayByDeletingBlanksIn:</a></code></p>
+<p><code><a href="Pages/arrayByTrimmingTrailingBlanksFrom_.html">arrayByTrimmingTrailingBlanksFrom:</a></code></p>
+<p><code><a href="Pages/arrayByTrimmingBlanksFrom_.html">arrayByTrimmingBlanksFrom:</a></code></p>
+<p><code><a href="Pages/arrayByReplacingNullsIn_withItem_.html">arrayByReplacingNullsIn:withItem:</a></code></p>
+<p><code><a href="Pages/arrayWithPattern_startNumber_endNumber_minDigits_.html">arrayWithPattern:startNumber:endNumber:minDigits:</a></code></p>
+<p><code><a href="Pages/sumMaxMinOf_error_.html">sumMaxMinOf:error:</a></code></p>
+<p><code><a href="Pages/subarraysIn_sortedByIndexes_ascending_sortTypes_error_.html">subarraysIn:sortedByIndexes:ascending:sortTypes:error:</a></code></p>
+<p><code><a href="Pages/subarraysIn_sortedByIndexes_ascending_sortTypes_sortKeys_error_.html">subarraysIn:sortedByIndexes:ascending:sortTypes:sortKeys:error:</a></code></p>
+<p><code><a href="Pages/arrayByMergingTextAtIndexes_inArray_inserting_error_.html">arrayByMergingTextAtIndexes:inArray:inserting:error:</a></code></p>
+<p><code><a href="Pages/indexesOfItem_inArray_inverting_.html">indexesOfItem:inArray:inverting:</a></code></p>
+<p><code><a href="Pages/indexesOfItems_inArray_inverting_.html">indexesOfItems:inArray:inverting:</a></code></p>
+<p><code><a href="Pages/subarraysIn_asDictionariesUsingLabels_error_.html">subarraysIn:asDictionariesUsingLabels:error:</a></code></p>
+<p><code><a href="Pages/subarraysFrom_usingKeys_outKeys_error_.html">subarraysFrom:usingKeys:outKeys:error:</a></code></p>
+<p><code><a href="Pages/arrayWithIndexSet_.html">arrayWithIndexSet:</a></code></p>
+<p><code><a href="Pages/arrayByAddingInteger_inArray_.html">arrayByAddingInteger:inArray:</a></code></p>
+<p><code><a href="Pages/sortedArrayFrom_stableSort_usingSelector_target_.html">sortedArrayFrom:stableSort:usingSelector:target:</a></code></p>
+<p><code><a href="Pages/indexSetWithArray_.html">indexSetWithArray:</a></code></p>
+<p><code><a href="Pages/splitArray_byKey_sortKeys_.html">splitArray:byKey:sortKeys:</a></code></p>
+<p><code><a href="Pages/sortedArrayFrom_byKeys_.html">sortedArrayFrom:byKeys:</a></code></p>
+<h3>URL and File related methods</h3>
+<p><code><a href="Pages/metadataFromImage_error_.html">metadataFromImage:error:</a></code></p>
+<p><code><a href="Pages/infoForFile_.html">infoForFile:</a></code></p>
+<p><code><a href="Pages/sizeInfoForFile_.html">sizeInfoForFile:</a></code></p>
+<p><code><a href="Pages/resourceValueForKey_forURLsOrFiles_.html">resourceValueForKey:forURLsOrFiles:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forURLsOrFiles_.html">resourceValuesForKeys:forURLsOrFiles:</a></code></p>
+<p><code><a href="Pages/itemsIn_recursive_skipHidden_skipInsidePackages_asPaths_.html">itemsIn:recursive:skipHidden:skipInsidePackages:asPaths:</a></code></p>
+<p><code><a href="Pages/itemsIn_recursive_asPaths_.html">itemsIn:recursive:asPaths:</a></code></p>
+<p><code><a href="Pages/filesIn_recursive_skipHidden_skipInsidePackages_asPaths_.html">filesIn:recursive:skipHidden:skipInsidePackages:asPaths:</a></code></p>
+<p><code><a href="Pages/filesIn_recursive_asPaths_.html">filesIn:recursive:asPaths:</a></code></p>
+<p><code><a href="Pages/foldersIn_recursive_skipHidden_skipInsidePackages_asPaths_.html">foldersIn:recursive:skipHidden:skipInsidePackages:asPaths:</a></code></p>
+<p><code><a href="Pages/foldersIn_recursive_asPaths_.html">foldersIn:recursive:asPaths:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forItemsIn_recursive_skipHidden_skipInsidePackages_.html">resourceValuesForKeys:forItemsIn:recursive:skipHidden:skipInsidePackages:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forItemsIn_recursive_.html">resourceValuesForKeys:forItemsIn:recursive:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forFilesIn_recursive_skipHidden_skipInsidePackages_.html">resourceValuesForKeys:forFilesIn:recursive:skipHidden:skipInsidePackages:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forFilesIn_recursive_.html">resourceValuesForKeys:forFilesIn:recursive:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forFoldersIn_recursive_skipHidden_skipInsidePackages_.html">resourceValuesForKeys:forFoldersIn:recursive:skipHidden:skipInsidePackages:</a></code></p>
+<p><code><a href="Pages/resourceValuesForKeys_forFoldersIn_recursive_.html">resourceValuesForKeys:forFoldersIn:recursive:</a></code></p>
+<p><code><a href="Pages/copyItemAt_toItem_replace_error_.html">copyItemAt:toItem:replace:error:</a></code></p>
+<p><code><a href="Pages/moveItemAt_toItem_replace_error_.html">moveItemAt:toItem:replace:error:</a></code></p>
+<p><code><a href="Pages/UTIForExtension_.html">UTIForExtension:</a></code></p>
+<p><code><a href="Pages/runSpotlightQuery_inFolders_error_.html">runSpotlightQuery:inFolders:error:</a></code></p>
+<p><code><a href="Pages/runSpotlightQuery_queryValues_inFolders_error_.html">runSpotlightQuery:queryValues:inFolders:error:</a></code></p>
+<p><code><a href="Pages/spotlightDataFor_.html">spotlightDataFor:</a></code></p>
+<h3>Miscellaneous methods</h3>
+<p><code><a href="Pages/bezierForAI_.html">bezierForAI:</a></code></p>
+<p><code><a href="Pages/bezierForID_.html">bezierForID:</a></code></p>
+<p><code><a href="Pages/pathOfBezier_.html">pathOfBezier:</a></code></p>
+<p><code><a href="Pages/lineDashCountAndPhaseOfBezier_.html">lineDashCountAndPhaseOfBezier:</a></code></p>
+<p><code><a href="Pages/componentsOfColor_.html">componentsOfColor:</a></code></p>
+<p><code><a href="Pages/fordEvent.html">fordEvent</a></code></p>
+<p><code><a href="Pages/passForGenericItem_account_error_.html">passForGenericItem:account:error:</a></code></p>
+<p><code><a href="Pages/passForGenericItem_account_keychainPath_error_.html">passForGenericItem:account:keychainPath:error:</a></code></p>
+<p><code><a href="Pages/passForInternetItem_account_server_path_port_error_.html">passForInternetItem:account:server:path:port:error:</a></code></p>
+<p><code><a href="Pages/passForInternetItem_account_server_path_port_keychainPath_error_.html">passForInternetItem:account:server:path:port:keychainPath:error:</a></code></p>
+<p><code><a href="Pages/dateValuesFrom_.html">dateValuesFrom:</a></code></p>
+<p><code><a href="Pages/extraDateValuesFrom_.html">extraDateValuesFrom:</a></code></p>
+<p><code><a href="Pages/timeValuesFrom_.html">timeValuesFrom:</a></code></p>
+<h3>Regular Expression methods</h3>
+<p><code><a href="Pages/findFirstMatch_inString_options_.html">findFirstMatch:inString:options:</a></code></p>
+<p><code><a href="Pages/findFirstMatchRecord_inString_options_.html">findFirstMatchRecord:inString:options:</a></code></p>
+<p><code><a href="Pages/findMatches_inString_options_.html">findMatches:inString:options:</a></code></p>
+<p><code><a href="Pages/findMatchRecords_inString_options_.html">findMatchRecords:inString:options:</a></code></p>
+<p><code><a href="Pages/findMatches_inString_options_captureGroups_.html">findMatches:inString:options:captureGroups:</a></code></p>
+<p><code><a href="Pages/findMatchRecords_inString_options_captureGroups_.html">findMatchRecords:inString:options:captureGroups:</a></code></p>
+<h3>Keyboard input source methods</h3>
+<p><code><a href="Pages/availableInputSourceIDs.html">availableInputSourceIDs</a></code></p>
+<p><code><a href="Pages/allAvailableInputSourceIDs.html">allAvailableInputSourceIDs</a></code></p>
+<p><code><a href="Pages/currentKeyboardInputSourceID.html">currentKeyboardInputSourceID</a></code></p>
+<p><code><a href="Pages/currentKeyboardLayoutInputSourceID.html">currentKeyboardLayoutInputSourceID</a></code></p>
+<p><code><a href="Pages/changeInputSourceTo_.html">changeInputSourceTo:</a></code></p>
+<h3>String manipulation methods</h3>
+<p><code><a href="Pages/datesFromStrings_format_.html">datesFromStrings:format:</a></code></p>
+<p><code><a href="Pages/stringsFromDates_format_.html">stringsFromDates:format:</a></code></p>
+<p><code><a href="Pages/arrayFromTSV_.html">arrayFromTSV:</a></code></p>
+<p><code><a href="Pages/arrayFromCSV_commaIs_.html">arrayFromCSV:commaIs:</a></code></p>
+<p><code><a href="Pages/transformedFrom_ICUTransform_inverse_.html">transformedFrom:ICUTransform:inverse:</a></code></p>
+<p><code><a href="Pages/encodedXMLFrom_.html">encodedXMLFrom:</a></code></p>
+<p><code><a href="Pages/unencodedForXMLFrom_.html">unencodedForXMLFrom:</a></code></p>
+<p><code><a href="Pages/encodedDecimalFrom_.html">encodedDecimalFrom:</a></code></p>
+<p><code><a href="Pages/decodedDecimalFrom_.html">decodedDecimalFrom:</a></code></p>
+<p><code><a href="Pages/encodedHexFrom_.html">encodedHexFrom:</a></code></p>
+<p><code><a href="Pages/MD5From_.html">MD5From:</a></code></p>
+<p><code><a href="Pages/smartQuotedFrom_.html">smartQuotedFrom:</a></code></p>
+<p><code><a href="Pages/unsmartQuotedFrom_.html">unsmartQuotedFrom:</a></code></p>
+<p><code><a href="Pages/cleanSpacedFrom_.html">cleanSpacedFrom:</a></code></p>
+<p><code><a href="Pages/emptyLineFreeFrom_.html">emptyLineFreeFrom:</a></code></p>
+<h3>Substring extraction methods</h3>
+<p><code><a href="Pages/charactersOfString_.html">charactersOfString:</a></code></p>
+<p><code><a href="Pages/wordsOfString_.html">wordsOfString:</a></code></p>
+<p><code><a href="Pages/localizedWordsOfString_.html">localizedWordsOfString:</a></code></p>
+<p><code><a href="Pages/sentencesOfString_.html">sentencesOfString:</a></code></p>
+<p><code><a href="Pages/localizedSentencesOfString_.html">localizedSentencesOfString:</a></code></p>
+<p><code><a href="Pages/paragraphsOfString_.html">paragraphsOfString:</a></code></p>
+<p><code><a href="Pages/linesOfString_.html">linesOfString:</a></code></p>
+<p><code><a href="Pages/stringsOfString_inString_options_.html">stringsOfString:inString:options:</a></code></p>
+<p><code><a href="Pages/stringsOfString_inString_options_locale_.html">stringsOfString:inString:options:locale:</a></code></p>
+<h3>Substring range methods</h3>
+<p><code><a href="Pages/rangesOfCharactersOfString_.html">rangesOfCharactersOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfWordsOfString_.html">rangesOfWordsOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfLocalizedWordsOfString_.html">rangesOfLocalizedWordsOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfSentencesOfString_.html">rangesOfSentencesOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfLocalizedSentencesOfString_.html">rangesOfLocalizedSentencesOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfParagraphsOfString_.html">rangesOfParagraphsOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfLinesOfString_.html">rangesOfLinesOfString:</a></code></p>
+<p><code><a href="Pages/rangesOfString_inString_options_.html">rangesOfString:inString:options:</a></code></p>
+<p><code><a href="Pages/rangesOfString_inString_options_locale_.html">rangesOfString:inString:options:locale:</a></code></p>
+<h3>Offset vs Range methods</h3>
+<p><code><a href="Pages/locationOfCharacterAt_inString_.html">locationOfCharacterAt:inString:</a></code></p>
+<p><code><a href="Pages/rangeOfCharacterAt_inString_.html">rangeOfCharacterAt:inString:</a></code></p>
+<p><code><a href="Pages/offsetOfLocation_inString_.html">offsetOfLocation:inString:</a></code></p>
+<p><code><a href="Pages/offsetsOfRange_inString_.html">offsetsOfRange:inString:</a></code></p>
+<h3>Substring counting methods</h3>
+<p><code><a href="Pages/characterCountOfString_.html">characterCountOfString:</a></code></p>
+<p><code><a href="Pages/wordCountOfString_.html">wordCountOfString:</a></code></p>
+<p><code><a href="Pages/localizedWordCountOfString_.html">localizedWordCountOfString:</a></code></p>
+<p><code><a href="Pages/sentenceCountOfString_.html">sentenceCountOfString:</a></code></p>
+<p><code><a href="Pages/localizedSentenceCountOfString_.html">localizedSentenceCountOfString:</a></code></p>
+<p><code><a href="Pages/paragraphCountOfString_.html">paragraphCountOfString:</a></code></p>
+<p><code><a href="Pages/lineCountOfString_.html">lineCountOfString:</a></code></p>
+<h3>Trigonometry methods</h3>
+<p><code><a href="Pages/tanValueOf_.html">tanValueOf:</a></code></p>
+<p><code><a href="Pages/sinValueOf_.html">sinValueOf:</a></code></p>
+<p><code><a href="Pages/cosValueOf_.html">cosValueOf:</a></code></p>
+<p><code><a href="Pages/atanValueOf_.html">atanValueOf:</a></code></p>
+<p><code><a href="Pages/asinValueOf_.html">asinValueOf:</a></code></p>
+<p><code><a href="Pages/acosValueOf_.html">acosValueOf:</a></code></p>
+<p><code><a href="Pages/tanhValueOf_.html">tanhValueOf:</a></code></p>
+<p><code><a href="Pages/sinhValueOf_.html">sinhValueOf:</a></code></p>
+<p><code><a href="Pages/coshValueOf_.html">coshValueOf:</a></code></p>
+<p><code><a href="Pages/atanhValueOf_.html">atanhValueOf:</a></code></p>
+<p><code><a href="Pages/asinhValueOf_.html">asinhValueOf:</a></code></p>
+<p><code><a href="Pages/acoshValueOf_.html">acoshValueOf:</a></code></p>
+<p><code><a href="Pages/logValueOf_.html">logValueOf:</a></code></p>
+<p><code><a href="Pages/log10ValueOf_.html">log10ValueOf:</a></code></p>
+<h3>AppleScript to Cocoa conversion methods</h3>
+<p><code><a href="Pages/CocoaifyFrom_.html">CocoaifyFrom:</a></code></p>
+<p><code><a href="Pages/CocoaifyFrom_forTypes_.html">CocoaifyFrom:forTypes:</a></code></p>
+<h3>Cocoa to AppleScript conversion methods</h3>
+<p><code><a href="Pages/ASifyFrom_.html">ASifyFrom:</a></code></p>
+<p><code><a href="Pages/ASifyInListFrom_.html">ASifyInListFrom:</a></code></p>
+<p><code><a href="Pages/ASifyFrom_forTypes_.html">ASifyFrom:forTypes:</a></code></p>
+<p><code><a href="Pages/ASifyInListFrom_forTypes_.html">ASifyInListFrom:forTypes:</a></code></p>
+<h3>Specialist conversion methods</h3>
+<p><code><a href="Pages/URLFrom_.html">URLFrom:</a></code></p>
+<p><code><a href="Pages/URLsFrom_.html">URLsFrom:</a></code></p>
+<p><code><a href="Pages/fileFromURL_.html">fileFromURL:</a></code></p>
+<p><code><a href="Pages/HFSPathFromURL_.html">HFSPathFromURL:</a></code></p>
+<p><code><a href="Pages/HFSPathFromURL_colonForPackages_.html">HFSPathFromURL:colonForPackages:</a></code></p>
+
+</body>
+</html>

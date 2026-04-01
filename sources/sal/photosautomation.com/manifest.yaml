@@ -1,0 +1,36 @@
+site:
+  slug: photosautomation
+  domain: photosautomation.com
+  owner: Sal Soghoian
+  role: Photos automation reference
+  status: captured-partial
+capture:
+  first_planned_at: '2026-04-01'
+  captured_at: '2026-04-01T13:56:45Z'
+  method: direct-wayback-snapshot:http-20240721
+  mirrored_by: merlib-mirror
+  mirror_root: sources/sal/photosautomation.com/mirror
+  asset_root: sources/sal/photosautomation.com/assets
+origin:
+  home: http://photosautomation.com/
+  capture_blocker: Live shell resolution failed; CDX-based Wayback crawl underperformed.
+  snapshot_url: http://web.archive.org/web/20240721142125/http://photosautomation.com/
+content:
+  priorities:
+  - Photos AppleScript examples
+  - Teaching material authored by the app's scripting architect
+  - Referenced downloads and images
+  expected_formats:
+  - html
+  - scpt
+  - txt
+  - images
+extraction:
+  scripts_target: scripts/sal/photosautomation
+  notes_target: analysis/sal/page-notes
+  concept_target: analysis/sal/concept-notes
+  status: mirrored-partial
+  asset_count: 0
+licensing:
+  status: unknown
+  notes: Track source page for each extracted script example. Direct snapshot crawl captured core section pages, stylesheet, and banner image under mirror/wayback-20240721.

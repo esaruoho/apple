@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Pano to Preso</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for themes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Pano to Preso</div>
+		
+			<p>Some things are just &ldquo;too big&rdquo; to capture in a single image: Alaska, the Grand Canyon, the Aurora Borealis, Space, those kind of things. But that doesn&rsquo;t stop us from trying to convey what it was like to &ldquo;be there.&rdquo; That&rsquo;s why we came up with the <i>pano</i> (short for panoramic image), whose width mimics more of what we can see with our own eyes.</p> 
+			
+			<p>But unless you&rsquo;ve got a special circular projection system, and a really large curved screen, replicating the panoramic view is very difficult. Especially in a slide presentation. But again, that doesn&rsquo;t stop us from trying.</p>
+			
+			<p>Here&rsquo;s an interesting use of Keynote automation that incorporates a very wide image, like the one shown below:</p>
+			
+			<img class="centered" width="624" alt="pano-preso" src="gfx/PIA17766_ip1248.jpg">
+			
+			<p class="imagecaption" style="margin-top:-8px;">NASA Jet Propulsion Laboratory, Space Images: Curiosity Mars Rover Approaches &ldquo;Dingo Gap,&rdquo; Mastcam View. (<a href="http://www.jpl.nasa.gov/spaceimages/details.php?id=PIA17766" target="_blank" style="color:white;">webpage here</a>) (<a href="http://www.jpl.nasa.gov/spaceimages/images/mediumsize/PIA17766_ip.jpg" target="_blank" style="color:white;">image here</a>)</p>
+			
+			<p>into a widescreen presentation, like this: (Click Movie to Play)</p>
+			
+			<video id="sampleMovie" width="624" height="390" controls poster="gfx/JPL-NASA-Martian-PANO-Preso.001.jpg" onclick="this.play();">
+				<source src="JPL-NASA-Martian-PANO-Preso.m4v" />
+			</video>
+			
+			
+			<p>The addition of a pano image to a presentation is labor-intensive, as you  need to:</p>
+			
+			<ul>
+				<li>Import the pano image to a new slide.</li>
+				
+				<li>Duplicate the slide three times.</li>
+				
+				<li>Scale the image in the second slide to fit the height of the slide and then position the image so that its left side is flush with the left side of the slide.</li>
+				
+				<li>Scale the image in the third slide to fit the height of the slide and then position the image so that its right side is flush with the right side of the slide.</li>
+				
+				<li>Apply the Magic Move transition to the first three slides, and adjust their transition delay value.</li>
+			
+			</ul>
+			
+			<p>A very detailed process indeed, and one that&rsquo;s ideal for automating.</p>
+			
+			<img class="across" width="640" alt="finished-slide" src="gfx/pano-preso.png">
+			<p class="imagecaption" style="margin-top:-8px;"><span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> A widescreen presentation designed to display, zoom, and scan, a panoramic image.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="PIA17766_ip.zip">DOWNLOAD</a> example image. <a href="JPL-NASA-Martian-PANO-Preso.zip">DOWNLOAD</a> finished presentation.</p>
+			
+			<p>This script is designed to quickly create a presentation for a panoramic image:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Pano to Preso</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Pano%20to%20Preso&script=property%20transitionInOutDuration%20%3A%203%0Dproperty%20transitionPanDuration%20%3A%2010%0Dproperty%20transitionInOutDelay%20%3A%202%0D%0Dtell%20application%20%22Keynote%22%0D%09if%20playing%20is%20true%20then%20tell%20the%20front%20document%20to%20stop%0D%09activate%0D%09%0D%09set%20the%20sourcePanoImage%20to%20%C2%AC%0D%09%09(choose%20file%20of%20type%20%22public.image%22%20with%20prompt%20%C2%AC%0D%09%09%09%22Pick%20the%20panoramic%20image%20to%20place%20across%20two%20slides%3A%22)%0D%09%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3A1920%2C%20height%3A1080%7D%0D%09%0D%09tell%20thisDocument%0D%09%09--%20get%20dimensions%20of%20the%20current%20document%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09set%20documentWidth%20to%20its%20width%0D%09%09%0D%09%09--%20set%20the%20master%20slide%20of%20the%20first%20slide%0D%09%09set%20the%20base%20slide%20of%20slide%201%20to%20master%20slide%20%22Blank%22%0D%09%09%0D%09%09tell%20slide%201%0D%09%09%09--%20set%20transition%20to%20Magic%20Move%0D%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%7Btransition%20effect%3Amagic%20move%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20duration%3AtransitionInOutDuration%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20delay%3AtransitionInOutDelay%20%C2%AC%0D%09%09%09%09%09%2C%20automatic%20transition%3Atrue%7D%0D%09%09%09--%20import%20the%20pano%20image%0D%09%09%09set%20thisImage%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AsourcePanoImage%7D%0D%09%09end%20tell%0D%09%09%0D%09%09--%20create%20a%20second%20slide%0D%09%09set%20secondSlide%20to%20%C2%AC%0D%09%09%09make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Blank%22%7D%0D%09%09tell%20secondSlide%0D%09%09%09--%20set%20transition%20to%20Magic%20Move%0D%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%7Btransition%20effect%3Amagic%20move%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20duration%3AtransitionPanDuration%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20delay%3A0%20%C2%AC%0D%09%09%09%09%09%2C%20automatic%20transition%3Atrue%7D%0D%09%09%09--%20import%20the%20pano%20image%0D%09%09%09set%20thisImage%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AsourcePanoImage%7D%0D%09%09%09--%20scale%20the%20image%20to%20match%20slide%20height%20and%20position%20so%20the%20left%20side%20of%20the%20image%20aligns%20with%20the%20left%20side%20of%20the%20slide%0D%09%09%09tell%20thisImage%0D%09%09%09%09set%20height%20to%20documentHeight%0D%09%09%09%09set%20position%20to%20%7B0%2C%200%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20create%20a%20third%20slide%0D%09%09set%20thirdSlide%20to%20%C2%AC%0D%09%09%09make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Blank%22%7D%0D%09%09tell%20thirdSlide%0D%09%09%09--%20set%20transition%20to%20Magic%20Move%0D%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%7Btransition%20effect%3Amagic%20move%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20duration%3AtransitionInOutDuration%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20delay%3AtransitionInOutDelay%20%C2%AC%0D%09%09%09%09%09%2C%20automatic%20transition%3Atrue%7D%0D%09%09%09--%20import%20the%20pano%20image%0D%09%09%09set%20thisImage%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AsourcePanoImage%7D%0D%09%09%09--%20scale%20the%20image%20to%20match%20slide%20height%20and%20position%20so%20the%20right%20side%20of%20the%20image%20aligns%20with%20the%20right%20side%20of%20the%20slide%0D%09%09%09tell%20thisImage%0D%09%09%09%09set%20height%20to%20documentHeight%0D%09%09%09%09set%20imageWidth%20to%20its%20width%0D%09%09%09%09set%20position%20to%20%7BdocumentWidth%20-%20imageWidth%2C%200%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20create%20a%20fourth%20slide%0D%09%09set%20fourthSlide%20to%20%C2%AC%0D%09%09%09make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Blank%22%7D%0D%09%09tell%20fourthSlide%0D%09%09%09--%20import%20the%20pano%20image%0D%09%09%09set%20thisImage%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AsourcePanoImage%7D%0D%09%09end%20tell%0D%09%09%0D%09end%20tell%0D%09%0D%09start%20thisDocument%20from%20first%20slide%20of%20thisDocument%0D%09%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">transitionInOutDuration</span> : 3</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">transitionPanDuration</span> : 10</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">transitionInOutDelay</span> : 2</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then tell the front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourcePanoImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand"><span class="codelibrarycommand"><span class="codelibrarycommand">choose file</span></span></span> <span class="codelibraryparameter">of type</span> &quot;public.image&quot; <span class="codelibraryparameter">with prompt</span>  &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>&quot;Pick the panoramic image to place across two slides:&quot;)</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;, <span class="codeproperty">width</span>:1920, <span class="codeproperty">height</span>:1080}</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the current document</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- set the master slide of the first slide</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>of</b> <span class="codelibraryclass">slide</span> 1 <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Blank&quot;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set transition to Magic Move</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">magic move</span> &not;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">transitionInOutDuration</span> &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:<span class="codevariable">transitionInOutDelay</span> &not;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- import the pano image</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">sourcePanoImage</span>}</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- create a second slide</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">secondSlide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">secondSlide</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set transition to Magic Move</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:magic move &not;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">transitionPanDuration</span> &not;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:0 &not;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- import the pano image</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">sourcePanoImage</span>}</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- scale the image to match slide height and position so the left side of the image aligns with the left side of the slide</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">height</span> <b>to</b> <span class="codevariable">documentHeight</span></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {0, 0}</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- create a third slide</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thirdSlide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thirdSlide</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set transition to Magic Move</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:magic move &not;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">transitionInOutDuration</span> &not;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:<span class="codevariable">transitionInOutDelay</span> &not;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- import the pano image</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">sourcePanoImage</span>}</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- scale the image to match slide height and position so the right side of the image aligns with the right side of the slide</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">height</span> <b>to</b> <span class="codevariable">documentHeight</span></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">imageWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">documentWidth</span> - <span class="codevariable">imageWidth</span>, 0}</td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- create a fourth slide</span></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">fourthSlide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">fourthSlide</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- import the pano image</span></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">sourcePanoImage</span>}</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>Here&rsquo;s another example: a beautiful panoramic image of Tromsø Norway.<br>(Click Movie to Play) (<a href="http://commons.wikimedia.org/wiki/File:Panorama_fjellheisen-improved.jpg" target="_blank">webpage here</a>)</p>
+		
+			<video id="sampleMovie2" width="624" height="390" controls poster="gfx/Tromsø-Norway.001.jpg" onclick="this.play();">
+				<source src="Tromsø-Norway.m4v" />
+			</video>
+			
+			<p>One last example: a panoramic presentation of the history of United States debt.<br>(Click Movie to Play) (<a href="http://www.treasurydirect.gov/govt/reports/pd/histdebt/histdebt.htm" target="_blank">webpage here</a>)</p>
+		
+			<video id="sampleMovie3" width="624" height="390" controls poster="gfx/USDebtPreso.001.jpg" onclick="this.play();">
+				<source src="History-of-US-Debt.m4v" />
+			</video>
+				
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-movie-export-droplet.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-outline.html">New Presentation from Outline</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-image-files.html">New Presentation from Image Files</a></li>
+				<li class="navListSectionItemSelected">Pano to Preso</li>
+				<li class="navListSectionItem"><a href="examples-movie-export-droplet.html">Movie Export Droplet</a></li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItem"><a href="examples-music-helper.html">Music Helper Applet</a></li>
+				<li class="navListSectionItem"><a href="examples-translation-helper-scripts.html">Translation Helper Scripts</a></li>
+				<li class="navListSectionItemSelected"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

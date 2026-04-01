@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Notification Auto-Approval Applet</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Folder Actions are a powerful feature of macOS that enable automated processing of items placed into &ldquo;attached folders&rdquo; in the Finder.">
+	<meta name="keywords" content="automation, macOS, Automator, Folder Actions, AppleScript, JavaScript">
+	<meta name="author" content="Sal Soghoian, ©2018 Nyhthawk Productions">
+  	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav-active.png">
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Notification Auto-Approval Applet</p>
+			
+			<p>In macOS, for the sake of security and by design, there are no mechanisms to have <b>Notification Center</b> alerts automatically approved or dismissed.</p>
+			
+			<p>However, as this folder action example of an autonomous AirDrop image repository demonstrates, there may be times when you intentionally want the computer automatically approve incoming AirDrop downloads.</p>
+		
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="folder-action" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/video-poster.jpg">
+				  <source src="folder-action-3360.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('folder-action').play();">PLAY</button>
+				<button onclick="document.getElementById('folder-action').pause();">PAUSE</button>
+				<button onclick="document.getElementById('folder-action').currentTime=(document.getElementById('folder-action').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('folder-action').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>The AppleScript applet provided on this page can perform the task of automatically approving downloads from AirDrop notification alerts.</p>
+			
+			<p>IMPORTANT: This applet is designed to work with macOS Mojave (v10.14) or higher. It will not work with earlier versions of macOS.</p>
+			
+			<p><a href="notification-approval-applet.zip">DOWNLOAD</a> the completed notification approval applet. (macOS Mojave required)</p>
+			
+			<div id="notification-approval-applet" class="script-content">use framework "Foundation"
+use scripting additions
+
+property alertTitles : {"AirDrop"}
+property closeButtonTitles : {"OK", "Decline", "Close"}
+property approveButtonTitles : {"Accept"}
+property actionMenuItem : "Save to Downloads"
+
+global monitorSound, denySound, approveSound, alertSound
+
+on run
+	set monitorSound to current application's NSSound's soundNamed:"Bottle"
+	set alertSound to current application's NSSound's soundNamed:"Morse"
+	set denySound to current application's NSSound's soundNamed:"Frog"
+	set approveSound to current application's NSSound's soundNamed:"Glass"
+end run
+
+on idle
+	try
+		tell application "System Events"
+			tell process "NotificationCenter"
+				monitorSound's play()
+				repeat with i from 1 to the count of windows
+					set aWindow to item i of windows
+					if subrole of aWindow is "AXNotificationCenterAlert" then
+						set alertTitle to value of static text of aWindow
+						-- alertSound's play()
+						if alertTitle is in alertTitles then
+							set alertOptions to every menu button of aWindow
+							if (count of alertOptions) is not 0 then
+								repeat with q from 1 to the count of alertOptions
+									set aButton to item q of alertOptions
+									set aButtonTitle to title of aButton
+									if aButtonTitle is in approveButtonTitles then
+										click aButton
+										tell menu 1 of aButton
+											click menu item actionMenuItem
+										end tell
+										approveSound's play()
+										exit repeat
+									end if
+								end repeat
+							end if
+						end if
+					end if
+				end repeat
+			end tell
+		end tell
+	on error errorMessage
+		activate
+		display dialog errorMessage buttons {"OK"} default button 1
+		tell me to quit
+	end try
+	return 3
+end idle</div>
+
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Notification Auto-Approval Applet</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('notification-approval-applet');">Copy Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">use</span> <span class="classEnum">framework</span> <span class="stringEnum">&quot;Foundation&quot;</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">use</span> <span class="classEnum">scripting additions</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">property</span> <span class="variableEnum">alertTitles</span> : {<span class="stringEnum">&quot;AirDrop&quot;</span>}</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">property</span> <span class="variableEnum">closeButtonTitles</span> : {<span class="stringEnum">&quot;OK&quot;</span>, <span class="stringEnum">&quot;Decline&quot;</span>, <span class="stringEnum">&quot;Close&quot;</span>}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">property</span> <span class="variableEnum">approveButtonTitles</span> : {<span class="stringEnum">&quot;Accept&quot;</span>}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">property</span> <span class="variableEnum">actionMenuItem</span> : <span class="stringEnum">&quot;Save to Downloads&quot;</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">global</span> <span class="variableEnum">monitorSound</span>, <span class="variableEnum">denySound</span>, <span class="variableEnum">approveSound</span>, <span class="variableEnum">alertSound</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">on <span class="functionNameEnum">run</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">monitorSound</span> to <span class="classEnum">current application</span>&#39;s <span class="valueEnum">NSSound</span>&#39;s <span class="methodEnum">soundNamed</span>:<span class="stringEnum">&quot;Bottle&quot;</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">alertSound</span> to <span class="classEnum">current application</span>&#39;s <span class="valueEnum">NSSound</span>&#39;s <span class="methodEnum">soundNamed</span>:<span class="stringEnum">&quot;Morse&quot;</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">denySound</span> to <span class="classEnum">current application</span>&#39;s <span class="valueEnum">NSSound</span>&#39;s <span class="methodEnum">soundNamed</span>:<span class="stringEnum">&quot;Frog&quot;</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">approveSound</span> to <span class="classEnum">current application</span>&#39;s <span class="valueEnum">NSSound</span>&#39;s <span class="methodEnum">soundNamed</span>:<span class="stringEnum">&quot;Glass&quot;</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="functionNameEnum">run</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">on <span class="functionNameEnum">idle</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">try</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="classEnum">application</span> <span class="stringEnum">&quot;System Events&quot;</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="classEnum">process</span> <span class="stringEnum">&quot;NotificationCenter&quot;</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="variableEnum">monitorSound</span>&#39;s <span class="methodEnum">play</span>()</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><b>repeat</b> <span class="parameterEnum">with</span> i <span class="parameterEnum">from</span> 1 <span class="parameterEnum">to</span> the <span class="propertyEnum">count</span> of <span class="classEnum">windows</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aWindow</span> to <span class="classEnum">item</span> i of <span class="classEnum">windows</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="ifEnum">if</span> <span class="propertyEnum">subrole</span> of <span class="variableEnum">aWindow</span> is <span class="stringEnum">&quot;AXNotificationCenterAlert&quot;</span> then</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">alertTitle</span> to <span class="propertyEnum">value</span> of <span class="classEnum">static text</span> of <span class="variableEnum">aWindow</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="js-comment">-- alertSound&#39;s play()</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="ifEnum">if</span> <span class="variableEnum">alertTitle</span> is in <span class="variableEnum">alertTitles</span> then</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:140px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">alertOptions</span> to every <span class="classEnum">menu button</span> of <span class="variableEnum">aWindow</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:140px;">&nbsp;</span><span class="ifEnum">if</span> (<span class="propertyEnum">count</span> of <span class="variableEnum">alertOptions</span>) is not 0 then</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:160px;">&nbsp;</span><b>repeat</b> <span class="parameterEnum">with</span> q <span class="parameterEnum">from</span> 1 <span class="parameterEnum">to</span> the <span class="propertyEnum">count</span> of <span class="variableEnum">alertOptions</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:180px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aButton</span> to <span class="classEnum">item</span> q of <span class="variableEnum">alertOptions</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:180px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aButtonTitle</span> to <span class="propertyEnum">title</span> of <span class="variableEnum">aButton</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:180px;">&nbsp;</span><span class="ifEnum">if</span> <span class="variableEnum">aButtonTitle</span> is in <span class="variableEnum">approveButtonTitles</span> then</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:200px;">&nbsp;</span><span class="methodEnum">click</span> <span class="variableEnum">aButton</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:200px;">&nbsp;</span><b>tell</b> <span class="classEnum">menu</span> 1 of <span class="variableEnum">aButton</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:220px;">&nbsp;</span><span class="methodEnum">click</span> <span class="classEnum">menu item</span> <span class="variableEnum">actionMenuItem</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:200px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:200px;">&nbsp;</span><span class="variableEnum">approveSound</span>&#39;s <span class="methodEnum">play</span>()</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:200px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:180px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:160px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:140px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">on error</span> <span class="functionParamterEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">activate</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">display dialog</span> <span class="functionParamterEnum">errorMessage</span> <span class="parameterEnum">buttons</span> {<span class="stringEnum">&quot;OK&quot;</span>} <span class="parameterEnum">default button</span> 1</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>tell me to <span class="methodEnum">quit</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">end try</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="returnEnum">return</span> 3</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="functionNameEnum">idle</span></td></tr>
+			</table>
+
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;01-02&nbsp;</span>&nbsp;AppleScriptObjective-C &ldquo;use statements&rdquo; function as import declarations for accessing the macOS Cocoa Foundation frameworks and the default AppleScript scripting additions. In this applet, the NSSound classes from Foundation are used to play system sounds.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;04-07&nbsp;</span>&nbsp;Properties whose values are the strings used by the targeted notification dialogs. You can edit these values for other languages.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;09&nbsp;</span>&nbsp;Global variable declarations indicate the variables available throughout the entire script. Note that properties are global in nature and do not need to identified as global.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;11-16&nbsp;</span>&nbsp;The script’s main <b>run</b> handler, executed when the applet starts up, instantiates values for the global variables, which in this case are system alert sound objects accessed using the NSSound Foundation class <span class="methodEnum">soundNamed</span>:<span class="valueEnum">nameString</span> method.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;18-55&nbsp;</span>&nbsp;An <b>idle</b> handler that is executed periodically by the applet that was saved as an application with the &ldquo;Stay open after run handler&rdquo; option selected.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;20-40&nbsp;</span>&nbsp;This script addresses the built-in <b>System Events</b> application to query and control the notification windows of the macOS <b>NotificationCenter</b> application. It checks the notification title to see if it indicates an AirDrop action, and if it does, checks the notification alert to see if it displays and options popup menu. If there is an alert options menu, then the script will select the option to save the AirDrop item to the downloads folder. If the notification alert does not offer the option to download, it is ignored by the idle handler.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;54&nbsp;</span>&nbsp;A value in seconds indicating the amount of time between executions of the idle handler. By default, the idle time is set to 3-seconds. Adjust as you wish.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Saving the Applet</p>
+			
+			<p>To create the Notification Approval applet, paste the provided script code into a new script window in the macOS <b>Script Editor</b> application (or the excellent <a href="https://latenightsw.com" target="_target">Script Debugger</a> editor app). Make whatever edits you wish, and then choose type Command-S (&#8984;S) or choose &ldquo;Save&hellip;&rdquo; from the <b>File</b> menu.</p>
+		
+			<img width="100%" alt="applet-save-dialog" src="gfx/applet-save-dialog.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Save</b> sheet displayed over the script document window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;Save the script as an applet by selecting &ldquo;Application&rdquo; from &ldquo;File Format&rdquo; popup menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Since this example script contains an idle handler, select the option &ldquo;Stay open after the run handler&rdquo; which will enable the applet to remain open and active instead of running and stopping as with a standard applet or script.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The save destination can be wherever you like. We suggest creating an &ldquo;Applications&rdquo; folder in your <b>Home</b> directory as a secondary application repository to the top-level &ldquo;Applications&rdquo; folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Enter a name for the applet.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;Click the <b>Save</b> button to save the script as an application in the specified directory.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Automation Security</p>
+			
+			<p>Beginning with macOS Mojave (v10.14) script applications (applets/droplets) require explicit user approval to send Apple Events to other applications. This approval only is required once during the first running of the applet.</p>
+			
+			<img width="532" style="display:block;margin-left:auto;margin-right:auto;" alt="applet-security-dialog-events" src="gfx/applet-security-dialog-events.png">
+			
+			<p>Once approved, the applet will be added to the Automation access list in the Privacy &amp; Security system preference pane (see <a href="../security.html">Automation Security</a> for more information):</p>
+			
+			<img width="100%" alt="automation-access-list" src="gfx/automation-access-list.png">
+		
+			<p>Also, since the applet script uses the <b>Accessibility</b> frameworks to query and control the UI of the <b>NotificationCenter</b> application, it will require a second one-time security approval for that as well:</p>
+			
+			<img width="529" style="display:block;margin-left:auto;margin-right:auto;" alt="accessibility-access-dialog" src="gfx/accessibility-access-dialog.png">
+		
+			<p>The &ldquo;Accessibility Access List&rdquo; controls are available in the <b>Accessibility</b> category of the <b>Privacy</b> tab of the <b>Security &amp; Privacy</b> system preference pane (see <a href="../accessibility.html">Assistive Access</a> for more information):</p>
+			
+			<img width="100%" alt="accessibility-access-list" src="gfx/accessibility-access-list.png">
+			
+			<p class="subhead" role="heading" aria-level="2">Stopping the Applet</p>
+			
+			<p>When you are ready to stop the applet, simply make it the frontmost application and type Command-Q (&#8984;Q) or choose <b>Quit</b> from the applet’s File menu.</p>
+		
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <p class="sub-topic"><a href="index.html">Folder Actions</a></p>
+			  <p class="active-sub-sub-topic">Auto-Approval Applet</p>
+			  <p class="sub-sub-topic"><a href="folder-actions-setup.html">Folder Actions Setup</a></p>
+			  <!-- <p class="sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

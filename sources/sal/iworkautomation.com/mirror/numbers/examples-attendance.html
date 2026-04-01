@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Attendance Table for Contacts Group</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Attendance Table for Contacts Group</div>
+											
+			<p>This script is designed for teachers, or others, who require the keeping of an attendance record for a group of people, listed in the user&rsquo;s Contacts application.</p>
+			
+			<p>It provides examples of these techniques:</p>
+			
+			<ul>
+				<li>Construction of a new table (95-96)</li>
+				<li>The import of data from another application (19-59)</li>
+				<li>The use of assigned data formats for cells (132)</li>
+				<li>The use of contextual formulas (144)</li>
+				<li>The use of the sort command (150)</li>
+			</ul>
+			
+			<p>Here&rsquo;s the script:</p>
+
+															
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create an Attendance Table for a Chosen Contact Group</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=try%0D%09tell%20application%20id%20%22com.apple.iWork.Numbers%22%0D%09%09activate%0D%09%09%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%201000%0D%09%09%0D%09%09display%20dialog%20%22This%20script%20will%20create%20a%20new%20table%20for%20tracking%20%22%20%26%20%C2%AC%0D%09%09%09%22the%20attendance%20of%20the%20people%20in%20a%20chosen%20Contacts%20group.%22%20%26%20%C2%AC%0D%09%09%09return%20%26%20return%20%26%20%C2%AC%0D%09%09%09%22Should%20the%20table%20include%20Saturdays%20and%20Sundays%3F%22%20buttons%20%C2%AC%0D%09%09%09%7B%22Cancel%22%2C%20%22Omit%20Weekends%22%2C%20%22Include%20Weekends%22%7D%20default%20button%203%0D%09%09if%20the%20button%20returned%20of%20the%20result%20is%20%22Include%20Weekends%22%20then%0D%09%09%09set%20includeWeekends%20to%20true%0D%09%09else%0D%09%09%09set%20includeWeekends%20to%20false%0D%09%09end%20if%0D%09end%20tell%0D%09%0D%09--%20launch%20Contacts%20if%20not%20open%0D%09if%20application%20id%20%22com.apple.AddressBook%22%20is%20not%20running%20then%0D%09%09set%20AddressBookWasOpen%20to%20false%0D%09%09tell%20application%20id%20%22com.apple.AddressBook%22%20to%20launch%0D%09else%0D%09%09set%20AddressBookWasOpen%20to%20true%0D%09end%20if%0D%09%0D%09--%20get%20the%20name%20of%20every%20group%0D%09tell%20application%20id%20%22com.apple.AddressBook%22%0D%09%09set%20the%20AddressBookGroupNames%20to%20the%20name%20of%20every%20group%0D%09end%20tell%0D%09if%20the%20AddressBookGroupNames%20is%20%7B%7D%20then%20error%20number%201001%0D%09%0D%09--%20prompt%20user%20to%20pick%20group%0D%09tell%20application%20id%20%22com.apple.iWork.Numbers%22%0D%09%09activate%0D%09%09set%20the%20chosenGroup%20to%20%C2%AC%0D%09%09%09(choose%20from%20list%20the%20AddressBookGroupNames%20%C2%AC%0D%09%09%09%09with%20prompt%20%22Pick%20the%20Contacts%20group%20to%20be%20used%20for%20the%20table%3A%22)%0D%09%09if%20the%20chosenGroup%20is%20false%20then%20error%20number%20-128%0D%09%09set%20the%20chosenGroup%20to%20the%20chosenGroup%20as%20string%0D%09end%20tell%0D%09%0D%09--%20extract%20the%20full%20names%20of%20the%20group's%20people%0D%09tell%20application%20id%20%22com.apple.AddressBook%22%0D%09%09set%20thesePeople%20to%20every%20person%20of%20group%20chosenGroup%0D%09%09if%20thesePeople%20is%20%7B%7D%20then%20error%20number%201002%0D%09%09set%20the%20fullNames%20to%20%7B%7D%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thesePeople%0D%09%09%09set%20thisPerson%20to%20item%20i%20of%20thesePeople%0D%09%09%09set%20the%20end%20of%20the%20fullNames%20to%20%C2%AC%0D%09%09%09%09(last%20name%20of%20thisPerson)%20%26%20%22%2C%20%22%20%26%20(first%20name%20of%20thisPerson)%0D%09%09end%20repeat%0D%09%09set%20the%20peopleCount%20to%20the%20count%20of%20the%20fullNames%0D%09end%20tell%0D%09%0D%09--%20close%20Contacts%20if%20it%20wasn%E2%80%99t%20previously%20open%0D%09if%20AddressBookWasOpen%20is%20false%20then%0D%09%09tell%20application%20id%20%22com.apple.AddressBook%22%20to%20quit%0D%09end%20if%0D%09%0D%09--%20generate%20the%20column%20titles%0D%09set%20tempDate%20to%20the%20current%20date%0D%09set%20the%20columnTitles%20to%20%7B%7D%0D%09set%20day%20of%20tempDate%20to%201%0D%09set%20thisMonth%20to%20the%20month%20of%20tempDate%0D%09repeat%20until%20month%20of%20tempDate%20is%20not%20thisMonth%0D%09%09set%20thisDay%20to%20day%20of%20tempDate%0D%09%09set%20thisWeekday%20to%20the%20(weekday%20of%20tempDate)%20as%20string%0D%09%09if%20includeWeekends%20is%20true%20or%20(includeWeekends%20is%20false%20and%20%C2%AC%0D%09%09%09thisWeekday%20is%20not%20in%20%7B%22Saturday%22%2C%20%22Sunday%22%7D)%20then%0D%09%09%09set%20the%20dayTitle%20to%20%C2%AC%0D%09%09%09%09(thisDay%20%26%20%22-%22%20%26%20(text%201%20thru%201%20of%20thisWeekday))%20as%20string%0D%09%09%09set%20the%20end%20of%20the%20columnTitles%20to%20the%20dayTitle%0D%09%09end%20if%0D%09%09set%20tempDate%20to%20tempDate%20%2B%20(1%20*%20days)%0D%09end%20repeat%0D%09%0D%09set%20the%20dayCount%20to%20the%20count%20of%20the%20columnTitles%0D%09%0D%09set%20the%20tableName%20to%20chosenGroup%20%26%20space%20%26%20%C2%AC%0D%09%09(text%201%20thru%203%20of%20(thisMonth%20as%20string)%20%26%20%C2%AC%0D%09%09%09%22-%22%20%26%20year%20of%20(the%20current%20date))%20as%20string%0D%09set%20tableName%20to%20my%20incrementTableNameIfNeeded(tableName%2C%20%22-%22)%0D%09%0D%09tell%20application%20id%20%22com.apple.iWork.Numbers%22%0D%09%09activate%0D%09%09%0D%09%09tell%20document%201%0D%09%09%09tell%20the%20active%20sheet%0D%09%09%09%09%0D%09%09%09%09--%20make%20and%20populate%20the%20table%0D%09%09%09%09--%20include%20extra%20column%20for%20total%20of%20missed%20days%0D%09%09%09%09set%20thisTable%20to%20make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bcolumn%20count%3AdayCount%20%2B%202%2C%20row%20count%3ApeopleCount%20%2B%201%2C%20name%3AtableName%7D%0D%09%09%09%09%0D%09%09%09%09tell%20thisTable%0D%09%09%09%09%09--%20set%20any%20global%20cell%20properties%0D%09%09%09%09%09set%20the%20height%20of%20every%20row%20to%2024%0D%09%09%09%09%09set%20the%20vertical%20alignment%20of%20every%20row%20to%20center%0D%09%09%09%09%09set%20the%20alignment%20of%20every%20row%20to%20center%0D%09%09%09%09%09--%20insert%20data%0D%09%09%09%09%09tell%20row%201%0D%09%09%09%09%09%09--%20set%20specific%20properties%20for%20the%20title%20row%0D%09%09%09%09%09%09set%20the%20vertical%20alignment%20to%20center%0D%09%09%09%09%09%09set%20the%20alignment%20to%20center%0D%09%09%09%09%09%09--%20insert%20column%20titles%0D%09%09%09%09%09%09repeat%20with%20i%20from%202%20to%20dayCount%20%2B%201%0D%09%09%09%09%09%09%09set%20value%20of%20cell%20i%20to%20item%20(i%20-%201)%20of%20the%20columnTitles%0D%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09tell%20column%201%0D%09%09%09%09%09%09--%20set%20specific%20properties%20for%20the%20title%20column%0D%09%09%09%09%09%09set%20the%20vertical%20alignment%20to%20center%0D%09%09%09%09%09%09set%20the%20alignment%20to%20left%0D%09%09%09%09%09%09set%20width%20to%20128%0D%09%09%09%09%09%09--%20insert%20full%20names%0D%09%09%09%09%09%09repeat%20with%20i%20from%202%20to%20peopleCount%20%2B%201%0D%09%09%09%09%09%09%09set%20value%20of%20cell%20i%20to%20item%20(i%20-%201)%20of%20the%20fullNames%0D%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09tell%20columns%202%20thru%20-2%0D%09%09%09%09%09%09set%20width%20to%2036%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09%0D%09%09%09%09%09--%20get%20the%20range%20of%20the%20cells%20to%20set%0D%09%09%09%09%09set%20the%20rangeStart%20to%20the%20name%20of%20cell%202%20of%20column%202%0D%09%09%09%09%09set%20the%20rangeEnd%20to%20the%20name%20of%20last%20cell%20of%20column%20-2%0D%09%09%09%09%09--%20set%20format%20of%20cells%0D%09%09%09%09%09tell%20range%20(rangeStart%20%26%20%22%3A%22%20%26%20rangeEnd)%0D%09%09%09%09%09%09set%20format%20to%20checkbox%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09%0D%09%09%09%09%09--%20Set%20the%20style%20and%20formula%20of%20the%20total%20missed%20days%20column%0D%09%09%09%09%09tell%20last%20column%0D%09%09%09%09%09%09set%20width%20to%2060%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%201%20to%20%22MISSED%22%0D%09%09%09%09%09%09set%20alignment%20to%20center%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09repeat%20with%20i%20from%202%20to%20the%20count%20of%20rows%0D%09%09%09%09%09%09tell%20row%20i%0D%09%09%09%09%09%09%09set%20the%20rangeString%20to%20(name%20of%20cell%202%20%26%20%22%3A%22%20%26%20name%20of%20cell%20-2)%0D%09%09%09%09%09%09%09set%20the%20formulaString%20to%20%22%3DCOUNTIF(%22%20%26%20rangeString%20%26%20%22%2C%20FALSE)%22%0D%09%09%09%09%09%09%09set%20the%20value%20of%20the%20last%20cell%20to%20formulaString%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09%09%0D%09%09%09%09%09--%20sort%20the%20table%20based%20on%20student%20names%0D%09%09%09%09%09sort%20by%20column%201%20direction%20ascending%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09return%20thisTable%0D%09end%20tell%0Don%20error%20errorMessage%20number%20errorNumber%0D%09if%20errorNumber%20is%201000%20then%0D%09%09set%20alertString%20to%20%22MISSING%20NUMBERS%20RESOURCE%22%0D%09%09set%20errorMessage%20to%20%22Please%20create%20or%20open%20a%20document%20before%20running%20this%20script.%22%0D%09else%20if%20errorNumber%20is%201001%20then%0D%09%09set%20alertString%20to%20%22MISSING%20CONTACTS%20RESOURCE%22%0D%09%09set%20errorMessage%20to%20%22There%20are%20no%20groups%20in%20your%20Contacts.%22%0D%09else%20if%20errorNumber%20is%201002%20then%0D%09%09set%20alertString%20to%20%22MISSING%20CONTACTS%20RESOURCE%22%0D%09%09set%20errorMessage%20to%20%22There%20are%20no%20people%20in%20the%20chosen%20Contacts%20group.%22%0D%09else%0D%09%09set%20alertString%20to%20%22EXECUTION%20ERROR%22%0D%09end%20if%0D%09if%20the%20errorNumber%20is%20not%20-128%20then%0D%09%09tell%20application%20id%20%22com.apple.iWork.Numbers%22%0D%09%09%09activate%0D%09%09%09display%20alert%20alertString%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%0D%09%09%09error%20number%20-128%0D%09%09end%20tell%0D%09end%20if%0Dend%20try%0D%0Don%20incrementTableNameIfNeeded(thisTableName%2C%20thisDivider)%0D%09--%20a%20routine%20for%20deriving%20a%20unique%20table%20name%20based%20on%20a%20provided%20table%20name%0D%09tell%20application%20%22Numbers%22%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20the%20active%20sheet%0D%09%09%09%09--%20get%20a%20list%20of%20the%20names%20of%20the%20tables%20on%20the%20active%20sheet%0D%09%09%09%09set%20the%20theseTableNames%20to%20the%20name%20of%20every%20table%0D%09%09%09%09set%20the%20testTableName%20to%20the%20thisTableName%0D%09%09%09%09set%20incrementor%20to%200%0D%09%09%09%09--%20increment%20the%20passed%20name%2C%20if%20needed%0D%09%09%09%09repeat%20until%20testTableName%20is%20not%20in%20theseTableNames%0D%09%09%09%09%09set%20incrementor%20to%20incrementor%20%2B%201%0D%09%09%09%09%09set%20the%20testTableName%20to%20%C2%AC%0D%09%09%09%09%09%09thisTableName%20%26%20thisDivider%20%26%20(incrementor%20as%20string)%0D%09%09%09%09end%20repeat%0D%09%09%09%09--%20return%20the%20non-conflicting%20table%20name%0D%09%09%09%09return%20the%20testTableName%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20incrementTableNameIfNeeded"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>try</b></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.iWork.Numbers&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> 1000</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will create a new table for tracking &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;the attendance of the people in a chosen Contacts group.&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibraryparameter">return</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;Should the table include Saturdays and Sundays?&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Omit Weekends&quot;, &quot;Include Weekends&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codelibraryparameter">button returned</span> <b>of the</b> <span class="codelibraryparameter">result</span> <b>is</b> &quot;Include Weekends&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">includeWeekends</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">includeWeekends</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- launch Contacts if not already open</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.AddressBook&quot; <b>is not</b> <span class="codeenumeration">running</span> <b>then</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">AddressBookWasOpen</span> <b>to</b> false</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.AddressBook&quot; <b>to</b> <span class="codelibrarycommand">launch</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">AddressBookWasOpen</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- get the name of every Contacts group</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.AddressBook&quot;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">AddressBookGroupNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">group</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">AddressBookGroupNames</span> <b>is {} then error</b> <span class="codelibraryparameter">number</span> 1001</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- prompt user to pick group</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.iWork.Numbers&quot;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">chosenGroup</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <b>the</b> <span class="codevariable">AddressBookGroupNames</span> &not;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryparameter">with prompt</span> &quot;Pick the Contacts group to be used for the table:&quot;)</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">chosenGroup</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">chosenGroup</span> <b>to the</b> <span class="codevariable">chosenGroup</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- extract the full names of the group&rsquo;s people</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.AddressBook&quot;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thesePeople</span> <b>to every</b> <span class="codelibraryclass">person</span> <b>of</b> <span class="codelibraryclass">group</span> <span class="codevariable">chosenGroup</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thesePeople</span> <b>is {} then error</b> <span class="codelibraryparameter">number</span> 1002</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">fullNames</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">thesePeople</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPerson</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thesePeople</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">fullNames</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codeproperty">last name</span> <b>of</b> <span class="codevariable">thisPerson</span>) &amp; &quot;, &quot; &amp; (<span class="codeproperty">first name</span> <b>of</b> <span class="codevariable">thisPerson</span>)</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">peopleCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">fullNames</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- close Contacts if it wasn&rsquo;t previously open</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">AddressBookWasOpen</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.AddressBook&quot; <b>to</b> <span class="codelibrarycommand">quit</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- generate the column titles</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">tempDate</span> <b>to the</b> <span class="codelibrarycommand">current date</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">columnTitles</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">day</span> <b>of</b> <span class="codevariable">tempDate</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMonth</span> <b>to the</b> <span class="codelibraryclass">month</span> <b>of</b> <span class="codevariable">tempDate</span></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat until</b> <span class="codelibraryclass">month</span> <b>of</b> <span class="codevariable">tempDate</span> <b>is not</b> <span class="codevariable">thisMonth</span></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDay</span> <b>to</b> <span class="codelibraryclass">day</span> <b>of</b> <span class="codevariable">tempDate</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWeekday</span> <b>to the</b> (<span class="codelibraryclass">weekday</span> <b>of</b> <span class="codevariable">tempDate</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">includeWeekends</span> <b>is</b> <span class="codeenumeration">true</span> <b>or</b> (<span class="codevariable">includeWeekends</span> <b>is</b> <span class="codeenumeration">false</span> <b>and</b> &not;</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">thisWeekday</span> <b>is not in</b> {&quot;Saturday&quot;, &quot;Sunday&quot;}) <b>then</b></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">dayTitle</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codevariable">thisDay</span> &amp; &quot;-&quot; &amp; (<span class="codelibraryclass">text</span> 1 <b>thru</b> 1 <b>of</b> <span class="codevariable">thisWeekday</span>)) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">columnTitles</span> <b>to the</b> <span class="codevariable">dayTitle</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">tempDate</span> <b>to</b> <span class="codevariable">tempDate</span> + (1 * <span class="codelibraryclass">days</span>)</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">dayCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">columnTitles</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableName</span> <b>to</b> <span class="codevariable">chosenGroup</span> &amp; <span class="codelibraryclass">space</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibraryclass">text</span> 1 <b>thru</b> 3 <b>of</b> (<span class="codevariable">thisMonth</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; &not;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;-&quot; &amp; <span class="codelibraryclass">year</span> <b>of (the</b> current date)) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">tableName</span> <b>to my</b> i<span class="codevariable">ncrementtableNameIfNeeded</span>(<span class="codevariable">tableName</span>, &quot;-&quot;)</td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.iWork.Numbers&quot;</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- make and populate the table</span></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- include extra column for total of missed days</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">column count</span>:<span class="codevariable">dayCount</span> + 2, <span class="codeproperty">row count</span>:<span class="codevariable">peopleCount</span> + 1, <span class="codeproperty">name</span>:<span class="codevariable">tableName</span>}</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- set any global cell properties</span></td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">height</span> <b>of every</b> <span class="codelibraryclass">row</span> <b>to</b> 24</td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">vertical alignment</span> <b>of every</b> <span class="codelibraryclass">row</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>of every</b> <span class="codelibraryclass">row</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- insert data</span></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">row</span> 1</td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- set specific properties for the title row</span></td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">vertical alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- insert column titles</span></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 2 <b>to</b> <span class="codevariable">dayCount</span> + 1</td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> <span class="codevariable">i</span> <b>to</b> <span class="codelibraryclass">item</span> (<span class="codevariable">i</span> - 1) <b>of the</b> <span class="codevariable">columnTitles</span></td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">column</span> 1</td></tr>
+				<tr><td class="line-count">114</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- set specific properties for the title column</span></td></tr>
+				<tr><td class="line-count">115</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">vertical alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">116</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">left</span></td></tr>
+				<tr><td class="line-count">117</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">width</span> <b>to</b> 128</td></tr>
+				<tr><td class="line-count">118</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- insert full names</span></td></tr>
+				<tr><td class="line-count">119</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 2 <b>to</b> <span class="codevariable">peopleCount</span> + 1</td></tr>
+				<tr><td class="line-count">120</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> <span class="codevariable">i</span> <b>to</b> <span class="codelibraryclass">item</span> (<span class="codevariable">i</span> - 1) <b>of the</b> <span class="codevariable">fullNames</span></td></tr>
+				<tr><td class="line-count">121</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">122</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">123</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">columns</span> 2 <b>thru</b> -2</td></tr>
+				<tr><td class="line-count">124</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">width</span> <b>to</b> 36</td></tr>
+				<tr><td class="line-count">125</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">126</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">127</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- get the range of the cells to set</span></td></tr>
+				<tr><td class="line-count">128</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">rangeStart</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> 2 <b>of</b> <span class="codelibraryclass">column</span> 2</td></tr>
+				<tr><td class="line-count">129</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">rangeEnd</span> <b>to the</b> <span class="codeproperty">name</span> <b>of last</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">column</span> -2</td></tr>
+				<tr><td class="line-count">130</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- set format of cells</span></td></tr>
+				<tr><td class="line-count">131</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">range</span> (<span class="codevariable">rangeStart</span> &amp; &quot;:&quot; &amp; <span class="codevariable">rangeEnd</span>)</td></tr>
+				<tr><td class="line-count">132</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">format</span> <b>to</b> <span class="codeenumeration">checkbox</span></td></tr>
+				<tr><td class="line-count">133</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">134</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">135</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- Set the style and formula of the total missed days column</span></td></tr>
+				<tr><td class="line-count">136</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell last</b> <span class="codelibraryclass">column</span></td></tr>
+				<tr><td class="line-count">137</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">width</span> <b>to</b> 60</td></tr>
+				<tr><td class="line-count">138</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> 1 <b>to</b> &quot;MISSED&quot;</td></tr>
+				<tr><td class="line-count">139</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">140</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">141</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 2 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">rows</span></td></tr>
+				<tr><td class="line-count">142</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">row</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">143</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codevariable">rangeString</span> <b>to</b> (<span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> 2 &amp; &quot;:&quot; &amp; <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> -2)</td></tr>
+				<tr><td class="line-count">144</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codevariable">formulaString</span> <b>to</b> &quot;=COUNTIF(&quot; &amp; <span class="codevariable">rangeString</span> &amp; &quot;, FALSE)&quot;</td></tr>
+				<tr><td class="line-count">145</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of the last</b> <span class="codelibraryclass">cell</span> <b>to</b> <span class="codevariable">formulaString</span></td></tr>
+				<tr><td class="line-count">146</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">147</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">148</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">149</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- sort the table based on student names</span></td></tr>
+				<tr><td class="line-count">150</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">sort</span> <span class="codelibraryparameter">by</span> <span class="codelibraryclass">column</span> 1 <span class="codelibraryparameter">direction</span> <span class="dictionary-enumeration">ascending</span></td></tr>
+				<tr><td class="line-count">151</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">152</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">153</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">154</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">155</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">156</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">157</td><td class="line-buffer"></td><td><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">158</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1000 <b>then</b></td></tr>
+				<tr><td class="line-count">159</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;MISSING NUMBERS RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">160</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please create or open <span class="codevariable">a</span> document before running this script.&quot;</td></tr>
+				<tr><td class="line-count">161</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1001 <b>then</b></td></tr>
+				<tr><td class="line-count">162</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;MISSING CONTACTS RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">163</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;There are no groups in your Contacts.&quot;</td></tr>
+				<tr><td class="line-count">164</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1002 <b>then</b></td></tr>
+				<tr><td class="line-count">165</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;MISSING CONTACTS RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">166</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;There are no people in the chosen Contacts group.&quot;</td></tr>
+				<tr><td class="line-count">167</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">168</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;EXECUTION ERROR&quot;</td></tr>
+				<tr><td class="line-count">169</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">170</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">171</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> <span class="codelibraryparameter">id</span> &quot;com.apple.iWork.Numbers&quot;</td></tr>
+				<tr><td class="line-count">172</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">173</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">alertString</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;}</td></tr>
+				<tr><td class="line-count">174</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">175</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">176</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">177</td><td class="line-buffer"></td><td><b>end try</b></td></tr>
+				<tr><td class="line-count">178</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">179</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">incrementtableNameIfNeeded</span>(<span class="codevariable">thistableName</span>, <span class="codevariable">thisDivider</span>)</td></tr>
+				<tr><td class="line-count">180</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- a routine for deriving a unique table name based on a provided table name</span></td></tr>
+				<tr><td class="line-count">181</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">182</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">183</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">184</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- get a list of the names of the tables on the active sheet</span></td></tr>
+				<tr><td class="line-count">185</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">thesetableNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">186</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">testtableName</span> <b>to the</b> <span class="codevariable">thistableName</span></td></tr>
+				<tr><td class="line-count">187</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementor</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">188</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- increment the passed name, if needed</span></td></tr>
+				<tr><td class="line-count">189</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat until</b> <span class="codevariable">testtableName</span> <b>is not in </b> <span class="codevariable">thesetableNames</span></td></tr>
+				<tr><td class="line-count">190</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementor</span> <b>to</b> <span class="codevariable">incrementor</span> + 1</td></tr>
+				<tr><td class="line-count">191</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">testtableName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">192</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">thistableName</span> &amp; <span class="codevariable">thisDivider</span> &amp; (<span class="codevariable">incrementor</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">193</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">194</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- return the non-conflicting table name</span></td></tr>
+				<tr><td class="line-count">195</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>return the</b> <span class="codevariable">testtableName</span></td></tr>
+				<tr><td class="line-count">196</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">197</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">198</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">199</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">incrementtableNameIfNeeded</span></td></tr>
+			</table>
+
+
+			
+			
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItemSelected">Attendance Table for Contacts Group</li>
+				<li class="navListSectionItem"><a href="examples-highlight-intersection.html">Colorize Intersection of Selection</a></li>
+				<li class="navListSectionItem"><a href="examples-table-as-image.html">Save Table|Selection as Image File</a></li>
+				<li class="navListSectionItem"><a href="examples-state-names.html">Table with State Names as Headers</a></li>
+				<li class="navListSectionItem"><a href="examples-sign-up.html">Collaborated Sign-Up Sheet</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

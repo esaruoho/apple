@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Default Text Items</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for working with the default text objects of slides in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Default Text Items</div>
+			
+			<p>Whether they are visible or not, every Keynote slide incorporates, by default, two text containers: one for the slide title; and one for the slide body. The visibility of these text items is determined by the state of the Appearance checkboxes in the Slide Layout pane of the Format tab. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;image&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p>The dictionary entry for the <span class="codelibraryclass">slide</span> class contains properties for determining visibility of these default text items, and well references to the objects, enabling the ability to set and format their text contents.</p>
+		
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Default Text Item Properties (Excerpt from Slide Class)</p>
+			<div class="dictionary" style="-webkit-user-select:text;">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">slide</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [<i>inh</i>. <span class="dictionary-class">iWork container</span>; see also <span class="dictionary-suite">Compatibility Suite</span>] :  A slide in a presentation document.</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">body showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the default body text item visible on the slide?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">default body item</span> (&nbsp;<span class="dictionary-class">text item</span> r/o&nbsp;) : The default text item container for the body text of the slide. Its visibility is determined by the value of the <span class="dictionary-property">body showing</span> property.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">default title item</span> (&nbsp;<span class="dictionary-class">text item</span> r/o&nbsp;) : The default text item container for the title text of the slide. Its visibility is determined by the value of the <span class="dictionary-property">title showing</span> property.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">title showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the default title text item visible on the slide?</p>
+			</div>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Master Slides and Default Text Items</p>
+			
+			<p>The following illustrations show how default text items are used in standard <span class="codelibraryclass">master slide</span> designs:</p>
+			
+			<img class="across" width="640" alt="default-text-items-01" src="gfx/default-text-items-01.png">
+		
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> Title &amp; Subtitle &bull; This slide master design incorporates a default text item for the title <span class="numeric-callout">&nbsp;1&nbsp;</span> and a default text item for the subtitle <span class="numeric-callout">&nbsp;2&nbsp;</span> . Their visibility is determined by the status of their corresponding checkboxes.</p>
+		
+			<img class="across" width="640" alt="default-text-items-02" src="gfx/default-text-items-02.png">
+		
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> Title &ndash; Center &bull; This slide master design incorporates a default text item for the title <span class="numeric-callout">&nbsp;1&nbsp;</span> and no default text item for a subtitle or body. Note that the checkbox for controlling the default body text item is unselected <span class="numeric-callout">&nbsp;2&nbsp;</span> .</p>
+
+			<img class="across" width="640" alt="default-text-items-03" src="gfx/default-text-items-03.png">
+		
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> Title, Bullets &amp; Photo &bull; This slide master design incorporates a default text item for the title <span class="numeric-callout">&nbsp;1&nbsp;</span> and a default text item for the bullet list <span class="numeric-callout">&nbsp;2&nbsp;</span> .</p>
+			
+			<img class="across" width="640" alt="default-text-items-04" src="gfx/default-text-items-04.png">
+		
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> Blank &bull; This slide master design incorporates no default text items, as indicated by the corresponding checkboxes for title <span class="numeric-callout">&nbsp;1&nbsp;</span> and body <span class="numeric-callout">&nbsp;2&nbsp;</span> .</p>		
+		
+		</div>
+		
+		
+		<!-- BEGIN SEGMENT: EXAMPLE SCRIPT -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Setting the Values of the Default Text Items</div>
+			
+			<p>A slide’s default text items are elements of the <span class="codelibraryclass">text item</span> class, inheriting from <span class="codelibraryclass">iWork items</span> of the <span class="dictionary-suite">iWork Suite</span>. The <span class="codeproperty">object text</span> property of the <span class="codelibraryclass">text item</span> class represents the text contents of the <span class="codelibraryclass">text item</span>. Change the value of this property, and you change the contents of the <span class="codelibraryclass">text item</span>. Unless specified otherwise, the formatting of a default text item assumes the styling of its related <span class="codelibraryclass">master slide</span>.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: see the <span class="codelibraryclass">text item</span> topic for details on applying styling to <span class="codeproperty">object text</span>.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Text Item Properties (Excerpt from Text Item Class)</p>
+			<div class="dictionary" style="-webkit-user-select:text;">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">text item</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [<i>inh</i>. <span class="dictionary-class">iWork item</span> :  A text container.</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">object text</span> (&nbsp;<span class="dictionary-class">rich text</span>&nbsp;) : The text contained within the text item.</p>
+			</div>			
+			
+			<p>The following script demonstrates how to set the content of the default text items of created slides:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Setting Default Text Items Example</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20thisThemeName%20%3A%20%22Black%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09--%20GET%20THE%20THEME%20NAMES%0D%09%09set%20the%20themeNames%20to%20the%20name%20of%20every%20theme%0D%09%09%0D%09%09--%20CHECK%20FOR%20THEME%0D%09%09if%20thisThemeName%20is%20not%20in%20the%20themeNames%20then%0D%09%09%09error%20%22The%20theme%20%E2%80%9C%22%20%26%20thisThemeName%20%26%20%22%E2%80%9D%20is%20not%20installed%20on%20this%20computer.%22%0D%09%09end%20if%0D%09%09%0D%09%09--%20MAKE%20NEW%20PRESENTATION%0D%09%09set%20thisDocument%20to%20%C2%AC%0D%09%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bdocument%20theme%3Atheme%20thisThemeName%2C%20width%3A1920%2C%20height%3A1080%7D%0D%09%09%0D%09%09tell%20thisDocument%0D%09%09%09--%20FORMAT%20THE%20FIRST%20SLIDE%0D%09%09%09set%20the%20base%20slide%20of%20the%20first%20slide%20to%20master%20slide%20%22Title%20%26%20Subtitle%22%0D%09%09%09tell%20the%20first%20slide%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22My%20Presentation%22%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%22Fun%20Stuff%20for%20You%20to%20Know%22%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09--%20ADD%20INFORMATION%20SLIDE%0D%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bbase%20slide%3Amaster%20slide%20%22Title%20%26%20Bullets%22%7D%0D%09%09%09tell%20thisSlide%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Main%20Point%22%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%C2%AC%0D%09%09%09%09%09%22Bullet%20Point%201%22%20%26%20return%20%26%20%22Bullet%20Point%202%22%20%26%20return%20%26%20%22Bullet%20Point%203%22%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09--%20ADD%20CLOSING%20SLIDE%0D%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bbase%20slide%3Amaster%20slide%20%22Title%20-%20Center%22%7D%0D%09%09%09tell%20thisSlide%0D%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Thank%20You!%22%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09end%20tell%0D%09%09%0D%09%09--%20PLAY%20THE%20PRESENTATION%0D%09%09start%20thisDocument%20from%20the%20first%20slide%20of%20thisDocument%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(%22ERROR%20%22%20%26%20errorNumber)%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">thisThemeName</span> : &quot;Black&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- GET THE THEME NAMES</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">themeNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">theme</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHECK FOR THEME</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisThemeName</span> <b>is not in the</b> <span class="codevariable">themeNames</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;The theme &ldquo;&quot; &amp; <span class="codevariable">thisThemeName</span> &amp; &quot;&rdquo; is not installed on this computer.&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- MAKE NEW PRESENTATION</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> <span class="codevariable">thisThemeName</span>, <span class="codeproperty">width</span>:1920, <span class="codeproperty">height</span>:1080}</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- FORMAT THE FIRST SLIDE</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>of the first</b> <span class="codelibraryclass">slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title &amp; Subtitle&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;My Presentation&quot;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &quot;Fun Stuff for You to Know&quot;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- ADD INFORMATION SLIDE</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{base slide:master slide &quot;Title &amp; Bullets&quot;}</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Main Point&quot;</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot;Bullet Point 1&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 2&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 3&quot;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- ADD CLOSING SLIDE</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Title - Center&quot;}</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Thank You!&quot;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- PLAY THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (&quot;<b>ERROR</b> &quot; &amp; <span class="codevariable">errorNumber</span>) <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<img class="across" width="640" height="389" alt="default-text-example" src="gfx/default-text-example.png">
+			
+		</div>
+		<!-- END SEGMENT: EXAMPLE SCRIPT -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="slide-transition.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="slide.html">Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-make.html">Making Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-duplicate.html">Duplicating Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-move.html">Moving Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-masters.html">Applying Master Slides</a></li>
+				<li class="navListSectionItemSelected">Default Text Items</li>
+				<li class="navListSectionItem"><a href="slide-transition.html">Slide Transitions</a></li>
+				<li class="navListSectionItem"><a href="slide-skipped.html">Show|Hide Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-delete.html">Deleting Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-presenter-notes.html">Presenter Notes</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

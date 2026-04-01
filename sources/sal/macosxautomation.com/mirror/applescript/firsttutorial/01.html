@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Properties and Values</h2>
+		
+		<p>Disks, files, folders, alias files, document files, application files, clippings, font suitcases, packages, internet location files, application files, windows and Finder windows are all objects or &ldquo;elements&rdquo; belonging to the Finder application. They are the items the Finder application uses in its organization and display of information. Each of these items has properties that define or describe the particular item. Some of these properties are unique to each item, some of these properties are shared by all Finder items.</p>
+
+		<p>For example, while an Internet location file or &ldquo;link,&rdquo; is the only Finder element that has a property describing a location on the Internet, it still shares some properties common to all Finder elements such as its <span class="inlinecode">icon size</span> or its <span class="inlinecode">position</span> in a folder window or on the desktop. And like other Finder elements, such as a folder or document file, a link file has a <span class="inlinecode">name</span> property whose value is text displayed with its icon and can be edited by the user of the computer.</p>
+
+		<img src="gfx/CH01_image01.jpg" width="158" height="109" align="top" class="across">
+		
+		<p class="imagecaption">An Internet Location file is a file that, when opened, displays its target URL in the default browser window.</p>
+		
+		<p>An important rule to remember about scriptable objects is this: </p>
+	
+		<p class="principle">Every scriptable application contains elements or objects that have properties. These properties have values that can be read or manipulated.</p>
+
+		<p>This rule applies to the Finder application and to all scriptable applications as well. All elements of the Finder application have properties, such as their name, size, and location. All of these properties have values, some of which can be edited, some which can only be read.</p>
+		
+		<h3>Think Big&hellip; Start Small</h3>
+		
+		<p>Your exploration of AppleScript is about learning the fundamental principles of the AppleScript language and how to apply them in writing scripts. No matter how complex a script is, the fundamental principles applied within the script remain the same. The lessons learned in scripting a common object such as a Finder window, pertain to all scriptable objects and applications, and can be used to create more complex and powerful automation tools later.</p>
+
+		<p>You&rsquo;ll begin the process of becoming a Scripter by examining the properties of a Finder window and learn how to manipulate them with scripts.</p>
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li class="hi">Properties and Values</li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

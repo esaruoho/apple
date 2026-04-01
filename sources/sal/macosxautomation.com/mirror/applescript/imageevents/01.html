@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Image Properties</h2>
+		
+		<p>Like all scriptable objects, images have properties that define them, such as their dimensions, their color space, and their resolution. The image class of the Image Suite of the Image Events dictionary contains these and other properties:</p>
+				
+		<p class="dictionary">
+		<span class="dictionary-term">bit depth</span> (enumeration) [r/o] sixteen colors/color/four grays/black &amp; white/thousands of colors/grayscale/two hundred fifty six grays/four colors/sixteen grays/millions of colors/best/two hundred fifty six colors/millions of colors plus <BR>
+		<span class="dictionary-definition">--&gt; bit depth of the image's color representation</span><BR>
+			<BR>
+		<span class="dictionary-term">color space</span> (enumeration) [r/o] Eight channel/Eight color/Five channel/Five color/Seven channel/RGB/Lab/XYZ/Six channel/CMYK/Six color/Seven color/Named/Gray <BR>
+		<span class="dictionary-definition">--&gt; color space of the image's color representation</span><BR>
+			<BR>
+		<span class="dictionary-term">dimensions</span> (list) [r/o] ex: {768, 1024]<BR>
+		<span class="dictionary-definition">--&gt; The width and height of the image, respectively, in pixels, as a pair of integers</span><BR>
+		<BR>
+		<span class="dictionary-term">file type</span> (enumeration) [r/o] PICT/Photoshop/BMP/QuickTime Image/GIF/JPEG/MacPaint/JPEG2/SGI/PSD/TGA/Text/PDF/PNG/TIFF <BR>
+		<span class="dictionary-definition">--&gt; The file type of the image's file</span> <BR>
+		<BR>
+		<span class="dictionary-term">image file</span> (disk item reference) [r/o] <BR>
+		<span class="dictionary-definition">--&gt; The file that contains the image</span> <BR>
+		<BR>
+		<span class="dictionary-term">location</span> (disk item reference) [r/o] <BR>
+		<span class="dictionary-definition">--&gt; The directory containing the image file</span> <BR>
+		<BR>
+		<span class="dictionary-term">name</span> (Unicode text) [r/o] <BR>
+		<span class="dictionary-definition">--&gt; The name of the image file</span> <BR>
+		<BR>
+		<span class="dictionary-term">resolution</span> (list) [r/o] ex: {72, 72}<BR>
+		<span class="dictionary-definition">--&gt; The pixel density of the image, in dots per inch, as a pair of integers</span></span></p>		
+		
+		<p>You can access these read-only properties easily using the Image Events application.</p>
+		
+		<p class="note"><b>IMPORTANT</b>: The file formats supported by Image Events for <b>reading</b> an image are: PICT, Photoshop, BMP, QuickTime Image, GIF, JPEG, MacPaint, JPEG2, SGI, PSD, TGA, Text, PDF, PNG, and TIFF.</p>
+		
+		<p class="note"><b>IMPORTANT</b>: The supported file formats for <b>saving</b> an image with the Image Events application are: JPEG2, TIFF, JPEG, PICT, BMP, PSD, PNG, and QuickTime Image.</p>
+		
+		<h3>Getting the Properties of an Image</h3>
+		
+		<p>To extract the value of the property of an image, your script must contain the following steps:</p>
+		
+		<ol>
+			<li>Start the Image Events application using the launch verb. Do not use the activate verb as the Image Events application has no user interface and runs invisibly.</li>
+		
+			<li>A file reference to the target image must be passed to the open command within an Image Events tell block. Doing so will load the image data from the image file. Once the image data has been successfully accessed, the script will return a reference to the opened image which can be stored in variable for use elsewhere in the script.</li>
+		
+			<li>The value of the properties of the loaded image can be extracted.</li>
+		
+			<li>The image data is purged from memory by using the close command targeting the opened image data.</li>
+		</ol>
+		
+		<p>Here's an example script that extracts the value of a single image property, using the procedures outlined above:</P>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20extract%20the%20property%20value%0D%09%09copy%20the%20resolution%20of%20this_image%20to%20%7BH_res%2C%20V_res%7D%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09display%20dialog%20%22Resolution%3A%20%22%20%26%20%28H_res%20as%20string%29%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image"></a><span class="script-caption">When the script is executed, it will display a dialog containing the image resolution for the chosen image:<br>&nbsp;<br></span><b>set</b> <span style="color:#0000FF;">this_file</span> <b>to</b> choose file<BR>
+		<b>try</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- extract the property value</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>copy the</b> resolution <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">H_res</span>, <span class="codevariable">V_res</span>}<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;Resolution: &quot; &amp; (<span class="codevariable">H_res</span> as string)<BR>
+		<b>on error</b> <span class="codevariable">error_message</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+		<b>end try</b><br><br><img src="gfx/23_image00.png" width="360" height="113" align="top" class="across"><br>&nbsp;</p>
+		
+		<p>Use the same steps, outlined in the previous script, when designing all of your Image Events scripts.</p>
+				
+		<h3>The Properties Record</h3>
+		
+		<p>The properties of an image can be queried individually as shown in the previous script, or extracted together by getting the value of the properties property, which is returned as an AppleScript record, a comma-delimited list of key-value pairs each with a property and its corresponding value delimited by a colon character:</p>
+		
+		<p class="dictionary">{ <span class="dictionary-term">bit depth</span> : millions of colors, <span class="dictionary-term">file type</span> : JPEG, <span class="dictionary-term">image file</span> : file "Macintosh HD:Users:sal:Slide.jpg" of application &quot;Image Events&quot;, <span class="dictionary-term">location</span> : folder &quot;Macintosh HD:Users:sal:&quot; of application &quot;Image Events&quot;, <span class="dictionary-term">resolution</span> : {100.0, 100.0}, <span class="dictionary-term">class</span> : image, <span class="dictionary-term">dimensions</span> : {1024.0, 768.0}, <span class="dictionary-term">name</span> : &quot;Slide.jpg&quot;, <span class="dictionary-term">color space</span> : RGB }</p>
+		
+		<p>In a script, it is faster to extract the property values from the properties record than to query the Image Events application for each property.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20extract%20the%20properties%20record%0D%09%09set%20the%20props_rec%20to%20the%20properties%20of%20this_image%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09%09%2D%2D%20extract%20the%20property%20values%20from%20the%20record%0D%09%09set%20the%20image_info%20to%20%22%22%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Name%3A%20%22%20%26%20%28name%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22File%3A%20%22%20%26%20%28path%20of%20image%20file%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Location%3A%20%22%20%26%20%28path%20of%20location%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22File%20Type%3A%20%22%20%26%20%28file%20type%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Bit%20Depth%3A%20%22%20%26%20%28bit%20depth%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Res%3A%20%22%20%26%20item%201%20of%20%28resolution%20of%20props_rec%29%20%26%20return%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Color%20Space%3A%20%22%20%26%20%28color%20space%20of%20props_rec%29%20%26%20return%0D%09%09copy%20%28dimensions%20of%20props_rec%29%20to%20%7Bx%2C%20y%7D%0D%09%09set%20the%20image_info%20to%20the%20image_info%20%26%20%22Dimemsions%3A%20%22%20%26%20x%20%26%20%22%2C%20%22%20%26%20y%0D%09end%20tell%0D%09display%20dialog%20image_info%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image"></a><span class="script-caption">Here's a script that uses the information stored in a properties record to display a dialog containing the property values for a chosen image:</span><br><br>
+		<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file<BR>
+		<b>try</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- extract the properties record</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">props_rec</span> <b>to the</b> properties <b>of</b> <span class="codevariable">this_image</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- extract the property values from the record</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Name: &quot; &amp; (name <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;File: &quot; &amp; (path <b>of</b> image file <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Location: &quot; &amp; (path <b>of</b> location <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;File Type: &quot; &amp; (file type <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Bit Depth: &quot; &amp; (bit depth <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Res: &quot; &amp; item 1 <b>of</b> (resolution <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Color Space: &quot; &amp; (color space <b>of</b> <span class="codevariable">props_rec</span>) &amp; <b>return</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> (dimensions <b>of</b> <span class="codevariable">props_rec</span>) <b>to</b> {x, y}<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_info</span> <b>to the</b> <span class="codevariable">image_info</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Dimemsions: &quot; &amp; <span class="codevariable">x</span> &amp; &quot;, &quot; &amp; y<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">image_info</span><BR>
+		<b>on error</b> <span class="codevariable">error_message</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+		<b>end try</b><img src="gfx/23_image01.png" width="360" height="225" class="script-image"><br><br>&nbsp;</p>		
+		
+		
+		<h3>Converting File References</h3>
+
+		<p>Note that in the previous script, the value of the <b>image file</b> and <b>location</b> properties required additional handling to convert them into a text string. By default, these properties return <b>file references</b>, such as:</p>
+		
+		<p class="code">file &quot;Macintosh HD:Users:sal:Slide.jpg&quot; of application "Image Events"</p>
+		
+		<p>An Image Events file reference cannot be coerced into a string by using the as string coercion:</p>
+		
+		<p class="code">image file <b>of the</b> <span class="codevariable">props_rec</span> <b>as</b> string<BR>
+		<span class="codecomment">--> &quot;Can't make file \&quot;Macintosh HD:Users:sal:Slide.jpg\&quot; of application \&quot;Image Events\&quot; into type string.&quot;</span></p>
+		
+		<p>To convert an Image Events file reference to a text path, access either the path of the file reference or the POSIX path of the file reference.</p> 
+		
+		<p>The first returns an HFS colon-delineated path:</p>
+		
+		<p class="code">path <b>of</b> image file <b>of</b> <span class="codevariable">props_rec</span><BR>
+		<span class="codecomment">-->&quot;Macintosh HD:Users:sal:Slide.jpg&quot;</span></p>	
+		
+		<p>and the second returns a UNIX slash-delineated path:</p>
+		
+		<p class="code">POSIX path <b>of</b> image file <b>of</b> <span class="codevariable">props_rec</span><BR>
+		<span class="codecomment">--> &quot;/Users/sal/Slide.jpg&quot;</span></p>				
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html">Introduction</a></li>
+				<li class="hi">Image Properties</li>
+				<li><a href="02.html">Flipping Images</a></li>
+				<li><a href="03.html">Rotating Images</a></li>
+				<li><a href="04.html">Scaling Images</a></li>
+				<li><a href="05.html">Padding Images</a></li>
+				<li><a href="06.html">Framing Images</a></li>
+				<li><a href="07.html">Croping Images</a></li>
+				<li><a href="08.html">File Conversion</a></li>
+				<li><a href="09.html">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

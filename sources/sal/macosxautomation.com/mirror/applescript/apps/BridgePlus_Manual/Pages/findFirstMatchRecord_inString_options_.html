@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #ee2200}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="findFirstMatch_inString_options_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="findMatches_inString_options_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>Regular Expression methods</p>
+<h3>Method</h3>
+<code>findFirstMatchRecord:inString:options:</code>
+<h3>Summary</h3>
+<p>Returns the first match record found. If none found, returns missing value.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSDictionary *)</span>findFirstMatchRecord:<span class="sigParens">(NSString *)</span><span class="param">regexPattern</span> inString:<span class="sigParens">(NSString *)</span><span class="param">searchString</span> options:<span class="sigParens">(NSString *)</span><span class="param">optionsString</span></code>
+<h3>Parameters</h3>
+<p><span class="param">regexPattern</span> = ICY regular expression pattern; see  http://userguide.icu-project.org/strings/regexp.</p><p><span class="param">searchString</span> = string to search</p><p><span class="param">optionsString</span> = a string containing any or all of the following letters:</p><p> i    Makes the search case insensitive</p><p> x    Allows white space and #comments in the pattern</p><p> s    Makes the "." character match a line terminator</p><p> m    Makes "^" and "$" match the start/end of every line, not just the whole string</p><p> w    Makes \b match word boundaries as described in Unicode UAX 29, rather than traditional regular expression behavior</p>
+<h3>Result</h3>
+<p>A match record dictionary or missing value. The format of a matchRecord dictionary is: {captureGroup:#, foundString:"found string", foundRange:{location:n, length:nn}}. For non-existent capture groups or capture groups that do not participate in a particular match, the foundString will be missing value, with a foundRange of {location:NSNotFound, length:0}.</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">aString</span> <b>to</b> "The cat sat in the cot"</p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>findFirstMatchRecord<span class="s1">:"c[^a]t" </span>inString<span class="s1">:</span><span class="s3">aString</span><span class="s1"> </span>options<span class="s1">:""</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:19, length:3}, captureGroup:0, foundString:"cot"}</p>
+<p class="p7"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span><span class="s1"> </span>-- only in 10.10 and later</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:19, length:3}, captureGroup:0, foundString:"cot"}</p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>findFirstMatchRecord<span class="s1">:"th." </span>inString<span class="s1">:</span><span class="s3">aString</span><span class="s1"> </span>options<span class="s1">:""</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:15, length:3}, captureGroup:0, foundString:"the"}</p>
+<p class="p6">theResult<span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span></p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:15, length:3}, captureGroup:0, foundString:"the"}</p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>findFirstMatchRecord<span class="s1">:"th." </span>inString<span class="s1">:</span><span class="s3">aString</span><span class="s1"> </span>options<span class="s1">:"i"</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:0, length:3}, captureGroup:0, foundString:"The"}</p>
+<p class="p6">theResult<span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span></p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{foundRange:{location:0, length:3}, captureGroup:0, foundString:"The"}</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20aString%20to%20%22The%20cat%20sat%20in%20the%20cot%22%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20findFirstMatchRecord:%22c%5B%5Ea%5Dt%22%20inString:aString%20options:%22%22%0DASify%20from%20theResult%0D--%3E%09%7BfoundRange:%7Blocation:19,%20length:3%7D,%20captureGroup:0,%20foundString:%22cot%22%7D%0DtheResult%20as%20record%20--%20only%20in%2010.10%20and%20later%0D--%3E%09%7BfoundRange:%7Blocation:19,%20length:3%7D,%20captureGroup:0,%20foundString:%22cot%22%7D%0D%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20findFirstMatchRecord:%22th.%22%20inString:aString%20options:%22%22%0DASify%20from%20theResult%0D--%3E%09%7BfoundRange:%7Blocation:15,%20length:3%7D,%20captureGroup:0,%20foundString:%22the%22%7D%0DtheResult%20as%20record%0D--%3E%09%7BfoundRange:%7Blocation:15,%20length:3%7D,%20captureGroup:0,%20foundString:%22the%22%7D%0D%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20findFirstMatchRecord:%22th.%22%20inString:aString%20options:%22i%22%0DASify%20from%20theResult%0D--%3E%09%7BfoundRange:%7Blocation:0,%20length:3%7D,%20captureGroup:0,%20foundString:%22The%22%7D%0DtheResult%20as%20record%0D--%3E%09%7BfoundRange:%7Blocation:0,%20length:3%7D,%20captureGroup:0,%20foundString:%22The%22%7D%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

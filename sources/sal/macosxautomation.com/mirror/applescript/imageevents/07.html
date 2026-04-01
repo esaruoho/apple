@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Cropping an Image</h2>
+		
+		<p>From the Image Events scripting dictionary:</p>
+		
+		<p class="dictionary"><b>crop</b> v : Crop an image <br>
+    		<span class="dictionary-indent-01"><span class="dictionary-term">crop</span> (object specifier) : the object that is the target of the command</span><br> 
+        	<span class="dictionary-indent-02"><span class="dictionary-term">to dimensions</span> (list) : the width and height of the new image, 
+            respectively, in pixels, as a pair of integers</span></p>
+		
+		<p>Cropping an image removes pixels around the outside of an image. The crop command automatically centers the cropped area in the image.</p>
+		
+		<p>The <span class="dictionary-term">to dimensions</span> parameter of the <span class="dictionary-term">crop</span> command takes as its value a list of two integers: the new width (in pixels) for the image and the new height for the image as shown in the following script:</p>
+		
+		<h3>Cropping an Image to a Specified Size</h3>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20crop_W%20to%20640%0Dset%20the%20crop_H%20to%20480%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09crop%20this_image%20to%20dimensions%20%7Bcrop_W%2C%20crop_H%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for cropping an image to specified dimensions.</span><br><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">crop_W</span> <b>to</b> 640<BR>
+<b>set the</b> <span class="codevariable">crop_H</span> <b>to</b> 480<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>crop <span class="codevariable">this_image</span> <b>to</b> dimensions {<span class="codevariable">crop_W</span>, <span class="codevariable">crop_H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+
+		<p>Most often, the crop command is used to trim the outside edges of images. This technique can be accomplished by specifying the number of pixels to crop or the percentage of pixels to crop.</p>
+		
+		<h3>Cropping an Image by a Specified Number of Pixels</h3>
+
+		<p>The following script crops an indicated number of pixels from the height and width of an image, as shown in the figure below:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20vertical_crop%20to%2024%0Dset%20the%20horizontal_crop%20to%2048%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20perform%20action%0D%09%09crop%20this_image%20to%20dimensions%20%7BW%20%2D%20horizontal_crop%2C%20H%20%2D%20vertical_crop%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try%0D"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that crops specified amounts from the width and height of an image.</span><br><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">vertical_crop</span> <b>to</b> 24<BR>
+<b>set the</b> <span class="codevariable">horizontal_crop</span> <b>to</b> 48<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>crop <span class="codevariable">this_image</span> <b>to</b> dimensions {W - <span class="codevariable">horizontal_crop</span>, <span class="codevariable">H</span> - <span class="codevariable">vertical_crop</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+
+		<img src="gfx/23_image10.png" width="640" height="338" hspace="4" class="across">
+		
+		<p class="imagecaption">An image cropped a specified number of pixels from its height and width. Note that a crop measurement is the total applied to both sides of an image. For example, a vertical crop of 10 pixels would remove 5 pixels from boththe top and bottom of an image.</p>
+		
+		
+		<h3>Cropping an Image by Specified Percentage</h3>
+
+		<p>In addition to cropping by indicating a specific number of pixels, you can crop by a percentage of the image width and height, as demonstrated in the following script and figure:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20vertical_crop%20to%200%0Dset%20the%20horizontal_crop%20to%200%2E32%20%2D%2D%2032%25%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20perform%20action%0D%09%09crop%20this_image%20to%20dimensions%20%7BW%20%2D%20%28W%20%2A%20horizontal_crop%29%2C%20H%20%2D%20%28H%20%2A%20vertical_crop%29%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that uses percentages to determine the amount of pixels to crop. In this case, the image width is cropped by %32.</span><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">vertical_crop</span> <b>to</b> 0<BR>
+set the <span class="codevariable">horizontal_crop</span> to 0.32 <span class="codecomment">-- 32%</span><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>crop <span class="codevariable">this_image</span> <b>to</b> dimensions {W - (<span class="codevariable">W</span> * <span class="codevariable">horizontal_crop</span>), <span class="codevariable">H</span> - (<span class="codevariable">H</span> * <span class="codevariable">vertical_crop</span>)}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+		
+		<img src="gfx/23_image11.png" width="463" height="360" hspace="4" class="across">
+		
+		<p class="imagecaption">An image whose width has been cropped by %32.</p>
+		
+		<h3>Cropping an Image to Letterbox Proportions (16:9)</h3>
+		
+		<p>Another interesting use of the crop command is to convert images to letterbox format, that is with dimensions in 16 x 9 proportion. You can crop the middle section from some horizontal and vertical images to display in HD format. This technique only works for images whose main content is centered in the image.</p>
+		
+		
+		<p>Here&rsquo;s the script for extracting an image section in letterbox format:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20determine%20the%20letterbox%20area%0D%09%09set%20crop_W%20to%20W%0D%09%09%2D%2D%20calcluate%20the%2016%3A9%20proportions%0D%09%09set%20crop_H%20to%20%28W%20%2A%209%29%20%2F%2016%0D%09%09%2D%2D%20perform%20action%0D%09%09crop%20this_image%20to%20dimensions%20%7Bcrop_W%2C%20crop_H%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that crops an image so that a section of the middle of the image, in 16 x 9 proportions, remains.</span><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- determine the letterbox area</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">crop_W</span> <b>to</b> W<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calcluate the 16:9 proportions</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">crop_H</span> <b>to</b> (<span class="codevariable">W</span> * 9) / 16<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>crop <span class="codevariable">this_image</span> <b>to</b> dimensions {<span class="codevariable">crop_W</span>, <span class="codevariable">crop_H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+
+		<img src="gfx/23_image12.png" width="640" height="203" hspace="4" class="across">
+
+		<p class="imagecaption">Using the <span class="inlinecode">crop</span> command to extract a section, in letterbox proportions, from a horizontal image.</p>
+		
+		<img src="gfx/23_image13.png" width="640" height="250" hspace="4" class="across">
+
+		<p class="imagecaption">Using the <span class="inlinecode">crop</span> command to extract a section, in letterbox proportions, from a vertical image.</p>
+
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="08.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html" target="_self">Introduction</a></li>
+				<li><a href="01.html" target="_self">Image Properties</a></li>
+				<li><a href="02.html" target="_self">Flipping Images</a></li>
+				<li><a href="03.html" target="_self">Rotating Images</a></li>
+				<li><a href="04.html" target="_self">Scaling Images</a></li>
+				<li><a href="05.html" target="_self">Padding Images</a></li>
+				<li><a href="06.html" target="_self">Framing Images</a></li>
+				<li class="hi">Croping Images</li>
+				<li><a href="08.html" target="_self">File Conversion</a></li>
+				<li><a href="09.html" target="_self">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

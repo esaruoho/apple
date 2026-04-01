@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Pixelmator Pro</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="AppleScript scripts demonstratig automation support in Pixelmator Pro.">
+	<link rel="stylesheet" type="text/css" href="omni-automation-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="stylesheet" type="text/css" href="applescriptcode.css" />
+	<link rel="stylesheet" type="text/css" href="mobile-main.css" />
+	<meta name="keywords" content="AppleScript, Pixelmator, automation">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<style>
+		.script-code-text {
+			padding: 2vw;
+			/* background-color: white; */
+			/* color: black; */
+			font-family: "Menlo", san-serif;
+			font-size: 1vw;
+		}
+		#code1, #code2, #code3
+		{
+			font: 14px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+			font-size: 14px;
+			margin: 12px 0px 12px 0px;
+			color: #fff;
+			background-color: #333;
+			padding: 8px;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div class="banner">
+			<img width="100%" alt="banner image" src="gfx/banner.jpg">
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head" role="heading" aria-level="1">Adding Numeric Callout Images</p>
+			
+			<p>If your work involves creating documentation, you’ll appreciate this set of scripts for automating the process of adding numeric callouts to an image.</p>
+
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="pixelmator-callouts" x-webkit-airplay="allow" webkit-playsinline width="100%" height="auto" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/callout-poster.jpg">
+				  <source src="pixelmator-callouts.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('pixelmator-callouts').play();">PLAY</button>
+				<button onclick="document.getElementById('pixelmator-callouts').pause();">PAUSE</button>
+				<button onclick="document.getElementById('pixelmator-callouts').currentTime=(document.getElementById('pixelmator-callouts').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('pixelmator-callouts').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>The &ldquo;Add Callout Layer&rdquo; script displays the contents of your folder containing the callout images in a file picker dialog. Select an image from the picker and it will be placed in a new layer in the currently open Pixelmator image. The other provided scripts will automate the scaling of the selected callout layer, and the reordering of the selected callout layers alphabetically.</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td class="rightside"><p><a href="callouts-demo.zip">DOWNLOAD</a> a zip archive (84mb) containing the Pixelmator example images, and the folder of example AppleScript script files. Place the folder of callout images named “Callouts” in the Shared folder (Users > Shared). Put the folder of script named “Numeric Callouts” in the Pixelmator Scripts folder.</p></td>
+				</tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">The AppleScript Scripts</p>
+			
+			<p>Here are the AppleScript scripts that automates the process of importing the callout images, scaling them, and re-ordering the selected callout layers by name.</p>
+			
+<p id="code1"><a href="applescript://com.apple.scripteditor?action=new&name=Add%20Callout%20Layer&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20scripting%20additions%0D%0Dproperty%20folderName%20%3A%20%22Callouts%22%0Dproperty%20sourceDirectory%20%3A%20path%20to%20%22sdat%22%20%2D%2D%20Shared%20folder%0D%28%2A%20path%20to%20pictures%20folder%20%2A%29%0D%28%2A%20path%20to%20documents%20folder%20%2A%29%0D%28%2A%20path%20to%20public%20folder%20%2A%29%0D%0Dset%20imagesFolderHFSPath%20to%20%28sourceDirectory%20as%20string%29%20%26%20folderName%0D%0Dtell%20application%20%22Pixelmator%20Pro%203%22%0D%09activate%0D%09try%0D%09%09if%20not%20%28exists%20document%201%29%20then%20error%20number%20%2D128%0D%09%09set%20imagesFolder%20to%20imagesFolderHFSPath%20as%20alias%0D%09%09set%20chosenImageFile%20to%20choose%20file%20of%20type%20%22public%2Eimage%22%20with%20prompt%20%22Select%20image%20to%20import%3A%22%20default%20location%20imagesFolder%0D%09%09set%20imageFileInfo%20to%20the%20info%20for%20chosenImageFile%0D%09%09set%20nameExtenstion%20to%20the%20name%20extension%20of%20the%20imageFileInfo%0D%09%09set%20chosenImageFileName%20to%20the%20displayed%20name%20of%20the%20imageFileInfo%0D%09%09set%20layerName%20to%20text%201%20thru%20%2D%28%28length%20of%20nameExtenstion%29%20%2B%202%29%20of%20chosenImageFileName%0D%09%09tell%20front%20document%0D%09%09%09make%20new%20image%20layer%20with%20properties%20%7Bfile%3AchosenImageFile%2C%20preserve%20transparency%3Atrue%2C%20constrain%20proportions%3Afalse%2C%20name%3AlayerName%7D%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20%2D128%20then%0D%09%09%09display%20alert%20%28errorNumber%20as%20string%29%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0D"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use scripting additions<BR>
+<BR>
+<b>property</b> folderName : &quot;Callouts&quot;<BR>
+property sourceDirectory : path to &quot;sdat&quot; <span class="codecomment">-- Shared folder</span><BR>
+(* path to pictures folder *)<BR>
+(* path to documents folder *)<BR>
+(* path to public folder *)<BR>
+<BR>
+<b>set</b> imagesFolderHFSpath to (sourceDirectory <b>as</b> string) &amp; folderName<BR>
+<BR>
+<b>tell</b> application id &quot;com.pixelmatorteam.pixelmator.x&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> number -128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> imagesFolder <b>to</b> imagesFolderHFSPath <b>as</b> alias<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> chosenImageFile <b>to</b> choose file <b>of</b> type &quot;public.image&quot; <b>with</b> prompt &quot;Select image <b>to</b> import:&quot; default location imagesFolder<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> imageFileInfo <b>to the</b> info for chosenImageFile<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> nameExtenstion <b>to the</b> name extension <b>of the</b> imageFileInfo<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> chosenImageFileName <b>to the</b> displayed name <b>of the</b> imageFileInfo<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> layerName <b>to</b> text 1 <b>thru</b> -((length <b>of</b> nameExtenstion) + 2) <b>of</b> chosenImageFileName<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:30px;">&nbsp;</span>make new image layer <b>with</b> properties {file:chosenImageFile, preserve transparency:true, constrain proportions:false, name:layerName}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> errorMessage number errorNumber<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> errorNumber <b>is not</b> -128 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>display alert (errorNumber <b>as</b> string) message errorMessage<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end tell</b></p>
+
+
+<p id="code2"><a href="applescript://com.apple.scripteditor?action=new&name=Scale%20Layer%20to%2050%20Percent&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20scripting%20additions%0D%0Dtell%20application%20%22Pixelmator%20Pro%203%22%0D%09activate%0D%09try%0D%09%09if%20not%20%28exists%20document%201%29%20then%20error%20number%20%2D128%0D%09%09tell%20front%20document%0D%09%09%09tell%20current%20layer%20of%20it%0D%09%09%09%09set%20height%20to%20%28height%20div%202%29%0D%09%09%09%09set%20width%20to%20%28width%20div%202%29%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20%2D128%20then%0D%09%09%09display%20alert%20%28errorNumber%20as%20string%29%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use scripting additions<BR>
+<BR>
+<b>tell</b> application id &quot;com.pixelmatorteam.pixelmator.x&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> number -128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> current layer <b>of it</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> height <b>to</b> (height <b>div</b> 2)<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> width <b>to</b> (width <b>div</b> 2)<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> errorMessage number errorNumber<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> errorNumber <b>is not</b> -128 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>display alert (errorNumber <b>as</b> string) message errorMessage<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end tell</b></p>
+
+<p id="code3"><a href="applescript://com.apple.scripteditor?action=new&name=Arrange%20Selected%20Layers%20Alphabetically&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20framework%20%22Foundation%22%0Duse%20scripting%20additions%0D%0Dtell%20application%20%22Pixelmator%20Pro%203%22%0D%09activate%0D%09try%0D%09%09if%20not%20%28exists%20document%201%29%20then%20error%20number%20%2D128%0D%09%09tell%20front%20document%0D%09%09%09set%20selectedLayers%20to%20the%20selected%20layers%20of%20it%0D%09%09%09if%20selectedLayers%20is%20%7B%7D%20then%20error%20%22Please%20select%20the%20layers%20to%20rearrange%20by%20name%2E%22%0D%09%09%09set%20layerNames%20to%20%7B%7D%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20selectedLayers%0D%09%09%09%09set%20the%20end%20of%20layerNames%20to%20the%20name%20of%20item%20i%20of%20selectedLayers%0D%09%09%09end%20repeat%0D%09%09%09set%20sortedLayerNames%20to%20my%20sortListOfStrings%28layerNames%29%0D%09%09%09set%20sortedLayerNames%20to%20the%20reverse%20of%20sortedLayerNames%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20sortedLayerNames%0D%09%09%09%09set%20thisLayerName%20to%20item%20i%20of%20sortedLayerNames%0D%09%09%09%09set%20thisLayer%20to%20layer%20thisLayerName%0D%09%09%09%09move%20thisLayer%20to%20before%20layer%201%0D%09%09%09end%20repeat%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20%2D128%20then%0D%09%09%09display%20alert%20%28errorNumber%20as%20string%29%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20sortListOfStrings%28sourceList%29%0D%09%2D%2D%20sorts%20a%20passed%20AppleScript%20list%20of%20strings%0D%09%2D%2D%20DOCUMENTATION%3A%20https%3A%2F%2Fdeveloper%2Eapple%2Ecom%2Flibrary%2Fmac%2F%23documentation%2FCocoa%2FReference%2FFoundation%2FClasses%2FNSArray%5FClass%2FNSArray%2Ehtml%23%2F%2Fapple%5Fref%2Fdoc%2Fuid%2FTP40003620%0D%09%2D%2D%20create%20a%20Cocoa%20array%20from%20the%20passed%20AppleScript%20list%0D%09set%20the%20CocoaArray%20to%20current%20application%27s%20NSArray%27s%20arrayWithArray%3AsourceList%0D%09%2D%2D%20sort%20the%20Cocoa%20array%0D%09set%20the%20sortedItems%20to%20CocoaArray%27s%20sortedArrayUsingSelector%3A%22localizedStandardCompare%3A%22%0D%09%2D%2D%20return%20the%20Cocoa%20array%20coerced%20to%20an%20AppleScript%20list%0D%09return%20%28sortedItems%20as%20list%29%0Dend%20sortListOfStrings"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use framework &quot;Foundation&quot;<BR>
+use scripting additions<BR>
+<BR>
+<b>tell</b> application id &quot;com.pixelmatorteam.pixelmator.x&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> number -128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> selectedLayers <b>to the</b> selected layers <b>of it</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> selectedLayers <b>is {} then error</b> &quot;Please select <b>the</b> layers <b>to</b> rearrange <b>by</b> name.&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> layerNames <b>to</b> {}<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> selectedLayers<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the end of</b> layerNames <b>to the</b> name <b>of</b> item <span class="codevariable">i</span> <b>of</b> selectedLayers<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> sortedLayerNames <b>to my</b> sortListOfStrings(layerNames)<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> sortedLayerNames <b>to the</b> reverse <b>of</b> sortedLayerNames<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> sortedLayerNames<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisLayerName <b>to</b> item <span class="codevariable">i</span> <b>of</b> sortedLayerNames<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisLayer <b>to</b> layer thisLayerName<BR>
+<span style="float:left; width:40px;">&nbsp;</span>move thisLayer <b>to</b> before layer 1<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> errorMessage number errorNumber<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> errorNumber <b>is not</b> -128 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>display alert (errorNumber <b>as</b> string) message errorMessage<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end tell</b><BR>
+<BR>
+<b>on</b> sortListOfStrings(sourceList)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- sorts a passed AppleScript list of strings</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa array from the passed AppleScript list</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> CocoaArray <b>to</b> current application's NSArray's arrayWithArray:sourceList<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- sort the Cocoa array</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> sortedItems <b>to</b> CocoaArray's sortedArrayUsingSelector:&quot;localizedStandardCompare:&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- return the Cocoa array coerced to an AppleScript list</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (sortedItems <b>as</b> list)<BR>
+<b>end</b> sortListOfStrings</p>
+
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">DEMOS</div>
+			  <p><a href="index.html">Home</a></p>
+			  <p><a href="numbers.html">Numbers &amp; Captions</a></p>
+			  <p><a href="descriptions.html">Description Overlays</a></p>
+			  <p><a href="maps.html">Open in Maps</a></p>
+			  <p class="active-topic">Callouts</p>
+			</nav>	
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

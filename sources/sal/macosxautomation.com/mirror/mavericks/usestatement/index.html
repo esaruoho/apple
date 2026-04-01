@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>The &ldquo;use statement&rdquo;</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Code signing support in OS X Automation editor applications">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The &ldquo;use&rdquo; Statement</div>
+				
+			<p class="content-intro">For its 20th anniversary debut in OS&nbsp;X Mavericks, AppleScript delivers a long-sought ability: an import command &mdash; dramatically extending the scope and power of this unique language.</p>
+			
+			<p>A new AppleScript construct, called the &ldquo;use statement&rdquo;, imports the terminology and functionality of AppleScript Libraries and scriptable Applications through a simple single-line declaration placed at the top of a script, such as: <b>use</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;, or: <b>use</b> <span class="codelibraryclass">script </span>&quot;My AppleScript Text Library&quot;.</p>
+		
+			<p>The handlers, scriptable objects, properties, and terminology of AppleScript Libraries and scriptable applications imported via a &ldquo;use statement,&rdquo; are automatically available globally throughout the hosting script, no longer requiring numerous &ldquo;tell statements&rdquo; or &ldquo;tell blocks&rdquo; to be compiled and executed. Scripts taking advantage of the &ldquo;use statement&rdquo; are more streamlined and clearer than similar scripts not implementing this new construct.</p>
+			
+			<p>In addition, AppleScript Libraries written in AppleScript/Objective-C, can incorporate &ldquo;use&rdquo; statements to import Cocoa frameworks, such as MapKit, EventKit, and WebKit.</p>			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: BASICS -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Basics</div>
+		
+		<p>A <b>use statement</b> declares a required resource for a script, such as an application, script library, framework, or version of AppleScript itself. If the required element cannot be located when the script is run, an error is returned.</p>
+		
+		<img class="centered" alt="error on compile" src="gfx/erroroncompile.png" width="624">
+		
+		<p class="imagecaption" style="width:608px;">(above) A <b>use statement</b> failing to compile due to a missing resource (in this case, a missing script library).</p>
+		
+		<img class="centered" alt="error on compile" src="gfx/erroronrun.png" width="624">
+		
+		<p class="imagecaption" style="width:608px;">(above) A <b>use statement</b> failing when run, due to a missing resource (in this case, a missing script library).</p>
+		
+		<p>Like <b>tell</b> or <b>using terms from</b> statements, a <b>use</b> statement specifies the terminology AppleScript should use in compiling the statements in a script, but unlike them, it does not contain statements and applies to the entire script object, instead of only applying to the statements within a block. The syntax and effects of use vary slightly depending on what the used resource is.</p>
+
+		</div>
+		<!-- END SEGMENT: BASICS -->
+		
+		<!-- BEGIN SEGMENT: APPLESCRIPT -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">use (AppleScript)</div>
+		<p>We will begin the examination of the <span class="codelibrarycommand">use statement</span> with the fundamental case of indicating the use of AppleScript:</p>
+		
+		<p class="code"><b>use</b> <span class="codelibraryclass">AppleScript</span></p>
+		
+		<p>This also implicitly means that the script uses AppleScript version 2.3 or later, when use was first introduced, and that the script expects a newer behavior for how scripting additions are handled, described later.</p>
+		
+		<p>A use command can also explicitly specify a minimum required version of AppleScript:</p>
+		
+		<p class="code"><b>use</b> <span class="codelibraryclass">AppleScript version </span>&quot;2.3.2&quot;</p>
+		
+		
+		</div>
+		<!-- END SEGMENT: APPLESCRIPT -->
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li class="hi">The &ldquo;use&rdquo; Statement</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li class="hi">Overview</li>
+					<li><a href="01.html">Scripting Additions</a></li>
+					<li><a href="02.html">Applications and Libraries</a></li>
+					<li><a href="03.html">Frameworks</a></li>
+				</ol>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

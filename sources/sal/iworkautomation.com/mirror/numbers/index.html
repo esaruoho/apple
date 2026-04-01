@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Keynote, Scripting, tables">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the iWork Numbers application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+	<meta http-equiv="last-modified" content="Fri, 21 Nov 2014 00:00:00 GMT"/>
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation" style="position:relative;z-index:1;">
+	<caption>
+		<div style="position:relative;float:left;"><a href="javascript:var baseURL=document.location.toString().replace(/^https?:\/\//, '');newURL='https://'+baseURL;document.location=newURL;" title="Switch page to secure HTTPS">&#128274;</a></div>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper" style="margin-left:auto;margin-right:auto;">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">iWork Automation: Numbers AppleScript Support</div>
+			
+			<p class="content-intro">Now you have a powerful ally to get and stay in superb &ldquo;fiscal shape&rdquo; — Numbers adds AppleScript support. So doing those daily &ldquo;crunches&rdquo; just got a whole lot easier.</p>
+								
+			<p>As anyone who creates or uses spreadsheets for a living can tell you, automation is an absolutely essential tool for maintaining sanity. When processes are automated, you gain:</p>
+			
+			<ul>
+				<li><b>Speed</b>. It takes less time to accomplish complex multi-step procedures.</li>
+				<li><b>Accuracy</b>. With automation, the chances of making mistakes because of human error are minimized.</li>
+				<li><b>Consistency</b>. Automation produces data of reliable quality.</li>
+				<li><b>Scalability</b>. If you want to do more, in a shorter time, while maintaining quality, automation is the best way to increase the productivity of your business.</li>
+			</ul>
+			
+			<p>Using automation frees you from the &ldquo;drudge work,&rdquo; to focus on the creative and analytical aspects of what you do — you know, that stuff you were actually hired and like to do! And when it comes to the world of automation, AppleScript is your best friend.</p>
+			
+			<p>So, if you are currently using another spreadsheet application for your work and are interested in seeing what Numbers can do; or are a Numbers user who wants to take the application to the next level of functionality; automating Numbers with AppleScript is something you should explore.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">What is covered in this overview of Numbers AppleScript support?</p>
+			
+			<p>The following pages describe and demonstrate how AppleScript can be used to access, query, control, make, style, and delete the elements of the Numbers application, with specific focus on documents, sheets, and tables.</p>
+			
+			<p>If you are familiar with AppleScript &mdash; great. If not, no problem. You can easily pick up this unique English-like scripting language from the <a href="http://macosxautomation.com/applescript/firsttutorial/index.html" target="_blank">tutorials</a> on this website, or from reading one of the many great AppleScript books on the subject, including Apple&rsquo;s own <a href="http://www.peachpit.com/store/apple-training-series-applescript-1-2-3-9780321149312" target="_blank">AppleScript 1-2-3</a> (on the <a href="&lt;a href=&quot;https://itunes.apple.com/us/book/applescript-1-2-3/id394135296?mt=11&quot;&gt;">iBooks Store</a>).</p>
+			
+			<p>And everything you need to automate Numbers with AppleScript is already installed in OS&nbsp;X. For starters, all of the example scripts on these pages can be viewed in the <b>AppleScript Editor</b> application (which can be found in your <b>Utilities</b> folder) automatically, by just clicking the <b>Open in AppleScript Editor</b> button located above each of the example scripts, that are placed inline throughout the documentation on this site.</p>
+			
+			<p>So what are you waiting for? Use the purple navigation box on the upper right side of this page to begin the process of becoming an &ldquo;uber-cruncher!&rdquo;</p>
+						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: COMPATIBILITY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1"> Numbers 2009 Compatibility</div>
+											
+			<p>The documentation provided in this section concerns the use of the <span style="font-family:'Times Roman';font-style:italic;font-size:normal;font-weight:bold;">Numbers 2009 Compatibility Suite</span> provided in the Numbers 3.1 release. This scripting suite is a revision based upon the original scripting terminology of the Numbers 2009 release.</p>
+			
+			<p>Most scripts written to work with Numbers 2009 should work with Numbers 3.1, with the exception of scripts that address features in the older version that are not in the latest version. Likewise, there are a few scripting features in the latest version that are not present in older versions of the application. These few exceptions are noted in the following documentation.</p>
+						
+		</div>
+		<!-- END SEGMENT: COMPATIBILITY -->
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="automation-utilities.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li class="hi">Overview</li>
+				<li><a href="https://iworkautomation.com/numbers/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="https://iworkautomation.com/numbers/template.html">Template</a></li>
+				<li><a href="https://iworkautomation.com/numbers/document.html">Document</a></li>
+				<li><a href="https://iworkautomation.com/numbers/sheet.html">Sheet</a></li>
+				<li><a href="https://iworkautomation.com/numbers/table.html">Table</a></li>
+				<li><a href="https://iworkautomation.com/numbers/range.html">Range</a></li>
+				<li><a href="https://iworkautomation.com/numbers/cell.html">Cell</a></li>
+				<li><a href="https://iworkautomation.com/numbers/column.html">Column</a></li>
+				<li><a href="https://iworkautomation.com/numbers/row.html">Row</a></li>
+				<li><a href="https://iworkautomation.com/numbers/image.html">Image</a></li>
+				<li><a href="https://iworkautomation.com/numbers/media-items.html">Media Items</a></li>
+				<li><a href="https://iworkautomation.com/numbers/text-item.html">Text Item</a></li>
+				<li><a href="https://iworkautomation.com/numbers/keynote.html">Exporting to Keynote</a></li>
+				<li><a href="https://iworkautomation.com/numbers/sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="https://iworkautomation.com/numbers/examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/yosemite/index.html" target="_blank"><img src="../gfx/yosemite-rectangle.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WEBSITE HISTORY</h2>
+			<p>11-21-14 &bull; Added new section about <a href="sqlite.html">SQLite &amp; Numbers</a></p>
+			<p>04-01-14 &bull; Include updated script features: Templates, Images, etc.</p>
+			<p>01-24-14 &bull; Script Updates: Cell Clear Script, Read TSV to Selection</p>
+			<p>01-23-14 &bull; Release</p>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+<!-- 
+<tr><td><a href="https://iworkautomation.com/numbers" target="_self"><img width="72" alt="HTTPS icon link" src="gfx/HTTPS.png" style="position:absolute;float:left;left:8px;top:0px;z-index:100;"></a></td></tr>
+ -->
+</table>
+</body>
+</html>

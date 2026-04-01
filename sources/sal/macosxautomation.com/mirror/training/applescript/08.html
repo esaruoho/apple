@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Sidebar Width Property</h2>
+		
+		<p>Another Finder window property introduced in Mac OS X version 10.4 is the <span class="dictionary-term">sidebar width</span> property. The value of this property is an integer, indicating the width of the sidebar in pixels, and can be both read and changed.</p>
+
+		<p>Try this script that will set the sidebar width to 240 pixels:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20Finder%20window%201%20to%20240"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The width of a Finder window&rsquo;s sidebar can be set using a script.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> sidebar width <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window 1 <b>to</b> 240</p>		
+		
+		<a href="gfx/CH01_image15.jpg" rel="lightbox" title="The sidebar width of the front Finder window has been set to 240 pixels."><img src="gfx/CH01_image15.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">The sidebar width of the front Finder window has been set to 240 pixels.</p>
+		
+		<p>Now, set the width of the sidebar in the second window:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20the%20second%20Finder%20window%20to%20240"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to set the value of the sidebar width property of a Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> sidebar width <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>the second</b> Finder window <b>to</b> 240</p>
+		
+		<a href="gfx/CH01_image16.jpg" title="Both Finder windows have their sidebar width set to 240." rel="lightbox"><img src="gfx/CH01_image16.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">Both Finder windows have their sidebar width set to 240.</p>
+		
+		<p>Now, set the <span class="dictionary-term">sidebar width</span> to the minimum value for both windows at the same time:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20sidebar%20width%20of%20every%20Finder%20window%20to%200"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to set the sidebar width of all open Finder windows simultaneously.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> sidebar width <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>every</b> Finder window <b>to</b> 0</p>
+		
+		<a href="gfx/CH01_image17.jpg" title="Both Finder windows have their sidebar width set to the minimum value." rel="lightbox"><img src="gfx/CH01_image17.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="note"><b>NOTE</b>: In Mac OS X v10.4 (Tiger), the sidebar could be completely closed by setting the value of the sidebar width to 0. In Mac OS X v10.5 (Leopard), the sidebar has a minimum width of 135. Any value less than 135 will be ignored and 135 used instead.</p>
+		
+		<p>Note, you can even set the value of the sidebar width property of one window to match another window using a script like this:</p>
+
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to set the</b> sidebar width <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window 1 <b>to the</b> sidebar width <b>of</b> Finder window 2</p>
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="09.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li class="hi">The Sidebar Width Property</li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

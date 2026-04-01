@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: Adding Images and Media</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: VIEW DEMO RESULTS -->
+		<div class="content-segment">
+		<div class="segment-header" >Adding Images and Media</div>
+		
+		<p>EPUB books created with the Text to EPUB action can optionally contain images, audio files, and video files. In the following steps, you will add media to the EPUB book.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Add a cover image to the publication by selecting &quot;Other&hellip;&quot; from the cover image popup menu on the right side of the dialog:</p>
+			
+		<img src="gfx/multi-05.png" width="640" height="369" class="across">
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the forthcoming choose dialog sheet, navigate to the Cover folder in the Demo Kit and select the cover image, then click the <b>Choose</b> button to add the cover image.:</p>
+		
+		<img src="gfx/multi-06.png" width="640" height="393" class="across">
+				
+		<p>Next, you&rsquo;ll add add the audio clips to the book. By default, one media item (image, audio file, or video file) will be inserted at the beginning (or end) of each chapter. Since there are three chapters, we'll add three corresponding audio files, which will be inserted one per chapter.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Set the value for the &ldquo;Place Media&rdquo; popup menu to be &ldquo;One Per Chapter (Beginning)&rdquo;:</p>
+		
+		<img src="gfx/multi-08.png" width="640" height="369" class="across">
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Next, click the &quot;Add&hellip;&quot; button beneath the media list area <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> to summon a dialog for selecting media files. Navigate to the Audio folder, and select the three provided audio clips, then click the &quot;Add&quot; button <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> to add the selected audio clips to the media list:</p>
+		
+		<img src="gfx/multi-09.png" width="640" height="393" class="across">
+		
+		<p>The selected audio clips have been added to the media list: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+		
+		<img src="gfx/multi-10.png" width="640" height="369" class="across">
+		
+		<p>Next, we&rsquo;ll add the illustrations to the media list. By default, the action will place any media not assigned to a chapter, in a chapter at the end of the book named &quot;Illustrations.&quot;</p> 
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the &quot;Add&hellip;&quot; beneath the media list <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> to summon the picker dialog, then navigate the the Illustrations folder in the demo kit, select all the illustration images, and Click the &quot;Add&quot; button:</p>
+		
+		<img src="gfx/multi-11.png" width="640" height="393" class="across">
+		
+		<p>As an option, you can choose to have the action scale large images to a smaller size.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the &ldquo;Scale Images&rdquo; checkbox: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+		
+		<img src="gfx/multi-13.png" width="640" height="369" class="across">
+		
+		<p>All the book components have beed identified, settings applied, and the book is ready to be constructed.</p> 
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the &quot;Continue&quot; button <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> to begin the construction of the digital book.</p>
+		
+		<p>A temporary folder containing the components of the book will be created in the indicated destination folder. Once the processing of the book items has completed, the folder will be converted into an EPUB document, which is ready to be added to iTunes and then transfered to your iPad.</p>
+		
+		<img src="gfx/EPUB-file.png" width="186" height="187" class="centered" alt="EPUB-file">
+				
+		</div>
+		<!-- END SEGMENT: VIEW DEMO RESULTS -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="07.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">The Text to EPUB Services</a></li>
+				<li><a href="02.html">The Action Interface</a></li>
+				<li><a href="03.html">Formatted EPUB Demo</a></li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li><a href="05.html">Multiple Chapter EPUB Demo</a></li>
+				<li class="hi">Add Media to the Book</li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this workshop segment, attendees will add the audio and image files to the publication.</p>
+			
+			<p>Audio files included in an EPUB document must be saved in MPEG (.m4a) format. Video files must be saved in MPEG (.m4v) format. The media files included in the attendee demo kit are already encoded correctly for inclusion in an EPUB document. However, included as extras in the workshop leader demo kit, are unencoded versions of the media files that can be used to demonstrate the powerful easy-to-use services for performing desktop <a href="http://macosxautomation.com/automator/encodeaudio/index.html" target="_blank"><font color="#FF0000">encoding of audio files</font></a> and <a href="http://macosxautomation.com/automator/encodemedia/index.html" target="_blank"><font color="#FF0000">encoding of video files</font></a>, that are built into OS&nbsp;X.</p>
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol>
+				<li>As part of the compromise of limiting complexity to preserve ease-of-use, the <b>Text to EPUB</b> action offers minimal layout options for the created publication. Each chapter can contain one media item (image, audio, or video file) which will be placed at either the beginning or end of each chapter. Extra media items will be placed in a chapter appended to the end of the book.</li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

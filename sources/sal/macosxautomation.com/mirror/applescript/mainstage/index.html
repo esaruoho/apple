@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: MainStage GarageBand Controller</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<script src="AC_QuickTime.js" language="javascript" type="text/javascript"> </script>
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The MainStage GarageBand Controller</h2>
+		
+		<p>A popular use of GarageBand amongst musicians who perform live engagements, is to use it as a virtual backing band. GarageBand makes an excellent accompianment tool and offers many advantages over playing along with recorded audio backing tracks, specifically:</p>
+		
+		<ul class="square">
+			<li>Individual tracks, such as the track assigned for playing the melody, can easily be muted or soloed.</li>
+			
+			<li>GarageBand&rsquo;s cycle controls can be used to repeat or loop specific sections of a song, allowing for adjustable arranagements for live performance.</li>
+			
+			<li>Song tempos can be adjusted without altering the pitch or key of the song.</li>
+		</ul>
+
+		<p>In addition to GarageBand, the MainStage module from the Logic Pro suite of audio tools, has become a popular live-performance controller for delivering an infinite variety of virtual instruments and settings. However, it has always been problematic to use GarageBand and MainStage together, as it necessitates the computer be readily available to allow switching between the two applications.</p>
+		
+		<p>With AppleScript and the MainStage GarageBand Controller layout view, this problem has been solved. It is now possible to load and controll GarageBand from within MainStage and even from your MIDI devices!</p>
+		
+		<img src="gfx/MainStage.png" width="640" height="393" class="across">
+		
+		<p class="imagecaption">(above) A MainStage layout containing the GarageBand Controller (outlined in red).</p>
+		
+		<h3>The GarageBand Controller Interface</h3>
+		
+		<p>The MainStage GarageBand Controller has options for adjusting and controlling key playback features of GarageBand. Like many of the MainStage layout items, most of these controls can be assigned to be triggered by switches, pans, or keys on your MIDI keyboard or  interface.</p>
+		
+		<img src="gfx/MSGB-interface-annotated.png" alt="" width="640" height="173" class="across">
+		
+		<ol>
+			<li>Master Volume &#149; This control will interactively adjust the master volume slider of the frontmost GarageBand project.</li>
+			
+			<li>Tempo &#149; This control will interactively adjust the tempo of the frontmost GarageBand project. For smoothest results, stop the playback of the project before changing the settings of this control.</li>
+			
+			<li>Cycle Mode &#149; Triggering this button will display a list dialog for switching the cycle mode of the front GarageBand project, on or off.</li>
+			
+			<li>Rewind &#149; Triggering this button will cause the playback cursor of the front GarageBand project to be set to the beginning. If the project is currently playing, it will continue to play.</li>
+			
+			<li>Start &#149; Triggering this button will cause the front GarageBand project to play from its beginning.</li>
+			
+			<li>Stop &#149; Triggering this button will cause the front GarageBand project to stop playing. The playback cursor will remain at its current place on the timeline.</li>
+			
+			<li>Play/Resume &#149; Triggering this button will cause the front GarageBand project to play from the current position of the playback cursor.</li>
+			
+			<li>Open Project &#149; Triggering this button will display a list dialog for selecting the GarageBand project file to open. Initially, the dialog will display the top level contents of the GarageBand folder in the Music folder in your Home directory. The sub-folder heirarchy of the GarageBand folder can be naviagated to locate files orgainized in directories.<br><br>Once a file is chosen, any currently open GarageBand project will be automatically close without saving, and the new project opened. The name of the project and the value of its volume and tempo controls will be displayed below this MainStage button.</li>
+			
+			<li>Fade and Stop &#149; Triggering this button will cause the front GarageBand project to play for 10 seconds before it is stopped. During this 10-second period, the Master Volume slider will be gradually moved to 0.</li>
+		</ol>
+	
+
+		<h3>Installation</h3>
+		
+		<p>First, watch the movie linked above in the sidebar, to see how to add and use the GarageBand Controller template with your MainStage projects. Next, download and run the scripts and MainStage template installers available <a href="agreement.html">here</a>.</p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Video &#149; 39MB &#149; 6:29</h2>
+			<!-- 
+<script type="text/javascript">
+				QT_WriteOBJECT_XHTML('gfx/link.png', '200', '125','','controller','false','href','http://movies.apple.com/movies/us/apple/applescript/2009/MSGB-setup.mov','target','quicktimeplayer');
+			</script>
+ -->
+			<a href="MSGB-setup.mov"><img style="width: 200px; height: 125px;" src="gfx/link.png" alt="link"></a>
+			<p>Click the image above to watch a movie detailing how to setup and use the MainStage GarageBand Controller layout view. The movie is 1280x800 and will automatically play full-screen.</p>			
+		</div>
+		<div class="box">
+			<h2>Dashboard Widget</h2>
+			<a href="../qwikwidget/index.html"><img src="../qwikwidget/gfx/widget32x32.png" width="32" height="32" align="top" class="left"></a><p>The QwikFolder Dashboard widget uses AppleScript to quickly open many of the special folders in Mac&nbsp;OS&nbsp;X, such as the Shared Items folder.</p>
+		</div>
+			<div class="box">
+				<h2>Browse Full Screen Script</h2>
+				<a href="../toolbar/index.html"><img src="../toolbar/gfx/Zoom32x32.png" width="32" height="20" align="top" class="left"></a><p>A toolbar script that instantly zooms the current Finder window to display full-screen, in Flow View mode, and with the Dock hidden. Click the toolbar script again to return to normal.</p>
+			</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

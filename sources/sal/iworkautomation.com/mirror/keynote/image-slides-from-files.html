@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Image Slides from Files</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="A detailed description of how to use the AppleScript support for images in the iWork Keynote application, add photo slides to the current Keynote document.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Image Slides from Files</div>
+		
+			<p>Here is a script that demonstrates the technique for creating new image slides from selected image files. You have the option to use the standard image import scaling or sizing the image to fill the slide.</p>
+		
+			<img class="across" width="640" alt="scale-to-fit" src="gfx/scale-to-fit.png" height="390">
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>Image added to slide using the Keynote application’s default import methodology: if an image dimension is smaller than a corresponding slide dimension, then it is added at normal size; if an image dimension is greater than a corresponding slide dimension, then it is scaled to the corresponding slide dimension. The added image is centered in the window. In the example above, both dimensions of the image are smaller than their corresponding slide dimensions.<br><br><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>Image added to slide using Scale to Fill method: adjust the image as needed (scale up or down) so that all the slide area is covered.</p>
+			<img class="across" width="640" height="390" alt="scale-to-fill" src="gfx/scale-to-fill.png">
+		
+					
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Image Slides from Files</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20playing%20is%20true%20then%20tell%20the%20front%20document%20to%20stop%0D%09%0D%09set%20theseImageFiles%20to%20%C2%AC%0D%09%09(choose%20file%20of%20type%20%22public.image%22%20with%20prompt%20%C2%AC%0D%09%09%09%22Select%20the%20image%20file(s)%20to%20import%3A%22%20default%20location%20%C2%AC%0D%09%09%09(path%20to%20pictures%20folder)%20with%20multiple%20selections%20allowed)%0D%09%0D%09display%20dialog%20%22Scale%20the%20images%20using%20which%20method%3A%22%20buttons%20%C2%AC%0D%09%09%7B%22Cancel%22%2C%20%22Scale%20to%20Fill%22%2C%20%22Default%20(Fit%20%26%20Center)%22%7D%20default%20button%203%0D%09if%20the%20button%20returned%20of%20the%20result%20is%20%22Scale%20to%20Fill%22%20then%0D%09%09set%20scaleToFill%20to%20true%0D%09else%0D%09%09set%20scaleToFill%20to%20false%0D%09end%20if%0D%09%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseImageFiles%0D%09%09set%20thisImageFile%20to%20item%20i%20of%20theseImageFiles%0D%09%09if%20not%20(exists%20document%201)%20then%0D%09%09%09set%20thisDocument%20to%20make%20new%20document%0D%09%09%09set%20thisSlide%20to%20the%20first%20slide%20of%20thisDocument%0D%09%09%09set%20the%20base%20slide%20of%20thisSlide%20to%20master%20slide%20%22Blank%22%20of%20thisDocument%0D%09%09else%0D%09%09%09tell%20front%20document%0D%09%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bbase%20slide%3Amaster%20slide%20%22Blank%22%7D%0D%09%09%09end%20tell%0D%09%09end%20if%0D%09%09my%20addImageFileToSlide(thisSlide%2C%20thisImageFile%2C%20scaleToFill)%0D%09end%20repeat%0D%09%0Dend%20tell%0D%0Don%20addImageFileToSlide(thisSlide%2C%20thisImageFile%2C%20scaleToFill)%0D%09tell%20application%20%22Keynote%22%0D%09%09try%0D%09%09%09activate%0D%09%09%09set%20queryResult%20to%20my%20getImageDimensions(POSIX%20path%20of%20thisImageFile)%0D%09%09%09if%20queryResult%20is%20false%20then%0D%09%09%09%09error%20number%2010000%0D%09%09%09else%0D%09%09%09%09copy%20queryResult%20to%20%7BimageWidth%2C%20imageHeight%7D%0D%09%09%09end%20if%0D%09%09%09tell%20front%20document%0D%09%09%09%09set%20documentWidth%20to%20its%20width%0D%09%09%09%09set%20documentHeight%20to%20its%20height%0D%09%09%09end%20tell%0D%09%09%09tell%20thisSlide%0D%09%09%09%09if%20scaleToFill%20is%20false%20then%0D%09%09%09%09%09set%20thisImage%20to%20make%20new%20image%20with%20properties%20%7Bfile%3AthisImageFile%7D%0D%09%09%09%09%09tell%20thisImage%0D%09%09%09%09%09%09set%20thisImageWidth%20to%20its%20width%0D%09%09%09%09%09%09set%20thisImageHeight%20to%20its%20height%0D%09%09%09%09%09%09--%20center%20image%0D%09%09%09%09%09%09set%20position%20of%20it%20to%20%C2%AC%0D%09%09%09%09%09%09%09%7B(documentWidth%20-%20thisImageWidth)%20%2F%202%20%C2%AC%0D%09%09%09%09%09%09%09%09%2C%20(documentHeight%20-%20thisImageHeight)%20%2F%202%7D%0D%09%09%09%09%09end%20tell%0D%09%09%09%09else%20--%20scale%20to%20fill%0D%09%09%09%09%09--%20figure%20new%20image%20height%20based%20on%20setting%20new%20image%20width%20to%20slide%20width%0D%09%09%09%09%09set%20newImageHeight%20to%20(imageHeight%20*%20documentWidth)%20%2F%20imageWidth%0D%09%09%09%09%09--%20check%20to%20see%20if%20new%20image%20height%20is%20greater%20than%20or%20equal%20to%20document%20height%0D%09%09%09%09%09if%20newImageHeight%20is%20greater%20than%20or%20equal%20to%20documentHeight%20then%0D%09%09%09%09%09%09set%20newImageWidth%20to%20documentWidth%0D%09%09%09%09%09%09--%20center%20image%20vertically%0D%09%09%09%09%09%09set%20verticalOffset%20to%20((newImageHeight%20-%20documentHeight)%20%2F%202)%20*%20-1%0D%09%09%09%09%09%09set%20horizontalOffset%20to%200%0D%09%09%09%09%09else%0D%09%09%09%09%09%09--%20scale%20image%20height%20to%20match%20slide%20height%0D%09%09%09%09%09%09set%20newImageHeight%20to%20documentHeight%0D%09%09%09%09%09%09set%20newImageWidth%20to%20(documentHeight%20*%20imageWidth)%20%2F%20imageHeight%0D%09%09%09%09%09%09--%20center%20image%20horizontally%0D%09%09%09%09%09%09set%20verticalOffset%20to%200%0D%09%09%09%09%09%09set%20horizontalOffset%20to%20((newImageWidth%20-%20documentWidth)%20%2F%202)%20*%20-1%0D%09%09%09%09%09end%20if%0D%09%09%09%09%09--%20import%2C%20scale%2C%20and%20position%20image%0D%09%09%09%09%09set%20thisImage%20to%20make%20new%20image%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bfile%3AthisImageFile%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20width%3AnewImageWidth%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20height%3AnewImageHeight%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20position%3A%7BhorizontalOffset%2C%20verticalOffset%7D%7D%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09%09display%20alert%20errorNumber%20message%20errorMessage%0D%09%09%09end%20if%0D%09%09%09error%20number%20-128%0D%09%09end%20try%0D%09end%20tell%0Dend%20addImageFileToSlide%0D%0Don%20getImageDimensions(thisImageFilePOSIXPath)%0D%09try%0D%09%09set%20imageWidth%20to%20%C2%AC%0D%09%09%09(do%20shell%20script%20%22mdls%20-raw%20-name%20kMDItemPixelWidth%20%22%20%26%20%C2%AC%0D%09%09%09%09quoted%20form%20of%20thisImageFilePOSIXPath)%20as%20integer%0D%09%09set%20imageHeight%20to%20%C2%AC%0D%09%09%09(do%20shell%20script%20%22mdls%20-raw%20-name%20kMDItemPixelHeight%20%22%20%26%20%C2%AC%0D%09%09%09%09quoted%20form%20of%20thisImageFilePOSIXPath)%20as%20integer%0D%09%09return%20%7BimageWidth%2C%20imageHeight%7D%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20getImageDimensions"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then tell the front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">theseImageFiles</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;public.image&quot; <span class="codelibraryparameter">with prompt</span>  &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>&quot;Select the image file(s) to import:&quot; <span class="codelibraryparameter">default location</span> &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">path to</span> <span class="codeenumeration">pictures folder</span>) <b>with</b> <span class="codelibraryparameter">multiple selections allowed</span> )</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Scale the images using which method:&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Scale to Fill&quot;, &quot;Default (Fit &amp; Center)&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span> <b>is</b> &quot;Scale to Fill&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">scaleToFill</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">scaleToFill</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseImageFiles</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseImageFiles</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span> <b>to the first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>of</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Blank&quot; <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">addImageFileToSlide</span>(<span class="codevariable">thisSlide</span>, <span class="codevariable">thisImageFile</span>, <span class="codevariable">scaleToFill</span>)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">addImageFileToSlide</span>(<span class="codevariable">thisSlide</span>, <span class="codevariable">thisImageFile</span>, <span class="codevariable">scaleToFill</span>)</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">queryResult</span> <b>to my</b> <span class="codevariable">getImageDimensions</span>(<span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">queryResult</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> 10000</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>copy</b> <span class="codevariable">queryResult</span> <b>to</b> {<span class="codevariable">imageWidth</span>, <span class="codevariable">imageHeight</span>}</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">scaleToFill</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- center image</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>of it to</b> &not;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>{(<span class="codevariable">documentWidth</span> - <span class="codevariable">thisImageWidth</span>) / 2 &not;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span>, (<span class="codevariable">documentHeight</span> - <span class="codevariable">thisImageHeight</span>) / 2}</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>else</b> <span class="codecomment">-- scale to fill</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- figure new image height based on setting new image width to slide width</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageHeight</span> <b>to</b> (<span class="codevariable">imageHeight</span> * <span class="codevariable">documentWidth</span>) / <span class="codevariable">imageWidth</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- check to see if new image height is greater than or equal to document height</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">newImageHeight</span> <b>is greater than or equal to</b> <span class="codevariable">documentHeight</span> <b>then</b></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageWidth</span> <b>to</b> <span class="codevariable">documentWidth</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- center image vertically</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">verticalOffset</span> <b>to</b> ((<span class="codevariable">newImageHeight</span> - <span class="codevariable">documentHeight</span>) / 2) * -1</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">horizontalOffset</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- scale image height to match slide height</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageHeight</span> <b>to</b> <span class="codevariable">documentHeight</span></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageWidth</span> <b>to</b> (<span class="codevariable">documentHeight</span> * <span class="codevariable">imageWidth</span>) / <span class="codevariable">imageHeight</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- center image horizontally</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">verticalOffset</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">horizontalOffset</span> <b>to</b> ((<span class="codevariable">newImageWidth</span> - <span class="codevariable">documentWidth</span>) / 2) * -1</td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- import, scale, and position image</span></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">file</span>:<span class="codevariable">thisImageFile</span> &not;</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">width</span>:<span class="codevariable">newImageWidth</span> &not;</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">height</span>:<span class="codevariable">newImageHeight</span> &not;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">position</span>:{<span class="codevariable">horizontalOffset</span>, <span class="codevariable">verticalOffset</span>}}</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">errorNumber</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">addImageFileToSlide</span></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">getImageDimensions</span>(<span class="codevariable">thisImageFilePOSIXPath</span>)</td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">imageWidth</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;mdls -raw -name kMDItemPixelWidth &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImageFilePOSIXPath</span>) <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">imageHeight</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;mdls -raw -name kMDItemPixelHeight &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImageFilePOSIXPath</span>) <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> {<span class="codevariable">imageWidth</span>, <span class="codevariable">imageHeight</span>}</td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">getImageDimensions</span></td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image-add-descriptions.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li class="hi"><a href="image.html">Image</a></li>
+				<li class="navListSectionItem"><a href="image-properties.html">Image Properties</a></li>
+				<li class="navListSectionItem"><a href="image-placeholder.html">Importing vs Replacing</a></li>
+				<li class="navListSectionItem"><a href="image-from-URL.html">Images from URLs</a></li>
+				<li class="navListSectionItemSelected">Image Slides from Files</li>
+				<li class="navListSectionItem"><a href="image-add-descriptions.html">Add Image Descriptions</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Removing Rows</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Removing Rows</div>
+											
+			<p>The <span class="codelibrarycommand">remove</span> command is used to delete <span class="codelibraryclass">rows</span> from a table.</p>
+
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">remove</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Remove specified rows or columns from a table.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>remove</b> <span class="dictionary-class">range</span></p>
+			</div>
+			
+			<p>The example script below, shows four methods for targeting specific rows to be removed:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codevariable">selectedTable</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- identify the target row by position</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">remove</span> <b>last</b> <span class="codelibraryclass">row</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- identify the target row by index</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">remove</span> <span class="codelibraryclass">row</span> 2</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- identify the target row by name</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">remove</span> <span class="codelibraryclass">row</span> &quot;February&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- identity the target row(s) from selection range</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">theseRows</span> <b>to every</b> <span class="codelibraryclass">row</span> <b>of</b> <span class="codeproperty">selection range</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibraryclass">count</span> <b>of</b> <span class="codevariable">theseRows</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">remove</span> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseRows</span>)</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="row.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li class="hi"><a href="row.html">Row</a></li>
+				<li class="navListSectionItem"><a href="row-select.html">Selecting Rows</a></li>
+				<li class="navListSectionItem"><a href="row-add.html">Adding Rows</a></li>
+				<li class="navListSectionItemSelected">Removing Rows</li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Text Item Styling</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for text items in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Text Item Styling</div>
+						
+			<p>The <span class="dictionary-suite">iWork Text Suite</span> provides the classes and properties for manipulating text in all <b>iWork</b> applications. Using this suite a script can set the <span class="codeproperty">font</span> (typeface), <span class="codeproperty">size</span>, and <span class="codeproperty">color</span> of the <span class="codeproperty">object text</span> placed within <span class="codelibraryclass">text items</span> and <span class="codelibraryclass">shapes</span>, as demonstrated in this video of a presentation created by the example script from this page:</p>
+
+			<video id="sampleMovie3" width="624" height="390" controls preload">
+				<source src="abracadabra.m4v" />
+			</video>
+			
+			<p>Here is the dictionary listing for the <span class="dictionary-suite">iWork Text Suite</span>:</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Text Suite</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">rich text</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp; <i>pl&nbsp;</i> <span class="dictionary-term">rich text</span>&nbsp;: This provides the base rich text class for all iWork applications.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="codelibraryclass">characters</span>, <span class="codelibraryclass">paragraphs</span>, <span class="codelibraryclass">words</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">color</span> (&nbsp;<span class="dictionary-class">RGB color</span> | <span class="codelibraryclass">text</span>&nbsp;) : The color of the font. Expressed as an RGB value consisting of a list of three color values from 0 to 65535. ex: Blue = {0, 0, 65535}. In addition, the lowercase names of the following standard colors can be used in place of RGB color value lists: &quot;black&quot;, &quot;blue&quot;, &quot;brown&quot;, &quot;cyan&quot;, &quot;green&quot;, &quot;magenta&quot;, &quot;orange&quot;, &quot;purple&quot;, &quot;red&quot;, &quot;yellow&quot;, and &quot;white&quot;.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">font</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : The name of the font. Can be the PostScript name, such as: &ldquo;TimesNewRomanPS-ItalicMT&rdquo;, or display name: &ldquo;Times New Roman Italic&rdquo;. TIP: Use the Font Book application get the information about a typeface.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">size</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The size of the font (in points).</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">character</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s characters.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>, <span class="codelibraryclass">paragraphs</span>, <span class="codelibraryclass">words</span>.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">paragraph</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s paragraphs.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">word</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s words.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>, <span class="codelibraryclass">paragraphs</span>.</p>
+			</div>
+			
+			<p>The following script demonstrates how to apply styling to a <span class="codelibraryclass">text item</span>’s <span class="codeproperty">object text</span>:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Styling Text</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3A1920%2C%20height%3A1080%7D%0D%09%0D%09tell%20thisDocument%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09%0D%09%09set%20the%20base%20slide%20of%20the%20first%20slide%20to%20master%20slide%20%22Blank%22%0D%09%09%0D%09%09tell%20slide%201%0D%09%09%09--%20create%20a%20new%20text%20item%0D%09%09%09set%20thisDisplayText%20to%20%22Abracadabra%22%0D%09%09%09set%20thisTextItem%20to%20%C2%AC%0D%09%09%09%09make%20new%20text%20item%20with%20properties%20%7Bobject%20text%3AthisDisplayText%7D%0D%09%09%09tell%20thisTextItem%0D%09%09%09%09--%20set%20type%20size%0D%09%09%09%09set%20the%20size%20of%20its%20object%20text%20to%20144%0D%09%09%09%09--%20set%20typeface%0D%09%09%09%09set%20the%20font%20of%20its%20object%20text%20to%20%22Zapfino%22%0D%09%09%09%09--%20adjust%20its%20vertical%20positon%0D%09%09%09%09copy%20its%20position%20to%20%7BcurrentHorizontal%2C%20currentVertical%7D%0D%09%09%09%09set%20its%20position%20to%20%7BcurrentHorizontal%2C%20documentHeight%20div%203%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09duplicate%20slide%201%20to%20after%20slide%201%0D%09%09%0D%09%09tell%20slide%202%0D%09%09%09set%20thisTextItem%20to%20its%20first%20text%20item%0D%09%09%09tell%20thisTextItem%0D%09%09%09%09--%20set%20color%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20length%20of%20thisDisplayText%0D%09%09%09%09%09set%20thisRGBColorValue%20to%20my%20generateRandomRGBColorValue()%0D%09%09%09%09%09set%20the%20color%20of%20character%20i%20of%20object%20text%20to%20thisRGBColorValue%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09set%20the%20transition%20properties%20of%20the%20first%20slide%20to%20%C2%AC%0D%09%09%09%7Btransition%20effect%3Asparkle%2C%20transition%20duration%3A2.0%20%C2%AC%0D%09%09%09%09%2C%20transition%20delay%3A1.0%2C%20automatic%20transition%3Atrue%7D%0D%09end%20tell%0D%09%0D%09start%20thisDocument%20from%20first%20slide%20of%20thisDocument%0Dend%20tell%0D%0Don%20generateRandomRGBColorValue()%0D%09set%20RedValue%20to%20random%20number%20from%200%20to%2065535%0D%09set%20GreenValue%20to%20random%20number%20from%200%20to%2065535%0D%09set%20BlueValue%20to%20random%20number%20from%200%20to%2065535%0D%09return%20%7BRedValue%2C%20GreenValue%2C%20BlueValue%7D%0Dend%20generateRandomRGBColorValue"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:theme &quot;Black&quot;, width:1920, <span class="codeproperty">height</span>:1080}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">base slide</span> <b>of the first</b> <span class="codelibraryclass">slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Blank&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- create a new text item</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDisplayText</span> <b>to</b> &quot;Abracadabra&quot;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTextItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">object text</span>:<span class="codevariable">thisDisplayText</span>}</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTextItem</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set type size</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">size</span> <b>of its</b> <span class="codeproperty">object text</span> <b>to</b> 144</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set typeface</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font</span> <b>of its</b> <span class="codeproperty">object text</span> <b>to</b> &quot;Zapfino&quot;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- adjust its vertical positon</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>copy its</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">currentHorizontal</span>, <span class="codevariable">currentVertical</span>}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set its</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">currentHorizontal</span>, <span class="codevariable">documentHeight</span> <b>div</b> 3}</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">duplicate</span> <span class="codelibraryclass">slide</span> 1 <b>to after</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 2</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTextItem</span> <b>to its first</b> text item</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTextItem</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set color</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codeproperty">length</span> <b>of</b> <span class="codevariable">thisDisplayText</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRGBColorValue</span> <b>to my</b> <span class="codevariable">generateRandomRGBColorValue</span>()</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of</b> <span class="codelibraryclass">character</span> <span class="codevariable">i</span> <b>of</b> <span class="codeproperty">object text</span> <b>to</b> <span class="codevariable">thisRGBColorValue</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>of the first</b> <span class="codelibraryclass">slide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">sparkle</span>, <span class="codeproperty">transition duration</span>:2.0 &not;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:1.0, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">true</span>}</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">generateRandomRGBColorValue</span>()</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">RedValue</span> <b>to</b> <span class="codelibrarycommand">random number</span> <b>from</b> 0 <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">GreenValue</span> <b>to</b> <span class="codelibrarycommand">random number</span> <b>from</b> 0 <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">BlueValue</span> <b>to</b> <span class="codelibrarycommand">random number</span> <b>from</b> 0 <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> {<span class="codevariable">RedValue</span>, <span class="codevariable">GreenValue</span>, <span class="codevariable">BlueValue</span>}</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">generateRandomRGBColorValue</span></td></tr>
+			</table>
+			
+			<p class="segment-note"><b>TIP</b>: For examples of styling the <span class="codeproperty">object text</span> of a <span class="codelibraryclass">shape</span>, select the <b>Shape</b> topic from the Navigation Menu at the top right of this page.</p>
+						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="text-item-overlay.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi"><a href="text-item.html">Text Item</a></li>
+				<li class="navListSectionItem"><a href="text-item-behavior.html">The Text Item Container</a></li>
+				<li class="navListSectionItemSelected">Styling Object Text</li>
+				<li class="navListSectionItem"><a href="text-item-overlay.html">Text Item Overlays</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

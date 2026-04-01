@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- 
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+ -->
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+<!~~ START IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcast.m4a\" width=\"320\" height=\"338\" scale=\"2\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!~~ END IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function SelectAll(id)
+			{
+				document.getElementById(id).focus();
+				document.getElementById(id).select();
+			}
+	</script>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: ASSIGN SHORTCUTS TO SERVICES -->
+		<div class="content-segment">
+		<div class="segment-header">Assign Keyboard Shortcuts to Services</div>
+		
+		<p>Once an Automator workflow service is created and installed, it will be available in the <b>Services</b> menu (located in the <b>Application</b> menu of most applications) and in many contextual menus throughout the system. To make it easier to access services that you use regularly, you can assign keyboard shortcuts to trigger them easily. Assigning keyboard shortcuts is done in the <b>Keyboard Shortcuts</b> pane of the <b>Keyboard</b> system preference.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Access the Services preferences by selecting the &ldquo;Services Preferences&hellip;&rdquo; menu option of the &ldquo;Services&rdquo; menu, available in most application menus, such as in the Finder (show below).</p>
+		
+		<img src="gfx/servicesprefs01.png" width="624" height="260" class="centered">
+		
+		<p>Once the &ldquo;Services Preferences&hellip;&rdquo; menu item is selected, the <b>System Preferences</b> application will launch and automatically switch its display to the <b>Services</b> tab in the <b>Keyboard Shortcuts</b> view of the <b>Keyboard</b> preference pane (see below).</p>
+		
+		<p>A list of the services installed on your computer are displayed on the right-side of the window. Each service can be activated or deactivated by selecting or deselecting the checkbox to the left of the service name <span class="numeric-callout">&nbsp;1&nbsp;</span>.</p>
+		
+		<img src="gfx/assign.png" width="640" height="583" class="across">
+		
+		<p>Optionally, services can be assigned keyboard shortcuts. Let&rsquo;s assign keyboard shortcuts to the services you just created.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the Keyboard Shortcuts list, select the &ldquo;Read Selection Aloud (female)&rdquo; service. Hit the &ldquo;Return&rdquo; or &ldquo;Enter&rdquo; key once to activate the key assigning field to the right of the service name <span class="numeric-callout">&nbsp;2&nbsp;</span> (see above). Type the key combination &ldquo;Control Key-1&rdquo; to assign the key-pairing to the service, which will display as <b>&#8963;1</b> in the service list.</p>
+		
+		<p>Continue the process of assigning keyboard shortcuts to the created services using the following keyboard combinations:</p>
+		
+		<table border="1" cellpadding="2" align="left"  style="position:relative;width:624px;background-color:#888A2B;margin-bottom:12px;">
+			<tr>
+				<td>Service</td>
+				<td align="center">Key Combination</td>
+				<td align="center">Key Notation</td>
+			</tr>
+			<tr>
+				<td>Read Selection Aloud (female)</td>
+				<td align="center">Control-1</td>
+				<td align="center">&#8963;1</td>
+			</tr>
+			<tr>
+				<td>Read Selection Aloud (male)</td>
+				<td align="center">Control-2</td>
+				<td align="center">&#8963;2</td>
+			</tr>
+			<tr>
+				<td>Render Selection as Audio (female)</td>
+				<td align="center">Control-Option-1</td>
+				<td align="center">&#8963;&#8997;1</td>
+			</tr>
+			<tr>
+				<td>Render Selection as Audio (male)</td>
+				<td align="center">Control-Option-2</td>
+				<td align="center">&#8963;&#8997;2</td>
+			</tr>
+		</table>
+		
+		<p>When you&rsquo;ve finished, the System Preference window should look something like the one shown below. (Make sure that the services are still active and have their checkboxes selected.)</p>
+		
+		<img src="gfx/assign2.png" width="624" height="583" class="centered">
+		
+		<p>Now that keystroke shortcuts have been assigned to the services, they can be accessed anytime you have text selected in a document or webpage.</p>
+		
+		<p class="content-subhead">Using the Speaking Services</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Try out the speaking services and their keyboard assignments (not the rendering services just yet), by selecting the following paragraph and typing either &ldquo;&#8963;1&rdquo; (Control-1) or &ldquo;&#8963;2&rdquo; (Control-2):</p>
+		
+		
+		<textarea rows="3" id="txtarea01" onClick="SelectAll('txtarea01');" style="font-family:'Times New Roman',serif;font-size:large;font-style:italic;padding:18px;width:90%;">We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable rights, that among these are life, liberty and the pursuit of happiness.</textarea>
+		
+		<p>In the next workshop segment, we will use the newly assigned keyboard shortcuts to test and encode the first narration segment for the GarageBand project.</p>
+		
+		</div>
+		<!-- END SEGMENT: ASSIGN SHORTCUTS TO SERVICES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li class="hi">Assign Keyboard Shortcuts</li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>The purpose of this segment is to have the attendees assign keyboard shortcuts to their newly created services. This provides an opportunity for them to learn about the controls available for organizing and activating the services installed on their computers.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Services are managed in the Services pane of the <b>Keyboard Shortcuts</b> tab in the <b>Keyboard</b> system preference pane.</li>
+				<li>Services can be enabled and disabled using these controls.</li>
+				<li>Keyboard shortcuts provide a quick and easy way to apply the power of services in the system.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

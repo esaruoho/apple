@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../automation.css" media="all">
+<!-- END META INFO -->
+	<!-- IMAGE LIGHTBOX -->
+  	<link rel="stylesheet" href="../img/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="../img/lightbox.js" type="text/javascript" charset="utf-8"></script>
+	<!-- IMAGE LOADING -->
+  	<link rel="stylesheet" href="../img/imageload.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="../img/imageload.js" type="text/javascript" charset="utf-8"></script>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../index.html">Lion Release Notes</a> | <a href="../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+			<h1 style="margin-top: 0;">Text to EPUB File</h1>
+			
+			<p>The ability to easily create and share information is an essential requirement for businesses and classrooms alike. Since many computers and mobile media devices now support digital reader applications, the use of digital books as a means of content delivery has dramatically increased. On the iPad and the iPhone, the Apple-provided reader application is <a href="http://www.apple.com/ipad/features/ibooks.html" target="_blank">iBooks</a>, and it supports the viewing of both commercial and non-commercial digital publications, including those created in the free and open Electronic Publication (<a href="http://www.idpf.org" target="_blank">EPUB</a>) format.</p>
+			
+			<p>A third-party application for reading EPUB documents on Mac&nbsp;OS&nbsp;X is <a href="http://www.stairways.com/main/bookle" target="_blank">Bookle</a> by Stairways Software. It is available on the <a href="http://itunes.apple.com/us/app/bookle/id496158508?mt=12" target="_blank">App Store</a> as well.</p>
+			
+			<p>Mac&nbsp;OS&nbsp;X Lion includes a built-in Automator action, named <b>Text to EPUB File</b>, that is designed to make it very easy to convert selected text or text documents into EPUB books, ideal for transferring to iPads and iPhones. Additionally, the created EPUB books can include images, MPEG audio, or MPEG video files.</p>
+			
+			<p class="note"><b>NOTE:</b> If the source documents for the action are in Rich Text Format (RTF), any formatting they possess will be preserved, and display correctly in the EPUB document. <b>HOWEVER</b>, <font color="#FF0000">files in RTFD format (Rich Text with embedded images and/or media) are <b><i>not</i></b> supported as input</font>.<br><br>Also, the action includes full Unicode support, so Asian and Arabic characters are preserved as well.  <img src="gfx/HUDPreviewActive.png" highresurl="gfx/multilanguageexample.jpg" width="36" caption="" onclick="void(0);lightboxThisImage(this);" height="36" align="right"></p>
+			
+									
+			<h3>The Action Interface</h3>
+			
+			<p>The action's interface is divided into two sections: on the left are the input fields for determining the created file name and location,; and on the right are the controls for adding related images, audio files, or movies. Here's an overview of the action interface controls.</p>
+			
+			<p><b>Document Parameters and Metadata</b>: (NOTE: all of these controls accept Automator workflow variables as input)</p>
+			
+			<ol>
+				<li><b>Title</b> - Enter the title of the book in this text field <font color="#FF0000"><b>(1)</b></font>.</li>
+				
+				<li><b>Author</b> - Enter the author of the book in this text field <font color="#FF0000"><b>(2)</b></font>. By default, the name of the current user will be used.</li>
+				
+				<li><b>File Name</b> - Enter the name for the created EPUB document in this text field <font color="#FF0000"><b>(3)</b></font>. EPUB file names must end with a name extension of &quot;epub&quot; like: <i>My Story.epub</i></li>
+				
+				<li><b>File Destination</b> - Choose the folder that will contain the created EPUB document from this popup menu <font color="#FF0000"><b>(4)</b></font>.</li>				
+			</ol>
+			
+			<img src="gfx/texttoepub.jpg" width="640" height="369" class="across">
+			
+			<p><b>Optional Media</b>:</p>
+			
+			<ol start="5">
+				<li><b>Cover Image</b> - Optionally, the EPUB book can have a custom cover image. Select the image file to be used as the  cover image from this popup menu <font color="#FF0000"><b>(5)</b></font>.</li>
+				
+				<li><b>Media Placement</b> - Images, audio (.m4a), or video (.m4v) files added to the book are placed one per chapter at either the beginning or end of each chapter. Select the insertion location from this popup menu <font color="#FF0000"><b>(6)</b></font>.<br><br>NOTE: additional media files (those unassigned to chapters) will be placed as a group at the end of the book in a chapter titled &quot;Illustrations.&quot; For example, if seven images are added to a book containing three chapters, the first three images in the list will be placed one-per-chapter and the remainning four images will be placed in an illustrations chapter at the end of the book.</li>
+			
+				<li><b>Scale Images</b> - Select this checkbox <font color="#FF0000"><b>(7)</b></font> if you want to reduce the file size of the EPUB document by scaling the images added to the book to fit within 1024 pixels.</li>
+			
+				<li><b>Media List</b> - A list of the added media files <font color="#FF0000"><b>(8)</b></font>. Files can be added or removed using the controls beneath the list view  <font color="#FF0000"><b>(9)</b></font>.</li>
+			</ol>
+			
+			<hr>
+			
+			<h3>EPUB Services</h3>
+			
+			<p>By default, Mac&nbsp;OS&nbsp;X Lion does not include any services that use the <b>Text to EPUB File</b> action. However, the <b>Text to EPUB Services</b> collection available on this website contains four Automator services for converting text into digital books:</p>
+				<ol>
+					<li>Create EPUB Book with Selected Files</li>
+					<li>Create EPUB Book with Selected Text</li>
+					<li>Create Formatted EPUB Book with Selected Text</li>
+					<li>Create EPUB Book with Contents of Clipboard</li>
+				</ol>
+				<p><a href="workflows.html">View</a> the service workflows</p>
+				<p><a href="agreement.html">Download</a> the service files</p>
+
+			<hr>
+			<h3>Media Preparation</h3>
+			
+			<p>Audio and video files should be encoded prior to using them with the <b>Text to EPUB File</b> action. Video files added to EPUB documents must be in MPEG (.m4v) format, and audio files must be in MPEG (.m4a) format. Fortunately, Mac&nbsp;OS&nbsp;X Lion includes two built-in services for converting video and audio files to the proper formats for inclusion in digital books. These services  appear in the Finder's contextual menu when appropriate audio/video source files are selected:</p>
+				
+			<ul>
+				<li><b>Encode Selected Movie Files</b> &bull; This service will encode movie files (.mov) selected in the Finder, to MPEG files (.m4v) for use with AppleTV, iPod, iPhone, or the iPad. (<a href="../encodemedia/index.html">learn more</a>)</li>
+				
+				<li><b>Encode Selected Audio Files</b> &bull; This service will encode selected audio files of WAV, AIF, CAF, or SDII formats, to MPEG (.m4a) files for use with the iPod, iPhone, or the iPad. (<a href="../encodeaudio/index.html">learn more</a>)</li>
+			</ul>
+			
+			<hr>
+			<h3>DOWNLOADS AND TUTORIALS</h3>
+			<p>You can download the installer for the EPUB services <a href="agreement.html">here</a>.</p>
+			
+			<p>In addition to the service installers, this website contains two hands-on tutorials with example materials.</p>
+			
+			<ol type="1">
+				<li><a href="simplebook/index.html">Simple Formatted Book</a> &#149; create a single-flow formatted book from the text selected in a document.</li>
+				<li><a href="demo.html">Multi-Chapter Book</a> &#149; create a multiple chapter book from selected text files, and add audio and image files as well.</li>
+			</ol>
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+		
+			<img src="gfx/multilanguageexample.jpg" alt="" style="display: none" width="768" height="1024">
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>NEW ACTIONS IN LION</h2>
+			<ol>
+				<li class="hi">Text to EPUB File</li>
+				<li><a href="../websitepopup/index.html">Website PopUp</a></li>
+				<li><a href="../createbanner/index.html">Create Banner Image from Text</a></li>
+				<li><a href="../encodeaudio/index.html">Encode to MPEG Audio</a></li>
+				<li><a href="../encodemedia.html">Encode Media</a></li>
+				<li><a href="../annotatedversion.html">Create Annotated Media File</a></li>
+				<li><a href="../webcontent/index.html">Get Web Content/Save Images from Web Content</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>ABOUT AUTOMATOR/SERVICES</h2>
+			<p>To learn more about how to create your own Automator workflows and services using this action, watch these short movies:</p>
+			<ul>
+				<li><a href="javascript:window.open('http://www.macosxautomation.com/automator/video/automator-001A.html','viewer-window-large','width=1284,height=740');">Introduction to Automator</a></li>
+				<li><a href="javascript:window.open('http://www.macosxautomation.com/services/video/services-001HD.html','viewer-window-large','width=1284,height=740');">Introduction to Services</a></li>
+			</ul>
+		</div>
+			<div class="box">
+				<h2>WHAT IS EPUB?</h2>
+				<img src="gfx/epub_logo_color.jpg" width="72" hspace="4" align="left" height="99" style="border-style:solid;border-width:4px;border-color:white;margin-right:4px;margin-bottom:2px;">
+				<p>The <a href="http://www.idpf.org" target="_blank">International Digital Publishing Forum</a> (IDPF) is the trade and standards association for the digital publishing industry. &quot;.epub&quot; is the file extension of an XML format for reflowable digital books and publications. &quot;.epub&quot; is composed of three open standards, the Open Publication Structure (OPS), Open Packaging Format (OPF) and Open Container Format (OCF), produced by the IDPF. &quot;EPUB&quot; allows publishers to produce and send a single digital publication file through distribution and offers consumers interoperability between software/hardware for unencrypted reflowable digital books and other publications.</p>
+			</div>
+			<div class="box">
+				<h2>EDITING EPUB DOCUMENTS</h2>
+				<p>Essentially, EPUB documents are saved as archived folders containing editable files and media.</p>  
+				
+				<p>To make changes to an EPUB document, first drag it onto the <b>Unpack EPUB</b> dropet and an unpacked copy of the digital book will be placed on the desktop.</p> 
+				
+				<p>To re-pack the edited EPUB folder, launch the <b>Re-Package EPUB</b> script and choose the edited folder to be reconstituted and a repackaged EPUB document will be created.</p> 
+			
+				<p>(<a href="EPUBscripts.zip">Download Scripts</a>)</p>
+			</div>
+			<div class="box">
+				<h2>TUTORIALS</h2>
+				<p>In addition to the service installers, this website contains two hands-on tutorials with example materials.</p>
+			
+				<ol type="1">
+					<li><a href="simplebook/index.html">Simple Formatted Book</a> &#149; create a single-flow formatted book from the text selected in a document.</li>
+					<li><a href="demo.html">Multi-Chapter Book</a> &#149; create a multiple chapter book from selected text files, and add audio and image files as well.</li>
+				</ol>
+			</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

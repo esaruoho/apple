@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Automation Applet Code Signing</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Code signing support in OS X Automation editor applications">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="mavericks-sm-banner" src="gfx/mavericks-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Certified vs. Non-Certified</div>
+			
+		<table style="width:100%;background-color:transparent;border-width:0;">
+			<tr>
+				<td>
+					<img class="left" alt="Icon_CertificateStandard" src="gfx/Icon_CertificateStandard.png" width="256">
+				</td>
+				<td>				
+					<p class="content-intro">Security is an important focus of OS&nbsp;X. And one aspect of delivering a secure computing environment is to determine which applications are allowed by GateKeeper to run on the host computer. The new Code Signing export controls in AppleScript Editor and Automator make it possible to deliver automation tools in a more secure fashion.</p>
+				</td>
+			</tr>
+		</table>
+
+			
+			<p class="content-subhead">Do I need to be involved with Code Signing?</p>
+			
+			<p>If you only write and run Automation applets on your own computer, the answer is: <b>no</b>. Continue writing and running scripts and applets as you always have. For you, nothing has changed&mdash;security-wise, that is. However, if you create Automation applets intended to be used by others on their computers, then Code Signing is an important issue you need to address.</p>
+				
+			<p class="content-subhead">What does Code Signing do?</p>
+			
+			<p>Code Signing is a defense against malware. Code signing your applet assures users that it is from a known source (you) and that the applet hasn&rsquo;t been modified by someone since it was last signed. Before your Automation applet or droplet can be installed and run on an OS X device using the standard GateKeeper security settings, it must be signed with a digital <b>certificate</b> issued by Apple.</p>
+			
+			<p class="content-subhead">Do I need to be a member of the Apple Developer Program to request signing certificates?</p>
+			
+			<p>Yes, Apple Developer Program membership is required to request, download, and use signing certificates issued by Apple.</p>
+			
+			<p class="content-subhead">But I&rsquo;m not a &ldquo;real developer&rdquo; who creates apps to place on the Mac App Store, I just write scripts. Do I still need to an Apple Developer?</p>
+			
+			<p>As is mentioned above, if you create and distribute Automation applets for others to use, it is worthwhile to consider becoming an Apple Developer. Don&rsquo;t worry, you won&rsquo;t be required to use Xcode or learn Objective-C (although that&rsquo;s something that would be handy for writing AppleScript/Objective-C automation tools). You can continue to create scripts and applets using the AppleScript Editor and Automator applications, as you currently do.</p>
+			
+			<p>The details of becoming an member of the Apple Developer Program can be found <a href="https://developer.apple.com/support/mac/" target="_blank">here</a>.</p>
+			
+		</div>
+		
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Installing Your Signing Certificate</div>
+			
+			<p>Once you&rsquo;ve joined the Apple Developer Program, you can use the developer website to generate and download your unique Apple signing certificate.</p>
+			
+			<p>To install the certificate on the computer used to create your automation applets:</p> 
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Launch the <b>Keychain Access</b> application (found in the <b>Applications</b>&nbsp;&gt;&nbsp;<b>Utilities</b> folder), and choose <b>Import</b> from the Keychain Access <b>File</b> menu.<br><br>In the forthcoming file chooser dialog, locate and select your downloaded certificate file, and click the <b>Open</b> button.</p>
+			
+			<p>The certificate will be installed and displayed in the list of installed certificates <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span>. That&rsquo;s it! You&rsquo;re ready to sign applets using the AppleScript Editor or Automator.</p>
+			
+			<img class="centered" alt="keychain" src="gfx/keychain.jpg" width="624" height="390">
+			
+									
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li class="hi">Applet Code Signing</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Code Signing</a></li>
+					<li class="hi">Developer Certificate</li>
+					<li><a href="02.html">AppleScript Editor</a></li>
+					<li><a href="03.html">Automator</a></li>
+				</ol>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">APPLE DOCUMENTATION</h2>
+			<p>Apple documentation concerning GateKeeper, developer IDs, and signing certificates:</p>
+			<ul>
+				<li><a href="https://developer.apple.com/developer-id/" target="_blank">Developer ID and GateKeeper</a></li>
+				<li><a href="https://developer.apple.com/support/technical/certificates/" target="_blank">Certificates</a></li>
+			</ul> 
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../index.html">Lion Release Notes</a> | <a href="../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+		<h1>Create Annotated Movie File</h1>
+				
+		<p>An important aspect of creating video content for distribution, is the inclusion of metadata in generated media files. It is essential that information such as the author, copyright, and description, travel with the items and be readily accessible to those wishing to use the content. Mac&nbsp;OS&nbsp;X Lion provides a tool for quickly and easily creating versions of media content that will contain user-provided  values for standard metadata tags.</p>
+		
+		<p>The <b>Create Annotated Movie File</b> action can be used in the creation of Automator workflows or services for generating annotated movie files.</p>
+		
+		<h3>The Action Interface</h3>
+		
+		<p>The following outlines the parameters and settings controls available in the action view:</p>
+		
+		<ul>
+			<li>The metadata titles and their values are displayed in a multi-column table <b><font color="#FF0000">(1)</font></b>.</li>
+			<li>Select the check box <b><font color="#FF0000">(2)</font></b> before the title of the annotation <b><font color="#FF0000">(3)</font></b> you wish to embed in the created movie file.</li>
+			<li>Double-click in the table cell to the right of the annotation title <b><font color="#FF0000">(4)</font></b> to activate the cell and enter the text of the annotation value.</li>
+		</ul>
+		
+					
+		<img src="gfx/createannotatedmovie-num.jpg" width="640" align="top" class="across">
+		
+		<ul>
+			<li>The action has controls for selecting/deselecting all the annotations checkbxes <b><font color="#FF0000">(5)</font></b> and a control for clearing all of the existing annotation values <b><font color="#FF0000">(6)</font></b>.</li>
+			<li>The Output options <b><font color="#FF0000">(7)</font></b> include controls for indicating the destination folder for the generated files and whether you want the source files deleted after they have been processed.</li>
+		</ul>
+		
+		<h3>What it Does</h3>
+		
+		<p>The <b>Create Annotated Movie File</b> action accepts one or more video files as input and produces a movie file (MOV) version of each video file, containing embedded metadata, as a result. For example, the video file <q>Stock Car Race.mpg</q> used as input to the action would produce the movie file <q>Stock Car Race.mov</q> containing the metadata tag titles and values selected and entered in the action interface.</p>
+		
+		<img src="gfx/annotationinfo.png" width="412" align="top" height="552" class="across">
+		
+		<p>Note that movie files used as input (MOV) will produce movie files as output (MOV). For example, <q>Home Run.mov</q> used as action input will produce an annotated version titled <q>Home Run.mov</q> as output. However, if the destination folder chosen in the action interface is the same as the source file, the resulting file will have the same name as the source movie file but incremented, such as <q>Home Run-1.mov</q>.</p>
+		
+		<h3>Use the Action in a Service</h3>
+		
+		<p>It's easy to create a desktop service for annotating selected video files. Simply launch Automator, create a new document using the Service template (click the gear icon), and set the service input controls at the top of the workflow window <b><font color="#FF0000">(1)</font></b> to accept movies files in the Finder as input.</p>
+		
+		<p>Search the Automator actions library for the <b>Create Annotated Movie File</b> action, and drag it into the workflow area <b><font color="#FF0000">(2)</font></b>.</p>
+		
+		<img src="gfx/annotationservice.jpg" width="640" height="541" align="top" class="across">
+		
+		<p>If there annotations and values you want to be used by default, enter them in the table in the action view, otherwise leave the table blank and click the Options button at the bottom of the action view to access the control for making the action interface appear everytime the workflow service is executed <b><font color="#FF0000">(3)</font></b>.</p>
+		
+		<p>Save and close the workflow. Next, Control-click one or more video files in the Finder to summon the Finder's contextual menu, a select your service from the menu options. The action interface will appear and you can enter the values you wish to apply to the selected video files.</p>
+		
+		<img src="gfx/annotationservicemenu.jpg" width="280" align="top" class="across">
+		
+		<p class="principle"><a href="bannerservices.zip"><img src="gfx/download.png" align="left" hspace="6" vspace="6"></a><b>TRY IT YOURSELF!</b> <a href="annotationservice.zip">Download</a> a zip archive of the service workflow shown above. To install, double-click the workflow file and click the <b>Install</b> button in the forthcoming dialog. Once installed, the service will be available from the <b>Finder &gt; Services</b> menu, or the Finder's action or contextual menus.</p>
+
+				
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>NEW ACTIONS IN LION</h2>
+			<ol>
+				<li><a href="../epub/index.html">Text to EPUB File</a></li>
+				<li><a href="../websitepopup/index.html">Website PopUp</a></li>
+				<li><a href="../createbanner/index.html">Create Banner Image from Text</a></li>
+				<li><a href="../encodeaudio/index.html">Encode to MPEG Audio</a></li>
+				<li><a href="../encodemedia/index.html">Encode Media</a></li>
+				<li class="hi">Create Annotated Media File</li>
+				<li><a href="../webcontent/index.html">Get Web Content/Save Images from Web Content</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>ABOUT AUTOMATOR/SERVICES</h2>
+			<p>To learn more about how to create your own Automator workflows and services using this action, watch these short movies:</p>
+			<ul>
+				<li><a href="javascript:window.open('http://www.macosxautomation.com/automator/video/automator-001A.html','viewer-window-large','width=1284,height=740');">Introduction to Automator</a></li>
+				<li><a href="javascript:window.open('http://www.macosxautomation.com/services/video/services-001HD.html','viewer-window-large','width=1284,height=740');">Introduction to Services</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>DEVELOPER NOTE</h2>
+			<p>The <b>Create Annotated Movie File</b> action uses the new <span class="inlinecode">avmetadata</span> command-line utility to create annotated versions of existing video files.</p>
+		</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" >How Contextual System Services Work</div>
+								
+			<p>Every installation of OS X, whether on a desktop or laptop computer, has a built-in architecture for executing automation &ldquo;recipes&rdquo; called &ldquo;workflows.&rdquo; Automation workflows are created using the Automator application and can be saved in a variety of formats, including as service plugins that appear as menu items on contextual menus in applications and the Finder.</p>
+			
+			<p>When a contextual system service is selected by the user, its related workflow file is executed by the operating system, using the current selection (often selected text or files) as the source material to be processed by the service workflow.</p>
+			
+			<p>Workflows are composed of a series of one or more individual steps called &ldquo;actions.&rdquo; Like the individual steps in a kitchen recipe, each action in the workflow processes the material passed to it by the previous action, and then passes the results of it processes to the action that follows it, until all steps (actions) of the automation recipe have been completed.</p>
+			
+			<p>Many of the Automator actions that are used to create workflows have interfaces containing user-settable controls that determine the parameters for how the individual action processes the data passed to it. To provide maximum flexibility in workflow design, these actions may be set to display their interfaces when their parent workflow is run, in order to allow the user to dynamically provide input or set parameter values.</p>
+			
+			<p>The Automator action used by the provided system service in this tutorial is designed to display its interface when its parent system service workflow is run. The following describes each of the controls or input fields of the action, and how they are used.</p>
+						
+			
+			<p class="segment-note">For an overview of Automator, watch <a href="http://macosxautomation.com/automator/video/automator-001A.html" target="_blank">this short video</a>. For an overview of Services, watch <a href="http://macosxautomation.com/services/video/services-001HD.html" target="_blank">this short video</a>.</p>
+			
+		</div>
+		<div class="content-segment">
+			<div class="segment-header" >The Automator Action Interface</div>
+						
+			<p>The interface for the <b>Create Single-Page iPad Web App</b> action (see below) is divided into four sections: <span class="numeric-callout" style="background-color:#0F0083;">&nbsp;1&nbsp;</span>&nbsp;<b>Application</b>, <span class="numeric-callout" style="background-color:#0F0083;">&nbsp;2&nbsp;</span>&nbsp;<b>Content</b>, <span class="numeric-callout" style="background-color:#0F0083;">&nbsp;3&nbsp;</span>&nbsp;<b>Metadata</b>, and <span class="numeric-callout" style="background-color:#0F0083;">&nbsp;4&nbsp;</span>&nbsp;<b>Style</b></p>
+			
+			<p><span class="numeric-callout" style="background-color:#0F0083;">&nbsp;1&nbsp;</span>&nbsp;<b>Application</b>:</p>
+
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Application Name</b> - The value entered here is the name for the folder containing the web-application content. When the action is run, this folder will be created on the desktop.</p>
+
+						
+			<p><span class="numeric-callout" style="background-color:#0F0083;">&nbsp;2&nbsp;</span>&nbsp;<b>Content</b>:</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Title</b>, <b>Sub-Head</b>, <b>Author</b>, <b>Copyright</b> - The values entered here appear at the top of the created document.</p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Creative Commons license</b> - You may choose to distribute your work under a license from the <a href="http://creativecommons.org" target="_blank"><b>Creative Commons</b></a> organization. Pick one of the licensing options from this popup menu and the cooresponding CC license will be added to the end of the article.</p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>1st Media Item</b> - Optionally, the created documents can contain up to two supporting media items (image, audio, or video). Included media may be placed at either the start or end of the body content. If the chosen media item is an image that contains embedded IPTC caption data, you can select the checkbox to have the action retrieve the embedded data and use it as the caption. Otherwise, you may enter the media caption in the provided text input field. <br><br><span style="color:#DF0200;"><b>NOTE</b>: This Automator action does not automatically encode chosen video files. Be sure to process your video file using the <a href="http://macosxautomation.com/lion/encodemedia/index.html" target="_blank"><b>built-in video encoding service</b></a> in the Finder, prior to selecting it for inclusion in a created document.</span></p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>2nd Media Item</b> - [see 1st Media Item description above].</p>				
+			
+			<a href="#"><img src="gfx/single-page-action.png" width="624" class="centered" alt="single-page-action" highresurl="gfx/action-filled-interface.png" caption="" displaywidth="800" displayheight="872" onclick="lightboxThisImage(this);return false;" height="681"></a>
+			
+			<p><span class="numeric-callout" style="background-color:#0F0083;">&nbsp;3&nbsp;</span>&nbsp;<b>Metadata</b>:</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Description</b>, and <b>Keywords</b> - The contents of these items are placed as meta entries in the head section of the main HTML file of the web app, making their data available to search engines. Keywords should be entered as a comma-delimited list of words or phrases.</p>
+							
+			<p><span class="numeric-callout" style="background-color:#0F0083;">&nbsp;4&nbsp;</span>&nbsp;<b>Style</b>:</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Type Style</b> - Individual controls are available for choosing common settings for <i>font-family</i>, <i>font-size</i>, <i>font-color</i>, and <i>letter-spacing</i> for each of the page text elements: <b>Title</b>, <b>Sub-Head</b>, <b>Author</b>, <b>Copyright</b>, and <b>Story</b>.</p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;<b>Page Color</b> - Use the popup menu to choose a page color from a selection of common colors as well as specialized options such as: <i>oyster shell</i>, <i>manila</i>, <i>seashell</i>, <i>cream</i>, <i>icy lavender</i>, and <i>icy pink</i>.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: all of the text input fields in the action view accept Automator workflow variables as input</p>
+		</div>
+		<!-- END SEGMENT: INSTALLATION -->
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, you&rsquo;ll use the services you just installed to create a single-page web application.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="06.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Multi-Column Article</a></li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li><a href="03.html">Multi-Column Article: Demo</a></li>
+				<li><a href="04.html">Single-Page Web-App</a></li>
+				<li class="hi">Single-Page Web-App: Interface</li>
+				<li><a href="06.html">Single-Page Web-App: Demo</a></li>
+				<li><a href="07.html">Desktop Web-Apps</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In preparation for the attendees performing the related tutorial in the next segment, this segment describes the interface of the <b>Create Single-Page iPad Web App</b> Automator action used by the installed system services.</p>
+			
+			<p>Before reviewing the action interface in detail, discuss briefly the concept of creating &ldquo;automation recipes&rdquo; and how they are activated contextually via use of system services. Links to informative movies about Automator and Services are provided should the attendees express interest in learning more about those topics.</p>
+			
+			<p>Explain to the attendees that once the text to be used as the source for the created article, is selected in a document, a system service to process the text selection, can be summoned via the hosting application&rsquo;s contextual menu. Doing so will cause the interface of the corresponding Automator action to appear, allowing the user to enter relevant information about the article to be created.</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+						
+			<ol type="1">
+				<li>Ask attendees if they have used Automator or System Services before.</li>
+				<li>Like a chef following a recipe, use of workflows sometimes require preparation of materials, such as processing audio, video, or image files for use by the workflow. You may want to point out that are built-in System Services for <a href="http://macosxautomation.com/lion/encodeaudio/index.html" target="_blank">processing audio</a>, and for <a href="http://macosxautomation.com/lion/encodemedia/index.html" target="_blank">processing video</a> files.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

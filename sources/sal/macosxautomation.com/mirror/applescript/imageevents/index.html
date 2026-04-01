@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<p class="note">The following online materials, regarding the manipulation of images using the Image Events application, are exerpted from the Apple Pro Training Book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank"><font color="#FF0000">AppleScript&nbsp;1-2-3</font></a>.</p>
+
+		<h1>Image Events</h1>
+		
+		<p>The world of the modern computer user is filled with pictures. Images from the internet, images in your mail messages, images from your cellphone, images from your camera-they're everywhere. Manipulating and sharing images is a big part of what we do with our computers.
+Most scripters don't realize that Mac OS X includes powerful built-in scriptable image processing tools that work independent of any photo software. In this chapter you'll learn how to scale, crop, rotate, pad, flip, and convert images, and you don't need anything but AppleScript.
+</p>
+		<h3>The Big Picture</h3>
+		
+		<p>Not to bore you with the details, but it may be useful to know the story behind the story...
+Mac OS X contains an image processing framework called &quot;Core Image.&quot; This framework is responsible for most of the image processing done by the operating system and software such as iPhoto or Aperture. The power of this framework is made available to shell scripts through a command-line utility called SIPS (Scriptable Image Processing Server). Another interface to this utility is a small application in the System &gt; Library &gt; CoreServices folder named Image Events.</p>
+
+		<h3>Image Events - the Application</h3>
+
+<p>The Image Events application is used by AppleScript to control the SIPS architecture. It has no visual interface and presents no menus, windows, or dialogs for user interaction. It is intended to run invisibly as a background process, only accessible via AppleScript commands.</P>
+
+<p>The scripting dictionary for Image Events, detailing its scriptable objects and commands, can be accessed from the Library palette in the Script Editor application.</p>
+
+<p>The script suites included in the Image Events dictionary are:</p>
+
+<ol>
+	<li><b>Standard Suite</b>.  This suite includes the standard objects and commands used by most scriptable applications. However, unlike other applications, Image Events runs as an invisible process with no user interface, so only a few commands from this suite, such as close and quit, are relevant.
+ </li>
+	<li><b>Text Suite</b>.  This default suite is included in most scriptable applications and is used for manipulating text objects. Since Image Events does not currently support any text classes, this suite is not used.
+ </li>
+	<li><b>Disk-Folder-File Suite</b>.  This suite is used for locating files and folders on disk. The classes and commands from this suite make it possible to locate, open, or delete files and folders using the Image Events application instead of the Finder. 
+ </li>
+	<li><b>Image Suite</b>.  This suite contains the properties and commands for manipulating image files.
+ </li>
+	<li><b>Image Events Suite</b>.  This suite contains the properties of the Image Events application itself.</li>
+</ol>
+
+<p>Let's examine some practical uses of the Image Events application, by focusing on the Image Suite.</p>
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li class="hi">Introduction</li>
+				<li><a href="01.html">Image Properties</a></li>
+				<li><a href="02.html">Flipping Images</a></li>
+				<li><a href="03.html">Rotating Images</a></li>
+				<li><a href="04.html">Scaling Images</a></li>
+				<li><a href="05.html">Padding Images</a></li>
+				<li><a href="06.html" target="_self">Framing Images</a></li>
+				<li><a href="07.html">Croping Images</a></li>
+				<li><a href="08.html">File Conversion</a></li>
+				<li><a href="09.html">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

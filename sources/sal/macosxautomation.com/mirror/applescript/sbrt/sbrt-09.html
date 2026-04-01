@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Writing to File</h2>
+		
+		<p>Often scripts will be designed to write data to files such as logs or backups. The following routine can be used to safely write data to disk. It is designed to work with TEXT files and if there is no existing file, will create one as needed.</p>
+		
+		<p>The sub-routine requires a file path for the target file, the data to write, and a value of true or false for whether the data should be appended to existing data.</p>
+		
+		<p>The following example script will use the sub-routine on this page to create a file on the desktop named "MY STORY" containing the passed data. If the file already exists, the script will replace the current contents of the file with the passed data.</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_story</span> <b>to</b> &quot;Once upon a time in Silicon Valley...&quot;<BR>
+		<b>set</b> <span class="codevariable">this_file</span> <b>to</b> (((path to desktop folder) <b>as</b> string) &amp; &quot;MY STORY&quot;)<BR>
+		<b>my</b> <span class="codevariable">write_to_file</span>(<span class="codevariable">this_story</span>, <span class="codevariable">this_file</span>, false)</p>
+		
+		<p>The following example script will use the same sub-routine to append an entry to a log file on the desktop:</p>
+		
+		<p class="code"><b>set</b> <span class="codevariable">this_data</span> <b>to</b> ((current date) <b>as</b> string) &amp; space &amp; &quot;STATUS OK&quot; &amp; <b>return</b><BR>
+		<b>set</b> <span class="codevariable">this_file</span> <b>to</b> (((path to desktop folder) <b>as</b> string) &amp; &quot;MY LOG FILE&quot;)<BR>
+		<b>my</b> <span class="codevariable">write_to_file</span>(<span class="codevariable">this_data</span>, <span class="codevariable">this_file</span>, true)</p>
+		
+		<p>Here's the sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20write_to_file%28this_data%2C%20target_file%2C%20append_data%29%0D%09try%0D%09%09set%20the%20target_file%20to%20the%20target_file%20as%20string%0D%09%09set%20the%20open_target_file%20to%20open%20for%20access%20file%20target_file%20with%20write%20permission%0D%09%09if%20append_data%20is%20false%20then%20set%20eof%20of%20the%20open_target_file%20to%200%0D%09%09write%20this_data%20to%20the%20open_target_file%20starting%20at%20eof%0D%09%09close%20access%20the%20open_target_file%0D%09%09return%20true%0D%09on%20error%0D%09%09try%0D%09%09%09close%20access%20file%20target_file%0D%09%09end%20try%0D%09%09return%20false%0D%09end%20try%0Dend%20write_to_file"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for writing data to a file:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">write_to_file</span>(<span class="codevariable">this_data</span>, <span class="codevariable">target_file</span>, <span class="codevariable">append_data</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_file</span> <b>to the</b> <span class="codevariable">target_file</span> <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">open_target_file</span> <b>to</b> open for access file <span class="codevariable">target_file</span> <b>with</b> write permission<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">append_data</span> <b>is</b> false <b>then set</b> eof <b>of the</b> <span class="codevariable">open_target_file</span> <b>to</b> 0<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>write <span class="codevariable">this_data</span> <b>to the</b> <span class="codevariable">open_target_file</span> starting at eof<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>close access <b>the</b> <span class="codevariable">open_target_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> true<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>close access file <span class="codevariable">target_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+		<b>end</b> <span class="codevariable">write_to_file</span></p>
+		
+		<p>The following error handler can be used in conjunction with the sub-routine to keep a log errors occurring during the execution of a script. Be sure to include the sub-routine above when adding it to your scripts:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=try%0D%09%2D%2DYOUR%20SCRIPT%20STATEMENTS%20GOE%20HERE%20%0Don%20error%20error_message%20number%20error_number%0D%09set%20this_error%20to%20%22Error%3A%20%22%20%26%20error_number%20%26%20%22%2E%20%22%20%26%20error_message%20%26%20return%0D%09%2D%2D%20change%20the%20following%20line%20to%20the%20name%20and%20location%20desired%20%0D%09set%20the%20log_file%20to%20%28%28path%20to%20desktop%29%20as%20string%29%20%26%20%22Script%20Error%20Log%22%0D%09my%20write_to_file%28this_error%2C%20log_file%2C%20true%29%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">An error handler that calls the sub-routine to append the error message to a log file:<br>&nbsp;<br><br></span><b>try</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--YOUR SCRIPT STATEMENTS GOE HERE </span><BR>
+		<b>on error</b> <span class="codevariable">error_message</span> number <span class="codevariable">error_number</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_error</span> <b>to</b> &quot;<b>Error</b>: &quot; &amp; <span class="codevariable">error_number</span> &amp; &quot;. &quot; &amp; <span class="codevariable">error_message</span> &amp; <b>return</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- change the following line to the name and location desired </span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">log_file</span> <b>to</b> ((path to desktop) <b>as</b> string) &amp; &quot;Script Error Log&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>my</b> <span class="codevariable">write_to_file</span>(<span class="codevariable">this_error</span>, <span class="codevariable">log_file</span>, true)<BR>
+		<b>end try</b></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li class="hi">Writing to File</li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

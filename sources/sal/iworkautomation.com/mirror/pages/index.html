@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+	<meta http-equiv="last-modified" content="Tue, 14 Nov 2014 00:00:00 GMT"/>
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation" style="position:relative;z-index:1;">
+	<caption>
+		<div style="position:relative;float:left;"><a href="javascript:var baseURL=document.location.toString().replace(/^https?:\/\//, '');newURL='https://'+baseURL;document.location=newURL;" title="Switch page to secure HTTPS">&#128274;</a></div>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" style="margin-left:auto;margin-right:auto;">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">iWork Automation: Pages AppleScript Support</div>
+			
+			<p class="content-intro">For emerging and established creatives alike, Pages is the &ldquo;go-to&rdquo; app in a &ldquo;go-go&rdquo; world. It’s versatile, powerful, and its documents are multi-platform and collaborative. And now it’s even more productive with the built-in power of AppleScript automation.</p>
+								
+			<p>As anyone who succeeds in the world of office and creative productivity can tell you, automation is an absolutely essential tool for maintaining sanity. When processes are automated, you gain:</p>
+			
+			<ul>
+				<li><b>Speed</b>. It takes less time to accomplish complex multi-step procedures.</li>
+				<li><b>Accuracy</b>. With automation, the chances of making mistakes because of human error are minimized.</li>
+				<li><b>Consistency</b>. Automation produces data of reliable quality.</li>
+				<li><b>Scalability</b>. If you want to do more, in a shorter time, while maintaining quality, automation is the best way to increase the productivity of your business.</li>
+			</ul>
+			
+			<p>Using automation frees you from the &ldquo;drudge work,&rdquo; to focus on the creative and analytical aspects of what you do — you know, that stuff you were actually hired and like to do! And when it comes to the world of automation, AppleScript is your best friend.</p>
+			
+			<p>So, if you are currently using another word-processing application for your work and are interested in seeing what Pages can do; or are a Pages user who wants to take the application to the next level of functionality; automating Pages with AppleScript is something you should explore.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">What is covered in this overview of Pages AppleScript support?</p>
+			
+			<p>The following pages describe and demonstrate how AppleScript can be used to access, query, control, make, style, and delete the elements of the Pages application, with specific focus on documents and page elements.</p>
+			
+			<p>If you are familiar with AppleScript &mdash; great. If not, no problem. You can easily pick up this unique English-like scripting language from the <a href="http://macosxautomation.com/applescript/firsttutorial/index.html" target="_blank">tutorials</a> on this website, or from reading one of the many great AppleScript books on the subject, including Apple&rsquo;s own <a href="http://www.peachpit.com/store/apple-training-series-applescript-1-2-3-9780321149312" target="_blank">AppleScript 1-2-3</a> (on the <a href="&lt;a href=&quot;https://itunes.apple.com/us/book/applescript-1-2-3/id394135296?mt=11&quot;&gt;">iBooks Store</a>).</p>
+			
+			<p>And everything you need to automate Pages with AppleScript is already installed in OS&nbsp;X. For starters, all of the example scripts on these pages can be viewed in the <b>AppleScript Editor</b> application (which can be found in your <b>Utilities</b> folder) automatically, by just clicking the <b>Open in AppleScript Editor</b> button located above each of the example scripts, that are placed inline throughout the documentation on this site.</p>
+			
+			<p>So what are you waiting for? Use the purple navigation box on the upper right side of this page to begin the process of becoming &ldquo;the potentate of productivity!&rdquo;</p>
+						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: COMPATIBILITY -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1"> Pages 2009 Compatibility</div>
+				<p>The current implementation of <b>Pages</b> scripting support does not contain a <span class="dictionary-suite">Compatibility Suite</span> for <b>Pages 2009</b>. The integrated object scripting support currently in the dictionary (that is shared by all <b>iWork</b> applications), is new to <b>Pages</b> and was not included in the <b>Pages 2009</b> scripting implementation.</p>							
+		</div>
+		<!-- END SEGMENT: COMPATIBILITY -->
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="template.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li class="hi">Overview</li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="https://iworkautomation.com/pages/template.html">Template</a></li>
+				<li><a href="https://iworkautomation.com/pages/document.html">Document</a></li>
+				<li><a href="https://iworkautomation.com/pages/body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="https://iworkautomation.com/pages/section.html">Section</a></li>
+				<li><a href="https://iworkautomation.com/pages/image.html">Image</a></li>
+				<li><a href="https://iworkautomation.com/pages/text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="https://iworkautomation.com/pages/media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/pages/line.html">Lines</a></li>
+				<li><a href="https://iworkautomation.com/pages/examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/yosemite/index.html" target="_blank"><img src="../gfx/yosemite-rectangle.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WEBSITE HISTORY</h2>
+			<p>09-23-16 &bull; Updated example for creating a <a href="examples-page-items-grid.html">grid of page items</a>.</p>
+			<p>11-03-14 &bull; <a href="line.html">Lines</a> section added.</p>
+			<p>10-16-14 &bull; <a href="script-tags-data-merge.html">Pages Data Merge</a> application released.</p>
+			<p>06-27-14 &bull; Added download for example <b>Export Pages to PDF</b> droplet. (<a href="document-export.html">sidebar link</a>)</p>
+			<p>06-25-14 &bull; Updated <a href="examples-doc-from-outline.html">Document from Outline</a> example to include downloadable example OmniOutliner document.</p>
+			<p>04-21-14 &bull; Updated <a href="examples-mail-merge.html">Mail Merge script</a> to contain a property for setting whether recipient address is required.</p>
+			<p>04-01-14 &bull; RELEASE.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+<!-- 
+<tr><td><a href="https://iworkautomation.com/pages" target="_self"><img width="72" alt="HTTPS icon link" src="gfx/HTTPS.png" style="position:absolute;float:left;left:8px;top:0px;z-index:100;"></a></td></tr>
+ -->
+</table>
+</body>
+</html>

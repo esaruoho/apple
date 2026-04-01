@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Highlight Cell with Transition</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Highlight Cell with Transition</div>
+		
+		<p>&ldquo;And as you can see, the third quarter results for W-21 are increasing&hellip;&rdquo; blah, blah, blah. (insert sounds like <a href="https://archive.org/details/PeanutsTeacherVoice" target="_blank">Charlie Brown&rsquo;s teacher</a>).</p>
+		
+		<p style="padding-left:36px;padding-right:36px;"><b>PRESENTATION RULE #5</b>: Don&rsquo;t assume that your audience <i>sees</i> what you see, or <i>understands</i> what you&rsquo;re saying. Make it easy for them to recognize and absorb the point you&rsquo;re making.</p>
+		
+		<p>This is especially true when presenting tables. If there&rsquo;s a cell value to highlight, then highlight it using the following script. Ah, peace and understanding are attained.</p>
+	
+		<p class="do-this" style="margin-bottom:24px;"><span class="do-this">DO THIS &#9658;</span><a href="SalesDataPresentation.zip" style="font-weight:bold;">DOWNLOAD</a> the example presentation.</p>
+		
+		<img class="centered" width="624" alt="selected-cell" src="gfx/selected-cell.jpg">
+		<p class="imagecaption" style="margin-top:-8px;margin-bottom:0;width:608px;"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A cell selected in a table on a slide. <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>A duplicate slide with the table formated to highlight the cell selected in the source table. Note that the row and column headers for the targeted cell are lighter, while the other table values are shaded darker.</p>
+		<img class="centered" width="624" alt="highlighted-cell" src="gfx/highlighted-cell.jpg">
+			
+		<p>Here’s what the effect looks like in a presentation.<br>(Click Movie to Play)</p>
+			
+		<video id="sampleMovie3" width="624" height="390" controls preload loop">
+			<source src="Highlight-Selected-Cell.m4v" />
+		</video>
+		
+		
+		<p>This script will duplicate the slide containing the selected table cell, and format the duplicated table to highlight the previously selected cell. In addition, the script will apply a transition to the source slide, and for your review, will start the presentation from the source slide. Enjoy!</p>
+		
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Highlight Selected Cell with Transition</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20selectedRangeBackgroundColor%20%3A%20%7B65535%2C%2065535%2C%2065535%7D%0Dproperty%20selectedRangeTextColor%20%3A%20%7B0%2C%200%2C%200%7D%0Dproperty%20backgroundDataColor%20%3A%20%7B39321%2C%2039321%2C%2039321%7D%0Dproperty%20headerHightlightTextColor%20%3A%20%7B65535%2C%2065535%2C%2065535%7D%0Dproperty%20lightnessValue%20%3A%2015000%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%201000%0D%09%09tell%20document%201%0D%09%09%09set%20sourceSlide%20to%20the%20current%20slide%0D%09%09%09tell%20sourceSlide%0D%09%09%09%09set%20thisSlideNumber%20to%20its%20slide%20number%0D%09%09%09%09try%0D%09%09%09%09%09set%20the%20selectedTable%20to%20%C2%AC%0D%09%09%09%09%09%09(the%20first%20table%20whose%20class%20of%20selection%20range%20is%20range)%0D%09%09%09%09on%20error%0D%09%09%09%09%09error%20number%201001%0D%09%09%09%09end%20try%0D%09%09%09%09tell%20selectedTable%0D%09%09%09%09%09set%20the%20selectionRangeName%20to%20the%20name%20of%20selection%20range%0D%09%09%09%09%09set%20the%20headerColumnCount%20to%20header%20column%20count%0D%09%09%09%09%09set%20the%20headerRowCount%20to%20header%20row%20count%0D%09%09%09%09%09set%20the%20footerRowCount%20to%20footer%20row%20count%0D%09%09%09%09%09set%20the%20tableDataRangeStart%20to%20%C2%AC%0D%09%09%09%09%09%09the%20name%20of%20cell%20(headerColumnCount%20%2B%201)%20of%20row%20(headerRowCount%20%2B%201)%0D%09%09%09%09%09set%20the%20tableDataRangeEnd%20to%20%C2%AC%0D%09%09%09%09%09%09the%20name%20of%20cell%20-1%20of%20row%20((footerRowCount%20%2B%201)%20*%20-1)%0D%09%09%09%09%09set%20tableDataRange%20to%20range%20(tableDataRangeStart%20%26%20%22%3A%22%20%26%20tableDataRangeEnd)%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09%09duplicate%20sourceSlide%20to%20after%20sourceSlide%0D%09%09%09set%20duplicateSlide%20to%20slide%20(thisSlideNumber%20%2B%201)%0D%09%09%09tell%20duplicateSlide%0D%09%09%09%09set%20the%20transition%20properties%20to%20%7Bautomatic%20transition%3Afalse%7D%0D%09%09%09%09tell%20table%201%0D%09%09%09%09%09set%20the%20tableDataRangeStart%20to%20%C2%AC%0D%09%09%09%09%09%09the%20name%20of%20cell%20(headerColumnCount%20%2B%201)%20of%20row%20(headerRowCount%20%2B%201)%0D%09%09%09%09%09set%20the%20tableDataRangeEnd%20to%20%C2%AC%0D%09%09%09%09%09%09the%20name%20of%20cell%20-1%20of%20row%20((footerRowCount%20%2B%201)%20*%20-1)%0D%09%09%09%09%09set%20tableDataRange%20to%20range%20(tableDataRangeStart%20%26%20%22%3A%22%20%26%20tableDataRangeEnd)%0D%09%09%09%09%09set%20text%20color%20of%20tableDataRange%20to%20backgroundDataColor%0D%09%09%09%09%09%0D%09%09%09%09%09if%20headerColumnCount%20is%20not%200%20then%0D%09%09%09%09%09%09copy%20background%20color%20of%20last%20cell%20of%20column%201%20to%20%7BRValue%2C%20GValue%2C%20BValue%7D%0D%09%09%09%09%09%09set%20lighterColumnColor%20to%20my%20lightenRGB(RValue%2C%20GValue%2C%20BValue%2C%20lightnessValue)%0D%09%09%09%09%09%09tell%20columns%201%20thru%20headerColumnCount%0D%09%09%09%09%09%09%09set%20text%20color%20to%20backgroundDataColor%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20if%0D%09%09%09%09%09%0D%09%09%09%09%09if%20headerRowCount%20is%20not%200%20then%0D%09%09%09%09%09%09copy%20background%20color%20of%20last%20cell%20of%20row%201%20to%20%7BRValue%2C%20GValue%2C%20BValue%7D%0D%09%09%09%09%09%09set%20lighterRowColor%20to%20my%20lightenRGB(RValue%2C%20GValue%2C%20BValue%2C%20lightnessValue)%0D%09%09%09%09%09%09tell%20rows%201%20thru%20headerRowCount%0D%09%09%09%09%09%09%09set%20text%20color%20to%20backgroundDataColor%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20if%0D%09%09%09%09%09%0D%09%09%09%09%09tell%20range%20selectionRangeName%0D%09%09%09%09%09%09if%20headerColumnCount%20is%20not%200%20then%0D%09%09%09%09%09%09%09set%20the%20text%20color%20of%20cells%201%20thru%20%C2%AC%0D%09%09%09%09%09%09%09%09headerColumnCount%20of%20its%20row%20to%20headerHightlightTextColor%0D%09%09%09%09%09%09%09set%20the%20background%20color%20of%20cells%201%20thru%20%C2%AC%0D%09%09%09%09%09%09%09%09headerColumnCount%20of%20its%20row%20to%20lighterColumnColor%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09if%20headerRowCount%20is%20not%200%20then%0D%09%09%09%09%09%09%09set%20the%20text%20color%20of%20cells%201%20thru%20%C2%AC%0D%09%09%09%09%09%09%09%09headerRowCount%20of%20its%20column%20to%20headerHightlightTextColor%0D%09%09%09%09%09%09%09set%20the%20background%20color%20of%20cells%201%20thru%20%C2%AC%0D%09%09%09%09%09%09%09%09headerRowCount%20of%20its%20column%20to%20lighterRowColor%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09set%20background%20color%20to%20selectedRangeBackgroundColor%0D%09%09%09%09%09%09set%20text%20color%20to%20selectedRangeTextColor%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09%09tell%20sourceSlide%0D%09%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%09%7Btransition%20effect%3Adissolve%20%C2%AC%0D%09%09%09%09%09%09%2C%20transition%20delay%3A0%20%C2%AC%0D%09%09%09%09%09%09%2C%20transition%20duration%3A0.75%20%C2%AC%0D%09%09%09%09%09%09%2C%20automatic%20transition%3Afalse%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09start%20document%201%20from%20sourceSlide%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%201000%20then%0D%09%09%09set%20alertString%20to%20%22MISSING%20RESOURCE%22%0D%09%09%09set%20errorMessage%20to%20%22Please%20create%20or%20open%20a%20document%20before%20running%20this%20script.%22%0D%09%09else%20if%20errorNumber%20is%201001%20then%0D%09%09%09set%20alertString%20to%20%22SELECTION%20ERROR%22%0D%09%09%09set%20errorMessage%20to%20%22Please%20select%20a%20table%20before%20running%20this%20script.%22%0D%09%09else%0D%09%09%09set%20alertString%20to%20%22EXECUTION%20ERROR%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20alertString%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell%0D%0Don%20lightenRGB(RValue%2C%20GValue%2C%20BValue%2C%20lightenAmount)%0D%09if%20RValue%20%2B%20lightenAmount%20is%20greater%20than%2065535%20then%0D%09%09set%20RValue%20to%2065535%0D%09else%0D%09%09set%20RValue%20to%20RValue%20%2B%20lightenAmount%0D%09end%20if%0D%09if%20GValue%20%2B%20lightenAmount%20is%20greater%20than%2065535%20then%0D%09%09set%20GValue%20to%2065535%0D%09else%0D%09%09set%20GValue%20to%20GValue%20%2B%20lightenAmount%0D%09end%20if%0D%09if%20BValue%20%2B%20lightenAmount%20is%20greater%20than%2065535%20then%0D%09%09set%20BValue%20to%2065535%0D%09else%0D%09%09set%20BValue%20to%20BValue%20%2B%20lightenAmount%0D%09end%20if%0D%09return%20%7BRValue%2C%20GValue%2C%20BValue%7D%0Dend%20lightenRGB"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">selectedRangeBackgroundColor</span> : {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">selectedRangeTextColor</span> : {0, 0, 0}</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">backgroundDataColor</span> : {39321, 39321, 39321}</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">headerHightlightTextColor</span> : {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">lightnessValue</span> : 15000</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> 1000</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">sourceSlide</span> <b>to the</b> current slide</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">sourceSlide</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideNumber</span> <b>to its</b> <span class="codeproperty">slide number</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectedTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>(<b>the first</b> <span class="codelibraryclass">table</span> <b>whose</b> <span class="codelibraryclass">class</span> <b>of</b> <span class="codeproperty">selection range</span> <b>is</b> <span class="codelibraryclass">range</span>)</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> 1001</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">selectedTable</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectionRangeName</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codeproperty">selection range</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">headerColumnCount</span> <b>to</b> <span class="codeproperty">header column count</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">headerRowCount</span> <b>to</b> <span class="codeproperty">header row count</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">footerRowCount</span> <b>to</b> <span class="codeproperty">footer row count</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableDataRangeStart</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">headerColumnCount</span> + 1) <b>of</b> <span class="codelibraryclass">row</span> (<span class="codevariable">headerRowCount</span> + 1)</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableDataRange</span>End <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> -1 <b>of</b> <span class="codelibraryclass">row</span> ((<span class="codevariable">footerRowCount</span> + 1) * -1)</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">tableDataRange</span> <b>to</b> <span class="codelibraryclass">range</span> (<span class="codevariable">tableDataRangeStart</span> &amp; &quot;:&quot; &amp; <span class="codevariable">tableDataRange</span>End)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">duplicate</span> <span class="codevariable">sourceSlide</span> <b>to</b> <b>after</b> <span class="codevariable">sourceSlide</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">duplicateSlide</span> <b>to</b> slide (<span class="codevariable">thisSlideNumber</span> + 1)</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">duplicateSlide</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> {<span class="codeproperty">automatic transition</span>:<span class="codeenumeration">false</span>}</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> table 1</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableDataRangeStart</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">headerColumnCount</span> + 1) <b>of</b> <span class="codelibraryclass">row</span> (<span class="codevariable">headerRowCount</span> + 1)</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableDataRange</span>End <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> -1 <b>of</b> <span class="codelibraryclass">row</span> ((<span class="codevariable">footerRowCount</span> + 1) * -1)</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">tableDataRange</span> <b>to</b> <span class="codelibraryclass">range</span> (<span class="codevariable">tableDataRangeStart</span> &amp; &quot;:&quot; &amp; <span class="codevariable">tableDataRange</span>End)</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>of</b> <span class="codevariable">tableDataRange</span> <b>to</b> <span class="codevariable">backgroundDataColor</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">headerColumnCount</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>copy</b> <span class="codeproperty">background color</span> <b>of last</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">column</span> 1 <b>to</b> {<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>}</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">lighterColumnColor</span> <b>to my</b> <span class="codevariable">lightenRGB</span>(<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>, <span class="codevariable">lightnessValue</span>)</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">columns</span> 1 <b>thru</b> <span class="codevariable">headerColumnCount</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> <span class="codevariable">backgroundDataColor</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">headerRowCount</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>copy</b> <span class="codeproperty">background color</span> <b>of last</b> <span class="codelibraryclass">cell</span> <b>of</b> <span class="codelibraryclass">row</span> 1 <b>to</b> {<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>}</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">lighterRowColor</span> <b>to my</b> <span class="codevariable">lightenRGB</span>(<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>, <span class="codevariable">lightnessValue</span>)</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">rows</span> 1 <b>thru</b> <span class="codevariable">headerRowCount</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> <span class="codevariable">backgroundDataColor</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> range <span class="codevariable">selectionRangeName</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>if</b> <span class="codevariable">headerColumnCount</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> text color <b>of</b> <span class="codelibraryclass">cells</span> 1 <b>thru</b> &not;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><span class="codevariable">headerColumnCount</span> <b>of its</b> <span class="codelibraryclass">row</span> <b>to</b> <span class="codevariable">headerHightlightTextColor</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codeproperty">background color</span> <b>of</b> <span class="codelibraryclass">cells</span> 1 <b>thru</b> &not;</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><span class="codevariable">headerColumnCount</span> <b>of its</b> <span class="codelibraryclass">row</span> <b>to</b> <span class="codevariable">lighterColumnColor</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>if</b> <span class="codevariable">headerRowCount</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codeproperty">text color</span> <b>of</b> <span class="codelibraryclass">cells</span> 1 <b>thru</b> &not;</td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><span class="codevariable">headerRowCount</span> <b>of its</b> <span class="codeproperty">column</span> <b>to</b> <span class="codevariable">headerHightlightTextColor</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set the</b> background color <b>of</b> <span class="codelibraryclass">cells</span> 1 <b>thru</b> &not;</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><span class="codevariable">headerRowCount</span> <b>of its</b> <span class="codeproperty">column</span> <b>to</b> <span class="codevariable">lighterRowColor</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">background color</span> <b>to</b> <span class="codevariable">selectedRangeBackgroundColor</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> <span class="codevariable">selectedRangeTextColor</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">sourceSlide</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">dissolve</span> &not;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:0 &not;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:0.75 &not;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codeenumeration">false</span>}</td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codelibraryclass">document</span> 1 <b>from</b> <span class="codevariable">sourceSlide</span></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1000 <b>then</b></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;MISSING RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please create or open <span class="codevariable">a</span> document before running this script.&quot;</td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1001 <b>then</b></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;SELECTION ERROR&quot;</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please select <span class="codevariable">a</span> table before running this script.&quot;</td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;EXECUTION ERROR&quot;</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">alertString</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;}</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">lightenRGB</span>(<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>, <span class="codevariable">lightenAmount</span>)</td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">RValue</span> + <span class="codevariable">lightenAmount</span> <b>is greater than</b> 65535 <b>then</b></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">RValue</span> <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">RValue</span> <b>to</b> <span class="codevariable">RValue</span> + <span class="codevariable">lightenAmount</span></td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">GValue</span> + <span class="codevariable">lightenAmount</span> <b>is greater than</b> 65535 <b>then</b></td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">GValue</span> <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">114</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">GValue</span> <b>to</b> <span class="codevariable">GValue</span> + <span class="codevariable">lightenAmount</span></td></tr>
+				<tr><td class="line-count">115</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">116</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">BValue</span> + <span class="codevariable">lightenAmount</span> <b>is greater than</b> 65535 <b>then</b></td></tr>
+				<tr><td class="line-count">117</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">BValue</span> <b>to</b> 65535</td></tr>
+				<tr><td class="line-count">118</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">119</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">BValue</span> <b>to</b> <span class="codevariable">BValue</span> + <span class="codevariable">lightenAmount</span></td></tr>
+				<tr><td class="line-count">120</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">121</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> {<span class="codevariable">RValue</span>, <span class="codevariable">GValue</span>, <span class="codevariable">BValue</span>}</td></tr>
+				<tr><td class="line-count">122</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">lightenRGB</span></td></tr>
+			</table>		
+	
+	</div>
+		
+		
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table-conditional-highlighting.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="hi"><a href="table.html">Table</a></li>
+				<li class="navListSectionItem"><a href="table-make.html">Making Basic Tables</a></li>
+				<li class="navListSectionItem"><a href="table-selected.html">Selected Table</a></li>
+				<li class="navListSectionItem"><a href="table-populate.html">Populating Tables</a></li>
+				<li class="navListSectionItem"><a href="table-style.html">Styling Tables</a></li>
+				<li class="navListSectionItem"><a href="table-chart-from-row-column.html" target="_blank">Pie Chart from Selected Row | Column</a></li>
+				<li class="navListSectionItemSelected">Highlight Cell with Transition</li>
+				<li class="navListSectionItem"><a href="table-conditional-highlighting.html">Conditional Highlighting</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

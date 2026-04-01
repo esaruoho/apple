@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Bounds Property</h2>
+		
+		<p>If you find yourself always resizing windows, you will probably write many scripts using the <span class="dictionary-term">bounds</span> property.</p>
+
+		<p>The value of the <span class="dictionary-term">bounds</span> property describes both the size and the position of the target window. This is accomplished by specifying two points: the top-left point of the window and the bottom-right point of the window. These two coordinates, combined into a four-item list, are used to outline the rectangular shape of the window.</p>
+
+		<p>Like the <span class="dictionary-term">position</span> property, the value of the <span class="dictionary-term">bounds</span> property can be read and edited. First, let&rsquo;s get the bounds of the frontmost window using this script:</p>
+				
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20front%20Finder%20window"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;</span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> bounds <b>of the front</b> window<BR><span class="codecomment">--> returns something like: {72, 90, 512, 481}</span></p>
+		
+		
+		<p>The value of the <span class="dictionary-term">bounds</span> property is returned as a four-item list of integers representing the area of the window like this: {72, 90, 512, 481}</p>
+		
+		<ul class="square">
+			<li>List item 1: {<span class="dictionary-term">72</span>, 90, 512, 481}<br>The distance in pixels from the left side of the screen to the left side of the Finder window.</li>
+			
+			<li>List item 2: {72, <span class="dictionary-term">90</span>, 512, 481}<br>The distance in pixels from the top of the screen to the top of the Finder window.</li>
+			
+			<li>List item 3: {72, 90, <span class="dictionary-term">512</span>, 481}<br>The distance in pixels from the left side of the screen to the right side of the Finder window.</li>
+			
+			<li>List item 4: {72, 90, 512, <span class="dictionary-term">481</span>}<br>The distance in pixels from the top of the screen to the bottom of the Finder window.</li>
+		</ul>
+
+		<p>By changing the value of the <span class="dictionary-term">bounds</span> property, you can resize and reposition a Finder window anywhere on the Desktop. For example, the following script places the front Finder window near the top left of the Desktop and resizes it to 500 pixels in width and 300 pixels in height. Again, the verb <span class="dictionary-term">set</span> is used to change the value of the property.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B24%2C%2096%2C%20524%2C%20396%7D"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> bounds <b>of the front</b> Finder window <b>to</b> {24, 96, 524, 396}</p>
+		
+		<p>The Finder window is now repositioned to the top left of the Desktop and resized.</p>
+		
+		<p class="note"><b>TIP</b>: to set the size of a window to a specific size, such as 500 pixels wide by 300 pixels tall, add the value of the first bounds list item to the desired width to create the third bounds list item: {24, 96, (24 + 500), 396}. Do the same for the window height, and add the value of the second list item to the desired window height to create the fourth list item: {24, 96, 524, (96 + 300)}.</p>
+		
+		<p>By the way, if you want to know the size of the current computer display, access the value of the bounds property for the Desktop window as shown in the following script. It returns the bounds of the entire Desktop, even if you have more than one monitor:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20bounds%20of%20the%20window%20of%20the%20desktop"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> bounds <b>of the</b> window <b>of the</b> desktop<BR><span class="codecomment">--> returns: {0, 0, 1920, 1200}</span></p>
+		
+		<p>The third item of the resulting bounds list is the desktop width, and the fourth item of the bounds list is the desktop height.</p>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="12.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li class="hi">The Bounds Property</li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

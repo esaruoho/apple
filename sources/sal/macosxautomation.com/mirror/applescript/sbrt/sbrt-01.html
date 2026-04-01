@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Math Routines</h2>
+		
+		<p>Here are some useful sub-routines addressing mathematical issues.</p>
+
+		<hr><a id="1000" name="1000" title="1000"><h3>Is a Passed Number an Odd Number?</h3></a>
+		
+		<p>This simple sub-routine will determine whether a passed whole number is even or odd. A returned value of false indicates the passed number is even, a returned value of true indicates the passed number is odd.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20is_odd%28this_number%29%0D%09if%20this_number%20mod%202%20is%20not%200%20then%0D%09%09return%20true%0D%09else%0D%09%09return%20false%0D%09end%20if%0Dend%20is_odd"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for determining whether a passed numeric value is even or odd. The result is a boolean value of true (number is odd) or false (number is even):<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">is_odd</span>(<span class="codevariable">this_number</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_number</span> <b>mod</b> 2 <b>is not</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> true<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">is_odd</span></p>
+		
+		<p>Here's an example script using this sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=repeat%0D%09display%20dialog%20%22Enter%20an%20even%20integer%3A%22%20default%20answer%20%22%22%0D%09try%0D%09%09if%20the%20text%20returned%20of%20the%20result%20is%20not%20%22%22%20then%20set%20the%20requested_number%20to%20the%20text%20returned%20of%20the%20result%20as%20integer%0D%09%09if%20is_odd%28the%20requested_number%29%20is%20false%20then%20exit%20repeat%0D%09end%20try%0Dend%20repeat%0D%0Don%20is_odd%28this_number%29%0D%09if%20this_number%20mod%202%20is%20not%200%20then%0D%09%09return%20true%0D%09else%0D%09%09return%20false%0D%09end%20if%0Dend%20is_odd"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating how to use the even/odd sub-routine:<br>&nbsp;<br><br></span><b>repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;Enter an even integer:&quot; default answer &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> text returned <b>of the</b> result <b>is not</b> &quot;&quot; <b>then</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">requested_number</span> <b>to the</b> text returned <b>of the</b> result <b>as</b> integer<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">is_odd</span>(<b>the</b> <span class="codevariable">requested_number</span>) <b>is</b> false <b>then exit repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+		<b>end repeat</b><BR>
+		<BR>
+		<b>on</b> <span class="codevariable">is_odd</span>(<span class="codevariable">this_number</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_number</span> <b>mod</b> 2 <b>is not</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> true<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">is_odd</span></p>
+		
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li class="hi">Math Routines</li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

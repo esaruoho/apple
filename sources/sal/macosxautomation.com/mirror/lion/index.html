@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+		p.opening:first-letter {
+ 			font-size : 300%;
+ 			font-weight : bold;
+ 			font-family: "Times New Roman", serif;
+ 			float : left;
+ 			width : 1em;
+ 			color : #000;
+ 			baseline-shift: 36px;
+ 		}
+	</style>
+</head>
+<body>
+<!-- END HEADER INCLUDE -->
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+<!-- 
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="applescript/intro.html">APPLESCRIPT</a></td>
+			<td><a href="services/intro.html">AUTOMATOR/SERVICES</a></td>
+			<td><a href="automator/intro.html">UNIX CLI (TERMINAL)</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+ -->
+</div>  
+<div id="main">
+		<div id="vertical-spacer" style="background-color: #fff;height:12px;"></div>
+		<div id="content" class="subheadcolumn">
+			<p>Every one of Mac OS X's automation technologies has been super-charged for Lion, resulting in significant improvements in their design and integration with Mac OS X. <b>Automator</b> sports new controls for creating and installing workflows, along with a powerful set of "content-focused" actions for encoding media, viewing and processing web content, and for creating digital publications. <b>AppleScript</b> in Lion brings the power of AppleScript/Objective-C to the desktop with new Cocoa-AppleScript applets that access the Cocoa frameworks directly within scripts. And even the <b>Terminal</b> gets rejuvenated, sporting numerous new features and UI enhancements, including the new "geek-mode" full-screen display option.</p>
+		</div>
+		<div class="subcolumn1-3">
+			<h1><a href="applescript.html">AppleScript</a></h1>
+			
+			<p>The focus of AppleScript in Lion is about bringing the power of AppleScript/Objective-C to the desktop.</p>
+			
+			<p><b>Cocoa-AppleScript Applets</b>. The AppleScript Editor can now create and edit Cocoa-AppleScript applets that provide direct access to the Cocoa frameworks from within their AppleScript code, by using the AppleScript/Objective-C bridge first introduced in Snow Leopard. Accordingly, applets can now display custom interfaces, such as progress windows, programmatically, taking advantage of the standard Cocoa interfaces available in the OS.</p>
+			
+			<p><b>Script Templates</b>. New for AppleScript Editor is a template menu, containing a variety of useful script templates, including scripts for creating file processing droplets, Aperture import actions, Mail rule actions, and iChat message responders.</p>
+			
+			<p><b>Global Script Application Targets</b>. In addition, the AppleScript Editor now has the ability to globally target a script to a specific application through a new optional “tell application” popup menu. Targeted scripts are excellent for quick development as they do not require the use of tell blocks or using terms clauses.</p>
+			
+			<p><b>Run Application Menu-Option</b>. For more accurate testing, applets opened in the AppleScript Editor can now be executed independently of the editing environment.</p>
+
+			<p><a href="applescript.html">View the details</a></p>
+		</div>	
+		<div class="subcolumn2-3">
+			<h1><a href="automatorservices.html">Automator/Services</a></h1>
+			
+			<p>Automator in Lion combines a streamlined easier-to-use interface, with new actions focused on digital content creation and the preparation of materials for use on iOS devices.</p>
+			
+			<p><b>Workflow Conversion</b>. Workflows can now be re-saved between template types, such as from an applet to a service, or from a service to a print plug-in.</p>
+			
+			<p><b>Improved Text Input Filtering</b>. Services processing Data Detector text input objects (like URLs, addresses, phone numbers, etc.) now have the option to pass only the found text objects to the workflow, or the full text selection.</p>
+			
+			<p><b>Versions</b>. Automator in Lion fully supports Versions so you can return a workflow to a previous state.</p>
+			
+			<p><b>Self-Installing Services and Actions</b>. As with Safari plugins or Dashboard Widgets, Automator Actions and Services can be self-installed from the desktop by double-clicking their icons and approving the forthcoming permissions dialog.</p>
+			
+			<p><b>New Automator Actions</b>. Included in Automator for Lion are new actions for turning text into images, text documents into EPUB books, also actions for displaying and retrieving web content, and a set of media actions enabling the desktop encoding of video and audio files.</p>
+			
+			<p><b>RTF Support in Text Actions</b>. Many text-based actions in Automator now support RTF (Rich Format Text) as an input type.</p>
+
+			<p><a href="automatorservices.html">View the details</a></p>
+		</div>	
+		<div class="subcolumn3-3">		
+			<h1><a href="terminal.html">Terminal (UNIX CLI)</a></h1>
+			<p>If you use the Terminal application on a regular basis, Mac&nbsp;OS&nbsp;X Lion just became your favorite platform for showing off your UNIX prowess.</p>
+			
+			<p><b>New appearance controls</b>. Editable ANSI colors in preferences, support for 256 colors and BCE (background color erase). The default TERM value is now xterm-256color. Windows now support background images (including randomized images from folders), hidden scroll bars, and a new translucent view. And to achieve master-geek status, try the new full-screen mode.</p>
+			
+			<p><b>New status controls</b>. Includes: display in tabs and minimized windows; and the showing of live content, with unread text, busy, and bell count indicators.</p>
+			
+			<p><b>Built-in system-wide Services</b>. You can create new sessions based on selected Finder folders, or text paths selected within in any application.</p>
+			
+			<p><b>Enhanced Drag and Drop Support</b>. In a Terminal window, the proxy icon in the window is an alias to the current directory. You can drag it from the window title bar into a session or tab to insert a reference to the current directory or file. Also, if you drag a folder from the Finder onto the Terminal icon, a new Terminal session to the dragged-on directory will be created.</p>
+
+			<p>w00t!</p>
+			
+			<p><a href="terminal.html">View the details</a></p>
+		</div>
+</div>
+</td></tr></table>
+</body>
+</html>

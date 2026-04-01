@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Automator System Notifications Support</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Automator notifications support in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="mavericks-sm-banner" src="gfx/mavericks-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Automator System Notifications Support</div>
+				<p>Automator in Mavericks introduces support for system notification via a new <b>Display Notification</b> action. This action can be placed at the beginning, end, or anywhere within a workflow. The action will pass-through any input provided by a previous action.</p>
+				
+				<p>The following describes the function of the various input fields of the action view, and how the provided data will be displayed in a notification window. Note that, in order for the action to run, at least one of the three input fields must contain text.</p>
+							
+				<img class="centered" alt="notifactionactionview" src="gfx/notifactionactionview.png" width="624">
+				
+		
+				<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Notification Title</b> - Enter the title for the notification window (see below) in the input field of the action view (see above). This input field accepts Automator workflow variables.</p>
+				<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Notification Subtitle</b> - Enter the subtitle for the notification window (see below) in the input field of the action view (see above). This input field accepts Automator workflow variables.</p>
+				<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Notification Message</b> - Enter the message for the notification window (see below) in the input field of the action view (see above). This input field does not accept Automator workflow variables.</p>
+				
+				<img class="centered" alt="automatorexamplenumbered" src="gfx/automatorexamplenumbered.png" width="624" height="202">
+				
+				<p class="imagecaption" style="width:608px;"><span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11014;&nbsp;<span style="vertical-align:+1px;">see&nbsp;above</span>)&nbsp;</span> The example notification window, displayed as an alert.</p>
+				
+				<p class="segment-note"><b>NOTE</b>: the type of notification window (banner or alert) is determined by the notifications settings for automation applet, chosen in the Notifications system preference pane. (more info <a href="03.html">here</a>)</p>
+				
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: USING -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Using the Display Notification Action</div>
+		
+				<p>Using the <b>Display Notification</b> action in Automator workflows can be as simple as adding the action to the end of a workflow, and entering the relevant title, subtitle, and description. <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+				
+				<img class="centered" alt="simplenotificationwkflw" src="gfx/simplenotificationwkflw.png" width="624" height="700">
+				
+				<p>When the workflow is run, it will post a system notification <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span> after the processing actions have completed. </p>
+				
+				<img class="centered" alt="simplenotificationwkflwbanner" src="gfx/simplenotificationwkflwbanner.png" width="500">
+				
+				<p class="segment-note"><a href="video-encoder-applet.zip"><b>DOWNLOAD</b></a> the example video encoder applet. To use, drag a high-resolution movie file onto the applet.</p>
+		
+		</div>
+		<!-- END SEGMENT: USING -->
+		
+		
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li class="hi">System Notifications Support</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li><a href="01.html">AppleScript</a></li>
+					<li><a href="01A.html">AppleScript (advanced)</a></li>
+					<li class="hi">Automator</li>
+					<li><a href="02A.html">Automator (advanced)</a></li>
+					<li><a href="03.html">Preferences</a></li>
+					<li><a href="reset.html">Reset Notification Center</a></li>
+				</ol>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

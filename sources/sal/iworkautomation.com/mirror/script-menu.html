@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and iWork: Script Menu</title>
+<link rel="stylesheet" type="text/css" href="iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting, tables">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="index.html.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="applescript-iwork-sm-banner" src="gfx/applescript-iwork-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="index.html">iWork</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Script Menu</div>
+						
+			<img alt="script-menu-populated" src="gfx/script-menu-populated.png" width="425" height="320" class="centered">
+								
+			<p>The system-wide <b>Script Menu</b> is an invaluable tool for automation enthusiasts. It provides quick access to favorite automation tools, stored and displayed in an organized manner. And this utility is versatile, as it is able to execute AppleScript scripts and applets, UNIX Shell scripts, as well as Automator workflows.</p>
+			
+			<p>The menu list of the <b>Script Menu</b> utility is generated dynamically based upon the automation files placed within the user <b>Scripts</b> folder, located within the user <b>Library</b> folder. User-created sub-menus can be inserted into the <b>Script Menu</b>, by placing groups of automation files within folders added to the <b>Scripts</b> folder.</p>
+			
+			<p>Users can also determine when the menu&rsquo;s Automation files (scripts) can be accessed. They can be available from within every application, or from within a specific application when it becomes the frontmost application.</p>
+			
+			<p>The documentation on this page outlines how to setup and activate the <b>Script Menu</b> on your computer.</p>			
+		
+			<p>If you&rsquo;d like the &ldquo;just the facts&rdquo; version of assistance, watch this movie:</p>
+			
+			<video width="624" height="436" controls preload="auto" style="margin-top:-24px;" poster="gfx/script-menu-poster.jpg">
+			  <source src="Script-Menu-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: SETUP -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Activation &amp; Preferences</div>
+		
+			<p>The system-wide <b>Script Menu</b> is turned on and off from within the preferences window of the <b>AppleScript Editor</b> application, accessed by selecting <b>Preferences&hellip;</b> from the <b>AppleScript Editor</b> application menu.</p>
+			
+			<p>The following illustration and callouts, outline a standard set of setup options:</p>
+						
+			<img alt="script-menu-prefs" src="gfx/script-menu-prefs.png" width="564" height="454" class="centered">
+			
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;The <b>General</b> tab of the AppleScript Editor&rsquo;s preference window contains the controls for the <b>Script Menu</b>.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;Select this checkbox to activate the <b>Script Menu</b>.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;This checkbox enables or disables the display of the scripts in the computer Library folder. To simplify the use of the Script Menu, this option can be left unchecked.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;These radio buttons determine whether the scripts for the frontmost application appear above or below the scripts placed in the top-level of the user Scripts folder. Script files located in the top-level of the user Scripts folder are available from within every application.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Turn on the system-wide Script Menu by selecting the <b>Show Script menu</b> checkbox <span class="numeric-callout">(2)</span> in the <b>General</b> pane of the <b>AppleScript Editor</b> preference window.</p>
+			
+			<p>The next section describes how to enable and access the Numbers Script Folder for storing and displaying scripts for the Numbers application.</p>
+		
+		</div>
+		<!-- END SEGMENT: SETUP -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Script for iWork Script Menu Setup</div>
+			<p>If you have the <b>iWork</b> applications installed on your computer, you can run this short script from within the <b>AppleScript Editor</b> application to turn on the system-wide <b>Script Menu</b> and create script folders for each of the <b>iWork</b> applications.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Setup Script Menu for iWork &amp; Contacts</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=set%20displayNameOfNumbers%20to%20the%20name%20of%20application%20id%20%22com.apple.iwork.numbers%22%0Dset%20displayNameOfPages%20to%20the%20name%20of%20application%20id%20%22com.apple.iwork.pages%22%0Dset%20displayNameOfKeynote%20to%20the%20name%20of%20application%20id%20%22com.apple.iwork.keynote%22%0Dset%20displayNameOfContacts%20to%20the%20name%20of%20application%20id%20%22com.apple.addressbook%22%0D%0Dset%20the%20applicationsList%20to%20%7BdisplayNameOfNumbers%2C%20displayNameOfPages%2C%20displayNameOfKeynote%2C%20displayNameOfContacts%7D%0D%0Dtell%20application%20id%20%22com.apple.AppleScriptUtility%22%0D%09if%20Script%20menu%20enabled%20is%20false%20then%0D%09%09set%20Script%20menu%20enabled%20to%20true%0D%09%09set%20application%20scripts%20position%20to%20top%0D%09%09set%20show%20Computer%20scripts%20to%20false%0D%09end%20if%0Dend%20tell%0Dset%20the%20UserScriptsFolder%20to%20(path%20to%20scripts%20folder%20from%20user%20domain)%0Dtell%20application%20%22Finder%22%0D%09activate%0D%09if%20not%20(exists%20folder%20%22Applications%22%20of%20UserScriptsFolder)%20then%0D%09%09make%20new%20folder%20at%20UserScriptsFolder%20with%20properties%20%7Bname%3A%22Applications%22%7D%0D%09end%20if%0D%09open%20folder%20%22Applications%22%20of%20UserScriptsFolder%0D%09tell%20folder%20UserScriptsFolder%0D%09%09tell%20folder%20%22Applications%22%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20applicationsList%0D%09%09%09%09set%20thisApplicationName%20to%20(item%20i%20of%20the%20applicationsList)%20as%20string%0D%09%09%09%09if%20not%20(exists%20folder%20thisApplicationName)%20then%0D%09%09%09%09%09make%20new%20folder%20at%20it%20with%20properties%20%7Bname%3AthisApplicationName%7D%0D%09%09%09%09end%20if%0D%09%09%09end%20repeat%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">displayNameOfNumbers</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.iwork.numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">displayNameOfPages</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.iwork.pages&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">displayNameOfKeynote</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.iwork.keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">displayNameOfContacts</span> <b>to the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.addressbook&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>set the</b> <span class="codevariable">applicationsList</span> <b>to</b> {<span class="codevariable">displayNameOfNumbers</span>, <span class="codevariable">displayNameOfPages</span>, <span class="codevariable">displayNameOfKeynote</span>, <span class="codevariable">displayNameOfContacts</span>}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.AppleScriptUtility&quot;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">Script menu enabled</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">Script menu enabled</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">application scripts position</span> <b>to</b> <span class="codeenumeration">top</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">show Computer scripts</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><b>set the</b> <span class="codevariable">UserScriptsFolder</span> <b>to</b> (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">scripts folder</span> <b>from</b> <span class="codeenumeration">user domain</span>)</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">folder</span> &quot;Applications&quot; <b>of</b> <span class="codevariable">UserScriptsFolder</span>) <b>then</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>make new folder at <span class="codevariable">UserScriptsFolder</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:&quot;Applications&quot;}</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>open folder &quot;Applications&quot; <b>of</b> <span class="codevariable">UserScriptsFolder</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">folder</span> <span class="codevariable">UserScriptsFolder</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">folder</span> &quot;Applications&quot;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">applicationsList</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisApplicationName <b>to</b> (item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">applicationsList</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">folder</span> <span class="codevariable">thisApplicationName</span>) <b>then</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">folder</span> <span class="codelibraryparameter">at</span> <b>it</b> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">thisApplicationName</span>}</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: NUMBERS SCRIPTS FOLDER -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Script Menu Controls</div>
+		
+			<p>The Script Menu provides options for opening the designated script storage folders for computer, user, and currently frontmost application. When any of these &ldquo;open folder&rdquo; options are selected, the <b>Script Menu</b> will create the folder if it doesn&rsquo;t exists, and then display the contents of the folder in a new Finder window.</p>
+						
+			<img alt="open-numbers-scripts" src="gfx/open-numbers-scripts.png" width="500" height="137" class="centered">
+			
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;The <b>Open Scripts Folder sub-menu</b> contains menu options for accessing the three designated script folder locations.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;Scripts placed in <b>Application Scripts Folder</b> are available for the current user, only when the named application is frontmost. This folder is located in the following path:</p>
+			
+			<p style="margin-left:72px;">Home <span style="font-size:small;">&#9658;</span> Library <span style="font-size:small;">&#9658;</span> Scripts <span style="font-size:small;">&#9658;</span> Applications <span style="font-size:small;">&#9658;</span> &lt;Name of Application&gt;</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;Scripts placed in <b>User Scripts Folder</b> are available for the current user, from within any application. This folder is located in the following path:</p>
+			
+			<p style="margin-left:72px;">Home <span style="font-size:small">&#9658;</span> Library <span style="font-size:small;">&#9658;</span> Scripts</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;Scripts placed in <b>Computer Scripts Folder</b> are available for any user account, from within any application. This folder is located in the following path:</p>
+			
+			<p style="margin-left:72px;">Startup Disk <span style="font-size:small">&#9658;</span> Library <span style="font-size:small;">&#9658;</span> Scripts</p>
+		
+			<p>Follow these steps to setup the <b>Script Menu</b>:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Make (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) the frontmost application, and select the <b>Open (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) Scripts Folder</b> option from the <b>Script Menu</b>. The scripts folder will be created and opened in a Finder window on the desktop.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Add your (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) scripts to the folder, and close the folder&rsquo;s Finder window. The scripts will now appear in the <b>Script Menu</b> when (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) is the frontmost application.</p>
+					
+			<img alt="numbers-scripts-folder-populated" src="gfx/numbers-scripts-folder-populated.png" width="624" class="centered">
+			
+		</div>
+		<!-- END SEGMENT: NUMBERS SCRIPTS FOLDER -->
+		
+		<!-- BEGIN SEGMENT: SCRIPT MENU TIPS -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Script Menu Tips</div>
+		
+		<p>Here are some useful tips for working with the <b>Script Menu</b>:</p>
+		
+			<ul>
+				<li>To run a script or automation file, simply select it from the Script Menu.</li>
+				<li>To reveal the related automation file of a <b>Script Menu</b> menu item, hold down the <b>Shift</b> key (&#8679;) when you select the menu item.</li>
+				
+				<li>To open the related automation file of a <b>Script Menu</b> menu item, into the <b>AppleScript Editor</b> (or default editing application), hold down the <b>Option</b> key (&#8997;) when you select the menu item.</li>
+			</ul>
+		
+		
+		</div>
+		<!-- END SEGMENT: SCRIPT MENU TIPS -->
+		
+		<!-- BEGIN SEGMENT: SAVING TO NUMBERS SCRIPTS FOLDER -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Saving Scripts to the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) Scripts Folder</div>
+			
+			<p>To add a script to the Script Menu, it must be saved as a script file placed into the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) script folder. Follow these steps that explain how to save a script file from the <b>AppleScript Editor</b> application, into the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) script folder.</p>
+			
+			<img alt="script-save-dialog-01" src="gfx/script-save-dialog-01.png" width="624" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>After entering a name for the script to be saved in the <b>Save Dialog</b> <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>, use the popup directory menu <span class="numeric-callout">(1)</span> to navigate to the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) Script folder located at this path:</p>
+			
+			<p style="text-align: center;">Home &gt; Library &gt; Scripts &gt; Applications &gt; (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>)</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the <b>Save</b> button, in the <b>Save Dialog</b>, to save the script file into the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) Script folder, making the script automatically available from the <b>Script Menu</b>.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Where is My Library Folder?</p>
+			
+			<p>By default, the user&rsquo;s Library folder is not visible from within the Finder or in Open and Save dialogs. If the user Library folder on your system is hidden it will not be accessible via the directory navigation popup in the Save dialog. To address this issue, you can choose to make the Library folder visible (see sidebar), or follow these steps:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Type the key combination <b>Shift-Command-G</b> ( &#8679;&#8984;-G ) to summon the UNIX navigation sheet <span class="numeric-callout">(2)</span> <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img alt="script-save-dialog-02" src="gfx/script-save-dialog-02.png" width="624" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Enter the UNIX path to the Numbers Scripts folder <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> in the text input field on the sheet <span class="numeric-callout">(2)</span>: <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span></p>
+			
+			<p style="text-align: center;">~/Library/Scripts/Applications/Numbers</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the <b>Go</b> button <span class="numeric-callout">(3)</span> on the sheet, and the Save Dialog will navigate to, and display the contents of, the Numbers Scripts folder. You can then click the <b>Save</b> button <span class="numeric-callout">(4)</span> to save the script.</p>
+			
+			<p>Script files placed or saved into the (<b>Numbers</b>|<b>Pages</b>|<b>Keynote</b>) Scripts folder, will automatically appear in the <b>Script Menu</b> the next time it is selected.</p>
+		</div>
+		<!-- END SEGMENT: SAVING TO NUMBERS SCRIPTS FOLDER -->
+		
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="services-support.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">iWORK &amp; APPLESCRIPT</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="hi"><a href="automation-utilities.html">Automation Utilities</a></li>
+				<li class="navListSectionItem"><a href="applescript-editor.html">Viewing an Application&rsquo;s Dictionary</a></li>
+				<li class="navListSectionItemSelected">The Script Menu</li>
+				<li class="navListSectionItem"><a href="services-support.html">iWork &amp; Services</a></li>
+				<li class="navListSectionItem"><a href="application-developers.html">Running iWork Scripts from 3rd-Party Applications</a></li>
+				<li class="navListSectionItem"><a href="app-termination.html">Enable|Disable App Termination</a></li>
+				<hr>
+				<li><a href="keynote/index.html">Keynote</a></li>
+				<li><a href="numbers/index.html"">Numbers</a></li>
+				<li><a href="pages/index.html">Pages</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">UN-HIDE LIBRARY FOLDER</h2>
+			
+			<p>By default, the user&rsquo;s Library folder is not visible in OS&nbsp;X. You can make your user Library folder visible in the Finder, and in <b>Open</b> and <b>Save</b> dialogs, by simply opening your Home directory in a Finder window, and then type Command-J ( &#8984;-J ) to summon the <b>View Options</b> palette for this folder. In the <b>View Options</b> window, select the checkbox titled <b>Show Library Folder</b> <span class="numeric-callout">(1)</span> and close the window. Your <b>Library</b> folder will now always be visible.</p>
+			
+			<img alt="homefolderinfowindow" src="gfx/homefolderinfowindow.png" width="220">
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

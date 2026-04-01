@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Tables</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Table</div>
+			<p>Sometimes the best way to deliver clarity is to present data in table form. They’re concise and to the point, and so it’s entirely logical to have a <span class="codelibraryclass">table</span> as element of <b>Keynote</b>.</p>
+			
+			<p>And since <span class="codelibraryclass">tables</span> are included in the <span class="dictionary-suite">iWork Suite</span> shared by all <b>iWork</b> applications, the scripts you use to create a table in one application, are the same scripts used to create a table in one of the other <b>iWork</b> applications. Very handy indeed.</p>
+			
+			<p class="segment-note">In general practice, the tables found in a <b>Keynote</b> presentation are usually of much simpler design than the ones found in <b>Numbers</b> or <b>Pages</b>. For that reason, refer to the <a href="../numbers/table.html"><b>Numbers</b> documentation on this website</a> for the detailed nitty-gritty concerning the manipulation of <span class="codelibraryclass">ranges</span>, <span class="codelibraryclass">cells</span>, <span class="codelibraryclass">columns</span>, and <span class="codelibraryclass">rows</span>. This section in the <b>Keynote</b> documentation will focus on the creation of tables with simpler design and data sets.</p>
+			
+			<p></p>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Table Class</p>
+			
+			<p>The <span class="codelibraryclass">table</span> class, contained in the <span class="dictionary-suite">iWork Suite</span>, is an element of a <span class="codelibraryclass">slide</span>, which is an element of a <span class="codelibraryclass">document</span>. A <span class="dictionary-class">table</span> contains <span class="dictionary-class">cells</span>, <span class="codelibraryclass">rows</span>, <span class="codelibraryclass">columns</span>, and <span class="codelibraryclass">ranges</span>.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">table</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: A table in a sheet</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">cells</span>, <span class="dictionary-class">columns</span>, <span class="dictionary-class">ranges</span>, <span class="dictionary-class">rows</span>; contained by <span class="dictionary-class">sheets</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">cell range</span> (&nbsp;<span class="dictionary-class">range</span>, r/o&nbsp;) : The range describing every cell in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">column count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of columns in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">filtered</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether the table is currently filtered.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">footer row count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of footer rows in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">header column count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of header columns in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">header row count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of header rows in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : The table&rsquo;s name.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">row count</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The number of rows in the table.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">selection range</span> (&nbsp;<span class="dictionary-class">range</span>&nbsp;) : The cells currently selected in the table.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span>, <span class="dictionary-verb">sort</span></p>
+			</div>
+			
+			<p>The properties <span class="codeproperty">cell range</span> and <span class="codeproperty">selection range</span> have values that are <span class="codelibraryclass">ranges</span> of <span class="codelibraryclass">cells</span>. The value of the <span class="codeproperty">cell range</span> property is a <span class="codelibraryclass">range</span> encompassing the entire table, while the value of the <span class="codeproperty">selection range</span> property is a <span class="codelibraryclass">range</span> defining the currently selected <span class="dictionary-class">cells</span> of the table.</p>
+		
+			<p class="segment-note"><b>NOTE</b>: The <span class="codelibraryclass">table</span> properties <span class="codeproperty">row count</span> and <span class="codeproperty">column count</span> are often used with the <span class="codelibrarycommand">make</span> command in the creation of a new table. The values of these properties for an existing table can be adjusted, however any <b>reduction</b> in the value of the <span class="codeproperty">row count</span> or <span class="codeproperty">column count</span> properties, must apply to only those <span class="codelibraryclass">rows</span> or <span class="codelibraryclass">columns</span> containing no data.</p>
+		</div>
+		
+		
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table-make.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="hi">Table</li>
+				<li class="navListSectionItem"><a href="table-make.html">Making Basic Tables</a></li>
+				<li class="navListSectionItem"><a href="table-selected.html">Selected Table</a></li>
+				<li class="navListSectionItem"><a href="table-populate.html">Populating Tables</a></li>
+				<li class="navListSectionItem"><a href="table-style.html">Styling Tables</a></li>
+				<li class="navListSectionItem"><a href="table-chart-from-row-column.html">Pie Chart from Selected Row | Column</a></li>
+				<li class="navListSectionItem"><a href="table-highlight-cell.html">Highlight Cell with Transition</a></li>
+				<li class="navListSectionItem"><a href="table-conditional-highlighting.html">Conditional Highlighting</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

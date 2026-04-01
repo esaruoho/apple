@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://photosautomation.com/scripting/index.html","20230925200222","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1695672142");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230925200222cs_/https://photosautomation.com/photos-automation.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Photos, JavaScript for Automation">
+	<meta name="Description" content="Creating and running scripts for the OS X Photos application.">
+	<link rel="home" href="http://photosautomation.com">
+	<title>Photos &amp; Scripting</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="photos-applescript-banner" src="http://web.archive.org/web/20230925200222im_/https://photosautomation.com/scripting/gfx/PhotosScriptingBanner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230925200222/https://macosxautomation.com/" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">OS X AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230925200222/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230925200222/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Photos and Scripting</p>
+					<p class="introduction"><span style="float:left;color:#222;font-size:75px;line-height:120px;margin-left:-36px;margin-bottom:-36px;padding-top:8px;padding-right:6px;padding-left:0px;font-family:Zapfino,'Times New Roman';background-color:transparent;">A</span>utomation begins with scripting. It is the foundational element that enables the user to query and control applications in OS&nbsp;X, unfettered by the limitations imposed on other forms of application-to-application communication. And best-of-all, because of its built-in scripting support, you can add Photos to your repertoire of automation tools.</p>
+					<p>Applications that support script access, are said to be “scriptable” and each one includes a user-readable dictionary of all the terms, objects, and commands that can be used by a script to communicate with the application. And like other scriptable applications, Photos has a scripting dictionary you use to create scripted solutions for managing and exporting your image library.</p>
+					<p>And when it comes to writing scripts, OS&nbsp;X offers two native script-language options for you choose from: <a href="http://web.archive.org/web/20230925200222/https://macosxautomation.com/applescript" target="_blank">AppleScript</a> or <a href="http://web.archive.org/web/20230925200222/https://developer.apple.com/library/mac/releasenotes/InterapplicationCommunication/RN-JavaScriptForAutomation/index.html" target="_blank">JavaScript for Automation (JXA)</a>. AppleScript is a well-established and supported English-like language that those new to scripting find to be an approachable automation tool. JavaScript for Automation (JXA), new to OS&nbsp;X, is an extension of the core JavaScript language that those with coding-experience find to be familiar and understandable.</p>
+					<p>Regardless of which language you prefer, they both interact with the Photos scripting architecture to get the job done!</p>
+					<p>Here’s an script example that provides a quick way to assign keywords to selected Photos images:</p>
+									
+				<table class="script-table" role="presentation"></td></tr>
+					<tr><td colspan="3" class="script-title">Add Keywords to Selected Photos (AppleScript)</td></tr>
+					<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="http://web.archive.org/web/20230925200222/applescript://com.apple.scripteditor/?action=new&amp;name=Add%20Keywords%20to%20Selected%20Photos&amp;script=" style="text-decoration:none;background-color:#eee;"><button type="button" style="margin:0;padding:4px;">Open in Script Editor</button></a></td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="codecomment">-- Script is written using AppleScriptObj-C, so load Cocoa Foundatation framework</span></td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="codelibraryclass">framework</span> &quot;Foundation&quot;</td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="codelibraryclass">scripting additions</span></td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>property</b> <span class="codevariable">keyWordString</span> : &quot;&quot; <span class="codecomment">-- his property will remember last entry</span></td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Photos&quot;</td></tr>
+					<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">currentSelection</span> <b>to the</b> <span class="codelibraryproperty">selection</span></td></tr>
+					<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">currentSelection</span> <b>is</b> {} <b>then error</b> <span class="codelibraryparameter">number</span> -28</td></tr>
+					<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogMessage</span> <b>to</b> &quot;Enter a comma-delimited list of keywords to apply to the selected media items:&quot;</td></tr>
+					<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> <span class="codevariable">dialogMessage</span> <span class="codelibraryparameter">default answer</span> <span class="codevariable">keyWordString</span> <span class="codelibraryparameter">with icon</span> 1 <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Replace&quot;, &quot;Append&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+					<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>copy the</b> <span class="codelibraryclass">result</span> <b>to</b> {<span class="codeproperty">button returned</span>:<span class="codevariable">buttonPressed</span>, <span class="codeproperty">text returned</span>:<span class="codevariable">keyWordString</span>}</td></tr>
+					<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- convert the comma-delimited string into a list of strings</span></td></tr>
+					<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">AppleScript's text item delimiters</span> <b>to</b> &quot;,&quot;</td></tr>
+					<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">keywordsToApply</span> <b>to every</b> <span class="codelibraryclass">text item</span> <b>of</b> <span class="codevariable">keyWordString</span></td></tr>
+					<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">AppleScript's text item delimiters</span> <b>to</b> &quot;,&quot;</td></tr>
+					<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- trim any white space around the strings</span></td></tr>
+					<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">whiteSpaceSet</span> <b>to</b> &not;</td></tr>
+					<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibraryclass">current application's</span> <span class="codevariable">NSCharacterSet's</span> <span class="codevariable">whitespaceAndNewlineCharacterSet()</span></td></tr>
+					<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWord</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">CocoaString</span> <b>to</b> (<span class="codelibraryclass">current application's</span> <span class="codevariable">NSString's</span> <span class="codevariable">stringWithString:<span class="codevariable">thisWord</span></span>)</td></tr>
+					<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">trimmedKeyword</span> <b>to</b> &not;</td></tr>
+					<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codevariable">CocoaString</span>'s <span class="codevariable">stringByTrimmingCharactersInSet:<span class="codevariable">whiteSpaceSet</span></span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+					<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">keywordsToApply</span> <b>to</b> <span class="codevariable">trimmedKeyword</span></td></tr>
+					<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+					<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- process each selected photo</span></td></tr>
+					<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">currentSelection</span></td></tr>
+					<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisItem</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">currentSelection</span></td></tr>
+					<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get the current keywords of the photo</span></td></tr>
+					<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseKeywords</span> <b>to the</b> keywords <b>of</b> <span class="codevariable">thisItem</span></td></tr>
+					<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">theseKeywords</span> <b>is</b> <span class="codelibraryclass">missing value</span> <b>then</b></td></tr>
+					<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">keywords</span> <b>of</b> <span class="codevariable">thisItem</span> <b>to</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>else if <span class="codevariable">keywordsToApply</span> <b>is</b> {} <b>then</b> <span class="codecomment">-- option for deleting all existing keywords</span></td></tr>
+					<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">buttonPressed</span> <b>is</b> &quot;Replace&quot; <b>then</b></td></tr>
+					<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">keywords</span> <b>of</b> <span class="codevariable">thisItem</span> <b>to</b> {}</td></tr>
+					<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+					<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+					<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">buttonPressed</span> <b>is</b> &quot;Append&quot; <b>then</b></td></tr>
+					<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- check to see if new keyword already exists</span></td></tr>
+					<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">filteredKeywords</span> <b>to</b> {}</td></tr>
+					<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisKeyword</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">q</span> <b>of</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">thisKeyword</span> <b>is not in</b> <span class="codevariable">theseKeywords</span> <b>then</b></td></tr>
+					<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">filteredKeywords</span> <b>to</b> <span class="codevariable">thisKeyword</span></td></tr>
+					<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+					<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+					<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">filteredKeywords</span> <b>is not {} then</b></td></tr>
+					<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- append checked keywords to existing keywords</span></td></tr>
+					<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">keywords</span> <b>of</b> <span class="codevariable">thisItem</span> <b>to</b> (<span class="codevariable">theseKeywords</span> &amp; <span class="codevariable">filteredKeywords</span>)</td></tr>
+					<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+					<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>else <span class="codecomment">-- replace keywords with new ones</span></td></tr>
+					<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">keywords</span> <b>of</b> <span class="codevariable">thisItem</span> <b>to</b> <span class="codevariable">keywordsToApply</span></td></tr>
+					<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+					<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+					<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+					<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>end tell</b></td></tr>
+				</table>
+				<p>And the same script written in JXA:</p>
+				<table class="script-table" role="presentation"></td></tr>
+					<tr><td colspan="3" class="script-title">Add Keywords to Selected Photos (JXA)</td></tr>
+					<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="http://web.archive.org/web/20230925200222/applescript://com.apple.scripteditor/?action=new&amp;name=Add%20Keywords%20to%20Selected%20Photos&amp;script=var%20Photos%20%3D%20Application(%22Photos%22)%0DPhotos.includeStandardAdditions%20%3D%20true%0D%0Dvar%20currentSelection%20%3D%20Photos.selection()%0D%0Dif%20(currentSelection.length%20%3E%200)%20%7B%0D%0D%09var%20dialogMessage%20%3D%20%22Enter%20a%20comma-delimited%20list%20of%20keywords%20to%20apply%20to%20the%20selected%20media%20items%3A%22%0D%09%0D%09var%20result%20%3D%20Photos.displayDialog(dialogMessage%2C%20%7B%0D%09%09defaultAnswer%3A%20%22%22%2C%0D%09%09withIcon%3A%201%2C%0D%09%09buttons%3A%20%5B%22Cancel%22%2C%20%22Replace%22%2C%20%22Append%22%5D%2C%0D%09%09defaultButton%3A%203%0D%09%7D)%0D%09%0D%09var%20buttonPressed%20%3D%20result.buttonReturned%0D%09var%20keywordString%20%3D%20result.textReturned%0D%09%0D%09var%20keywordsToApply%20%3D%20keywordString.split(%22%2C%22).map(function(element)%20%7B%0D%09%09return%20element.trim()%0D%09%7D)%0D%09%0D%09for%20(var%20item%20of%20currentSelection)%20%7B%0D%09%09var%20keywords%20%3D%20item.keywords()%0D%09%09%0D%09%09if%20(!keywords)%20%7B%0D%09%09%09item.keywords%20%3D%20keywordsToApply%0D%09%09%7D%0D%09%09else%20if%20(keywordsToApply.length%20%3D%3D%200)%20%7B%0D%09%09%09if%20(buttonPressed%20%3D%3D%20%22Replace%22)%20%7B%0D%09%09%09%09item.keywords%20%3D%20%5B%5D%0D%09%09%09%7D%0D%09%09%7D%0D%09%09else%20if%20(buttonPressed%20%3D%3D%20%22Append%22)%20%7B%0D%09%09%09var%20filteredKeywords%20%3D%20%5B%5D%0D%09%09%09%0D%09%09%09for%20(var%20keyword%20of%20keywordsToApply)%20%7B%0D%09%09%09%09if%20(!keywords.includes(keyword))%20%7B%0D%09%09%09%09%09filteredKeywords.push(keyword)%0D%09%09%09%09%7D%0D%09%09%09%7D%0D%09%09%09%0D%09%09%09if%20(filteredKeywords.length%20!%3D%200)%20%7B%0D%09%09%09%09item.keywords%20%3D%20keywords.concat(filteredKeywords)%0D%09%09%09%7D%0D%09%09%7D%0D%09%09else%20%7B%0D%09%09%09item.keywords%20%3D%20keywordsToApply%0D%09%09%7D%0D%09%7D%0D%7D%0D" style="text-decoration:none;background-color:#eee;"><button type="button" style="margin:0;padding:4px;">Open in Script Editor</button></a></td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="color:blue;">var</span> Photos = Application(<span style="color:red;">&quot;Photos&quot;</span>)</td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">Photos.includeStandardAdditions = <span style="color:blue;">true</span></td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="color:blue;">var</span> currentSelection = Photos.selection()</td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="color:blue;">if</span> (currentSelection.length &gt; <span style="color:green;">0</span>) {</td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span style="color:blue;">var</span> dialogMessage = <span style="color:red;">&quot;Enter a comma-delimited list of keywords to apply to the selected media items:&quot;</span></td></tr>
+					<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span style="color:blue;">var</span> result = Photos.displayDialog(dialogMessage, {</td></tr>
+					<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>defaultAnswer: <span style="color:red;">&quot;&quot;,</span></td></tr>
+					<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>withIcon: <span style="color:green;">1</span>,</td></tr>
+					<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>buttons: [<span style="color:red;">&quot;Cancel&quot;</span>, <span style="color:red;">&quot;Replace&quot;</span>, <span style="color:red;">&quot;Append&quot;</span>],</td></tr>
+					<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>defaultButton: <span style="color:green;">3</span></td></tr>
+					<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span>})</td></tr>
+					<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span style="color:blue;">var</span> buttonPressed = result.buttonReturned</td></tr>
+					<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span style="color:blue;">var</span> keywordString = result.textReturned</td></tr>
+					<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span style="color:blue;">var</span> keywordsToApply = keywordString.split(<span style="color:red;">&quot;,&quot;</span>).map(<span style="color:blue;">function</span>(element) {</td></tr>
+					<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">return</style> element.trim()</td></tr>
+					<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span>})</td></tr>
+					<tr><td class="line-count">23</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span>for (<span style="color:blue;">var</span> item <span style="color:blue;">of</span> currentSelection) {</td></tr>
+					<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">var</span> keywords = item.keywords()</td></tr>
+					<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">if</span> (!keywords) {</td></tr>
+					<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>item.keywords = keywordsToApply</td></tr>
+					<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">else if</span> (keywordsToApply.length == <span style="color:green;">0</span>) {</td></tr>
+					<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span style="color:blue;">if</span> (buttonPressed == <span style="color:red;">&quot;Replace&quot;</span>) {</td></tr>
+					<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>item.keywords = []</td></tr>
+					<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">else if</span> (buttonPressed == <span style="color:red;">&quot;Append&quot;</span>) {</td></tr>
+					<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span style="color:blue;">var</span> filteredKeywords = []</td></tr>
+					<tr><td class="line-count">37</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>for (<span style="color:blue;">var</span> keyword <span style="color:blue;">of</span> keywordsToApply) {</td></tr>
+					<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span style="color:blue;">if</span> (!keywords.includes(keyword)) {</td></tr>
+					<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span>filteredKeywords.push(keyword)</td></tr>
+					<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">43</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span style="color:blue;">if</span> (filteredKeywords.length != <span style="color:green;">0</span>) {</td></tr>
+					<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>item.keywords = keywords.concat(filteredKeywords)</td></tr>
+					<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span style="color:blue;">else</span> {</td></tr>
+					<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>item.keywords = keywordsToApply</td></tr>
+					<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span>}</td></tr>
+					<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">}</td></tr>
+				</table>
+			</div>
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230925200222/https://photosautomation.com/scripting/script-library-01.html">Photos Utilities Script Library</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230925200222/https://photosautomation.com/index.html">Automator Overview</a></li>
+						<hr>
+						<li class="hi">Scripting Overview</li>
+						<li><a href="http://web.archive.org/web/20230925200222/https://photosautomation.com/scripting/script-library.html">Photos Script Library</a></li>
+					</ul>
+				</div>
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. PHOTOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. PHOTOSAUTOMATION.COM provides this only as a convenience to our users. PHOTOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and PHOTOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from PHOTOSAUTOMATION.COM and that PHOTOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 20:02:22 Sep 25, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:57:16 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.621
+  exclusion.robots: 0.018
+  exclusion.robots.policy: 0.006
+  esindex: 0.009
+  cdx.remote: 289.165
+  LoadShardBlock: 274.474 (3)
+  PetaboxLoader3.datanode: 305.977 (4)
+  load_resource: 125.533
+  PetaboxLoader3.resolve: 74.967
+-->

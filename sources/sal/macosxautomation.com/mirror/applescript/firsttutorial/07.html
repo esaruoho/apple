@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Statusbar Visible Property</h2>
+		
+		<p>Introduced in Mac OS X version 10.4, the <span class="dictionary-term">statusbar visible</span> property determines whether a Finder window displays a status bar or not. Like the <span class="dictionary-term">toolbar visible</span> property, this property also has a value that is a <span class="dictionary-term">boolean</span>, in other words: true or false.</p>
+		
+		<p>Since a statusbar is only visible when the toolbar is not shown, alter the previous script to set the <span class="dictionary-term">toolbar visible</span> property to false:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20Finder%20window%201%20to%20false"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to hide the front Finder window&rsquo;s toolbar.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set</b> toolbar visible <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window 1 <b>to</b> false</p>		
+		
+		<p>Now, write and execute this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20statusbar%20visible%20of%20Finder%20window%201%20to%20true"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to show the Finder window&rsquo;s status bar.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set</b> statusbar visible <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window 1 <b>to</b> true</p>
+		
+		<a href="gfx/CH01_image14.jpg" rel="lightbox" title="A Finder window without a toolbar but displaying a status bar below the title bar."><img src="gfx/CH01_image14.jpg" width="450" align="top" class="across"></a>
+		<p class="imagecaption">A Finder window without a toolbar but displaying a status bar below the title bar.</p>
+		
+		<p>The Finder window now displays a status bar beneath the title bar.</p>
+
+		<p>Return the window to normal by setting the value of the <span class="dictionary-term">toolbar visible</span> property back to <span class="dictionary-term">true</span>:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20toolbar%20visible%20of%20Finder%20window%201%20to%20true"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to restore the toolbar to the frontmost Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set</b> toolbar visible <b>of</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window 1 <b>to</b> true</p>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="08.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li class="hi">The Statusbar Visible Property</li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Add Picture Slides to Presentation</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Add Picture Slides to Presentation</h2>
+		
+		<p>Creating a high-quality narrated slideshow for the Web just became as easy as dragging your tagged photos onto a small AppleScript script application.</p>
+		
+		<img src="gfx/slide.png" width="640" height="525" class="across">
+		
+		<p>The Add Images to Slideshow droplet will add image files, dragged onto its icon, to a Keynote slideshow. If there is no open Keynote slideshow, one will be created.</p>
+
+		<p>Any IPTC captions, embedded into an image file, will be extracted from the file, added to the slide’s presenter notes, and then rendered to disk as a spoken audio file using the built-in Mac OS X text-to-speech architecture. </p>
+
+		<p>Each audio clip is automatically imported into its corresponding slide, and the audio source files will be created in the same folder as the slideshow. If the slideshow has not yet been saved, the audio files will be created in the Music folder instead.</p>
+
+		<p>Once the script has completed processing the dragged-on image files, it will select the first slide added and begin playing the slideshow. When the audio clip for the slide has completed, use the right-arrow key to advance to the next slide.</p>
+		
+		<h3>Render Slides Script</h3>
+		
+		<p>If your images do not have embedded captions or you should want to enter and/or edit the speaker notes to be used as the source for audio clips, the Render Slide Notes to Audio File script is installed with the example files. Run this script from the Script Menu to convert speaker notes, for either the current slide or all slides, into spoken audio clips will be automatically imported into your presentation.</p>
+		
+		<img src="gfx/renderscript.png" width="440" height="209" class="across">
+
+		
+		<h3>Export for the Web</h3>
+		
+		<p>Narrated slideshows are perfect for posting as web-based instructional or marketing materials. Choose Export from the Share menu in Keynote and then select QuickTime as the export format. Be sure to check the optional for including the created audio clips in the finsihed Flash file. Click <a href="javascript:window.open('presentation.html','viewer-window-00','width=516,height=404');">here</a> to watch the example. Once the narration for the first slide has completed, click the play button to proceed to the next one in the presentation. You can start the presentation from the beginning by reloading its containing webpage or using the movie controller.</p>
+		
+		<img src="gfx/export.png" width="607" height="427" class="across">
+		
+		<h3>Download the script and example files</h3>
+		<p>You can download the example installer <a href="agreement.html">here</a>.</p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Example Slideshow</h2>
+			<a href="javascript:window.open('presentation.html','viewer-window-00','width=516,height=404');"><img src="gfx/movie32x32.png" width="32" height="32" class="left"></a>
+			<p><a href="javascript:window.open('presentation.html','viewer-window-00','width=516,height=388');">Here</a> is the example Keynote slideshow built using the droplet and exported in QuickTime format.</p>
+		</div>
+		<div class="box">
+			<h2>Dashboard Widget</h2>
+			<a href="../qwikwidget/index.html"><img src="../qwikwidget/gfx/widget32x32.png" width="32" height="32" align="top" class="left"></a>The QwikFolder Dashboard widget uses AppleScript to quickly open many of the special folders in Mac&nbsp;OS&nbsp;X, such as the Shared Items folder.</p>
+		</div>
+			<div class="box">
+				<h2>Browse Full Screen Script</h2>
+				<a href="../toolbar/index.html"><img src="../toolbar/gfx/Zoom32x32.png" width="32" height="20" align="top" class="left"></a><p>A toolbar script that instantly zooms the current Finder window to display full-screen, in Flow View mode, and with the Dock hidden. Click the toolbar script again to return to normal.</p>
+			</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

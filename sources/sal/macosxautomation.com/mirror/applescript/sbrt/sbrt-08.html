@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Text Encoding | Decoding</h2>
+		
+		<p>A standard practice when creating URL's is to encode special characters (high-level ASCII) and spaces to their hexidecimal equivalents. For example, spaces in URL's are converted to: <span class="inlinecode">%20</span></p>
+		
+		<p>The following sub-routines can be used to encode text in a variety of settings.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Character Encoding Sub-Routine</h3></a>
+		
+		<p>This sub-routine will encode a passed character. It is called by the other sub-routine examples and must be included in your script.</p>
+		
+		<p class="code"><span class="codevariable">encode_char</span>(&quot;$&quot;)<BR>
+		<span class="codecomment">--> returns: &quot;%24&quot;</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20encode_char%28this_char%29%0D%09set%20the%20ASCII_num%20to%20%28the%20ASCII%20number%20this_char%29%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20x%20to%20item%20%28%28ASCII_num%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09set%20y%20to%20item%20%28%28ASCII_num%20mod%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09return%20%28%22%25%22%20%26%20x%20%26%20y%29%20as%20string%0Dend%20encode_char"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for encoding high-ASCII characters:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">encode_char</span>(<span class="codevariable">this_char</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">ASCII_num</span> <b>to</b> (<b>the</b> ASCII number <span class="codevariable">this_char</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">hex_list</span> <b>to</b> {&quot;0&quot;, &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;, &quot;F&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> item ((<span class="codevariable">ASCII_num</span> <b>div</b> 16) + 1) <b>of the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> item ((<span class="codevariable">ASCII_num</span> <b>mod</b> 16) + 1) <b>of the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (&quot;%&quot; &amp; <span class="codevariable">x</span> &amp; y) <b>as</b> string<BR>
+		<b>end</b> <span class="codevariable">encode_char</span></p>
+		
+		<hr><a id="1001" name="1001" title="1001"><h3>Text Encoding Sub-Routine</h3></a>
+		
+		<p>This sub-routine is used in conjunction with the encoding characters sub-routine to encode spaces and high-level ASCII characters (those above 127) in passed text strings. There are two parameters which control which characters to exempt from encoding.</p>
+		
+		<p>The first parameter: <span class="inlinecode">encode_URL_A</span> is a true or false value which indicates to the sub-routine whether to also encode most of the special characters reserved for use by URLs.</p>
+		
+		<p>In the following example the <span class="inlinecode">encode_URL_A</span> value is false thereby exempting the asterisk (*) character, which has a special meaning in URL's, from the encoding process. Only spaces and high-level ASCII characters, like the copyright symbol are encoded.</p>
+		
+		<p class="code"><span class="codevariable">encode_text</span>(&quot;*smith-wilson© report_23.txt&quot;, false, false)<BR>
+		<span class="codecomment">--> &quot;*smith-wilson%A9%20report_23.txt&quot;</span></p>
+		
+		<p>In the following example the <span class="inlinecode">encode_URL_A</span> parameter is true and the asterisk character is included in the encoding process:</p>
+		
+		<p class="code"><span class="codevariable">encode_text</span>(&quot;*smith-wilson© report_23.txt&quot;, true, true)<BR>
+		<span class="codecomment">--> &quot;%2Asmith%2Dwilson%A9%20report%5F23%2Etxt&quot;</span></p>
+		
+		<p>In the following example the encode_URL_B is false, thereby exempting periods (.), colons(:), underscores (_), and hypens (-) from encoding:</p>
+		
+		<p class="code"><span class="codevariable">encode_text</span>(&quot;annual smith-<span class="codevariable">wilson_report.txt</span>&quot;, true, false)<BR>
+		<span class="codecomment">--> &quot;%2Aannual%20smith-wilson_report.txt</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=%2D%2D%20this%20sub%2Droutine%20is%20used%20to%20encode%20text%20%0Don%20encode_text%28this_text%2C%20encode_URL_A%2C%20encode_URL_B%29%0D%09set%20the%20standard_characters%20to%20%22abcdefghijklmnopqrstuvwxyz0123456789%22%0D%09set%20the%20URL_A_chars%20to%20%22%24%2B%21%27%2F%3F%3B%26%40%3D%23%25%3E%3C%7B%7D%5B%5D%5C%22%7E%60%5E%5C%5C%7C%2A%22%0D%09set%20the%20URL_B_chars%20to%20%22%2E%2D_%3A%22%0D%09set%20the%20acceptable_characters%20to%20the%20standard_characters%0D%09if%20encode_URL_A%20is%20false%20then%20set%20the%20acceptable_characters%20to%20the%20acceptable_characters%20%26%20the%20URL_A_chars%0D%09if%20encode_URL_B%20is%20false%20then%20set%20the%20acceptable_characters%20to%20the%20acceptable_characters%20%26%20the%20URL_B_chars%0D%09set%20the%20encoded_text%20to%20%22%22%0D%09repeat%20with%20this_char%20in%20this_text%0D%09%09if%20this_char%20is%20in%20the%20acceptable_characters%20then%0D%09%09%09set%20the%20encoded_text%20to%20%28the%20encoded_text%20%26%20this_char%29%0D%09%09else%0D%09%09%09set%20the%20encoded_text%20to%20%28the%20encoded_text%20%26%20encode_char%28this_char%29%29%20as%20string%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20encoded_text%0Dend%20encode_text"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for percent encoding strings:<br>&nbsp;<br><br></span><span class="codecomment">-- this sub-routine is used to encode text </span><BR>
+		<b>on</b> <span class="codevariable">encode_text</span>(<span class="codevariable">this_text</span>, <span class="codevariable">encode_URL_A</span>, <span class="codevariable">encode_URL_B</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">standard_characters</span> <b>to</b> &quot;abcdefghijklmnopqrstuvwxyz0123456789&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">URL_A_chars</span> <b>to</b> &quot;$+!'/?;&@=#%><{}[]\&quot;~`^\\|*&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">URL_B_chars</span> <b>to</b> &quot;.-<span class="codevariable">_</span>:&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">acceptable_characters</span> <b>to the</b> <span class="codevariable">standard_characters</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">encode_URL_A</span> <b>is</b> false <b>then set the</b> <span class="codevariable">acceptable_characters</span> <b>to the</b> <span class="codevariable">acceptable_characters</span> &amp; <b>the</b> <span class="codevariable">URL_A_chars</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">encode_URL_B</span> <b>is</b> false <b>then set the</b> <span class="codevariable">acceptable_characters</span> <b>to the</b> <span class="codevariable">acceptable_characters</span> &amp; <b>the</b> <span class="codevariable">URL_B_chars</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">encoded_text</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_char</span> <b>in</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_char</span> <b>is in the</b> <span class="codevariable">acceptable_characters</span> <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">encoded_text</span> <b>to</b> (<b>the</b> <span class="codevariable">encoded_text</span> &amp; <span class="codevariable">this_char</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">encoded_text</span> <b>to</b> (<b>the</b> <span class="codevariable">encoded_text</span> &amp; <span class="codevariable">encode_char</span>(<span class="codevariable">this_char</span>)) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">encoded_text</span><BR>
+		<b>end</b> <span class="codevariable">encode_text</span></p>
+		
+		<hr><a id="1002" name="1002" title="1002"><h3>Text Decoding Routines</h3></a>
+		
+		<p>The following sub-routines can be used to decode previously encoded text:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=%2D%2D%20this%20sub%2Droutine%20is%20used%20to%20decode%20a%20three%2Dcharacter%20hex%20string%20%0Don%20decode_chars%28these_chars%29%0D%09copy%20these_chars%20to%20%7Bindentifying_char%2C%20multiplier_char%2C%20remainder_char%7D%0D%09set%20the%20hex_list%20to%20%22123456789ABCDEF%22%0D%09if%20the%20multiplier_char%20is%20in%20%22ABCDEF%22%20then%0D%09%09set%20the%20multiplier_amt%20to%20the%20offset%20of%20the%20multiplier_char%20in%20the%20hex_list%0D%09else%0D%09%09set%20the%20multiplier_amt%20to%20the%20multiplier_char%20as%20integer%0D%09end%20if%0D%09if%20the%20remainder_char%20is%20in%20%22ABCDEF%22%20then%0D%09%09set%20the%20remainder_amt%20to%20the%20offset%20of%20the%20remainder_char%20in%20the%20hex_list%0D%09else%0D%09%09set%20the%20remainder_amt%20to%20the%20remainder_char%20as%20integer%0D%09end%20if%0D%09set%20the%20ASCII_num%20to%20%28multiplier_amt%20%2A%2016%29%20%2B%20remainder_amt%0D%09return%20%28ASCII%20character%20ASCII_num%29%0Dend%20decode_chars"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">this sub-routine is used to decode a three-character hex string<br>&nbsp;<br><br></span><span class="codecomment">A sub-routine for decoding a three-character hex string:</span><BR>
+		<b>on</b> <span class="codevariable">decode_chars</span>(<span class="codevariable">these_chars</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>copy</b> <span class="codevariable">these_chars</span> <b>to</b> {<span class="codevariable">indentifying_char</span>, <span class="codevariable">multiplier_char</span>, <span class="codevariable">remainder_char</span>}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">hex_list</span> <b>to</b> &quot;123456789ABCDEF&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">multiplier_char</span> <b>is in</b> &quot;ABCDEF&quot; <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">multiplier_amt</span> <b>to the</b> offset <b>of the</b> <span class="codevariable">multiplier_char</span> <b>in the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">multiplier_amt</span> <b>to the</b> <span class="codevariable">multiplier_char</span> <b>as</b> integer<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">remainder_char</span> <b>is in</b> &quot;ABCDEF&quot; <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">remainder_amt</span> <b>to the</b> offset <b>of the</b> <span class="codevariable">remainder_char</span> <b>in the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">remainder_amt</span> <b>to the</b> <span class="codevariable">remainder_char</span> <b>as</b> integer<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">ASCII_num</span> <b>to</b> (<span class="codevariable">multiplier_amt</span> * 16) + <span class="codevariable">remainder_amt</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (ASCII character <span class="codevariable">ASCII_num</span>)<BR>
+		<b>end</b> <span class="codevariable">decode_chars</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=%2D%2D%20this%20sub%2Droutine%20is%20used%20to%20decode%20text%20strings%20%0Don%20decode_text%28this_text%29%0D%09set%20flag_A%20to%20false%0D%09set%20flag_B%20to%20false%0D%09set%20temp_char%20to%20%22%22%0D%09set%20the%20character_list%20to%20%7B%7D%0D%09repeat%20with%20this_char%20in%20this_text%0D%09%09set%20this_char%20to%20the%20contents%20of%20this_char%0D%09%09if%20this_char%20is%20%22%25%22%20then%0D%09%09%09set%20flag_A%20to%20true%0D%09%09else%20if%20flag_A%20is%20true%20then%0D%09%09%09set%20the%20temp_char%20to%20this_char%0D%09%09%09set%20flag_A%20to%20false%0D%09%09%09set%20flag_B%20to%20true%0D%09%09else%20if%20flag_B%20is%20true%20then%0D%09%09%09set%20the%20end%20of%20the%20character_list%20to%20my%20decode_chars%28%28%22%25%22%20%26%20temp_char%20%26%20this_char%29%20as%20string%29%0D%09%09%09set%20the%20temp_char%20to%20%22%22%0D%09%09%09set%20flag_A%20to%20false%0D%09%09%09set%20flag_B%20to%20false%0D%09%09else%0D%09%09%09set%20the%20end%20of%20the%20character_list%20to%20this_char%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20character_list%20as%20string%0Dend%20decode_text"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for decoding multiple encoded characters:<br>&nbsp;<br><br></span><span class="codecomment">-- this sub-routine is used to decode text strings </span><BR>
+		<b>on</b> <span class="codevariable">decode_text</span>(<span class="codevariable">this_text</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_A</span> <b>to</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_B</span> <b>to</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">temp_char</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">character_list</span> <b>to</b> {}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_char</span> <b>in</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_char</span> <b>to the</b> contents <b>of</b> <span class="codevariable">this_char</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_char</span> <b>is</b> &quot;%&quot; <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_A</span> <b>to</b> true<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">flag_A</span> <b>is</b> true <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">temp_char</span> <b>to</b> <span class="codevariable">this_char</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_A</span> <b>to</b> false<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_B</span> <b>to</b> true<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">flag_B</span> <b>is</b> true <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">character_list</span> <b>to my</b> <span class="codevariable">decode_chars</span>((&quot;%&quot; &amp; <span class="codevariable">temp_char</span> &amp; <span class="codevariable">this_char</span>) <b>as</b> string)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">temp_char</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_A</span> <b>to</b> false<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">flag_B</span> <b>to</b> false<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">character_list</span> <b>to</b> <span class="codevariable">this_char</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">character_list</span> <b>as</b> string<BR>
+		<b>end</b> <span class="codevariable">decode_text</span></p>		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li class="hi">Text Encoding | Decoding</li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

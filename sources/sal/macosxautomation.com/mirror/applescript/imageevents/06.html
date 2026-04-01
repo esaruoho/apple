@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Framing an Image</h2>
+		
+		<p>An interesting use of the <span class="inlinecode">pad</span> command is to create a border around images. Padding an image will add black space around the image to the dimensions provided in the script command. It is similar in function to growing or shrinking the image canvas in Adobe Photoshop. Padding is often used to put a border around images or every image in a group of images the same size, regardless of their original orientation.</p>
+		
+		<p>This can be done by indicating the thickness of the border in pixels or as a percentage of the overall size of the image.</p>
+		
+		<h3>Frame Thickness in Pixels</h3>
+		
+		<p>The following script will add a frame, whose width is the indicated number of pixels, around an image. Note that the thickness of the frame on each side of the image is the indicated number of pixels. If you want to add a frame that increases the width or height of the image by only 12 pixels, use half that amount, 6 pixels, as the value for the <span class="inlinecode">frame_TH</span> variable.</p> 
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20frame_TH%20to%2012%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for adding a border of a specified number of pixels to an image.</span><BR>&nbsp;<br>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">frame_TH</span> <b>to</b> 12<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>to</b> dimensions {<span class="codevariable">W</span> + <span class="codevariable">frame_TH</span>, <span class="codevariable">H</span> + <span class="codevariable">frame_TH</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<img src="gfx/23_image08.png" width="640" height="204" hspace="4" class="across">
+
+		<p class="imagecaption">Use of the <span class="inlinecode">pad</span> command to add a frame whose thickness is fixed number of pixels.</p>
+		
+		<h3>Frame Thickness in Points</h3>
+
+		<p>Note that the &quot;visual thickness&quot; of the image border is dependent on the resolution of the image itself. A border of 12 pixels will appear thicker on an image whose resolution is 72 DPI (dots per inch) than an image whose resolution is 300 DPI.</p>
+		
+		<p>To get a border whose thickness is a specific number of <b>points</b>, add a calculation to the script that multiplies the desired border thickness (in points) times the resolution of the image divided by the number of points per inch you want to use:</p>
+		
+		<p>To get a border whose thickness is a specific number of <b>points</b>, add a calculation to the script that divides the resolution of the image by the number of points in an inch (usually 72), and then multiply the result times the number of points you want the frame thickness to be.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=property%20points_per_inch%20%3A%2072%0D%0Dset%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20frame_TH%20to%2012%20%2D%2D%20points%2C%20NOT%20pixels%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20resolution%20of%20the%20image%0D%09%09copy%20resolution%20of%20this_image%20to%20%7BX_res%2C%20Y_res%7D%0D%09%09%2D%2D%20calculate%20the%20frame%20thickness%20based%20on%20points%20per%20inch%0D%09%09set%20pixels_per_point%20to%20X_res%20%2F%20points_per_inch%0D%09%09set%20the%20frame_TH%20to%20frame_TH%20%2A%20pixels_per_point%0D%09%09set%20the%20frame_TH%20to%20round%20frame_TH%20rounding%20as%20taught%20in%20school%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for adding a border whose thickness in specified in points, not picels.</span><BR>&nbsp;<br>
+<b>property</b> <span class="codevariable">points_per_inch</span> : 72<BR>
+<BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+set the <span class="codevariable">frame_TH</span> to 12 <span class="codecomment">-- points, NOT pixels</span><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get resolution of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> resolution <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">X_res</span>, <span class="codevariable">Y_res</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate the frame thickness based on points per inch</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">pixels_per_point</span> <b>to</b> <span class="codevariable">X_res</span> / <span class="codevariable">points_per_inch</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">frame_TH</span> <b>to</b> <span class="codevariable">frame_TH</span> * <span class="codevariable">pixels_per_point</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">frame_TH</span> <b>to</b> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>round <span class="codevariable">frame_TH</span> rounding as taught in school<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>{W + <span class="codevariable">frame_TH</span>, <span class="codevariable">H</span> + <span class="codevariable">frame_TH</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<h3>Frame Thickness as Percentage</h3>
+		
+		<p>The second method of determing border size is by percentage. Using this method, the frame thickness will vary for each image, depending on its size and resolution.</p>
+
+		<p>The following script will add a frame, whose width is a percentage of the overall size of the image based on the length of the distance between the opposing ends of the image.</p>
+
+
+<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20TH_factor%20to%200%2E05%20%2D%2D%205%25%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20determine%20the%20length%20of%20the%20hypotenuse%0D%09%09set%20the%20HY_length%20to%20%28%28W%20%5E%202%29%20%2B%20%28H%20%5E%202%29%29%20%5E%200%2E5%0D%09%09%2D%2D%20determine%20the%20frame%20thickness%0D%09%09set%20frame_TH%20to%20HY_length%20%2A%20TH_factor%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for adding a border whose thickness is a percentage of the overall size of the image.</span><BR>&nbsp;<br>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+set the <span class="codevariable">TH_factor</span> to 0.05 <span class="codecomment">-- 5%</span><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- determine the length of the hypotenuse</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">HY_length</span> <b>to</b> ((<span class="codevariable">W</span> ^ 2) + (<span class="codevariable">H</span> ^ 2)) ^ 0.5<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- determine the frame thickness</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">frame_TH</span> <b>to</b> <span class="codevariable">HY_length</span> * <span class="codevariable">TH_factor</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>to</b> dimensions {W + <span class="codevariable">frame_TH</span>, <span class="codevariable">H</span> + <span class="codevariable">frame_TH</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<img src="gfx/23_image09.png" width="640" height="205" hspace="4" class="across">
+		
+		<p class="imagecaption">Use of the <span class="inlinecode">pad</span> command to add a frame whose thickness is based on a percentage of their overall size. Note that the height of each image (excluding the thickness of the frame) is the same. The frame thickness of each image varies because the size of the images vary.</p>
+
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="07.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html" target="_self">Introduction</a></li>
+				<li><a href="01.html" target="_self">Image Properties</a></li>
+				<li><a href="02.html" target="_self">Flipping Images</a></li>
+				<li><a href="03.html" target="_self">Rotating Images</a></li>
+				<li><a href="04.html" target="_self">Scaling Images</a></li>
+				<li><a href="05.html" target="_self">Padding Images</a></li>
+				<li class="hi">Framing Images</li>
+				<li><a href="07.html" target="_self">Croping Images</a></li>
+				<li><a href="08.html" target="_self">File Conversion</a></li>
+				<li><a href="09.html" target="_self">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Choose Color Command</h2>
+			<p>The <span class="inlinecode">choose color</span> command from the Standard Additions dictionary, can be used to prompt the script user to pick a color using the standard system color picker palette.</p>
+			<img src="gfx/color_picker02.png" width="200" height="364" class="across"><br>
+			
+			<p>The chosen color value can then be used as the value for the <span class="inlinecode">with pad color</span> parameter of the <span class="inlinecode">pad</span> command to set the color of the pad area around an image.</p>
+			
+			<img src="gfx/sqblueframe.JPG" width="200" height="200" class="across"><br>
+			
+			<img src="gfx/sqlpurpleframe.JPG" width="200" height="200" class="across"><br>
+			
+			<p>Click <a href="applescript://com.apple.scripteditor?action=new&script=%28%2A%20IMPORTANT%3A%20The%20with%20pad%20color%20parameter%20of%20the%20pad%20command%20does%20not%20work%20in%20Mac%20OS%2010%2E5%2E5%2E%20Use4%20the%20SIPS%20command%2Dline%20utility%20instead%20when%20padding%20with%20a%20color%20%2A%29%0Dproperty%20default_color%20%3A%20%7B0%2C%200%2C%200%7D%0Dproperty%20frame_TH%20%3A%2012%0D%0Dset%20this_file%20to%20choose%20file%20with%20prompt%20%22Pick%20an%20image%20to%20frame%3A%22%20without%20invisibles%0Dset%20this_path%20to%20the%20quoted%20form%20of%20the%20POSIX%20path%20of%20this_file%0D%0Dset%20the%20default_color%20to%20choose%20color%20default%20color%20default_color%0Dset%20the%20hex_color%20to%20text%202%20thru%20%2D1%20of%20%28my%20RBG_to_HTML%28default_color%29%29%0D%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%28%2A%20The%20with%20pad%20color%20parameter%20is%20broken%20in%20Mac%20OS%20X%2010%2E5%2E5%20%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2A%29%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09%0D%09%2D%2D%20The%20with%20pad%20color%20parameter%20is%20not%20working%20in%2010%2E5%2E5%20so%20use%20the%20SIPS%20command%2Dline%20utitlity%20instead%0D%09set%20pad_H%20to%20%28H%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09set%20pad_W%20to%20%28W%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09do%20shell%20script%20%22sips%20%22%20%26%20this_path%20%26%20%22%20%2Dp%20%22%20%26%20pad_H%20%26%20space%20%26%20pad_W%20%26%20space%20%26%20%22%2D%2DpadColor%20%22%20%26%20hex_color%20%26%20space%20%26%20%22%2Di%22%0D%09%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML">here</a> for a version of the first script, incorporating use of the color picker palette.</p>
+			
+			<p>Click <a href="applescript://com.apple.scripteditor?action=new&script=%28%2A%20IMPORTANT%3A%20The%20with%20pad%20color%20parameter%20of%20the%20pad%20command%20does%20not%20work%20in%20Mac%20OS%2010%2E5%2E5%2E%20Use4%20the%20SIPS%20command%2Dline%20utility%20instead%20when%20padding%20with%20a%20color%20%2A%29%0Dproperty%20default_color%20%3A%20%7B0%2C%200%2C%200%7D%0Dproperty%20frame_TH%20%3A%2012%20%2D%2D%20points%2C%20NOT%20pixels%2E%20Divide%20by%202%20to%20get%20per%2Dside%20frame%20thickness%0Dproperty%20points_per_inch%20%3A%2072%0D%0Dset%20this_file%20to%20choose%20file%20with%20prompt%20%22Pick%20an%20image%20to%20frame%3A%22%20without%20invisibles%0Dset%20this_path%20to%20the%20quoted%20form%20of%20the%20POSIX%20path%20of%20this_file%0D%0Dset%20the%20default_color%20to%20choose%20color%20default%20color%20default_color%0Dset%20the%20hex_color%20to%20text%202%20thru%20%2D1%20of%20%28my%20RBG_to_HTML%28default_color%29%29%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20resolution%20of%20the%20image%0D%09%09copy%20resolution%20of%20this_image%20to%20%7BX_res%2C%20Y_res%7D%0D%09%09%2D%2D%20calculate%20the%20frame%20thickness%20based%20on%20points%20per%20inch%0D%09%09set%20pixels_per_point%20to%20X_res%20%2F%20points_per_inch%0D%09%09set%20the%20frame_TH%20to%20frame_TH%20%2A%20pixels_per_point%0D%09%09set%20the%20frame_TH%20to%20round%20frame_TH%20rounding%20as%20taught%20in%20school%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%28%2A%20The%20with%20pad%20color%20parameter%20is%20broken%20in%20Mac%20OS%20X%2010%2E5%2E5%20%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2A%29%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09%0D%09%2D%2D%20The%20with%20pad%20color%20parameter%20is%20not%20working%20in%2010%2E5%2E5%20so%20use%20the%20SIPS%20command%2Dline%20utitlity%20instead%0D%09set%20pad_H%20to%20%28H%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09set%20pad_W%20to%20%28W%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09do%20shell%20script%20%22sips%20%22%20%26%20this_path%20%26%20%22%20%2Dp%20%22%20%26%20pad_H%20%26%20space%20%26%20pad_W%20%26%20space%20%26%20%22%2D%2DpadColor%20%22%20%26%20hex_color%20%26%20space%20%26%20%22%2Di%22%0D%09%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML">here</a> for a version of the second script, incorporating use of the color picker palette.</p>
+			
+			
+			<p>Click <a href="applescript://com.apple.scripteditor?action=new&script=%28%2A%20IMPORTANT%3A%20The%20with%20pad%20color%20parameter%20of%20the%20pad%20command%20does%20not%20work%20in%20Mac%20OS%2010%2E5%2E5%2E%20Use4%20the%20SIPS%20command%2Dline%20utility%20instead%20when%20padding%20with%20a%20color%20%2A%29%0Dproperty%20default_color%20%3A%20%7B0%2C%200%2C%200%7D%0Dproperty%20TH_factor%20%3A%200%2E05%20%2D%2D%205%25%0D%0Dset%20this_file%20to%20choose%20file%20with%20prompt%20%22Pick%20an%20image%20to%20pad%3A%22%20without%20invisibles%0Dset%20this_path%20to%20the%20quoted%20form%20of%20the%20POSIX%20path%20of%20this_file%0D%0Dset%20the%20default_color%20to%20choose%20color%20default%20color%20default_color%0Dset%20the%20hex_color%20to%20text%202%20thru%20%2D1%20of%20%28my%20RBG_to_HTML%28default_color%29%29%0D%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20determine%20the%20length%20of%20the%20hypotenuse%0D%09%09set%20the%20HY_length%20to%20%28%28W%20%5E%202%29%20%2B%20%28H%20%5E%202%29%29%20%5E%200%2E5%0D%09%09%2D%2D%20determine%20the%20frame%20thickness%0D%09%09set%20frame_TH%20to%20HY_length%20%2A%20TH_factor%0D%09%09%28%2A%20The%20with%20pad%20color%20parameter%20is%20broken%20in%20Mac%20OS%20X%2010%2E5%2E5%20%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7BW%20%2B%20frame_TH%2C%20H%20%2B%20frame_TH%7D%20with%20pad%20color%20%20default_color%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%60%09%2A%29%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09%0D%09%2D%2D%20The%20with%20pad%20color%20parameter%20is%20not%20working%20in%2010%2E5%2E5%20so%20use%20the%20SIPS%20command%2Dline%20utitlity%20instead%0D%09set%20pad_H%20to%20%28H%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09set%20pad_W%20to%20%28W%20%2B%20frame_TH%29%20as%20integer%20as%20string%0D%09do%20shell%20script%20%22sips%20%22%20%26%20this_path%20%26%20%22%20%2Dp%20%22%20%26%20pad_H%20%26%20space%20%26%20pad_W%20%26%20space%20%26%20%22%2D%2DpadColor%20%22%20%26%20hex_color%20%26%20space%20%26%20%22%2Di%22%0D%09%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML">here</a> for a version of the third script, incorporating use of the color picker palette.</p>
+			
+			
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,273 @@
+version: 1
+updated: "2026-04-01"
+
+curriculum:
+  title: "Apple Automation Workflow Curriculum"
+  intent: "Turn Sal Soghoian source archives into a staged learning system."
+  principles:
+    - "Teach workflows, not isolated syntax."
+    - "Preserve attribution to original Sal pages."
+    - "Pair every concept with a runnable example where possible."
+    - "Bridge legacy tools to modern macOS automation."
+
+tracks:
+  - slug: foundations
+    title: "Foundations"
+    level: 1
+    purpose: "Learn the AppleScript mental model and basic execution paths."
+    categories:
+      - applescript-basics
+      - script-execution
+      - terminology
+    source_roots:
+      - "sources/sal/macosxautomation.com/mirror/applescript/firsttutorial"
+      - "sources/sal/macosxautomation.com/mirror/applescript/features"
+      - "sources/sal/macosxautomation.com/mirror/training/applescript"
+    capabilities:
+      - "Write simple tell-block based scripts."
+      - "Read commands, classes, and properties from examples."
+      - "Run scripts in Script Editor and via osascript."
+    modern_bridge:
+      - "scripts/workflows/"
+      - "dictionaries/"
+
+  - slug: workflow-building
+    title: "Workflow Building"
+    level: 2
+    purpose: "Move from scripts to reusable user workflows."
+    categories:
+      - automator
+      - services
+      - folder-actions
+      - workflow-packaging
+    source_roots:
+      - "sources/sal/macosxautomation.com/mirror/automator"
+      - "sources/sal/macosxautomation.com/mirror/services"
+      - "sources/sal/macosxautomation.com/mirror/training/automator"
+      - "sources/sal/macosxautomation.com/mirror/training/services"
+    capabilities:
+      - "Build Services and Quick Actions."
+      - "Build folder actions and app workflows."
+      - "Package reusable automations."
+    modern_bridge:
+      - "scripts/workflows/"
+      - "shortcuts/"
+
+  - slug: app-automation
+    title: "App Automation"
+    level: 3
+    purpose: "Automate real apps using their object models."
+    categories:
+      - keynote
+      - numbers
+      - pages
+      - photos
+      - image-events
+      - app-specific-workflows
+    source_roots:
+      - "sources/sal/iworkautomation.com/mirror/keynote"
+      - "sources/sal/iworkautomation.com/mirror/numbers"
+      - "sources/sal/iworkautomation.com/mirror/pages"
+      - "sources/sal/photosautomation.com/mirror/wayback-20240721"
+      - "sources/sal/macosxautomation.com/mirror/applescript/imageevents"
+    capabilities:
+      - "Generate slides, documents, tables, and charts."
+      - "Automate photo import, export, selection, and display actions."
+      - "Understand app dictionaries as the map of possibility."
+    modern_bridge:
+      - "dictionaries/"
+      - "scripts/workflows/"
+
+  - slug: accessibility-voice
+    title: "Accessibility And Voice"
+    level: 3
+    purpose: "Treat automation as accessibility infrastructure."
+    categories:
+      - dictation-commands
+      - speakable-workflows
+      - gui-scripting
+      - accessibility
+    source_roots:
+      - "sources/sal/dictationcommands.com/mirror/wayback-20240424"
+      - "sources/sal/macosxautomation.com/mirror/mavericks/speakableworkflows"
+      - "sources/sal/macosxautomation.com/mirror/mavericks/guiscripting"
+    capabilities:
+      - "Map spoken phrases to actions."
+      - "Use UI scripting when an app is otherwise dark."
+      - "Frame automation as empowerment and accessibility."
+    modern_bridge:
+      - "scripts/workflows/accessibility"
+      - "scripts/workflows/system-events"
+
+  - slug: admin-deployment
+    title: "Admin And Deployment"
+    level: 4
+    purpose: "Apply workflow thinking to deployment and device management."
+    categories:
+      - configurator
+      - deployment
+      - backup-restore
+      - identity-management
+      - classroom
+    source_roots:
+      - "sources/sal/configautomation.com/mirror/wayback-20240422"
+      - "sources/sal/macosxautomation.com/mirror/mavericks/codesign"
+      - "sources/sal/macosxautomation.com/mirror/mavericks/libraries"
+    capabilities:
+      - "Understand install, backup, restore, DEP, and identity workflows."
+      - "Understand script-library distribution and code-signing constraints."
+      - "Connect personal automation to institutional deployment."
+    modern_bridge:
+      - "scripts/workflows/"
+      - "dictionaries/system-events"
+
+  - slug: modern-translation
+    title: "Modern Translation Layer"
+    level: 4
+    purpose: "Translate Sal's examples into the current Apple automation stack."
+    categories:
+      - shortcuts
+      - app-intents
+      - shell-bridges
+      - workflow-modernization
+    source_roots:
+      - "scripts/workflows"
+      - "shortcuts"
+      - "dictionaries"
+      - "scripts/sal"
+    capabilities:
+      - "Map Automator and AppleScript patterns to Shortcuts and App Intents."
+      - "Retain AppleScript depth where modern tools lack reach."
+      - "Create current equivalents of preserved workflows."
+
+categories:
+  - slug: applescript-basics
+    label: "AppleScript Basics"
+    sources:
+      - "macosxautomation"
+    allows:
+      - "Write basic scripts."
+      - "Understand object-command syntax."
+
+  - slug: automator
+    label: "Automator"
+    sources:
+      - "macosxautomation"
+      - "iworkautomation"
+      - "photosautomation"
+      - "configautomation"
+    allows:
+      - "Compose actions into user workflows."
+      - "Package repeatable automation."
+
+  - slug: services
+    label: "Services And Quick Actions"
+    sources:
+      - "macosxautomation"
+    allows:
+      - "Trigger context-sensitive automation from Finder and app menus."
+
+  - slug: folder-actions
+    label: "Folder Actions"
+    sources:
+      - "macosxautomation"
+    allows:
+      - "React to file-system events with automation."
+
+  - slug: keynote
+    label: "Keynote Automation"
+    sources:
+      - "iworkautomation"
+    allows:
+      - "Generate and modify presentations programmatically."
+
+  - slug: numbers
+    label: "Numbers Automation"
+    sources:
+      - "iworkautomation"
+    allows:
+      - "Build and transform tables, rows, columns, and charts."
+
+  - slug: pages
+    label: "Pages Automation"
+    sources:
+      - "iworkautomation"
+    allows:
+      - "Construct documents, sections, layouts, and page-item workflows."
+
+  - slug: photos
+    label: "Photos Automation"
+    sources:
+      - "photosautomation"
+      - "macosxautomation"
+    allows:
+      - "Operate on selections, imports, exports, maps, and displays."
+
+  - slug: dictation-commands
+    label: "Dictation Commands"
+    sources:
+      - "dictationcommands"
+    allows:
+      - "Bind spoken phrases to automation tasks."
+
+  - slug: gui-scripting
+    label: "GUI Scripting"
+    sources:
+      - "macosxautomation"
+    allows:
+      - "Automate apps without direct scripting support."
+
+  - slug: configurator
+    label: "Configurator Automation"
+    sources:
+      - "configautomation"
+    allows:
+      - "Automate deployment and configuration workflows."
+
+sites:
+  macosxautomation:
+    status: "captured"
+    strengths:
+      - "Largest and broadest AppleScript/Automator teaching corpus."
+      - "Strong training and workshop material."
+    key_categories:
+      - applescript-basics
+      - automator
+      - services
+      - folder-actions
+      - gui-scripting
+
+  iworkautomation:
+    status: "captured"
+    strengths:
+      - "Deep iWork object-model examples."
+      - "Keynote/Numbers/Pages-specific teaching."
+    key_categories:
+      - keynote
+      - numbers
+      - pages
+      - automator
+
+  photosautomation:
+    status: "captured-partial"
+    strengths:
+      - "Photos-specific action categories and workflow framing."
+    key_categories:
+      - photos
+      - automator
+
+  dictationcommands:
+    status: "captured-partial"
+    strengths:
+      - "Voice-triggered workflow framing and demo material."
+    key_categories:
+      - dictation-commands
+      - accessibility
+
+  configautomation:
+    status: "captured-partial"
+    strengths:
+      - "Deployment-oriented automation categories."
+    key_categories:
+      - configurator
+      - deployment

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Present Slideshow with Narration&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Present Slideshow with Narration&rdquo; Automator action will automatically deliver the currently open Keynote presentation using the built-in system voice to narrate the slide presenter notes.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;Present Slideshow with Narration&rdquo; Action</div>
+			<p>Have you ever wished you could preview your presentation by having someone else deliver it while you observed? Well, the &ldquo;Present Slideshow with Narration&rdquo; Automator action will put you in the audience by automatically delivering an open Keynote presentation using one of the built-in system voices to narrate the slide presenter notes and perform object builds and slide advances.</p>
+
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">An AppleScript reference to the open Keynote document to be presented.</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">An AppleScript reference to the presenting document</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>The installed voice to use for the narrator.</p></li>
+						<li><p>Whether the narrator should introduce him/herself after starting the presentation.</p></li>
+						<li><p>Whether the narrator should speak the slide number of each slide prior to speaking the slide&rsquo;s presenter notes</p></li>
+						<li><p>The slide the presentation should begin with</p></li>
+						<li><p>The length of silence (in seconds) that should occur for slides that have no presenter notes</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Note:</td><td class="data-value"><p>To automatically execute builds, place the tag [[adv]] in the presenter notes, where you want the advance to occur.</p><p>To have a build occur without waiting for the spoken text to finish, place the tag [[adv*]] in the presenter notes where you want the advance to occur.</p><p>Also, if you wish to have the narrator introduce him or herself, and speak the number of each slide before narrating, select the &ldquo;Include introduction&rdquo; and &ldquo;Speak each slide number&rdquo; checkboxes.</p></td></tr>
+				<tr><td class="data-key">Important:</td><td class="data-value"><p>To enable this action to control the presentation process, <b>automatic advancing between slides must be disabled</b>.</p></td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that may precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Open Keynote Files</p></li>
+						<li><p>Get Specified Document</p></li>
+					</ul>
+				</td></tr>
+			</table>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<img class="action-interface" alt="The &ldquo;Present Slideshow with Narration&rdquo; action interface" src="gfx/Present-Slideshow-with-Narration.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>System Voice</b>&nbsp;-&nbsp;From this popup menu, select from the voice to use as the narrator. <b>NOTE</b>: Watch <a href="document-actions-08-video.html">this short video</a> on how to upgrade|install free high-quality voices from Apple.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Narrator Introduction</b>&nbsp;-&nbsp;Select this option to have the &ldquo;narrator&rdquo; introduce his/herself before beginning the presentation. For example: &ldquo;Hello, my name is Samantha, and I&rsquo;ll be delivering this presentation.&rdquo;</p>
+		   <p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Announce Slides</b>&nbsp;-&nbsp;Select this option to have the narrator announce each slide. For example: &ldquo;Slide twelve.&rdquo;</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Starting Slide Index</b>&nbsp;-&nbsp;Use the stepper control to select the index of the starting slide.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Current Slide</b>&nbsp;-&nbsp;Select this checkbox to begin the presentation from the currently selected slide.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Default Display Duration</b>&nbsp;-&nbsp;Select the number of seconds that slides without presenter notes should be displayed during the presentation.</p>
+			
+			
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Example Workflow: Present Slideshow with Narration</div>
+			<p>Here&rsquo;s a simple workflow that will begin to narrate the frontmost presentation in Keynote. The provided installer below includes an example presentation containing presenter notes with advance codes.</p>
+			
+			<img class="across" alt="narration-workflow" src="gfx/narration-workflow.png" width="640">
+			
+			<p class="segment-note"><a href="installers/Narrated-Presentation-Workflow.zip" style="font-weight:700;">DOWNLOAD&nbsp;</a>&nbsp;an example narrator-ready presentation and related workflow installer (29-MB). The installer will activate the system-wide Script Menu and add the workflow to the menu.<br><br><b>TIP</b>: To <b>open</b> the installed workflow in Automator for editing, hold down the Option key and select the workflow title from the Script Menu. To <b>reveal</b> the workflow, hold down the Shift key and select the workflow title from the Script Menu.</p>
+			
+			<img class="across" width="640" alt="narration-presentation" src="gfx/narration-presentation.png">
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li class="hi">Document Actions</a></li>
+				<li class="navListSectionItem"><a href="document-actions-01.html">New Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-02.html">Open Keynote Files</a></li>
+				<li class="navListSectionItem"><a href="document-actions-03.html">Get Specified Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-04.html">Export Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-05.html">Save Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-06.html">Close Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-07.html">Begin Presentation</a></li>
+				<li class="navListSectionItemSelected">Present Slideshow with Narration</li>
+				<li class="navListSectionItem"><a href="document-actions-09.html">Get Fonts of Keynote Documents</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

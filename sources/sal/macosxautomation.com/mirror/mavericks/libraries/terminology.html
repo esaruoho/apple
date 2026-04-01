@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AppleScript Libraries: Libraries with Terminology</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, AppleScript Libraries, Automation, Automator, Services, OS X, Snow Leopard, Lion, Mountain Lion, Movericks">
+	<META NAME="Description" CONTENT="Overview and examples of AppleScript Libraries in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<div class="content-segment">
+			<div class="segment-header" >AppleScript Libraries with Terminology</div>
+				
+			<p class="content-subhead">Why Use Terminology?</p>	
+						
+			<p>The introduction of <b>AppleScript Libraries</b>, will substantially expand the number of commands and routines available to users, as scripters and developers create and distribute these new tools.</p>
+			
+			<p>While a boon for customers, in terms of delivering increased functionality, having to remember script library routine names and paramaters when writing scripts, is challenging problem, even for those used to dealing with complex code.</p>
+			
+			<p>To make it easier for the users of script libraries to recall and execute commands and their parameters, script libraries can contain and publish scripting dictionaries that use common-language terms and phrasing to represent the complex handlers code executed by the library.</p>
+			
+			<p>For example, when composing a script that references a script library command, it&rsquo;s much easier to remember and implement:</p>
+			
+			<ol style="list-style-type:none;">
+				<li><p class="code"><span class="codelibrarycommand">transform text</span> <span class="codevariable">sourceText</span> <span class="codelibraryparameter">to</span> <span class="codeenumeration">upper case</span></p></li>
+			</ol>
+			 
+			<p>than:</p> 
+			 
+			<ol style="list-style-type:none;">
+				<li><p class="code"><span class="codelibrarycommand">changeCaseOfText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">numericCaseIndicator</span>)</p></li>
+			</ol>
+			
+			<p>or:</p> 
+			 
+			<ol style="list-style-type:none;">
+				<li><p class="code"><span class="codelibrarycommand">changeCaseOfText</span>:<span class="codevariable">sourceText</span> <span class="codelibraryparameter">toCaseIndicatedBy</span>:<span class="codevariable">numericCaseIndicator</span></p></li>
+			</ol>
+			
+			<p>Also, from an esthetic point-of-view, using terminology is more &ldquo;AppleScript-like&rdquo; than including handler names and parameters in your script statements.</p>
+			
+			<p>If you want others to use the AppleScript libraries you create, consider adding scripting terminology to your AppleScript libraries.</p>
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" >Viewing a Script Library&rsquo;s Terminology</div>
+				
+				<p>The terminology of an AppleScript Library can be viewed in the same manner as viewing the dictionary of scriptable applications.</p>
+				<p>From within the <b>AppleScript Editor</b> application, choose <b>Open Dictionary&hellip;</b> from the <b>File</b> menu. In the forthcoming file dialog, locate and select the script library whose terminology you wish to view. The script library&rsquo;s scripting terminology will be displayed in a standard dictionary viewer window, as shown below:</p>
+				
+			<a href="javascript:void(0);">
+				<img class="centered" alt="Text-Utilities-Library-Dictionary-sm" src="gfx/Text-Utilities-Dictionary-sm.png" width="624" height="691" highresurl="gfx/Text-Utilities-Dictionary.png" caption="<b>The dictionary viewer for an AppleScript Library</b>" displaywidth="1432" displayheight="1586" onclick="void(0);lightboxThisImage(this);">
+			</a>
+		</div>
+			
+			
+		<div class="content-segment">
+			<div class="segment-header" >How to Implement Terminology for a Script Library</div>
+			
+				<p>The best way to learn how to create and implement terminology for a script library is to watch the following 26-minute video. It explains, in detail, the step-by-step process of creating and adding a scripting dictionary to an AppleScript library.</p>
+				
+				<p class="segment-note"><b>VIDEO:</b> <a href="mda/libraries-with-terminology.m4v" target="_blank">Libraries with Terminology</a> (26:12-1152×720)</p>
+
+			<p>Additional technical documentation is available on the Apple Developer website, linked below:</p>
+		
+			<p class="segment-note"><b>RESOURCE:</b> Detailed developer documentation about creating scripting dictionaries, is available on the Apple developer site. See: <a href="https://encrypted.google.com/url?sa=t&amp;rct=j&amp;q=preparing%20a%20scripting%20definition%20file&amp;source=web&amp;cd=1&amp;ved=0CCkQFjAA&amp;url=https%3A%2F%2Fdeveloper.apple.com%2Flibrary%2Fmac%2Fdocumentation%2Fcocoa%2Fconceptual%2FScriptableCocoaApplications%2FSApps_creating_sdef%2FSAppsCreateSdef.html&amp;ei=j6oVUoumHsagiAKkiIDICQ&amp;usg=AFQjCNForvBYXDERWdeNYgT8170-OCfIRQ" target="_blank">Preparing a Scripting Definition File</a></p>
+			
+			<p>Also, you may want to download the fully-editable example AppleScript Libraries provided in the <a href="examples.html" target="_self">next section</a> of this topic.</p>
+
+		</div>
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li class="hi">AppleScript Libraries</li>
+					<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+						<li><a href="index.html">Overview</a></li>
+						<li><a href="simple.html">Simple Script Library</a></li>
+						<li><a href="asoc.html">ASOC Script Library</a></li>
+						<li class="hi">Libraries with Terminology</li>
+						<li><a href="examples.html">Example Libraries</a></li>
+					</ol>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>
+		<div class="box">
+		<h2 style="text-align:center;">ASObjC Explorer</h2>
+		<a href="javascript:void(0);"><img alt="ExplorerMav300" src="gfx/ExplorerMav300.jpg" width="222" highresurl="gfx/ExplorerMavBig.jpg" caption="<b>The ASObjC Explorer application for OS&nbsp;X Mavericks</b>" displaywidth="900" displayheight="818" onclick="void(0);lightboxThisImage(this);" height="202"></a>
+		<p>The <b>ASObjC Explorer</b> application is an advanced script editor for composing scripts written using AppleScript/Objective-C. Version 3 for OS&nbsp;X Mavericks, offers the ability to create and edit and AppleScript Libraries, including their scripting definition files (SDEF).</p>
+		
+		<p><a href="http://macosxautomation.com/applescript/apps/index.html" target="_blank">Learn more&hellip;</a></p>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

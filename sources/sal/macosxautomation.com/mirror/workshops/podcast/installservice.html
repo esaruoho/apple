@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- 
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+ -->
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+<!~~ START IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcast.m4a\" width=\"320\" height=\"338\" scale=\"2\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!~~ END IMAGE SWAP SCRIPT ~~>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+				
+		<!-- BEGIN SEGMENT: INSTALLING SERVICE FILES -->
+		<div class="content-segment">
+			<div class="segment-header">Installing Service Workflow Files</div>
+			
+			<p>On occasion you may want to install Automator service workflow files you&rsquo;ve acquired, into the system. The installation process is a simple one, requiring only a double-click and approval.</p>
+			
+			<p class="segment-note" style="background-color:#FFC;border:2px solid #C93;color:black;font: normal normal normal 10px/normal 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;font-size: 12px;margin: 12px 0px;padding: 8px;width: %100;"><b>IMPORTANT</b>: Automator workflows can be very powerful and often are granted access to important areas of your home directory and computer. Practice safe computing and ONLY INSTALL WORKFLOWS AND ACTIONS THAT COME FROM TRUSTED SOURCES.</p>
+			
+			<p><img src="gfx/workflowdocumenticon.png" width="128" height="128" align="left">To begin the installation of an Automator workflow service, in the Finder, double-click the icon of the Automator service workflow (shown left) you want to install. The Automator application will launch and an approval dialog, similar to the following illustration, will appear:</p>
+			
+			<img src="gfx/installquerydialog.png" width="624" height="309" class="centered">
+			
+			<p>The Service Installer dialog offers three options (buttons):</p>
+						
+			<ol type="1">
+				<li>Click the &ldquo;Open in Automator&rdquo; button to open the service workflow in Automator for viewing and editing.</li>
+				<li>Click the &ldquo;Install&rdquo; button to begin the process of moving the workflow file into the Services folder in your home Library folder.</li>
+				<li>Click the &ldquo;Cancel&rdquo; button to stop the installation process.</li>
+			</ol>
+			
+			<p>Once the installer has completed the installation process, a confirmation dialog will appear. The newly installed service is ready for use, and can be optionally opened in Automator for viewing and editing.</p>
+			
+			<img src="gfx/installcompletedialog.png" width="624" height="268" class="centered">
+			
+		</div>
+		<!-- END SEGMENT: INSTALLING SERVICE FILES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li class="hi">Create Reading Services</li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>This page details the steps for installing an Automator workflow service file.</p>
+			
+			<p>It is essential that the attendees be made aware of the security concerns that come will the installation of any 3rd-party items, and that only services and Automator actions from trusted sources should be installed on their computers.</p>
+			
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

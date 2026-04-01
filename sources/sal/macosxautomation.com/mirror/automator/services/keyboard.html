@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Touch Bar Quick Actions: Settings</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Settings for Automator Quick Actions and Services are found in the Keyboard system preference pane in the System Preferences application.">
+	<meta property="og:image" content="https://macosautomation.com/automator/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav-active.png">
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Keyboard Settings</p>
+			
+			<p>The preferences for the display and use of Automator workflow <a href="extensions.html">Extensions</a> and <a href="services.html">Services</a> are located within the <a href="x-apple.systempreferences:com.apple.preference.keyboard">Keyboard preference pane</a> of the System Preferences application.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Touch Bar</p>
+			
+			<p>The preferences for determining the display of the Touch Bar are accessed in the <b>Touch Bar</b> category of the <b>Keyboard</b> tab of the <b>Keyboard</b> preference pane in the <b>System Preferences</b> application.</p>
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/touch-bar-key-settings.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Keyboard</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Keyboard</b> tab of the <b>Keyboard</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;A popup menu for selecting which set of items are displayed on the Touch Bar by default.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;A checkbox whose selection indicates that a condensed version of the Control Strip should be displayed on the Touch Bar.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The options for the default Touch Bar set.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;A popup menu for selecting the set of items to be displayed on the Touch Bar when the function key is pressed.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;The possible sets of items to be displayed on the Touch Bar when the function key is pressed.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;Clicking the &ldquo;Customize Touch Bar…&rdquo; button will display a screen overlay that contains the controls that may be dragged to the Touch Bar. (see below)</p>
+			</div>
+			
+			<p>The Touch Bar overlay displays the available controls that can be used to customize the display and functionality of the Touch Bar. Individual controls can be dragged into position on the Touch Bar or from the Touch Bar.</p>
+			
+			<p>The <b>Quick Actions</b> control (circled below) provides a mechanism or quickly accessing Automator Quick Actions from any customized configuration.</p>
+			
+			<img width="100%" alt="customize-touchbar-options" src="gfx/customize-touchbar-options.png">
+			
+			<p>The Touch Bar configuration shown below is based upon the <b>Default Set</b> with the <b>Quick Actions</b> control (shown at far right) taking the place of the standard <b>Siri</b> control.</p>
+			
+			<img width="100%" alt="touch-bar-with-tb-button" src="gfx/touch-bar-with-tb-button.png">
+			
+			<p>When the <b>Quick Actions</b> control is pressed, the Touch Bar display will instantly switch to displaying a horizontally scrollable list of Quick Actions in the order outlined in the Touch Bar  category in the <a href="extensions.html">Extensions</a> system preference pane.</p>
+			
+			<img width="100%" alt="full-touch-bar" src="gfx/full-touch-bar.png">
+			
+			<a name="services-prefs" title="services-prefs" id="services-prefs"><p class="subhead" role="heading" aria-level="2">Services</p></a>
+			
+			<p>The preferences for controlling the use of <b>System Services</b> are located in the <b>Services</b> category of the <b>Shortcuts</b> tab of the <b>Keyboard</b> system preference pane.</p>
+			
+			<img width="100%" alt="keyboard-settings-services" src="gfx/keyboard-settings-services.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Keyboard</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Shortcuts</b> tab of the <b>Keyboard</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;When the <b>Services</b> category is selected, a list of all System Services is displayed in the pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;A System Service can be activated or deactivated by selecting or deselecting the checkbox to the left of the System Service title.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;System Services may optionally be assigned keyboard shortcut combinations by clicking the &ldquo;Add Shortcut&rdquo; button and then typing the keyboard key combination you wish to use for that service. An assigned keyboard shortcut will be available when the service is contextually available.</p>
+				<!-- <p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;XXXXX</p> -->
+			</div>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <p class="sub-topic"><a href="index.html">Quick Actions</a></p>
+			  <p class="sub-sub-topic"><a href="extensions.html">Extensions</a></p>
+			  <p class="sub-sub-topic"><a href="services.html">Services</a></p>
+			  <p class="active-sub-sub-topic">Keyboard Settings</p>
+			  <p class="sub-sub-topic"><a href="https://support.apple.com/en-us/HT207055" target="_blank">&#63743; Using Touch Bar</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+<!-- 
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+ -->
+			</nav>
+
+			<aside style="font-size:75%;margin-bottom:72px;">
+				<h3>Videos from MacBreak</h3>
+
+				<p>Here are links to podcast videos with <a href="https://twitter.com/alexlindsay" target="_blank">Alex Lindsey</a> about Services.</p>
+				<ul>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkv_235_540p_h264.mov">Services in Snow Leopard</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_012_540p_h264.mov">Services and Apple Remote Desktop</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_013_540p_h264.mov">Creating Automator Actions</a></p></li>
+				</ul>
+			</aside>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

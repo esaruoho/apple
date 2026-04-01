@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Pixelmator Pro &amp; AppleScript: Image Captions from Spreadsheet</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="AppleScript scripts demonstratig automation support in Pixelmator Pro.">
+	<link rel="stylesheet" type="text/css" href="omni-automation-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="stylesheet" type="text/css" href="applescriptcode.css" />
+	<link rel="stylesheet" type="text/css" href="mobile-main.css" />
+	<meta name="keywords" content="AppleScript, Pixelmator, automation">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<style>
+		.script-code-text {
+			padding: 2vw;
+			/* background-color: white; */
+			/* color: black; */
+			font-family: "Menlo", san-serif;
+			font-size: 1vw;
+		}
+		#code
+		{
+			font: 14px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+			font-size: 14px;
+			margin: 12px 0px 12px 0px;
+			color: #fff;
+			background-color: #333;
+			padding: 8px;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div class="banner">
+			<img width="100%" alt="banner image" src="gfx/banner.jpg">
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head" role="heading" aria-level="1">Image Captions from Spreadsheet</p>
+			
+			<p>If creating marketing materials for use in multiple countries and languages is an essential element of your work, you’ll totally understand how useful this multi-app automation is.</p>
+
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="pixelmator-numbers" x-webkit-airplay="allow" webkit-playsinline width="100%" height="auto" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/numbers-poster.jpg">
+				  <source src="pixelmator-numbers.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('pixelmator-numbers').play();">PLAY</button>
+				<button onclick="document.getElementById('pixelmator-numbers').pause();">PAUSE</button>
+				<button onclick="document.getElementById('pixelmator-numbers').currentTime=(document.getElementById('pixelmator-numbers').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('pixelmator-numbers').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>In this example, a Numbers spreadsheet contains an image caption translated into dozens of languages. An AppleScript script iterates the spreadsheet rows and replaces the caption in the open Pixelmator Pro image with a translated caption, and then exports the resulting image to a destination folder previous chosen by the user. This process is repeated until all rows in the spreadsheet have been processed.</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td class="rightside"><p><a href="pixelmator-numbers-demo.zip">DOWNLOAD</a> a zip archive (14mb) containing the Pixelmator template image, the Numbers spreadsheet, and the example AppleScript script file.</p></td>
+				</tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">The AppleScript Script</p>
+			
+			<p>Here is the AppleScript script that automates the process of inserting the image captions from the spreadsheet into the Pixelmator image and exporting.</p>
+			
+<p id="code"><a href="applescript://com.apple.scripteditor?action=new&name=Render%20Product%20Images&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20scripting%20additions%0D%0Dproperty%20headlineLayerName%20%3A%20%22Headline%22%0D%0Dtry%0D%09activate%0D%09%0D%09tell%20application%20id%20%22com%2Eapple%2EiWork%2ENumbers%22%0D%09%09if%20not%20%28exists%20document%201%29%20then%20error%20number%20%2D128%0D%09%09tell%20front%20document%0D%09%09%09tell%20active%20sheet%0D%09%09%09%09if%20not%20%28exists%20table%201%29%20then%20error%20%22The%20current%20spreadsheet%20does%20not%20include%20a%20table%2E%22%0D%09%09%09%09tell%20table%201%0D%09%09%09%09%09set%20languageNames%20to%20the%20formatted%20value%20of%20cells%202%20thru%20%2D1%20of%20column%201%0D%09%09%09%09%09set%20the%20translatedHeadlines%20to%20the%20formatted%20value%20of%20cells%202%20thru%20%2D1%20of%20column%202%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09set%20destinationDirectory%20to%20%28choose%20folder%20with%20prompt%20%22Select%20the%20folder%20in%20which%20to%20place%20the%20exported%20images%3A%22%29%0D%09end%20tell%0D%09%0D%09tell%20application%20%22Pixelmator%20Pro%22%0D%09%09activate%0D%09%09if%20not%20%28exists%20document%201%29%20then%20error%20%22No%20document%20is%20open%20in%20Pixelmator%20Pro%2E%22%0D%09%09tell%20front%20document%0D%09%09%09if%20not%20%28exists%20text%20layer%20headlineLayerName%29%20then%0D%09%09%09%09error%20%22The%20text%20layer%20%E2%80%9C%22%20%26%20headlineLayerName%20%26%20%22%E2%80%9D%20is%20not%20in%20the%20Pixelmator%20Pro%20document%2E%22%0D%09%09%09end%20if%0D%09%09%09%0D%09%09%09%2D%2D%20GET%2FSTORE%20DEFAULTS%0D%09%09%09set%20documentName%20to%20the%20name%20of%20it%0D%09%09%09if%20documentName%20ends%20with%20%22%2Epxd%22%20then%0D%09%09%09%09set%20documentName%20to%20text%201%20thru%20%2D5%20of%20documentName%0D%09%09%09end%20if%0D%09%09%09tell%20text%20layer%20headlineLayerName%0D%09%09%09%09set%20defaultFont%20to%20the%20font%20of%20it%0D%09%09%09%09set%20defaultText%20to%20the%20text%20content%20of%20it%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09%2D%2D%20ITERATE%20THE%20SPREADSHEET%20ROWS%0D%09%09%09set%20imageCount%20to%20the%20count%20of%20languageNames%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20imageCount%0D%09%09%09%09%0D%09%09%09%09%2D%2D%20Set%20the%20headline%0D%09%09%09%09set%20thisLanguage%20to%20item%20i%20of%20languageNames%0D%09%09%09%09set%20thisHeadline%20to%20item%20i%20of%20translatedHeadlines%0D%09%09%09%09set%20the%20text%20content%20of%20text%20layer%20headlineLayerName%20to%20thisHeadline%0D%09%09%09%09%0D%09%09%09%09%2D%2D%20Adjust%20the%20font%20as%20needed%0D%09%09%09%09if%20thisLanguage%20is%20%22Simplified%20Chinese%20%28CH%29%22%20then%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20%22PingFangSC%2DLight%22%0D%09%09%09%09else%20if%20thisLanguage%20is%20%22Traditional%20Chinese%20%28TA%29%22%20then%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20%22PingFangTC%2DLight%22%0D%09%09%09%09else%20if%20thisLanguage%20is%20%22Japanese%20%28J%29%22%20then%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20%22HiraginoSans%2DW1%22%0D%09%09%09%09else%20if%20thisLanguage%20is%20%22Korean%20%28KH%29%22%20then%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20%22AppleSDGothicNeo%2DLight%22%0D%09%09%09%09else%20if%20thisLanguage%20is%20%22Thai%20%28TH%29%22%20then%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20%22Thonburi%2DLight%22%0D%09%09%09%09else%0D%09%09%09%09%09set%20font%20of%20text%20layer%20headlineLayerName%20to%20defaultFont%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09%09%2D%2D%20Export%20the%20image%0D%09%09%09%09set%20exportFilename%20to%20documentName%20%26%20%22%2D%22%20%26%20thisLanguage%20%26%20%22%2Ejpg%22%0D%09%09%09%09set%20targetHFSPath%20to%20%28destinationDirectory%20as%20string%29%20%26%20exportFilename%0D%09%09%09%09export%20for%20web%20to%20file%20targetHFSPath%20as%20JPEG%0D%09%09%09%09%0D%09%09%09%09%2D%2D%20Show%20notification%20for%20export%0D%09%09%09%09set%20notificationTitle%20to%20%22Image%20Export%20%28%22%20%26%20%28i%20as%20string%29%20%26%20%22%2F%22%20%26%20imageCount%20%26%20%22%29%22%0D%09%09%09%09display%20notification%20exportFilename%20with%20title%20notificationTitle%20subtitle%20thisLanguage%0D%09%09%09end%20repeat%0D%09%09%09%0D%09%09%09%2D%2D%20reset%20the%20headline%20layer%0D%09%09%09set%20the%20text%20content%20of%20text%20layer%20headlineLayerName%20to%20defaultText%0D%09%09%09set%20the%20font%20of%20text%20layer%20headlineLayerName%20to%20defaultFont%0D%09%09end%20tell%0D%09end%20tell%0D%09%0D%09%2D%2D%20Show%20the%20exported%20results%0D%09tell%20application%20%22Finder%22%0D%09%09activate%0D%09%09open%20destinationDirectory%0D%09%09select%20the%20first%20item%20of%20destinationDirectory%0D%09end%20tell%0Don%20error%20errorMessage%20number%20errorNumber%0D%09if%20errorNumber%20is%20not%20%2D128%20then%0D%09%09activate%0D%09%09tell%20current%20application%0D%09%09%09display%20alert%20%22ERROR%22%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0D%09%09end%20tell%0D%09end%20if%0Dend%20try%0D"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use scripting additions<BR>
+<BR>
+<b>property</b> headlineLayerName : &quot;Headline&quot;<BR>
+<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+	<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application id &quot;com.apple.iWork.Numbers&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> number -128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> active sheet<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if not</b> (exists table 1) <b>then error</b> &quot;The current spreadsheet does not include a table.&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> table 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> languageNames <b>to the</b> formatted value <b>of</b> cells 2 <b>thru</b> -1 <b>of</b> column 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> translatedHeadlines <b>to the</b> formatted value <b>of</b> cells 2 <b>thru</b> -1 <b>of</b> column 2<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>set destinationDirectory to (choose folder with prompt &quot;Select the folder in which to place the exported images:&quot;)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+	<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Pixelmator Pro&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> &quot;No document <b>is</b> open <b>in</b> Pixelmator Pro.&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell front</b> document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if not</b> (exists text layer headlineLayerName) <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>error</b> &quot;The text layer &ldquo;&quot; &amp; headlineLayerName &amp; &quot;&rdquo; is not in the Pixelmator Pro document.&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+			<BR>
+<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- GET/STORE DEFAULTS</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> documentName <b>to the</b> name <b>of it</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> documentName <b>ends with</b> &quot;.pxd&quot; <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> documentName <b>to</b> text 1 <b>thru</b> -5 <b>of</b> documentName<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> text layer headlineLayerName<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> defaultFont <b>to the</b> font <b>of it</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> defaultText <b>to the</b> text content <b>of it</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+			<BR>
+<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- ITERATE THE SPREADSHEET ROWS</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> imageCount <b>to the</b> count <b>of</b> languageNames<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> imageCount<BR>
+				<BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- Set the headline</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisLanguage <b>to</b> item <span class="codevariable">i</span> <b>of</b> languageNames<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisHeadline <b>to</b> item <span class="codevariable">i</span> <b>of</b> translatedHeadlines<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> text content <b>of</b> text layer headlineLayerName <b>to</b> thisHeadline<BR>
+				<BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- Adjust the font as needed</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if</b> thisLanguage <b>is</b> &quot;Simplified Chinese (CH)&quot; <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> &quot;PingFangSC-Light&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else if</b> thisLanguage <b>is</b> &quot;Traditional Chinese (TA)&quot; <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> &quot;PingFangTC-Light&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else if</b> thisLanguage <b>is</b> &quot;Japanese (J)&quot; <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> &quot;HiraginoSans-W1&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else if</b> thisLanguage <b>is</b> &quot;Korean (KH)&quot; <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> &quot;AppleSDGothicNeo-Light&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else if</b> thisLanguage <b>is</b> &quot;Thai (TH)&quot; <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> &quot;Thonburi-Light&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font <b>of</b> text layer headlineLayerName <b>to</b> defaultFont<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+				<BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- Export the image</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> exportFilename <b>to</b> documentName &amp; &quot;-&quot; &amp; thisLanguage &amp; &quot;.jpg&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> targetHFSpath to (destinationDirectory <b>as</b> string) &amp; exportFilename<BR>
+<span style="float:left; width:40px;">&nbsp;</span>export for web <b>to</b> file targetHFSPath <b>as</b> JPEG<BR>
+				<BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- Show notification for export</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> notificationTitle <b>to</b> &quot;Image Export (&quot; &amp; (<span class="codevariable">i</span> <b>as</b> string) &amp; &quot;/&quot; &amp; imageCount &amp; &quot;)&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span>display notification exportFilename <b>with</b> title notificationTitle subtitle thisLanguage<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b><BR>
+			<BR>
+<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- reset the headline layer</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> text content <b>of</b> text layer headlineLayerName <b>to</b> defaultText<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> font <b>of</b> text layer headlineLayerName <b>to</b> defaultFont<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+	<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- Show the exported results</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:20px;">&nbsp;</span>open destinationDirectory<BR>
+<span style="float:left; width:20px;">&nbsp;</span>select <b>the first</b> item <b>of</b> destinationDirectory<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> errorMessage number errorNumber<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>if</b> errorNumber <b>is not</b> -128 <b>then</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> current application<BR>
+<span style="float:left; width:30px;">&nbsp;</span>display alert &quot;<b>ERROR</b>&quot; message errorMessage buttons {&quot;Cancel&quot;} default button 1<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+<b>end try</b></p>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">DEMOS</div>
+			  <p><a href="index.html">Home</a></p>
+			  <p class="active-topic"><a href="numbers.html">Numbers &amp; Captions</a></p>
+			  <p><a href="descriptions.html">Description Overlays</a></p>
+			  <p><a href="maps.html">Open in Maps</a></p>
+			  <p><a href="callouts.html">Callouts</a></p>
+			</nav>	
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

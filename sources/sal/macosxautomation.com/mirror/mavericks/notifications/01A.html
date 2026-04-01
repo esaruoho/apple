@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AppleScript System Notifications Support (advanced)</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Advanced notifications AppleScript support in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="mavericks-sm-banner" src="gfx/mavericks-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">AppleScript System Notifications Support (advanced)</div>
+				
+				<p>This segment details the options in how AppleScript applications can be implemented to respond to user interaction with notification windows triggered by the AppleScript applications.</p>
+				
+				<p>Specifically, in OS&nbsp;X Mavericks (v10.9), clicking on a notification window (banner or alert) posted by a script application, will cause a run event to be sent to the triggering AppleScript applet|droplet. Essentially, this means the script will attempt to run again&mdash;an action the script must be prepared to handle.</p>
+				
+				<p>The example AppleScript droplet provided here, contains code showing options in how to design a script application that can handle a run event triggered by direct user-interaction, or by the <b>Notification Center</b>.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+		<!-- BEGIN SEGMENT: EXAMPLE -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The Example Droplet</div>
+				
+				<p class="segment-note"><a href="notificationdroplet.zip"><b>DOWNLOAD</b></a> the example AppleScript droplet application, and open it for viewing, by dragging its icon onto the AppleScript Editor&rsquo;s icon.</p>
+				
+				<p>The following are the components of the example script:</p>
+				
+				
+				<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>The &ldquo;<span class="codelibrarycommand">open</span>&rdquo; Handler</b> - This routine is triggered whenever items are dragged onto the applet&rsquo;s icon in the Finder or Dock. When triggered, the variable <span class="codevariable">theseItems</span> will contain file references (in alias format) to all of the dragged-on items.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>The &ldquo;<span class="codevariable">processItems</span>&rdquo; Handler</b> - The input items from the open handler are passed to this routine (located farther down in the script) which is where you&rsquo;ll place the script code for processing the passed items. This handler should return to the open handler, a list of references to the items that resulted from the processing.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>The <span class="codelibrarycommand">Display Notification</span> Command</b> - The script uses this command to trigger the display of a notification window. Note that the name of this droplet was used as the title of the notification (placed in the variable <span class="codevariable">notificationTitle</span>), along with a message containing the number of items that were processed by the process handler.<br><br>Since the script statement containing the <span class="codelibrarycommand">display notification</span> command is the last script statement executed before the script stops, it is followed by a script statement containing a <span class="codelibrarycommand">delay</span> command, in order to give the application enough time to trigger the notification before it quits.</p>
+				
+				<p>These first three items are the standard script routines and commands, required for processing files dragged onto the droplet, and then posting a notification when the processing has completed. Next we&rsquo;ll examine the routines that are designed to respond to user-interaction with the droplet, or with the notification dialog. (begins after the image below)</p>
+				
+								
+				<a href="javascript:void(0);"><img class="centered" alt="Advanced AppleScript Example Script" src="gfx/adv-applescript-ex.jpg" width="624" highresurl="gfx/adv-applescript-ex.jpg" caption="" displaywidth="900" displayheight="2019" onclick="void(0);lightboxThisImage(this);"></a>
+				
+				<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>The &ldquo;<span class="codelibrarycommand">run</span>&rdquo; Handler</b> - The run handler of a script application is called by AppleScript whenever:</p>
+				
+				 <ol style="margin-left:48px;margin-right:48px;">
+					<li>the script applet|droplet is launched from the Finder by either double-clicking its icon, or selecting its icon and choosing <b>Open</b> from the Finder&rsquo;s <b>File</b> menu; or</li>
+					
+					<li>the script applet|droplet is launched from the Dock by clicking its icon; or</li>
+					
+					<li>the notification window, that was triggered by the script, is clicked by the user.</li>
+				</ol>
+
+				<p>For the purposes of this advanced script example, the run handler will do the following:</p>
+				
+				 <ol style="margin-left:48px;margin-right:48px;">
+					<li>Determine whether the handler was triggered by a direct user action on the application, or by the <b>Notification Center</b> when the user clicks the notification banner or alert.</li>
+					
+					<li style="list-style:none;list-style-type:none;">This check is accomplished by executing a routine that uses the OS Accessibility frameworks <span class="numeric-callout">(5)</span> to see if <b>Notification Center</b> is currently displaying a banner or alert that uses this droplet&rsquo;s name, as its title.</li>
+				</ol>	
+					
+				 <ol style="margin-left:48px;margin-right:48px;" start="2">
+					<li>If the handler was triggered by the Notification Center, the script will tell the Finder to <span class="codelibrarycommand">activate</span> (come to the front), and <span class="codelibrarycommand">reveal</span> the selected applet|droplet icon. <span class="numeric-callout">(7)</span></li>
+					
+					<li>But, if the handler was triggered by direct user action on the applet|droplet, the script will display a file selection dialog (using the <span class="codelibrarycommand">choose file</span> command), and then pass the chosen file references to the <span class="codelibrarycommand">open</span> handler to execute. <span class="numeric-callout">(8)</span></li>
+				</ol>
+
+				<p class="caption-callout"><span class="numeric-callout">(5)</span>&nbsp;<b>The <span class="codevariable">&ldquo;getNotificationTitles&rdquo;</span> Handler</b> - This specialized routine uses the OS Accessibility frameworks to get and return a list of the titles of all currently open notification banners or alerts.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">(5)</span>&nbsp;<b>The <span class="codevariable">&ldquo;addAppletToAccessibilityList&rdquo;</span> Handler</b> - If this droplet|applet is not in the list of applications approved to access the Accessibility frameworks on the computer, this routine will open the System Preferences application to the Accessibility controls in the Privacy preference pane, and prompt the user on how to add this droplet|applet to the Accessibility List of approved applications.</p>
+				
+				<p class="segment-note">For a complete overview of using AppleScript with the Accessibility frameworks, see the <a href="../guiscripting/index.html">GUI Scripting</a> topic in the Mavericks automation overview on this site.</p>				
+		</div>
+		<!-- END SEGMENT: EXAMPLE -->
+		
+		<!-- BEGIN SEGMENT: RUNNING -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Using the Droplet</div>
+		
+			<p>To test the droplet, simply drag some files onto the droplet&rsquo;s icon in the Finder. Dont&rsquo;t worry, the example droplet does not contain any processing code, so your files will be safe.</p>
+			
+			<p>Once the droplet has completed, a notification banner will appear:</p>
+			
+			<img alt="droplet-banner" class="centered" src="gfx/droplet-banner.png" width="400">
+			
+			<p>Click on the banner, and the script will attempt to check with Notification Center by using the Accessibility frameworks. Since the droplet has not yet been granted access to the frameworks, the System Preferences app will be launched, and a prompt dialog displayed. Follow the steps listed in the dialog, and the droplet will function without interruption.</p>
+		
+			<a href="javascript:void(0);"><img alt="droplet-add-scenario" src="gfx/droplet-add-scenario.png" width="624" highresurl="gfx/droplet-add-scenario.png" caption="" displaywidth="900" displayheight="732" onclick="void(0);lightboxThisImage(this);" height="508"></a>
+		
+				<p class="segment-note">If you plan to create and|or run AppleScript applications that use the Accessibility frameworks, you should review the <a href="../guiscripting/index.html">GUI Scripting</a> topic in the Mavericks automation overview on this site.</p>
+				
+		</div>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li class="hi">System Notifications Support</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li><a href="01.html">AppleScript</a></li>
+					<li class="hi">AppleScript (advanced)</li>
+					<li><a href="02.html">Automator</a></li>
+					<li><a href="02A.html">Automator (advanced)</a></li>
+					<li><a href="03.html">Preferences</a></li>
+					<li><a href="reset.html">Reset Notification Center</a></li>
+				</ol>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+
+			</ol>
+		</div>		
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">IMPORTANT TIPS</h2>
+			<p>1) If you use the example droplet as template for writing your own scripts, be sure to edit the bundle identifier string to your own identity. The bundle identifier preference is accessed in the script bundle drawer. See <a href="http://macosxautomation.com/mavericks/codesign/02.html">here</a> for instructions on how to edit script bundle preferences.</p>
+			
+			<p>2) Once a script applet|droplet has been approved for Accessibility access, editing the script will negate its approval status. As a remedy, check and re-check the checkbox to the left of its name in the Accessibility Access list. See <a href="http://macosxautomation.com/mavericks/guiscripting/index.html">here</a> for details on AppleScript and Accessibility access.</p>		
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

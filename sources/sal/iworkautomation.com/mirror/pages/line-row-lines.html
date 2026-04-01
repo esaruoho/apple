@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Row Lines with Gutters</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Pages, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An example of how to create and delete grids of lines in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Row Lines with Gutters</div>
+			<p>Here’s a script for using lines to create a grid of gutter-separated rows:</p>
+
+			<img class="across" width="640" alt="horizontal-line-grid" src="gfx/horizontal-line-grid.png">
+			
+			<table class="script-table" role="presentation"></td></tr>
+				<tr><td colspan="3" class="script-title">Row Lines with Gutters</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20defaultVerticalMargin%20%3A%2036%0Dproperty%20defaultHorizontalMargin%20%3A%2036%0Dproperty%20defaultGutterHeight%20%3A%2012%0Dproperty%20defaultRowCount%20%3A%206%0D%0Dtell%20application%20%22Pages%22%0D%09activate%0D%09%0D%09set%20chosenPageSize%20to%20(choose%20from%20list%20%7B%22Cancel%22%2C%20%22A3%22%2C%20%22A4%22%2C%20%22A5%22%2C%20%22B5%22%2C%20%22US%20Letter%22%2C%20%22US%20Legal%22%2C%20%22Tabloid%22%7D%20with%20prompt%20%22Pick%20the%20page%20size%3A%22)%0D%09if%20chosenPageSize%20is%20false%20then%20error%20number%20-128%0D%09set%20chosenPageSize%20to%20chosenPageSize%20as%20string%0D%09if%20chosenPageSize%20is%20%22A4%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B595%2C%20842%7D%0D%09else%20if%20chosenPageSize%20is%20%22A3%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B842%2C%201191%7D%0D%09else%20if%20chosenPageSize%20is%20%22A5%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B420%2C%20595%7D%0D%09else%20if%20chosenPageSize%20is%20%22B5%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B499%2C%20709%7D%0D%09else%20if%20chosenPageSize%20is%20%22US%20Letter%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B612%2C%20792%7D%0D%09else%20if%20chosenPageSize%20is%20%22US%20Legal%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B612%2C%201008%7D%0D%09else%20if%20chosenPageSize%20is%20%22Tabloid%22%20then%0D%09%09set%20thisPageDimensions%20to%20%7B792%2C%201224%7D%0D%09end%20if%0D%09copy%20thisPageDimensions%20to%20%7BdocumentWidth%2C%20documentHeight%7D%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20top%20margin%20height%20in%20pixels%3A%22%0D%09set%20verticalTopMarginHeight%20to%20my%20promptForIntegerValue(thisPrompt%2C%200%2C%20documentHeight%20div%202%2C%20defaultVerticalMargin)%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20bottom%20margin%20height%20in%20pixels%3A%22%0D%09set%20verticalBottomMarginHeight%20to%20my%20promptForIntegerValue(thisPrompt%2C%200%2C%20documentHeight%20div%202%2C%20defaultVerticalMargin)%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20left%20margin%20width%20in%20pixels%3A%22%0D%09set%20sideLeftMarginWidth%20to%20my%20promptForIntegerValue(thisPrompt%2C%200%2C%20documentHeight%20div%202%2C%20defaultHorizontalMargin)%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20right%20margin%20width%20in%20pixels%3A%22%0D%09set%20sideRightMarginWidth%20to%20my%20promptForIntegerValue(thisPrompt%2C%200%2C%20documentHeight%20div%202%2C%20defaultHorizontalMargin)%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20gutter%20height%20in%20pixels%3A%22%0D%09set%20gutterHeight%20to%20my%20promptForIntegerValue(thisPrompt%2C%200%2C%20200%2C%20defaultGutterHeight)%0D%09%0D%09set%20thisPrompt%20to%20%22Enter%20the%20row%20count%3A%22%0D%09set%20rowCount%20to%20my%20promptForIntegerValue(thisPrompt%2C%202%2C%2050%2C%20defaultRowCount)%0D%09%0D%09set%20gutterCount%20to%20rowCount%20-%201%0D%09%0D%09set%20editableAreaHeight%20to%20documentHeight%20-%20verticalTopMarginHeight%20-%20verticalBottomMarginHeight%0D%09%0D%09set%20editableRowAreaHeight%20to%20editableAreaHeight%20-%20(gutterCount%20*%20gutterHeight)%0D%09%0D%09set%20editableSegmentHeight%20to%20editableRowAreaHeight%20div%20rowCount%0D%09%0D%09tell%20document%201%0D%09%09tell%20current%20page%0D%09%09%09set%20startPointHorizontal%20to%20sideLeftMarginWidth%0D%09%09%09set%20endPointHorizontal%20to%20documentWidth%20-%20sideRightMarginWidth%0D%09%09%09%0D%09%09%09set%20thisStartPointVertical%20to%20verticalTopMarginHeight%0D%09%09%09set%20thisEndPointVertical%20to%20verticalTopMarginHeight%0D%09%09%09%0D%09%09%09set%20repeatCount%20to%20rowCount%20%2B%201%20--%20add%20a%20line%20for%20the%20bottom%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20repeatCount%0D%09%09%09%09--%20MAKE%20LINE%0D%09%09%09%09set%20newLine%20to%20make%20new%20line%0D%09%09%09%09tell%20newLine%0D%09%09%09%09%09set%20start%20point%20to%20%7BstartPointHorizontal%2C%20thisStartPointVertical%7D%0D%09%09%09%09%09set%20end%20point%20to%20%7BendPointHorizontal%2C%20thisEndPointVertical%7D%0D%09%09%09%09%09set%20locked%20to%20true%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09if%20i%20is%20not%201%20and%20i%20is%20not%20repeatCount%20then%0D%09%09%09%09%09--%20ADD%20GUTTER%0D%09%09%09%09%09set%20thisStartPointVertical%20to%20thisStartPointVertical%20%2B%20gutterHeight%0D%09%09%09%09%09set%20thisEndPointVertical%20to%20thisEndPointVertical%20%2B%20gutterHeight%0D%09%09%09%09%09set%20newLine%20to%20make%20new%20line%0D%09%09%09%09%09tell%20newLine%0D%09%09%09%09%09%09set%20start%20point%20to%20%7BstartPointHorizontal%2C%20thisStartPointVertical%7D%0D%09%09%09%09%09%09set%20end%20point%20to%20%7BendPointHorizontal%2C%20thisEndPointVertical%7D%0D%09%09%09%09%09%09set%20locked%20to%20true%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09--%20INCREMENT%20VERTICAL%20POSITION%0D%09%09%09%09%09set%20thisStartPointVertical%20to%20thisStartPointVertical%20%2B%20editableSegmentHeight%0D%09%09%09%09%09set%20thisEndPointVertical%20to%20thisEndPointVertical%20%2B%20editableSegmentHeight%0D%09%09%09%09else%0D%09%09%09%09%09--%20INCREMENT%20VERTICAL%20POSITION%0D%09%09%09%09%09set%20thisStartPointVertical%20to%20thisStartPointVertical%20%2B%20editableSegmentHeight%0D%09%09%09%09%09set%20thisEndPointVertical%20to%20thisEndPointVertical%20%2B%20editableSegmentHeight%0D%09%09%09%09end%20if%0D%09%09%09end%20repeat%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell%0D%0Don%20promptForIntegerValue(thisPrompt%2C%20minimumValue%2C%20maximumValue%2C%20defaultValue)%0D%09tell%20application%20%22Pages%22%0D%09%09repeat%0D%09%09%09display%20dialog%20thisPrompt%20default%20answer%20(defaultValue%20as%20string)%0D%09%09%09try%0D%09%09%09%09set%20thisValue%20to%20(the%20text%20returned%20of%20the%20result)%20as%20integer%0D%09%09%09%09if%20thisValue%20is%20greater%20than%20or%20equal%20to%20minimumValue%20and%20thisValue%20is%20less%20than%20or%20equal%20to%20maximumValue%20then%0D%09%09%09%09%09return%20thisValue%0D%09%09%09%09end%20if%0D%09%09%09on%20error%0D%09%09%09%09beep%0D%09%09%09end%20try%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20promptForIntegerValue"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultVerticalMargin</span> : 36</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultHorizontalMargin</span> : 36</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">default<span class="codevariable">gutterHeight</span></span> : 12</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">default<span class="codevariable">rowCount</span></span> : 6</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenPageSize</span> <b>to</b> (<span class="codelibrarycommand">choose from list</span> {&quot;Cancel&quot;, &quot;A3&quot;, &quot;A4&quot;, &quot;A5&quot;, &quot;B5&quot;, &quot;US Letter&quot;, &quot;US Legal&quot;, &quot;Tabloid&quot;} <span class="codelibraryparameter">with prompt</span>  &quot;Pick the page size:&quot;)</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenPageSize</span> <b>to</b> <span class="codevariable">chosenPageSize</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;A4&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {595, 842}</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;A3&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {842, 1191}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;A5&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {420, 595}</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;B5&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {499, 709}</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;US Letter&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {612, 792}</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;US Legal&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {612, 1008}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else if</b> <span class="codevariable">chosenPageSize</span> <b>is</b> &quot;Tabloid&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {792, 1224}</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>copy</b> <span class="codevariable">thisPageDimensions</span> <b>to</b> {<span class="codevariable">documentWidth</span>, <span class="codevariable">documentHeight</span>}</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the top margin height in pixels:&quot;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">verticalTopMarginHeight</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 0, <span class="codevariable">documentHeight</span> <b>div</b> 2, <span class="codevariable">defaultVerticalMargin</span>)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the bottom margin height in pixels:&quot;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">verticalBottomMarginHeight</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 0, <span class="codevariable">documentHeight</span> <b>div</b> 2, <span class="codevariable">defaultVerticalMargin</span>)</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the left margin width in pixels:&quot;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">sideLeftMarginWidth</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 0, <span class="codevariable">documentHeight</span> <b>div</b> 2, <span class="codevariable">defaultHorizontalMargin</span>)</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the right margin width in pixels:&quot;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">sideRightMarginWidth</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 0, <span class="codevariable">documentHeight</span> <b>div</b> 2, <span class="codevariable">defaultHorizontalMargin</span>)</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the gutter height in pixels:&quot;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">gutterHeight</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 0, 200, <span class="codevariable">default<span class="codevariable">gutterHeight</span></span>)</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPrompt</span> <b>to</b> &quot;Enter the row count:&quot;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">rowCount</span> <b>to my</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, 2, 50, <span class="codevariable">default<span class="codevariable">rowCount</span></span>)</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">gutterCount</span> <b>to</b> <span class="codevariable">rowCount</span> - 1</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">editableAreaHeight</span> <b>to</b> <span class="codevariable">documentHeight</span> - <span class="codevariable">verticalTopMarginHeight</span> - <span class="codevariable">verticalBottomMarginHeight</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">editableRowAreaHeight</span> <b>to</b> <span class="codevariable">editableAreaHeight</span> - (<span class="codevariable">gutterCount</span> * <span class="codevariable">gutterHeight</span>)</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">editableSegmentHeight</span> <b>to</b> <span class="codevariable">editableRowAreaHeight</span> <b>div</b> <span class="codevariable">rowCount</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">current page</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">startPointHorizontal</span> <b>to</b> <span class="codevariable">sideLeftMarginWidth</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">endPointHorizontal</span> <b>to</b> <span class="codevariable">documentWidth</span> - <span class="codevariable">sideRightMarginWidth</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisStartPointVertical</span> <b>to</b> <span class="codevariable">verticalTopMarginHeight</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisEndPointVertical</span> <b>to</b> <span class="codevariable">verticalTopMarginHeight</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">repeatCount</span> <b>to</b> <span class="codevariable">rowCount</span> + 1 <span class="codecomment">-- add a line for the bottom</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">repeatCount</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- MAKE LINE</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">newLine</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">line</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">newLine</span></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">start point</span> <b>to</b> {<span class="codevariable">startPointHorizontal</span>, <span class="codevariable">thisStartPointVertical</span>}</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">end point</span> <b>to</b> {<span class="codevariable">endPointHorizontal</span>, <span class="codevariable">thisEndPointVertical</span>}</td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">locked</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is not</b> 1 <b>and</b> <span class="codevariable">i</span> <b>is not</b> <span class="codevariable">repeatCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- ADD GUTTER</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisStartPointVertical</span> <b>to</b> <span class="codevariable">thisStartPointVertical</span> + <span class="codevariable">gutterHeight</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisEndPointVertical</span> <b>to</b> <span class="codevariable">thisEndPointVertical</span> + <span class="codevariable">gutterHeight</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">newLine</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">line</span></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codevariable">newLine</span></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">start point</span> <b>to</b> {<span class="codevariable">startPointHorizontal</span>, <span class="codevariable">thisStartPointVertical</span>}</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">end point</span> <b>to</b> {<span class="codevariable">endPointHorizontal</span>, <span class="codevariable">thisEndPointVertical</span>}</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">locked</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- INCREMENT VERTICAL POSITION</span></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisStartPointVertical</span> <b>to</b> <span class="codevariable">thisStartPointVertical</span> + <span class="codevariable">editableSegmentHeight</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisEndPointVertical</span> <b>to</b> <span class="codevariable">thisEndPointVertical</span> + <span class="codevariable">editableSegmentHeight</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- INCREMENT VERTICAL POSITION</span></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisStartPointVertical</span> <b>to</b> <span class="codevariable">thisStartPointVertical</span> + <span class="codevariable">editableSegmentHeight</span></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisEndPointVertical</span> <b>to</b> <span class="codevariable">thisEndPointVertical</span> + <span class="codevariable">editableSegmentHeight</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">promptForIntegerValue</span>(<span class="codevariable">thisPrompt</span>, <span class="codevariable">minimumValue</span>, <span class="codevariable">maximumValue</span>, <span class="codevariable">defaultValue</span>)</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> <span class="codevariable">thisPrompt</span> <span class="codelibraryparameter">default answer</span> (<span class="codevariable">defaultValue</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisValue</span> <b>to</b> (<b>the</b> <span class="codeproperty">text returned</span> <b>of the</b> <span class="codelibraryclass">result</span>) <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">thisValue</span> <b>is greater than or equal to</b> <span class="codevariable">minimumValue</span> <b>and</b> <span class="codevariable">thisValue</span> <b>is less than or equal to</b> <span class="codevariable">maximumValue</span> <b>then</b></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>return</b> <span class="codevariable">thisValue</span></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">beep</span></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">promptForIntegerValue</span></td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="media-items-audio-clip.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li class="hi"><a href="line.html">Lines</a></li>
+				<li class="navListSectionItem"><a href="line-column-lines.html">Column Lines with Gutters</a></li>
+				<li class="navListSectionItemSelected">Row Lines with Gutters</li>
+				<li class="navListSectionItemLast"><a href="line-delete.html">Deleting Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

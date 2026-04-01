@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://photosautomation.com/display-actions.html","20230925203436","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1695674076");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230925203436cs_/https://photosautomation.com/photos-automation.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Photos">
+	<meta name="Description" content="An Automator action for displaying a chosen image in Photos.">
+	<link rel="home" href="http://photosautomation.com">
+	<title>Photos &amp; Automator: Choosing Images</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="photos-automation-banner" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/photos-automation-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230925203436/https://macosxautomation.com/" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">OS X AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230925203436/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230925203436/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Displaying a Chosen Photo</p>
+					
+					<p>In some workflows it may be useful to be able to have the user choose the photo to use. To present a media picker dialog, from within any application, add the &ldquo;Ask for Photos&rdquo; action to the workflow. This action will return a reference to the file location of the chosen Photos image. To display the chosen photo in the Photos application window, add the &ldquo;Display Referenced Photo&rdquo; action after the &ldquo;Ask for Photos&rdquo; action in the workflow.</p>
+			
+					<img class="action-interface" width="640" alt="" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/display-chosen-workflow.png">
+			
+					<p>When the workflow is executed, the system media picker dialog will be presented:</p>
+			
+					<img class="centered" width="540" alt="media-picker" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/media-picker.png">
+			
+					<p>When the user has selected an image from the picker window, the corresponding photo will be displayed full-size in the Photos window:</p>
+			
+					<img class="across" width="640" alt="chosen-photo" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/chosen-photo.png">
+			
+					<p class="segment-note"><b>TIP</b>: Since the result of the &ldquo;Display Referenced Photo&rdquo; action is a reference to the Photos item, this action can be followed by any of the Photos actions that take media items as their input, such as the &ldquo;Export Media Items to Keynote&rdquo; action that is used in this workflow, included with the <a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/workflows.html">examples installer</a>,  for creating a new image slide in Keynote:<br>
+					<img style="width:600px;margin-top:24px;margin-left:auto;margin-right:auto;" class="action-interface" alt="keynote-picker-workflow" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/keynote-picker-workflow.png"></p>
+				</div>
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">The &ldquo;Ask for Photos Helper&rdquo; action</p>
+					
+					<p>There is a known issue that occurs when the &ldquo;Ask for Photos&rdquo; action precedes the &ldquo;Display Referenced Photo&rdquo; action in a workflow. If the image chosen from the media picker (presented by the &ldquo;Ask for Photos&rdquo; action) has been previously edited, an incompatible file reference will passed as input to the &ldquo;Display Referenced Photo&rdquo; action, causing an error to occur.</p>
+					<p>The workflows examples installer provided on this website will install a special Automator action titled &ldquo;Ask for Photos Helper&rdquo; that you will place between the &ldquo;Ask for Photos&rdquo; action and the &ldquo;Display Referenced Photo&rdquo; action in your workflows. <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<p>This action will attempt to resolve any incompatible file reference and pass the reference type expected by the &ldquo;Display Referenced Photo&rdquo; action. This &ldquo;translation&rdquo; action will resolve references for edited images, but it will not work when the Photos library contains duplicates of the photo to be referenced.</p>
+				
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230925203436im_/https://photosautomation.com/gfx/ask-for-photos-helper.png">
+				</div>
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/album-contents.html">Get Album Contents</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li class="hi">Selection &amp; Content</li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/selection-actions.html">Current Selection</a></li>
+						<li class="navListSectionItemSelected">Choosing an Image</li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/album-contents.html">Get Album Contents</a></li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/album-add.html">Add to Albums</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/import-action.html">Importing Media Items</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/export-action.html">Exporting Media Items</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/maps-action.html">Metadata</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/slideshow-control.html">Slideshow Actions</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/scripting/index.html">Scripting Overview</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/workflows.html">Workflow Recipes</a></li>
+						<li><a href="http://web.archive.org/web/20230925203436/https://photosautomation.com/dictation-commands.html">Dictation Commands</a></li>
+					</ul>
+				</div>
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. PHOTOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. PHOTOSAUTOMATION.COM provides this only as a convenience to our users. PHOTOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and PHOTOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from PHOTOSAUTOMATION.COM and that PHOTOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 20:34:36 Sep 25, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:57:21 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.725
+  exclusion.robots: 0.019
+  exclusion.robots.policy: 0.007
+  esindex: 0.012
+  cdx.remote: 101.551
+  LoadShardBlock: 415.559 (3)
+  PetaboxLoader3.datanode: 179.51 (4)
+  PetaboxLoader3.resolve: 429.356 (2)
+  load_resource: 223.009
+-->

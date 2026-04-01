@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Images</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for images in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Images</div>
+			
+			<p>When it comes to making convincing documents, the old adage of &ldquo;A picture is worth a thousand words&rdquo; is sacrosanct. Nothing gets the point across like a compelling image. Not to worry, the AppleScript support in <b>Numbers</b> provides ample controls for creating unforgettable documents.</p>
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Scripting Terminology for Images</div>
+			
+			<p>Documents created by any of the iWork applications, Pages, Numbers, or Keynote, can incorporate a common set of elements, including <span class="codelibraryclass">images</span>, <span class="codelibraryclass">shapes</span>, <span class="codelibraryclass">lines</span>, <span class="codelibraryclass">tables</span>, <span class="codelibraryclass">charts</span>, <span class="codelibraryclass">movies</span>, and <span class="codelibraryclass">audio clips</span>. To AppleScript and the built-in scripting support of the iWork applications, these elements are considered <span class="codelibraryclass">iWork Items</span>, and share a common set of properties, detailed in the <span class="codelibraryclass">iWork Item</span> class from the <span class="dictionary-suite">iWork Suite</span>:</p>
+									
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">iWork item</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">iWork item</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An item which supports formatting.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">height</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The height of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">locked</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether the object is locked.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">parent</span> (&nbsp;<span class="dictionary-class">iWork container</span> r/o&nbsp;) : The <span class="codelibraryclass">iWork container</span> containing this <span class="codelibraryclass">iWork item</span>.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">position</span> (&nbsp;<span class="dictionary-class">point</span>&nbsp;) : The horizontal and vertical coordinates of the top left point of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">width</span> (&nbsp;<span class="codelibraryclass">integer</span>&nbsp;) : The width of the iWork item.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span></p>
+			</div>
+
+			<p>The properties in the <span class="codelibraryclass">iWork item</span> class can be accessed and changed for any of the common iWork elements. For example, a script can <span class="codelibrarycommand">get</span> or <span class="codelibrarycommand">set</span> the <span class="codeproperty">position</span> of a <span class="codelibraryclass">movie</span>, or <span class="codelibraryclass">image</span>, or <span class="codelibraryclass">shape</span>, or any of the common elements.</p>
+			
+			<p>In addition to sharing a common set of properties with the other iWork elements, each iWork element has its own set of properties, particular to that element. For example, the element-specific properties of an <span class="codelibraryclass">image</span> are detailed in its dictionary listing, found in the <span class="dictionary-suite">iWork Suite</span>: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+																				
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">image</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">image</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An image container.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">description</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : Text associated with the image, can be read aloud by VoiceOver.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file</span> (&nbsp;<span class="dictionary-class">file</span>&nbsp;, r/o) : The image file. This property is a required parameter when used with the <span class="codelibrarycommand">make</span> command to create a new image item on a slide. Use the <span class="codeproperty">file name</span> property to retrieve the name of the image, or to replace the currently displayed image.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file name</span> (&nbsp;<span class="dictionary-class">text</span> or <span class="dictionary-class">file</span>&nbsp;) : When used with the <span class="codelibrarycommand">get</span> command, the value of this property is the file name of the image file currently displayed in the image container. When this property is used with the set command, the value of the property is a file reference (in <span class="codelibraryclass">HFS alias</span> format) to the image file to be used to replace the currently displayed image.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">opacity</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The opacity of the image, in percent (0 to 100).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the image displaying a reflection?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection value</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The percentage of reflection of the image, from 0 (none) to 100 (full).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">rotation</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The rotation of the image item, in degrees from 0 to 359.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span></p>
+			</div>
+			
+			<p>Here’s an example script that creates a new document with a new <span class="codelibraryclass">table</span> overlaid on a decorative background image. It incorporates the use of many of the <span class="codelibraryclass">image</span> properties, as well as those for <span class="codelibraryclass">text items</span>.</p>
+			
+			<img class="across" width="640" height="395" alt="beach-layout" src="gfx/beach-layout.png">
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Layout with Decorative Background Image</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20defaultImageWidth%20%3A%20792%20--%20in%20points%0Dproperty%20defaultTypeSize%20%3A%2036%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09%0D%09--%20CREATE%20THE%20DOCUMENT%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bdocument%20template%3Atemplate%20%22Blank%22%7D%0D%09%0D%09tell%20thisDocument%0D%09%09%0D%09%09--%20GET%20THE%20RANDOM%20IMAGE%0D%09%09copy%20my%20getRandomDesktopPicture()%20to%20%7BthisImageFileName%2C%20thisImageFile%7D%0D%09%09--%20trim%20the%20file%20extension%20(.jpg)%20from%20the%20file%20name%0D%09%09set%20thisImageName%20to%20text%201%20thru%20-5%20of%20thisImageFileName%0D%09%09%0D%09%09--%20ADD%20THE%20IMAGE%20FILE%20TO%20THE%20FIRST%20SLIDE%0D%09%09tell%20the%20active%20sheet%0D%09%09%09--%20CLEAR%20THE%20CANVAS%0D%09%09%09delete%20every%20table%0D%09%09%09%0D%09%09%09--%20IMPORT%20THE%20DESKTOP%20IMAGE%0D%09%09%09set%20thisImage%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AthisImageFile%7D%0D%09%09%09tell%20thisImage%0D%09%09%09%09set%20width%20to%20defaultImageWidth%0D%09%09%09%09set%20position%20to%20%7B0%2C%200%7D%0D%09%09%09%09set%20opacity%20to%20100%0D%09%09%09%09set%20imageWidth%20to%20its%20width%0D%09%09%09%09set%20imageHeight%20to%20its%20height%0D%09%09%09%09copy%20position%20of%20it%20to%20%7BimageHPosition%2C%20imageVPositon%7D%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09--%20CREATE%20A%20TEXT%20OVERLAY%20DISPLAYING%20IMAGE%20NAME%0D%09%09%09set%20thisTitleBox%20to%20%C2%AC%0D%09%09%09%09make%20new%20text%20item%20with%20properties%20%7Bobject%20text%3AthisImageName%7D%0D%09%09%09tell%20thisTitleBox%0D%09%09%09%09tell%20its%20object%20text%0D%09%09%09%09%09set%20font%20to%20%22Times%20New%20Roman%20Italic%22%0D%09%09%09%09%09set%20size%20to%20defaultTypeSize%0D%09%09%09%09%09set%20color%20of%20it%20to%20%7B65535%2C%2065535%2C%2065535%7D%0D%09%09%09%09end%20tell%0D%09%09%09%09set%20textItemHeight%20to%20its%20height%0D%09%09%09%09set%20textItemWidth%20to%20its%20width%0D%09%09%09%09%0D%09%09%09%09copy%20position%20of%20it%20to%20%7BtextHPosition%2C%20textVPosition%7D%0D%09%09%09%09set%20newHPosition%20to%20imageHPosition%20%2B%20((imageWidth%20div%202)%20-%20(textItemWidth%20div%202))%0D%09%09%09%09set%20newVPosition%20to%20imageVPositon%20%2B%2024%0D%09%09%09%09set%20position%20of%20it%20to%20%7BnewHPosition%2C%20newVPosition%7D%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09%09--%20CREATE%20AN%20OVERLAY%20TABLE%0D%09%09%09set%20thisTable%20to%20make%20new%20table%0D%09%09%09tell%20thisTable%0D%09%09%09%09set%20the%20background%20color%20of%20cell%20range%20to%20%7B65535%2C%2065535%2C%2065535%7D%0D%09%09%09%09set%20tableWidth%20to%20its%20width%0D%09%09%09%09set%20tableHeight%20to%20its%20height%0D%09%09%09%09set%20newHPosition%20to%20imageHPosition%20%2B%20((imageWidth%20div%202)%20-%20(tableWidth%20div%202))%0D%09%09%09%09set%20newVPosition%20to%20imageVPositon%20%2B%20(imageHeight%20-%20tableHeight%20-%2036)%0D%09%09%09%09set%20position%20of%20it%20to%20%7BnewHPosition%2C%20newVPosition%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell%0D%0Don%20getRandomDesktopPicture()%0D%09--%20GET%20A%20RANDOM%20IMAGE%20FROM%20THE%20DESKTOP%20PICTURES%20FOLDER%0D%09set%20desktopPicturesFolder%20to%20(path%20to%20desktop%20pictures%20folder)%0D%09set%20the%20imageFileNames%20to%20every%20paragraph%20of%20%C2%AC%0D%09%09(do%20shell%20script%20%22ls%20%22%20%26%20quoted%20form%20of%20POSIX%20path%20of%20desktopPicturesFolder)%0D%09--%3E%20RETURNS%3A%20%7B%22Abstract.jpg%22%2C%20%22Antelope%20Canyon.jpg%22%2C%20%22Bahamas%20Aerial.jpg%22%2C%20etc.%7D%0D%09set%20thisImageFileName%20to%20some%20item%20of%20the%20imageFileNames%0D%09--%3E%20RETURNS%3A%20%22Mountain%20Range.jpg%22%0D%09set%20thisImageFile%20to%20((desktopPicturesFolder%20as%20string)%20%26%20thisImageFileName)%20as%20alias%0D%09--%3E%20RETURNS%3A%20alias%20%22Macintosh%20HD%3ALibrary%3ADesktop%20Pictures%3AMountain%20Range.jpg%22%0D%09return%20%7BthisImageFileName%2C%20thisImageFile%7D%0Dend%20getRandomDesktopPicture"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultImageWidth</span> : 792 <span class="codecomment">-- in points</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultTypeSize</span> : 36</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- CREATE THE DOCUMENT</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- GET THE RANDOM IMAGE</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>copy my</b> <span class="codevariable">getRandomDesktopPicture</span>() <b>to</b> {<span class="codevariable">thisImageFileName</span>, <span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- trim the file extension (.jpg) from the file name</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageName</span> <b>to</b> <span class="codelibraryclass">text</span> 1 <b>thru</b> -5 <b>of</b> <span class="codevariable">thisImageFileName</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- ADD THE IMAGE FILE TO THE FIRST SLIDE</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- CLEAR THE CANVAS</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- IMPORT THE DESKTOP IMAGE</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">width</span> <b>to</b> <span class="codevariable">defaultImageWidth</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {0, 0}</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">opacity</span> <b>to</b> 100</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">imageWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">imageHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>copy</b> <span class="codeproperty">position</span> <b>of it to</b> {<span class="codevariable">imageHPosition</span>, <span class="codevariable">imageVPositon</span>}</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- CREATE A TEXT OVERLAY DISPLAYING IMAGE NAME</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTitleBox</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">object text</span>:<span class="codevariable">thisImageName</span>}</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTitleBox</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell its</b> <span class="codeproperty">object text</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Times New Roman Italic&quot;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> <span class="codevariable">defaultTypeSize</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">color</span> <b>of it to</b> {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">textItemHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">textItemWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>copy</b> <span class="codeproperty">position</span> <b>of it to</b> {<span class="codevariable">textHPosition</span>, <span class="codevariable">textVPosition</span>}</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">newHPosition</span> <b>to</b> <span class="codevariable">imageHPosition</span> + ((<span class="codevariable">imageWidth</span> <b>div</b> 2) - (<span class="codevariable">textItemWidth</span> <b>div</b> 2))</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">newVPosition</span> <b>to</b> <span class="codevariable">imageVPositon</span> + 24</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>of it to</b> {<span class="codevariable">newHPosition</span>, <span class="codevariable">newVPosition</span>}</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- CREATE AN OVERLAY TABLE</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">background color</span> <b>of</b> <span class="codeproperty">cell range</span> <b>to</b> {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">tableWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">tableHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">newHPosition</span> <b>to</b> <span class="codevariable">imageHPosition</span> + ((<span class="codevariable">imageWidth</span> <b>div</b> 2) - (<span class="codevariable">tableWidth</span> <b>div</b> 2))</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">newVPosition</span> <b>to</b> <span class="codevariable">imageVPositon</span> + (<span class="codevariable">imageHeight</span> - <span class="codevariable">tableHeight</span> - 36)</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>of it to</b> {<span class="codevariable">newHPosition</span>, <span class="codevariable">newVPosition</span>}</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">getRandomDesktopPicture</span>()</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- GET A RANDOM IMAGE FROM THE DESKTOP <span class="codeenumeration">pictures folder</span></span></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">desktopPicturesFolder</span> <b>to</b> (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">desktop pictures folder</span>)</td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">imageFileNames</span> <b>to every</b> <span class="codelibraryclass">paragraph</span> <b>of</b> &not;</td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">do shell script</span> &quot;ls &quot; &amp; <span class="codeproperty">quoted form</span> <b>of</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">desktopPicturesFolder</span>)</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: {&quot;Abstract.jpg&quot;, &quot;Antelope Canyon.jpg&quot;, &quot;Bahamas Aerial.jpg&quot;, etc.}</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFileName</span> <b>to some</b> <span class="codelibraryclass">item</span> <b>of the</b> <span class="codevariable">imageFileNames</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: &quot;Mountain Range.jpg&quot;</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> ((<span class="codevariable">desktopPicturesFolder</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; <span class="codevariable">thisImageFileName</span>) <b>as</b> <span class="codelibraryclass">alias</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> RETURNS: alias &quot;Macintosh HD:Library:Desktop Pictures:Mountain Range.jpg&quot;</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> {<span class="codevariable">thisImageFileName</span>, <span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">getRandomDesktopPicture</span></td></tr>
+			</table>			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="#" target="_self">CONTINUE</a></p>
+	</div>
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li class="hi">Image</li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #ee2200}
+span.s6 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="log10ValueOf_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="infoForFile_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>URL and File related methods</p>
+<h3>Method</h3>
+<code>metadataFromImage:error:</code>
+<h3>Summary</h3>
+<p>Pass an alias, file, HFS path, POSIX path or NSURL for an image file, and receive back a dictionary/record of the metadata.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSDictionary *)</span>metadataFromImage:<span class="sigParens">(id)</span><span class="param">fileAliasOrPath</span> error:<span class="sigParens">(NSError *__autoreleasing *)</span><span class="param">outError</span></code>
+<h3>Parameters</h3>
+<p><span class="param">fileAliasOrPath</span> = alias, file, HFS path, POSIX path or NSURL for an image file</p><p><span class="param">outError</span> = missing value or reference</p>
+<h3>Result</h3>
+<p>Dictionary/record of associated metadata</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>If you set outError to reference, the result will be a list of two items. If there is no error, the first item will be the result of the method and the second will be missing value. If there is an error, the first item will be missing value and the second item with be an NSError.</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">fileAliasOrPath</span> <b>to</b> "~/Desktop/Test/IMG_0829.JPG"</p>
+<p class="p5"><span class="s1"><b>set</b> </span>theResult<span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s5">metadataFromImage</span><span class="s1">:</span>fileAliasOrPath<span class="s1"> </span><span class="s5">|error|</span><span class="s1">:(</span><span class="s2"><i>missing value</i></span><span class="s1">)</span></p>
+<p class="p5"><span class="s6"><b>ASify</b></span><span class="s1"> </span><span class="s6">from</span><span class="s1"> </span>theResult</p>
+<p class="p6">--&gt; {​​​​{​​​​​​​TIFF}:{​​​​​​​​​ResolutionUnit:2, ​​​​​​​​​Software:"9.0.2", ​​​​​​​​​DateTime:"2015:10:12 15:12:55", [...]}, ​​​​​​​{Exif}:{​​​​​​​​​DateTimeOriginal:"2015:10:12 15:12:55", ​​​​​​​​​MeteringMode:5, ​​​​​​​​​[...]}, ​​​​​​​{GPS}:{​​​​​​​​​ImgDirection:129.325396825397, ​​​​​​​​​LatitudeRef:"S", ​​​​​​​​​[...]}, ​​​​​​​ProfileName:"sRGB IEC61966-2.1", ​​​​​​​DPIWidth:72.0, ​​​​​​​DPIHeight:72.0, ​​​​​​​ColorModel:"RGB", ​​​​​​​{MakerApple}:{​​​​​​​​​7:1, ​​​​​​​​​3:{​​​​​​​​​​​flags:1, ​​​​​​​​​​​[...]​​​​​}​​​</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span><span class="s1"> </span>-- 10.11 only</p>
+<p class="p6">--&gt; {​​​​​​​​​​​{TIFF}:{​​​​​​​​​ResolutionUnit:2, ​​​​​​​​​Software:"9.0.2", ​​​​​​​​​DateTime:"2015:10:12 15:12:55", [...]}, ​​​​​​​{Exif}:{​​​​​​​​​DateTimeOriginal:"2015:10:12 15:12:55", ​​​​​​​​​MeteringMode:5, ​​​​​​​​​[...]}, ​​​​​​​{GPS}:{​​​​​​​​​ImgDirection:129.325396825397, ​​​​​​​​​LatitudeRef:"S", ​​​​​​​​​[...]}, ​​​​​​​ProfileName:"sRGB IEC61966-2.1", ​​​​​​​DPIWidth:72.0, ​​​​​​​DPIHeight:72.0, ​​​​​​​ColorModel:"RGB", ​​​​​​​{MakerApple}:{​​​​​​​​​7:1, ​​​​​​​​​3:{​​​​​​​​​​​flags:1, ​​​​​​​​​​​[...]​​​​​}​​​</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span><span class="s1"> </span>-- 10.9 and 10.10</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>&lt;reals will be single precision&gt;</p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">fileAliasOrPath</span> <b>to</b> "~/Desktop/Test/No such file"</p>
+<p class="p5"><span class="s1"><b>set</b> {</span>theResult<span class="s1">, </span>theError<span class="s1">} <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s5">metadataFromImage</span><span class="s1">:</span>fileAliasOrPath<span class="s1"> </span><span class="s5">|error|</span><span class="s1">:(</span><span class="s2"><i>reference</i></span><span class="s1">)</span></p>
+<p class="p2"><b>if</b> <span class="s3">theResult</span> = <span class="s2"><i>missing value</i></span> <b>then</b> <b>error</b> (<span class="s3">theError's</span> <span class="s5">localizedDescription</span>() <b>as</b> <span class="s2"><i>text</i></span>)</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>error number -2700<span class="Apple-converted-space">  </span>Image could not be read.</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20fileAliasOrPath%20to%20%22~/Desktop/Test/IMG_0829.JPG%22%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20metadataFromImage:fileAliasOrPath%20%7Cerror%7C:(missing%20value)%0DASify%20from%20theResult%0D--%3E%20%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BTIFF%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BResolutionUnit:2,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BSoftware:%229.0.2%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDateTime:%222015:10:12%2015:12:55%22,%20%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BExif%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDateTimeOriginal:%222015:10:12%2015:12:55%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BMeteringMode:5,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BGPS%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BImgDirection:129.325396825397,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BLatitudeRef:%22S%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BProfileName:%22sRGB%20IEC61966-2.1%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDPIWidth:72.0,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDPIHeight:72.0,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BColorModel:%22RGB%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BMakerApple%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B7:1,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B3:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8Bflags:1,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7D%E2%80%8B%E2%80%8B%E2%80%8B%0DtheResult%20as%20record%20--%2010.11%20only%0D--%3E%20%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BTIFF%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BResolutionUnit:2,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BSoftware:%229.0.2%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDateTime:%222015:10:12%2015:12:55%22,%20%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BExif%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDateTimeOriginal:%222015:10:12%2015:12:55%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BMeteringMode:5,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BGPS%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BImgDirection:129.325396825397,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BLatitudeRef:%22S%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%7D,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BProfileName:%22sRGB%20IEC61966-2.1%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDPIWidth:72.0,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BDPIHeight:72.0,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8BColorModel:%22RGB%22,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7BMakerApple%7D:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B7:1,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B3:%7B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8Bflags:1,%20%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%5B...%5D%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B%7D%E2%80%8B%E2%80%8B%E2%80%8B%0DtheResult%20as%20record%20--%2010.9%20and%2010.10%0D--%3E%09%3Creals%20will%20be%20single%20precision%3E%0D%0Dset%20fileAliasOrPath%20to%20%22~/Desktop/Test/No%20such%20file%22%0Dset%20%7BtheResult,%20theError%7D%20to%20current%20application's%20SMSForder's%20metadataFromImage:fileAliasOrPath%20%7Cerror%7C:(reference)%0Dif%20theResult%20=%20missing%20value%20then%20error%20(theError's%20localizedDescription()%20as%20text)%0D--%3E%09error%20number%20-2700%20%20Image%20could%20not%20be%20read.%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

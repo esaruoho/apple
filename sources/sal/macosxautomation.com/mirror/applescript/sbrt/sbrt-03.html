@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Filters</h2>
+		
+		<p>The following routines can be used to filter lists and text data.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Highest Numeric Value in a List</h3></a>
+		
+		<p>This sub-routine will return the highest numeric value in a list of items. The passed list can contain non-numeric data as well as lists within lists. For example:</p>
+		
+		<p class="code"><span class="codevariable">highest_number</span>({-3.25, 23, 2345, &quot;sid&quot;, 3, 67})<BR>
+		<span class="codecomment">--> returns: 2345</span><BR>
+		<span class="codevariable">highest_number</span>({-3.25, 23, {23, 78695, &quot;bob&quot;}, 2345, true, &quot;sid&quot;, 3, 67})<BR>
+		<span class="codecomment">--> returns: 78695</span></p>
+		
+		<p>If there is no numeric data in the passed list, the sub-routine will return a null string (<span class="inlinecode">&quot;&quot;</span>)</p>
+		
+		<p class="code"><span class="codevariable">highest_number</span>({&quot;this&quot;, &quot;list&quot;, &quot;contains&quot;, &quot;only&quot;, &quot;text&quot;})<BR>
+		<span class="codecomment">--> returns: &quot;&quot;</span></p>
+
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20highest_number%28values_list%29%0D%09set%20the%20high_amount%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20values_list%0D%09%09set%20this_item%20to%20item%20i%20of%20the%20values_list%0D%09%09set%20the%20item_class%20to%20the%20class%20of%20this_item%0D%09%09if%20the%20item_class%20is%20in%20%7Binteger%2C%20real%7D%20then%0D%09%09%09if%20the%20high_amount%20is%20%22%22%20then%0D%09%09%09%09set%20the%20high_amount%20to%20this_item%0D%09%09%09else%20if%20this_item%20is%20greater%20than%20the%20high_amount%20then%0D%09%09%09%09set%20the%20high_amount%20to%20item%20i%20of%20the%20values_list%0D%09%09%09end%20if%0D%09%09else%20if%20the%20item_class%20is%20list%20then%0D%09%09%09set%20the%20high_value%20to%20highest_number%28this_item%29%0D%09%09%09if%20the%20the%20high_value%20is%20greater%20than%20the%20high_amount%20then%20set%20the%20high_amount%20to%20the%20high_value%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20high_amount%0Dend%20highest_number"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that returns the highest value from the values passed to it:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">highest_number</span>(<span class="codevariable">values_list</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">high_amount</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_class</span> <b>to the</b> class <b>of</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">item_class</span> <b>is in</b> {integer, real} <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codevariable">high_amount</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">high_amount</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_item</span> <b>is greater than the</b> <span class="codevariable">high_amount</span> <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">high_amount</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> <span class="codevariable">item_class</span> <b>is</b> list <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">high_value</span> <b>to</b> <span class="codevariable">highest_number</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if the the</b> <span class="codevariable">high_value</span> <b>is greater than the</b> <span class="codevariable">high_amount</span> <b>then</b> &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">high_amount</span> <b>to the</b> <span class="codevariable">high_value</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">high_amount</span><BR>
+		<b>end</b> <span class="codevariable">highest_number</span></p>
+
+
+		<hr><a id="1001" name="1001" title="1001"><h3>Lowest Numeric Value in a List</h3></a>
+		
+		<p>This sub-routine will return the lowest numeric value in a list of items. The passed list can contain non-numeric data as well as lists within lists. For example:</p>
+		
+		<p class="code"><span class="codevariable">lowest_number</span>({-3.25, 23, 2345, &quot;sid&quot;, 3, 67})<BR>
+		<span class="codecomment">--> returns: -3.25</span><BR>
+		<span class="codevariable">lowest_number</span>({-3.25, 23, {-22, 78695, &quot;bob&quot;}, 2345, true, &quot;sid&quot;, 3, 67})<BR>
+		<span class="codecomment">--> returns: -22</span></p>
+		
+		<p>If there is no numeric data in the passed list, the sub-routine will return a null string (<span class="inlinecode">&quot;&quot;</span>)</p>
+		
+		<p class="code"><span class="codevariable">lowest_number</span>({&quot;this&quot;, &quot;list&quot;, &quot;contains&quot;, &quot;only&quot;, &quot;text&quot;})<BR>
+		<span class="codecomment">--> returns: &quot;&quot;</span></p>
+
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20lowest_number%28values_list%29%0D%09set%20the%20low_amount%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20values_list%0D%09%09set%20this_item%20to%20item%20i%20of%20the%20values_list%0D%09%09set%20the%20item_class%20to%20the%20class%20of%20this_item%0D%09%09if%20the%20item_class%20is%20in%20%7Binteger%2C%20real%7D%20then%0D%09%09%09if%20the%20low_amount%20is%20%22%22%20then%0D%09%09%09%09set%20the%20low_amount%20to%20this_item%0D%09%09%09else%20if%20this_item%20is%20less%20than%20the%20low_amount%20then%0D%09%09%09%09set%20the%20low_amount%20to%20item%20i%20of%20the%20values_list%0D%09%09%09end%20if%0D%09%09else%20if%20the%20item_class%20is%20list%20then%0D%09%09%09set%20the%20low_value%20to%20lowest_number%28this_item%29%0D%09%09%09if%20the%20the%20low_value%20is%20less%20than%20the%20low_amount%20then%20set%20the%20low_amount%20to%20the%20low_value%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20low_amount%0Dend%20lowest_number"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that returns the lowest numeric value from the numeric values passed to it:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">lowest_number</span>(<span class="codevariable">values_list</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_amount</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_class</span> <b>to the</b> class <b>of</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">item_class</span> <b>is in</b> {integer, real} <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codevariable">low_amount</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_amount</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_item</span> <b>is less than the</b> <span class="codevariable">low_amount</span> <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_amount</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">values_list</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> <span class="codevariable">item_class</span> <b>is</b> list <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_value</span> <b>to</b> <span class="codevariable">lowest_number</span>(<span class="codevariable">this_item</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if the the</b> <span class="codevariable">low_value</span> <b>is less than the</b> <span class="codevariable">low_amount</span> <b>then</b> &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_amount</span> <b>to the</b> <span class="codevariable">low_value</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">low_amount</span><BR>
+		<b>end</b> <span class="codevariable">lowest_number</span></p>
+
+
+
+
+
+
+
+
+
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li class="hi">Filtering Routines</li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

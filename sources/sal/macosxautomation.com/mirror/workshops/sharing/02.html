@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Sharing Content Locally</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Share, File Sharing">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Sharing Content</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: PUBLIC FOLDER -->
+		<div class="content-segment">
+		<div class="segment-header" >Public Folder</div>
+			<img src="gfx/public-folder-512.png" alt="public-folder-512" width="128" height="128" class="left">
+			<p class="content-intro">Because of its UNIX underpinnings, easy-to-use secure file-sharing has always been a hallmark feature of Apple computers and OS&nbsp;X. Every copy of OS&nbsp;X comes with a preset sharing framework, specifically designed to easily allow you to share and receive files, documents, and folders, with other users on your network.</p>
+			
+			<p>In this workshop segment, you will learn how to activate personal file sharing on your computer, and how to take advantage of the integrated Public an Dropbox folders in your Home directory.</p>
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Enabling Your Public Folder</div>			
+		<img alt="public-folder-selected" src="gfx/public-folder-selected.png" width="624" class="centered">
+
+		<img alt="public-folder-info" src="gfx/public-folder-info.png" width="240" class="left">
+		
+		<p>Personal file sharing in OS&nbsp;X begins with your <b>Public</b> folder. Located in your Home directory (see above), the Public folder is designed to be the sharing interface of your computer to the other computers on your network.</p>
+		
+		<p>Documents, files, and folders placed in your <b>Public</b> folder by you, will be accessible to the other users on your network. They will be able to copy and view your public items on their computers.</p>
+		
+		<p>The first step in setting up personal file sharing on your computer will be to adjust the sharing settings of your <b>Public</b> folder:</p>
+		
+		<p class="do-this" style="margin-left:250px;"><span class="do-this">DO THIS &#9658;</span>In a Finder window displaying your Home directory, select the <b>Public</b> folder (see above), and type Command-I (&#8984;-I) to display its information window (see left). </p>
+		
+		<p>In the General panel of the folder&rsquo;s information window, is a checkbox for enabling the sharing of the contents of your <b>Public</b> folder. The checkbox is titled &ldquo;Shared folder&rdquo; and its status indicates whether sharing for your <b>Public</b> folder is enabled or disabled.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the <b>Public</b> folder&rsquo;s information window, click the checkbox titled <b>Shared folder</b> (see above left) to enable the sharing of the contents of your <b>Public</b> folder.</p>
+		
+		<p>Once you have selected the checkbox in the information window, an alert sheet will appear (see below) reminding you to turn on <b>File Sharing</b> on your computer. <b>NOTE</b>: this alert sheet will not appear if <b>File Sharing</b> is already turned on for your computer.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>If the alert sheet is visible, press the <b>Enable</b> button in the sheet, to turn on the <b>File Sharing</b> service for your computer. You may now close the information window.</p>
+		
+		<img alt="sharing-alert" src="gfx/sharing-alert.png" width="624" class="centered">
+
+
+		</div>	
+			
+		<div class="content-segment">
+		<div class="segment-header" >Sharing Controls</div>
+		
+			<p>All of the controls and parameters for file sharing on your computer are displayed within the Sharing preference pane, located in the <b>System Preferences</b> application (see below).</p>
+						
+			<img alt="sharing-prefs" src="gfx/sharing-prefs.png" width="624" class="centered">
+			
+			<p>Details regarding the relevant controls are described below:</p>
+			
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Computer Name</b> - This text input field displays the name of your computer as others see it on the network. The default network name of your computer was automatically chosen for you when you first setup your computer, but it can be edited by you to any name of your choosing.</p>
+		
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Local Network Address</b> - Below the Computer Name is text indicating the local network address of your computer, based on the current computer name. A local network address cannot contain spaces or special characters, which are replaced by dashes and underscore characters if needed. <b>NOTE</b>: advanced users can create a custom local network address by clicking the <b>Edit</b> button on the right.</p>
+		
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Sharing Services</b> - This scrolling field contains a list of the sharing services available for your computer. The status of each service is controlled using the checkboxes to the left of their names. The <b>File Sharing</b> service should already be active. If it is not, select the checkbox to its left.</p>
+
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Shared Folders</b> - This scrolling field contains a list of the folders shared by the current user of your computer. Select a folder name in this list to view its sharing permissions in the field to the right <span class="numeric-callout">&nbsp;4&nbsp;</span>.</p>
+
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Users &amp; Permissions</b> - This scrolling field contains a list of the users who are allowed access to the shared folder selected in the list on the left <span class="numeric-callout">&nbsp;3&nbsp;</span>. To the right of each user or group name is a popup menu displaying the actions allowed by that user. By default, you are allowed to read and write to the folder, while everyone else on the network is only allowed to read (copy) items in the <b>Public</b> folder.<br><br><b>NOTE</b>: There are advanced controls for adding individuals to the Users &amp; Permissions list and giving them custom access to shared folders. To maintain the security of your computer, only attempt this if you know what you are doing.</p>
+		
+		</div>		
+		
+		<div class="content-segment">
+		<div class="segment-header" >Share Items with Others</div>
+		
+			<p>This content segment is about how the other network users can access your shared items, and how they can share items with you.</p>
+			
+			<p>The image below is of a Finder window on the computer of another user on your network. It shows how they access and view the contents of your shared Public folder.</p>
+		
+			<img alt="public-folder-active" src="gfx/public-folder-active.png" width="624" height="510" class="centered">
+			
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Computer Name</b> - The name entered in the Computer Name field in the Sharing preferences on your computer, is the name that appears in the sidebar of Finder windows on the computers of other users on your network. When a network user wants to access your Public folder, they simply select your computer name in their sidebar. Their computer will automatically connect to (or &ldquo;mount&rdquo;) your <b>Public</b> folder, and the contents of your <b>Public</b> folder will then be displayed in their Finder window.</p>
+		
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Shared Items</b> - The items placed by you in your <b>Public</b> folder are accessible to other network users. With the sharing settings on your computer set to their default values, other users may copy these items to their computers by simply dragging the icons of the shared items to their desktop or other folder on their computer.</p>
+
+		<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Your Dropbox</b> - Your default sharing settings allow other network users who have accessed your <b>Public</b> folder, to only copy items <b>from</b> your <b>Public</b> folder. They are not allowed to copy items <b>to</b> your <b>Public</b> folder. The <b>Dropbox</b> folder in your <b>Public</b> folder is a special folder to which they can copy items from their computers to your computer. (see next content segment for details)</p>
+		
+		
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Your Dropbox</div>
+			<p>As mentioned above, the <b>Dropbox</b> folder in your <b>Public</b> folder is a special folder to which other network users can copy items from their computers to your computer.</p>
+			
+			<p>Because your <b>Public</b> folder may be accessed by multiple network users at the same time, your secure privacy settings dictate that network users who copy items to your <b>Dropbox</b> folder, are not allowed to see what items have been placed in the <b>Dropbox</b> folder by other network users. This way, only you are allowed to know what items have been shared with you.</p>
+			
+			<p>When a network user copies an item to your Dropbox folder, the alert shown below appears, informing them of this privacy rule:</p>
+		
+			<img alt="dropbox-warning" src="gfx/dropbox-warning.png" width="534" height="290" class="centered">
+			
+			<p>Of course, you always have access to the <b>Dropbox</b> folder within your <b>Public</b> folder (see below). NOTE: Folders whose contents are shared, will display a dark gray bar across the top of their Finder windows, indicating their status as a shared folder (see below).</p>
+			
+			<img alt="dropbox-public-folder" src="gfx/dropbox-public-folder.png" width="624" class="centered">
+		</div>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">AirDrop</a></li>
+				<li class="hi">Public Folder</li>
+				<li><a href="03.html">Personal Web-Sharing</a></li>
+				<li><a href="05.html">Sharing Scenarios</a></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees will learn about how to share items using the built-in file sharing services of OS&nbsp;X.</p>
+			
+			<p>You will guide them through the process of both sharing and receiving a file.</p>
+			
+			<p class="sidebar-subhead">Guided Tutorial</p>
+			
+			<ol style="margin-bottom:18px;">
+				<li>Begin by having all attendees open the <b>Photo Booth</b> application and take a picture of themselves. Select the taken snapshot in the photo tray and choose <b>Export</b> from the Photo Booth <b>File</b> menu. Have them export a copy of the selected snapshot to their Public folder. <b>TIP</b>: typing Shift-Command-H (<span style="font-family:'AppleSDGothicNeo-Bold','Lucida Grande',Helvetica;">&#8679;</span>&#8984;H) in the Save dialog will display the user&rsquo;s Home directory in the dialog. The Public folder can then be selected as the destination for the exported file.</li>
+			</ol>
+							
+			<ol start="2" style="margin-top:18px;">
+				<li>Instruct all attendees to locate and select the Public folder located in their Home directories.</li>
+				
+				<li>Next, instruct the attendees to bring up the Information window for the selected Public folder.</li>
+				
+				<li>Have the attendees turn on File Sharing for their computers by selecting the <b>Share folder</b> checkbox in their Public folder&rsquo;s information window.</li>
+				
+				<li>Open the Sharing preference pane in the <b>System Preferences</b> application and review the functions of the various controls and parameters with the attendees.</li>
+								
+				<li>Instruct the attendees to open a new Finder window on their desktops, and select another attendee&rsquo;s computer from the list of shared computers in the Finder window sidebar.</li>
+				
+				<li>Have the attendees copy the image file from another attendee&rsquo;s Public folder to their desktop.</li>
+				
+				<li>Have the attendees copy the image file from their computer to another attendee&rsquo;s Dropbox folder.</li>
+			</ol>
+			
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Discuss how AirDrop is a computer-to-computer WiFi service for sharing files, that doesn&rsquo;t require a network to work.</li>
+				
+				<li>Discuss possible usage scenarios and integration ideas.</li>
+			</ol>
+			
+			
+		</div>
+		
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

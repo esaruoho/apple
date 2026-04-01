@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Cell Data Formats</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Cell Data Formats</div>
+											
+			<p><span class="codelibraryclass">Cells</span> have a <span class="codeproperty">format</span> property, inherited from the <span class="codelibraryclass">range</span> class, that determines how the cell&rsquo;s data is parsed and displayed. By default, a new cell&rsquo;s format is set to <i>automatic</i>, and will attempt to interpret the inserted data into the correct format. Set the format property if the data, such as a numeric value, can be interpreted to be used by more than one format, otherwise leave the format property set to the default of <i>automatic</i>.</p>
+						
+			<!-- <p class="segment-note"><b>NOTE</b>: Scripts written for the <b>Numbers ‘09 Compatibility Suite</b> can set the <i>value</i> of a cell, but only if the value is expressed as a <span class="codelibraryclass">number</span>, <span class="codelibraryclass">date</span>, <span class="codelibraryclass">text</span>, or <span class="codelibraryclass">boolean</span>. Those data types work for all cell formats, except the popup menu, whose value cannot be set with a script, but will display its default value of a three-item list.</p> -->
+			
+			<p>The following script will create a small table displaying the various available cell formats:</p>
+			
+			
+<table class="script-table" role="presentation">
+<tr><td colspan="3" class="script-title">Create Cell Format Table</td></tr>
+<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20document%201%0D%09%09tell%20active%20sheet%0D%09%09%09--%20make%20a%20new%20table%0D%09%09%09set%20thisTable%20to%20make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%7Brow%20count%3A16%2C%20column%20count%3A2%2C%20name%3A%22Cell%20Formats%22%7D%0D%09%09%09tell%20thisTable%0D%09%09%09%09--%20a%20list%20of%20the%20supported%20formats%0D%09%09%09%09set%20theseFormats%20to%20%7Bautomatic%2C%20checkbox%2C%20currency%2C%20date%20and%20time%2C%20fraction%2C%20number%2C%20percent%2C%20pop%20up%20menu%2C%20scientific%2C%20slider%2C%20stepper%2C%20text%2C%20duration%2C%20rating%2C%20numeral%20system%7D%0D%09%09%09%09--%20placeholder%20data%0D%09%09%09%09set%20formatData%20to%20%7B%22%22%2C%20true%2C%201234.02%2C%20(get%20current%20date)%2C%200.1%2C%20123.89%2C%200.75%2C%20%22%22%2C%2064%2C%2064%2C%2035%2C%20%22HOWDY%22%2C%204.5%2C%203%2C%204569.123%7D%0D%09%09%09%09--%20set%20the%20values%20of%20the%20first%20column%20with%20the%20names%20of%20the%20formats%0D%09%09%09%09tell%20column%201%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseFormats%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20(i%20%2B%201)%20to%20(item%20i%20of%20theseFormats)%20as%20string%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20tell%0D%09%09%09%09--%20set%20the%20formats%20of%20the%20column%20cells%2C%20and%20add%20placeholder%20data%0D%09%09%09%09tell%20column%202%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseFormats%0D%09%09%09%09%09%09set%20the%20format%20of%20cell%20(i%20%2B%201)%20to%20(item%20i%20of%20theseFormats)%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20(i%20%2B%201)%20to%20(item%20i%20of%20formatData)%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="dictionary-class">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="dictionary-class">document</span> 1</td></tr>
+<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> active sheet</td></tr>
+<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- make a new table</span></td></tr>
+<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">row count</span>:16, <span class="codeproperty">column count</span>:2, <span class="codeproperty">name</span>:&quot;Cell Formats&quot;}</td></tr>
+<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- a list of the supported formats</span></td></tr>
+<tr><td class="line-count">11</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">theseFormats</span> <b>to</b> {<span class="dictionary-enumeration">automatic</span>, <span class="dictionary-enumeration">checkbox</span>, <span class="dictionary-enumeration">currency</span>, <span class="dictionary-enumeration">date and time</span>, <span class="dictionary-enumeration">fraction</span>, <span class="codelibraryclass">number</span>, <span class="dictionary-enumeration">percent</span>, <span class="dictionary-enumeration">pop up menu</span>, <span class="dictionary-enumeration">scientific</span>, <span class="dictionary-enumeration">slider</span>, <span class="dictionary-enumeration">stepper</span>, <span class="codelibraryclass">text</span>, <span class="dictionary-enumeration">duration</span>, <span class="dictionary-enumeration">rating</span>, <span class="dictionary-enumeration">numeral system</span>}</td></tr>
+<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- placeholder data</span></td></tr>
+<tr><td class="line-count">13</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">formatData</span> <b>to</b> {&quot;&quot;, true, 1234.02, (<b>get</b> current date), 0.1, 123.89, 0.75, &quot;&quot;, 64, 64, 35, &quot;HOWDY&quot;, 4.5, 3, 4569.123}</td></tr>
+<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set the values of the first column with the names of the formats</span></td></tr>
+<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">column</span> 1</td></tr>
+<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseFormats</span></td></tr>
+<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="dictionary-class">cell</span> (<span class="codevariable">i</span> + 1) <b>to</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseFormats</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set the formats of the column cells, and add placeholder data</span></td></tr>
+<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">column</span> 2</td></tr>
+<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseFormats</span></td></tr>
+<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">format</span> <b>of</b> <span class="dictionary-class">cell</span> (<span class="codevariable">i</span> + 1) <b>to</b> (<span class="dictionary-class">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseFormats</span>)</td></tr>
+<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="dictionary-class">cell</span> (<span class="codevariable">i</span> + 1) <b>to</b> (<span class="dictionary-class">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">formatData</span>)</td></tr>
+<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+<tr><td class="line-count">30</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+</table>
+		
+			
+			<p>The created table:</p>
+			
+			<img class="centered" alt="format-tables-01" src="gfx/format-tables-01.jpg" width="624">
+			<p class="imagecaption" style="margin-top:-8px;">(above left) The cell formats table. (above right) A selected cell with popup menu format.</p>
+			
+			
+			<img class="centered" style="margin-top:24px;" alt="format-tables-02" src="gfx/format-tables-02.jpg" width="624">
+			<p class="imagecaption" style="margin-top:-8px;">(above left) A selected cell with stepper format. (above right) A selected cell with slider format.</p>
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="cell-styling.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li class="hi"><a href="cell.html">Cell</a></li>
+				<li class="navListSectionItemSelected">Cell Data Formats</li>
+				<li class="navListSectionItem"><a href="cell-styling.html">Styling Cells</a></li>
+				<li class="navListSectionItem"><a href="cell-formulas.html">Cell Formulas</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>AppleScriptObjective-C (ASOC) Routines</h2>
+		
+		<p>AppleScriptObjective-C applets, created in the AppleScript Editor via the <b>File</b> &gt; <b>New From Templates</b> menu, have the ability to access the power of the native Cocoa libraries of OS&nbsp;X, from within the AppleScript code of the applet or droplet. The example sub-routines on this page can only be used in AppleScriptObjective-C (ASOC) applets.</p>
+		
+		<p>For a detailed overview of how AppleScriptObjective-C is used to create applications, click <a href="http://macosxautomation.com/applescript/apps/index.html">here</a>.</p>
+
+		<hr><a id="1000" name="1000" title="1000"><h3>Replacing Characters in a String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html">NSString</a></b> Cocoa class to find and replace a specified string within text.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20findAndReplaceStringInText(sourceText,%20searchString,%20replacementString)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-SW6%0D%09%0D%09--%20create%20a%20Cocoa%20string%20from%20the%20passed%20AppleScript%20string,%20by%20calling%20the%20NSString%20class%20method%20stringWithString:%0D%09set%20the%20sourceString%20to%20current%20application's%20NSString's%20stringWithString_(sourceText)%0D%09--%20Replace%20the%20search%20string%20with%20the%20replacement%20string,%20by%20calling%20a%20method%20on%20the%20newly%20created%20instance%0D%09set%20the%20adjustedString%20to%20the%20sourceString's%20stringByReplacingOccurrencesOfString_withString_(searchString,%20replacementString)%0D%09--%20convert%20from%20Cocoa%20string%20to%20AppleScript%20string%0D%09return%20(adjustedString%20as%20string)%0Dend%20findAndReplaceStringInText"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for replacing occurrences of a specified string in text.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">findAndReplaceStringInText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">searchString</span>, <span class="codevariable">replacementString</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the passed AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> current application's <span class="codevariable">NSString</span>'s <span class="codevariable">stringWithString_(sourceText)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- call a Cocoa string replacement method on the newly created Cocoa string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>the</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">stringByReplacingOccurrencesOfString_withString_(searchString, replacementString)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- convert from Cocoa string to AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">adjustedString</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">findAndReplaceStringInText</span></p>
+
+		
+		<hr><a id="1010" name="1010" title="1010"><h3>Trim White Space Around String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html">NSString</a></b> Cocoa class to trim spaces and tabs from both sides of the text passed to the routine.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20trimWhiteSpaceAroundString(sourceText)%0D%09--%20trims%20spaces%20and%20tabs%20from%20both%20sides%20of%20the%20passed%20string%0D%09--%20create%20Cocoa%20string%20from%20passed%20AppleScript%20string%0D%09set%20the%20sourceString%20to%20current%20application's%20NSString's%20stringWithString_(sourceText)%0D%09--%20trim%20white%20space%20around%20Cocoa%20string%0D%09set%20the%20trimmedCocoaString%20to%20%C2%AC%0D%09%09sourceString's%20stringByTrimmingCharactersInSet_(current%20application's%20NSCharacterSet's%20whitespaceCharacterSet)%0D%09--%20return%20result%20coerced%20to%20an%20AppleScript%20string%0D%09return%20(trimmedCocoaString%20as%20string)%0Dend%20trimWhiteSpaceAroundString"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for trimming spaces and tabs from both sides of the text passed to the routine.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">trimWhiteSpaceAroundString</span>(<span class="codevariable">sourceText</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create Cocoa string from passed AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> current application's NSString's <span class="codevariable">stringWithString_</span>(<span class="codevariable">sourceText</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- trim white space around Cocoa string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">trimmedCocoaString</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codevariable">sourceString</span>'s <span class="codevariable">stringByTrimmingCharactersInSet_(current application's NSCharacterSet's whitespaceCharacterSet)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- return result coerced to an AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">trimmedCocoaString</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">trimWhiteSpaceAroundString</span></p>
+
+		
+		<hr><a id="1001" name="1001" title="1001"><h3>Change the Case of Text</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html">NSString</a></b> Cocoa class to change the case of the text passed to the sub-routine.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20changeCaseOfText(sourceText,%20caseIndicator)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-uppercaseString%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-lowercaseString%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-capitalizedString%0D%09%0D%09--%20create%20a%20Cocoa%20string%20from%20the%20passed%20text,%20by%20calling%20the%20NSString%20class%20method%20stringWithString:%0D%09set%20the%20sourceString%20to%20current%20application's%20NSString's%20stringWithString_(sourceText)%0D%09--%20apply%20the%20indicated%20transformation%20to%20the%20Cocoa%20string%0D%09if%20the%20caseIndicator%20is%200%20then%0D%09%09set%20the%20adjustedString%20to%20sourceString's%20uppercaseString()%0D%09else%20if%20the%20caseIndicator%20is%201%20then%0D%09%09set%20the%20adjustedString%20to%20sourceString's%20lowercaseString()%0D%09else%0D%09%09set%20the%20adjustedString%20to%20sourceString's%20capitalizedString()%0D%09end%20if%0D%09--%20convert%20from%20Cocoa%20string%20to%20AppleScript%20string%0D%09return%20(adjustedString%20as%20string)%0Dend%20changeCaseOfText"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for changing the case of the text passed to the routine. Case indicator: 0 = UPPER CASE; 1 = lower case; 2 = Capitalized Words<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">changeCaseOfText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">caseIndicator</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the passed text, by calling the NSString class method stringWithString:</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> current application's <span class="codevariable">NSString</span>'s <span class="codevariable">stringWithString_(sourceText)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- apply the indicated transformation to the Cocoa string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">caseIndicator</span> <b>is</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">uppercaseString()</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else if the</b> <span class="codevariable">caseIndicator</span> <b>is</b> 1 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">lowercaseString()</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">capitalizedString()</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- convert from Cocoa string to AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">adjustedString</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">changeCaseOfText</span></p>
+
+		
+		<hr><a id="1002" name="1002" title="1002"><h3>Convert a List to a String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSArray_Class/NSArray.html">NSArray</a></b> Cocoa class to convert an AppleScript list of strings into a single AppleScript string. Optionally, the list items can be divided by a delimiter string passed to the routine.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20listToStringUsingTextItemDelimiter(sourceList,%20textItemDelimiter)%0D%09--%20creates%20a%20string%20from%20a%20passed%20AppleScript%20list%20of%20strings%20using%20a%20passed%20delimiter%20string%0D%09--%20DOCUMENTATION:%20https://developer.apple.com/library/mac/%23documentation/Cocoa/Reference/Foundation/Classes/NSArray_Class/NSArray.html%23//apple_ref/doc/uid/TP40003620%0D%09%0D%09--%20convert%20AppleScript%20list%20into%20Cocoa%20array%0D%09set%20the%20CocoaArray%20to%20current%20application's%20NSArray's%20arrayWithArray_(sourceList)%0D%09--%20create%20a%20Cocoa%20string%20from%20the%20Cocoa%20array%20using%20the%20passed%20delimiter%20string%0D%09set%20the%20CocoaString%20to%20CocoaArray's%20componentsJoinedByString_(textItemDelimiter)%0D%09--%20return%20the%20Cocoa%20string%20coerced%20into%20an%20AppleScript%20string%0D%09return%20(CocoaString%20as%20string)%0Dend%20listToStringUsingTextItemDelimiter"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for converting an AppleScript list of strings into a single string.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">listToStringUsingTextItemDelimiter</span>(<span class="codevariable">sourceList</span>, <span class="codevariable">textItemDelimiter</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa array from the passed AppleScript list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">CocoaArray</span> <b>to</b> current application's <span class="codevariable">NSArray</span>'s <span class="codevariable">arrayWithArray_(sourceList)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the Cocoa array using the passed delimiter string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">CocoaString</span> <b>to</b> <span class="codevariable">CocoaArray</span>'s <span class="codevariable">componentsJoinedByString_(textItemDelimiter)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- return the Cocoa string coerced into an AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">CocoaString</span> <b>as</b> string)<BR>
+		<b>end</b> listToStringUsingTextItemDelimiter</p>
+
+		
+		<hr><a id="1003" name="1003" title="1003"><h3>Sort a List of Strings</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSArray_Class/NSArray.html">NSArray</a></b> Cocoa class to sort an AppleScript list of strings.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20sortListOfStrings(sourceList)%0D%09--%20sorts%20a%20passed%20AppleScript%20list%20of%20strings%0D%09--%20DOCUMENTATION:%20https://developer.apple.com/library/mac/%23documentation/Cocoa/Reference/Foundation/Classes/NSArray_Class/NSArray.html%23//apple_ref/doc/uid/TP40003620%0D%09%0D%09--%20create%20a%20Cocoa%20array%20from%20the%20passed%20AppleScript%20list%0D%09set%20the%20CocoaArray%20to%20current%20application's%20NSArray's%20arrayWithArray_(sourceList)%0D%09--%20sort%20the%20Cocoa%20array%0D%09set%20the%20sortedItems%20to%20CocoaArray's%20sortedArrayUsingSelector_(%22localizedStandardCompare:%22)%0D%09--%20return%20the%20Cocoa%20array%20coerced%20to%20an%20AppleScript%20list%0D%09return%20(sortedItems%20as%20list)%0Dend%20sortListOfStrings"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for sorting an AppleScript list of strings.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">sortListOfStrings</span>(<span class="codevariable">sourceList</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa array from the passed AppleScript list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">CocoaArray</span> <b>to</b> current application's <span class="codevariable">NSArray</span>'s <span class="codevariable">arrayWithArray_(sourceList)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- sort the Cocoa array</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sortedItems</span> <b>to</b> <span class="codevariable">CocoaArray</span>'s <span class="codevariable">sortedArrayUsingSelector_(&quot;localizedStandardCompare:&quot;)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- return the Cocoa array coerced to an AppleScript list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">sortedItems</span> <b>as</b> list)<BR>
+		<b>end</b> <span class="codevariable">sortListOfStrings</span></p>
+
+		
+		<hr><a id="1004" name="1004" title="1004"><h3>Encode String using Percent Encoding</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html">NSString</a></b> Cocoa class to encode an AppleScript string using percent encoding.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20encodeUsingPercentEncoding(sourceText)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-BCIBFDCB%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-SW59%0D%09%0D%09--%20create%20a%20Cocoa%20string%20from%20the%20passed%20AppleScript%20string,%20by%20calling%20the%20NSString%20class%20method%20stringWithString:%0D%09set%20the%20sourceString%20to%20current%20application's%20NSString's%20stringWithString_(sourceText)%0D%09--%20apply%20the%20indicated%20transformation%20to%20the%20Cooca%20string%0D%09set%20the%20adjustedString%20to%20the%20sourceString's%20stringByAddingPercentEscapesUsingEncoding_(current%20application's%20NSUTF8StringEncoding)%0D%09--%20coerce%20from%20Cocoa%20string%20to%20AppleScript%20string%0D%09return%20(adjustedString%20as%20string)%0Dend%20encodeUsingPercentEncoding"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for encoding text using percent encoding.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">encodeUsingPercentEncoding</span>(<span class="codevariable">sourceText</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the passed text, by calling the NSString class method stringWithString:</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> current application's <span class="codevariable">NSString</span>'s <span class="codevariable">stringWithString_</span>(sourceText)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- apply the indicated transformation to the Cooca string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>the</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">stringByAddingPercentEscapesUsingEncoding_(current application's NSUTF8StringEncoding)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- coerce from Cocoa string to AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">adjustedString</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">encodeUsingPercentEncoding</span></p>
+
+		
+		<hr><a id="1005" name="1005" title="1005"><h3>Decode String using Percent Encoding</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html">NSString</a></b> Cocoa class to decode an AppleScript string using percent encoding.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20decodePercentEncoding(sourceText)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-BCIECHFE%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html%23//apple_ref/doc/uid/20000154-SW59%0D%09%0D%09--%20create%20a%20Cocoa%20string%20from%20the%20passed%20AppleScript%20string,%20by%20calling%20the%20NSString%20class%20method%20stringWithString:%0D%09set%20the%20sourceString%20to%20current%20application's%20NSString's%20stringWithString_(sourceText)%0D%09--%20apply%20the%20indicated%20transformation%20to%20the%20Cooca%20string%0D%09set%20the%20adjustedString%20to%20the%20sourceString's%20stringByReplacingPercentEscapesUsingEncoding_(current%20application's%20NSUTF8StringEncoding)%0D%09--%20coerce%20from%20Cocoa%20string%20to%20AppleScript%20string%0D%09return%20(adjustedString%20as%20string)%0Dend%20decodePercentEncoding"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for decoding text that has been previously encoded using percent encoding.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">decodePercentEncoding</span>(<span class="codevariable">sourceText</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the passed text, by calling the NSString class method stringWithString:</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> current application's <span class="codevariable">NSString</span>'s <span class="codevariable">stringWithString_(sourceText)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- apply the indicated transformation to the Cooca string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>the</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">stringByReplacingPercentEscapesUsingEncoding_(current application's NSUTF8StringEncoding)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- coerce from Cocoa string to AppleScript string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">adjustedString</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">decodePercentEncoding</span></p>
+
+		
+		<hr><a id="1006" name="1006" title="1006"><h3>Convert Number to Decimal Value String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html">NSNumberFormatter</a></b> Cocoa class to convert a number to a string by returning a comma delimited, rounded, localized decimal value, e.g.: (3.64525432506E+5 to 0 places = 364525) (3.64525432506E+5 to 3 places = 364525.433) (0.2375 to 2 places = 0.24).</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20convertNumberToDecimalValueString(thisNumber,%20maxDecimalPlaces)%0D%09if%20maxDecimalPlaces%20is%20greater%20than%200%20then%0D%09%09set%20decimalIndicators%20to%20%22.%22%0D%09%09repeat%20maxDecimalPlaces%20times%0D%09%09%09set%20decimalIndicators%20to%20decimalIndicators%20%26%20%22%23%22%0D%09%09end%20repeat%0D%09else%0D%09%09set%20decimalIndicators%20to%20%22%22%0D%09end%20if%0D%09set%20thisFormatter%20to%20current%20application's%20NSNumberFormatter's%20alloc()'s%20init()%0D%09tell%20thisFormatter%20to%20setFormat_(%220%22%20%26%20decimalIndicators)%0D%09set%20resultingText%20to%20thisFormatter's%20stringFromNumber_(thisNumber)%0D%09return%20(resultingText%20as%20string)%0Dend%20convertNumberToDecimalValueString"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for decoding text that has been previously encoded using percent encoding.<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">convertNumberToDecimalValueString</span>(<span class="codevariable">thisNumber</span>, <span class="codevariable">maxDecimalPlaces</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">maxDecimalPlaces</span> <b>is greater than</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">decimalIndicators</span> <b>to</b> &quot;.&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> <span class="codevariable">maxDecimalPlaces</span> <b>times</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">decimalIndicators</span> <b>to</b> <span class="codevariable">decimalIndicators</span> &amp; &quot;#&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">decimalIndicators</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFormatter</span> <b>to</b> current application's <span class="codevariable">NSNumberFormatter</span>'s <span class="codevariable">alloc()</span>'s <span class="codevariable">init()</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisFormatter</span> <b>to</b> <span class="codevariable">setFormat_(&quot;0&quot; &amp; decimalIndicators)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">resultingText</span> <b>to</b> <span class="codevariable">thisFormatter</span>'s <span class="codevariable">stringFromNumber_(thisNumber)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">resultingText</span> <b>as</b> string)<BR>
+		<b>end</b> convertNumberToDecimalValueString</p>
+
+		
+		<hr><a id="1007" name="1007" title="1007"><h3>Convert Number to Percentage Value String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html">NSNumberFormatter</a></b> Cocoa class to return a string of number that is a comma delimited, rounded, localized percentage value, e.g.: (0.2345 = 23%) (0.2375 = 24%).</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20convertNumberToPercentageValueString(thisNumber)%0D%09--%3E%20returns%20comma%20delimited,%20rounded,%20localized%20percentage%20value,%20e.g.:%20(0.2345%20%3D%2023%25)%20(0.2375%20%3D%2024%25)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html%0D%09tell%20current%20application's%20NSNumberFormatter%20to%20set%20resultingText%20to%20localizedStringFromNumber_numberStyle_(thisNumber,%20current%20application's%20NSNumberFormatterPercentStyle)%0D%09return%20(resultingText%20as%20string)%0Dend%20convertNumberToPercentageValueString"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that returns comma delimited, rounded, localized percentage value, e.g.: (0.2345 = 23%) (0.2375 = 24%).<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">convertNumberToPercentageValueString</span>(<span class="codevariable">thisNumber</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> current application's <span class="codevariable">NSNumberFormatter</span> <b>to set</b> <span class="codevariable">resultingText</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><span class="codevariable">localizedStringFromNumber_numberStyle_(thisNumber, current application's NSNumberFormatterPercentStyle)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">resultingText</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">convertNumberToPercentageValueString</span></p>
+
+
+		<hr><a id="1008" name="1008" title="1008"><h3>Convert Number to Currency Value String</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html">NSNumberFormatter</a></b> Cocoa class to return a string of number that is a comma delimited, rounded, localized currency value, e.g.: (9128 = $9,128.00) (9978.2485 = $9,128.25).</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20convertNumberToCurrencyValueString(thisNumber)%0D%09--%3E%20returns%20comma%20delimited,%20rounded,%20localized%20currency%20value,%20e.g.:%20(9128%20%3D%20$9,128.00)%20(9978.2485%20%3D%20$9,128.25)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html%0D%09tell%20current%20application's%20NSNumberFormatter%20to%20set%20resultingText%20to%20localizedStringFromNumber_numberStyle_(thisNumber,%20current%20application's%20NSNumberFormatterCurrencyStyle)%0D%09return%20(resultingText%20as%20string)%0Dend%20convertNumberToCurrencyValueString"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that returns a string of a numeric value in words, e.g: (23 = &ldquo;twenty-three&rdquo;) (23.75 = &ldquo;twenty-three point seven five&rdquo;).<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">convertNumberToCurrencyValueString</span>(<span class="codevariable">thisNumber</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> current application's <span class="codevariable">NSNumberFormatter</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">resultingText</span> <b>to</b> <span class="codevariable">localizedStringFromNumber_numberStyle_(thisNumber, current application's NSNumberFormatterCurrencyStyle)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">resultingText</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">convertNumberToCurrencyValueString</span>
+</p>
+
+		<hr><a id="1009" name="1009" title="1009"><h3>Convert Number to Words</h3></a>
+		
+		<p>This ASOC sub-routine uses methods from the <b><a href="http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html">NSNumberFormatter</a></b> Cocoa class to return a string of a numeric value in words, e.g: (23 = &ldquo;twenty-three&rdquo;) (23.75 = &ldquo;twenty-three point seven five&rdquo;).</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20convertNumberToWords(thisNumber)%0D%09--%3E%20returns%20a%20numeric%20value%20in%20words,%20e.g:%20(23%20%3D%20%E2%80%9Ctwenty-three%E2%80%9D)%20(23.75%20%3D%20%E2%80%9Ctwenty-three%20point%20seven%20five%E2%80%9D)%0D%09--%20DOCUMENTATION:%20http://developer.apple.com/library/ios/documentation/Cocoa/Reference/Foundation/Classes/NSNumberFormatter_Class/Reference/Reference.html%0D%09tell%20current%20application's%20NSNumberFormatter%20to%20set%20resultingText%20to%20localizedStringFromNumber_numberStyle_(thisNumber,%20current%20application's%20NSNumberFormatterSpellOutStyle)%0D%09return%20(resultingText%20as%20string)%0Dend%20convertNumberToWords"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that returns a string of a numeric value in words, e.g: (23 = &ldquo;twenty-three&rdquo;) (23.75 = &ldquo;twenty-three point seven five&rdquo;).<br>&nbsp;<br><br></span>
+		<b>on</b> <span class="codevariable">convertNumberToWords</span>(<span class="codevariable">thisNumber</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> current application's <span class="codevariable">NSNumberFormatter</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">resultingText</span> <b>to</b> <span class="codevariable">localizedStringFromNumber_numberStyle_(thisNumber, current application's NSNumberFormatterSpellOutStyle)</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">resultingText</span> <b>as</b> string)<BR>
+		<b>end</b> <span class="codevariable">convertNumberToWords</span></p>
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li class="hi">AppleScriptObjective-C (ASOC)</li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

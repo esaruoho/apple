@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Importing an Image vs Replacing an Image</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="A detailed description of how to use the AppleScript support for images in the iWork Keynote application, to import new images, or replace existing placeholder images.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Importing an Image vs Replacing an Image</div>
+		
+			<p>There are two methods for adding image files to a presentation:</p>
+			
+			<ul>
+				<li>Create a new image item on a slide</li>
+				<li>Replace an existing image placeholder</li>
+			</ul>
+			
+			<p>The two methods involve the use of different script techniques, the first requires the use of the <span class="codelibrarycommand">make</span> command, and the second is accomplished by changing the value of an image property.</p>
+		
+			<p>The following sections show how to perform each method, and describe the default scaling and sizing methods when images are imported or replaced.</p>
+			
+		</div>
+		
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Importing an Image</div>
+			
+			<p>As stated above, new image items are added to a slide through the use of the <span class="codelibrarycommand">make</span> command, as shown in the script below:</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Importing an Image File</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20current%20slide%0D%09%09%09%0D%09%09%09--%20TO%20CREATE%20A%20NEW%20IMAGE%20ITEM%3A%0D%09%09%09--%20use%20the%20make%20command%20and%20include%20an%20HFS%20file%20reference%20to%20the%20file%20to%20be%20imported%2C%20as%20the%20value%20of%20%E2%80%9Cfile%E2%80%9D%20property%0D%09%09%09set%20newImageItem%20to%20%C2%AC%0D%09%09%09%09make%20new%20image%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bfile%3Aalias%20%22Macintosh%20HD%3AUsers%3Asal%3APictures%3ANASA%20Rocket.jpg%22%7D%0D%09%09%09%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">current slide</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- TO CREATE A NEW IMAGE ITEM:</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- use the <b>make</b> command and include an HFS file reference to the file to be imported, as the value of the &ldquo;file&rdquo; property</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">newImageItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">file</span>:<span class="codelibraryclass">alias</span> &quot;Macintosh HD:Users:sal:Pictures:NASA Rocket.jpg&quot;}</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		
+			<p class="content-subhead" role="heading" aria-level="2">Automatic Scaling and Placement</p>
+			
+			<p>When a script imports an image file into a presentation, <b>Keynote</b> applies specific scaling and positioning methods to the new image item. The following rules describe <b>Keynote</b>&rsquo;s default behavior for the sizing and placement of images <b>imported</b> using scripts. (NOTE: The dimensions of the new image item are highlighted in red)</p>
+			
+			<p class="segment-note"><b>CREATED IMAGES</b>: If the <b>height</b> of the created image is <b>smaller</b> than the <b>slide height</b>, <b>AND</b> the <b>width</b> of the created image is <b>smaller</b> than the <b>slide width</b>, the created image will be imported at its normal size and will be automatically centered on the slide. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="across" width="640" alt="image-smaller-than-slide" src="gfx/image-smaller-than-slide.png" height="389">
+			
+			<p class="segment-note"><b>NOTE</b>: Once the image has been imported, a script can adjust the placed image&rsquo;s dimensions and position as needed.</p>		
+			
+			<p class="segment-note"><b>CREATED IMAGES</b>: If the <b>height</b> of the created image is <b>larger</b> than the slide height, <b>OR</b> the <b>width</b> of the created images is <b>larger</b> than the slide width, the created image will be automatically scaled to fit centered on the slide. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>		
+			
+			
+			<img class="across" width="640" alt="image-wider-than-slide" src="gfx/image-wider-than-slide.png" height="389">
+			
+			<img class="across" width="640" alt="image-taller-than-slide" src="gfx/image-taller-than-slide.png" height="389">
+			
+		</div>
+			
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Replacing an Image Placeholder</div>
+		
+			<p>The development of presentations with a consistent look and style often depends upon the use of slide templates. The standard set of slide templates incorporated in the default Apple <b>Keynote</b> themes, include ones that feature images in both prominent and supporting roles.</p>
+			
+			<p>In the iWork applications, images can be designated as media placeholders by selecting the image and then choosing the <b>Define as Media Placeholder</b> menu item from the <b>Format &gt; Advanced</b> sub-menu. Images chosen as media placeholders will display a small round icon at the bottom right of the image <span class="numeric-callout">&nbsp;1&nbsp;</span> <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="across" width="640" alt="placeholder-replacement" src="gfx/placeholder-replacement.png">
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Image Placeholder</b>&nbsp;&bull;&nbsp;The selected media placeholder displays an indicator icon at the bottom right of the image.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;</span>&nbsp;<b>Image File Info</b>&nbsp;&bull;&nbsp;The name of the selected image file appears here, alongside the <b>Replace</b> button, providing the means, in the application user interface, to replace the media placeholder.</p>
+			
+			<p>The following script shows how an image placeholder can be replaced with a specified image file, by changing the value of the placeholder image&rsquo;s <span class="codeproperty">file name</span> property:</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Replacing an Image</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20current%20slide%0D%09%09%09%0D%09%09%09--%20TO%20REPLACE%20A%20PLACEHOLDER%20OR%20EXISTING%20IMAGE%3A%0D%09%09%09--%20change%20the%20value%20of%20the%20%E2%80%9Cfile%20name%E2%80%9D%20property%20of%20the%20image%20to%20be%20an%20HFS%20file%20reference%20to%20the%20replacement%20image%20file%0D%09%09%09set%20thisPlaceholderImageItem%20to%20image%201%0D%09%09%09set%20file%20name%20of%20thisPlaceholderImageItem%20to%20%C2%AC%0D%09%09%09%09alias%20%22Macintosh%20HD%3AUsers%3Asal%3APictures%3ASaturn.jpg%22%0D%09%09%09%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">current slide</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- TO REPLACE A PLACEHOLDER OR EXISTING IMAGE:</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- change the value of the &ldquo;file name&rdquo; property of the image to be an HFS file reference to the replacement image file</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPlaceholderImageItem</span> <b>to</b> <span class="codelibraryclass">image</span> 1</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">file name</span> <b>of</b> <span class="codevariable">thisPlaceholderImageItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryclass">alias</span> &quot;Macintosh HD:Users:sal:Pictures:Saturn.jpg&quot;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Automatic Scaling and Placement</p>
+			
+			<p>The following rules describe <b>Keynote</b>&rsquo;s default behavior for the sizing and placement of images that replace media placeholders.</p>			
+			
+			<p class="segment-note"><b>REPLACEMENT IMAGES</b>:  Images that replace placeholder images are by default, set to be <b>proportionally scaled to fill</b> the container defined by the placeholder image.</p>
+			
+			<p class="imagecaption"><span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The selected media placeholder. (Note its dimensions shown in red)</p>
+			
+			<img class="across" width="640" alt="placeholder-image" src="gfx/placeholder-image.png">
+		
+			<p class="imagecaption"><span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The replacement images, scaled proportionally to fill the space defined by the placeholder. (Note that the dimensions remain the same as before)</p>
+			
+			<img class="across" width="640" alt="replacement-image-tall" src="gfx/replacement-image-tall.png">
+					
+			<img class="across" width="640" alt="replacement-image-tall" src="gfx/replacement-image-wide.png">
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image-from-URL.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li class="hi"><a href="image.html">Image</a></li>
+				<li class="navListSectionItem"><a href="image-properties.html">Image Properties</a></li>
+				<li class="navListSectionItemSelected">Importing vs Replacing</li>
+				<li class="navListSectionItem"><a href="image-from-URL.html">Images from URLs</a></li>
+				<li class="navListSectionItem"><a href="image-slides-from-files.html">Image Slides from Files</a></li>
+				<li class="navListSectionItem"><a href="image-add-descriptions.html">Add Image Descriptions</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">EXAMPLE IMAGES</h2>
+			<p><a href="exampleimages.zip">DOWNLOAD</a> the example images.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

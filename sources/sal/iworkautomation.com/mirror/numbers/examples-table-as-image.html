@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Save Table|Selection as Image File</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Save Table|Selection as Image File</div>
+											
+			<p>Sharing table data with others is a common practice. And while you can copy and paste formatted table data between some applications (such as from Numbers to Mail, TextEdit, Keynote, etc.), it is often preferable to share the table data as an un-editable image file. This script will convert either the entire table, or just the selected range of cells, into an image file in PNG format.</p>
+															
+			<p>The script provides examples of these techniques:</p>
+			
+			<ul>
+				<li>Interacting with the script user (7, 39, 48)</li>
+				<li>Using the Accessibility Frameworks to mimic user keystrokes (18, 33)</li>
+				<li>Retrieving image data from the clipboard (44)</li>
+				<li>Saving image data to file (75-92)</li>
+				<li>Displaying table data in other applications (54, 59)</li>
+			</ul>
+			
+			<p>Here&rsquo;s the script:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Save Table|Selection as Image File</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20active%20sheet%0D%09%09%09%09set%20thisTable%20to%20the%20first%20table%20whose%20class%20of%20selection%20range%20is%20range%0D%09%09%09%09display%20dialog%20%C2%AC%0D%09%09%09%09%09%22Save%20the%20entire%20table%2C%20or%20just%20the%20selection%20range%2C%20as%20an%20image%3F%22%20buttons%20%C2%AC%0D%09%09%09%09%09%7B%22Cancel%22%2C%20%22Range%22%2C%20%22Table%22%7D%20default%20button%203%20with%20icon%201%0D%09%09%09%09set%20the%20userChoice%20to%20the%20button%20returned%20of%20the%20result%0D%09%09%09%09if%20the%20userChoice%20is%20%22Table%22%20then%0D%09%09%09%09%09tell%20thisTable%0D%09%09%09%09%09%09--%20store%20the%20selection%20range%20address%0D%09%09%09%09%09%09set%20thisRange%20to%20the%20selection%20range%0D%09%09%09%09%09%09--%20select%20the%20entire%20table%0D%09%09%09%09%09%09set%20the%20selection%20range%20to%20the%20cell%20range%0D%09%09%09%09%09%09--%20copy%20to%20selection%20to%20the%20clipboard%0D%09%09%09%09%09%09tell%20application%20%22System%20Events%22%20to%20%C2%AC%0D%09%09%09%09%09%09%09keystroke%20%22c%22%20using%20command%20down%0D%09%09%09%09%09%09--%20restore%20the%20selection%20range%20to%20original%20state%0D%09%09%09%09%09%09set%20the%20selection%20range%20to%20thisRange%0D%09%09%09%09%09%09--%20derive%20default%20image%20name%0D%09%09%09%09%09%09set%20tableName%20to%20the%20name%0D%09%09%09%09%09%09set%20the%20defaultName%20to%20(tableName%20%26%20%22.png%22)%0D%09%09%09%09%09end%20tell%0D%09%09%09%09else%0D%09%09%09%09%09tell%20thisTable%0D%09%09%09%09%09%09--%20derive%20default%20image%20name%0D%09%09%09%09%09%09set%20tableName%20to%20the%20name%0D%09%09%09%09%09%09set%20the%20defaultName%20to%20(tableName%20%26%20space%20%26%20%22Selection%22%20%26%20%22.png%22)%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09--%20copy%20to%20selection%20to%20the%20clipboard%0D%09%09%09%09%09tell%20application%20%22System%20Events%22%20to%20%C2%AC%0D%09%09%09%09%09%09keystroke%20%22c%22%20using%20command%20down%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09set%20the%20targetImageFile%20to%20(choose%20file%20name%20default%20name%20defaultName)%0D%09%09set%20targetImageFileHFSPath%20to%20targetImageFile%20as%20string%0D%09%09if%20targetImageFileHFSPath%20does%20not%20end%20with%20%22.png%22%20then%0D%09%09%09set%20targetImageFileHFSPath%20to%20targetImageFileHFSPath%20%26%20%22.png%22%0D%09%09end%20if%0D%09%09set%20the%20imageData%20to%20get%20the%20clipboard%20as%20%C2%ABclass%20PNGf%C2%BB%0D%09%09set%20the%20writeResult%20to%20my%20writeToFile(imageData%2C%20targetImageFileHFSPath%2C%20false)%0D%09%09%0D%09%09if%20writeResult%20is%20true%20then%0D%09%09%09display%20dialog%20%22The%20table%20image%20has%20been%20created.%22%20buttons%20%C2%AC%0D%09%09%09%09%7B%22Send%20Image%22%2C%20%22Show%20Image%20File%22%2C%20%22OK%22%7D%20default%20button%203%20with%20icon%201%0D%09%09%09set%20userChoice%20to%20the%20button%20returned%20of%20the%20result%0D%09%09%09if%20userChoice%20is%20%22Send%20Image%22%20then%0D%09%09%09%09tell%20application%20%22Finder%22%0D%09%09%09%09%09open%20document%20file%20targetImageFileHFSPath%20%C2%AC%0D%09%09%09%09%09%09using%20application%20file%20id%20%22com.apple.mail%22%0D%09%09%09%09end%20tell%0D%09%09%09else%20if%20userChoice%20is%20%22Show%20Image%20File%22%20then%0D%09%09%09%09tell%20application%20%22Finder%22%0D%09%09%09%09%09activate%0D%09%09%09%09%09reveal%20document%20file%20targetImageFileHFSPath%0D%09%09%09%09end%20tell%0D%09%09%09end%20if%0D%09%09else%0D%09%09%09error%20%22There%20was%20a%20problem%20writing%20the%20image%20file.%22%0D%09%09end%20if%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20-1719%20then%0D%09%09%09set%20errorMessage%20to%20%22Please%20select%20a%20table%20before%20running%20this%20script.%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20errorNumber%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20writeToFile(thisData%2C%20targetFile%2C%20appendData)%0D%09tell%20current%20application%0D%09%09try%0D%09%09%09set%20the%20targetFile%20to%20the%20targetFile%20as%20string%0D%09%09%09set%20the%20openTargetFile%20to%20open%20for%20access%20file%20targetFile%20with%20write%20permission%0D%09%09%09if%20appendData%20is%20false%20then%20set%20eof%20of%20the%20openTargetFile%20to%200%0D%09%09%09write%20thisData%20to%20the%20openTargetFile%20starting%20at%20eof%20--as%20%C2%ABclass%20PNGf%C2%BB%0D%09%09%09close%20access%20the%20openTargetFile%0D%09%09%09return%20true%0D%09%09on%20error%20errorMessage%0D%09%09%09try%0D%09%09%09%09close%20access%20file%20targetFile%0D%09%09%09end%20try%0D%09%09%09log%20(%22SCRIPT%20ERROR%3A%20%22%20%26%20errorMessage)%0D%09%09%09return%20false%0D%09%09end%20try%0D%09end%20tell%0Dend%20writeToFile%0D%0D"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="dictionary-class">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to the first</b> <span class="codelibraryclass">table</span> <b>whose</b> <span class="codelibraryclass">class</span> <b>of</b> <span class="codeproperty">selection range</span> <b>is</b> <span class="codelibraryclass">range</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot;Save the entire table, or just the selection range, as an image?&quot; buttons &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Range&quot;, &quot;Table&quot;} <span class="codelibraryparameter">default button</span> 3 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">userChoice</span> <b>to the</b> <span class="codelibraryparameter">button returned</span> <b>of the</b> <span class="dictionary-class">result</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">userChoice</span> <b>is</b> &quot;Table&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- store the selection range address</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisRange</span> <b>to the</b> <span class="dictionary-property">selection range</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- select the entire table</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to the</b> <span class="codeproperty">cell range</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- copy to selection to the clipboard</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;System Events&quot; <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codelibrarycommand">keystroke</span> &quot;c&quot; <span class="codelibraryparameter">using</span> <span class="dictionary-enumeration">command down</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- restore the selection range to original state</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codevariable">thisRange</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- derive default image name</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">tableName</span> <b>to the</b> <span class="codeproperty">name</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">defaultName</span> <b>to</b> (<span class="codevariable">tableName</span> &amp; &quot;.png&quot;)</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- derive default image name</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">tableName</span> <b>to the</b> <span class="codeproperty">name</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">defaultName</span> <b>to</b> (<span class="codevariable">tableName</span> &amp; <span class="dictionary-enumeration">space</span> &amp; &quot;Selection&quot; &amp; &quot;.png&quot;)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- copy to selection to the clipboard</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;System Events&quot; <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codelibrarycommand">keystroke</span> &quot;c&quot; <span class="codelibraryparameter">using</span> <span class="codeenumeration">command down</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetImageFile</span> <b>to</b> (<span class="codelibrarycommand">choose file name</span> <span class="codelibraryparameter">default name</span> <span class="codevariable">defaultName</span>)</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetImageFileHFSpath</span> <b>to</b> <span class="codevariable">targetImageFile</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">targetImageFileHFSpath</span> <b>does not end with</b> &quot;.png&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">targetImageFileHFSpath</span> <b>to</b> <span class="codevariable">targetImageFileHFSpath</span> &amp; &quot;.png&quot;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">imageData</span> <b>to</b> <span class="codelibrarycommand">get the clipboard</span> <b>as</b> &laquo;class PNGf&raquo;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">writeResult</span> <b>to my</b> <span class="codevariable">writeToFile</span>(<span class="codevariable">imageData</span>, <span class="codevariable">targetImageFileHFSpath</span>, <span class="dictionary-enumeration">false</span>)</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">writeResult</span> <b>is</b> <span class="dictionary-enumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;The table image has been created.&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{&quot;Send Image&quot;, &quot;Show Image File&quot;, &quot;OK&quot;} <span class="codelibraryparameter">default button</span> 3 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">userChoice</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">userChoice</span> <b>is</b> &quot;Send Image&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">open</span> <span class="dictionary-class">document file</span> <span class="codevariable">targetImageFileHFSpath</span> &not;</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codelibraryparameter">using</span> <span class="codelibraryclass">application file</span> <span class="codelibraryparameter">id</span> &quot;com.apple.mail&quot;</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">userChoice</span> <b>is</b> &quot;Show Image File&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>activate</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">reveal</span> <span class="codelibraryclass">document file</span> <span class="codevariable">targetImageFileHFSpath</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;There was a problem writing the image file.&quot;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> -1719 <b>then</b></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please select a table before running this script.&quot;</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">errorNumber</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">writeToFile</span>(<span class="codevariable">thisData</span>, <span class="codevariable">targetFile</span>, <span class="codevariable">appendData</span>)</td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> current application</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetFile</span> <b>to the</b> <span class="codevariable">targetFile</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">openTargetFile</span> <b>to</b> <span class="codelibrarycommand">open for access</span> <span class="codelibraryclass">file</span> <span class="codevariable">targetFile</span> <b>with</b> <span class="codelibraryparameter">write permission</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">appendData</span> <b>is</b> <span class="dictionary-enumeration">false</span> <b>then set</b> <span class="codelibraryparameter">eof</span> <b>of the</b> <span class="codevariable">openTargetFile</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">write</span> <span class="codevariable">thisData</span> <span class="codelibraryparameter">to</span> <span class="codevariable">openTargetFile</span> <span class="dictionary-enumeration">starting at eof</span> <span class="codecomment">--as &laquo;class PNGf&raquo;</span></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">close access</span> <b>the</b> <span class="codevariable">openTargetFile</span></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="dictionary-enumeration">true</span></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">close access</span> <span class="codelibraryclass">file</span> <span class="codevariable">targetFile</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">log</span> (&quot;SCRIPT ERROR: &quot; &amp; <span class="codevariable">errorMessage</span>)</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="dictionary-enumeration">false</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">writeToFile</span></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			</table>
+
+			
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-attendance.html">Attendance Table for Contacts Group</a></li>
+				<li class="navListSectionItem"><a href="examples-highlight-intersection.html">Colorize Intersection of Selection</a></li>
+				<li class="navListSectionItemSelected">Save Table|Selection as Image File</li>
+				<li class="navListSectionItem"><a href="examples-state-names.html">Table with State Names as Headers</a></li>
+				<li class="navListSectionItem"><a href="examples-sign-up.html">Collaborated Sign-Up Sheet</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

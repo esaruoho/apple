@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Opening Documents</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Pages, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for making documents in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Making Documents</div>
+
+
+			<p>Creating new <b>Pages</b> documents is done using the <span class="codelibrarycommand">make</span> command from the <span class="dictionary-suite">Standard Suite</span>. The optional <span class="codelibraryparameter">with data</span> parameter for the <span class="codelibrarycommand">make</span> command is currently not supported in <b>Pages</b>.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">make</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Create a new object.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>make</b></p>
+				<p class="dictionary-double-indent"><span class="codelibraryparameter">new</span> <span class="dictionary-class">class</span> : The class of the new object.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">at location</span> <span class="dictionary-class">specifier</span> ] : The location at which to insert the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with data</span> <span class="dictionary-class">any</span> ] : The initial contents of the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with properties</span> <span class="dictionary-class">record</span> ] : The initial values for properties of the object.</p>	
+				<p class="dictionary-double-indent">&rArr;&nbsp;<span class="dictionary-class">specifier</span> : The new object.</p>
+			</div>
+			
+			<p>Using the <span class="codelibrarycommand">make</span> command, scripts can create <b>Pages</b> documents using the default template, as shown in the example script below:</p>
+					
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Default Pages Document</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09--%20create%20a%20new%20document%20and%20store%20its%20reference%20in%20a%20variable%0D%09set%20thisDocument%20to%20make%20new%20document%0D%09--%20address%20the%20document%20reference%0D%09tell%20thisDocument%0D%09%09--%20script%20actions%20go%20here%09%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a new document and store its reference in a variable</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- address the document reference</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- script actions go here	</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+					
+			<p>Here&rsquo;s a script demonstrating how to use the optional <span class="codelibraryparameter">with properties</span> parameter to make a new <span class="codelibraryclass">document</span> based upon a specific <span class="codelibraryclass">template</span>:</p>		
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Document with Specified Document Properties</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20template%3Atemplate%20%22Blank%22%7D%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>In the current version of <b>Pages</b> there is a template, named &ldquo;Blank,&rdquo; for creating a blank word-processing document. There is no corresponding template for creating a blank page-layout document. A script can use the value of the <span class="codeproperty">document body</span> property to determine whether a chosen template is designed for use as a page-layout document, and then delete all of its existing page items.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Blank Page Layout Document</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09set%20templateNames%20to%20the%20name%20of%20every%20template%0D%09repeat%0D%09%09set%20thisTemplateName%20to%20%C2%AC%0D%09%09%09(choose%20from%20list%20templateNames%20with%20prompt%20%C2%AC%0D%09%09%09%09%22Choose%20the%20template%20to%20use%20to%20create%20a%20blank%20layout%20document%3A%22)%0D%09%09if%20thisTemplateName%20is%20false%20then%20error%20number%20-128%0D%09%09set%20thisDocument%20to%20%C2%AC%0D%09%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bdocument%20template%3Atemplate%20(thisTemplateName%20as%20string)%7D%0D%09%09tell%20thisDocument%0D%09%09%09if%20document%20body%20is%20false%20then%0D%09%09%09%09set%20locked%20of%20every%20iWork%20item%20to%20false%0D%09%09%09%09delete%20every%20iWork%20item%0D%09%09%09%09exit%20repeat%0D%09%09%09else%0D%09%09%09%09close%20thisDocument%20saving%20no%0D%09%09%09%09display%20alert%20%22WRONG%20TEMPLATE%22%20message%20%22The%20chosen%20template%20had%20an%20active%20document%20body.%22%20%26%20return%20%26%20return%20%26%20%22Choose%20a%20template%20that%20does%20not%20contain%20a%20document%20body%20text%20flow.%22%20buttons%20%7B%22Cancel%22%2C%20%22Try%20Again%22%7D%20default%20button%202%20cancel%20button%20%22Cancel%22%0D%09%09%09end%20if%0D%09%09end%20tell%0D%09end%20repeat%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">templateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTemplateName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">templateNames</span> <span class="codelibraryparameter">with prompt</span>  &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;Choose the template to use to create a blank layout document:&quot;)</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTemplateName</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">document template</span>:template (<span class="codevariable">thisTemplateName</span> <b>as</b> <span class="codelibraryclass">string</span>)}</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> document body <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">locked</span> <b>of every</b> <span class="codelibraryclass">iWork item</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">iWork item</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">close</span> <span class="codevariable">thisDocument</span> <span class="codelibraryparameter">saving no</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;WRONG TEMPLATE&quot; <span class="codelibraryparameter">message</span> &quot;The chosen template had an active document body.&quot; &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &quot;Choose a template that does not contain a document body text flow.&quot; <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Try Again&quot;} <span class="codelibraryparameter">default button</span> 2 <span class="codelibraryparameter">cancel button</span> &quot;Cancel&quot;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>			
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+
+
+
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-save.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li class="hi"><a href="document.html">Document</a></li>
+				<li class="navListSectionItem"><a href="document-open.html">Opening Documents</a></li>
+				<li class="navListSectionItemSelected">Making Documents</li>
+				<li class="navListSectionItem"><a href="document-save.html">Saving Documents</a></li>
+				<li class="navListSectionItem"><a href="document-close.html">Closing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-export.html">Exporting Documents</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

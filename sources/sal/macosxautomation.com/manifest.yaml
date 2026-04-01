@@ -1,0 +1,39 @@
+site:
+  slug: macosxautomation
+  domain: macosxautomation.com
+  owner: Sal Soghoian
+  role: Primary hub
+  status: captured
+capture:
+  first_planned_at: '2026-04-01'
+  captured_at: '2026-04-01T13:17:55Z'
+  method: merlib-mirror wrapper:live
+  mirrored_by: merlib-mirror
+  mirror_root: sources/sal/macosxautomation.com/mirror
+  asset_root: sources/sal/macosxautomation.com/assets
+origin:
+  home: http://macosxautomation.com/
+  known_urls:
+  - http://macosxautomation.com/
+  - http://macosxautomation.com/about.html
+content:
+  priorities:
+  - Site hub and cross-links to all other Sal domains
+  - About page and automation philosophy
+  - Downloads, examples, and linked tutorials
+  expected_formats:
+  - html
+  - pdf
+  - zip
+  - scpt
+  - txt
+  - images
+extraction:
+  scripts_target: scripts/sal/macosxautomation
+  notes_target: analysis/sal/page-notes
+  concept_target: analysis/sal/concept-notes
+  status: mirrored
+  asset_count: 934
+licensing:
+  status: unknown
+  notes: Preserve attribution and original URLs until explicit license terms are captured.

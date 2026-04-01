@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Browse Full Screen Toolbar Script</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Browse Full Screen</h2>
+		
+		<p>The Flow View in Mac&nbsp;OS&nbsp;X provides detailed visual information about the files displayed within a Finder window, and naturally fits with the Quick Look feature that lets you scan many documents without having to open them in their original authoring applications.</p>
+		
+		<p> If you&rsquo;re looking for any easy quick way to change the view of a Finder window to Flow View and to expand its display area on screen to maximize its visual effectivness, the <b>Browse Full Screen</b> toolbar script makes switching to Flow View and displaying the window full screen, a single click in the Finder toolbar. And when you're done purusing your files, a single click on the same script returns the window back to its original state.</p>
+		
+		<img src="gfx/before.jpg" width="640" height="400" class="across">
+		
+		<p class="imagecaption">(Above) The Finder window before running the Browse Full Screen script. (Below) The same Finder window after the script has run.</p>
+		
+		<img src="gfx/after.jpg" width="640" height="400" class="across">
+		
+		<h3>Installation</h3>
+		
+		<p>To install the Browse Full Screen script, follow these simple steps:</p>
+		
+		<ol>
+			<li><a href="agreement.html">Download</a> the utility, and place it in the Applications > Utilities folder.</li>
+			<li>Drag the script to the toolbar of any Finder window and hold in place until the cursor changes to include a plus-sign, then release the mouse. The icon of the script will now be added to the toolbar.</li>
+		</ol>
+		
+		<p>To use this utility, click the script icon in the toolbar of the Finder window you want to zoom, and the window will be resized and the view mode changed to Flow View. In addition, the Dock will be hidden to maximize the window display area on the screen.</p>
+		
+		<p class="note"><b>NOTE</b>: Do not close the window when it is displaying full-screen as those window measurements will become the default for the displayed folder. To return the window to its previous state, click the toolbar script icon again.</p>
+	
+		
+		<h3 style="margin-top:36px;">The &ldquo;Toggle Front Window Full Screen&rdquo; Service</h3>
+		
+		<p>In Mac&nbsp;OS&nbsp;X v10.6 and higher, the same functionality in the <b>Browse Full Screen</b> applet can be delivered as a system service, able to be called using a chosen keystroke combination.</p>
+		
+		<p>To install the <b>Toggle Front Window Full Screen</b> service, follow these simple steps:</p>
+		
+		<ol>
+			<li><a href="agreement.html">Download</a> and unpack the service workflow file archive.</li>
+			<li>In Mac&nbsp;OS&nbsp;X v10.7 (Lion) or higher, double-click the workflow file to access the automatic installation dialog, and click the <b>Install</b> button. In Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard) move the unpacked service workflow file to the Home &gt; Library &gt; Services folder (make a Services folder if needed).</li>
+			<li>Select the <b>Keyboard Shortcuts</b> tab in the <b>Keyboard</b> preference pane in the <b>System Preferences</b> application. Select the <b>Toggle Front Window Full Screen</b> service from the list of services, and press the <b>Return</b> key. Now press the key combination you want to use to run the service.</li>
+			
+			<img src="gfx/services.jpg" width="600" height="297" class="across">
+		</ol>
+		
+		<p>To use this service, while in the Finder, press the keyboard combination you assigned in the Keyboard Shortcuts preference pane. The front window will be zoomed full screen. Press the keyboard combination again and the window will return to its previous state.</p>
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Account Switcher</h2>
+			<a href="../accountswitcher/index.html"><img src="../accountswitcher/gfx/Accounts32x32.png" width="32" height="32" align="top" class="left"></a><p>The Account Switcher applet provides an easy one-click method for qucikly switching between user accounts.</p>
+		</div>
+<!-- 
+		<div class="box">
+			<h2>Mighty Mouse Script Menu</h2>
+			<a href="../mmousemenu/index.html"><img src="gfx/MMSM32x32.png" width="32" height="32" align="top" class="left"></a><p>The Mighty Mouse Script Menu utility will present a list of the items in the user's Scripts folder for the frontmost application, when a pre-assigned mouse control is activated.</p>
+		</div>
+ -->
+		<div class="box">
+			<h2>Dashboard Widget</h2>
+			<a href="../qwikwidget/index.html"><img src="gfx/widget32x32.png" width="32" height="32" align="top" class="left"></a>The QwikFolder Dashboard widget uses AppleScript to quickly open many of the special folders in Mac&nbsp;OS&nbsp;X, such as the Shared Items folder.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

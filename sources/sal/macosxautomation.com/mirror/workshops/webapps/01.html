@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" >The Multi-Column Article</div>
+					
+			<p class="content-intro">The Multi-Column Article is a webpage design widely used by online blogs and news publications. It provides an excellent format for articles, reports, or papers whose length is greater than one-thousand words. Using this page design, longer stories are presented in a compact footprint, while retaining high levels of readability and comprehension.</p>
+			
+			<p class="content-subhead">HTML Content-Creation Services</p>
+			
+			<p>The automation tools provided with this tutorial, will automatically generate a folder containing multi-column HTML content, from text selected in any document or webpage.</p>
+			
+			<p>In addition, this publication tool allows for the optional inclusion of a single piece of supporting media to be published with the source article. This media item can be an audio file, video file, or image file, that is automatically placed at the beginning of the article, after the title and byline.</p>
+			
+			<p>Click the image thumbnails below to view variations of the same article, each with a different type of supporting media. (If you are viewing this page on an iPad, tap the links below the thumbnail images)</p>
+			
+			<table style="width:624px;background-color:#ccc;border:0;">
+				<tr style="text-align:center;color:black;"><td>IMAGE</td><td>AUDIO</td><td>VIDEO</td></tr>
+				<tr>
+					<td><a href="javascript:void(0);" onclick="PopupCenterWithScrolls('mc-example-image/index.html', 'viewer-window-article-picture',768,1024);"><img src="gfx/exampleimage.png" width="200" border="0" alt="exampleimage"></a></td>
+					<td><a href="javascript:void(0);" onclick="PopupCenterWithScrolls('mc-example-audio/index.html', 'viewer-window-article-picture',768,1024);"><img src="gfx/exampleaudio.png" width="200" border="0" alt="exampleimage"></a></td>
+					<td><a href="javascript:void(0);" onclick="PopupCenterWithScrolls('mc-example-video/index.html', 'viewer-window-article-picture',768,1024);"><img src="gfx/examplevideo.png" width="200" border="0" alt="examplevideo"></a></td>
+				</tr>
+				<tr style="text-align:center;color:black;"><td>iPad tap <a href="mc-example-image/index.html">HERE</a></td><td>iPad tap <a href="mc-example-audio/index.html">HERE</a></td><td>iPad tap <a href="mc-example-video/index.html">HERE</a></td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: INSTALLATION -->
+		<div class="content-segment">
+			<div class="segment-header" >Installation of the Multi-Column Article Publishing Tool</div>
+			<p>Before continuing this workshop, there are two components of the Multi-Column Article publishing tool that need to be installed on the computer:</p>
+			
+			<ol>
+				<li>An Automator action. This bundle file component of the Automator automation frameworks, contains the interface and supporting code for creating multi-column HTML publications.</li>
+				<li>An Automator service workflow. This Automator workflow contains the Multi-Column Automator action, and is displayed on the contextual menu whenever and wherever text is selected in the operating system.</li>
+			</ol>
+			
+			<p>Installing the two components is easy, and takes very little time and effort.</p>
+		</div>
+			
+		<div class="content-segment">
+			<div class="segment-header" >Download and Unpack the Archive</div>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="Multi-Column-Installs.zip">Download</a> the ZIP archive containing the Multi-Column Automator action and Automator service workflow.</p>
+
+			<p>The unpacked ZIP archive will create a folder titled &ldquo;Multi-Column-Installs&rdquo; (see below). Open this folder:</p>
+
+			<img alt="multi-column-installs-folder" src="gfx/multi-column-installs-folder.png" width="602" height="419" class="centered">
+
+			<p>The folder contains three items:</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;An Automator action file (labeled ACTION)</p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;an Automator service workflow file (labeled WFLOW)</p>
+				
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;an AppleScript applet for installing the Automator service workflow file <span class="numeric-callout">&nbsp;2&nbsp;</span></p>				
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" >Install the Automator Action</div>
+			
+			<p>The first installation step is to install the Automator action file that enables the creation of Multi-Column web apps.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Double-click the icon of the Automator action (ACTION) <span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp; to begin its installation process.</p>
+
+			<p>A dialog will appear, asking you to confirm the installation of the Automator action file. (see below)</p>
+			
+			<img alt="install-action-01" src="gfx/install-action-01.png" width="624" height="309" class="centered">
+			
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Confirm the installation by pressing the <b>Install</b> button in the dialog. (see above)</p>
+			
+			<p>Once the installation has been confirmed, the Automator action bundle file will be moved into the Automator folder in the user Library folder. Automator actions placed in this folder are automatically displayed in the user automation library when the Automator application is launched.</p> 
+			
+			<p>A dialog confirmation of the installation will appear when the installation process has completed. (see below)</p>
+			
+			<img alt="install-action-02" src="gfx/install-action-02.png" width="624" height="268" class="centered">
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" >Install the Automator Service</div>
+			
+			<p>Next, you&rsquo;ll install the Automator service that enables the creation of Multi-Column web apps.</p> 
+			
+			<img alt="multi-column-installs-folder" src="gfx/multi-column-installs-folder.png" width="602" height="419" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Double-click the icon of the <b>Automator Service Installer</b> applet <span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;to begin the process of installing the Automator service workflow file <span class="numeric-callout">&nbsp;2&nbsp;</span>.</p>
+			
+			<p>A security dialog will display (see below), informing you that the <b>Automator Service Installer</b> applet was downloaded from this website, and asking you to confirm your intention to launch the applet.</p>
+				
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Click the <b>Open</b> button in the security dialog to launch the <b>Automator Service Installer</b> applet.</p>
+			
+			<img src="gfx/internetdownloaddialog.png" width="624" class="centered">
+			
+			<p>The <b>Automator Service Installer</b> dialog will display (see below).</p>
+			
+			<img src="gfx/installerappletdialog.png" width="474" class="centered" alt="installerappletdialog" height="326">
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Click the <b>Continue</b> button in the applet dialog (see above), and then enter an administrator name and password in the forthcoming security dialog (see below).</p>
+			
+			<img src="gfx/namepassworddialog.png" width="557" class="centered" alt="namepassworddialog" height="353">
+
+			<p>Once the <b>Automator Service Installer</b> has completed the installation of the Automator service workflows, it will display a confirmation dialog (see below).</p>
+							
+			<img src="gfx/installercompletiondialog.png" width="474" class="centered" alt="installercompletiondialog" height="259">
+		
+			<p class="do-this" style="margin-bottom:18px;"><span class="do-this">DO THIS &#9658;</span> Click the <b>OK</b> button to confirm the completion dialog (see above).</p>
+		</div>
+			
+			
+		<div class="content-segment">
+			<div class="segment-header" >Cleanup</div>
+			<p>And lastly, now that the installation of files has been completed, it&rsquo;s time for a little cleanup.</p>
+			
+			<p class="do-this" style="margin-bottom:18px;"><span class="do-this">DO THIS &#9658;</span> Close the <b>Multi-Column-Installs</b> folder and place it in the trash.</p>
+		</div>
+		<!-- END SEGMENT: INSTALLATION -->
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, we&rsquo;ll examine the interface for the Automator action that creates the HTML content.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li class="hi">Multi-Column Article</li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li><a href="03.html">Multi-Column Article: Demo</a></li>
+				<li><a href="04.html">Single-Page Web-App</a></li>
+				<li><a href="05.html">Single-Page Web-App: Interface</a></li>
+				<li><a href="06.html">Single-Page Web-App: Demo</a></li>
+				<li><a href="07.html">Desktop Web-Apps</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>This first tutorial is about quickly creating attractive publications that incorporate a limited amount of supporting media. The focus of these designs is on the text content, with optional media items (images, audio, video) taking a supporting role to the stories, papers, or reports.</p>
+			
+			<p>Have the attendees view the variations of the example article, and then discuss their impressions of the multi-column document design that scrolls horizontally rather than vertically.</p>
+			
+			<p>After the initial discussion, guide them through the installation of the automation components.</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<p>Continue the workshop discussion by focusing on the use of a simplified layout design such as the Multi-Column publication.</p>
+			
+			<ol type="1">
+				<li>Ask attendees if they have viewed sites that use this type of page layout.</li>
+				<li>Discuss the use of simplified HTML templates, with limited use of supporting media. Do they put the focus on the content rather than its presentation?</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Replacing Image Placeholders</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Pages, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="Using AppleScript to create a poster of thumbnails in Pages from the images containing in an iPhoto ablum.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Replacing Image Placeholders</div>
+
+			<p>In <b>Pages</b>, there is a difference in the default behavior between creating a new image and replacing an existing placeholder image.</p>
+			
+			<p class="segment-note"><b>CREATE IMAGE</b>: When a script creates a new image, the image container is automatically wrapped to fit the image, regardless of any sizing indicated during the execution of the <span class="codelibrarycommand">make</span> command.</p>
+			
+			<p class="segment-note"><b>REPLACE IMAGE</b>: When a script replaces a placeholder image with an image file, the imported image is scaled and centered so that its shortest side fits within the placeholder view.</p>
+			
+			<p>The example script on this page demonstrates image placeholder replacement by importing photos from a chosen iPhoto album into a tabloid-sized template containing rows of square image placeholders. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+
+			<img class="across" width="640" alt="The image thumbnail document poplulated with photos." src="gfx/populated-placeholder-template.png">
+
+			<p class="content-subhead" role="heading" aria-level="2">Populate Thumbnail Template</p>
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Before opening and running this script, <a href="thumbnail-poster-template.zip" style="font-weight:bold;">DOWNLOAD</a> and install the &ldquo;Thumbnail Poster&rdquo; template.</p>
+			
+			<p>Here&rsquo;s the script:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Populate Thumbnail Grid Template</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20thisTemplateName%20%3A%20%22Thumbnail%20Poster%22%0D%0Dtell%20application%20%22Pages%22%0D%09activate%0D%09try%0D%09%09--%20check%20for%20the%20required%20template%0D%09%09set%20the%20templateNames%20to%20the%20name%20of%20every%20template%0D%09%09if%20thisTemplateName%20is%20not%20in%20the%20templateNames%20then%20error%20number%201000%0D%09%09%0D%09%09--%20prompt%20user%20to%20pick%20the%20source%20album%0D%09%09set%20albumNames%20to%20my%20iPhotoAlbumNames()%0D%09%09if%20albumNames%20is%20false%20then%20error%20number%201001%0D%09%09set%20chosenAlbum%20to%20%C2%AC%0D%09%09%09(choose%20from%20list%20albumNames%20with%20prompt%20%C2%AC%0D%09%09%09%09%22Pick%20the%20album%20containing%20images%20to%20import%3A%22)%0D%09%09if%20chosenAlbum%20is%20false%20then%20error%20number%20-128%0D%09%09%0D%09%09--%20get%20a%20list%20of%20file%20paths%20to%20the%20album%20images%0D%09%09tell%20application%20%22iPhoto%22%0D%09%09%09--%20using%20previews%20reduces%20time%20required%20for%20script%20to%20complete%0D%09%09%09--%20use%20the%20%22image%20path%22%20property%20for%20higher%20resolution%0D%09%09%09set%20the%20imagePaths%20to%20%C2%AC%0D%09%09%09%09the%20preview%20path%20of%20every%20photo%20of%20album%20(chosenAlbum%20as%20string)%0D%09%09%09set%20albumImageCount%20to%20the%20count%20of%20the%20imagePaths%0D%09%09%09if%20albumImageCount%20is%200%20then%20error%20number%201002%0D%09%09end%20tell%0D%09%09%0D%09%09--%20make%20a%20new%20Pages%20document%0D%09%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20template%3Atemplate%20thisTemplateName%7D%0D%09%09tell%20thisDocument%0D%09%09%09tell%20the%20current%20page%0D%09%09%09%09set%20imageCount%20to%20the%20count%20of%20images%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20imageCount%0D%09%09%09%09%09if%20i%20is%20greater%20than%20albumImageCount%20then%20error%20number%201003%0D%09%09%09%09%09--%20locate%20the%20image%20item%20by%20its%20description%0D%09%09%09%09%09set%20thisImage%20to%20(the%20first%20image%20whose%20description%20is%20(i%20as%20string))%0D%09%09%09%09%09--%20convert%20the%20POSIX%20path%20to%20HFS%20file%20reference%0D%09%09%09%09%09set%20thisImageFile%20to%20(item%20i%20of%20the%20imagePaths)%20as%20POSIX%20file%0D%09%09%09%09%09--%20replace%20the%20placeholder%20with%20the%20image%0D%09%09%09%09%09set%20file%20name%20of%20thisImage%20to%20thisImageFile%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20notify%20the%20user%0D%09%09my%20displayThisNotification(%22New%20Pages%20Document%22%2C%20%22Thumbnail%20document%20created.%22%2C%20%22%22)%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%201000%20then%0D%09%09%09display%20alert%20%22MISSING%20RESOURCE%22%20message%20%22This%20script%20requires%20the%20installation%20of%20a%20Pages%20template%20titled%20%E2%80%9C%22%20%26%20thisTemplateName%20%26%20%22.%E2%80%9D%22%20%26%20return%20%26%20return%20%26%20%22The%20template%20can%20be%20downloaded%20from%3A%20iworkautomation.com%22%20as%20critical%20buttons%20%7B%22Download%22%2C%20%22Stop%22%7D%20default%20button%202%0D%09%09%09if%20the%20button%20returned%20of%20the%20result%20is%20%22Download%22%20then%0D%09%09%09%09open%20location%20%22http%3A%2F%2Fiworkautomation.com%2Fpages%2Fimage-replace.html%22%0D%09%09%09end%20if%0D%09%09%09error%20number%20-128%0D%09%09else%20if%20errorNumber%20is%201001%20then%0D%09%09%09set%20errorNumber%20to%20%22iPhoto%20Issue%22%0D%09%09%09set%20errorMessage%20to%20%22There%20was%20a%20problem%20getting%20a%20list%20of%20albums%20from%20iPhoto.%22%0D%09%09else%20if%20errorNumber%20is%201002%20then%0D%09%09%09set%20errorNumber%20to%20%22iPhoto%20Issue%22%0D%09%09%09set%20errorMessage%20to%20%22The%20chosen%20album%20contains%20no%20photos.%22%0D%09%09else%20if%20errorNumber%20is%201003%20then%0D%09%09%09set%20errorNumber%20to%20%22iPhoto%20Issue%22%0D%09%09%09set%20errorMessage%20to%20%22There%20are%20more%20image%20placeholders%20than%20album%20images.%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20(errorNumber%20as%20string)%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20displayThisNotification(thisTitle%2C%20thisNotification%2C%20thisSubtitle)%0D%09tell%20current%20application%0D%09%09display%20notification%20thisNotification%20with%20title%20thisTitle%20subtitle%20thisSubtitle%0D%09end%20tell%0Dend%20displayThisNotification%0D%0Don%20iPhotoAlbumNames()%0D%09try%0D%09%09--get%20a%20list%20of%20iPhoto%20albums%0D%09%09tell%20application%20%22iPhoto%22%0D%09%09%09launch%0D%09%09%09return%20(the%20name%20of%20every%20album)%0D%09%09end%20tell%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20iPhotoAlbumNames%0D"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">thisTemplateName</span> : &quot;Thumbnail Poster&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- check for the required template</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">templateNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">template</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisTemplateName</span> <b>is not in the</b> <span class="codevariable">templateNames</span> <b>then error</b> <span class="codelibraryparameter">number</span> 1000</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- prompt user to pick the source album</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">albumNames</span> <b>to my</b> <span class="codevariable">iPhoto<span class="codevariable">albumNames</span></span>()</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">albumNames</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> 1001</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenAlbum</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">albumNames</span> <span class="codelibraryparameter">with prompt</span>  &not;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;Pick the album containing images to import:&quot;)</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenAlbum</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get a list of file paths to the album images</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iPhoto&quot;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- using previews reduces time required for script to complete</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- use the &quot;image path&quot; property for higher resolution</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">imagePaths</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>the</b> <span class="codeproperty">preview path</span> <b>of every</b> <span class="codelibraryclass">photo</span> <b>of</b> <span class="codelibraryclass">album</span> (<span class="codevariable">chosenAlbum</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">album<span class="codevariable">imageCount</span></span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">imagePaths</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">album<span class="codevariable">imageCount</span></span> <b>is</b> 0 <b>then error</b> <span class="codelibraryparameter">number</span> 1002</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- make a new Pages document</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> thisDocument <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">thisTemplateName</span>}</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> thisDocument</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the</b> current page</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">imageCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">images</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">imageCount</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is greater than</b> <span class="codevariable">album<span class="codevariable">imageCount</span></span> <b>then error</b> <span class="codelibraryparameter">number</span> 1003</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- locate the image item by its description</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> (<b>the first</b> <span class="codelibraryclass">image</span> <b>whose</b> <span class="codeproperty">description</span> <b>is</b> (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>))</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- convert the <span class="codeproperty">POSIX path</span> to HFS file reference</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">imagePaths</span>) <b>as</b> the front</b> <span class="codelibraryclass">POSIX file</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- replace the placeholder with the image</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">file name</span> <b>of</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codevariable">thisImageFile</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- notify the user</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">display<span class="codevariable">thisNotification</span></span>(&quot;New Pages Document&quot;, &quot;Thumbnail document created.&quot;, &quot;&quot;)</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1000 <b>then</b></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;MISSING RESOURCE&quot; <span class="codelibraryparameter">message</span> &quot;This script requires the installation of a Pages template titled &ldquo;&quot; &amp; <span class="codevariable">thisTemplateName</span> &amp; &quot;.&rdquo;&quot; &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &quot;The template can be downloaded from: iworkautomation.com&quot; <b>as</b> <span class="codelibraryparameter">critical</span> <span class="codelibraryparameter">buttons</span> {&quot;Download&quot;, &quot;Stop&quot;} <span class="codelibraryparameter">default button</span> 2</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span> <b>is</b> &quot;Download&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>open location &quot;http://iworkautomation.com/pages/image-replace.html&quot;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1001 <b>then</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorNumber</span> <b>to</b> &quot;iPhoto Issue&quot;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;There was a problem getting a list of albums <b>from</b> iPhoto.&quot;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1002 <b>then</b></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorNumber</span> <b>to</b> &quot;iPhoto Issue&quot;</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;The chosen album contains no photos.&quot;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1003 <b>then</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorNumber</span> <b>to</b> &quot;iPhoto Issue&quot;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;There are more image placeholders than album images.&quot;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> (<span class="codevariable">errorNumber</span> <b>as</b> <span class="codelibraryclass">string</span>) message <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">display<span class="codevariable">thisNotification</span></span>(<span class="codevariable">thisTitle</span>, <span class="codevariable">thisNotification</span>, <span class="codevariable">thisSubtitle</span>)</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">current application</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display notification</span> <span class="codevariable">thisNotification</span> <span class="codelibraryparameter">with title</span>  <span class="codevariable">thisTitle</span> <span class="codelibraryparameter">subtitle</span> <span class="codevariable">thisSubtitle</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">display<span class="codevariable">thisNotification</span></span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">iPhoto<span class="codevariable">albumNames</span></span>()</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--get a list of iPhoto albums</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;iPhoto&quot;</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>launch</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return (the</b> name <b>of every</b> album)</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">iPhoto<span class="codevariable">albumNames</span></span></td></tr>
+			</table>
+			
+			<p class="segment-note"><b>TIP</b>: This template can be populated because the description for each placeholder image contains a number indicating its position in the order of placeholders on the page.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li class="hi"><a href="image.html">Image</a></li>
+				<li class="navListSectionItem"><a href="image-thumb-poster.html">Thumbnail Poster</a></li>
+				<li class="navListSectionItemSelected">Replacing Placeholder Images</li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">IMAGE EDITS &amp; APPLESCRIPT</h2>
+			<p>For a complete overview of performing standard image editing tasks, such as scale, pad, rotate, and crop, using AppleScript, visit <a href="http://macosxautomation.com/applescript/imageevents/index.html" target="_blank">this webpage</a> on this site.</p>	
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

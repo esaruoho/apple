@@ -1,0 +1,75 @@
+# Sal concept index
+# Maps core teachings, apps, functions, and source pages.
+
+version: 1
+updated: "2026-04-01"
+
+concepts:
+  - slug: applescript-depth
+    name: "AppleScript depth"
+    summary: "Deep object-level automation through scripting dictionaries and Apple Events."
+    related_apps: ["finder", "mail", "music", "system-events", "keynote", "numbers", "pages", "photos"]
+    related_sites: ["macosxautomation", "iworkautomation", "photosautomation"]
+    source_notes:
+      - "sal-soghoian.md"
+  - slug: shortcuts-width
+    name: "Shortcuts width"
+    summary: "Broad component automation that should complement, not replace, AppleScript."
+    related_apps: ["shortcuts", "notes", "mail", "music"]
+    related_sites: ["macosxautomation", "omni-automation"]
+    source_notes:
+      - "sal-soghoian.md"
+  - slug: system-events-ui-scripting
+    name: "System Events UI scripting"
+    summary: "Accessibility-driven control of apps without direct scripting support."
+    related_apps: ["system-events", "system-settings", "finder"]
+    related_sites: ["macosxautomation"]
+    source_notes:
+      - "sal-soghoian.md"
+  - slug: iwork-document-automation
+    name: "iWork document automation"
+    summary: "Document, slide, spreadsheet, and template automation for Keynote, Numbers, and Pages."
+    related_apps: ["keynote", "numbers", "pages"]
+    related_sites: ["iworkautomation"]
+    source_notes:
+      - "sal-soghoian.md"
+  - slug: photos-library-automation
+    name: "Photos library automation"
+    summary: "Automation patterns for albums, media assets, metadata, and photo workflows."
+    related_apps: ["photos"]
+    related_sites: ["photosautomation"]
+    source_notes:
+      - "sal-soghoian.md"
+  - slug: dictation-accessibility
+    name: "Dictation accessibility"
+    summary: "Voice-triggered automation intended to widen access to macOS automation."
+    related_apps: ["system-events", "shortcuts"]
+    related_sites: ["dictationcommands"]
+    source_notes:
+      - "sal-soghoian.md"
+
+functions:
+  - slug: activate-app
+    name: "Activate app"
+    summary: "Bring an application to the foreground with AppleScript."
+    patterns:
+      - "tell application \"AppName\" to activate"
+    related_concepts: ["applescript-depth"]
+    related_apps: ["finder", "mail", "music", "script-editor"]
+  - slug: ui-script-menu
+    name: "UI script menu path"
+    summary: "Use System Events to click menus, buttons, and controls in otherwise dark apps."
+    patterns:
+      - "tell application \"System Events\""
+      - "click menu item"
+    related_concepts: ["system-events-ui-scripting"]
+    related_apps: ["system-events", "system-settings"]
+  - slug: pass-document-between-apps
+    name: "Pass document between apps"
+    summary: "Use shared data types and exported files to chain scripts across applications."
+    patterns:
+      - "save"
+      - "open"
+      - "make new"
+    related_concepts: ["iwork-document-automation", "photos-library-automation"]
+    related_apps: ["keynote", "numbers", "pages", "photos", "finder"]

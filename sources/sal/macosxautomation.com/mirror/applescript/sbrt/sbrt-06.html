@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Text Manipulation</h2>
+		
+		<p>Manipulating text strings is one of the most common tasks performed in scripts. The following sub-routines perform some of the most common text manipulation tasks.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Trim Line</h3></a>
+		
+		<p>The following sub-routine can be used to trim text from the beginning or end of a string. It has three passed parameters:</p>
+			
+			<ol>
+				<li>The text to trim</li>
+				<li>The characters to trim from the passed text</li>
+				<li>The direction indicator</li>
+			</ol>
+
+		<p>The direction indicator has three possible numeric values:</p>
+
+		<p><span class="inlinecode">0</span>, which tells the routine to trim the indicated characters from the beginning of the passed string:</p>
+
+		<p class="code">set <span class="codevariable">this_text</span> to &quot;<span class="codecomment">----1----&quot;</span><BR>
+		<span class="codevariable">trim_line</span>(<span class="codevariable">this_text</span>, &quot;-&quot;, 0)<BR>
+		<span class="codecomment">--> returns: &quot;1----&quot;</span></p>
+		
+		<p><span class="inlinecode">1</span>, which tells the routine to trim the indicated characters from the end of the passed string:</p>
+
+		<p class="code"><b>set</b> <span class="codevariable">this_text</span> <b>to</b> &quot;12345.txt&quot;<BR>
+		<span class="codevariable">trim_line</span>(<span class="codevariable">this_text</span>, &quot;.txt&quot;, 1)<BR>
+		<span class="codecomment">--> returns: &quot;12345&quot;</span></p>
+	
+		<p><span class="inlinecode">2</span>, which tells the routine to trim the indicated characters from both ends of the passed string:</p>
+	
+		<p class="code"><b>set</b> <span class="codevariable">this_text</span> <b>to</b> &quot;*-*-fred*-*-&quot;<BR>
+		<span class="codevariable">trim_line</span>(<span class="codevariable">this_text</span>, &quot;*-&quot;, 2)<BR>
+		<span class="codecomment">--> returns: &quot;fred&quot;</span></p>
+	
+		<p>Here's the trimming sub-routine:</p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20trim_line%28this_text%2C%20trim_chars%2C%20trim_indicator%29%0D%09%2D%2D%200%20%3D%20beginning%2C%201%20%3D%20end%2C%202%20%3D%20both%0D%09set%20x%20to%20the%20length%20of%20the%20trim_chars%0D%09%2D%2D%20TRIM%20BEGINNING%0D%09if%20the%20trim_indicator%20is%20in%20%7B0%2C%202%7D%20then%0D%09%09repeat%20while%20this_text%20begins%20with%20the%20trim_chars%0D%09%09%09try%0D%09%09%09%09set%20this_text%20to%20characters%20%28x%20%2B%201%29%20thru%20%2D1%20of%20this_text%20as%20string%0D%09%09%09on%20error%0D%09%09%09%09%2D%2D%20the%20text%20contains%20nothing%20but%20the%20trim%20characters%0D%09%09%09%09return%20%22%22%0D%09%09%09end%20try%0D%09%09end%20repeat%0D%09end%20if%0D%09%2D%2D%20TRIM%20ENDING%0D%09if%20the%20trim_indicator%20is%20in%20%7B1%2C%202%7D%20then%0D%09%09repeat%20while%20this_text%20ends%20with%20the%20trim_chars%0D%09%09%09try%0D%09%09%09%09set%20this_text%20to%20characters%201%20thru%20%2D%28x%20%2B%201%29%20of%20this_text%20as%20string%0D%09%09%09on%20error%0D%09%09%09%09%2D%2D%20the%20text%20contains%20nothing%20but%20the%20trim%20characters%0D%09%09%09%09return%20%22%22%0D%09%09%09end%20try%0D%09%09end%20repeat%0D%09end%20if%0D%09return%20this_text%0Dend%20trim_line"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for trimming unwanted characters from strings:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">trim_line</span>(<span class="codevariable">this_text</span>, <span class="codevariable">trim_chars</span>, <span class="codevariable">trim_indicator</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- 0 = beginning, 1 = end, 2 = both</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> length <b>of the</b> <span class="codevariable">trim_chars</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- TRIM BEGINNING</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">trim_indicator</span> <b>is in</b> {0, 2} <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> while <span class="codevariable">this_text</span> <b>begins with the</b> <span class="codevariable">trim_chars</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_text</span> <b>to</b> characters (<span class="codevariable">x</span> + 1) <b>thru</b> -1 <b>of</b> <span class="codevariable">this_text</span> <b>as</b> string<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- the text contains nothing but the trim characters</span><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>return</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- TRIM ENDING</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">trim_indicator</span> <b>is in</b> {1, 2} <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> while <span class="codevariable">this_text</span> <b>ends with the</b> <span class="codevariable">trim_chars</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_text</span> <b>to</b> characters 1 <b>thru</b> -(<span class="codevariable">x</span> + 1) <b>of</b> <span class="codevariable">this_text</span> <b>as</b> string<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- the text contains nothing but the trim characters</span><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>return</b> &quot;&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_text</span><BR>
+		<b>end</b> <span class="codevariable">trim_line</span></p>
+	
+		<p>The following routine uses the <span class="inlinecode">trim_line</span> sub-routine to remove unwanted characters from multiple paragraphs:</p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20trim_paragraphs%28this_text%2C%20trim_chars%2C%20trim_indicator%29%0D%09set%20the%20paragraph_list%20to%20every%20paragraph%20of%20this_text%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20paragraphs%20of%20this_text%0D%09%09set%20this_paragraph%20to%20item%20i%20of%20the%20paragraph_list%0D%09%09set%20item%20i%20of%20the%20paragraph_list%20to%20trim_line%28this_paragraph%2C%20trim_chars%2C%20trim_indicator%29%0D%09end%20repeat%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20return%0D%09set%20this_text%20to%20the%20paragraph_list%20as%20string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20this_text%0Dend%20trim_paragraphs"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for trimming multiple lines:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">trim_paragraphs</span>(<span class="codevariable">this_text</span>, <span class="codevariable">trim_chars</span>, <span class="codevariable">trim_indicator</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">paragraph_list</span> <b>to every</b> paragraph <b>of</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> paragraphs <b>of</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_paragraph</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">paragraph_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">paragraph_list</span> <b>to</b> <span class="codevariable">trim_line</span>(<span class="codevariable">this_paragraph</span>, <span class="codevariable">trim_chars</span>, <span class="codevariable">trim_indicator</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to return</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_text</span> <b>to the</b> <span class="codevariable">paragraph_list</span> <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_text</span><BR>
+		<b>end</b> <span class="codevariable">trim_paragraphs</span></p>
+	
+	
+		<hr><a id="1001" name="1001" title="1001"><h3>Change Case</h3></a>
+		
+		<p>The following sub-routine will change the case of alpha characters of passed text to either all lower or all caps. The sub-routine has two passed parameters: 1) the passed text to alter, 2) a case indicator. A case indicator of <span class="inlinecode">0</span> will have the routine convert the passed text to lower case. A case indicator of <span class="inlinecode">1</span> will have the routine convert the passed text to all caps.</p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20change_case%28this_text%2C%20this_case%29%0D%09if%20this_case%20is%200%20then%0D%09%09set%20the%20comparison_string%20to%20%22ABCDEFGHIJKLMNOPQRSTUVWXYZ%22%0D%09%09set%20the%20source_string%20to%20%22abcdefghijklmnopqrstuvwxyz%22%0D%09else%0D%09%09set%20the%20comparison_string%20to%20%22abcdefghijklmnopqrstuvwxyz%22%0D%09%09set%20the%20source_string%20to%20%22ABCDEFGHIJKLMNOPQRSTUVWXYZ%22%0D%09end%20if%0D%09set%20the%20new_text%20to%20%22%22%0D%09repeat%20with%20this_char%20in%20this_text%0D%09%09set%20x%20to%20the%20offset%20of%20this_char%20in%20the%20comparison_string%0D%09%09if%20x%20is%20not%200%20then%0D%09%09%09set%20the%20new_text%20to%20%28the%20new_text%20%26%20character%20x%20of%20the%20source_string%29%20as%20string%0D%09%09else%0D%09%09%09set%20the%20new_text%20to%20%28the%20new_text%20%26%20this_char%29%20as%20string%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20new_text%0Dend%20change_case"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine to change the case of English alpha characters:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">change_case</span>(<span class="codevariable">this_text</span>, <span class="codevariable">this_case</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_case</span> <b>is</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">comparison_string</span> <b>to</b> &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">source_string</span> <b>to</b> &quot;abcdefghijklmnopqrstuvwxyz&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">comparison_string</span> <b>to</b> &quot;abcdefghijklmnopqrstuvwxyz&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">source_string</span> <b>to</b> &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_text</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_char</span> <b>in</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> offset <b>of</b> <span class="codevariable">this_char</span> <b>in the</b> <span class="codevariable">comparison_string</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">x</span> <b>is not</b> 0 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_text</span> <b>to</b> (<b>the</b> <span class="codevariable">new_text</span> &amp; character <span class="codevariable">x</span> <b>of the</b> <span class="codevariable">source_string</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_text</span> <b>to</b> (<b>the</b> <span class="codevariable">new_text</span> &amp; <span class="codevariable">this_char</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">new_text</span><BR>
+		<b>end</b> <span class="codevariable">change_case</span></p>
+	
+		<hr><a id="1002" name="1002" title="1002"><h3>Replacing Characters in a String</h3></a>
+		
+		<p>The following sub-routine can be used to replace specific characters in a string. The sub-routine has three passed parameters: 1) the text to alter, 2) to text to search for, 3) the replacement text</p>
+
+		<p class="code"><b>set the</b> <span class="codevariable">message_text</span> <b>to</b> &quot;On Tuesday I told you to have the report ready by next Tuesday.&quot;<BR>
+		<b>set the</b> <span class="codevariable">message_text</span> <b>to</b> <span class="codevariable">replace_chars</span>(<span class="codevariable">message_text</span>, &quot;Tuesday&quot;, &quot;Friday&quot;)<BR>
+		<span class="codecomment">--> Returns: &quot;On Friday I told you to have the report ready by next Friday.&quot;</span></p>
+	
+		<p>Here's the sub-routine:</p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20replace_chars%28this_text%2C%20search_string%2C%20replacement_string%29%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20the%20search_string%0D%09set%20the%20item_list%20to%20every%20text%20item%20of%20this_text%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20the%20replacement_string%0D%09set%20this_text%20to%20the%20item_list%20as%20string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09return%20this_text%0Dend%20replace_chars"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for replacing characters in strings:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">replace_chars</span>(<span class="codevariable">this_text</span>, <span class="codevariable">search_string</span>, <span class="codevariable">replacement_string</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to the</b> <span class="codevariable">search_string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">item_list</span> <b>to every</b> text item <b>of</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to the</b> <span class="codevariable">replacement_string</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_text</span> <b>to the</b> <span class="codevariable">item_list</span> <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_text</span><BR>
+		<b>end</b> <span class="codevariable">replace_chars</span></p>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li class="hi">Text Manipulation</li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

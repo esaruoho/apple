@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Applications</title>
+	<link rel="apple-touch-icon" href="application-nav-active.png">
+	<meta name="description" content="The Automator workflow applet is a versitile format for delivering portable functionality.">
+	<meta property="og:image" content="http://macosautomation.com/automator/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<img class="nav-icon" alt="Applications" src="../gfx/application-nav-active.png">
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Applications</p>
+			
+			<p>The Automator workflow applet is a versitile format for delivering portable functionality.</p>
+			
+			<p>Automator workflows can be saved as stand-alone applets that execute without input, or as droplets that process files and/or folders dragged onto the applet’s icon. This useful format offers portability and the ability to deliver code-signed functionality from Apple developers.</p>
+			
+			<p>Here is the workflow document window that appears when the Application template is chosen from the Automator template picker dialog:</p>
+			
+			<img width="100%" alt="application-workflow-window" src="gfx/application-workflow-window.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator workflow document window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;For some other workflow formats the workflow input settings banner may contain controls for identifying the data type of the workflow input. However, in the case of Automator workflow applets there are no input controls, meaning that input can be nothing, or files and/or folders dragged onto the applet icon.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The workflow assembly pane where Automator actions are placed in the order in which they are executed.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Input Strategy</p>
+			
+			<p>If you are designing a droplet for processing specific types of files, or for processing only folders, beginning the workflow with the <b>Filter Finder Items</b> action is a good method to ensure the user has dragged-on the appropriate content.</p>
+			
+			<p>Alternatively, you can begin the workflow with the <b>Ask for Finder Items</b> action to have the user choose the input items, or the <b>Get Selected Finder Items</b> action to use the current Finder selection as input, or the <b>Get Specified Finder Items</b> action to work with specific items.</p>
+			
+			<p><b>PRO TIP</b>: For extra functionality, place the workflow applet in the Dock and drag the document proxy icon (see below) from an open document onto the applet icon in Dock to process the open document.</p>
+			
+			<img width="100%" alt="proxy-icon" src="gfx/document-proxy-icon.png">
+			
+			<p class="subhead" role="heading" aria-level="2">Example: Render Text Files to Audio Clip</p>
+			
+			<p>Here’s an example of an Automator workflow applet/droplet that renders the text from one or more dragged-on text files (.txt) into an audio clip of the combined text spoken using the indicated Text-to-Speech voice installed in the system.</p>
+						
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;An Automator workflow applet document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The input banner for this workflow indicates that can accept files and/or folders as its input.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Filter Finder Items</b> action is set to only pass references to text files (those with the file extension .txt) to the next action in the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The references to the passed text files are sorted alphabetically by name of the file.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The <b>Combine Text Files</b> action reads the contents of the passed text files and combines them into a single text string, which is passed to the next action.</p>
+			</div>
+			
+			<img width="100%" alt="render-to-audio-workflow" src="gfx/render-workflow.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>Run AppleScript</b> action is added to run an AppleScript script for processing the passed text. The script uses inserted speech commands to add pauses after paragraphs and sentences. The resulting text, with the inserted Speech commands, is passed to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;The <b>Text to Audio File</b> action renders the passed text to an audio file, placed into the user’s Music folder, using the chosen installed system voice. A reference to the created audio file (in uncompressed AIFF format) is passed to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;The <b>Encode to MPEG Audio</b> action is used to convert the passed AIFF audio file into a smaller MPEG audio file (in ACC format). The original file is deleted, and a reference to the newly created compressed file is passed to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;9&nbsp;</span>&nbsp;The <b>Open Finder Items</b> actions opens the newly created audio file in the <b>QuickTime Player</b> application.</p>
+				<!-- <p class="caption-callout"><span class="numeric-callout">&nbsp;10&nbsp;</span>&nbsp;XXXXX</p> -->
+			</div>
+			
+			<p>Here is the AppleScript script for inserting <a href="http://mirror.informatimago.com/next/developer.apple.com/documentation/mac/Sound/Sound-200.html" target="_blank">Speech Synthesis commands</a> for pauses into the passed text.</p>
+			
+			<div id="humanizing-script" class="script-content">set AppleScript's text item delimiters to "."
+set textItems to every text item of (input as string)
+set AppleScript's text item delimiters to ".[[slnc 500]]"
+set pgs to every paragraph of (textItems as string)
+set AppleScript's text item delimiters to "[[slnc 250]]" & return
+set txt to pgs as string
+set AppleScript's text item delimiters to ""
+return txt</div>
+			
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Humanizing Script (AppleScript)</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('humanizing-script');">Copy Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set AppleScript&#39;s <span class="propertyEnum">text item delimiters</span> to <span class="stringEnum">&quot;.&quot;</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set <span class="variableEnum">textItems</span> to every <span class="propertyEnum">text item</span> of (<span class="variableEnum">input</span> as <span class="classEnum">string</span>)</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set AppleScript&#39;s <span class="propertyEnum">text item delimiters</span> to <span class="stringEnum">&quot;.[[slnc 500]]&quot;</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set <span class="variableEnum">pgs</span> to every <span class="classEnum">paragraph</span> of (<span class="variableEnum">textItems</span> as <span class="classEnum">string</span>)</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set AppleScript&#39;s <span class="propertyEnum">text item delimiters</span> to <span class="stringEnum">&quot;[[slnc 250]]&quot;</span> & return</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set <span class="variableEnum">txt</span> to <span class="variableEnum">pgs</span> as <span class="classEnum">string</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">set AppleScript&#39;s <span class="propertyEnum">text item delimiters</span> to <span class="stringEnum">&quot;&quot;</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="returnEnum">return</span> <span class="variableEnum">txt</span></td></tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">Security Dialog</p>
+			
+			<p>Since the workflow contains an action that executes an Apple Event script (Run AppleScript), the saved applet will require user approval the first time it is run, described in the section on <a href="../security.html">Automation Security</a>.</p>
+			
+			<img height="320" style="margin-left:auto;margin-right:auto;display:block;" alt="security-dialog" src="gfx/security-dialog.png">
+
+			
+			<p class="subhead" role="heading" aria-level="2">Example Files</p>
+			
+			<p>As an example, <a href="poem.zip">download</a> a text file containing the following poem and drag it onto the <a href="applet.zip">Automator workflow applet</a>.</p>
+			
+			<p>The poem is from the play/movie <a href="https://en.wikipedia.org/wiki/The_Night_of_the_Iguana#Film_versions" target="_blank">&ldquo;Night of the Iguana&rdquo;</a> by American playright <a href="https://en.wikipedia.org/wiki/Tennessee_Williams" target="_blank">Tennesse Williams</a>. Note that the original play used an “Orange Branch” rather than the “Olive Branch” which is from the movie version.</p>
+			
+			<p style="fohnt-size:small;">(rendered using the Daniel voice)</p>
+			
+			<audio controls style="width:100%;">
+				<source src="text-to-speech.m4a" type="audio/mpeg">
+				Your browser does not support the audio tag.
+			</audio> 
+						
+			<p style="text-align:center;margin-bottom:36px;margin-top:18px;font-style:italic;">How calmly does the olive branch<br>
+observe the sky begin to blanch,<br>
+without a cry, without a prayer,<br>
+with no betrayal of despair.<br>
+Some time while light obscures the tree,<br>
+the zenith of its life will be,<br>
+gone, past forever.<br>
+And from thence,<br>
+a second history will commence,<br>
+a chronicle no longer gold,<br>
+a bargaining with mist and mold.<br>
+And finally the broken stem,<br>
+the plummeting to earth, and then,<br>
+an intercourse not well designed<br>
+for beings of a golden kind,<br>
+whose native green must arch above,<br>
+the earth’s obscene corrupting love.<br>
+And still the ripe fruit and the branch,<br>
+observe the sky begin to blanch,<br>
+without a cry, without a prayer,<br>
+with no betrayal of despair.<br>
+Oh courage! Could you not as well,<br>
+select a second place to dwell,<br>
+not only in that golden tree,<br>
+but in the frightened heart of me?</p>
+
+			<!-- <p><a href="https://www.youtube.com/watch?v=UEKBRi9ofHc" target="_blank">YouTube video of Nonno’s Poem from the movie “Night of the Iguana”</a></p> -->
+
+			<iframe style="display:block;margin-left:auto;margin-right:auto;margin-top:24px;margin-bottom:24px;" width="560" height="315" src="https://www.youtube.com/embed/UEKBRi9ofHc" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+			
+			<p class="subhead" role="heading" aria-level="2">Custom Voices</p>
+			
+			<p>In macOS, Apple provides dozens of high-quality voices for various languages. The best quality voices, such as the English voice &ldquo;Daniel&rdquo; used in this example, can be chosen and downloaded automatically from the &ldquo;System Voice&rdquo; popup menu in the <b>Speech</b> category in the <b>Accessibility</b> system preference pane.</p>
+
+			<img width="100%" alt="speech-prefs" src="gfx/speech-prefs.png">
+
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <p class="active-sub-topic">Applications</p>
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

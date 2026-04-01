@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Set Contents for Default Text Items&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Set Contents for Default Text Items&rdquo; Automator action is used to set the value for the default title and default body text items of specified slides in a presentation.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="Automator Keynote banner image" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;Set Contents for Default Text Items&rdquo; Action</div>
+			<p>Every Keynote slide, regardless of which master slide it is based upon, can display a default title or body text item. Some master slides, such as full slide photo, disable these text items by default <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="centered" width="624" alt="default-text-item-controls" src="gfx/default-text-item-controls.jpg">
+			<p class="imagecaption" style="margin-top:-8px;"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>The controls for the default text items of a slide are available in the Slide Layout tab of the Format panel in the Keynote document window.</p>
+			
+			<p>In some master slides the default body item is used to display a bulleted list of text entries, while in others it is used to display a single line of text.</p>
+			
+			<p>Using the &ldquo;Set Contents for Default Text Items&rdquo; action, you can enable|disable either or both of a slide&rsquo;s default text items, and set their text content.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">This action accepts AppleScript references to the slides to be processed. <span style="font-weight:500;">NOTE</span>:<br>
+						<ul style="margin-bottom:0;">
+							<li><p>If no reference is provided as input, the action will assume the current slide of the frontmost document is the slide to be processed.</p></li>
+							<li><p>If a document reference is provided as input, the action will assume the current slide of the referenced document is the slide to be processed.</p></li>
+						</ul>
+					</td>
+				</tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">An AppleScript reference to the processed slide</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Setting the skipped status of the specified slide</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that often precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Get Specified Slide</p></li>
+						<li><p>New Presentation</p></li>
+					</ul>
+				</td></tr>
+			</table>		
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<p>This action has controls for determining the status (visibility) of default text objects, as well as for setting their text content:</p>
+			
+			<img class="action-interface" alt="The interface for the Set Contents for Default Text Items action" src="gfx/default-text-items-02.jpg">
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Status Control menus</b>&nbsp;&bull;&nbsp;Two menus for controlling the visibility of the title and body items. Each menu offers options for setting the visibility of the object to:</p>
+			
+					<ul style="margin-bottom:12px;margin-left:72px;">
+						<li style="margin-bottom:-6px;"><p>Follow the default behavior determined by the master slide</p></li>
+						<li style="margin-bottom:-6px;"><p>Make the text object visible</p></li>
+						<li><p>Hide the text object, regardless of content</p></li>
+					</ul>
+						
+			<img class="centered" width="130" alt="default-text-items-01" src="gfx/default-text-items-01.png">
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Default Title Item</b>&nbsp;&bull;&nbsp;Select the checkbox to make the default title item visible and showing the content provided in the corresponding text input field</p>			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Default Body Item</b>&nbsp;&bull;&nbsp;Select the checkbox to make the default body item visible and showing the content provided in the corresponding text input field</p>			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>TIP</b>&nbsp;&bull;&nbsp;When the cursor is within the text entry field, typing the Option-Return keys will enter a new line character. Also, if the default body item is designed to display a bulleted list, each paragraph entered into the text input field will be displayed as a bullted entry.</p>			
+		
+		<p class="segment-note"><b>NOTE</b>: Both text input fields in this action support the use of Automator workflow variables to dynamically generate their text values when the workflow containing the action is run. (see the example below and the <a href="workflows-01.html">dynamic prompt example</a>)</p>
+		
+			<p class="content-subhead" role="heading" aria-level="2">Prompt for Bullet Points</p>
+			
+			<p>Here a script for entering into an AppleScript variable that is placed in the body text input field in any action that replaces the default body content of a slide.</p>
+			
+			<p>The script will prompt the user to enter the text of a bullet, and then offer three options:</p>
+			
+			<ul>
+				<li>Click the &ldquo;Add&rdquo; button to store the entered text and bring up the dialog again, prompting for another bullet content</li>
+				<li>Click the &ldquo;Add &amp; Done&rdquo; button to add the entered text to the stored text and then close the dialog and replace the content of the slide body text input with the entered bullet points</li>
+				<li>Click the Cancel button to stop</li>
+			</ul>
+			
+			<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Prompt for Slide Bullets</td></tr>
+			<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20id%20%22com.apple.iwork.keynote%22%0D%09activate%0D%09set%20textToReturn%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%2010%0D%09%09display%20dialog%20%22Enter%20the%20text%20of%20the%20bullet%20point%20%22%20%26%20%C2%AC%0D%09%09%09(i%20as%20string)%20default%20answer%20(%22Bullet%20text%20%22%20%26%20(i%20as%20string))%20%C2%AC%0D%09%09%09with%20title%20%22Slide%20Bullet%20Points%22%20buttons%20%C2%AC%0D%09%09%09%7B%22Cancel%22%2C%20%22Add%20%26%20Done%22%2C%20%22Add%22%7D%20default%20button%203%0D%09%09copy%20result%20to%20%C2%AC%0D%09%09%09%7Bbutton%20returned%3AbuttonPressed%2C%20text%20returned%3AtextEntered%7D%0D%09%09if%20buttonPressed%20is%20%22Add%20%26%20Done%22%20then%0D%09%09%09if%20textToReturn%20is%20%22%22%20then%0D%09%09%09%09set%20textToReturn%20to%20textEntered%0D%09%09%09else%0D%09%09%09%09set%20textToReturn%20to%20textToReturn%20%26%20return%20%26%20textEntered%0D%09%09%09end%20if%0D%09%09%09return%20textToReturn%0D%09%09end%20if%0D%09%09if%20i%20is%201%20then%0D%09%09%09set%20textToReturn%20to%20textEntered%0D%09%09else%0D%09%09%09set%20textToReturn%20to%20textToReturn%20%26%20return%20%26%20textEntered%0D%09%09end%20if%0D%09end%20repeat%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> id &quot;com.apple.iwork.keynote&quot;</td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">textToReturn</span> <b>to</b> &quot;&quot;</td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> 10</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Enter the text of the bullet point &quot; &amp; &not;</td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>(<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>) <span class="codelibraryparameter">default answer</span> (&quot;Bullet text &quot; &amp; (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>)) &not;</td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibraryparameter">with title</span>  &quot;Slide Bullet Points&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Add &amp; Done&quot;, &quot;Add&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>copy</b> <span class="codelibraryclass">result</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">button returned</span>:<span class="codevariable">buttonPressed</span>, <span class="codeproperty">text returned</span>:<span class="codevariable">textEntered</span>}</td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">buttonPressed</span> <b>is</b> &quot;Add &amp; Done&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">textToReturn</span> <b>is</b> &quot;&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">textToReturn</span> <b>to</b> <span class="codevariable">textEntered</span></td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">textToReturn</span> <b>to</b> <span class="codevariable">textToReturn</span> &amp; <b>return</b> &amp; <span class="codevariable">textEntered</span></td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="codevariable">textToReturn</span></td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> 1 <b>then</b></td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">textToReturn</span> <b>to</b> <span class="codevariable">textEntered</span></td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">textToReturn</span> <b>to</b> <span class="codevariable">textToReturn</span> &amp; <b>return</b> &amp; <span class="codevariable">textEntered</span></td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>			
+		
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="slide-actions-08.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li><a href="document-actions-01.html">Document Actions</a></li>
+				<li class="hi">Slide Actions</li>
+				<li class="navListSectionItem"><a href="slide-actions-01.html">Get Specified Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-02.html">New Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-03.html">Delete Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-04.html">Set Master for Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-05.html">Set Skipped for Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-09.html">Get Presenter Notes for Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-actions-06.html">Set Presenter Notes for Slide</a></li>
+				<li class="navListSectionItemSelected">Set Contents for Default Text Items</li>
+				<li class="navListSectionItem"><a href="slide-actions-08.html">Set Transition for Slide</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

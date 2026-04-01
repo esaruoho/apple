@@ -1,0 +1,118 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Enhanced Application Object Model</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html" class="hi">Features</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Enhanced Application Object Model</h2>
+		
+		<p>Application objects in AppleScript have some new features designed to reduce the need for awkward or obscure workarounds. In other words, the capabilities are not new, but they are now directly supported and easier to use.</p>
+		
+		<h3>Is an application running?</h3>
+
+		<p>While the scripting support in the System Events application is capable of determining whether or not an application is running, doing so is an involved process of getting the application indentifers of the currently running processes, and then scanning that list for specific applications. In Mac&nbsp;OS&nbps; Leopard Application Objects now have a <span class="dictionary-term">running</span> property that can give you the answer directly, without invoking System Events. For example, the following script pauses iTunes, but will not launch iTunes if it is not already running:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22iTunes%22%0D%09if%20it%20is%20running%20then%0D%09%09pause%0D%09end%20if%0Dend%20tell%0D"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Using the running application property to determine if an application is active:<br>&nbsp;<br><br></span><b>tell</b> application &quot;iTunes&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if it is</b> running <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>pause<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end tell</b></p>
+
+		<p>The <span class="dictionary-term">running</span> property does not need to appear inside a <span class="dictionary-term">tell block</span>; the above script could also be written like this:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=if%20application%20%22iTunes%22%20is%20running%20then%0D%09tell%20application%20%22iTunes%22%20to%20pause%0Dend%20if"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The running application property can be used to limit the execution of scripts to run only when applications are open or only when application are not open:<br>&nbsp;<br><br></span><b>if</b> application &quot;iTunes&quot; <b>is</b> running <b>then</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;iTunes&quot; <b>to</b> pause<BR>
+		<b>end if</b></p>
+
+		<h3>Get an application&rsquo;s version</h3>
+
+		<p>Most applications have a version property of their own, but using it requires that the application be running, and sometimes you specifically want to avoid that. The new built-in <span class="dictionary-term">version</span> property will return the application version as text without launching the application or sending it an event. There is also a corresponding built-in <span class="dictionary-term">name</span> property; the value is usable as the name of an application to <span class="inlinecode">tell</span>.</p>
+
+		<h3>Target applications by signature or bundle identifier</h3>
+
+		<p>Sometimes you may want to target an application with a script but you&rsquo;re not sure how the application is named. In Leopard, it is now possible to simply address an application object by <span class="dictionary-term">id</span>, where the <span class="dictionary-term">id</span> is either the four-character signature code or the bundle identifier. For example, <span class="inlinecode">application "Mail"</span>, <span class="inlinecode">application id "emal"</span>, and <span class="inlinecode">application id "com.apple.Mail"</span> all refer to Mail.app, and will all work as the target of a <span class="inlinecode">tell block</span>.</p>
+
+		<p>If you&rsquo;re not sure of what an application&rsquo;s bundle indentifier is, you can use the id property to get it:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=get%20id%20of%20application%20%22TextEdit%22%0D%2D%2D%3E%20%22com%2Eapple%2ETextEdit%22%0D%0Dtell%20application%20id%20%22com%2Eapple%2ETextEdit%22%0D%09make%20new%20document%0Dend%20tell"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating how to get the value of the id property of an application, and how to use an application's id to address the application:<br>&nbsp;<br><br></span><b>get</b> id <b>of</b> application &quot;TextEdit&quot;<BR>
+		<span class="codecomment">--> &quot;com.apple.TextEdit&quot;</span><BR>
+		<BR>
+		<b>tell</b> application id &quot;com.apple.TextEdit&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new document<BR>
+		<b>end tell</b></p>
+
+		<p>Note that getting the value of the <span class="dictionary-term">id</span> property does not require that the application be running. Locating applications by <span class="dictionary-term">id</span> is superior to locating them by name, since users can change the application name. However, this is usually only an issue for scripts distributed to others.</p>
+
+		<h3>Changes in Application and Script Behavior</h3>
+		
+		<p>There are two changes to application behavior to make them easier to deal with:</p>
+		
+		<ul class="square">
+			<li>Applications launch hidden<br>&nbsp;<br>
+			
+			AppleScript has always launched applications if it is necessary to send them a command. However, by default they would launch in front, possibly obscuring whatever the script was attempting to show. AppleScript now launches applications hidden by default. They will not be visible unless the script explicitly says otherwise using launch, activate, or set frontmost to true.<br>&nbsp;<br></li>
+	
+			<li>Applications are located and re-located dynamically<br>&nbsp;<br>
+		
+			Application object specifiers, including those in <span class="dictionary-term">tell blocks</span>, are evaluated every time the script runs. This alleviates problems with scripts getting &ldquo;stuck&rdquo; to a particular copy of an application.</li>
+		</ul>
+ 
+ 		<h3>Compatibility</h3>
+
+		<p>Uses of the built-in application properties will fall back to sending an event to the application in older versions of AppleScript, but the application may not handle them the same, or handle them at all. (Most applications will handle <span class="inlinecode">name</span>, <span class="inlinecode">version</span>, and <span class="inlinecode">frontmost</span>; <span class="inlinecode">id</span> and <span class="inlinecode">running</span> are uncommon.) The other new features above require AppleScript 2.0.</p>
+		
+		<p></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>New in Mac&nbsp;OS&nbsp;X&nbsp;10.5</h2>
+			<ol>
+				<li><a href="unicode.html">Full Unicode Support</a></li>
+				<li class="hi">Enhanced Application Object Model</li>
+				<li><a href="system-prefs.html">New Scriptable System Preferences and Applications: Dock, iChat, etc.</a></li>
+				<li><a href="propertylists.html">Read/Write Property Lists</a></li>
+				<li><a href="scriptingbridge.html">Scripting Bridge for Objective-C</a></li>
+				<li><a href="features.html#1000">Updated Folder Action Support</a></li>
+				<li><a href="features.html#1001">Descriptive Error Messages</a></li>
+				<li><a href="features.html#1002">AppleScript Language Guide</a></li>
+				<li><a href="features.html#1003">64-Bit Support</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Release Notes</h2>
+			<p>Developer <a href="http://developer.apple.com/releasenotes/AppleScript/RN-AppleScript/index.html">release notes</a> for AppleScript in Mac&nbsp;OS&nbsp;X.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

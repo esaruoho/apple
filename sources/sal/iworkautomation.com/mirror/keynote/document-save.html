@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Saving Documents</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for saving documents in the Keynote application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: OVERVIEW -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Saving Documents</div>
+						
+			<p>Scripts use the <span class="codelibrarycommand">save</span> command, from the <span class="dictionary-suite">Standard Suite</span>, to save <b>Keynote</b> documents to files on disk.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">save</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Save a document.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>save</b> <span class="dictionary-class">specifier</span> : The document(s) to save.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">in</span> <span class="dictionary-class">file reference</span> ] : The file in which to save the document.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">as</span> <span class="dictionary-enumeration">Keynote</span> ] : The file format to use.</p>	
+			</div>			
+			
+			<p>To save a document with a specific name and location, include the optional <span class="codelibraryparameter" style="font-weight:bold;">in</span> parameter with the <span class="codelibrarycommand">save</span> command, and follow the parameter with a reference to the file to be created. This reference can be in an HFS file format or UNIX POSIX path format. Be sure to include the file extension &ldquo;key&rdquo; with the file name.</p>
+			
+			<p class="code"><span class="codelibrarycommand">save</span> <span class="codelibraryclass">document</span> 1 <span class="codelibraryparameter">in</span> <span class="codelibraryclass">file</span> &quot;Macintosh HD:Users:Johnny:Desktop:Report.key&quot;</p>
+			
+			<p class="code"><span class="codelibrarycommand">save</span> <span class="codelibraryclass">document</span> 1 <span class="codelibraryparameter">in</span> &quot;/Users/Johnny/Desktop/Report.key&quot;</p>
+			
+			<p class="segment-note">Examples for exporting saved <b>Keynote</b> documents in other formats, such as PDF, Microsoft PowerPoint, or HTML, are detailed in the <a href="document-export.html">Exporting Documents</a> page.</p>
+					
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make and Save New Document</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Make%20and%20Save%20New%20Document&script=--%20Create%20a%20new%20document%20and%20save%20it%20into%20the%20Documents%20folder%0D%0D--%20generate%20the%20default%20file%20name%0Dset%20todaysDate%20to%20(current%20date)%0Dset%20the%20nameToUse%20to%20%C2%AC%0D%09(%22Monthly%20Report%20-%20%22%20%26%20(month%20of%20todaysDate)%20as%20string)%20%26%20%C2%AC%0D%09space%20%26%20(year%20of%20todaysDate)%20as%20string%0D--%3E%20%22Monthly%20Report%20-%20December%202014%22%0D%0D--%20make%20sure%20the%20file%20name%20is%20not%20in%20use%0Dset%20the%20destinationFolderHFSPath%20to%20%C2%AC%0D%09(path%20to%20the%20documents%20folder)%20as%20string%0Drepeat%20with%20i%20from%200%20to%20100000%0D%09if%20i%20is%200%20then%0D%09%09set%20incrementText%20to%20%22%22%0D%09else%0D%09%09set%20incrementText%20to%20%22-%22%20%26%20(i%20as%20string)%0D%09end%20if%0D%09set%20thisFileName%20to%20nameToUse%20%26%20incrementText%20%26%20%22.key%22%0D%09set%20thisFilePath%20to%20destinationFolderHFSPath%20%26%20thisFileName%0D%09tell%20application%20%22Finder%22%0D%09%09if%20not%20(exists%20document%20file%20thisFilePath)%20then%20exit%20repeat%0D%09end%20tell%0Dend%20repeat%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09--%20create%20a%20new%20document%20and%20store%20its%20reference%20in%20a%20variable%0D%09set%20thisDocument%20to%20make%20new%20document%0D%09--%20save%20the%20document%0D%09save%20thisDocument%20in%20file%20thisFilePath%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- Create a new document and save it into the Documents folder</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- generate the default file name</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">todaysDate</span> <b>to</b> (<span class="codelibrarycommand">current date</span>)</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>set the</b> <span class="codevariable">nameToUse</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>(&quot;Monthly Report - &quot; &amp; (month <b>of</b> <span class="codevariable">todaysDate</span>) <b>as</b> <span class="codelibraryclass">string</span>) &amp; &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>space &amp; (<span class="codeproperty">year</span> <b>of</b> <span class="codevariable">todaysDate</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">--> &quot;Monthly Report - April 2014&quot;</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- make sure the file name is not in use</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><b>set the</b> <span class="codevariable">destinationFolderHFSpath</span> to &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>(<span class="codelibrarycommand">path to</span> <b>the</b> <span class="codeenumeration">documents folder</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 0 <b>to</b> 100000</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementText</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementText</span> <b>to</b> &quot;-&quot; &amp; (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFileName</span> <b>to</b> <span class="codevariable">nameToUse</span> &amp; <span class="codevariable">incrementText</span> &amp; &quot;.key&quot;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFilePath</span> to <span class="codevariable">destinationFolderHFSpath</span> &amp; <span class="codevariable">thisFileName</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Finder&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document file</span> <span class="codevariable">thisFilePath</span>) <b>then exit repeat</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><b>end repeat</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a new document and store its reference in a variable</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- save the document to the pre-determined file path</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">save</span> <span class="codevariable">thisDocument</span> <b>in</b> <span class="codelibraryclass">file</span> <span class="codevariable">thisFilePath</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+
+				
+			<p class="segment-note"><b>TIP</b>: The script above uses the <span class="codelibrarycommand">path to</span> command to generate a disk reference to a standard user folder. Enumerations for other standard <span class="codelibrarycommand">path to</span> command locations include: <span class="dictionary-enumeration">documents folder</span>/‌<span class="dictionary-enumeration">downloads folder</span>/<span class="dictionary-enumeration">home folder</span>/<span class="dictionary-enumeration">movies folder</span>/<span class="dictionary-enumeration">music folder</span>/‌<span class="dictionary-enumeration">pictures folder</span>/<span class="dictionary-enumeration">public folder</span>/<span class="dictionary-enumeration">temporary items</span>/<span class="dictionary-enumeration">shared documents</span>. For more information, view the <span class="codelibrarycommand">path to</span> command in the <b>Standard Additions</b> scripting dictionary.</p>
+
+
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+				
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-close.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li class="hi"><a href="document.html">Document</a></li>
+				<li class="navListSectionItem"><a href="document-open.html">Opening Documents</a></li>
+				<li class="navListSectionItem"><a href="document-play.html">Playing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-make.html">Making Documents</a></li>
+				<li class="navListSectionItemSelected">Saving Documents</li>
+				<li class="navListSectionItem"><a href="document-close.html">Closing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-export.html">Exporting Documents</a></li>
+				<li class="navListSectionItem"><a href="document-kiosk.html">Making Kiosks</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">POWERPOINT TO KEYNOTE DROPLET</h2>
+			<p>If you&rsquo;re looking for any easy way to convert <b>Microsoft PowerPoint</b> documents into <b>Keynote</b> presentations, simply drag the PowerPoint files (ppt) onto <a href="PPT2KEY.zip">this AppleScript droplet</a>. Each dragged-on PowerPoint file will be opened in Keynote and saved to the same folder as the original PowerPoint file. Enjoy!</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

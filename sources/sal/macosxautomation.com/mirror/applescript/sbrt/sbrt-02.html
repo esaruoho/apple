@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Number to Text Manipulations</h2>
+		
+		<p>Scripts often convert numeric data to text data in order to display information to the user. Most of the time this conversion can be accomplished simply by using the coercion handler <span class="inlinecode">as</span>, like in the following example:</p>
+		
+		<p class="code">12 <b>as</b> string<BR>
+<span class="codecomment">--> Returns: &quot;12&quot;</span></p>
+
+		<p>However, some numeric values are displayed in scientific notation. For example, <span class="inlinecode">1234000000</span> is displayed by a script as <span class="inlinecode">1.234E+9</span></p>
+		
+		<p>When this value is coerced to text it becomes: <span class="inlinecode">&quot;1.234E+9&quot;</span></p>
+		
+		<p>The following sub-routine will convert any number to a string of numeric characters. This sub-routine is used by the other sub-routines on this page which also manipulate numeric data.</p>
+
+		<hr><a id="1000" name="1000" title="1000"><h3>Number to String</h3></a>
+
+		<p>An easy-to-use sub-routine, just pass the number to convert to text as the passed parameter value in the sub-routine call:</p>
+		
+		<p class="code"><span class="codevariable">number_to_string</span>(8.72124243234E+11)<BR>
+		<span class="codecomment">--> returns: &quot;872124243234&quot;</span></p>
+
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20number_to_string%28this_number%29%0D%09set%20this_number%20to%20this_number%20as%20string%0D%09if%20this_number%20contains%20%22E%2B%22%20then%0D%09%09set%20x%20to%20the%20offset%20of%20%22%2E%22%20in%20this_number%0D%09%09set%20y%20to%20the%20offset%20of%20%22%2B%22%20in%20this_number%0D%09%09set%20z%20to%20the%20offset%20of%20%22E%22%20in%20this_number%0D%09%09set%20the%20decimal_adjust%20to%20characters%20%28y%20%2D%20%28length%20of%20this_number%29%29%20thru%20%2D1%20of%20this_number%20as%20string%20as%20number%0D%09%09if%20x%20is%20not%200%20then%0D%09%09%09set%20the%20first_part%20to%20characters%201%20thru%20%28x%20%2D%201%29%20of%20this_number%20as%20string%0D%09%09else%0D%09%09%09set%20the%20first_part%20to%20%22%22%0D%09%09end%20if%0D%09%09set%20the%20second_part%20to%20characters%20%28x%20%2B%201%29%20thru%20%28z%20%2D%201%29%20of%20this_number%20as%20string%0D%09%09set%20the%20converted_number%20to%20the%20first_part%0D%09%09repeat%20with%20i%20from%201%20to%20the%20decimal_adjust%0D%09%09%09try%0D%09%09%09%09set%20the%20converted_number%20to%20the%20converted_number%20%26%20character%20i%20of%20the%20second_part%0D%09%09%09on%20error%0D%09%09%09%09set%20the%20converted_number%20to%20the%20converted_number%20%26%20%220%22%0D%09%09%09end%20try%0D%09%09end%20repeat%0D%09%09return%20the%20converted_number%0D%09else%0D%09%09return%20this_number%0D%09end%20if%0Dend%20number_to_string"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that converts numeric values to strings:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">number_to_string</span>(<span class="codevariable">this_number</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_number</span> <b>to</b> <span class="codevariable">this_number</span> <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_number</span> <b>contains</b> &quot;E+&quot; <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> offset <b>of</b> &quot;.&quot; <b>in</b> <span class="codevariable">this_number</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to the</b> offset <b>of</b> &quot;+&quot; <b>in</b> <span class="codevariable">this_number</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">z</span> <b>to the</b> offset <b>of</b> &quot;E&quot; <b>in</b> <span class="codevariable">this_number</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">decimal_adjust</span> <b>to</b> characters (<span class="codevariable">y</span> - (length <b>of</b> <span class="codevariable">this_number</span>)) <b>thru</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>-1 <b>of</b> <span class="codevariable">this_number</span> <b>as</b> string <b>as</b> number<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">x</span> <b>is not</b> 0 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">first_part</span> <b>to</b> characters 1 <b>thru</b> (<span class="codevariable">x</span> - 1) <b>of</b> <span class="codevariable">this_number</span> <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">first_part</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">second_part</span> <b>to</b> characters (<span class="codevariable">x</span> + 1) <b>thru</b> (<span class="codevariable">z</span> - 1) <b>of</b> <span class="codevariable">this_number</span> <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">converted_number</span> <b>to the</b> <span class="codevariable">first_part</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">decimal_adjust</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">converted_number</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>the</b> <span class="codevariable">converted_number</span> &amp; character <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">second_part</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>on error</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">converted_number</span> <b>to the</b> <span class="codevariable">converted_number</span> &amp; &quot;0&quot;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return the</b> <span class="codevariable">converted_number</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">this_number</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">number_to_string</span></p>
+		
+		<hr><a id="1001" name="1001" title="1001"><h3>Comma Delimit a Number</h3></a>
+		
+		<p>This sub-routine will comma delimit a numeric value and convert it to text.</p>
+		
+		<p class="code"><span class="codevariable">comma_delimit</span>(872124243234)<BR>
+		<span class="codecomment">--> returns: &quot;872,124,243,234&quot;</span></p>
+
+		<p class="note"><b>NOTE</b>: this sub-routine uses the <span class="codevariable">number_to_sring()</span> sub-routine shown above. Be sure to add it to your script as well.</p>
+		
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20comma_delimit%28this_number%29%0D%09set%20this_number%20to%20this_number%20as%20string%0D%09if%20this_number%20contains%20%22E%22%20then%20set%20this_number%20to%20number_to_text%28this_number%29%0D%09set%20the%20num_length%20to%20the%20length%20of%20this_number%0D%09set%20the%20this_number%20to%20%28the%20reverse%20of%20every%20character%20of%20this_number%29%20as%20string%0D%09set%20the%20new_num%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20num_length%0D%09%09if%20i%20is%20the%20num_length%20or%20%28i%20mod%203%29%20is%20not%200%20then%0D%09%09%09set%20the%20new_num%20to%20%28character%20i%20of%20this_number%20%26%20the%20new_num%29%20as%20string%0D%09%09else%0D%09%09%09set%20the%20new_num%20to%20%28%22%2C%22%20%26%20character%20i%20of%20this_number%20%26%20the%20new_num%29%20as%20string%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20new_num%0Dend%20comma_delimit"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that delimits numbers with commas:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">comma_delimit</span>(<span class="codevariable">this_number</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_number</span> <b>to</b> <span class="codevariable">this_number</span> <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_number</span> <b>contains</b> &quot;E&quot; <b>then set</b> <span class="codevariable">this_number</span> <b>to</b> <span class="codevariable">number_to_text</span>(<span class="codevariable">this_number</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">num_length</span> <b>to the</b> length <b>of</b> <span class="codevariable">this_number</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">this_number</span> <b>to</b> (<b>the</b> reverse <b>of every</b> character <b>of</b> <span class="codevariable">this_number</span>) <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_num</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">num_length</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is the</b> <span class="codevariable">num_length</span> or (<span class="codevariable">i</span> <b>mod</b> 3) <b>is not</b> 0 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_num</span> <b>to</b> (character <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_number</span> &amp; <b>the</b> <span class="codevariable">new_num</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_num</span> <b>to</b> (&quot;,&quot; &amp; character <span class="codevariable">i</span> <b>of</b> <span class="codevariable">this_number</span> &amp; <b>the</b> <span class="codevariable">new_num</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">new_num</span><BR>
+		<b>end</b> <span class="codevariable">comma_delimit</span></p>
+		
+		<hr><a id="1002" name="1002" title="1002"><h3>Round and Truncate</h3></a>
+		
+		<p>This sub-routine will round and truncate a numeric value and convert it to text. To use, pass the numeric value and the number of desired decimal places as the passed parameters.</p>
+		
+		<p class="code"><span class="codevariable">round_truncate</span>(1.04575, 3)<BR>
+		<span class="codecomment">--> returns: &quot;1.046&quot;</span></p>
+
+		<p class="note"><b>NOTE</b>: this sub-routine uses the <span class="codevariable">number_to_sring()</span> sub-routine shown above. Be sure to add it to your script as well.</p>
+		
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20round_truncate%28this_number%2C%20decimal_places%29%0D%09if%20decimal_places%20is%200%20then%0D%09%09set%20this_number%20to%20this_number%20%2B%200%2E5%0D%09%09return%20number_to_text%28this_number%20div%201%29%0D%09end%20if%0D%09%0D%09set%20the%20rounding_value%20to%20%225%22%0D%09repeat%20decimal_places%20times%0D%09%09set%20the%20rounding_value%20to%20%220%22%20%26%20the%20rounding_value%0D%09end%20repeat%0D%09set%20the%20rounding_value%20to%20%28%22%2E%22%20%26%20the%20rounding_value%29%20as%20number%0D%09%0D%09set%20this_number%20to%20this_number%20%2B%20rounding_value%0D%09%0D%09set%20the%20mod_value%20to%20%221%22%0D%09repeat%20decimal_places%20%2D%201%20times%0D%09%09set%20the%20mod_value%20to%20%220%22%20%26%20the%20mod_value%0D%09end%20repeat%0D%09set%20the%20mod_value%20to%20%28%22%2E%22%20%26%20the%20mod_value%29%20as%20number%0D%09%0D%09set%20second_part%20to%20%28this_number%20mod%201%29%20div%20the%20mod_value%0D%09if%20the%20length%20of%20%28the%20second_part%20as%20text%29%20is%20less%20than%20the%20decimal_places%20then%0D%09%09repeat%20decimal_places%20%2D%20%28the%20length%20of%20%28the%20second_part%20as%20text%29%29%20times%0D%09%09%09set%20second_part%20to%20%28%220%22%20%26%20second_part%29%20as%20string%0D%09%09end%20repeat%0D%09end%20if%0D%09%0D%09set%20first_part%20to%20this_number%20div%201%0D%09set%20first_part%20to%20number_to_text%28first_part%29%0D%09set%20this_number%20to%20%28first_part%20%26%20%22%2E%22%20%26%20second_part%29%0D%09%0D%09return%20this_number%0Dend%20round_truncate"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine that will round and truncate a passed number:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">round_truncate</span>(<span class="codevariable">this_number</span>, <span class="codevariable">decimal_places</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">decimal_places</span> <b>is</b> 0 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_number</span> <b>to</b> <span class="codevariable">this_number</span> + 0.5<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">number_to_text</span>(<span class="codevariable">this_number</span> <b>div</b> 1)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">rounding_value</span> <b>to</b> &quot;5&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat</b> <span class="codevariable">decimal_places</span> <b>times</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">rounding_value</span> <b>to</b> &quot;0&quot; &amp; <b>the</b> <span class="codevariable">rounding_value</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">rounding_value</span> <b>to</b> (&quot;.&quot; &amp; <b>the</b> <span class="codevariable">rounding_value</span>) <b>as</b> number<BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_number</span> <b>to</b> <span class="codevariable">this_number</span> + <span class="codevariable">rounding_value</span><BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">mod_value</span> <b>to</b> &quot;1&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat</b> <span class="codevariable">decimal_places</span> - 1 <b>times</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">mod_value</span> <b>to</b> &quot;0&quot; &amp; <b>the</b> <span class="codevariable">mod_value</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">mod_value</span> <b>to</b> (&quot;.&quot; &amp; <b>the</b> <span class="codevariable">mod_value</span>) <b>as</b> number<BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">second_part</span> <b>to</b> (<span class="codevariable">this_number</span> <b>mod</b> 1) <b>div the</b> <span class="codevariable">mod_value</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> length <b>of (the</b> <span class="codevariable">second_part</span> <b>as</b> text) <b>is less than the</b> <span class="codevariable">decimal_places</span> <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> <span class="codevariable">decimal_places</span> - (<b>the</b> length <b>of (the</b> <span class="codevariable">second_part</span> <b>as</b> text)) <b>times</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">second_part</span> <b>to</b> (&quot;0&quot; &amp; <span class="codevariable">second_part</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">first_part</span> <b>to</b> <span class="codevariable">this_number</span> <b>div</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">first_part</span> <b>to</b> <span class="codevariable">number_to_text</span>(<span class="codevariable">first_part</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_number</span> <b>to</b> (<span class="codevariable">first_part</span> &amp; &quot;.&quot; &amp; <span class="codevariable">second_part</span>)<BR>
+			<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_number</span><BR>
+		<b>end</b> <span class="codevariable">round_truncate</span></p>
+		
+		
+		<hr><a id="1003" name="1003" title="1003"><h3>Adding Descriptive Suffix</h3></a>
+		
+		<p>The following sub-routine will add &quot;st&quot;, &quot;nd&quot;, &quot;rd&quot;, or &quot;th&quot; to the end of a number.</p>
+		
+		<p class="code"><span class="codevariable">add_numeric_suffix</span>(24)<BR>
+		<span class="codecomment">--> returns: &quot;24th&quot;</span></p>
+		
+		<p>Here's the sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20add_numeric_suffix%28this_num%29%0D%09set%20this_num%20to%20this_num%20as%20string%0D%09if%20this_num%20ends%20with%20%2211%22%20or%20this_num%20ends%20with%20%2212%22%20or%20this_num%20ends%20with%20%2213%22%20then%0D%09%09set%20the%20list_index%20to%201%0D%09else%0D%09%09set%20the%20list_index%20to%20%28this_num%20mod%2010%29%20%2B%201%0D%09end%20if%0D%09set%20the%20num_suffix%20to%20item%20list_index%20of%20%7B%22th%22%2C%20%22st%22%2C%20%22nd%22%2C%20%22rd%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%7D%0D%09return%20%28this_num%20%26%20num_suffix%29%0Dend%20add_numeric_suffix"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for adding a descriptive suffix to the end of a numeric string:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">add_numeric_suffix</span>(<span class="codevariable">this_num</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_num</span> <b>to</b> <span class="codevariable">this_num</span> <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_num</span> <b>ends with</b> &quot;11&quot; <b>or</b> <span class="codevariable">this_num</span> <b>ends with</b> &quot;12&quot; <b>or</b> <span class="codevariable">this_num</span> <b>ends with</b> &quot;13&quot; <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">list_index</span> <b>to</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">list_index</span> <b>to</b> (<span class="codevariable">this_num</span> <b>mod</b> 10) + 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">num_suffix</span> <b>to</b> item <span class="codevariable">list_index</span> <b>of</b> {&quot;th&quot;, &quot;st&quot;, &quot;nd&quot;, &quot;rd&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">this_num</span> &amp; <span class="codevariable">num_suffix</span>)<BR>
+		<b>end</b> <span class="codevariable">add_numeric_suffix</span></p>
+		
+		
+		<p>Here's an example script using the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_list%20to%20%7B%22Sal%22%2C%20%22Carl%22%2C%20%22Bob%22%2C%20%22Sue%22%2C%20%22Wanda%22%7D%0Drepeat%20with%20i%20from%201%20to%20the%20count%20of%20this_list%0D%09display%20dialog%20%22The%20%22%20%26%20add_numeric_suffix%28i%29%20%26%20%22%20person%20in%20the%20list%20is%20%22%20%26%20%28item%20i%20of%20this_list%29%20%26%20%22%2E%22%0Dend%20repeat%0D%0Don%20add_numeric_suffix%28this_num%29%0D%09set%20this_num%20to%20this_num%20as%20string%0D%09if%20this_num%20ends%20with%20%2211%22%20or%20this_num%20ends%20with%20%2212%22%20or%20this_num%20ends%20with%20%2213%22%20then%0D%09%09set%20the%20list_index%20to%201%0D%09else%0D%09%09set%20the%20list_index%20to%20%28this_num%20mod%2010%29%20%2B%201%0D%09end%20if%0D%09set%20the%20num_suffix%20to%20item%20list_index%20of%20%7B%22th%22%2C%20%22st%22%2C%20%22nd%22%2C%20%22rd%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%7D%0D%09return%20%28this_num%20%26%20num_suffix%29%0Dend%20add_numeric_suffix"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating the use of the sub-routine:<br>&nbsp;<br><br></span><b>set</b> <span class="codevariable">this_list</span> <b>to</b> {&quot;Sal&quot;, &quot;Carl&quot;, &quot;Bob&quot;, &quot;Sue&quot;, &quot;Wanda&quot;}<BR>
+		<b>repeat with</b> <span class="codevariable">i</span> 						<b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">this_list</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;The &quot; &amp; <span class="codevariable">add_numeric_suffix</span>(i) &amp; &quot; person in the list is &quot; &amp; (item <span class="codevariable">i</span> of <span class="codevariable">this_list</span>) &amp; &quot;.&quot;<BR>
+		<b>end repeat</b></p>
+		
+		
+		<hr><a id="1004" name="1004" title="1004"><h3>Adding Leading Zeros</h3></a>
+		
+		<p>The following sub-routine will place leading zeros (0001, 023, etc.) before a number.</p>
+		
+		<p>There are two passed parameters: the number to add leading zeros to, and the maximum number of leading zeros to add.</p>
+		
+		<p>For example, if the maximum number of leading zeros is set to 2, then the results will range from 001 to 999. If the maximum number of leading zeros is 3, then the results will range from 0001 to 9999, and so on.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20add_leading_zeros%28this_number%2C%20max_leading_zeros%29%0D%09set%20the%20threshold_number%20to%20%2810%20%5E%20max_leading_zeros%29%20as%20integer%0D%09if%20this_number%20is%20less%20than%20the%20threshold_number%20then%0D%09%09set%20the%20leading_zeros%20to%20%22%22%0D%09%09set%20the%20digit_count%20to%20the%20length%20of%20%28%28this_number%20div%201%29%20as%20string%29%0D%09%09set%20the%20character_count%20to%20%28max_leading_zeros%20%2B%201%29%20%2D%20digit_count%0D%09%09repeat%20character_count%20times%0D%09%09%09set%20the%20leading_zeros%20to%20%28the%20leading_zeros%20%26%20%220%22%29%20as%20string%0D%09%09end%20repeat%0D%09%09return%20%28leading_zeros%20%26%20%28this_number%20as%20text%29%29%20as%20string%0D%09else%0D%09%09return%20this_number%20as%20text%0D%09end%20if%0Dend%20add_leading_zeros"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for adding leading zeros to numbers:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">add_leading_zeros</span>(<span class="codevariable">this_number</span>, <span class="codevariable">max_leading_zeros</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">threshold_number</span> <b>to</b> (10 ^ <span class="codevariable">max_leading_zeros</span>) <b>as</b> integer<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_number</span> <b>is less than the</b> <span class="codevariable">threshold_number</span> <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">leading_zeros</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">digit_count</span> <b>to the</b> length <b>of</b> ((<span class="codevariable">this_number</span> <b>div</b> 1) <b>as</b> string)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">character_count</span> <b>to</b> (<span class="codevariable">max_leading_zeros</span> + 1) - <span class="codevariable">digit_count</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> <span class="codevariable">character_count</span> <b>times</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">leading_zeros</span> <b>to</b> (<b>the</b> <span class="codevariable">leading_zeros</span> &amp; &quot;0&quot;) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> (<span class="codevariable">leading_zeros</span> &amp; (<span class="codevariable">this_number</span> <b>as</b> text)) <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">this_number</span> <b>as</b> text<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">add_leading_zeros</span></p>
+		
+		
+		
+		
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li class="hi">Number to Text</li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/workflow-recipes.html","20230519122335","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1684499015");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230519122335cs_/https://configautomation.com/automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="A collection of Automator actions for the Apple Configurator 2 application.">
+	<link rel="home" href="http://configautomation.com">
+
+	<title>Apple Configurator &amp; Automator: Workflow Recipes</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230519122335im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230519122335/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230519122335/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230519122335/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<a name="1000"></a><div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Workflow Recipes</p>
+					
+					<p>This section provides example concepts and workflows addressing specific management scenarios.</p>
+
+					<p class="segment-note"><b>TIP</b>: If you want to prevent the Photos application from launching when iOS devices are connected to the host computer, enter and run the following statement in a new Terminal window:<br> <span style="font-size:small;-webkit-user-select:text;margin-left:36px;">defaults -currentHost write com.apple.ImageCapture disableHotPlug -bool YES</span></p>
+				</div>
+
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+				<!-- BEGIN SEGMENT: MANAGEMENT WORKFLOWS -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Basic Workflow Design</p>
+			
+					<p>You can create individualized management tools for iOS devices by creating &ldquo;automation recipes&rdquo; using Automator. Let’s examine the basic design of a typical management &ldquo;recipe.&rdquo;</p>
+					
+					<p>Most Automator workflows involving mobile device management, follow these basic steps: <b>IDENTIFY</b> &gt; <b>FORMAT</b> &gt; <b>INSTALL</b></p>
+			
+					<ol>
+						<li><b>IDENTIFY</b> &bull; Begin the workflow with either the <b>Get Connected Devices</b> action or the <b>Choose Connected Devices</b> action to specify which connected devices are to be processed by the workflow.</li>
+						<li><b>FORMAT</b> &bull; Add one or more of the formatting actions (<b>Restore Devices</b>, <b>Erase Devices</b>, <b>Prepare Devices</b>, <b>Rename Devices</b>) to get the specified devices into the desired default state, ready for the installation of profiles, apps, and documents.</li>
+						<li><b>INSTALL</b> &bull; Use one or more of the installation actions (<b>Install Profiles on Devices</b>, <b>Install Apps on Devices</b>, <b>Copy Documents to Devices</b>) to install profiles, apps, and/or documents.</li>
+					</ol>
+						
+					<p>The example workflow shown below, demonstrates a standard workflow design for setting iPads in a ready-to-use state:</p>
+			
+					<p class="imagecaption" style="margin-top:18px;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>An example workflow for the initial setup of iPads:</p>
+					
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230519122335im_/https://configautomation.com/gfx/example-workflow.png">	
+		
+					<p class="segment-note"><b>NOTE</b>: While these steps reflect a common use-case scenario, be aware that you can always use the Run AppleScript, Run JavaScript, and Run Shell Script Automator actions with the <a href="http://web.archive.org/web/20230519122335/https://configautomation.com/script-library.html">Configuration Utility script library</a> to create whatever custom workflows best serve your needs.</p>
+
+				</div>
+				<!-- END SEGMENT: MANAGEMENT WORKFLOWS -->
+				
+				
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230519122335/https://configautomation.com/developer.html">Create Actions</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/identity-files.html">Supervision Identity</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/selection-actions.html">Selection Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/dep.html">DEP Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/restore.html">Formatting Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/backup.html">Backup Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/install-apps.html">Installation Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/information-actions.html">Information Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/attach-workflow.html">“Attached” Workflows</a></li>
+						<hr>
+						<li class="hi">Workflow Recipes</li>
+						<li class="navListSectionItemSelected">Workflow Recipes</li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/developer.html">Create Actions</a></li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/PDF-print-plugin.html">Print to Devices</a></li>
+						<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+						<li><a href="http://web.archive.org/web/20230519122335/https://configautomation.com/classroom.html">iOS Classroom</a></li>
+					</ul>
+				</div>
+				
+<!-- 
+				<div class="sidebar-box">
+					<p class="sidebar-box-head" style="margin-left:-28px;margin-right:-12px;background-color:orange;">AUTOMATION UPDATE</p>
+					<p class="sidebar-box-body">Apple Configurator version 2.1 (3B42) has issues with executing some Automator actions correctly. This update corrects those issues by installing three Automator actions, and a Script Library file.</p>
+					<ul style="color:#eee;">
+						<li><p style="font-family:Helvetica;color:#eee;font-size:small;">Configuration Utility v2.9</p></li>
+						<li><p style="font-family:Helvetica;color:#eee;font-size:small;">Prepare Devices v1.2</p></li>
+						<li><p style="font-family:Helvetica;color:#eee;font-size:small;">Choose Connected Devices v1.1</p></li>
+						<li><p style="font-family:Helvetica;color:#eee;font-size:small;">Prepare Devices using Automated Enrollment v1.0</p></li>
+					</ul>
+					<ul style="margin-left:0;list-style:none;padding-left:12px;">
+						<li><a href="AC2-1-Automation-Update.zip" class="download" target="_self">DOWNLOAD</a></li></ul>
+					</ul>
+				</div>
+ -->
+				
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 12:23:35 May 19, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:34 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.561
+  exclusion.robots: 0.019
+  exclusion.robots.policy: 0.007
+  esindex: 0.01
+  cdx.remote: 26.208
+  LoadShardBlock: 88.85 (3)
+  PetaboxLoader3.datanode: 119.319 (4)
+  load_resource: 318.028
+  PetaboxLoader3.resolve: 254.947
+-->

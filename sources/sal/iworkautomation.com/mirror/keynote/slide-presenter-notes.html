@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Slide Presenter Notes</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for working with slide presenter notes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: SLIDE PRESENTER NOTES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Slide Presenter Notes</div>			
+			
+			<p>Although Presenter Notes can be used for a variety of purposes, they most often contain the statements intended to be spoken by the presenter. The following scripts demonstrate interesting uses of these written outlines.<span class="codeproperty"></span></p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="Wind-Power.zip" style="font-weight:bold;">DOWNLOAD</a> the example presentation.</p>
+		</div>	
+		
+		<!-- BEGIN SEGMENT: SLIDE PRESENTER NOTES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Retrieving Presenter Notes</div>			
+						
+			<p>As many who develop presentations for a living will tell you, for a fresh perpective, it is often useful to work on presenter notes away from the presentation itself. The scripts in this segment demonstrate how to retrieve the presenter notes from a presentation and place them into a new document in another application like <b>Pages</b> or <b>OmniOutliner</b>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Retrieve Presenter Notes from Active Slides to Pages</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09set%20thisDocumentName%20to%20the%20name%20of%20it%0D%09%09set%20the%20combinedPresenterNotes%20to%20%C2%AC%0D%09%09%09%22PRESENTER%20NOTES%20FOR%3A%20%E2%80%9C%22%20%26%20thisDocumentName%20%26%20%22%E2%80%9D%22%20%26%20return%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09tell%20slide%20i%0D%09%09%09%09if%20skipped%20is%20false%20then%0D%09%09%09%09%09set%20the%20combinedPresenterNotes%20to%20%C2%AC%0D%09%09%09%09%09%09combinedPresenterNotes%20%26%20return%20%26%20return%20%26%20%C2%AC%0D%09%09%09%09%09%09%22SLIDE%20%22%20%26%20(i%20as%20string)%20%26%20%22%20%E2%80%A2%20%22%20%26%20presenter%20notes%20of%20it%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20tell%0D%0Dtell%20application%20%22Pages%22%0D%09activate%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%7Bdocument%20template%3Atemplate%20%22Blank%22%7D%0D%09tell%20thisDocument%0D%09%09set%20body%20text%20to%20combinedPresenterNotes%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> number -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocumentName</span> <b>to the</b> <span class="codeproperty">name</span> <b>of it</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">combinedPresenterNotes</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;PRESENTER NOTES FOR: &ldquo;&quot; &amp; <span class="codevariable">thisDocumentName</span> &amp; &quot;&rdquo;&quot; &amp; <span class="codelibraryparameter">return</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codeproperty">skipped</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">combinedPresenterNotes</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">combinedPresenterNotes</span> &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>&quot;SLIDE &quot; &amp; (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; &quot; &bull; &quot; &amp; <span class="codeproperty">presenter notes</span> <b>of it</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">body text</span> <b>to</b> <span class="codevariable">combinedPresenterNotes</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="imagecaption" style="margin-top:24px;margin-bottom:0;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>A new Pages document containing the presenter notes from the frontmost Keynote presentation:</p>
+			<img class="centered" width="624" alt="presenter-notes-pages" src="gfx/presenter-notes-pages.png">
+		
+			<p>Here&rsquo;s a similar script except the presenter notes are moved into a new OmniOutliner document:</p>
+			
+			<p class="segment-note"><b>NOTE</b>: <b>OmniOutliner</b> is productivity software from the <a href="http://www.omnigroup.com/omnioutliner/" target="_blank" style="font-weight:bold;">Omni Group</a>, and is available for purchase from the <a href="https://itunes.apple.com/us/app/omnioutliner/id404478020?mt=12" target="_blank" style="font-weight:bold;">Mac&nbsp;App&nbsp;Store</a>, or as a <a href="http://www.omnigroup.com/omnioutliner#download" target="_blank" style="font-weight:bold;">trial version</a> from the <b>Omni Group</b> website.</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Outliner Document with Presenter Notes of Active Slides</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20playing%20is%20true%20then%20tell%20the%20front%20document%20to%20stop%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20front%20document%0D%09%09set%20thesePresenterNotes%20to%20%C2%AC%0D%09%09%09the%20presenter%20notes%20of%20every%20slide%20whose%20skipped%20is%20false%0D%09end%20tell%0Dend%20tell%0D%0Dtell%20application%20%22OmniOutliner%22%0D%09activate%0D%09set%20thisDocument%20to%20make%20new%20document%0D%09tell%20thisDocument%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thesePresenterNotes%0D%09%09%09set%20thisPresenterNote%20to%20item%20i%20of%20thesePresenterNotes%0D%09%09%09make%20new%20row%20with%20properties%20%7Btopic%3AthisPresenterNote%7D%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then tell the front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thesePresenterNotes</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codeproperty">presenter notes</span> <b>of every</b> <span class="codelibraryclass">slide</span> <b>whose</b> <span class="codeproperty">skipped</span> <b>is</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;OmniOutliner&quot;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thesePresenterNotes</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisPresenterNote</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thesePresenterNotes</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">row</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">topic</span>:<span class="codevariable">thisPresenterNote</span>}</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="imagecaption" style="margin-top:24px;margin-bottom:0;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>A new OmniOutliner document containing the presenter notes from the frontmost Keynote presentation:</p>
+			<img class="centered" width="624" alt="presenter-notes-to-outliner" src="gfx/presenter-notes-to-outliner.png">
+					
+			<p>Since <b>OmniOutliner</b> is an application dedicated to editing outline documents, a script can easily move the edited notes back into the originating <b>Keynote</b> presentation:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Transfer OmniOutliner Outline to Presenter Notes</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22OmniOutliner%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%2010000%0D%09%09%0D%09%09display%20dialog%20%22This%20script%20will%20replace%20the%20presenter%20notes%20of%20the%20active%20slides%20of%20the%20frontmost%20Keynote%20presentation%2C%20with%20the%20contents%20of%20this%20outline.%22%20%26%20return%20%26%20return%20%26%20%22The%20contents%20of%20each%20row%20will%20become%20the%20presenter%20notes%20of%20a%20corresponding%20Keynote%20slide.%22%20with%20icon%201%0D%09%09%0D%09%09tell%20application%20%22Keynote%22%0D%09%09%09activate%0D%09%09%09if%20not%20(exists%20document%201)%20then%20error%20number%2010001%0D%09%09%09%0D%09%09%09tell%20front%20document%0D%09%09%09%09set%20the%20slideCount%20to%20the%20count%20of%20(slides%20whose%20skipped%20is%20false)%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09tell%20the%20front%20document%0D%09%09%09set%20theseOutlinerNotes%20to%20the%20topic%20of%20every%20row%0D%09%09end%20tell%0D%09%09%0D%09%09if%20the%20(count%20of%20theseOutlinerNotes)%20is%20greater%20than%20the%20slideCount%20then%0D%09%09%09error%20number%2010002%0D%09%09else%20if%20the%20(count%20of%20theseOutlinerNotes)%20is%20less%20than%20the%20slideCount%20then%0D%09%09%09error%20number%2010003%0D%09%09end%20if%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%2010000%20then%0D%09%09%09set%20errorMessage%20to%20%22No%20document%20is%20open.%22%0D%09%09else%20if%20errorNumber%20is%2010001%20then%0D%09%09%09set%20errorMessage%20to%20%22No%20presentation%20is%20open.%22%0D%09%09else%20if%20errorNumber%20is%2010002%20then%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22There%20are%20more%20rows%20in%20this%20document%20than%20there%20are%20active%20slides%20in%20the%20presentation.%22%0D%09%09else%20if%20errorNumber%20is%2010003%20then%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22There%20are%20fewer%20rows%20in%20this%20document%20than%20there%20are%20active%20slides%20in%20the%20presentation.%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20%22PREPARATION%20ERROR%22%20message%20errorMessage%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09tell%20front%20document%0D%09%09--%20get%20a%20list%20of%20the%20active%20slides%0D%09%09set%20theseSlides%20to%20(every%20slide%20of%20it%20whose%20skipped%20is%20false)%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseSlides%0D%09%09%09set%20thisSlide%20to%20item%20i%20of%20theseSlides%0D%09%09%09set%20the%20presenter%20notes%20of%20thisSlide%20to%20item%20i%20of%20theseOutlinerNotes%0D%09%09end%20repeat%0D%09end%20tell%0D%09display%20dialog%20%22The%20transfer%20of%20presenter%20notes%20has%20completed.%22%20buttons%20%7B%22OK%22%7D%20default%20button%201%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;OmniOutliner&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> 10000</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will replace the presenter notes of the active slides of the frontmost Keynote presentation, with the contents of this outline.&quot; &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &quot;The contents of each row will become the presenter notes of <span class="codevariable">a</span> corresponding Keynote slide.&quot; <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> 10001</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">slideCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> (<span class="codelibraryclass">slides</span> <b>whose</b> <span class="codeproperty">skipped</span> <b>is</b> <span class="codeenumeration">false</span>)</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">theseOutlinerNotes</span> <b>to the</b> <span class="codeproperty">topic</span> <b>of every</b> <span class="codelibraryclass">row</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if the</b> (<span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseOutlinerNotes</span>) <b>is greater than the</b> <span class="codevariable">slideCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> 10002</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> (<span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseOutlinerNotes</span>) <b>is less than the</b> <span class="codevariable">slideCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> 10003</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 10000 <b>then</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;No document is open.&quot;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 10001 <b>then</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;No presentation is open.&quot;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 10002 <b>then</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;There are more rows in this document than there are active slides in the presentation.&quot;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 10003 <b>then</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;There are fewer rows in this document than there are active slides in the presentation.&quot;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;PREPARATION ERROR&quot; message <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get a list of the active slides</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseSlides</span> <b>to (every</b> <span class="codelibraryclass">slide</span> <b>of it whose</b> <span class="codeproperty">skipped</span> <b>is</b> <span class="codeenumeration">false</span>)</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseSlides</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseSlides</span></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">presenter notes</span> <b>of</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseOutlinerNotes</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;The transfer of presenter notes has completed.&quot; <span class="codelibraryparameter">buttons</span> {&quot;OK&quot;} <span class="codelibraryparameter">default button</span> 1</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>			
+			
+		</div>
+
+		<!-- BEGIN SEGMENT: SLIDE PRESENTER NOTES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Speaking Presenter Notes</div>			
+						
+			<p>Here’s an interesting script that can provide an opportunity for you to sit back and watch and listen to your presentation being presented to you!</p>
+			
+			<p>This script uses the built-in text-to-speech capabilities of OS&nbsp;X, and the scriptable presentation controls in <b>Keynote</b>, to display each slide and read the slide’s presenter notes aloud. When a slide’s presenter notes have been read, the script will advance to the next slide.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: This script is designed to work with presentations of a specific design. “Speakable” slides must not contain object builds and must contain presenter notes.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Simple Play and Say</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Simple%20Play%20and%20Say&script=property%20defaultSlideDuraton%20%3A%202%0Dproperty%20pauseBeforeSpeaking%20%3A%200%20--%201.5%0Dproperty%20stoppingStatement%20%3A%20%22%5B%5Bslnc%201000%5D%5D%20Stopping%20presentation.%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%09%0D%09%09if%20playing%20is%20true%20then%20stop%20the%20front%20document%0D%09%09%0D%09%09tell%20document%201%0D%09%09%09set%20the%20slideCount%20to%20the%20count%20of%20(slides%20whose%20skipped%20is%20false)%0D%09%09%09start%20from%20(first%20slide%20whose%20slide%20number%20is%201)%0D%09%09end%20tell%0D%09%09repeat%20with%20i%20from%201%20to%20the%20slideCount%0D%09%09%09log%20i%0D%09%09%09if%20playing%20is%20false%20then%0D%09%09%09%09my%20speakSlideNotes(stoppingStatement)%0D%09%09%09%09error%20number%20-128%0D%09%09%09end%20if%0D%09%09%09tell%20document%201%0D%09%09%09%09repeat%0D%09%09%09%09%09set%20currentSlideNumber%20to%20(get%20slide%20number%20of%20current%20slide)%0D%09%09%09%09%09if%20currentSlideNumber%20is%20equal%20to%20i%20then%20exit%20repeat%0D%09%09%09%09%09my%20idleForThisTime(1)%0D%09%09%09%09%09if%20my%20playingStatus()%20is%20false%20then%0D%09%09%09%09%09%09my%20speakSlideNotes(stoppingStatement)%0D%09%09%09%09%09%09error%20number%20-128%0D%09%09%09%09%09end%20if%0D%09%09%09%09end%20repeat%0D%09%09%09%09set%20thisSlidesPresenterNotes%20to%20presenter%20notes%20of%20current%20slide%0D%09%09%09end%20tell%0D%09%09%09if%20thisSlidesPresenterNotes%20is%20%22%22%20then%0D%09%09%09%09delay%20defaultSlideDuraton%0D%09%09%09else%0D%09%09%09%09if%20pauseBeforeSpeaking%20is%20not%200%20then%0D%09%09%09%09%09delay%20pauseBeforeSpeaking%0D%09%09%09%09end%20if%0D%09%09%09%09my%20speakSlideNotes(thisSlidesPresenterNotes)%0D%09%09%09end%20if%0D%09%09%09if%20i%20is%20slideCount%20then%0D%09%09%09%09exit%20repeat%0D%09%09%09else%0D%09%09%09%09if%20playing%20is%20false%20then%0D%09%09%09%09%09my%20speakSlideNotes(stoppingStatement)%0D%09%09%09%09%09error%20number%20-128%0D%09%09%09%09end%20if%0D%09%09%09%09show%20next%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09%0D%09%09tell%20document%201%20to%20stop%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20((%22ERROR%20%22%20%26%20errorNumber)%20as%20string)%20message%20errorMessage%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20speakSlideNotes(thisSlidesPresenterNotes)%0D%09say%20thisSlidesPresenterNotes%20with%20waiting%20until%20completion%0Dend%20speakSlideNotes%0D%0Don%20idleForThisTime(idleTimeInSeconds)%0D%09do%20shell%20script%20%22sleep%20%22%20%26%20(idleTimeInSeconds%20as%20string)%0Dend%20idleForThisTime%0D%0Don%20playingStatus()%0D%09tell%20application%20%22Keynote%22%0D%09%09return%20(get%20playing)%0D%09end%20tell%0Dend%20playingStatus"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultSlideDuraton</span> : 2</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">pauseBeforeSpeaking</span> : 1.5</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">stoppingStatement</span> : &quot;[[slnc 1000]] Stopping presentation.&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codeparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> true <b>then</b> <span class="codelibrarycommand">stop</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">slideCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">start</span> <b>from first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">slideCount</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>my</b> <span class="codevariable">speakSlideNotes</span>(<span class="codevariable">stoppingStatement</span>)</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibrarycommand">document</span> 1</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlidesPresenterNotes</span> <b>to</b> <span class="codeproperty">presenter notes</span> <b>of</b> <span class="codelibraryclass">slide</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">thisSlidesPresenterNotes</span> <b>is</b> &quot;&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">delay</span> <span class="codevariable">defaultSlideDuraton</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">pauseBeforeSpeaking</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">delay</span> <span class="codevariable">pauseBeforeSpeaking</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>my</b> <span class="codevariable">speakSlideNotes</span>(<span class="codevariable">thisSlidesPresenterNotes</span>)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> <span class="codevariable">slideCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>my</b> <span class="codevariable">speakSlideNotes</span>(<span class="codevariable">stoppingStatement</span>)</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">show next</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1 <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> ((&quot;<b>ERROR</b> &quot; &amp; errorNumber) <b>as</b> <span class="codelibraryclass">string</span>) <span class="codelibraryparameter">message</span> errorMessage</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">speakSlideNotes</span>(<span class="codevariable">thisSlidesPresenterNotes</span>)</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">say</span> <span class="codevariable">thisSlidesPresenterNotes</span> <span class="codecomment">-- with waiting until completion</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">speakSlideNotes</span></td></tr>
+			</table>
+		</div>		
+						
+		<!-- BEGIN SEGMENT: SLIDE PRESENTER NOTES -->
+		<div class="content-segment">
+		<a name="render-presenter-notes"><div class="segment-header" role="heading" aria-level="1">Rendering Presenter Notes to Audio</div></a>			
+						
+			<p>One more example of “spoken presentation notes.” This script will render the presenter notes of a slide to an audio file of the notes being spoken by the text-to-speech frameworks in OS&nbsp;X. The audio file is then imported into the source slide.</p>
+			
+			<p>Once the script has completed, you can play the presentation and advance the slides to listen to the presentation.</p>
+			
+			<p class="segment-note"><b>TIP</b>: Using the <a href="document-export.html#export-HTML">Export to HTML</a> script, a presentation containing audio clips can be exported to HTML content, and placed on a server to become an online presentation! <a href="Wind-Power/index.html" target="_blank">See for yourself!</a></p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Render Presenter Notes to Audio File and Import</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09tell%20slide%20i%0D%09%09%09%09set%20thisSlideNumber%20to%20the%20slide%20number%0D%09%09%09%09set%20thisSlidesNotes%20to%20presenter%20notes%0D%09%09%09%09set%20thisAudioFile%20to%20my%20renderAndEncode(thisSlidesNotes%2C%20thisSlideNumber)%0D%09%09%09%09if%20thisAudioFile%20is%20not%20false%20then%0D%09%09%09%09%09set%20thisAudioClip%20to%20%C2%AC%0D%09%09%09%09%09%09make%20new%20image%20with%20properties%20%7Bfile%3AthisAudioFile%7D%0D%09%09%09%09%09my%20deleteFile(thisAudioFile)%0D%09%09%09%09end%20if%0D%09%09%09%09set%20transition%20properties%20to%20%7Bautomatic%20transition%3Afalse%7D%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0D%09start%20the%20front%20document%20from%20the%20first%20slide%20of%20the%20front%20document%0Dend%20tell%0D%0Don%20deleteFile(thisFileHFSAlias)%0D%09set%20thisFilePOSIXPath%20to%20the%20POSIX%20path%20of%20thisFileHFSAlias%0D%09do%20shell%20script%20%22rm%20-f%20%22%20%26%20(quoted%20form%20of%20thisFilePOSIXPath)%0Dend%20deleteFile%0D%0Don%20renderAndEncode(thisSlidesNotes%2C%20thisSlideNumber)%0D%09if%20thisSlidesNotes%20is%20%22%22%20then%0D%09%09return%20false%0D%09else%0D%09%09--%20get%20the%20path%20to%20the%20temp%20folder%0D%09%09set%20the%20temporaryItemsFolder%20to%20the%20POSIX%20path%20of%20(path%20to%20temporary%20items)%0D%09%09--%20derive%20unique%20names%20for%20the%20audio%20files%0D%09%09set%20thisTempName%20to%20(do%20shell%20script%20%22uuidgen%22)%0D%09%09set%20audioAIFFFileName%20to%20%C2%AC%0D%09%09%09%22SLIDE-%22%20%26%20thisSlideNumber%20%26%20%22-%22%20%26%20thisTempName%20%26%20%22.aiff%22%0D%09%09set%20audioMPEGFileName%20to%20%C2%AC%0D%09%09%09%22SLIDE-%22%20%26%20thisSlideNumber%20%26%20%22-%22%20%26%20thisTempName%20%26%20%22.m4a%22%0D%09%09--%20construct%20the%20paths%20to%20the%20files%20to%20be%20created%0D%09%09set%20targetAIFFFilePath%20to%20temporaryItemsFolder%20%26%20audioAIFFFileName%0D%09%09set%20targetMPEGFilePath%20to%20temporaryItemsFolder%20%26%20audioMPEGFileName%0D%09%09--%20render%20text%20to%20AIFF%20audio%20file%0D%09%09do%20shell%20script%20%22say%22%20%26%20space%20%26%20%22-o%22%20%26%20space%20%26%20%C2%AC%0D%09%09%09quoted%20form%20of%20targetAIFFFilePath%20%26%20space%20%26%20quoted%20form%20of%20thisSlidesNotes%0D%09%09--%20encode%20audio%20file%20to%20MPEG%0D%09%09do%20shell%20script%20%22afconvert%20-f%20'm4af'%20-d%20'aac%20'%20-s%201%20%22%20%26%20%C2%AC%0D%09%09%09(quoted%20form%20of%20targetAIFFFilePath)%20%26%20space%20%26%20(quoted%20form%20of%20targetMPEGFilePath)%0D%09%09--%20delete%20source%20audio%20file%0D%09%09do%20shell%20script%20%22rm%20-f%20%22%20%26%20(quoted%20form%20of%20targetAIFFFilePath)%0D%09%09--%20return%20reference%20to%20encoded%20audio%20file%0D%09%09return%20(targetMPEGFilePath%20as%20POSIX%20file%20as%20alias)%0D%09end%20if%0Dend%20renderAndEncode"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> document 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> document</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> i</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideNumber</span> <b>to the</b> <span class="codeproperty">slide number</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlidesNotes</span> <b>to</b> <span class="codeproperty">presenter notes</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisAudioFile</span> <b>to my</b> <span class="codevariable">renderAndEncode</span>(<span class="codevariable">thisSlidesNotes</span>, <span class="codevariable">thisSlideNumber</span>)</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">thisAudioFile</span> <b>is not</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisAudioClip</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">audio clip</span> <span class="codelibraryparameter">with properties</span> {<span class="codelibraryclass">file</span>:<span class="codevariable">thisAudioFile</span>}</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>my</b> <span class="codevariable">deleteFile</span>(<span class="codevariable">thisAudioFile</span>)</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">transition properties</span> <b>to</b> {<span class="codeproperty">automatic transition</span>:<span class="codeenumeration">false</span>}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <b>the front</b> <span class="codelibraryclass">document</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">deleteFile</span>(<span class="codevariable">thisFileHFSAlias</span>)</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFilePOSIXpath</span> <b>to the</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisFileHFSAlias</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;rm -f &quot; &amp; (<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisFilePOSIXPath</span>)</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">deleteFile</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">renderAndEncode</span>(<span class="codevariable">thisSlidesNotes</span>, <span class="codevariable">thisSlideNumber</span>)</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">thisSlidesNotes</span> <b>is</b> &quot;&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get the path to the temp folder</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">temporaryItemsFolder</span> <b>to the</b> <span class="codeproperty">POSIX path</span> <b>of</b> (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">temporary items</span>)</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- derive unique names for the audio files</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTempName</span> <b>to</b> (<span class="codelibrarycommand">do shell script</span> &quot;uuidgen&quot;)</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">audioAIFFFileName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;SLIDE-&quot; &amp; <span class="codevariable">thisSlideNumber</span> &amp; &quot;-&quot; &amp; <span class="codevariable">thisTempName</span> &amp; &quot;.aiff&quot;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">audioMPEGFileName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;SLIDE-&quot; &amp; <span class="codevariable">thisSlideNumber</span> &amp; &quot;-&quot; &amp; <span class="codevariable">thisTempName</span> &amp; &quot;.m4a&quot;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- construct the paths to the files to be created</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetAIFFFilepath</span> <b>to</b> <span class="codevariable">temporaryItemsFolder</span> &amp; <span class="codevariable">audioAIFFFileName</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetMPEGFilepath</span> <b>to</b> <span class="codevariable">temporaryItemsFolder</span> &amp; <span class="codevariable">audioMPEGFileName</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- render text to AIFF audio file</span></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;say&quot; &amp; <span class="codeenumeration">space</span> &amp; &quot;-o&quot; &amp; <span class="codeenumeration">space</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">targetAIFFFilePath</span> &amp; <span class="codeenumeration">space</span> &amp; <span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisSlidesNotes</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- encode audio file to MPEG</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;afconvert -f 'm4af' -d 'aac ' -s 1 &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">targetAIFFFilePath</span>) &amp; <span class="codeenumeration">space</span> &amp; (<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">targetMPEGFilePath</span>)</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- delete source audio file</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;rm -f &quot; &amp; (<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">targetAIFFFilePath</span>)</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- return reference to encoded audio file</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> (<span class="codevariable">targetMPEGFilePath</span> <b>as</b> <span class="codeproperty">POSIX file</span> <b>as</b> <span class="codelibraryclass">alias</span>)</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">renderAndEncode</span></td></tr>
+			</table>
+					
+		</div>
+		<!-- END SEGMENT: SLIDE PRESENTER NOTES -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="slide.html">Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-make.html">Making Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-duplicate.html">Duplicating Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-move.html">Moving Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-masters.html">Applying Master Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-default-text.html">Default Text Items</a></li>
+				<li class="navListSectionItem"><a href="slide-transition.html">Slide Transitions</a></li>
+				<li class="navListSectionItem"><a href="slide-skipped.html">Show|Hide Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-delete.html">Deleting Slides</a></li>
+				<li class="navListSectionItemSelected">Presenter Notes</li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

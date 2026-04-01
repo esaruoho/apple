@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: AirDrop PDF of Front Presentation</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;AirDrop PDF of Front Presentation&rdquo; Automator workflow is used to export a PDF version of a presentation to another computer or iOS device.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="Automator Keynote banner image" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">AirDrop PDF of Presentation to Another Computer or iOS Device</div>
+			
+			<p>A workflow doesn&rsquo;t have to be complex to be very useful. The &ldquo;AirDrop PDF of Front Presentation&rdquo; Automator workflow can be used to quickly export a PDF version of a presentation to another computer or iOS device.</p>
+						
+			<video width="624" height="436" controls poster="gfx/workflow-02-video-poster.jpg" style="margin-top:-24px;">
+			  <source src="AirDrop-PDF-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>			
+			
+			<p>The workflow contains two actions: one for exporting the front presentation to an encrypted PDF file; and one for beginning an AirDrop session with the new file. The Export Presentation action is used to create the encrypted PDF file.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Output Settings</b>&nbsp;&bull;&nbsp;Select the folder in which to export the file, and set the action result to be a reference to the exported file.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Export to PDF option</b>&nbsp;&bull;&nbsp;Select the checkbox for exporting the presentation to PDF.</p>
+			
+			<img class="across" width="640" alt="airdrop-pdf-01" src="gfx/airdrop-pdf-01.png">
+			
+			<p class="caption-callout" style="margin-top:-12px;"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Encryption Option</b>&nbsp;&bull;&nbsp;Select the option to encrypt the PDF file with a password. If you want to use the same password for every export, enter the password to use for exported files, otherwise select the option to be prompted for the password when the parent workflow is executed.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>AirDrop action</b>&nbsp;&bull;&nbsp;This action will begin an AirDrop session with the exported file. If this action is not executed from within Automator or other application that stays open after running the workflow, select the option to extend the action’s duration and choose a value (in seconds) that the AirDrop dialog should remain visible.</p>
+			
+			<p>Once the PDF export has completed and the AirDrop session begun, select the target device from the AirDrop dialog to begin the transfer <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+
+			<img class="centered" width="560" alt="AirDrop-dialog" src="gfx/AirDrop-dialog.png">
+
+			<p class="segment-note"><a href="installers/AirDrop-PDF-Workflow.zip" style="font-weight:700;">DOWNLOAD&nbsp;</a>&nbsp;an installer for the example workflow that will activate the Script Menu and install the workflow into the Keynote Scripts folder. Once installed, the workflow can be executed from the Script Menu when Keynote is the frontmost application.<br><br><b>TIP</b>: To <span style="font-family:'Times New Roman',serif;font-style:italic;font-size:130%;font-weight:600;">open</span> the workflow for editing, select it from the Script Menu while holding down the Option key. To <span style="font-family:'Times New Roman',serif;font-style:italic;font-size:130%;font-weight:600;">reveal</span> the workflow in the Finder, select it from the Script Menu while holding down the Shift key.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="workflows-03.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li><a href="document-actions-01.html">Document Actions</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li class="hi">Workflow Recipes</li>
+				<li class="navListSectionItem"><a href="workflows-01.html">Dynamic Prompts</a></li>
+				<li class="navListSectionItemSelected">AirDrop PDF Version</li>
+				<li class="navListSectionItem"><a href="workflows-03.html">Send Notes of Front Presentation</a></li>
+				<li class="navListSectionItem"><a href="workflows-04.html">Screen Captures to Slide</a></li>
+				<li class="navListSectionItem"><a href="workflows-05.html">Print to Image Slide</a></li>
+				<li class="navListSectionItem"><a href="workflows-06.html">Processing Multiple Keynote Items</a></li>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			
+			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

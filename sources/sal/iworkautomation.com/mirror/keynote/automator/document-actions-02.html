@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Open Keynote Files&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Open Keynote Files&rdquo; Automator action is used to open specified Keynote documents.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;Open Keynote Files&rdquo; Action</div>
+			<p>The &ldquo;Open Keynote Files&rdquo; Automator action is used to open specified Keynote documents. This action accepts references to Keynote document files as its input. When its containing workflow is executed, this action returns a reference to any Keynote documents it opens.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>			
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">References to the Keynote or Microsoft PowerPoint files to be opened</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">AppleScript reference(s) to the opened document(s)</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Open only the first Keynote document passed to the action as input</p></li>
+						<li><p>Make Keynote the frontmost application when action is run</p></li>
+						<li><p>Use the Font Book application to check to see if the typefaces used by the Keynote documents are installed and active on the host system.</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Note:</td><td class="data-value"><p>Supported file types for opening include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Keynote files (key)</p></li>
+						<li><p>Microsoft PowerPoint (ppt)</p></li>
+						<li><p>Open XML Format Presentation (pptx)</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that often precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Get Specified Finder Items</p></li>
+						<li><p>Get Selected Finder Items</p></li>
+						<li><p>Find Finder Items</p></li>
+						<li><p>Filter Finder Items</p></li>
+						<li><p>Sort Finder Items</p></li>
+						<li><p>Spotlight</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that often follow this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Export Presentation</p></li>
+						<li><p>Save Document</p></li>
+						<li><p>Begin Presentation</p></li>
+						<li><p>Present Slideshow with Narration</p></li>
+						<li><p>New Slide</p></li>
+					</ul>
+				</td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<img class="action-interface" alt="The “Open Keynote Files” action interface." src="gfx/Open-Keynote-Files.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Open Single Input Item</b>&nbsp;&bull;&nbsp;Select this option to open only the first file whose reference is passed to the action as input. This option is particularly useful when the action is preceded by an action, such as Spotlight, that may provide multiple items when the host workflow may be designed to process a single document.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Activate Keynote</b>&nbsp;&bull;&nbsp;Select this option to make Keynote the frontmost application.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Perform Font Check</b>&nbsp;&bull;&nbsp;When this option is selected, the Font Book application will be used to ensure that typefaces used by the input documents are installed and active. If a typeface is found to be missing from the fonts installed on the host system, an alert will be posted in the Font Book application <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			<img class="centered" style="margin-top:-24px;" width="532" alt="Font-Warning-Dialog" src="gfx/Font-Warning-Dialog.png" height="282">
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+				
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Example Workflow: Play Most Recently Modified Presentation</div>
+			<p>Here’s a simple workflow that incorporates the use of all three parameters available in the &ldquo;Open Keynote Files&rdquo; action. This workflow will open the presentation that was the most recently saved, modified, or opened:</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Search Location</b>&nbsp;&bull;&nbsp;The first step is to locate presentation files. From the path popup menu, select the folder in which to search for presentation files, for example the Documents folder.</p>
+			<p class="caption-callout" style="margin-bottom:-12px;"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Search Parameters</b>&nbsp;&bull;&nbsp;Set the search parameter to look for presentation documents in the indicated folder.</p>
+			<img class="across" width="640" alt="Open-Keynote-Files-workflow" src="gfx/Open-Keynote-Files-workflow.png">
+			<p class="caption-callout" style="margin-top:-24px;"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Sorting Parameter</b>&nbsp;&bull;&nbsp;Once presentation files have been located, sort them by a property such as modification date.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Sort Order</b>&nbsp;&bull;&nbsp;Sort the items in descending order so the most recent is the first in the sorted list.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Opening Parameters</b>&nbsp;&bull;&nbsp;Set the parameters to use when opening the indicated document. Select the option to open only the first (in this case, the most recent) presentation file passed as input to the action.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Starting Slide</b>&nbsp;&bull;&nbsp;Begin the presentation from the indicated slide (1).</p>
+
+
+
+			<p class="segment-note"><a href="installers/Play-Recent-Presentation-Workflow" style="font-weight:700;">DOWNLOAD&nbsp;</a>the example workflow file and installer. The installer will activate the system-wide Script Menu and add the workflow to the menu. <br><br><b>TIP</b>: To open the installed workflow in Automator, hold down the Option key and select the workflow title from the Script Menu.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->		
+		
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-actions-03.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li class="hi">Document Actions</a></li>
+				<li class="navListSectionItem"><a href="document-actions-01.html">New Presentation</a></li>
+				<li class="navListSectionItemSelected">Open Keynote Files</li>
+				<li class="navListSectionItem"><a href="document-actions-03.html">Get Specified Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-04.html">Export Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-05.html">Save Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-06.html">Close Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-07.html">Begin Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-08.html">Present Slideshow with Narration</a></li>
+				<li class="navListSectionItem"><a href="document-actions-09.html">Get Fonts of Keynote Documents</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

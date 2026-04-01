@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AppleScript Libraries: Simple</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, AppleScript Libraries, Automation, Automator, Services, OS X, Snow Leopard, Lion, Mountain Lion, Movericks">
+	<META NAME="Description" CONTENT="Overview and examples of AppleScript Libraries in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Simple AppleScript Libraries</div>
+		
+			<p>While AppleScript Libraries can vary in the complexity of their design and implementation, their purpose is the same: to provide easy access in scripts to collections of specialized commands and handlers.</p>
+
+			<p>An AppleScript Library’s source code may be written in standard AppleScript, or it may employ AppleScript/Objective-C to access methods and classes from standard Cocoa frameworks such as Foundation and AppKit, and even import specialized frameworks such as MapKit, EventKit, or WebKit.</p>
+
+			<p>Regardless of the kind of AppleScript Library you create, the process of creating the library is similar for every type:</p>
+			
+			<p style="font-style:italic;">Script code containing routines and handlers, is placed into a script file or bundle, which is then saved and placed into the Script Libraries folder to become available for use by other scripts.</p>
+			
+			<p>Follow the steps detailed below to create and use a simple AppleScript Library.</p>						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: CREATE SCRIPT FILE -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Create and Save a Script File</div>
+		
+			<p>To create a simple AppleScript Library, written in AppleScript, open a new script document in the <b>AppleScript Editor</b> application. Save the new document as a standard script file by choosing <b>Script</b> from the <b>Format</b> popup menu in the <b>Save</b> dialog (see below):</p>						
+		
+			<img alt="format-popup-menu-script" class="centered" src="gfx/format-popup-menu-script.png" width="300">
+			
+			<p>For this example, name the script: <i>Simple Case Changer</i>. By default, the saved script file will have a name extension of &ldquo;scpt&rdquo;.</p>
+		</div>
+		<!-- END SEGMENT: CREATE SCRIPT FILE -->
+		
+		<!-- BEGIN SEGMENT: SIMPLE LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >A Simple AppleScript Routine</div>
+		
+			<p>The script code for this example is an AppleScript handler for changing the case of text to either all upper or all lower case. The handler has two parameters: the text to be transformed, and a number indicating which case conversion to apply to the passed text.</p>
+		
+			<p class="code"><b>on</b> <span class="codelibrarycommand">changeCaseOfText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">caseIndicator</span>)<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">caseIndicator</span> <b>is</b> 0 <b>then</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">comparisonCharacters</span> <b>to</b> &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceCharacters</span> <b>to</b> &quot;abcdefghijklmnopqrstuvwxyz&quot;<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">comparisonCharacters</span> <b>to</b> &quot;abcdefghijklmnopqrstuvwxyz&quot;<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceCharacters</span> <b>to</b> &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">newText</span> <b>to</b> &quot;&quot;<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">thisCharacter</span> <b>in</b> <span class="codevariable">sourceText</span><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> offset <b>of</b> <span class="codevariable">thisCharacter</span> <b>in the</b> <span class="codevariable">comparisonCharacters</span><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">x</span> <b>is not</b> 0 <b>then</b><BR>
+			<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">newText</span> <b>to</b> &not;<BR>
+			<span style="float:left; width:40px;">&nbsp;</span>(<b>the</b> <span class="codevariable">newText</span> &amp; character <span class="codevariable">x</span> <b>of the</b> <span class="codevariable">sourceCharacters</span>) <b>as</b> string<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+			<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">newText</span> <b>to</b> (<b>the</b> <span class="codevariable">newText</span> &amp; <span class="codevariable">thisCharacter</span>) <b>as</b> string<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">newText</span><BR>
+			<b>end</b> <span class="codelibrarycommand">changeCaseOfText</span></p>	
+			
+			<p>Next, copy the text of the handler and paste it into the blank script file you created. Compile the script, save, and then close the script file.</p>	
+		</div>
+		<!-- END SEGMENT: SIMPLE LIBRARY -->
+		
+		<!-- BEGIN SEGMENT: INSTALLING THE LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Installing the Library</div>
+			
+			<p>AppleScript Libraries are installed and made available for use by AppleScript scripts, by placing their files within a folder titled: &ldquo;Script Libraries&rdquo;. A <b>Script Libraries</b> folder can reside in a variety of locations, depending on how you want to define their availability on the computer.</p>
+			
+			<p>The easiest way to install an AppleScript Library for the current user is to make a new folder in your <b>Home &gt; Library</b> folder, titled <b>Script Libraries</b>. Next, place your saved script file into the newly created <b>Script Libraries</b> folder. That&rsquo;s all you need to do!</p>
+			
+			<p>For detailed information on other available installation locations, read the <a href="index.html"><b>Installing and Deploying AppleScript Libraries</b></a> segment on the overview page of this topic.</p>
+			
+		</div>
+		<!-- END SEGMENT: INSTALLING THE LIBRARY -->
+		
+		<!-- BEGIN SEGMENT: USING THE LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Using the AppleScript Library</div>
+			
+			<p>Once installed, the handlers contained in AppleScript Libraries can be accessed by AppleScript scripts directly via <b>tell statements</b> or <b>tell blocks</b>. Copy the script text below, paste it into a new script window, and run.</p>
+			
+			<p class="code"><b>tell</b> <span class="codelibraryclass">script</span> &quot;Simple Case Changer&quot;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><b>set the</b> <span class="codevariable">adjustedText</span> <b>to</b> <span class="codelibrarycommand">changeCaseOfText</span>(&quot;How now brown cow.&quot;</span>, 1)<br><span style="margin-left:2em;">--&gt; result: &quot;HOW NOW BROWN COW.&quot;</span><br><b>end tell</b></p></li>
+			
+			<p>The passed text will be sent to the handler in the targeted AppleScript Library, which will be then executed, returning the source text transformed into all upper case characters.</p>
+			
+			<p>A simple example of a simple AppleScript Library.</p>
+		</div>
+		<!-- END SEGMENT: USING THE LIBRARY -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="asoc.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li class="hi">AppleScript Libraries</li>
+					<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+						<li><a href="index.html">Overview</a></li>
+						<li class="hi">Simple Script Library</li>
+						<li><a href="asoc.html">ASOC Script Library</a></li>
+						<li><a href="terminology.html">Libraries with Terminology</a></li>
+						<li><a href="examples.html">Example Libraries</a></li>
+					</ol>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

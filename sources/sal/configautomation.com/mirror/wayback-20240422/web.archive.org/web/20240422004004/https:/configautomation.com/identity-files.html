@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/identity-files.html","20230519122601","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1684499161");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230519122601cs_/https://configautomation.com/automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="A collection of Automator actions for the Apple Configurator 2 application.">
+	<link rel="home" href="http://configautomation.com">
+
+	<title>Apple Configurator &amp; Supervision Certificates</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230519122601/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230519122601/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230519122601/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<a name="1000"></a><div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Creating Supervision Identity Files</p>
+			
+					<p>Some device management tasks, such as erasing devices, require the approval of the device’s designated supervision authority in order to be performed. Since the management workflows you create may be designed to be run by non-administrative personel, authentication is accomplished through the use of certificate and private key files that you generate from your Configurator supervision profile.</p>
+					
+<img class="action-interface" alt="erase-devices-action-view-numbered" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/erase-devices-action-view-numbered.png">
+
+					<p>These validation files are then selected (when required) from within the action interfaces that require supervision authority, such as the &ldquo;Erase Devices&rdquo; action <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span></p>
+					
+					<p>The information provided on the following pages, outline the steps for creating and exporting a supervision identity for use with the Configurator Automator actions.</p>
+
+					
+					<p class="content-subhead" role="heading" aria-level="2">Creating the Organization Profile</p>
+					
+					<p>Supervision identities are created in the Configurator preferences window, accessed from the <b>Configurator &gt; Preferences</b> menu in the Configurator application. Select the &ldquo;Organizations&rdquo; pane in the preferences window <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<img class="across" width="640" alt="organization-01" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-01.png">
+					
+					<p>Click the &ldquo;Add&rdquo; button ( + ) located at the bottom left of the window <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span> and the process of creating a supervision identity will begin <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<img class="across" width="640" alt="organization-02" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-02.png">
+					
+					<p>Click the &ldquo;Next&rdquo; button <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> and enter the information for the supervising organization in the provided fields <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<!-- <img class="across" width="640" alt="organization-03" src="gfx/organization-03.png"> -->
+					
+					<img class="across" width="640" alt="organization-04" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-04.png">
+					
+					<p>Once the organization information has been entered, click the &ldquo;Next&rdquo; button <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span> and choose the option to Generate a new supervision identity in the following pane <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<img class="across" width="640" alt="organization-05" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-05.png">
+					
+					<p>Click the &ldquo;Done&rdquo; button <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span> and a security authentication dialog will prompt you to approve changes to the Certificate Trust Settings on your system <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="centered" width="555" alt="organization-07" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-07.png">
+					
+					<p>Click the &ldquo;Update Settings&rdquo; button <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span> to finish the process of create a supervision identity <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span> which will now be added to the preferences window.</p>
+					
+					<img class="centered" width="640" alt="organization-08" src="http://web.archive.org/web/20230519122601im_/https://configautomation.com/gfx/organization-08.png">
+					
+					<p>The next step will be to export the Keychain identity certificate that is used by the supervision identity you just created.</p>
+					
+															
+				</div>
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230519122601/https://configautomation.com/identity-files-02.html">Exporting the Keychain Certificate</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+			<ul>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/index.html">Overview</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li class="hi">Supervision Identity</li>
+				<li class="navListSectionItemSelected">Create Profile</li>
+				<li class="navListSectionItem"><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/identity-files-02.html">Export Certificate</a></li>
+				<!-- <li class="navListSectionItem"><a href="identity-files-02.html">Create Files</a></li> -->
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/selection-actions.html">Selection Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/dep.html">DEP Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/restore.html">Formatting Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/backup.html">Backup Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/install-apps.html">Installation Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/information-actions.html">Information Actions</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/attach-workflow.html">“Attached” Workflows</a></li>
+				<hr>
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></li>
+				<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+				<li><a href="http://web.archive.org/web/20230519122601/https://configautomation.com/classroom.html">iOS Classroom</a></li>
+			</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 12:26:01 May 19, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:14 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.386
+  exclusion.robots: 0.011
+  exclusion.robots.policy: 0.004
+  esindex: 0.007
+  cdx.remote: 15.743
+  LoadShardBlock: 148.427 (3)
+  PetaboxLoader3.datanode: 155.808 (4)
+  load_resource: 84.779
+  PetaboxLoader3.resolve: 48.324
+-->

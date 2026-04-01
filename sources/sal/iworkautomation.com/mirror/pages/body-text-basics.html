@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Working with Text</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for body text in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Working with Text</div>
+			<p>This topic concerns identifying and manipulating text in a document, with particular focus on the <span class="codeproperty">body text</span> property of <span class="codelibraryclass">documents</span>, <span class="codelibraryclass">sections</span>, and <span class="codelibraryclass">pages</span>.</p>
+			
+			<p>Here is the dictionary listing from the <span class="dictionary-suite">iWork Text Suite</span> for the basic text elements: <span class="codelibraryclass">characters</span>, <span class="codelibraryclass">words</span>, and <span class="codelibraryclass">paragraphs</span>; as well as the entry for the <span class="codelibraryclass">rich text</span> class that contains their formatting properties:</p>
+			
+			<div class="dictionary">
+				<p class="content-subhead" role="heading" aria-level="2">The iWork Text Suite</p>
+				<p class="dictionary-term"><span class="dictionary-term">character</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s characters.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>, <span class="codelibraryclass">paragraphs</span>, <span class="codelibraryclass">words</span>.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">paragraph</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s paragraphs.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">word</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">rich text</span> ] : One of some text&rsquo;s words.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">rich text</span>, <span class="codelibraryclass">paragraphs</span>.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">rich text</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp; <i>pl&nbsp;</i> <span class="dictionary-term">rich text</span>&nbsp;: This provides the base rich text class for all iWork applications.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="codelibraryclass">characters</span>, <span class="codelibraryclass">paragraphs</span>, <span class="codelibraryclass">words</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">color</span> (&nbsp;<span class="dictionary-class">RGB color</span> | <span class="codelibraryclass">text</span>&nbsp;) : The color of the font. Expressed as an RGB value consisting of a list of three color values from 0 to 65535. ex: Blue = {0, 0, 65535}. In addition, the lowercase names of the following standard colors can be used in place of RGB color value lists: &quot;black&quot;, &quot;blue&quot;, &quot;brown&quot;, &quot;cyan&quot;, &quot;green&quot;, &quot;magenta&quot;, &quot;orange&quot;, &quot;purple&quot;, &quot;red&quot;, &quot;yellow&quot;, &quot;gray&quot;, and &quot;white&quot;.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">font</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : The name of the font. Can be the PostScript name, such as: &ldquo;TimesNewRomanPS-ItalicMT&rdquo;, or display name: &ldquo;Times New Roman Italic&rdquo;. TIP: Use the Font Book application get the information about a typeface.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">size</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The size of the font (in points).</p>
+			</div>
+			
+			<p>These object and properties will be incorporated into the discussion and examples about how to locate, extract, and manipulate text.</p>
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Identifying Text</div>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>For use with this tutorial <a href="AliceInWonderlandDocument.zip">DOWNLOAD</a> the example <i>Alice in Wonderland</i> <b>Pages</b> document.</p>
+			
+			<p>The first requirement for accessing and/or editing text is to identify to the script, the text you want it to examine. This is done through the use of <b>references</b>. You can identify (reference) text using either of three methods:</p>
+			
+			<ul>
+				<li>By <span class="codeproperty">position value</span></li>
+				<li>By <span class="codeproperty">property value</span></li>
+				<li>By <span class="codeproperty">contents</span></li>
+			</ul>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Identifying by Position</p>
+			
+			<p>Position referencing is a fairly straight-forward concept:</p>
+			
+			<p class="code"><b>the first</b> <span class="codelibraryclass">character</span><br><b>the first</b> <span class="codelibraryclass">word</span><br><b>the first</b> <span class="codelibraryclass">paragraph</span><br><b>the last</b> <span class="codelibraryclass">character</span> <b>of the first</b> <span class="codelibraryclass">paragraph</span><br><b>the first</b> <span class="codelibraryclass">character</span> <b>of the second</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></p>
+			
+			<p>You can reference by a contiguous range of elements as well:</p>
+			
+			<p class="code"><span class="codelibraryclass">characters</span> 1 <b>thru</b> 5 of the first <span class="codelibraryclass">paragraph</span><br><span class="codelibraryclass">words</span> <b>three</b> <b>thru</b> -1 <b>of the second</b> <span class="codelibraryclass">paragraph</span>&nbsp;<span class="codecomment">-- -1 is the last item</span><br><span class="codelibraryclass">paragraphs</span> 3 <b>thru</b> 7 <b>of</b> <span class="codelibraryclass">section</span> 2</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Identifying by Property</p>
+			
+			<p>Referencing by property value requires a bit more detail in that the script must contain the target property <span class="codeproperty">name</span> and the target property <span class="codeproperty">value</span>:</p>
+			
+			<p class="code"><b>every</b> <span class="codelibraryclass">word</span> <b>of every</b> <span class="codelibraryclass">paragraph</span> <b>where its</b> <span class="codeproperty">font</span> <b>is</b> &quot;Impact&quot;<br><b>every</b> <span class="codelibraryclass">paragraph</span> <b>where its</b> <span class="codeproperty">size</span> <b>is</b> 11</p>
+			
+						<p class="content-subhead" role="heading" aria-level="2">Identifying by Contents</p>
+			
+			<p>For content matching, the script indicates the <span class="codelibraryclass">class</span> of the object it wants to locate and the target text of the <span class="codelibraryclass">class</span>:</p>
+			
+			<p class="code"><b>first</b> <span class="codelibraryclass">word</span> <b>of every</b> <span class="codelibraryclass">paragraph</span> <b>where it is</b> "Alice"</p>
+			
+			<p class="segment-note"><b>IMPORTANT</b>: Avoid searching the <span class="codelibraryclass">document</span> <span class="codeproperty">body text</span> directly, such as: <b>every</b> <span class="codelibraryclass">word</span> <b>of</b> <span class="codeproperty">body text</span> <b>where it is</b> &quot;Alice&quot;. Doing so can hang the application. Instead, search all paragraphs of the body text: <b>every</b> <span class="codelibraryclass">word</span> <b>of every</b> <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span> <b>where it is</b> &quot;Alice&quot;</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Getting the Contents of Text Objects</div>
+			
+			<p>This examination of working with text begins with getting the contents of text objects. Simply precede a text object reference with the <span class="codelibrarycommand">get</span> verb (command) and the result of the script statement will be the text string contents of the text object:</p>
+			
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Get the Contents of a Text Object</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20body%20text%0D%09%09%09get%20first%20word%20of%20the%20third%20paragraph%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>get first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> &quot;Alice&quot;</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+
+		
+		<p class="segment-note"><b>IMPORTANT</b>: In the <b>AppleScript</b> language, use of the <span class="codelibrarycommand">get</span> command to retrieve an object&rsquo;s value is optional, as its use is implied by default. So in the <b>iWork</b> applications, use of a text object reference without a preceding verb returns the text objects contents.</p>
+		
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">The Implied Get Verb (command)</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20body%20text%0D%09%09%09--%20BOTH%20STATMENTS%20RETURN%20THE%20SAME%20RESULT%0D%09%09%09--%20NOTE%3A%20by%20default%20in%20the%20iWork%20applicaitons%2C%20use%20of%20a%20text%20object%20reference%20not%20preceded%20with%20a%20verb%20(command)%20returns%20its%20contents%0D%09%09%09%0D%09%09%09--%20explicit%20use%20of%20the%20get%20verb%3A%0D%09%09%09get%20first%20word%20of%20the%20third%20paragraph%0D%09%09%09%0D%09%09%09--%20implicit%20use%20of%20the%20get%20verb%3A%0D%09%09%09the%20first%20word%20of%20the%20third%20paragraph%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- BOTH STATMENTS RETURN THE SAME RESULT</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- NOTE: by default in the iWork applicaitons, use of a text object reference not preceded with a verb (command) returns its contents</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- explicit use of the get verb:</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>get first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> &quot;Alice&quot;</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- implicit use of the get verb:</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>the first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> &quot;Alice&quot;</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The implicit use of the <span class="codelibrarycommand">get</span> verb (command) also occurs when a script statement uses the <span class="codelibrarycommand">set</span> verb to set the value of <span class="codevariable">variables</span> to the result of a text object reference:</p>
+			
+
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Variables and the Get Verb</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20body%20text%0D%09%09%09--%20implicit%20use%20of%20the%20get%20verb%3A%0D%09%09%09set%20thisWord%20to%20the%20first%20word%20of%20the%20third%20paragraph%0D%09%09%09say%20thisWord%0D%09%09%09--%3E%20%22Alice%22%0D%09%09%09--%20Explicit%20use%20of%20the%20get%20verb%3A%0D%09%09%09set%20thisWord%20to%20get%20the%20first%20word%20of%20the%20third%20paragraph%0D%09%09%09say%20thisWord%0D%09%09%09--%3E%20%22Alice%22%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- implicit use of the get verb:</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWord</span> <b>to the first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">say</span> <span class="codevariable">thisWord</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> &quot;Alice&quot;</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Explicit use of the get verb:</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWord</span> <b>to get the first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">say</span> <span class="codevariable">thisWord</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> &quot;Alice&quot;</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>			
+			
+			<p>To store a text object reference in a variable instead of the contents of the text object, use the <b>AppleScript</b> construct: <span class="codeproperty">a reference to</span></p>
+			
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Store a Text Object Reference</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09tell%20the%20front%20document%0D%09%09tell%20the%20body%20text%0D%09%09%09set%20thisWord%20to%20a%20reference%20to%20the%20first%20word%20of%20the%20third%20paragraph%0D%09%09%09return%20thisWord%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWord</span> <b>to a reference to the first</b> <span class="codelibraryclass">word</span> <b>of the third</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>return</b> <span class="codevariable">thisWord</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">--> word 1 of paragraph 3 of body text of document 1 of application &quot;Pages&quot;</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+				<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Changing the Values of Text Object Properties</div>
+			
+			<p>To change the values of the properties of a text object, such as its typeface, type size, or color, use a <b>tell statement</b> or <b>tell block</b> targeting the text object. The tell statement or blocks include the use of the <b>set</b> verb to trigger the change of the value of properties.</p>
+			
+			<p><b>Tell statements</b> are useful for changing the value of a single property, <b>tell blocks</b> are used to change the values of multiple properties:</p>
+			
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Changing Properties of Text Object</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09tell%20body%20text%0D%09%09%09%0D%09%09%09--%20tell%20statement%20(single%20sentence)%3A%0D%09%09%09tell%20the%20first%20character%20to%20set%20its%20color%20to%20%22blue%22%0D%09%09%09%0D%09%09%09--%20tell%20block%20(begin%20tell%20and%20end%20tell)%0D%09%09%09tell%20the%20first%20character%0D%09%09%09%09set%20the%20color%20of%20it%20to%20%22blue%22%0D%09%09%09%09set%20the%20size%20to%20%2224%22%0D%09%09%09%09set%20the%20font%20to%20%22Times%20New%20Roman%20Italic%22%0D%09%09%09end%20tell%0D%09%09%09%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- tell statement (single sentence):</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">character</span> <b>to set its</b> <span class="codelibraryclass">color</span> <b>to</b> &quot;blue&quot;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- tell block (begin tell and end tell)</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">character</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codelibraryclass">color</span> <b>of it to</b> &quot;blue&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">size</span> <b>to</b> &quot;24&quot;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font</span> <b>to</b> &quot;Times New Roman Italic&quot;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>			
+			
+			<p class="segment-note"><b>NOTE</b>: In the <b>Pages</b> dictionary, the term &ldquo;color&rdquo; is both a <span class="codelibraryclass">class</span> and a <span class="codeproperty">property</span>. To avoid ambiguity and possible errors in scripts using this term, explicitly indicate <span class="codelibraryclass">color</span>&rsquo;s use as a property by including possessive terms such as <span class="inlinecode">its color</span> or <span class="inlinecode">color of it</span> to indicate that <span class="codelibraryclass">color</span> is being used as a <span class="codeproperty">property</span> of the targeted <span class="codelibraryclass">text object</span> (<b>it</b>).<br><br>The use of possessive indicators is optional for the other text object properties.</p>
+		
+			<p>Here are two short script examples of changing the value of text object properties:</p>
+		
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Large 1st Character</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09set%20thisCharacter%20to%20%C2%AC%0D%09%09%09a%20reference%20to%20the%201st%20character%20of%20the%201st%20paragraph%20of%20the%20body%20text%0D%09%09tell%20thisCharacter%0D%09%09%09set%20size%20to%20((its%20size)%20*%203)%0D%09%09%09set%20font%20to%20%22Zapfino%22%0D%09%09%09set%20color%20of%20it%20to%20%7B0%2C%200%2C%2065535%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisCharacter</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>a reference to the</b> 1st <span class="codelibraryclass">character</span> <b>of the</b> 1st <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisCharacter</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> ((<b>its</b> <span class="codeproperty">size</span>) * 3)</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Zapfino&quot;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">color</span> <b>of it to</b> &quot;blue&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Turn Alice Blue</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09tell%20body%20text%0D%09%09%09set%20the%20color%20of%20%C2%AC%0D%09%09%09%09(every%20word%20of%20every%20paragraph%20where%20it%20is%20%22Alice%22)%20to%20%7B0%2C%200%2C%2065535%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(<b>every</b> <span class="codelibraryclass">word</span> <b>of every</b> <span class="codelibraryclass">paragraph</span> <b>where it is</b> &quot;Alice&quot;) <b>to</b> &quot;blue&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The following script uses the provided example Pages file to demonstrate how to format the section titles with multiple text styles:</p>		
+					
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Formatting Chapter Titles</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09tell%20front%20document%0D%09%09%0D%09%09get%20words%201%20thru%202%20of%20the%20first%20paragraph%20of%20the%20body%20text%20of%20every%20section%0D%09%09--%20%7B%7B%22CHAPTER%22%2C%20%22I%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22II%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22III%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22IV%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22V%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22VI%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22VII%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22VIII%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22IX%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22X%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22XI%22%7D%2C%20%7B%22CHAPTER%22%2C%20%22XII%22%7D%7D%0D%09%09%0D%09%09--%20format%20the%20first%20part%20of%20the%20section%20title%0D%09%09tell%20words%201%20thru%202%20of%20the%20first%20paragraph%20of%20the%20body%20text%20of%20every%20section%0D%09%09%09set%20font%20to%20%22Zapfino%22%0D%09%09%09set%20size%20to%208%0D%09%09%09set%20the%20color%20of%20it%20to%20%7B26214%2C%2026214%2C%2026214%7D%0D%09%09end%20tell%0D%09%09%0D%09%09--%20format%20the%20second%20part%20of%20the%20section%20title%0D%09%09tell%20words%203%20thru%20-1%20of%20the%20first%20paragraph%20of%20the%20body%20text%20of%20every%20section%0D%09%09%09set%20font%20to%20%22Times%20New%20Roman%20Italic%22%0D%09%09%09set%20size%20to%2018%0D%09%09%09set%20the%20color%20of%20it%20to%20%7B0%2C%200%2C%200%7D%0D%09%09end%20tell%0D%09%09%0D%09%09--%20Format%20any%20ending%20punctuation%0D%09%09tell%20the%20last%20character%20of%20the%20first%20paragraph%20of%20the%20body%20text%20of%20every%20section%0D%09%09%09set%20font%20to%20%22Times%20New%20Roman%20Italic%22%0D%09%09%09set%20size%20to%2018%0D%09%09%09set%20the%20color%20of%20it%20to%20%7B0%2C%200%2C%200%7D%0D%09%09end%20tell%0D%09%09%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>get</b> <span class="codelibraryclass">words</span> 1 <b>thru</b> 2 <b>of the first</b> <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- {{&quot;CHAPTER&quot;, &quot;I&quot;}, {&quot;CHAPTER&quot;, &quot;II&quot;}, {&quot;CHAPTER&quot;, &quot;III&quot;}, {&quot;CHAPTER&quot;, &quot;IV&quot;}, {&quot;CHAPTER&quot;, &quot;V&quot;}, {&quot;CHAPTER&quot;, &quot;VI&quot;}, {&quot;CHAPTER&quot;, &quot;VII&quot;}, {&quot;CHAPTER&quot;, &quot;VIII&quot;}, {&quot;CHAPTER&quot;, &quot;IX&quot;}, {&quot;CHAPTER&quot;, &quot;X&quot;}, {&quot;CHAPTER&quot;, &quot;XI&quot;}, {&quot;CHAPTER&quot;, &quot;XII&quot;}}</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- format the first part of the section title</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">words</span> 1 <b>thru</b> 2 <b>of the first</b> <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Zapfino&quot;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> 8</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of it to</b> {26214, 26214, 26214}</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- format the second part of the section title</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">words</span> 3 <b>thru</b> -1 <b>of the first</b> <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Times New Roman Italic&quot;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> 18</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of it to</b> {0, 0, 0}</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- Format any ending punctuation</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the last</b> character <b>of the first</b> <span class="codelibraryclass">paragraph</span> <b>of the</b> <span class="codeproperty">body text</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Times New Roman Italic&quot;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> 18</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of it to</b> {0, 0, 0}</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>Some of the section titles formatted by the script:</p>
+			<img class="centered" width="624" height="186" alt="Examples of the section chapter titles with new formatting" src="gfx/formatted-chapter-titles.jpg">	
+		
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Changing the Content of a Text Object</div>
+			
+			<p>To change the content of a text object, use the <b>set</b> verb followed by a delineated reference to the text object, followed by the new text for the text object:</p>
+		
+		<p class="code"><b>set</b> (<b>the first</b> <span class="codelibraryclass">character</span> <b>of the</b> <span class="codeproperty">body text</span>) <b>to</b> "K"</p>
+		
+		<p>Note that the text object reference is placed within parens (&nbsp;) to ensure that the object reference is resolved first by the script, before it attempts to change the text object&rsquo;s contents.</p>
+		
+		<p>Scripts can replace the content of all of the Pages text objects: <span class="codelibraryclass">characters</span>, <span class="codelibraryclass">words</span>, <span class="codelibraryclass">paragraphs</span>, and even the document&rsquo;s <span class="codeproperty">body text</span>:</p>
+		
+			<table class="script-table"></td></tr>
+				<tr><td colspan="3" class="script-title">Change the Content of Text Objects</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%7Bdocument%20template%3Atemplate%20%22Blank%22%7D%0D%09%0D%09tell%20thisDocument%0D%09%09--%20replace%20body%20text%0D%09%09set%20body%20text%20to%20%22Curabitur%20blandit%20tempus%20porttitor.%20Donec%20sed%20odio%20dui.%20Donec%20id%20elit%20non%20mi%20porta%20gravida%20at%20eget%20metus.%20Etiam%20porta%20sem%20malesuada%20magna%20mollis%20euismod.%0D%0DDonec%20ullamcorper%20nulla%20non%20metus%20auctor%20fringilla.%20Maecenas%20faucibus%20mollis%20interdum.%20Nulla%20vitae%20elit%20libero%2C%20a%20pharetra%20augue.%20Praesent%20commodo%20cursus%20magna%2C%20vel%20scelerisque%20nisl%20consectetur%20et.%20Integer%20posuere%20erat%20a%20ante%20venenatis%20dapibus%20posuere%20velit%20aliquet.%0D%0DDonec%20sed%20odio%20dui.%20Vestibulum%20id%20ligula%20porta%20felis%20euismod%20semper.%20Praesent%20commodo%20cursus%20magna%2C%20vel%20scelerisque%20nisl%20consectetur%20et.%20Lorem%20ipsum%20dolor%20sit%20amet%2C%20consectetur%20adipiscing%20elit.%20Nulla%20vitae%20elit%20libero%2C%20a%20pharetra%20augue.%20Donec%20justo%20odio%2C%20dapibus%20ac%20facilisis%20in%2C%20egestas%20eget%20quam.%20Maecenas%20sed%20diam%20eget%20risus%20varius%20blandit%20sit%20amet%20non%20magna.%0D%0DCOPYRIGHT%20NOTICE%22%0D%09%09%0D%09%09tell%20body%20text%0D%09%09%09--%20set%20body%20tet%20properties%0D%09%09%09set%20font%20to%20%22Verdana%22%0D%09%09%09set%20size%20to%2018%0D%09%09%09set%20color%20of%20it%20to%20%22gray%22%0D%09%09%09%0D%09%09%09--%20replace%20character%0D%09%09%09set%20(the%20first%20character)%20to%20%22T%22%0D%09%09%09%0D%09%09%09--%20replace%20word%0D%09%09%09set%20(every%20word%20of%20every%20paragraph%20where%20it%20is%20%22Donec%22)%20to%20%22Salnec%22%0D%09%09%09%0D%09%09%09--%20replace%20paragraph%0D%09%09%09set%20(every%20paragraph%20where%20it%20begins%20with%20%22COPYRIGHT%20NOTICE%22)%20to%20%C2%AC%0D%09%09%09%09%22%C2%A9%20ACME%20WIDGETS%2C%20INC.%20ALL%20RIGHTS%20RESERVED.%22%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> &quot;Blank&quot;}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- replace body text</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">body text</span> <b>to</b> &quot;Curabitur blandit tempus porttitor. Donec sed odio dui. Donec id elit non mi porta gravida at eget metus. Etiam porta sem malesuada magna mollis euismod.</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap">Donec ullamcorper nulla non metus auctor fringilla. Maecenas faucibus mollis interdum. Nulla vitae elit libero, a pharetra augue. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap">Donec sed odio dui. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla vitae elit libero, a pharetra augue. Donec justo odio, dapibus ac facilisis <b>in</b>, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna.</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap">COPYRIGHT NOTICE&quot;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set body tet properties</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> &quot;Verdana&quot;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> 18</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">color</span> <b>of it to</b> &quot;gray&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- replace character</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> (<b>the first</b> <span class="codelibraryclass">character</span>) <b>to</b> &quot;T&quot;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- replace word</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> (<b>every</b> <span class="codelibraryclass">word</span> <b>of every</b> <span class="codelibraryclass">paragraph</span> <b>where it is</b> &quot;Donec&quot;) <b>to</b> &quot;Salnec&quot;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- replace paragraph</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> (<b>every</b> <span class="codelibraryclass">paragraph</span> <b>where it begins with</b> &quot;COPYRIGHT NOTICE&quot;) <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;© ACME WIDGETS, INC. ALL RIGHTS RESERVED.&quot;</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>Read the next page for details on how to perform find and replace on document with long body text.</p>	
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="body-text-replace.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="body-text.html">Body Text</a></li>
+				<li class="navListSectionItemSelected">Working with Text</li>
+				<li class="navListSectionItem"><a href="body-text-replace.html">Find &amp; Replace</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

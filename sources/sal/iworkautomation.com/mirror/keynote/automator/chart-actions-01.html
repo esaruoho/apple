@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Add Chart with Numbers Table Data&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Add Chart with Numbers Table Data&rdquo; Automator action is used to create a chart on the indicated slide, using data from a specified Numbers table.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;Add Chart with Numbers Table Data&rdquo; Action</div>
+			
+			<p><b>Q</b>: <span style="font-family:'Times New Roman',serif;font-style:italic;font-size:130%;">What do you call a business presentation without a compelling chart?</span></p> 
+			<p><b>A</b>: <span style="font-family:'Times New Roman',serif;font-style:italic;font-size:130%;">A request for early retirement.</span></p>
+			
+			<p>In the business world, a lot can be riding on a single presentation. So it has to be convincing and carry impact. And when it comes to dishing decisive data, Apple’s iWork suite of applications serve up the most delicious display of digital daring-do.</p>
+			
+			<p>The &ldquo;Add Chart with Numbers Table Data&rdquo; action makes it easy to insert creative charts, based on data from Numbers documents, into Keynote presentations.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>			
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">An AppleScript reference to the slide to which the chart is to be added</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">An AppleScript reference to the slide to which the chart was added</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>The method for identifying the Numbers table to be used as the source data for the created chart.</p></li>
+						<li><p>The type of chart to be created from the source data.</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that often precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>New Slide</p></li>
+						<li><p>Get Specified Slide</p></li>
+					</ul>
+				</td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Video Overview</p>
+			<p>The following video (5:23) demonstrates how to use this Automator action:</p>
+			
+			<video width="624" height="436" controls>
+			  <source src="New-Chart-Action-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<p>The view for this action is divided into two groups:</p>
+			
+			<ul>
+				<li>Parameters related to identifying the source table data are placed in the top box in the action view.</li>
+				<li>Parameters related to determining the chart type and data display method are placed in the bottom box in the action view.</li>
+			</ul>
+			
+			<p>Here is the interface view for the action, with various parameters set to specified options:</p>
+
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The image to be replaced is set be identified by its file name.</p>
+			<img class="action-interface" alt="new-image-slide-01" src="gfx/add-chart-from-numbers-01.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Source Document File</b>&nbsp;&bull;&nbsp;Select the document file that contains the table whose data is to be used as the source for the created chart. To open the Numbers document file indicated in the source popup menu, click the adjacent &ldquo;Open&rdquo; button.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Use Open Document</b>&nbsp;&bull;&nbsp;Instead of specifying a Numbers document using the &ldquo;Source Document File&rdquo; fie picker <span class="numeric-callout">&nbsp;1&nbsp;</span> select this checkbox to indicate the action should use the frontmost document open in Numbers when the parent workflow is executed.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Data Source Menu</b>&nbsp;&bull;&nbsp;Use this menu to indicate how the action determines the source data to used in creating the chart. The four options include: using the data from the currently selected Numbers table; using the selection of the active table; using the first table of the active sheet; or using a table specified by name <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			<img class="centered" width="230" alt="source-table-popup-menu" src="gfx/source-table-popup-menu.png" height="106">
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Table Name</b>&nbsp;&bull;&nbsp;If the &ldquo;Data Source Menu&rdquo; <span class="numeric-callout">&nbsp;3&nbsp;</span> is set to &ldquo;Named table&hellip;&rdquo; this text input will be enabled. Enter the name of the Numbers table to used as the data source.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Table Name for Slide Title</b>&nbsp;&bull;&nbsp;Select this option to use the table name as the title for the slide that hosts the created chart.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Chart Type</b>&nbsp;&bull;&nbsp;Select the type of chart to be created, from this popup menu <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			<img class="centered" width="230" height="314" alt="chart-type-popup-menu" src="gfx/chart-type-popup-menu.png">
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Data Grouping</b>&nbsp;&bull;&nbsp;Select the data grouping method to use for the chart. Options include grouping data: by row; or by column.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;<b>Delete All Charts</b>&nbsp;&bull;&nbsp;Select this option to delete any existing charts on the host slide. A useful option for updating an existing presentation.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+				
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image-actions-02.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="#">Automator Quick-Start</a></li>
+				<hr>
+				<li><a href="document-actions-01.html">Document Actions</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li class="hi">Chart Actions</li>
+				<li class="navListSectionItemSelected">Add Chart with Numbers Table Data</li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+								
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

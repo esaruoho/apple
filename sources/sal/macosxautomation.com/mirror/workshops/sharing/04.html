@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Sharing Content Locally</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Share, Personal Web-Sharing, OS X">
+	<META NAME="Description" CONTENT="How to restore and control Personal Web-Sharing in OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Sharing Content</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: PUBLIC FOLDER -->
+		<div class="content-segment">
+		<div class="segment-header" >Using Personal Web-Sharing</div>
+			
+			<p>In the previous workshop segment, you activated the built-in Personal Web-Sharing feature of your computer. As part of the setup process, a <b>Sites</b> folder was created in your Home directory (see below). This folder will contain the items you wish to share with others on your local network.</p>
+						
+			<img alt="sites-folder" src="gfx/sites-folder.png" width="624" height="451" class="centered">			
+						
+			<p>With a very small amount of preparation, you&rsquo;ll soon be actively web-publishing from your computer. The first step is to download some example items to place in the Sites folder.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="webshareitems.zip">Download</a> and unpack the ZIP archive containing example items to place in the Sites folder.</p>
+			
+			<p>The unarchived folder contains three example items:</p>
+			
+			<ol>
+				<li><b>MadTeaParty.epub</b> - A digital book file in EPUB format (created using the tools from the <a href="http://macosxautomation.com/workshops/epub/index.html">One-Step Creation of Digital Books</a> workshop).</li>
+				
+				<li><b>Tea-Party-Cover.jpg</b> - An image file.</li>
+				
+				<li><b>article</b> - A web-app folder containing HTML content in multi-column format (created using the tools from the <a href="http://macosxautomation.com/workshops/webapps/index.html">Simple Template Publishing</a> workshop).</li>
+			</ol>
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Move the downloaded example items into the Sites folder.</p>
+			
+			<p>The Sites folder will now contain four items, the three downloaded example items, and the default webpage file (index.html) created by the setup AppleScript applet (see below).</p>
+			
+			<img alt="sites-folder-02" src="gfx/sites-folder-02.png" width="624" height="369" class="centered">
+			
+			<p>When a Sites folder contains an <b>index.html</b> file, the HTML contents of the <b>index.html</b> file will be displayed to others when they enter the URL for your computer in a web browser application on their computer. When the Sites folder does <b>not</b> contain an <b>index.html</b> file, a list of links to the contents of the Sites folder will be displayed instead. This is what we want to display for web-sharing.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Move the <b>index.html</b> file out of the Sites folder (see below).</p>
+			
+			<img alt="sites-folder-03" src="gfx/sites-folder-03.png" width="624" height="369" class="centered">
+			
+			<p>Now that the sites folder does not contain an <b>index.html</b> file, a list of links to the items within the Sites folder, will be displayed in web-browser application of a local network user, when they enter the URL to your computer (see below).</p>
+			
+			<img alt="browser-view" src="gfx/browser-view.png" width="624" height="515" class="centered">
+
+			<p>When a connect user clicks one of the links, the contents of the linked item will be display within their browser (if possible). For example, here is what is displayed in Safari on OS&nbsp;X when a connected user clicks the &ldquo;article&rdquo; link:</p>
+			
+			<img alt="article-computer" src="gfx/article-computer.png" width="624" height="550" class="centered">
+
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Viewing Your Served Content on iOS Devices</div>
+		
+			<p>Content made available through personal web-sharing can be easily viewed on iOS devices such as iPads and iPhones. Simply open the Safari browser on the devices and enter the URL for the local network address of the publishing computer, followed by a forward slash (/), a tilde character (~), and the name of the user who is hosting the content, like this: <i>johnny.local/~Johhny/</i></p>
+			
+			<p>The list of links to the content of the shared Sites folder will be displayed (see below):</p>
+			
+			<img alt="ipad-01" src="gfx/ipad-01.png" width="624" height="374" class="centered">
+			
+			<p>When the viewer taps a link, the content will be displayed, as in this example where the viewer tapped the &ldquo;article&rdquo; link: (see below)</p>
+			
+			<img alt="ipad-02" src="gfx/ipad-02.png" width="624" height="832" class="centered">
+			
+			<p>On an iOS device, tapping a link to a digital book, will display a screen allowing import of the book into iBooks or another application: (see below)</p>
+
+			<img alt="ipad-03" src="gfx/ipad-03.png" width="624" height="400" class="centered">
+			
+		</div>			
+
+					
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="05.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">AirDrop</a></li>
+				<li><a href="02.html">Public Folder</a></li>
+				<li><a href="03.html">Personal Web-Sharing (setup)</a></li>
+				<li style="list-style:none;" class="hi">Personal Web-Sharing (use)</li>
+				<li><a href="05.html">Sharing Scenarios</a></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees will share example content using the Personal Web-Sharing services they activated in the previous segment.</p>
+						
+			<p class="sidebar-subhead">Guided Tutorial</p>
+			
+			<ol style="margin-bottom:18px;">
+				<li>Begin by having all attendees <a href="webshareitems.zip">download</a> the example content to their computers.</li>
+
+				<li>Next, instruct the attendees to locate and open the Sites folder located in their Home directory. Explain that content placed in this directory will be published to other users on the local network.</li>
+				
+				<li>Instruct the attendees to place the downloaded example items into their Sites folder.</li>
+				
+				<li>Have the attendees move the index.html file from their Sites folder to the desktop, and by doing so enable the other network users to “see” links to the other items in the Sites folder.</li>
+				
+				<li>Demonstrate how to view the published items by either entering one of the attendee’s local network name in a Safari window on your computer, or by accessing and double-clicking one of their shared link files.</li>
+				
+				<li>Select the image link to demonstrate viewing a published image.</li>
+				
+				<li>Select the article link to demonstrate viewing a published HTML content.</li>
+				
+				<li>Using an iOS device, such as an iPad, demonstrate viewing published content, focusing on the HTML article and EPUB document.</li>
+				
+			</ol>
+			
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Discuss how activating Personal Web-Sharing on a specific computer on a local network could be useful for sharing content amongst a classroom or workgroup.</li>
+			</ol>
+			
+			
+		</div>
+		
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

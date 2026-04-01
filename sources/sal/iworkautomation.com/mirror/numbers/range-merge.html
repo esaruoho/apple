@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Merging a Range</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Merging a Range</div>
+											
+			<p>The <span class="codelibraryclass">range</span> class can be the target of the <span class="codelibrarycommand">merge</span> and <span class="codelibrarycommand">unmerge</span> commands.</p>
+						
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">merge</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Merge a specified range of cells.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>merge</b> <span class="dictionary-class">range</span></p>
+			</div>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">unmerge</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Unmerge all merged the cells in a specified range.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>unmerge</b> <span class="dictionary-class">range</span></p>
+			</div>
+			
+			<p>The merging of cells is often done for organizational or esthetic reasons, as a way to separate or highlight data in a table. In the example table shown below, alternating rows have been merged to provide a buffer between the rows that will contain the data.</p>
+			
+			<img class="centered" alt="merged-row-table" src="gfx/merged-row-table.jpg" width="624">
+			
+			<p class="segment-note"><b>NOTE</b>: You can merge cells wholly within a table header region or the body. You cannot merge cells that span those regions. e.g. If you set the number of header columns to 5 then <span class="inlinecode">merge range &quot;A1:E1&quot;</span> will work but <span class="inlinecode">merge range &quot;A1:F1&quot;</span> will not, because F1 is in the body and the others are in the header.</p>
+			
+			<p>The following example script will create such a table on the current spread of the frontmost document:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Table with Alternating Merged Rows</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20rowCount%20%3A%2010%0Dproperty%20columnCount%20%3A%2010%0Dproperty%20useRowHeaders%20%3A%20true%0Dproperty%20useColumnHeaders%20%3A%20true%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20make%20new%20document%0D%09tell%20document%201%0D%09%09tell%20active%20sheet%0D%09%09%09set%20thisTable%20to%20%C2%AC%0D%09%09%09%09make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Brow%20count%3ArowCount%2C%20column%20count%3AcolumnCount%7D%0D%09%09%09tell%20thisTable%0D%09%09%09%09set%20height%20of%20every%20row%20to%2040%0D%09%09%09%09set%20width%20of%20every%20column%20to%2060%0D%09%09%09%09if%20useRowHeaders%20is%20true%20then%0D%09%09%09%09%09set%20startRowCellIndex%20to%202%0D%09%09%09%09else%0D%09%09%09%09%09set%20startRowCellIndex%20to%201%0D%09%09%09%09end%20if%0D%09%09%09%09if%20useColumnHeaders%20is%20true%20then%0D%09%09%09%09%09set%20startColumnCellIndex%20to%203%0D%09%09%09%09else%0D%09%09%09%09%09set%20startColumnCellIndex%20to%202%0D%09%09%09%09end%20if%0D%09%09%09%09repeat%20with%20i%20from%20startColumnCellIndex%20to%20rowCount%20by%202%0D%09%09%09%09%09--%20define%20the%20cell%20range%20to%20merge%0D%09%09%09%09%09set%20rangeStart%20to%20name%20of%20cell%20startRowCellIndex%20of%20row%20i%0D%09%09%09%09%09set%20rangeEnd%20to%20name%20of%20cell%20-1%20of%20row%20i%0D%09%09%09%09%09set%20the%20rowRange%20to%20rangeStart%20%26%20%22%3A%22%20%26%20rangeEnd%0D%09%09%09%09%09--%20merge%20the%20specified%20range%0D%09%09%09%09%09merge%20range%20rowRange%0D%09%09%09%09%09tell%20cell%202%20of%20row%20i%20--%20format%20the%20merged%20area%0D%09%09%09%09%09%09set%20background%20color%20to%20%7B59121%2C%2059119%2C%2059120%7D%0D%09%09%09%09%09%09set%20text%20color%20to%20%7B46137%2C%2046137%2C%2046137%7D%0D%09%09%09%09%09%09set%20alignment%20to%20center%0D%09%09%09%09%09%09set%20vertical%20alignment%20to%20center%0D%09%09%09%09%09%09set%20font%20size%20to%2018.0%0D%09%09%09%09%09%09set%20value%20to%20%22%E2%96%BC%22%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20repeat%0D%09%09%09%09set%20the%20selection%20range%20to%20cell%20range%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">rowCount</span> : 10</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">columnCount</span> : 10</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">useRowHeaders</span> : <span class="dictionary-enumeration">true</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">useColumnHeaders</span> : <span class="dictionary-enumeration">true</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">row count</span>:<span class="codevariable">rowCount</span>, <span class="codeproperty">column count</span>:<span class="codevariable">columnCount</span>}</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">height</span> <b>of every</b> <span class="codelibraryclass">row</span> <b>to</b> 40</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">width</span> <b>of every</b> <span class="codelibraryclass">column</span> <b>to</b> 60</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">useRowHeaders</span> <b>is</b> <span class="dictionary-enumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startRowCellIndex</span> <b>to</b> 2</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startRowCellIndex</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">useColumnHeaders</span> <b>is</b> <span class="dictionary-enumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startColumnCellIndex</span> <b>to</b> 3</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startColumnCellIndex</span> <b>to</b> 2</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> <span class="codevariable">startColumnCellIndex</span> <b>to</b> <span class="codevariable">rowCount</span> <b>by</b> 2</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- define the cell range to merge</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">rangeStart</span> <b>to</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">cell</span> <span class="codevariable">startRowCellIndex</span> <b>of</b> <span class="codelibraryclass">row</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">rangeEnd</span> <b>to</b> name <b>of</b> <span class="codelibraryclass">cell</span> -1 <b>of</b> <span class="codelibraryclass">row</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">rowRange</span> <b>to</b> <span class="codevariable">rangeStart</span> &amp; &quot;:&quot; &amp; <span class="codevariable">rangeEnd</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- merge the specified range</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">merge</span> <span class="codelibraryclass">range</span> <span class="codevariable">rowRange</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">cell</span> 2 of <span class="codelibraryclass">row</span> <span class="codevariable">i</span> <span class="codecomment">-- format the merged area</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">background color</span> <b>to</b> {59121, 59119, 59120}</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> {46137, 46137, 46137}</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="dictionary-enumeration">center</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">vertical alignment</span> <b>to</b> <span class="dictionary-enumeration">center</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">font size</span> <b>to</b> 18.0</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">value</span> <b>to</b> &quot;&#9660;&quot;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">selection range</span> <b>to</b> <span class="codeproperty">cell range</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="range-clear.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li class="hi"><a href="range.html">Range</a></li>
+				<li class="navListSectionItem"><a href="range-select.html">Selecting a Range</a></li>
+				<li class="navListSectionItemSelected">Merging a Range</li>
+				<li class="navListSectionItem"><a href="range-clear.html">Clearing a Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

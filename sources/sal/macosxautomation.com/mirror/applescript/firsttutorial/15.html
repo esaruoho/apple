@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Nested Tell Blocks</h2>
+		
+		<p>To further improve script readability and understanding, <span class="dictionary-term">tell blocks</span> can contain other <span class="dictionary-term">tell blocks</span> that target scriptable elements or objects belonging to the scriptable element or object targeted in the outermost <span class="dictionary-term">tell block</span>. For example, the Desktop Setup script can be rewritten so that the actions targeting the front window are enclosed within their own <span class="dictionary-term">tell blocks</span> within the outer Finder <span class="dictionary-term">tell block</span>, as shown in the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%0D%09close%20every%20window%0D%09open%20home%0D%09tell%20the%20front%20Finder%20window%0D%09%09set%20toolbar%20visible%20to%20true%0D%09%09set%20the%20sidebar%20width%20to%20135%0D%09%09set%20the%20current%20view%20to%20column%20view%0D%09%09set%20the%20bounds%20to%20%7B36%2C%20116%2C%20511%2C%20674%7D%0D%09end%20tell%0D%09open%20folder%20%22Documents%22%20of%20home%0D%09tell%20the%20front%20Finder%20window%0D%09%09set%20toolbar%20visible%20to%20false%0D%09%09set%20the%20current%20view%20to%20flow%20view%0D%09%09set%20the%20bounds%20to%20%7B528%2C%20116%2C%201016%2C%20674%7D%0D%09end%20tell%0D%09select%20the%20last%20Finder%20window%0Dend%20tell"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The Desktop Setup script re-written to use nested tell blocks.<br>&nbsp;<br>&nbsp;<br></span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>close <b>every</b> window<BR>
+<span style="float:left; width:10px;">&nbsp;</span>open home<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> Finder window<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> toolbar visible <b>to</b> true<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> sidebar width <b>to</b> 135<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> current view <b>to</b> column view<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> bounds <b>to</b> {36, 116, 511, 674}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>open folder &quot;Documents&quot; <b>of</b> home<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> Finder window<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> toolbar visible <b>to</b> false<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> current view <b>to</b> flow view<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> bounds <b>to</b> {528, 116, 1016, 674}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>select <b>the last</b> Finder window<BR>
+<b>end tell</b></p>
+
+		<p>The technique of placing tell blocks within other tell blocks is referred to as <span class="dictionary-term">nesting</span> tell blocks and is found quite often in scripts. And, since scripts are read from top to bottom and from left to right, the use of tell blocks makes it very easy to quickly see how a script is designed.</p>
+		
+		<p>For example, the previous script starts with two commands to the Finder followed by four commands to the front Finder window followed by a single command to the Finder followed by four commands to the front Finder window again and then finishes with a single command to the Finder.</p>
+		
+		<p>Since you&rsquo;ll often edit your scripts later (perhaps a long time later), it&rsquo;s important to write your scripts in a manner that is easy to understand and review. Using <span class="dictionary-term">tell blocks</span> and <span class="dictionary-term">nested tell blocks</span> in your scripts enables you to write scripts that are readable and that make sense to yourself and others. You can use as many nested tell blocks as you like in your scripts, just remember:</p>
+		
+		<p class="principle">If you begin a <b>tell block</b>, you must end the <b>tell block</b> with an <b>end tell</b> statement.</p>
+		
+		<p>If you entered the original version Desktop Setup script in the Script Editor, edit it now to match the version with the nested tell blocks. Be sure to remove the possessive phrase <span class="inlinecode">of the front Finder window</span> when you create the nested tell blocks. The function played by that phrase in defining the containment hierarchy of the front Finder window object is now played by the nested tell statement, <span class="inlinecode">tell the front Finder window</span>.</p>
+		
+		
+		<p>Notice there are two nested tell blocks addressing the front Finder window in the Desktop Setup script. Why? Shouldn’t the second nested tell block be addressing the second Finder window?</p>
+		
+		
+		<p>No, when the second Finder window is opened, it automatically becomes the frontmost Finder window in the stack of open Finder windows. Therefore, it is now the front Finder window and can be targeted in the same manner as the previous window.</p>
+		
+
+
+
+
+
+
+
+
+
+			
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="16.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li class="hi">Nested Tell Blocks</li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

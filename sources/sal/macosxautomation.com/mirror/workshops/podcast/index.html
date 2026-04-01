@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- START MOVIE PLAYER SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE PLAYER SCRIPT -->
+<!-- START IMAGE SWAP SCRIPT -->
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcastmovie.mp4\" width=\"320\" height=\"338\" scale=\"1\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!-- END IMAGE SWAP SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator<a href="javascript:void();"><img alt="podcast-qr" src="gfx/podcast-qr.png" width="64" height="64" style="margin-top:-11px;margin-right:-11px;float:right;" highresurl="gfx/podcast-qr.png" caption="http://macosxautomation.com/workshops/podcast" displaywidth="330" displayheight="330" onclick="void(0);lightboxThisImage(this);"></a></div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<div class="content-segment">
+			<div class="segment-header">Introduction</div>
+			
+		<h1 class="content-title">Add Rendered Narration Tracks to Podcasts</h1>
+	
+		<p class="content-intro">Use Automator and the built-in speech technology of OS&nbsp;X to add realistic rendered narration tracks to your GarageBand slideshow podcasts.</p>
+		
+		<div id="podcastFrame" style="float:left;margin-right:12px;user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;-ms-user-select:text!important;"><img src="gfx/podcastcover.jpg" width="320" height="320" onClick="swapImageWithMovie();" style="margin-bottom:18px;"></div>
+<!-- 
+		<object width="320" height="338" standby="Data is loading..." codebase="http://www.apple.com/qtactivex/qtplugin.cab" style="float:left;margin-right:12px;"> 
+			<param name="src" value="alaskanpodcast.m4a"> 
+			<param name="autoplay" value="true"> 
+			<param name="controller" value="true">
+			<param name="width" value="320"> 
+			<param name="height" value="338"> 
+			<embed src="alaskanpodcast.m4a" width="320" height="338" scale="2" autoplay="false" controller="true" type="video/x-m4v" pluginspage="http://www.apple.com/quicktime/download/"> 
+			</embed> 
+		</object>
+ -->
+			
+		<p style="color:#BE0039;"><b>IMPORTANT</b>: GarageBand version 10 no longer supports podcasts. Use GarageBand version 6.0.5 or earlier.</p>	
+				
+		<p>One of the challenges in creating slideshow podcasts is recording the narration track that accompanies the display of images.</p>
+		
+		<p>Traditionally, the process of recording a usable narration track requires the use of a quality microphone in a quiet environment in order to get a recording free of background noise and distractions. In addition, speaking the narration clearly and accurately is difficult for many people not trained in broadcast techniques, and may end up taking a lot of time and effort to get a usable narration track.</p> 
+		
+		<p>An alternative approach is to use the built-in text-to-speech abilities of OS&nbsp;X and Automator to render written phrases into spoken audio clips that are combined to become the narration of your slideshow. This technique requires no special equipment or environment and delivers a high-quality narration in a shorter amount of time.</p>
+		
+		<p>In this workshop you will learn how to create and install the Automator-based OS&nbsp;X Services for turning text into spoken audio clips.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Before you continue, take 3 1/2 minutes to watch the completed example podcast. To view the podcast embedded in this webpage, click or tap the <a href="javascript:void();" onClick="swapImageWithMovie();"><b>Alaskan Adventure image</b></a> above, or view a larger version, <a href="javascript:void(0);" onclick="PopupCenter('podcast.html', 'viewer-podcast',640,658);"><b>displayed in its own window</b></a>.</p>
+		
+		</div>
+		
+		<!-- BEGIN SEGMENT: WORKSHOP SESSION MATERIALS -->
+		<div class="content-segment">
+			<div class="segment-header">Workshop Session Materials</div>
+			
+			<p>The Workshop Session Kit provided here contains everything you'll need to create the finished GarageBand podcast. Specifically, the kit contains the following items:</p>
+			
+			<ol>
+				<li>The GarageBand slideshow podcast project template containing sound markers as placeholders for the narration clips to be created and added.</li>
+				<li>A text file containing the narration dialog for two narrators, one male, one female.</li>
+				<li>A folder containing Automator service workflow files.</li>
+			</ol>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="AUTOWKSHP-03-Attendee.zip"><b>DOWNLOAD</b></a> (65 MB) and unpack the workshop session kit archive. You&rsquo;ll use its contents in this workshop.</p>
+		</div>
+		<!-- END SEGMENT: WORKSHOP SESSION MATERIALS -->
+				
+				
+		<!-- BEGIN SEGMENT: CHOOSE & INSTALL VOICES -->
+		<div class="content-segment">
+			<div class="segment-header">Choose and Install the Narrator Voices</div>
+			
+			<p>This workshop demonstrates how to use the built-in speech technology of OS&nbsp;X to convert written statements, into spoken audio clips that are added to a GarageBand project as narration tracks. With a project as this, the quality and style of the computer voice is essential to producing a realistic listenable podcast.</p>
+			
+			<p>OS&nbsp;X Lion includes many new high-quality male and female voices, available in multiple languages, that are perfect for narration. So the first step in this workshop is to choose and install two of these voices.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>On your computer, open the <b>System Preferences</b> application by selecting the &ldquo;<b>System Preferences&hellip;</b>&rdquo; menu option from the <b>Apple</b> menu. Once the application is open, navigate to the <b>Speech</b> preference pane by selecting &ldquo;<b>Speech</b>&rdquo; from its &ldquo;<b>View</b>&rdquo; menu.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the Speech preference pane, select the &ldquo;<b>Text to Speech</b>&rdquo; tab, and then select the &ldquo;<b>Customize&hellip;</b>&rdquo; menu option from the &ldquo;<b>System Voice</b>&rdquo; popup menu (see below)</p>
+			
+			<img src="gfx/customize.png" width="640" height="493" class="across">
+			
+			<p>Once the menu item is selected, a drop-down sheet appears, displaying a list of high-quality voices, that can be installed on your system (see below). These male and female voices are available in multiple languages and can be sampled by selecting a voice and clicking the &ldquo;Play&rdquo; button in the sheet window.</p>
+			
+			<img src="gfx/voicesheet.png" width="640" height="493" class="across">
+			
+			<p>This tutorial uses two of the UK English voices: Serena <span class="numeric-callout">&nbsp;1&nbsp;</span>, and Daniel <span class="numeric-callout">&nbsp;2&nbsp;</span>.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the checkbox next to these voices, click the &ldquo;OK&rdquo; button <span class="numeric-callout">&nbsp;3&nbsp;</span>, and follow the forthcoming instructions to complete the installation.</p>
+		</div>
+		<!-- END SEGMENT: CHOOSE & INSTALL VOICES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li class="hi">Introduction &amp; Setup</li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Session Overview</p>
+			
+			<p>This workshop is designed to be an interactive introduction for Apple customers to the power and abilities of the built-in automation technologies in OS&nbsp;X.</p>
+			
+			<p>Attendees will be taught how to create automation tools for rendering text selected in an applicaiton to MPEG-encoded audio files, added to a GarageBand slideshow podcast as narration tracks.</p>
+			
+			<p class="sidebar-subhead">Session Requirements:</p>
+			<ol>
+				<li>A laptop or computer running OS&nbsp;X (v10.7+)</li>
+				<li>A standard installation of the GarageBand application from the iLife suite of applications. <br><span style="color:#BE0039;"><b>NOTE</b>: GarageBand version 10 no longer supports podcasts. Use GarageBand version 6.0.5 or earlier</span>.</li>
+				<li>Basic knowledge of GarageBand recommended</li>
+				<li>Prior attendance of the Introduction to Automator workshop is useful</li>
+			</ol>
+						
+			<p class="sidebar-subhead">Session Materials</p>
+			
+			<p>The session materials for the instructor contain both the finished and template versions of the GarageBand project. Both versions incorporate loops and clips from the standard podcast installation for GarageBand and require no additional installs of Jam Packs or third-party sets.</p>
+			
+			<p>The session leader workshop kit contains the following items:</p>
+			
+			<ol>
+				<li>The completed GarageBand slideshow podcast project.</li>
+				<li>The GarageBand slideshow podcast project template containing sound markers as placeholders for the narration clips to be created and added.</li>
+				<li>An iPhoto library containing the images used in the podcast.</li>
+				<li>A text file containing the narration dialog for two narrators, one male, one female.</li>
+				<li>A folder containing Automator service workflow files.</li>
+			</ol>
+			
+			<p><b><a href="AUTOWKSHP-03-Leader.zip" style="color:blue;">DOWNLOAD</a></b> (145 MB) the instructor session kit.</p>
+
+			<p>The attendee session kit contains the following items:</p>
+			
+			<ol>
+				<li>The GarageBand slideshow podcast project template containing sound markers as placeholders for the narration clips to be created and added.</li>
+				<li>A text file containing the narration dialog for two narrators, one male, one female.</li>
+				<li>A folder containing Automator service workflow files.</li>
+			</ol>
+
+			<p class="sidebar-subhead">Beginning the Workshop</p>
+			
+			<p>Begin the session by describing the challenges involved with creating spoken narration tracks for a podcast. Specifically:</p>
+						
+			<ol type="1">
+				<li>Recording a narration for a podcast requires specialized hardware, such as a high-quality microphone, and a quiet recording environment.</li>
+				<li>For people not used to recording narrations, multiple attempts may be required to record an accurate usable track.</li>
+				<li>Sometimes you may want the narrator to be of the opposite gender than yourself.</li>
+				<li>The automation technologies of OS&nbsp;X provide an easy solution for these challenges.</li>
+			</ol>
+			
+			<p>Open the finished GarageBand project and point out the various elements that comprise the podcast, including images, sound effects, and background music tracks.</p>
+			
+			<p>Before you play the GarageBand file, make sure that the podcast view window is displayed, and size the window so that it can easily be seen by the session attendees.</p>
+			
+			<p>Play the entire project from the beginning, pointing out how the  use of two alternating narrators, one male, one female, gives a &ldquo;TV News Magazine&rdquo; feel to the finished product, and keeps the narration from becoming monotonous and monotone.</p>
+			
+			<p>Once the podcast has completed, solicit comments and questions. For example:</p>
+			
+			<ol>
+				<li>Were the voices natural-sounding?</li>
+				<li>Did the combination of male and female voices keep the narration interesting?</li>
+			</ol>
+			
+			<p>Next, close the finished project, open the template project, and follow the steps outlined in this tutorial.</p>
+			
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

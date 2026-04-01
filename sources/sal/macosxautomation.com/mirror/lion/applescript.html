@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="index.html">Lion Release Notes</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+		<h1>AppleScript in Lion</h1>
+		
+		<p>The focus of AppleScript in Lion is about bringing the power of AppleScript/Objective-C to the desktop.</p>
+		
+		<p><a href="#1000"><b>Cocoa-AppleScript Applets</b></a>. The AppleScript Editor can now create and edit Cocoa-AppleScript applets that provide direct access to the Cocoa frameworks from within their AppleScript code, by using the AppleScript/Objective-C bridge first introduced in Snow Leopard. Accordingly, applets can now display custom interfaces, such as progress windows, programmatically, taking advantage of the standard Cocoa interfaces available in the OS.</p>
+		
+		<p><a href="#1001"><b>Script Templates</b></a>. New for AppleScript Editor is a template menu, containing a variety of useful script templates, including scripts for creating file processing droplets, Aperture import actions, Mail rule actions, and iChat message responders.</p>
+		
+		<p><a href="#1002"><b>Global Script Application Targets</b></a>. In addition, the AppleScript Editor now has the ability to globally target a script to a specific application through a new optional “tell application” popup menu. Targeted scripts are excellent for quick development as they do not require the use of tell blocks or using terms clauses.</p>
+		
+		<hr>
+		
+		<a id="1000" name="1000"><h2>Cocoa-AppleScript Applets</h2></a>
+		
+		<p>AppleScript in Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard) introduced AppleScript/Objective-C and the ability to <a href="http://macosxautomation.com/applescript/develop/index.html">create AppleScript applications in Xcode</a> that could directly access any part of the Cocoa frameworks. In Mac&nbsp;OS&nbsp;X v10.7 (Lion) the power of AppleScript/Objective-C has been made accessible to scripters with the introduction of Cocoa-AppleScript Applets in the AppleScript Editor.</p>
+		
+		<p>For the first time, AppleScript can access the Cocoa Foundation and AppKit frameworks directly within applet code, augmenting AppleScript's legendary ability to communicate with and control applications, with Cocoa&rsquo;s powerful routines for text, number, window, and image manipulation. Combine this new Cocoa integration with AppleScript&rsquo;s existing access to the UNIX command-line, and you&rsquo;ve got a fantastic automation powerhouse.</p>
+		
+		<img src="gfx/cocoaappletmenuitem.jpg" alt="" width="640" height="264">
+		<p class="imagecaption" style="margin-top:0;">Selecting the <b>Cocoa-AppleScript Applet</b> script template from the AppleScript Editor's <b>New From Template</b> menu.</p>
+
+		<h3>Cocoa-AppleScript Applet Template</h3>
+		
+		<p>The new Cocoa-AppleScript applet is available as a script template via the AppleScript Editor's <b>New From Template</b> menu. Once selected, you will be prompted to name and save the new applet. This applet accepts most standard AppleScript constructs and code, as well as statements and routines written in AppleScript/Objective-C.</p>
+		
+		<img src="gfx/caseexample.jpg" alt="" width="640" height="365">
+		
+		<p class="imagecaption" style="margin-top:0;" >Using AppleScript/Objective-C in an AppleScript applet, to transform text to uppercase.</p>
+		
+		<h3>Caveats</h3>
+				
+		<ol>
+			<li>Although Cocoa-AppleScript applets can be created and edited from within the AppleScript Editor application, they are executed by using a new &ldquo;<b>Run Application</b>&rdquo; command in the AppleScript Editor's <b>Script</b> menu that runs applets by launching them. This means that the AppleScript Editor Event and Result panes will not report data during applet execution.<br><img src="gfx/runappmenu.png" width="234" height="149" align="top"><br>
+			If the standard <b>Run</b> menu item or <b>Run button</b> in the toolbar is used to execute an applet or droplet containing AppleScriptObj-C code, an alert will be displayed informing the user that the script should not be executed within in the AppleScript Editor but should be launched using the <b>Run Application</b> menu option:<br>
+			<img src="gfx/runappalert.png" width="570" height="501" align="top">
+			
+			
+			<br>(<b>NOTE</b>: The <a href="http://www.macosxautomation.com/applescript/apps/explorer.html">AppleScriptObjC Explorer</a> is a third-party script editor application able to both edit and run AppleScript scripts containing AppleScript/Objective-C code.)</li>
+			
+			<li>Cocoa-AppleScript applets can be executed on computers running either Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard) or Mac&nbsp;OS&nbsp;X v10.7 (Lion). However, the applets cannot be edited using the AppleScript Editor in Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard).</li>
+			
+			<li>Properties in Cocoa-AppleScript applets do not retain changed values between executions of the scripts. Use the standard Cocoa  User Defaults mechanism to store and retrieve data dynamically.</li>
+		</ol>
+		
+		<hr>
+		
+		<h2>AppleScript/Objective-C Updates</h2>
+		
+		<p>In Mac&nbsp;OS&nbsp;X Lion, two important changes were made to AppleScript/Objective-C</p>
+		
+		<ol>
+			<li>AppleScriptObjC can now call plain C functions, in addition to Objective-C.  To call a C function, tell "current application" to execute the function, as in this example:<br><br><span class="inlinecode">tell current application to NSRectFill(aRect)</span><br>&nbsp;</li>
+			
+			<li>Function parameters of type "<span class="inlinecode">void *</span>" are now handled as if they were of type "<span class="inlinecode">id</span>".  When using such a parameter from AppleScript, you may pass any AppleScript value.  Previously, only "<span class="inlinecode">missing value</span>" (equivalent to NULL in C) was allowed.</li>
+		</ol>
+		
+		<hr>
+		
+		<a id="1001" name="1001"><h2>Script Templates</h2></a>
+		
+		<p>Finally, an easy way to quickly create your favorite types of scripts! AppleScript Editor in Lion introduces a New from Template menu that contains a variety of useful script templates, including templates for creating Mail rule actions, iChat response scripts, Aperture import actions, and file processing droplets. You can add your own templates by placing the template scripts in the Home &gt; Library &gt; Application Support &gt; Script Editor &gt; Templates folder.</p>
+
+		<img src="gfx/templates.jpg" width="640" height="197" align="top">
+		<p class="imagecaption" style="margin-top:0;">Selecting an iChat template from the AppleScript Editor <b>New from Template</b> menu.</p>
+		
+		<p>Selecting a template from the menu will prompt you for a name and location for the duplicated template file. Once provided the duplicated script file will open in the AppleScript Editor:</p>
+		
+		<img src="gfx/ichattemplate.png" width="640" height="469" align="top">
+		<p class="imagecaption" style="margin-top:0;">An iChat event handler script for automatically responding to specified buddies.</p>
+		
+		<hr>
+		
+		<a id="1002" name="1002"><h2>Global Script Application Targets</h2></a>
+		
+		<p>For scripters wanting a simple way to target scripts at a particular application, AppleScript Editor in Lion implements a target application menu, beneath the toolbar in a script window, from which you can select the application that will be the target of all the script statements.</p>
+		
+		<img src="gfx/tellappmenu.jpg" width="640" height="532" align="top">
+		
+		<p>This feature can be enabled in the AppleScript Editor editing preference pane by selecting the checkbox titled: <b>Show <q>tell</q> application pop-up menu</b></p>
+		
+		<img src="gfx/asprefs.png" width="564" height="417" align="top">
+		
+		<p>When a script is targeted at a specific application, you don't need to include <b>tell</b> blocks or <b>tell</b> statements for the targeted applicaiton.</p>
+		
+		<img src="gfx/tellappmenuuse.png" width="640" height="517" align="top">
+			
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+		
+		
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">LEARN APPLESCRIPT/OBJ-C</h2>
+			
+			<img src="http://macosxautomation.com/applescript/apps/gfx/cover.jpg" alt="" width="90" align="left">
+			
+			<p><b>AppleScriptObjC Explored</b> by Shane Stanley is the definitive resource on AppleScript Objective-C.</p>
+			
+			<p>In addition to documenting how to build applications using AppleScriptObjC, this PDF book comes with fully-editable and annotated example projects for you to explore in detail.</p>
+			<ol>
+				<li>The best documentation about AppleScript Objective-C</li>
+				<li>Written from an AppleScript scripter's perspective</li>
+				<li>Learn by building a range of projects</li>
+				<li>Includes an overview of the tools you use</li>
+				<li>More than 20 sample projects</li>
+				<li>Learn the <q>gotchas</q> and how to work-around them</li>
+				<li>Second edition contains 50% more content</li>
+			</ol>
+			
+			<p><a href="http://macosxautomation.com/applescript/apps/index.html"><b>MORE&hellip;</b></a></p>
+			
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">COCOA-APPLESCRIPT EXAMPLES</h2>
+			<p>The AppleScript Editor application in Mac&nbsp;OS&nbsp;X v10.7 (Lion) comes with a set of Cocoa-AppleScript example templates. You can download these additional examples and make them available in the AppleScript Editor by placing them in the Home &gt; Library &gt; Application Support &gt; Script Editor &gt; Templates folder.</p>
+			<a href="javascript:(void);" onclick="PopupCenter('gfx/progress.png','',474,220)"><img src="gfx/progress.png" alt="PROGRESS DIALOG" width="206" align="top"></a>
+			<ol>
+				<li><b>Applet with Progress Window</b> &#149; This template demonstrates how to create and manipulate progress window using AppleScript/Objective-C. (<a href="appletwithprogress.zip">download</a>)</li>
+				
+				<li><b>Droplet with Progress Window</b> &#149; This template demonstrates a recursive file processing droplet with an AppleScript/Objective-C created progress window. (<a href="dropletwithprogress.zip">download</a>)</li>
+				
+				<li><b>Play Sound</b> &#149; This example demonstrates how to create an app delegate to receive notification of the completion of the playing of a system sound. (<a href="playsoundexample.zip">download</a>)</li>
+			
+				<li><b>Working with Alerts</b> &#149; This template demonstrates how to display an alert dialog using AppleScript/Objective-C. (<a href="alertexample.zip">download</a>)</li>
+				
+				<li><b>Working with Strings</b> &#149; This template demonstrates how to manipulate text. (<a href="stringsexample.zip">download</a>)</li>
+				
+				<li><b>Working with Numbers</b> &#149; This template demonstrates how to convert numbers to strings. (<a href="numbersexample.zip">download</a>)</li>
+				
+				<li><b>Working with Percent Encoding</b> &#149; This template demonstrates how to encode and decode strings for use in URLs. (<a href="percentencodingexample.zip">download</a>)</li>
+			
+				<li><b>% Encoding, Numbers, Strings</b> &#149; All of the sub-routines from the previous applets in an AppleScript text file. (<a href="ASOC-sub-routines.applescript.zip">download</a>)</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">RELATED LINKS</h2>
+			<p>Developer documentation for some of the Cocoa classes available for use with the Cocoa-AppleScript applets:</p>
+			<ol>
+				<li><a href="http://developer.apple.com/library/mac/#releasenotes/ScriptingAutomation/RN-AppleScriptObjC/_index.html" target="_blank"><b>AppleScriptObjC Release Notes</b></a> &#149; Apple's release notes for AppleScript/OBjective-C.</li>
+				<li><b><a href="http://developer.apple.com/library/mac/navigation/" target="_blank">Apple Developer Library</a></b> &#149; Apple's online developer documentation.</li>
+				<li><b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html" target="_blank">NSString Documentation</a></b> &#149; Apple's online developer documentation for the NSString class.</li>
+				<li><b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/Classes/NSWindow_Class/Reference/Reference.html" target="_blank">NSWindow Documentation</a></b> &#149; Apple's online developer documentation for the NSWindow class.</li>
+				<li><b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/Classes/NSImage_Class/Reference/Reference.html" target="_blank">NSImage Documentation</a></b> &#149; Apple's online developer documentation for the NSImage class.</li>
+				<li><b><a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSObject_Class/Reference/Reference.html" target="_blank">NSObject Documentation</a></b> &#149; Apple's online developer documentation for the NSObject class.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">APPLESCRIPT ACTIONS</h2>
+			<p>Two Xcode projects have been posted demonstrating how to use the new AppleScript/Objective-C templates to creating Automator actions using lists. The automated publishing example can be viewed <a href="http://www.macosxautomation.com/automator/examples/ex04/index.html">here</a>.</p>
+		</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

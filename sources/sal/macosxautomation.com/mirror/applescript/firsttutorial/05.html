@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Target Property</h2>
+		
+		<p>The value of the <span class="dictionary-term">target</span> property is a reference to the folder or disk whose contents are displayed in the Finder window. This value can be both read and changed. Let's examine both actions.</p>
+
+		First, let&rsquo;s get the value of the <span class="dictionary-term">target</span> property of the frontmost window:
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20target%20of%20the%20front%20window%0D%2D%2D%3E%20returns%3A%20folder%20%22your%20home%20directory%22%20of%20folder%20%22Users%22%20of%20startup%20disk%20of%20application%20%22Finder%22"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The value of the target property of a Finder window is a reference to the folder whose contents are displayed in that window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> target <b>of the front</b> Finder window<BR>
+		<span class="codecomment">--> returns: folder &lt;name of your home directory&gt; of folder &quot;Users&quot; of startup disk of application &quot;Finder&quot;</span></p>
+		
+		<a href="gfx/CH01_image08.jpg" rel="lightbox" title="A script getting the value of the target property of a Finder window."><img src="gfx/CH01_image08.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">A script getting the value of the target property of a Finder window.</p>
+
+		<p>As you can see, the result of this script is a reference to the folder whose contents are displayed in the Finder window, in this case your home directory. This reference describes the target folder in terms of its position in its object hierarchy or where it is in its &ldquo;Chain of Command.&rdquo;</p> 
+
+		<p>The returned object reference clearly shows, through the use of the possessive &ldquo;of,&rdquo; that the target folder is contained by the &ldquo;Users&rdquo; folder which is on the startup disk which is an element of the Finder application. You&rsquo;ll use this hierarchical reference structure often in the scripts you write.</p> 
+
+		<p>Next, we&rsquo;ll change the targets of the open Finder windows. To change the value of a property, we&rsquo;ll use the verb &ldquo;set&rdquo; in our scripts. Set is the verb or command used to change the value of a property.</p> 
+
+		<p>Delete the previous script from the script window, then enter, compile, and run the following script:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20front%20Finder%20window%20to%20the%20startup%20disk"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Changing the value of a Finder window&rsquo;s target property will change the contents displayed in the window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> target <b>of the front</b> Finder window <b>to the</b> startup disk</p>
+		
+		<p>You&rsquo;ll notice that the frontmost Finder window now displays the contents of the startup disk:</p> 
+		
+		<a href="gfx/CH01_image09.jpg" rel="lightbox" title="The frontmost Finder window now displays the contents of the startup disk."><img src="gfx/CH01_image09.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">The frontmost Finder window now displays the contents of the startup disk.</p>
+
+		<p>Now try this script:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20last%20Finder%20window%20to%20home"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to set the target of the last Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> target <b>of the last</b> Finder window <b>to</b> home</p>
+
+		<p>The second Finder window now displays the contents of your home directory:</p>
+
+		<a href="gfx/CH01_image10.jpg" rel="lightbox" title="The rear Finder window now displays the contents of the home directory."><img src="gfx/CH01_image10.jpg" width="450" align="top" class="across"></a>
+
+		<p class="imagecaption">The rear Finder window now displays the contents of the home directory.</p>
+
+		<p>In summary, the target property of a Finder window has a value that is a reference to a specific folder or disk whose contents are displayed within the Finder window. This value can be changed by using the verb &ldquo;set&rdquo; in conjunction with a reference to a new target folder. A reference describes an object in terms of its position in its object hierarchy, or in the case of a folder object, where it is on its parent disk.</p>
+
+		<h2>Finder References</h2>
+
+		<p>Since you'll often use object references in the scripts you write, here's a short overview of how to create an object reference for use with the Finder application.</p> 
+
+		<p>First, in the front Finder window, navigate to your Documents folder in your Home directory. In the Documents folder, create a new folder named &ldquo;Smith Project.&rdquo; We&rsquo;ll use this folder in the following examples.</p>
+
+		<p>To construct an object reference to a specific Finder disk item, simply start with the item to be referenced and list each folder or containing item of the object hierarchy until you've reached the disk containing the item.</p> 
+
+		<p>For example, to create a Finder reference to the folder named &ldquo;Smith Project&rdquo; in the Documents folder in your Home directory, begin the Finder reference with the name of the referenced item preceded by a class identifier indicating the type of item it is, such as a &ldquo;folder&rdquo; or &ldquo;document file.&rdquo;</p>
+
+		<p class="code">folder &quot;Smith Project&quot;</p>
+
+		<p>Next, you add the class identifier and name of the previous object&rsquo;s parent or containing folder or object, preceded with the possessive &ldquo;of&rdquo; to indicate its ownership of the previous item.</p>
+
+		<p class="code">folder &quot;Smith Project&quot; <b>of</b> folder &quot;Documents&quot;</p>
+
+		<p>Again, add the class identifier and name of the previous object&rsquo;s parent or containing folder or object, preceded with the possessive &ldquo;of&rdquo; to indicate ownership.</p>
+		
+		<p class="code">folder &quot;Smith Project&quot; <b>of</b> folder &quot;Documents&quot; <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>folder &lt;name of your home directory&gt;</p>
+		
+		<p>This process will continue until we&rsquo;ve reached the disk containing the referenced object:</p>
+		
+		<p class="code">folder &quot;Smith Project&quot; <b>of</b> folder &quot;Documents&quot; <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>folder &lt;name of your home directory&gt; <b>of</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>folder &quot;Users&quot; <b>of</b> disk &quot;Macintosh HD&quot;</p>
+		
+		<p>Note the use of the class identifier &ldquo;<span class="dictionary-term">disk</span>&rdquo; for the disk object.</p>
+		
+		<p>You&rsquo;ve now constructed an <span class="dictionary-term">object reference</span> to the Finder item &ldquo;Smith Project&rdquo; located in the Documents folder in your Home directory.</p>
+
+		<p><span class="dictionary-term">Object references</span> to Finder items can sometimes be very long. To shorten our example reference, and make it more generic and eaiser to write, we can optionally replace the section of the reference pertaining to your Home directory and it&rsquo;s parent containers with the special Finder term &ldquo;<span class="dictionary-term">home</span>,&rdquo; mentioned earlier in this chapter:</p>
+
+		<p class="code">folder &quot;Smith Project&quot; <b>of</b> folder &quot;Documents&quot; <b>of</b> home</p>
+		
+		<p>This shorten version will function exactly as the longer reference.</p>
+
+		<p>If we wanted to use this object reference as the value for the target property, the script would be this:</p>
+
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to set the</b> target <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>the front</b> Finder window <b>to</b> folder &quot;Smith Project&quot; <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>folder &quot;Documents&quot; <b>of</b> home</p>
+
+		<p>Of course, this script will not work if there is no folder named &ldquo;Smith Project&rdquo; in the referenced location.</p>
+		
+		<p class="note"><b>TIP</b>: To view the object heirarchy of a Finder disk item, click on the title in its Finder window or its parent Finder window while holding down the Command key. Each segment in the object heirarchy will be listed on the popup menu.</p>
+		
+		<a href="gfx/CH01_image11.jpg" rel="lightbox" title="To view the object heirarchy of a Finder disk item, click on the title in its Finder window or its parent Finder window while holding down the Command key. Each segment in the object heirarchy will be listed on the popup menu."><img src="gfx/CH01_image11.jpg" width="450" align="top" class="across"></a>
+		
+		<p>Before we continue our tutorial, let&rsquo;s reset the front Finder window back to displaying the contents of the startup disk by running this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20target%20of%20the%20front%20Finder%20window%20to%20the%20startup%20disk"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to make the frontmost Finder window display the contents of the startup disk.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to set the</b> target <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>the front</b> Finder window <b>to the</b> startup disk</p>
+		
+		<h2>Quick Summary</h2>
+
+		<p>That's a short explanation and demonstration of Finder disk item references.  This topic is covered in great detail in a later chapter. For now, it is enough to understand that:</p>
+	
+		<p class="principle">Scriptable objects are referenced by describing their object hierarchy or &ldquo;Chain of Command.&rdquo;</p>
+
+		<p>Now, let&rsquo;s continue our overview of the properties of a Finder window.</p>
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="06.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li class="hi">The Target Property</li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,35 @@
+site:
+  slug: configautomation
+  domain: configautomation.com
+  owner: Sal Soghoian
+  role: Apple Configurator automation
+  status: captured-partial
+capture:
+  first_planned_at: '2026-04-01'
+  captured_at: '2026-04-01T13:22:33Z'
+  method: direct-wayback-snapshot:http-20240422
+  mirrored_by: merlib-mirror
+  mirror_root: sources/sal/configautomation.com/mirror
+  asset_root: sources/sal/configautomation.com/assets
+origin:
+  home: http://configautomation.com/
+  capture_blocker: Live shell resolution is unreliable; Wayback CDX queries later returned no data.
+  snapshot_url: http://web.archive.org/web/20240422004004/https://configautomation.com/
+content:
+  priorities:
+  - Configurator examples
+  - Deployment and setup workflows
+  expected_formats:
+  - html
+  - scpt
+  - txt
+  - images
+extraction:
+  scripts_target: scripts/sal/configautomation
+  notes_target: analysis/sal/page-notes
+  concept_target: analysis/sal/concept-notes
+  status: mirrored-partial
+  asset_count: 0
+licensing:
+  status: unknown
+  notes: Preserve capture notes because this domain may be less frequently referenced. Direct snapshot crawl captured core section pages, stylesheet, poster image, banner image, and mp4 media under mirror/wayback-20240422.

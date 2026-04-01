@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Padding an Image</h2>
+		
+		<p>From the Image Events scripting dictionary:</p>
+		
+		<p class="dictionary"><b>pad</b> v : Pad an image<br>
+		<span class="dictionary-indent-01"><span class="dictionary-term">pad</span> (reference) : the object for the command</span><br>
+		<span class="dictionary-indent-02"><span class="dictionary-term">to dimensions</span> (list) : the width and height of the new image, respectively, in pixels, as a pair of integers</span><br>
+		<span class="dictionary-indent-02">[<span class="dictionary-term">with pad color</span> list] : the RGB color values with which to pad the new image, such as {65535, 0, 0} for red. The default color is black: {0, 0, 0}</span></p>
+		
+		<p>Padding an image will add black space around the image to the dimensions provided in the script command. It is similar in function to growing or shrinking the image canvas in Adobe Photoshop. Padding is often used to put a border around images or every image in a group of images the same size, regardless of their origininal orientation.</p>
+		
+		<p>The <span class="inlinecode">pad</span> command takes a list of two integers for the <span class="inlinecode">to dimensions</span> parameter: the new width (in pixels) for the image, and the new height for the image. Here's an example:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7B640%2C%20480%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top" alt="Click to open example in the Script Editor application"></a><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions {640, 480}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<p>The result of the pad command depends upon the dimensions of the image in relation to the dimensions of the pad area. If the image dimensions are smaller than the pad area, the image will be surrounded by an area of black pixels. If the image dimensions are larger than the pad area, then the image will be cropped to match the pad area.</p>
+		
+		<img src="gfx/23_image06.png" width="640" height="183" class="across">
+		
+		<p class="imagecaption">Use of the pad command. (L to R) Normal, image is smaller than the indicated pad area, image is larger than the indicated pad area.</p>
+		
+		<p>There are three approaches preventing an image from being cropped during a pad:</p>
+		
+		<ol>
+			<li>Don't alter the current image dimensions and add pad area based on the indicated pad proportions (aspect ratio), such as 4 x 3 or 16 x 9</li>
+			<li>Use the current image dimensions as the starting point for determining and adding a pad area, and then scale the padded image to fit the desired image size</li>
+			<li>Use the <span class="inlinecode">scale</span> command to resize the image to fit within the desired pad dimensions and then add padding.</li>
+		</ol>
+
+		<p>The first method uses the current image dimensions and provided pad area proportions to calculate and apply the padding. Here's a script demonstrating this technique by padding images to letterbox (16 x 9) format:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0D%2D%2D%20indicate%20the%20proportions%20for%20the%20pad%20area%0Dset%20H_proportion%20to%2016%0Dset%20V_proportion%20to%209%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20pad%20dimensions%0D%09%09if%20H_proportion%20is%20greater%20than%20V_proportion%20then%0D%09%09%09set%20the%20new_W%20to%20%28H%20%2A%20H_proportion%29%20%2F%20V_proportion%0D%09%09%09set%20pad_dimensions%20to%20%7Bnew_W%2C%20H%7D%0D%09%09else%0D%09%09%09set%20the%20new_H%20to%20%28W%20%2A%20V_proportion%29%20%2F%20H_proportion%0D%09%09%09set%20pad_dimensions%20to%20%7BW%2C%20new_H%7D%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20pad_dimensions%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for padding an image based on provided final proportions for the padded image:</span><br><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<span class="codecomment">-- indicate the proportions for the pad area</span><BR>
+<b>set</b> <span class="codevariable">H_proportion</span> <b>to</b> 16<BR>
+<b>set</b> <span class="codevariable">V_proportion</span> <b>to</b> 9<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate pad dimensions</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">H_proportion</span> <b>is greater than</b> <span class="codevariable">V_proportion</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_W</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">H_proportion</span>) / <span class="codevariable">V_proportion</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">pad_dimensions</span> <b>to</b> {<span class="codevariable">new_W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_H</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">V_proportion</span>) / <span class="codevariable">H_proportion</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">pad_dimensions</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">new_H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions <span class="codevariable">pad_dimensions</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<img src="gfx/23_image07.png" width="640" height="119" class="across">
+		
+		<p class="imagecaption">Use of the <span class="inlinecode">pad</span> command to pad images to a 16:9 ratio. (L to R) vertical 3:4 image, horizontal 4:3 image, square 1:1 image.</p>
+		
+		<p>The second padding method uses the current dimensions of the image, and the proportions of the provided target pad dimensions, as the basis for determining the pad area.  Once the image has been padded proportionally, it is scaled to fit the target padding dimensions.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0D%2D%2D%20indicate%20the%20final%20dimensions%20for%20the%20padded%20image%0Dset%20target_W%20to%20960%0Dset%20target_H%20to%20540%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20pad%20dimensions%0D%09%09if%20target_W%20is%20greater%20than%20target_H%20then%0D%09%09%09set%20the%20new_W%20to%20%28H%20%2A%20target_W%29%20%2F%20target_H%0D%09%09%09set%20pad_dimensions%20to%20%7Bnew_W%2C%20H%7D%0D%09%09%09set%20the%20scale_dimension%20to%20target_W%0D%09%09else%0D%09%09%09set%20the%20new_H%20to%20%28W%20%2A%20target_H%29%20%2F%20target_W%0D%09%09%09set%20pad_dimensions%20to%20%7BW%2C%20new_H%7D%0D%09%09%09set%20the%20scale_dimension%20to%20target_H%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20pad_dimensions%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_dimension%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for padding an image based on provided final dimensions of the padded image.:</span><br><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<span class="codecomment">-- indicate the final dimensions for the padded image</span><BR>
+<b>set</b> <span class="codevariable">target_W</span> <b>to</b> 960<BR>
+<b>set</b> <span class="codevariable">target_H</span> <b>to</b> 540<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate pad dimensions</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_W</span> <b>is greater than</b> <span class="codevariable">target_H</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_W</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">target_W</span>) / <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">pad_dimensions</span> <b>to</b> {<span class="codevariable">new_W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_dimension</span> <b>to</b> <span class="codevariable">target_W</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_H</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">target_H</span>) / <span class="codevariable">target_W</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">pad_dimensions</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">new_H</span>}<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_dimension</span> <b>to</b> <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions <span class="codevariable">pad_dimensions</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">scale_dimension</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<p>Note that in the previous script, the image is saved twice: once after the padding has been applied, and once after the scaling has been applied. This is necessary when a scale procedure follows a padding procedure.</p>
+		
+		<p>The third padding method begins by scaling the image to fit within the target pad area and then adds the padding to the scaled image.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0D%2D%2D%20indicate%20the%20final%20dimensions%20for%20the%20padded%20image%0Dset%20target_W%20to%20960%0Dset%20target_H%20to%20540%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20scaling%0D%09%09if%20target_W%20is%20greater%20than%20target_H%20then%0D%09%09%09if%20W%20is%20greater%20than%20H%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28W%20%2A%20target_H%29%20%2F%20H%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09%09end%20if%0D%09%09else%20if%20target_H%20is%20greater%20than%20target_W%20then%0D%09%09%09if%20H%20is%20greater%20than%20W%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28H%20%2A%20target_W%29%20%2F%20W%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_W%0D%09%09%09end%20if%0D%09%09else%20%2D%2D%20square%20pad%20area%0D%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_length%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7Btarget_W%2C%20target_H%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for padding an image based on provided final dimensions of the padded image.</span><br><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<span class="codecomment">-- indicate the final dimensions for the padded image</span><BR>
+<b>set</b> <span class="codevariable">target_W</span> <b>to</b> 960<BR>
+<b>set</b> <span class="codevariable">target_H</span> <b>to</b> 540<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate scaling</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_W</span> <b>is greater than</b> <span class="codevariable">target_H</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">W</span> <b>is greater than</b> <span class="codevariable">H</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">target_H</span>) / H<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">target_H</span> <b>is greater than</b> <span class="codevariable">target_W</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">H</span> <b>is greater than</b> <span class="codevariable">W</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">target_W</span>) / W<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_W</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>else <span class="codecomment">-- square pad area</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">scale_length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions {<span class="codevariable">target_W</span>, <span class="codevariable">target_H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<h3>Example Accepting User Input</h3>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=property%20target_dimensions%20%3A%20%221024%2C%20768%22%0D%0Dset%20this_file%20to%20choose%20file%20without%20invisibles%0D%2D%2D%20get%20the%20final%20dimensions%20for%20the%20padded%20image%0Drepeat%0D%09display%20dialog%20%22Enter%20the%20target%20dimensions%20for%20the%20padded%20image%3A%22%20%26%20return%20%26%20return%20%26%20%22target%20width%2C%20target%20height%22%20default%20answer%20target_dimensions%0D%09set%20the%20dimensions_string%20to%20the%20text%20returned%20of%20the%20result%0D%09try%0D%09%09if%20the%20dimensions_string%20does%20not%20contain%20%22%2C%22%20then%20error%0D%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%2C%22%0D%09%09copy%20every%20text%20item%20of%20the%20dimensions_string%20to%20%7Bwidth_string%2C%20height_string%7D%0D%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09%09set%20target_W%20to%20width_string%20as%20integer%0D%09%09set%20target_H%20to%20height_string%20as%20integer%0D%09%09if%20target_W%20is%20less%20than%201%20then%20error%0D%09%09if%20target_H%20is%20less%20than%201%20then%20error%0D%09%09set%20the%20target_dimensions%20to%20%28target_W%20%26%20%22%2C%20%22%20%26%20target_H%29%20as%20string%0D%09%09exit%20repeat%0D%09on%20error%0D%09%09beep%0D%09end%20try%0Dend%20repeat%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20scaling%0D%09%09if%20target_W%20is%20greater%20than%20target_H%20then%0D%09%09%09if%20W%20is%20greater%20than%20H%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28W%20%2A%20target_H%29%20%2F%20H%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09%09end%20if%0D%09%09else%20if%20target_H%20is%20greater%20than%20target_W%20then%0D%09%09%09if%20H%20is%20greater%20than%20W%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28H%20%2A%20target_W%29%20%2F%20W%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_W%0D%09%09%09end%20if%0D%09%09else%20%2D%2D%20square%20pad%20area%0D%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_length%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7Btarget_W%2C%20target_H%7D%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that allows the user to input the target width and height for the chosen image. The image will be scaled and padded to the fit the input dimensions.</span><img src="gfx/23_imageA5.png" width="360" height="181" hspace="4" class="script-image"><BR>&nbsp;<BR>
+<b>property</b> <span class="codevariable">target_dimensions</span> : &quot;1024, 768&quot;<BR>
+<BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<span class="codecomment">-- get the final dimensions for the padded image</span><BR>
+<b>repeat</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;Enter the target dimensions for the padded image:&quot; &amp; &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return &amp; return</b> &amp; &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>&quot;target width, target height&quot; default answer <span class="codevariable">target_dimensions</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">dimensions_string</span> <b>to the</b> text returned <b>of the</b> result<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">dimensions_string</span> does <b>not</b> contain &quot;,&quot; <b>then error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;,&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy every</b> text item <b>of</b> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codevariable">dimensions_string</span> <b>to</b> {<span class="codevariable">width_string</span>, <span class="codevariable">height_string</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">target_W</span> <b>to</b> <span class="codevariable">width_string</span> <b>as</b> integer<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">target_H</span> <b>to</b> <span class="codevariable">height_string</span> <b>as</b> integer<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_W</span> <b>is less than</b> 1 <b>then error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_H</span> <b>is less than</b> 1 <b>then error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_dimensions</span> <b>to</b> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>(<span class="codevariable">target_W</span> &amp; &quot;, &quot; &amp; <span class="codevariable">target_H</span>) <b>as</b> string<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>exit repeat</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>beep<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end repeat</b><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate scaling</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_W</span> <b>is greater than</b> <span class="codevariable">target_H</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">W</span> <b>is greater than</b> <span class="codevariable">H</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">target_H</span>) / H<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">target_H</span> <b>is greater than</b> <span class="codevariable">target_W</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">H</span> <b>is greater than</b> <span class="codevariable">W</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">target_W</span>) / W<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_W</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>else <span class="codecomment">-- square pad area</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> <span class="codevariable">target_H</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">scale_length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>pad <span class="codevariable">this_image</span> <b>to</b> dimensions {<span class="codevariable">target_W</span>, <span class="codevariable">target_H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=%28%2A%20IMPORTANT%3A%20The%20with%20pad%20color%20parameter%20of%20the%20pad%20command%20does%20not%20work%20in%20Mac%20OS%2010%2E5%2E5%2E%20Use4%20the%20SIPS%20command%2Dline%20utility%20instead%20when%20padding%20with%20a%20color%20%2A%29%0D%0Dproperty%20target_dimensions%20%3A%20%221024%2C%20768%22%0Dproperty%20default_color%20%3A%20%7B0%2C%200%2C%200%7D%0D%0Dset%20this_file%20to%20choose%20file%20with%20prompt%20%22Pick%20an%20image%20to%20pad%3A%22%20without%20invisibles%0Dset%20this_path%20to%20the%20quoted%20form%20of%20the%20POSIX%20path%20of%20this_file%0D%0D%2D%2D%20get%20the%20final%20dimensions%20for%20the%20padded%20image%0Drepeat%0D%09display%20dialog%20%22Enter%20the%20target%20dimensions%20for%20the%20padded%20image%3A%22%20%26%20return%20%26%20return%20%26%20%22target%20width%2C%20target%20height%22%20default%20answer%20target_dimensions%20buttons%20%7B%22Cancel%22%2C%20%22Set%20Color%22%2C%20%22Continue%22%7D%20default%20button%203%0D%09copy%20the%20result%20to%20%7Btext%20returned%3Adimensions_string%2C%20button%20returned%3Abutton_pressed%7D%0D%09if%20the%20button_pressed%20is%20%22Set%20Color%22%20then%0D%09%09set%20the%20default_color%20to%20choose%20color%20default%20color%20default_color%0D%09else%0D%09%09try%0D%09%09%09if%20the%20dimensions_string%20does%20not%20contain%20%22%2C%22%20then%20error%0D%09%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%2C%22%0D%09%09%09copy%20every%20text%20item%20of%20the%20dimensions_string%20to%20%7Bwidth_string%2C%20height_string%7D%0D%09%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09%09%09set%20target_W%20to%20width_string%20as%20integer%0D%09%09%09set%20target_H%20to%20height_string%20as%20integer%0D%09%09%09if%20target_W%20is%20less%20than%201%20then%20error%0D%09%09%09if%20target_H%20is%20less%20than%201%20then%20error%0D%09%09%09set%20the%20target_dimensions%20to%20%28target_W%20%26%20%22%2C%20%22%20%26%20target_H%29%20as%20string%0D%09%09%09exit%20repeat%0D%09%09on%20error%0D%09%09%09beep%0D%09%09end%20try%0D%09end%20if%0Dend%20repeat%0Dset%20the%20hex_color%20to%20text%202%20thru%20%2D1%20of%20%28my%20RBG_to_HTML%28default_color%29%29%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20scaling%0D%09%09if%20target_W%20is%20greater%20than%20target_H%20then%0D%09%09%09if%20W%20is%20greater%20than%20H%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28W%20%2A%20target_H%29%20%2F%20H%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09%09end%20if%0D%09%09else%20if%20target_H%20is%20greater%20than%20target_W%20then%0D%09%09%09if%20H%20is%20greater%20than%20W%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28H%20%2A%20target_W%29%20%2F%20W%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20target_W%0D%09%09%09end%20if%0D%09%09else%20%2D%2D%20square%20pad%20area%0D%09%09%09set%20the%20scale_length%20to%20target_H%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_length%0D%09%09%28%2A%20The%20with%20pad%20color%20parameter%20is%20broken%20in%20Mac%20OS%20X%2010%2E5%2E5%20%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7Btarget_W%2C%20target_H%7D%20with%20pad%20color%20default_color%0D%09%09%2A%29%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09%0D%09%2D%2D%20The%20with%20pad%20color%20parameter%20is%20not%20working%20in%2010%2E5%2E5%20so%20use%20the%20SIPS%20command%2Dline%20utitlity%20instead%0D%09do%20shell%20script%20%22sips%20%22%20%26%20this_path%20%26%20%22%20%2Dp%20%22%20%26%20target_H%20%26%20space%20%26%20target_W%20%26%20space%20%26%20%22%2D%2DpadColor%20%22%20%26%20hex_color%20%26%20space%20%26%20%22%2Di%22%0D%09%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Click the Script Editor icon for a version of the previous script that incorporates the <span class="inlinecode">with pad color</span> parameter and the <span class="inlinecode">choose color</span> command to allow the user to pick the color for the image pad.</span></p>
+
+
+
+<img src="gfx/color_01.png" width="440" height="261" hspace="4" class="script-image">
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="06.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html" target="_self">Introduction</a></li>
+				<li><a href="01.html" target="_self">Image Properties</a></li>
+				<li><a href="02.html" target="_self">Flipping Images</a></li>
+				<li><a href="03.html" target="_self">Rotating Images</a></li>
+				<li><a href="04.html" target="_self">Scaling Images</a></li>
+				<li class="hi">Padding Images</li>
+				<li><a href="06.html" target="_self">Framing Images</a></li>
+				<li><a href="07.html" target="_self">Croping Images</a></li>
+				<li><a href="08.html" target="_self">File Conversion</a></li>
+				<li><a href="09.html" target="_self">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Choose Color Command</h2>
+			<p>The <span class="inlinecode">choose color</span> command from the Standard Additions dictionary, can be used to prompt the script user to pick a color using the standard system color picker palette.</p>
+			<img src="gfx/color_picker01.png" width="200" height="364" class="across"><br>
+			<p>The chosen color value can then be used as the value for the <span class="inlinecode">with pad color</span> parameter of the <span class="inlinecode">pad</span> command to set the color of the pad area around an image.</p>
+			<img src="gfx/orangepad.jpg" width="200" height="112" class="across"><br>
+			<img src="gfx/purplepad.jpg" width="200" height="112" class="across"><br>
+			<p>Click <a href="applescript://com.apple.scripteditor?action=new&script=%28%2A%20IMPORTANT%3A%20The%20with%20pad%20color%20parameter%20of%20the%20pad%20command%20does%20not%20work%20in%20Mac%20OS%2010%2E5%2E5%2E%20Use4%20the%20SIPS%20command%2Dline%20utility%20instead%20when%20padding%20with%20a%20color%20%2A%29%0D%0Dproperty%20default_color%20%3A%20%7B0%2C%200%2C%200%7D%0D%0Dset%20this_file%20to%20choose%20file%20with%20prompt%20%22Pick%20an%20image%20to%20pad%3A%22%20without%20invisibles%0Dset%20this_path%20to%20the%20quoted%20form%20of%20the%20POSIX%20path%20of%20this_file%0Dset%20the%20default_color%20to%20choose%20color%20default%20color%20default_color%0Dset%20the%20hex_color%20to%20text%202%20thru%20%2D1%20of%20%28my%20RBG_to_HTML%28default_color%29%29%0D%0D%2D%2D%20indicate%20the%20proportions%20for%20the%20pad%20area%0Dset%20H_proportion%20to%2016%0Dset%20V_proportion%20to%209%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20calculate%20pad%20dimensions%0D%09%09if%20H_proportion%20is%20greater%20than%20V_proportion%20then%0D%09%09%09set%20the%20new_W%20to%20%28H%20%2A%20H_proportion%29%20%2F%20V_proportion%0D%09%09%09set%20%7Bpad_W%2C%20pad_H%7D%20to%20%7Bnew_W%2C%20H%7D%0D%09%09else%0D%09%09%09set%20the%20new_H%20to%20%28W%20%2A%20V_proportion%29%20%2F%20H_proportion%0D%09%09%09set%20%7Bpad_W%2C%20pad_H%7D%20to%20%7BW%2C%20new_H%7D%0D%09%09end%20if%0D%09%09%28%2A%20The%20with%20pad%20color%20parameter%20is%20broken%20in%20Mac%20OS%20X%2010%2E5%2E5%20%0D%09%09%2D%2D%20perform%20action%0D%09%09pad%20this_image%20to%20dimensions%20%7Bpad_W%2C%20pad_H%7D%20with%20pad%20color%20default_color%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2A%29%0D%09%09%2D%2D%20close%20image%0D%09%09close%20this_image%0D%09%09%2D%2D%20calculate%20pad%20dimensions%0D%09end%20tell%0D%09%0D%09%2D%2D%20The%20with%20pad%20color%20parameter%20is%20not%20working%20in%2010%2E5%2E5%20so%20use%20the%20SIPS%20command%2Dline%20utitlity%20instead%0D%09do%20shell%20script%20%22sips%20%22%20%26%20this_path%20%26%20%22%20%2Dp%20%22%20%26%20pad_H%20%26%20space%20%26%20pad_W%20%26%20space%20%26%20%22%2D%2DpadColor%20%22%20%26%20hex_color%20%26%20space%20%26%20%22%2Di%22%0D%09%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML">here</a> for a version of the letterbox script that incorporates the color picker palette.</p>
+			
+			
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Print Plugins</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Automator workflows can be saved as PDF Print Plugins, accessed from an application’s print dialog.">
+	<meta property="og:image" content="https://macosautomation.com/automator/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav-active.png">
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Print Plugins (PDF)</p>
+			
+			<p>By default, Automator includes a workflow template for processing PDF files generated when the user selects a Print Plugin workflow from the PDF popup menu in the application Print dialog.</p>
+			
+			<p>The following example details the creation of an Automator PDF Print Plugin that adds a new slide containing an image of the current map in the Maps app, to a new slide in a Keynote presentation.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Example: Export Map to Keynote as Image</p>
+			
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="pdf-plugin-moov" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/video-poster.jpg">
+				  <source src="pdf-plugin-keynote.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('pdf-plugin-moov').play();">PLAY</button>
+				<button onclick="document.getElementById('pdf-plugin-moov').pause();">PAUSE</button>
+				<button onclick="document.getElementById('pdf-plugin-moov').currentTime=(document.getElementById('pdf-plugin-moov').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('pdf-plugin-moov').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>This 3-action workflow renders an image from the PDF file generated using the PDF popup menu in the Maps print dialog. It includes an AppleScript script (provided here) that performs the task of creating a new slide in Keynote and importing the image rendered by the first workflow action. The workflow ends by “cleaning-up after itself” by deleting the generated image file after the import process has completed.</p>
+			
+			<p><a href="pdf-plugin-workflow.zip">DOWNLOAD</a> the example Print Plugin workflow file.</p>
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator Print Plugin workflow document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The input banner declares that the workflow receives PDF files from the macOS print system as the workflow input.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Render PDF Pages as Images</b> action will render the printed PDF pages to images of the indicated format and resolution. Each PDF page will be rendered to a single image file, which will be passed to the next action for processing.</p>
+			</div>
+			
+			<img width="100%" alt="print-plugin-workflow-window" src="gfx/print-plugin-workflow-window.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>Run AppleScript</b> action contains the AppleScript script shown below that creates a new image slide in the frontmost Keynote document for each of the rendered PDF pages. If no presentation is currently open, a new one will be created. References to the rendered images passed as input to this action will be passed through to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The <b>Move Finder Items to the Trash</b> action will delete the images files previously rendered into the user’s Temporary Items folder.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">The AppleScript Script</p>
+			
+			<p>The following AppleScript script is designed to process the rendered images passed to it as input. Each image file will be placed on a new slide in the frontmost Keynote document. To use in a workflow, add the <b>Run AppleScript</b> action to the workflow and replaces its default contents with this script.</p>
+			
+			<div id="new-slide-script" class="script-content">on run {input, parameters}
+	try
+		if the class of input is not list then set input to input as list
+		
+		tell application id "com.apple.iWork.Keynote"
+			activate
+			
+			if not (exists document 1) then
+				make new document
+			end if
+			
+			tell the front document
+				set docWidth to its width
+				set docHeight to its height
+				
+				set the masterSlideNames to the name of every master slide
+				
+				repeat with i from 1 to the count of input
+					set aImageFile to item i of input
+					
+					if "Blank" is in the masterSlideNames then
+						set aSlide to ¬
+							make new slide with properties {base slide:master slide "Blank"}
+					else
+						set aSlide to make new slide
+					end if
+					
+					tell aSlide
+						set aImage to make new image with properties {file:aImageFile}
+					end tell
+					
+					tell aImage
+						set imgWidth to its width
+						set imgHeight to its height
+					end tell
+					
+					-- new image height based on setting new image width to slide width
+					set newImgHeight to (imgHeight * docWidth) / imgWidth
+					-- check to see if new image height is greater than or equal to doc height
+					if newImgHeight is greater than or equal to docHeight then
+						set newImgWidth to docWidth
+						-- center image vertically
+						set vOffset to ((newImgHeight - docHeight) / 2) * -1
+						set hOffset to 0
+					else
+						-- scale image height to match slide height
+						set newImgHeight to docHeight
+						set newImgWidth to (docHeight * imgWidth) / imgHeight
+						-- center image horizontally
+						set vOffset to 0
+						set hOffset to ((newImgWidth - docWidth) / 2) * -1
+					end if
+					
+					tell aImage
+						set its width to newImgWidth
+						set its height to newImgHeight
+						set its position to {hOffset, vOffset}
+					end tell
+					
+				end repeat
+			end tell
+		end tell
+	on error errorMessage
+		display dialog errorMessage buttons {"Cancel"} default button 1
+	end try
+	
+	return input
+end run</div>
+
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Image Slide(s)</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('new-slide-script');">Copy Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ifEnum">on</span> <span class="methodEnum">run</span> {<span class="functionParamterEnum">input</span>, <span class="functionParamterEnum">parameters</span>}</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">try</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>if the <span class="propertyEnum">class</span> of <span class="functionParamterEnum">input</span> is not <span class="classEnum">list</span> then set <span class="functionParamterEnum">input</span> to <span class="functionParamterEnum">input</span> as <span class="classEnum">list</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>tell <span class="classEnum">application</span> <span class="propertyEnum">id</span> <span class="stringEnum">&quot;com.apple.iWork.Keynote&quot;</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>if not (<span class="methodEnum">exists</span> <span class="classEnum">document</span> 1) then</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">make</span> <span class="newEnum">new</span> <span class="classEnum">document</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>end if</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>tell the front <span class="classEnum">document</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">docWidth</span> to its <span class="propertyEnum">width</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">docHeight</span> to its <span class="propertyEnum">height</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span>set the <span class="variableEnum">masterSlideNames</span> to the <span class="propertyEnum">name</span> of every <span class="classEnum">master slide</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">repeat</span> with i from 1 to the count of <span class="functionParamterEnum">input</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aImageFile</span> to item i of <span class="functionParamterEnum">input</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>if <span class="stringEnum">&quot;Blank&quot;</span> is in the <span class="variableEnum">masterSlideNames</span> then</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aSlide</span> to ¬</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:140px;">&nbsp;</span><span class="methodEnum">make</span> <span class="newEnum">new</span> <span class="classEnum">slide</span> with properties {<span class="propertyEnum">base slide</span>:<span class="classEnum">master slide</span> <span class="stringEnum">&quot;Blank&quot;</span>}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>else</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aSlide</span> to <span class="methodEnum">make</span> <span class="newEnum">new</span> <span class="classEnum">slide</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>end if</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>tell <span class="variableEnum">aSlide</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aImage</span> to <span class="methodEnum">make</span> <span class="newEnum">new</span> <span class="classEnum">image</span> with properties {<span class="propertyEnum">file</span>:<span class="variableEnum">aImageFile</span>}</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>tell <span class="variableEnum">aImage</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">imgWidth</span> to its <span class="propertyEnum">width</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">imgHeight</span> to its <span class="propertyEnum">height</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="js-comment">-- image height based on setting new image width to slide width</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">newImgHeight</span> to (<span class="variableEnum">imgHeight</span> * <span class="variableEnum">docWidth</span>) / <span class="variableEnum">imgWidth</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="js-comment">-- is new image height greater than or equal to doc height?</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>if <span class="variableEnum">newImgHeight</span> is greater than or equal to <span class="variableEnum">docHeight</span> then</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">newImgWidth</span> to <span class="variableEnum">docWidth</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="js-comment">-- center image vertically</span></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">vOffset</span> to ((<span class="variableEnum">newImgHeight</span> - <span class="variableEnum">docHeight</span>) / 2) * -1</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">hOffset</span> to 0</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>else</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="classEnum">-- scale image height to match slide height</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">newImgHeight</span> to <span class="variableEnum">docHeight</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">newImgWidth</span> to (<span class="variableEnum">docHeight</span> * <span class="variableEnum">imgWidth</span>) / <span class="variableEnum">imgHeight</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="js-comment">-- center image horizontally</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">vOffset</span> to 0</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">hOffset</span> to ((<span class="variableEnum">newImgWidth</span> - <span class="variableEnum">docWidth</span>) / 2) * -1</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>end if</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>tell <span class="variableEnum">aImage</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> its <span class="propertyEnum">width</span> to <span class="variableEnum">newImgWidth</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> its <span class="propertyEnum">height</span> to <span class="variableEnum">newImgHeight</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:120px;">&nbsp;</span><span class="methodEnum">set</span> its <span class="propertyEnum">position</span> to {<span class="variableEnum">hOffset</span>, <span class="variableEnum">vOffset</span>}</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">end repeat</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">on error</span> <span class="variableEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">display dialog</span> <span class="variableEnum">errorMessage</span> buttons {<span class="stringEnum">&quot;Cancel&quot;</span>} default button 1</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">end try</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="returnEnum">return</span> <span class="functionParamterEnum">input</span></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="methodEnum">run</span></td></tr>
+			</table>
+
+			
+			<p class="subhead" role="heading" aria-level="2">Using the Plugin</p>
+			
+			<p>Using the Print Plugin is a simple process, outlined here:</p>
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The map document window. Although this example is shown in satellite view without sidebars and location pins, you can setup your maps as you like.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The print sheet appears over the document window after &ldquo;Print&hellip;&rdquo; is selected from the <b>File</b> menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;This example optionally uses a user-created custom paper size that matches the dimensions of the target presentation. The map will automatically expand to fit the indicated size.</p>
+			</div>
+			
+			<img width="100%" alt="map-window" src="gfx/map-window.jpg">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The PDF popup menu that list the PDF export options, one of which is the installed example Print Plugin workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Select the Print Plugin workflow to begin PDF export and image conversion and placement into Keynote.</p>
+			</div>
+			
+			<p>Starting with macOS Mojave (v10.14), workflows that contain Apple Event scripts targeting applications, will prompt the user for an initial approval of the workflow. This approval is only required once.</p>
+			
+			<img style="display:block;margin-left:auto;margin-right:auto;" width="532" alt="security-dialog" src="gfx/security-dialog.png">
+			
+			<p>The rendered image file will be imported to a new slide added to the current Keynote document. If no presentation is open in Keynote, a new one using default settings will be created.</p>
+			
+			<img width="100%" alt="keynote-window" src="gfx/keynote-window.jpg">
+			
+			<p class="subhead" role="heading" aria-level="2">Custom Printer Paper Sizes</p>
+			
+			<p><b>PRO TIP</b>: use the Paper Size popup menu in the Print Setup dialog to create custom paper sizes that match the standard slide sizes you use for your presentations. The custom printer settings will work well with the example PDF Plugin to create images of the appropriate size for use in the Keynote presentations.</p>
+			
+			<p>In this example, a custom printer paper size that matches 1920 x 1080 pixels was created and used.</p>
+
+			<img width="100%" alt="print-setup-settings" src="gfx/print-setup-settings.png">
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <p class="active-sub-topic">Print Plugins</p>
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

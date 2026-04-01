@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- 
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+ -->
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+<!~~ START IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcast.m4a\" width=\"320\" height=\"338\" scale=\"2\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!~~ END IMAGE SWAP SCRIPT ~~>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: WORKSHOP SESSION SUMMARY -->
+		<div class="content-segment">
+			<div class="segment-header">Workshop Session Summary</div>
+			
+			<p>Congratulations. You&rsquo;ve completed the process of creating, setting up, and using custom automation tools for OS&nbsp;X.</p>
+			
+			<p>Specifically:</p>
+			
+			<ol>
+				<li>Using Automator, you created service workflows that use text selected in documents or windows as input for the built-in  text-to-speech abilities of OS&nbsp;X.</li>
+				
+				<li>In addition, you enabled these services to be easily accessible throughout the system by assigning them keyboard shortcuts.</li>
+				
+				<li>And you incorporated the use of the new services in the process of constructing a media presentation.</li>
+			</ol>
+			
+			<p>In short, you&rsquo;ve discovered that the power and abilities of automation in OS&nbsp;X is available for you use. If you find yourself thinking &ldquo;I wonder if there&rsquo;s a better way to do this?&rdquo; then it&rsquo;s time to consider using automation.</p>
+			
+			<p class="content-subhead">What&rsquo;s Next?</p>
+			
+			<p>If you found this workshop useful, and want to learn more about Automator, AppleScript, Services, and the automation abilities of OS&nbsp;X, you can:</p>
+			
+			<ol>
+				<li>Sign up for another workshop!</li>
+				
+				<li>Try out the <a href="http://support.apple.com/kb/HT2488" target="_blank">Mac 101 Automator tutorial</a></li>
+				
+				<li>Watch <a href="http://www.macosxautomation.com/automator/video/automator-001A.html" target="_blank">this short movie</a> about Automator.</li>
+				
+				<li>Watch <a href="http://www.macosxautomation.com/services/video/services-001HD.html" target="_blank">this short movie</a> about Services.</li>
+				
+				<li>Visit <a href="http://macosxautomation.com" target="_blank">MACOSXAUTOMATION.COM</a>, a website dedicated to information about the automation technologies of OS&nbsp;X.</li>
+			</ol>
+			
+
+		</div>
+		<!-- END SEGMENT: WORKSHOP SESSION SUMMARY -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li class="hi">Summary</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>Engage the attendees in conversation about the workshop, lesson learned, ideas for other uses.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Services created with Automator can be adapted, expanded, simplified, etc. To edit an existing service, choose &ldquo;Open&rdquo; from the Automator &ldquo;File&rdquo; menu, and then select &ldquo;Service&rdquo; from the &ldquo;Type&rdquo; popup menu in the forthcoming dialog. The services installed in the user Services folder will be selectable for editing.</li>
+			
+				<li>Services created with Automator can be shared with others. Mention how the service workflow files, located in the Home &gt; Library &gt; Services folder can be copied to other computers, and then installed by double-clicking the workflow files in the Finder. (installation details <a href="installservice.html">here</a>)</li>
+				
+				<li>The services created for this workshop can be used in other ways aside from creating narration tracks for podcasts. The same services can be used to add voice to Keynote presentations, and even for creating movies, such as <a href="http://www.macosxautomation.com/automator/video/automator-001A.html" target="_blank">this short movie</a> about Automator. Discuss possible use scenarios with the attendees.</li>
+				
+				<li>In addition to the voices that come with OS&nbsp;X, there are very high-quality voices available from the 3rd-party deelopers linked below.</li>
+			
+				<li>Written text can include special embedded Speech Synthesis Commands to make text rendered to audio by the computer, sound more natural. For detailed information on these special codes, visit the Apple developer website pages for <a href="https://developer.apple.com/library/mac/#documentation/UserExperience/Conceptual/SpeechSynthesisProgrammingGuide/FineTuning/FineTuning.html%23//apple_ref/doc/uid/TP40004365-CH5-SW12" target="_blank">Speech Synthesis</a>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">3RD-PARTY VOICES</h2>
+			<p>High-quality voices in multiple languages for OS&nbsp;X:</p>
+			<ul class="square">
+				<li><a href="http://www.assistiveware.com/product/infovox-ivox/voices" target="_blank">Acapela - iVox</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

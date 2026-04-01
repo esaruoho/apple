@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Playing Documents</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for playing documents in the Keynote application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: OVERVIEW -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Playing Documents</div>
+			
+			<p>In addition to opening, creating, editing, and closing <b>Keynote</b> documents, Keynote scripting support includes the ability to control the playback of presentations, using the following commands excerpted from the <b>Keynote</b> <span class="dictionary-suite">Compatibility Suite</span>:</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">start</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Start playing the presentation.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>start</b> <span class="dictionary-class">document</span> : The document to play.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">from</span> <span class="dictionary-class">slide</span> ] : The slide at which to start playing.</p>	
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">stop</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Stop playing the presentation.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>stop</b> <span class="dictionary-class">document</span> : The document to stop.</p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">show next</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Advance one build or slide.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>show next</b></p>
+				<p>&nbsp;</p>
+				<p class="dictionary-term"><span class="dictionary-term">show previous</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Go to the previous slide.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>show previous</b></p>			
+			</div>
+			
+			<p>Here&rsquo;s an example script that uses some the playback commands to play, advance, and stop a very short presentation:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create, Play, Advance, and Stop Presentation</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Create,%20Play,%20Advance,%20and%20Stop%20Presentation&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3A1024%2C%20height%3A768%7D%0D%09%0D%09tell%20thisDocument%0D%09%09set%20thisMasterSlide%20to%20master%20slide%20%22Title%20-%20Center%22%0D%09%09tell%20the%20first%20slide%0D%09%09%09set%20the%20base%20slide%20to%20thisMasterSlide%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22HELLO%22%0D%09%09end%20tell%0D%09%09set%20thisSlide%20to%20%C2%AC%0D%09%09%09make%20new%20slide%20with%20properties%20%7Bbase%20slide%3AthisMasterSlide%7D%0D%09%09tell%20thisSlide%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22GOODBYE%22%0D%09%09end%20tell%0D%09end%20tell%0D%09%0D%09--%20begin%20presenting%0D%09start%20thisDocument%20from%20the%20first%20slide%20of%20thisDocument%0D%09delay%202%0D%09--%20show%20the%20next%20slide%20or%20build%0D%09show%20next%0D%09delay%202%0D%09--%20stop%20the%20presentation%0D%09stop%20thisDocument%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;, <span class="codeproperty">width</span>:1024, <span class="codeproperty">height</span>:768}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMasterSlide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title - Center&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>to</b> <span class="codevariable">thisMasterSlide</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;HELLO&quot;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codevariable">thisMasterSlide</span>}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;GOODBYE&quot;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- begin presenting</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 2</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- show the next slide or build</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">show next</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 2</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- stop the presentation</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">stop</span> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="segment-note"><b>TIP</b>: For a more complex playback example that involves a script presenting a document while speaking its presenter notes, check out the <b>Simple Play and Say</b> script on the <a href="slide-presenter-notes.html">Presenter Notes</a> page.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Hands-Free Playback Control Scripts</p>
+			
+			<p>Scripts can be used to control the playing of <b>Keynote</b> documents in many scenarios, such as on a schedule or remotely. Using the <span class="codeproperty">intrinsic application properties</span> outlined in the <a href="application.html">Application section</a> of this documentation, a script can &ldquo;sense&rdquo; the current running and playback status of the <b>Keynote</b> application and act accordingly.</p>
+			
+			<p>The following script will only execute its command if the <b>Keynote</b> application is already running. Running this script will <b>not</b> cause <b>Keynote</b> to activate if it is not already open.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Stop Presentation</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Stop%20Presentation&script=--%20IF%20KEYNOTE%20IS%20ACTIVE%20AND%20PLAYING%20THEN%20STOP%20IT%0Dif%20running%20of%20application%20%22Keynote%22%20is%20true%20then%0D%09tell%20application%20%22Keynote%22%0D%09%09if%20playing%20is%20true%20then%20stop%20the%20front%20document%0D%09end%20tell%0Dend%20if"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- IF KEYNOTE IS ACTIVE AND PLAYING THEN STOP IT</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b> <span class="codelibrarycommand">stop</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>end if</b></td></tr>
+			</table>
+			
+			<p>And a script for presenting the front document. It will start the presentation only if <b>Keynote</b> is open with a document open. The script will not execute its command if <b>Keynote</b> is already playing a document:</p>	
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Start Presentation</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Start%20Presentation&script=--%20IF%20KEYNOTE%20IS%20ACTIVE%20AND%20NOT%20PLAYING%20THEN%20START%20IT%0Dif%20running%20of%20application%20%22Keynote%22%20is%20true%20then%0D%09tell%20application%20%22Keynote%22%0D%09%09activate%0D%09%09try%0D%09%09%09if%20playing%20is%20false%20then%20start%20the%20front%20document%0D%09%09end%20try%0D%09end%20tell%0Dend%20if"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- IF KEYNOTE IS ACTIVE AND NOT PLAYING THEN START IT</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b> <span class="codelibrarycommand">start</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end if</b></td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Moving to a Specific Slide</p>
+			
+			<p>As of Keynote 7.1, you can now set the value of the <span class="codeproperty">current slide</span> property of a <span class="codelibraryclass">document</span>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">1) Set the Current Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Set%20Current%20Slide&script=tell%20application%20id%20%22com.apple.iWork.Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09set%20the%20current%20slide%20to%20the%20first%20slide%0D%09end%20tell%0Dend%20tell" style="text-decoration:none;background-color:#eee;" onmouseover='this.style.color="black"' onmouseout='this.style.color="red"'>Open in Script Editor</a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>tell</b> <span class="dictionary-class">application</span> <span class="codeproperty">id</span> &quot;com.apple.iWork.Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">current slide</span> <b>to the first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>Be aware that the index of slide does not take into account whether a slide is skipped or not:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">2) Set the Current Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Set%20Current%20Slide&script=tell%20application%20id%20%22com.apple.iWork.Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09set%20the%20current%20slide%20to%20slide%202%0D%09end%20tell%0Dend%20tell" style="text-decoration:none;background-color:#eee;" onmouseover='this.style.color="black"' onmouseout='this.style.color="red"'>Open in Script Editor</a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>tell</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.iWork.Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="dictionary-class">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">current slide</span> <b>to</b> <span class="codelibraryclass">slide</span> 2</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>end tell</b></td></tr>
+			</table>
+			
+			<p>So to ignore any skipped slides, use the <b>slide number</b> property when setting the value of the <b>current slide</b> property:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">3) Set Current Slide using Slide Number Property</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Set%20Current%20Slide&script=tell%20application%20id%20%22com.apple.iWork.Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09set%20the%20current%20slide%20to%20the%20first%20slide%20whose%20slide%20number%20is%202%0D%09end%20tell%0Dend%20tell"  style="text-decoration:none;background-color:#eee;" onmouseover='this.style.color="black"' onmouseout='this.style.color="red"'>Open in Script Editor</a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>tell</b> <span class="codelibraryclass">application</span> <span class="codeproperty">id</span> &quot;com.apple.iWork.Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="dictionary-property">current slide</span> <b>to the first</b> <span class="codelibraryclass">slide</span> <b>whose</b> <span class="dictionary-property">slide number</span> <b>is</b> 2</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>end tell</b></td></tr>
+			</table>
+			
+			<img class="centered" style="margin-top:24px;" width="624" alt="current-slide" src="gfx/current-slide.jpg">
+			
+			
+			<p><b>NOTE</b>: If you are using a version of Keynote prior to 7.1, to have a script select a specific slide in the presentation, use one of the sub-routines below:</p>
+			
+			<p>These sub-routines force the display of a specific slide by creating and deleting a small shape on the slide:</p>
+			
+	<table class="script-table" role="presentation">
+		<tr><td colspan="3" class="script-title">Select Specific Slide Sub-Routines</td></tr>
+		<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Select%20Specific%20Slide%20Sub-Routines&script=tell%20application%20%22Keynote%22%0D%09tell%20front%20document%0D%09%09my%20goToSlideByIndex(-1)%20--%20last%20slide%20is%3A%20-1%0D%09%09delay%202%0D%09%09my%20goToSlideByReference(the%20first%20slide)%0D%09end%20tell%0Dend%20tell%0D%0Don%20goToSlideByIndex(slideIndex)%0D%09tell%20application%20%22Keynote%22%0D%09%09activate%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20slide%20slideIndex%0D%09%09%09%09set%20thisShape%20to%20%C2%AC%0D%09%09%09%09%09make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bheight%3A12%2C%20width%3A12%2C%20position%3A%7B0%2C%200%7D%7D%0D%09%09%09%09delete%20thisShape%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20goToSlideByIndex%0D%0Don%20goToSlideByReference(slideReference)%0D%09tell%20application%20%22Keynote%22%0D%09%09activate%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20slideReference%0D%09%09%09%09set%20thisShape%20to%20%C2%AC%0D%09%09%09%09%09make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bheight%3A12%2C%20width%3A12%2C%20position%3A%7B0%2C%200%7D%7D%0D%09%09%09%09delete%20thisShape%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20goToSlideByReference"><button type="button">Open in Script Editor</button></a></td></tr>
+		<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+		<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+		<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+		<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">goToSlideByIndex</span>(-1) <span class="codecomment">-- last slide is: -1</span></td></tr>
+		<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>delay 2</td></tr>
+		<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">goToSlideByReference</span>(<b>the first</b> <span class="codelibraryclass">slide</span>)</td></tr>
+		<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+		<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+		<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">goToSlideByIndex</span>(<span class="codevariable">slideIndex</span>)</td></tr>
+		<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+		<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+		<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+		<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> <span class="codevariable">slideIndex</span></td></tr>
+		<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisShape</span> <b>to</b> &not;</td></tr>
+		<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+		<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">height</span>:12, <span class="codeproperty">width</span>:12, <span class="codeproperty">position</span>:{0, 0}}</td></tr>
+		<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>delete <span class="codevariable">thisShape</span></td></tr>
+		<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">goToSlideByIndex</span></td></tr>
+		<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+		<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">goToSlideByReference</span>(slideReference)</td></tr>
+		<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+		<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+		<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+		<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> slideReference</td></tr>
+		<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisShape</span> <b>to</b> &not;</td></tr>
+		<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+		<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">height</span>:12, <span class="codeproperty">width</span>:12, <span class="codeproperty">position</span>:{0, 0}}</td></tr>
+		<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>delete <span class="codevariable">thisShape</span></td></tr>
+		<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+		<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">goToSlideByReference</span></td></tr>
+	</table>			
+			<p>The subroutine shown below evokes Keynote&rsquo;s slide switcher interface::</p>		
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Select Specific Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Select%20Specific%20Slide&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20document%201%0D%09%09my%20moveToSlide(last%20slide)%0D%09%09delay%202%0D%09%09my%20moveToSlide(first%20slide)%0D%09end%20tell%0Dend%20tell%0D%0Don%20moveToSlide(thisSlide)%0D%09tell%20application%20%22Keynote%22%0D%09%09tell%20front%20document%0D%09%09%09if%20thisSlide%20is%20last%20slide%20then%0D%09%09%09%09start%20from%20slide%20before%20last%20slide%0D%09%09%09%09tell%20application%20%22Keynote%22%0D%09%09%09%09%09show%20slide%20switcher%0D%09%09%09%09%09move%20slide%20switcher%20forward%0D%09%09%09%09%09accept%20slide%20switcher%0D%09%09%09%09%09stop%20front%20document%0D%09%09%09%09end%20tell%0D%09%09%09else%0D%09%09%09%09set%20thisSlideNumber%20to%20slide%20number%20of%20thisSlide%0D%09%09%09%09start%20from%20slide%20(thisSlideNumber%20%2B%201)%0D%09%09%09%09tell%20application%20%22Keynote%22%0D%09%09%09%09%09show%20slide%20switcher%0D%09%09%09%09%09move%20slide%20switcher%20backward%0D%09%09%09%09%09accept%20slide%20switcher%0D%09%09%09%09%09stop%20front%20document%0D%09%09%09%09end%20tell%0D%09%09%09end%20if%0D%09%09end%20tell%0D%09end%20tell%0Dend%20moveToSlide"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">moveToSlide</span>(<b>last</b> <span class="codelibraryclass">slide</span>)</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 2</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">moveToSlide</span>(<b>first</b> <span class="codelibraryclass">slide</span>)</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">moveToSlide</span>(<span class="codevariable">thisSlide</span>)</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span> <b>is last</b> <span class="codelibraryclass">slide</span> <b>then</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codelibraryparameter">from</span> <span class="codelibraryclass">slide</span> <b>before last</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">show slide switcher</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">move slide switcher forward</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">accept slide switcher</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">stop</span> <b>front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideNumber</span> <b>to</b> <span class="codeproperty">slide number</span> <b>of</b> <span class="codevariable"><span class="codevariable">thisSlide</span></span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codelibraryparameter">from</span> <span class="codelibraryclass">slide</span> (<span class="codevariable">thisSlideNumber</span> + 1)</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">show slide switcher</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">move slide switcher backward</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">accept slide switcher</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">stop</span> <b>front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">moveToSlide</span></td></tr>
+			</table>			
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+				
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-make.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li class="hi"><a href="document.html">Document</a></li>
+				<li class="navListSectionItem"><a href="document-open.html">Opening Documents</a></li>
+				<li class="navListSectionItemSelected">Playing Documents</li>
+				<li class="navListSectionItem"><a href="document-make.html">Making Documents</a></li>
+				<li class="navListSectionItem"><a href="document-save.html">Saving Documents</a></li>
+				<li class="navListSectionItem"><a href="document-close.html">Closing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-export.html">Exporting Documents</a></li>
+				<li class="navListSectionItem"><a href="document-kiosk.html">Making Kiosks</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

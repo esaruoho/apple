@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Skipping Slides</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for showing and hiding slides in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Skipping Slides</div>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Keynote Suite Slide Class (Excerpt)</p>
+			<div class="dictionary" style="-webkit-user-select:text;">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">slide</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [<i>inh</i>. <span class="dictionary-class">iWork container</span>; see also <span class="dictionary-suite">Compatibility Suite</span>] :  A slide in a presentation document.</span></p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">skipped</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the slide skipped? If true, the slide will not be shown when the presentation is played.</p>
+			</div>
+			
+			<p>The value of the <span class="codeproperty">skipped</span> property of a <span class="codelibraryclass">slide</span> determines whether a slide is enabled or disabled for display when in its parent presentation document is played.</p>
+		
+			<p>This deceptively simple property can be used in creative ways to deliver interesting enhancements to <b>Keynote</b>&rsquo;s functionality.</p>
+			
+			<p>For example, this short script will “un-skip” every slide in a presentation:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Un-Skip All Slides</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20front%20document)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09set%20skipped%20of%20every%20slide%20to%20false%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <b>front</b> <span class="codelibraryclass">document</span>) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">skipped</span> <b>of every</b> <span class="codelibraryclass">slide</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+						
+			<p>This short script could be used to skip all of the slides of a presentation that featured content about older topics:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Skip Old Slides</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09set%20skipped%20of%20%C2%AC%0D%09%09%09(every%20slide%20where%20the%20object%20text%20of%20its%20default%20title%20item%20contains%20%222012%22)%20to%20true%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">skipped</span> <b>of</b> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<b>every</b> <span class="codelibraryclass">slide</span> <b>where the</b> <span class="codeproperty">object text</span> <b>of its</b> <span class="codeproperty">default title item</span> <b>contains</b> &quot;2012&quot;) <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>Here&rsquo;s another interesting use of the skipped property:</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Multi-Region Presentation</p>
+			
+			<p>Maintaining up-to-date presentation materials is a challenge for sales and marketing organizations, often requiring the creation and maintenance of multiple versions of the same presentation. For example, a company that sells widgets in different countries or regions, would need to keep multiple versions of the same presentation, exactly alike except the prices for widgets would need to be displayed in the currency of the target country or region.</p>
+			
+			<p>Using the <span class="codeproperty">skipped</span> property and a simple AppleScript script, the company could create and use only one presentation, one that contains slides for all target countries or regions. The script would instantly adapt the presentation to address a specific country or region, without altering the presentation contents!</p>
+		
+			<p>The following example will show how this done.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="MultiRegionPreso.zip" style="font-weight:bold;">DOWNLOAD</a> and open an example <b>Keynote</b> document designed for presentation to three regions: Japan, USA, and Europe:</p>
+		
+			<p>The various elements of the presentation file are described below:</p>
+			
+			<img class="centered" width="624" height="379" alt="multi-region-preso-01" src="gfx/multi-region-preso-01.png">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Versions of Slide</b>&nbsp;&bull;&nbsp;Each slide of the core presentation is duplicated for each of the target regions. In this example, there are three target regions: Japan, USA, and Europe.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Localized Data</b>&nbsp;&bull;&nbsp;The content of the each slide is localized for its target region. For example, the selected slide, targeting Japan, displays the widget price in Yen instead of Dollars or Euros.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Region Identifier</b>&nbsp;&bull;&nbsp;Slides that are specific to a target region have the region name placed at the beginning the slide&rsquo;s presenter notes as a means to enable the slide to be identified by the script as targeting a specific region.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open and run the example script: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<p>The script will present a dialog from which you choose the region to present:</p>
+			
+			<img class="centered" width="534" height="234" alt="which-zone" src="gfx/which-zone.png">
+			
+			<p>The script will disable (skip) only those slides <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> whose region identifier does not match the region chosen in the previous dialog <span class="numeric-callout">&nbsp;1&nbsp;</span>, add the target region name to the title slide <span class="numeric-callout">&nbsp;2&nbsp;</span>, and then run the presentation.</p>
+			
+			<img class="centered" width="624" height="379" alt="multi-region-preso-02" src="gfx/multi-region-preso-02.png">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Step through the short example presentation, and then run the script again, choosing a different target region.</p>
+			
+			<table class="script-table" style="margin-top:24px;">
+				<tr><td colspan="3" class="script-title">Adapt Presentation for Region</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09display%20dialog%20%22Set%20this%20presentation%20to%20which%20zone%3F%22%20buttons%20%C2%AC%0D%09%09%7B%22JAPAN%22%2C%20%22USA%22%2C%20%22EUROPE%22%7D%0D%09set%20thisIdentifer%20to%20the%20button%20returned%20of%20the%20result%0D%09%0D%09tell%20the%20front%20document%0D%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20of%20slide%201%20to%20thisIdentifer%0D%09%09%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09tell%20slide%20i%0D%09%09%09%09set%20theseNotes%20to%20presenter%20notes%0D%09%09%09%09if%20theseNotes%20is%20%22%22%20or%20theseNotes%20begins%20with%20thisIdentifer%20then%0D%09%09%09%09%09set%20skipped%20to%20false%0D%09%09%09%09else%0D%09%09%09%09%09set%20skipped%20to%20true%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0D%09%0D%09start%20the%20front%20document%20from%20the%20first%20slide%20of%20the%20front%20document%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Set this presentation to which zone?&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{&quot;JAPAN&quot;, &quot;USA&quot;, &quot;EUROPE&quot;}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisIdentifer</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codeenumeration">result</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>of</b> <span class="codelibraryclass">slide</span> 1 <b>to</b> <span class="codevariable">thisIdentifer</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">theseNotes</span> <b>to</b> <span class="codeproperty">presenter notes</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">theseNotes</span> <b>is</b> &quot;&quot; or <span class="codevariable">theseNotes</span> <b>begins with</b> <span class="codevariable">thisIdentifer</span> <b>then</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">skipped</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">skipped</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <b>the front</b> <span class="codelibraryclass">document</span> <b>from the first</b> <span class="codelibraryclass">slide</span> <b>of the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+		
+		
+		
+		
+		
+		</div>
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="slide-delete.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="slide.html">Slide</a></li>
+				<li class="navListSectionItem"><a href="slide-make.html">Making Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-duplicate.html">Duplicating Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-move.html">Moving Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-masters.html">Applying Master Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-default-text.html">Default Text Items</a></li>
+				<li class="navListSectionItem"><a href="slide-transition.html">Slide Transitions</a></li>
+				<li class="navListSectionItemSelected">Show | Hide Slides</li>
+				<li class="navListSectionItem"><a href="slide-delete.html">Deleting Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-presenter-notes.html">Presenter Notes</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

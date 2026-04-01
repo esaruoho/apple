@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/selection-actions.html","20230519122927","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1684499367");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230519122927cs_/https://configautomation.com/automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="A collection of Automator actions for the Apple Configurator 2 application.">
+	<link rel="home" href="http://configautomation.com">
+
+	<title>Apple Configurator &amp; Automator: Selection Actions</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230519122927/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230519122927/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230519122927/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Determining Workflow Input</p>
+
+					<p>The first step in the creation of any workflow is to identify the items that will be processed by the workflow. In terms of the Apple Configurator, the items to process are the iOS devices connected to your computer.</p>
+			
+					<p>The <b>Apple Configurator</b> Automator actions collection contains two actions for indicating what devices are to be manipulated by a host workflow:</p>
+			
+					<ul>
+						<li><b>Get Connected Devices</b></li>
+						<li><b>Choose Connected Devices</b></li>
+					</ul>
+				</div>
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+				<!-- BEGIN SEGMENT: MANAGEMENT WORKFLOWS -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">The &ldquo;Get Connected Devices&rdquo; action</p>
+			
+					<p>The <b>Get Connected Devices</b> action will return the unique ECID identifiers for all the connected iOS devices whose corresponding checkboxes are selected in the action interface. The passed ECID identifiers will be used by the next and subsequent actions in the workflow to determine which devices are to be processed.</p>
+			
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/selection-actions-01.jpg">
+			
+					<p>So, for example, if you have multiple types of iOS devices connected to your computer, but only want your workflow to process iPads, simply select the iPad checkbox in the action view and leave the other checkboxes unchecked.</p>
+			
+					<table class="action-info-table" style="margin-bottom:24px;">
+						<tr><td class="data-key">Input:</td><td class="data-value">This action accepts no input</td></tr>
+						<tr><td class="data-key">Output:</td><td class="data-value">ECID Identifiers for the connected devices matching the chosen parameters.</td></tr>
+						<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+							<ul style="margin-bottom:0;">
+								<li><p>Selecting the type of devices to reference</p></li>
+							</ul>
+						</td></tr>
+					</table>
+			
+					<p class="segment-note"><b>What is ECID?</b>: ECID stands for Exclusive Chip Identification Number or Electronic Chip Identification Number and is incorporated into every iOS device as a means of providing a unique identifier for the device.</p>
+
+				</div>
+				<!-- END SEGMENT: MANAGEMENT WORKFLOWS -->
+				
+				<!-- BEGIN SEGMENT: SCRIPT LIBRARY -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Device References</p>
+
+					<p>All of the Apple Configurator actions use ECID identifiers as the mechanism for identifying, querying, and controlling connected devices. Each action accepts device ECID identifiers as their input, thereby enabling them to target their processing to a specified set of devices. When an action has completed its processing, it then passes the ECID identifiers of the processed devices, to the next action in the workflow.</p>
+			
+					<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>If a workflow is executed from within Automator, you can view the results of each action by selecting the Results button in the action view. The ECID identifiers of the processed devices will be listed in the Results pane:</p>
+			
+			<img class="action-interface" alt="" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/selection-actions-03.png">
+
+
+				</div>
+				<!-- END SEGMENT: SCRIPT LIBRARY -->
+				
+				<!-- BEGIN SEGMENT: CHOOSE DEVICE -->
+		
+				<a name="1001"></a><div class="content-segment">
+				<p class="header" role="heading" aria-level="1">The &ldquo;Choose Connected Devices&rdquo; action</p>
+					<p>In some workflows, you may wish to dynamically select specific connected devices to process. The &ldquo;Choose Connected Devices&rdquo; action is perfect for quickly selecting one or more devices from the list of available devices.</p>
+			
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/selection-actions-06.jpg">
+			
+					<table class="action-info-table" style="margin-bottom:24px;margin-top:24px;">
+						<tr><td class="data-key">Input:</td><td class="data-value">This action accepts no input</td></tr>
+						<tr><td class="data-key">Output:</td><td class="data-value">ECID Identifiers for the connected devices selected in the appearing list dialog.</td></tr>
+						<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+							<ul style="margin-bottom:0;">
+								<li><p>Choosing to have the information for each listed device begin with the device class or device type</p></li>
+								<li><p>Choosing to have the information for each listed device include the device’s serial number</p></li>
+							</ul>
+						</td></tr>
+					</table>
+			
+					<p>When this action is run by an executing workflow, it will present a dialog listing the class, name, and ECID number of each of the currently connected iOS devices <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="centered" width="640" alt="" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/selection-actions-04.png">
+			
+					<p>Once the user has selected one or more devices, and pressed the OK button, the ECID identifiers for the chosen devices will be passed to the next action in the workflow:</p>
+				
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230519122927im_/https://configautomation.com/gfx/selection-actions-05.png">	
+	
+				</div>
+				<!-- END SEGMENT: CHOOSE DEVICE -->
+				
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230519122927/https://configautomation.com/dep.html">DEP Actions</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/identity-files.html">Supervision Identity</a></li>
+						<li class="hi">Selection Actions</li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/dep.html">DEP Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/restore.html">Formatting Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/backup.html">Backup Actions</a></li>
+						<li><a href="selection-actions.html#">Installation Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/information-actions.html">Information Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/attach-workflow.html">“Attached” Workflows</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></li>
+						<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+						<li><a href="http://web.archive.org/web/20230519122927/https://configautomation.com/classroom.html">iOS Classroom</a></li>
+					</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 12:29:27 May 19, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:16 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.489
+  exclusion.robots: 0.015
+  exclusion.robots.policy: 0.006
+  esindex: 0.007
+  cdx.remote: 50.717
+  LoadShardBlock: 88.895 (3)
+  PetaboxLoader3.datanode: 95.198 (4)
+  load_resource: 512.005
+  PetaboxLoader3.resolve: 455.356
+-->

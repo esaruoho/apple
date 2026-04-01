@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AppleScript Libraries: AppleScript/Objective-C</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, AppleScript Libraries, Automation, Automator, Services, OS X, Snow Leopard, Lion, Mountain Lion, Movericks">
+	<META NAME="Description" CONTENT="Overview and examples of AppleScript Libraries in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >AppleScript/Objective-C Libraries</div>
+		
+			<p>In some situations, the functions of the native AppleScript language and its standard set of scripting additions, may be lacking in the ability to perform a certain task, such as transforming the case of text.</p>
+
+			<p>For example, the code used in the creation of the simple AppleScript Library in the previous section, is limited in the scope of what it can do. The previous script handler:</p>
+			
+			<ol>
+				<li>Only works with the English language</li>
+				<li>Does not support the transformation of special characters</li>
+				<li>Does not support other standard case conversions such a Word Case</li>
+			</ol>
+
+			<p> Fortunately, AppleScript/Objective-C (introduced in OS&nbsp;X v10.6) provides access to the thousands of functions that make up OS&nbsp;X&rsquo;s powerful Cocoa frameworks. The issues found in the previous library handler can be easily resolved by creating a library that uses AppleScript/Objective-C to access the text handling capabilities of the Cocoa <a href="https://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html" target="_blank">NSString class</a>.</p>						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: CREATE SCRIPT BUNDLE -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Create and Save a Script Bundle</div>
+		
+			<p>AppleScript Libraries, written to use AppleScript/Objective-C, are saved as script bundle files. Open a new script document in the <b>AppleScript Editor</b> application. Save the new document as a script bundle by choosing <b>Script bundle</b> from the <b>Format</b> popup menu in the <b>Save</b> dialog (see below):</p>						
+		
+			<img alt="format-popup-menu" class="centered" src="gfx/format-popup-menu.png" width="300">
+			
+			<p>For this example, name the script: <i>Case Changer</i>. By default, the saved script bundle file will have a name extension of &ldquo;scptd&rdquo;.</p>
+			
+			<p>Once the script has been saved as a bundle file, you can enter the script parameters that define it as a library. Press the <b>Bundle Contents</b> button (shown below), located at the top right of the script window, to open the script bundle drawer, which is attached to main script window.</p>
+		
+			<img alt="bundle-contents-button" class="centered" src="gfx/bundle-contents-button.png" width="180">
+			
+			<p>The bundle drawer contains four parameters we will use to identify the script bundle as an AppleScript Library written in AppleScript/Objective-C.</p>
+
+			<img class="centered" alt="drawer" src="gfx/drawer.jpg" width="624">
+			
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Script Library Name</b>- In the Name text input field, enter the name of this script library: Case Changer</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Bundle Identifier</b> - It is important that every AppleScript Library have a unique bundle identifier. In this text input field, enter a bundle identifier based on your developer domain (no spaces). If you don’t have a developer domain, use your name, like: <i>com.JohnnyAppleseed.lib.CaseChanger</i></p>
+
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Developer Copyright</b> - In this text input field, enter a copyright string for your library.</p>
+
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>AppleScript/Objective-C Library checkbox</b> - If an AppleScript Library contains AppleScript/Objective-C code, this checkbox must be selected in order to allow the script to be compiled. For this example, select this checkbox.</p>
+			
+			<p>Save the script again. You are now ready to add the script code for the library.</p>
+		</div>
+		<!-- END SEGMENT: CREATE SCRIPT BUNDLE -->
+		
+		<!-- BEGIN SEGMENT: ASOC LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">The AppleScript/Objective-C Script Code</div>
+		
+			<p>AppleScript/Objective-C enables AppleScript scripts to call Cocoa methods of Cocoa classes to perform functions and tasks with data passed to the methods.</p>
+			
+			<p>In the example handler below, text passed to the handler is converted from standard AppleScript text into a Cocoa string, and then depending on the passed numeric case indicator (0, 1, or 2), a Cocoa method from the <a href="https://developer.apple.com/library/mac/documentation/Cocoa/Reference/Foundation/Classes/NSString_Class/Reference/NSString.html" target="_blank">NSString class</a> is applied to the created Cocoa string to change the case of the string. The resulting string is then converted back into AppleScript text and returned to the script.</p>
+		
+			<p class="code"><b>on</b> <span class="codelibrarycommand">changeCaseOfText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">caseIndicator</span>)<BR>
+			<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a Cocoa string from the passed text</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceString</span> <b>to</b> &not;<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><span class="codelibraryclass">current application</span>'s <span class="codevariable">NSString</span>'s <span class="codevariable">stringWithString:sourceText</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- apply the indicated transformation to the Cocoa string</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">caseIndicator</span> <b>is</b> 0 <b>then</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">uppercaseString()</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>else if the</b> <span class="codevariable">caseIndicator</span> <b>is</b> 1 <b>then</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">lowercaseString()</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">adjustedString</span> <b>to</b> <span class="codevariable">sourceString</span>'s <span class="codevariable">capitalizedString()</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- convert from Cocoa string to AppleScript text</span><BR>
+			<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">adjustedString</span> <b>as</b> string)<BR>
+			<b>end</b> <span class="codelibrarycommand">changeCaseOfText</span></p>	
+			
+			<p>Next, copy the text of the handler and paste it into the blank script bundle file you created. Compile the script, save, and then close the script bundle file.</p>	
+		</div>
+		<!-- END SEGMENT: ASOC LIBRARY -->
+		
+		<!-- BEGIN SEGMENT: INSTALLING THE LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Installing the Library</div>
+			
+			<p>AppleScript Libraries are installed and made available for use by AppleScript scripts, by placing their files within a folder titled: &ldquo;Script Libraries&rdquo;. A <b>Script Libraries</b> folder can reside in a variety of locations, depending on how you want to define their availability on the computer.</p>
+			
+			<p>The easiest way to install an AppleScript Library for the current user is to make a new folder in your <b>Home &gt; Library</b> folder, titled <b>Script Libraries</b>. Next, place your saved script bundle file into the newly created <b>Script Libraries</b> folder. That&rsquo;s all you need to do!</p>
+			
+			<p>For detailed information on other available installation locations, read the <a href="index.html"><b>Installing and Deploying AppleScript Libraries</b></a> segment on the overview page of this topic.</p>
+			
+		</div>
+		<!-- END SEGMENT: INSTALLING THE LIBRARY -->
+		
+		<!-- BEGIN SEGMENT: USING THE LIBRARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Using the AppleScript/Objective-C Library</div>
+			
+			<p>Once installed, the handlers contained in AppleScript Libraries can be accessed by AppleScript scripts directly via <b>tell statements</b> or <b>tell blocks</b>. Copy the script text below, paste it into a new script window, and run.</p>
+			
+			<p class="code"><b>tell</b> <span class="codelibraryclass">script</span> &quot;Case Changer&quot;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><b>set the</b> <span class="codevariable">adjustedText</span> <b>to</b> <span class="codelibrarycommand">changeCaseOfText</span>(&quot;How now brown cow.&quot;</span>, 3)<br><span style="margin-left:2em;">--&gt; result: &quot;How Now Brown Cow.&quot;</span><br><b>end tell</b></p></li>
+			
+			<p>Unlike the handler from the Simple AppleScript Library, this handler works with special characters, non-English languages, and also offers the ability to convert text to Word Case. Cool!</p>
+			
+		</div>
+		<!-- END SEGMENT: USING THE LIBRARY -->
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="terminology.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li class="hi">AppleScript Libraries</li>
+					<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+						<li><a href="index.html">Overview</a></li>
+						<li><a href="simple.html">Simple Script Library</a></li>
+						<li class="hi">ASOC Script Library</li>
+						<li><a href="terminology.html">Libraries with Terminology</a></li>
+						<li><a href="examples.html">Example Libraries</a></li>
+					</ol>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>
+		
+		<div class="box">
+		<h2 style="text-align:center;">ASObjC Explorer</h2>
+		<a href="javascript:void(0);"><img alt="ExplorerMav300" src="gfx/ExplorerMav300.jpg" width="222" highresurl="gfx/ExplorerMavBig.jpg" caption="<b>The ASObjC Explorer application for OS&nbsp;X Mavericks</b>" displaywidth="900" displayheight="818" onclick="void(0);lightboxThisImage(this);" height="202"></a>
+		<p>The <b>ASObjC Explorer</b> application is an advanced script editor for composing scripts written using AppleScript/Objective-C. Version 3 for OS&nbsp;X Mavericks, offers the ability to create and edit and AppleScript Libraries, including their scripting definition files (SDEF).</p>
+		
+		<p><a href="http://macosxautomation.com/applescript/apps/index.html" target="_blank">Learn more&hellip;</a></p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

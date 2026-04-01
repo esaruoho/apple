@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Images</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Pages, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for images in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Image</div>
+
+			<p>Documents created by any of the iWork applications, Pages, Numbers, or Keynote, can incorporate a common set of elements, including <span class="codelibraryclass">images</span>, <span class="codelibraryclass">shapes</span>, <span class="codelibraryclass">lines</span>, <span class="codelibraryclass">tables</span>, <span class="codelibraryclass">charts</span>, <span class="codelibraryclass">movies</span>, and <span class="codelibraryclass">audio clips</span>. To AppleScript and the built-in scripting support of the iWork applications, these elements are considered <span class="codelibraryclass">iWork Items</span>, and share a common set of properties, detailed in the <span class="codelibraryclass">iWork Item</span> class from the <span class="dictionary-suite">iWork Suite</span>:</p>
+									
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">iWork item</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">iWork item</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An item which supports formatting.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">height</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The height of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">locked</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether the object is locked.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">parent</span> (&nbsp;<span class="dictionary-class">iWork container</span> r/o&nbsp;) : The <span class="codelibraryclass">iWork container</span> containing this <span class="codelibraryclass">iWork item</span>.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">position</span> (&nbsp;<span class="dictionary-class">point</span>&nbsp;) : The horizontal and vertical coordinates of the top left point of the iWork item.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">width</span> (&nbsp;<span class="codelibraryclass">integer</span>&nbsp;) : The width of the iWork item.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span></p>
+			</div>
+
+			<p>The properties in the <span class="codelibraryclass">iWork item</span> class can be accessed and changed for any of the common iWork elements. For example, a script can <span class="codelibrarycommand">get</span> or <span class="codelibrarycommand">set</span> the <span class="codeproperty">position</span> of a <span class="codelibraryclass">movie</span>, or <span class="codelibraryclass">image</span>, or <span class="codelibraryclass">shape</span>, or any of the common elements.</p>
+			
+			<p>In addition to sharing a common set of properties with the other iWork elements, each iWork element has its own set of properties, particular to that element. For example, the element-specific properties of an <span class="codelibraryclass">image</span> are detailed in its dictionary listing, found in the <span class="dictionary-suite">iWork Suite</span>: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+																				
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">image</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">image</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : An image container.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">slides</span>, <span class="dictionary-class">document</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">description</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : Text associated with the image, can be read aloud by VoiceOver.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file</span> (&nbsp;<span class="dictionary-class">file</span>&nbsp;, r/o) : The image file. This property is a required parameter when used with the <span class="codelibrarycommand">make</span> command to create a new image item on a slide. Use the <span class="codeproperty">file name</span> property to retrieve the name of the image, or to replace the currently displayed image.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file name</span> (&nbsp;<span class="dictionary-class">text</span> or <span class="dictionary-class">file</span>&nbsp;) : When used with the <span class="codelibrarycommand">get</span> command, the value of this property is the file name of the image file currently displayed in the image container. When this property is used with the set command, the value of the property is a file reference (in <span class="codelibraryclass">HFS alias</span> format) to the image file to be used to replace the currently displayed image.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">opacity</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The opacity of the image, in percent (0 to 100).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the image displaying a reflection?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection value</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The percentage of reflection of the image, from 0 (none) to 100 (full).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">rotation</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The rotation of the image item, in degrees from 0 to 359.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">make</span></p>
+			</div>
+
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Importing Images</div>
+			<p>Images are added to to the page of a document using the <span class="codelibrarycommand">make</span> command and the image <span class="codeproperty">file</span> property. By default, <b>Pages</b> will wrap the image container to fit the added <span class="codelibraryclass">image</span>, and then scale the <span class="codelibraryclass">image</span> to be centered in the section of the <span class="codelibraryclass">page</span> currently displayed in the document window.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="tropicalfishimages.zip" style="font-weight:bold;">DOWNLOAD</a> and unpack the ZIP archive containing the example images. Place the folder containing the images in your Pictures folder.</p>
+			
+			<p>The following script example creates a photo book using selected image files. The script:</p>
+			
+			<ul>
+				<li>prompts the user to select a group of image files with landscape orientation to import.</li>
+				<li>imports each image file to its own page, centering the image file on the page.</li>
+				<li>extracts the caption metadata from the image on places it in a newly created text item, overlaid on a translucent shape at the bottom of the image.</li>
+			</ul>
+			
+			<img class="across" width="640" height="426" alt="A multi-page Pages document containing the imported image files." src="gfx/image-book.png">
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Simple Photo Book</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20templateName%20%3A%20%22Photo%20Card%20Horizontal%22%0Dproperty%20templateWidth%20%3A%20792%0Dproperty%20templateHeight%20%3A%20612%0Dproperty%20defaultMargin%20%3A%2036%0Dproperty%20textItemInset%20%3A%2012%0Dproperty%20defaultTypeFace%20%3A%20%22Verdana%22%0Dproperty%20defaultTypeSize%20%3A%2010%0D%0Dtell%20application%20%22Pages%22%0D%09activate%0D%09%0D%09--%20promput%20user%20for%20images%0D%09set%20theseImages%20to%20%C2%AC%0D%09%09(choose%20file%20with%20prompt%20%22Select%20the%20images%20to%20import%3A%22%20with%20multiple%20selections%20allowed)%0D%09%0D%09--%20make%20a%20new%20page%20layout%20document%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bdocument%20template%3Atemplate%20templateName%7D%0D%09%0D%09tell%20thisDocument%0D%09%09--%20delete%20the%20default%20template%20items%0D%09%09set%20locked%20of%20every%20iWork%20item%20to%20false%0D%09%09delete%20every%20iWork%20item%0D%09%09%0D%09%09--%20add%20the%20images%20to%20the%20document%2C%20each%20on%20its%20own%20page%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseImages%0D%09%09%09set%20thisImageFile%20to%20item%20i%20of%20theseImages%0D%09%09%09--%20extract%20any%20embedded%20caption%20metadata%20from%20the%20image%20file%0D%09%09%09set%20thisImageDescription%20to%20my%20extractkMDItemDescription(thisImageFile)%0D%09%09%09--%20make%20a%20new%20page%20if%20needed%0D%09%09%09if%20i%20is%20not%201%20then%20make%20new%20page%0D%09%09%09tell%20current%20page%0D%09%09%09%09--%20import%20the%20image%0D%09%09%09%09set%20thisImage%20to%20make%20new%20image%20with%20properties%20%7Bfile%3AthisImageFile%7D%0D%09%09%09%09--%20center%20the%20image%20on%20the%20page%0D%09%09%09%09tell%20thisImage%0D%09%09%09%09%09copy%20%7Bwidth%20of%20it%2C%20height%20of%20it%7D%20to%20%7BimageWidth%2C%20imageHieght%7D%0D%09%09%09%09%09set%20its%20width%20to%20(templateWidth%20-%20(defaultMargin%20*%202))%0D%09%09%09%09%09copy%20%7Bwidth%20of%20it%2C%20height%20of%20it%7D%20to%20%7BimageWidth%2C%20imageHieght%7D%0D%09%09%09%09%09set%20its%20position%20to%20%C2%AC%0D%09%09%09%09%09%09%7B(templateWidth%20-%20imageWidth)%20div%202%2C%20(templateHeight%20-%20imageHieght)%20div%202%7D%0D%09%09%09%09end%20tell%0D%09%09%09%09--%20if%20there%20is%20an%20image%20description%2C%20place%20over%20opaque%20background%20overlay%0D%09%09%09%09if%20thisImageDescription%20is%20not%20%22%22%20then%0D%09%09%09%09%09set%20thisShape%20to%20make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bwidth%3A(templateWidth%20-%20(4%20*%20defaultMargin))%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20height%3A90%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20position%3A%7B(2%20*%20defaultMargin)%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20(templateHeight%20-%20(4%20*%20defaultMargin))%7D%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20opacity%3A40%7D%0D%09%09%09%09%09tell%20thisShape%0D%09%09%09%09%09%09copy%20%7Bwidth%20of%20it%2C%20height%20of%20it%7D%20to%20%7BshapeWidth%2C%20shapeHeight%7D%0D%09%09%09%09%09%09copy%20its%20position%20to%20%7BshapeHorizontalOffset%2C%20shapeVerticalOffset%7D%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09set%20thisTextItem%20to%20make%20new%20text%20item%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bobject%20text%3AthisImageDescription%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20width%3A(shapeWidth%20-%20(2%20*%20textItemInset))%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20height%3A(shapeHeight%20-%20(2%20*%20textItemInset))%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20position%3A%7BshapeHorizontalOffset%20%2B%20textItemInset%20%C2%AC%0D%09%09%09%09%09%09%09%2C%20shapeVerticalOffset%20%2B%20textItemInset%7D%7D%0D%09%09%09%09%09tell%20object%20text%20of%20thisTextItem%0D%09%09%09%09%09%09set%20font%20to%20defaultTypeFace%0D%09%09%09%09%09%09set%20size%20to%20defaultTypeSize%0D%09%09%09%09%09%09set%20color%20of%20it%20to%20%22white%22%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20tell%0D%0Don%20extractkMDItemDescription(thisImageFile)%0D%09--%20use%20Spotlight%20to%20extract%20embedded%20metadata%0D%09try%0D%09%09set%20thisImagePOSIXPath%20to%20the%20POSIX%20path%20of%20thisImageFile%0D%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09do%20shell%20script%20%22mdls%20-name%20kMDItemDescription%20%22%20%26%20%C2%AC%0D%09%09%09%09(quoted%20form%20of%20thisImagePOSIXPath)%0D%09%09if%20embeddedDescription%20is%20%22kMDItemDescription%20%3D%20(null)%22%20then%0D%09%09%09set%20embeddedDescription%20to%20%22%22%0D%09%09else%0D%09%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09%09(text%20from%20((length%20of%20%22kMDItemDescription%20%3D%20%5C%22%22)%20%2B%201)%20to%20%C2%AC%0D%09%09%09%09%09-2%20of%20embeddedDescription)%0D%09%09end%20if%0D%09%09return%20embeddedDescription%0D%09on%20error%0D%09%09return%20%22%22%0D%09end%20try%0Dend%20extractkMDItemDescription"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">templateName</span> : &quot;Photo Card Horizontal&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">templateWidth</span> : 792</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">templateHeight</span> : 612</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultMargin</span> : 36</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textItemInset</span> : 12</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultTypeFace</span> : &quot;Verdana&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultTypeSize</span> : 10</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- promput user for images</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">theseImages</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">with prompt</span>  &quot;Select the images to import:&quot; <b>with</b> <span class="codelibraryparameter">multiple selections allowed</span> )</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- make a new page layout document</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">templateName</span>}</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- delete the default template items</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">locked</span> <b>of every</b> <span class="codelibraryclass">iWork item</span> <b>to</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">iWork item</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- add the images to the document, each on its own page</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseImages</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseImages</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- extract any embedded caption metadata from the image file</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageDescription</span> <b>to my</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- make a new page if needed</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is not</b> 1 <b>then</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">page</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codeproperty">current page</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- import the image</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- center the image on the page</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>copy</b> {<span class="codeproperty">width</span> <b>of it</b>, <span class="codeproperty">height</span> <b>of it</b>} <b>to</b> {<span class="codevariable">imageWidth</span>, <span class="codevariable">imageHieght</span>}</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set its</b> <span class="codeproperty">width</span> <b>to</b> (<span class="codevariable">templateWidth</span> - (<span class="codevariable">defaultMargin</span> * 2))</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>copy</b> {<span class="codeproperty">width</span> <b>of it</b>, <span class="codeproperty">height</span> <b>of it</b>} <b>to</b> {<span class="codevariable">imageWidth</span>, <span class="codevariable">imageHieght</span>}</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set its</b> <span class="codeproperty">position</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{(<span class="codevariable">templateWidth</span> - <span class="codevariable">imageWidth</span>) <b>div</b> 2, (<span class="codevariable">templateHeight</span> - <span class="codevariable">imageHieght</span>) <b>div</b> 2}</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- if there is an image description, place over opaque background overlay</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">thisImageDescription</span> <b>is not</b> &quot;&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> thisShape <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{width:(<span class="codevariable">templateWidth</span> - (4 * <span class="codevariable">defaultMargin</span>)) &not;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">height</span>:90 &not;</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, position:{(2 * <span class="codevariable">defaultMargin</span>) &not;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, (<span class="codevariable">templateHeight</span> - (4 * <span class="codevariable">defaultMargin</span>))} &not;</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, opacity:40}</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> thisShape</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>copy</b> {<span class="codeproperty">width</span> <b>of it</b>, <span class="codeproperty">height</span> <b>of it</b>} <b>to</b> {<span class="codevariable">shapeWidth</span>, <span class="codevariable">shapeHeight</span>}</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>copy its</b> position <b>to</b> {<span class="codevariable">shapeHorizontalOffset</span>, <span class="codevariable">shapeVerticalOffset</span>}</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTextItem</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">object text</span>:<span class="codevariable">thisImageDescription</span> &not;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">width</span>:(<span class="codevariable">shapeWidth</span> - (2 * <span class="codevariable">textItemInset</span>)) &not;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">height</span>:(<span class="codevariable">shapeHeight</span> - (2 * <span class="codevariable">textItemInset</span>)) &not;</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">position</span>:{<span class="codevariable">shapeHorizontalOffset</span> + <span class="codevariable">textItemInset</span> &not;</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span>, <span class="codevariable">shapeVerticalOffset</span> + <span class="codevariable">textItemInset</span>}}</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codeproperty">object text</span> <b>of</b> <span class="codevariable">thisTextItem</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> <span class="codevariable">defaultTypeFace</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> <span class="codevariable">defaultTypeSize</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">color</span> <b>of it to</b> &quot;white&quot;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- use Spotlight to extract embedded metadata</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImagePOSIXpath</span> to <b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisImageFile</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;mdls -name kMDItemDescription &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImagePOSIXpath</span>)</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">embeddedDescription</span> <b>is</b> &quot;kMDItemDescription = (null)&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(text <b>from</b> ((length <b>of</b> &quot;kMDItemDescription = \&quot;&quot;) + 1) <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>-2 <b>of</b> <span class="codevariable">embeddedDescription</span>)</td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">embeddedDescription</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">extractkMDItemDescription</span></td></tr>
+			</table>			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="image-thumb-poster.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li class="hi">Image</li>
+				<li class="navListSectionItem"><a href="image-thumb-poster.html">Thumbnail Poster</a></li>
+				<li class="navListSectionItem"><a href="image-replace.html">Replacing Placeholder Images</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">ISTOCKPHOTO.COM</h2>
+			<p>The colorful <a href="http://www.istockphoto.com/stock-photo-11289540-tropical-fish-lionfish.php?st=c371d08" target="_blank">images</a> used in this example presentation can be found at <a href="http://www.istockphoto.com" target="_blank">ISTOCKPHOTO.COM</a>.</p>	
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Sal script index
+# One record per extracted runnable script or code sample.
+
+version: 1
+updated: "2026-04-01"
+
+schema:
+  required:
+    - id
+    - title
+    - site
+    - language
+    - source_url
+    - local_path
+  optional:
+    - source_title
+    - source_domain
+    - retrieved_at
+    - apps
+    - automation_layers
+    - concepts
+    - functions
+    - original_format
+    - normalization_notes
+    - tags
+
+records: []

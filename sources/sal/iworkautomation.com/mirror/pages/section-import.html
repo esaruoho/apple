@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Create Sections from Imported Files</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An AppleScript script for importing a set of chosen text files into a new document, with each imported file flowing into its own section.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Create Sections with Imported Files</div>
+						
+			<p>A fundamental benefit of automation is found in its ability to perform a series of intricate procedures over and over, quickly but with precision. Take for example the task of combining a dozen files, perhaps chapters of a book, into a single document, with the contents of each file occupying its own section in the new document. If done by hand, this process could take 15 minutes, but when done with a script, it takes only seconds. That&rsquo;s why professionals rank automation as such a high priority.</p>
+			
+			<p>As a demonstration, here&rsquo;s an <b>AppleScript</b> script for importing a set of chosen text files into a new document, with each imported file flowing into its own section.</p>
+			
+			<p>Follow these steps:</p>
+					
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="AliceInWonderlandChapterFiles.zip" style="font-weight:bold;">DOWNLOAD</a> a ZIP archive containing the text of <i>Alice in Wonderland</i> divided into group of individual chapter files.<br><br>(A special &ldquo;thank you&rdquo; to <a href="http://www.gutenberg.org" target="_blank">Project Gutenberg</a> for making this content available to the public!)</p>
+			
+			<img class="across" width="640" height="416" alt="AIW-files" src="gfx/AIW-files.png">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the script into the <b>Script Editor</b> application by clicking the button at the top of the <a href="#script-link" name="script-link-link">script segment</a> at the bottom of this page: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span><br><br><b>FYI</b>: Click <a href="../script-menu.html" style="font-weight:700;" target="_blank">HERE</a> for instructions on how to save scripts for use with the system-wide <b>Script Menu</b>.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Run the script and a file chooser dialog will appear <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> Select the text files you wish to import and click the <b>Choose</b> button to continue:</p>
+			
+			<img class="across" width="640" height="534" alt="import-choose-file-dialog" src="gfx/import-choose-file-dialog.png">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>A second dialog is displayed <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> asking if you would like to manually indicate the import order for the selected files, or use the order displayed in the previous choosing dialog. For the purposes of this tutorial, click the <b>Yes</b> button.</p>
+			
+			<img class="centered" width="534" height="251" alt="manual-sort-dialog" src="gfx/manual-sort-dialog.png">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Since you indicated that a manual sort process was desired, a list dialog displaying the names of selected files, appears <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span><br><br>Double-click the name of the first file to import (CHAPTER I. Down the Rabbit-Hole.txt). The list will reappear, prompting you to choose the second file to import (CHAPTER II. The Pool of Tears.txt). This process continues until you&rsquo;ve indicated the import order for all of the files.<br><br><b>TIP</b>: For those who can&rsquo;t remember the Roman Numerals for 1 through 12, they are: I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII</p>
+			
+			<img class="centered" width="494" height="457" alt="sort-list" src="gfx/sort-list.png">
+			
+			<p>The script will create a new blank document and import each of the chosen files into its own section. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="across" width="640" alt="completed-import-sections-doc" src="gfx/completed-import-sections-doc.png">
+			
+			<a name="script-link"><p>Here&rsquo;s the script:</p></a>
+		
+
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Import Multiple Text Files</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20defaultTemplateName%20%3A%20%22Blank%22%0D%0Dtell%20application%20%22Pages%22%0D%09activate%0D%09set%20chosenFiles%20to%20%C2%AC%0D%09%09(choose%20file%20of%20type%20%7B%22public.plain-text%22%7D%20%C2%AC%0D%09%09%09with%20prompt%20%22Choose%20the%20text%20files%20to%20import%3A%22%20with%20multiple%20selections%20allowed)%0D%09%0D%09display%20dialog%20%22Do%20you%20want%20to%20indicate%20the%20import%20order%20for%20the%20chosen%20files%3F%22%20buttons%20%C2%AC%0D%09%09%7B%22Cancel%22%2C%20%22No%22%2C%20%22Yes%22%7D%20default%20button%203%20with%20icon%201%0D%09set%20performManualSort%20to%20the%20button%20returned%20of%20the%20result%0D%09%0D%09if%20performManualSort%20is%20%22Yes%22%20then%0D%09%09set%20the%20fileCount%20to%20the%20count%20of%20chosenFiles%0D%09%09set%20theseFileNames%20to%20%7B%7D%0D%09%09repeat%20with%20i%20from%201%20to%20the%20fileCount%0D%09%09%09set%20thisFile%20to%20item%20i%20of%20chosenFiles%0D%09%09%09set%20the%20end%20of%20theseFileNames%20to%20my%20fileNameFromAliasReference(thisFile)%0D%09%09end%20repeat%0D%09%09set%20the%20sourceList%20to%20chosenFiles%0D%09%09set%20the%20sortedList%20to%20%7B%7D%0D%09%09set%20theseDisplayNames%20to%20theseFileNames%0D%09%09repeat%20with%20i%20from%201%20to%20fileCount%0D%09%09%09if%20i%20is%20fileCount%20then%0D%09%09%09%09set%20chosenFileName%20to%20theseDisplayNames%20--%20one%20item%20left%0D%09%09%09else%0D%09%09%09%09set%20thisFileIndexString%20to%20my%20addOrdinalSuffix(i)%0D%09%09%09%09set%20chosenFileName%20to%20%C2%AC%0D%09%09%09%09%09(choose%20from%20list%20theseDisplayNames%20with%20prompt%20%C2%AC%0D%09%09%09%09%09%09%22Double-click%20the%20%22%20%26%20thisFileIndexString%20%26%20%22%20file%20to%20import%3A%22)%0D%09%09%09end%20if%0D%09%09%09if%20chosenFileName%20is%20false%20then%0D%09%09%09%09error%20number%20-128%0D%09%09%09else%0D%09%09%09%09set%20chosenFileName%20to%20chosenFileName%20as%20string%0D%09%09%09end%20if%0D%09%09%09repeat%20with%20z%20from%201%20to%20count%20of%20theseFileNames%0D%09%09%09%09if%20chosenFileName%20is%20item%20z%20of%20theseFileNames%20then%0D%09%09%09%09%09set%20the%20end%20of%20the%20sortedList%20to%20item%20z%20of%20chosenFiles%0D%09%09%09%09%09exit%20repeat%0D%09%09%09%09end%20if%0D%09%09%09end%20repeat%0D%09%09%09set%20theseDisplayNames%20to%20my%20removeItemFromList(theseDisplayNames%2C%20chosenFileName)%0D%09%09end%20repeat%0D%09%09set%20theseFiles%20to%20sortedList%0D%09else%0D%09%09set%20theseFiles%20to%20chosenFiles%0D%09end%20if%0D%09%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20template%3Atemplate%20defaultTemplateName%7D%0D%09%0D%09tell%20thisDocument%0D%09%09if%20document%20body%20is%20false%20then%0D%09%09%09display%20alert%20%22INCOMPATIBLE%20TEMPLATE%22%20message%20%C2%AC%0D%09%09%09%09%22The%20created%20document%20does%20not%20have%20a%20document%20body%20text%20flow.%22%20%26%20%C2%AC%0D%09%09%09%09return%20%26%20return%20%26%20%22Choose%20a%20template%20that%20has%20a%20body%20text%20flow.%22%0D%09%09%09error%20number%20-128%0D%09%09end%20if%0D%09%09%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseFiles%0D%09%09%09if%20i%20is%201%20then%0D%09%09%09%09set%20body%20text%20to%20(read%20(item%20i%20of%20theseFiles))%0D%09%09%09else%0D%09%09%09%09make%20new%20section%0D%09%09%09%09set%20body%20text%20of%20last%20section%20to%20(read%20(item%20i%20of%20theseFiles))%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09end%20tell%0D%09%0D%09display%20notification%20%22Import%20completed.%22%0Dend%20tell%0D%0Don%20fileNameFromAliasReference(thisFileAliasReference)%0D%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%3A%22%0D%09set%20thisFileName%20to%20the%20last%20text%20item%20of%20(thisFileAliasReference%20as%20string)%0D%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09return%20thisFileName%0Dend%20fileNameFromAliasReference%0D%0Don%20removeItemFromList(sourceList%2C%20targetItem)%0D%09set%20newList%20to%20%7B%7D%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20sourceList%0D%09%09set%20thisItem%20to%20item%20i%20of%20sourceList%0D%09%09if%20thisItem%20is%20not%20targetItem%20then%0D%09%09%09set%20the%20end%20of%20newList%20to%20(item%20i%20of%20sourceList)%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20newList%0Dend%20removeItemFromList%0D%0Don%20addOrdinalSuffix(thisInteger)%0D%09set%20thisInteger%20to%20thisInteger%20as%20integer%20as%20string%0D%09if%20thisInteger%20ends%20with%20%2211%22%20or%20%C2%AC%0D%09%09thisInteger%20ends%20with%20%2212%22%20or%20%C2%AC%0D%09%09thisInteger%20ends%20with%20%2213%22%20then%0D%09%09set%20the%20listIndex%20to%201%0D%09else%0D%09%09set%20the%20listIndex%20to%20(thisInteger%20mod%2010)%20%2B%201%0D%09end%20if%0D%09set%20the%20ordinalSuffix%20to%20item%20listIndex%20of%20%C2%AC%0D%09%09%7B%22th%22%2C%20%22st%22%2C%20%22nd%22%2C%20%22rd%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%2C%20%22th%22%7D%0D%09return%20(thisInteger%20%26%20ordinalSuffix)%0Dend%20addOrdinalSuffix"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">defaultTemplateName</span> : &quot;Blank&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>activate</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenFiles</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> {&quot;public.plain-text&quot;} &not;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibraryparameter">with prompt</span> &quot;Choose the text files to import:&quot; <b>with</b> <span class="codelibraryparameter">multiple selections allowed</span>)</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Do you want to indicate the import order for the chosen files?&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;No&quot;, &quot;Yes&quot;} <span class="codelibraryparameter">default button</span> 3 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">performManualSort</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">performManualSort</span> <b>is</b> &quot;Yes&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">fileCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">chosenFiles</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseFileNames</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">fileCount</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFile</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">chosenFiles</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">theseFileNames</span> <b>to my</b> <span class="codevariable">fileNameFromAliasReference</span>(<span class="codevariable">thisFile</span>)</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">sourceList</span> <b>to</b> <span class="codevariable">chosenFiles</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">sortedList</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseDisplayNames</span> <b>to</b> <span class="codevariable">theseFileNames</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> <span class="codevariable">fileCount</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> <span class="codevariable">fileCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>set <span class="codevariable">chosenFileName</span> to <span class="codevariable">theseDisplayNames</span> <span class="codecomment">-- one item left</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFileIndexString</span> <b>to my</b> <span class="codevariable">addOrdinalSuffix</span>(<span class="codevariable">i</span>)</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenFileName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">theseDisplayNames</span> <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>&quot;Double-click the &quot; &amp; <span class="codevariable">thisFileIndexString</span> &amp; &quot; file to import:&quot;)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenFileName</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">chosenFileName</span> <b>to</b> <span class="codevariable">chosenFileName</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">z</span> <b>from</b> 1 <b>to</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseFileNames</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenFileName</span> <b>is</b> <span class="codelibraryclass">item</span> <span class="codevariable">z</span> <b>of</b> <span class="codevariable">theseFileNames</span> <b>then</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">sortedList</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">z</span> <b>of</b> <span class="codevariable">chosenFiles</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">theseDisplayNames</span> <b>to my</b> <span class="codevariable">removeItemFromList</span>(<span class="codevariable">theseDisplayNames</span>, <span class="codevariable">chosenFileName</span>)</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseFiles</span> <b>to</b> <span class="codevariable">sortedList</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">theseFiles</span> <b>to</b> <span class="codevariable">chosenFiles</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document template</span>:<span class="codelibraryclass">template</span> <span class="codevariable">defaultTemplateName</span>}</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">document body</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;INCOMPATIBLE TEMPLATE&quot; <span class="codelibraryparameter">message</span> &not;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;The created document does not have a document body text flow.&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &quot;Choose a template that has a body text flow.&quot;</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseFiles</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> 1 <b>then</b></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">body text</span> <b>to</b> (<span class="codelibrarycommand">read</span> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseFiles</span>))</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">body text</span> <b>of last</b> <span class="codelibraryclass">section</span> <b>to</b> (<span class="codelibrarycommand">read</span> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseFiles</span>))</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display notification</span> &quot;Import completed.&quot;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">fileNameFromAliasReference</span>(<span class="codevariable">thisFile</span>AliasReference)</td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codeproperty">AppleScript's text item delimiters</span> <b>to</b> &quot;:&quot;</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisFileName</span> <b>to the last</b> <span class="codelibraryclass">text item</span> <b>of</b> (<span class="codevariable">thisFileAliasReference</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codeproperty">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">thisFileName</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">fileNameFromAliasReference</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">removeItemFromList</span>(<span class="codevariable">sourceList</span>, <span class="codevariable">targetItem</span>)</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">newList</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">sourceList</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisItem</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">sourceList</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">thisItem</span> <b>is not</b> <span class="codevariable">targetItem</span> <b>then</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">newList</span> <b>to</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">sourceList</span>)</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">newList</span></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">removeItemFromList</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">addOrdinalSuffix</span>(<span class="codevariable">thisInteger</span>)</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisInteger</span> <b>to</b> <span class="codevariable">thisInteger</span> <b>as</b> <span class="codelibraryclass">integer</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">thisInteger</span> <b>ends with</b> &quot;11&quot; <b>or</b> &not;</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codevariable">thisInteger</span> <b>ends with</b> &quot;12&quot; <b>or</b> &not;</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codevariable">thisInteger</span> <b>ends with</b> &quot;13&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">listIndex</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">listIndex</span> <b>to</b> (<span class="codevariable">thisInteger</span> <b>mod</b> 10) + 1</td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">ordinalSuffix</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">listIndex</span> <b>of</b> &not;</td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{&quot;th&quot;, &quot;st&quot;, &quot;nd&quot;, &quot;rd&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;}</td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> (<span class="codevariable">thisInteger</span> &amp; <span class="codevariable">ordinalSuffix</span>)</td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> addOrdinalSuffix</td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="section-export.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li class="hi"><a href="section.html">Section</a></li>
+				<li class="navListSectionItemSelected">Create Sections from Imported Files</li>
+				<li class="navListSectionItem"><a href="section-export.html">Export Sections to Files</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

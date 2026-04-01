@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: Introduction</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator<a href="javascript:void();"><img alt="epub-qr" src="gfx/epub-qr.png" width="64" height="64" style="margin-top:-11px;margin-right:-11px;float:right;" highresurl="gfx/epub-qr.png" caption="http://automationworkshops/epub" displaywidth="512" displayheight="512" onclick="void(0);lightboxThisImage(this);"></a></div>
+	
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" >Introduction</div>
+		
+		<h1 class="content-title">One-Step Creation of Digital Books</h1>
+	
+		<p class="content-intro">In this guided hands-on workshop you will learn how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.</p>
+		
+			<img src="gfx/ibooks-256.png" alt="" width="100" height="100" class="left" style="margin-top:8px;">
+						
+			<p>The ability to easily create and share information is an essential requirement for businesses and classrooms alike. Since many computers and mobile media devices now support digital reader applications, the use of digital books as a means of content delivery has dramatically increased.</p>
+			
+			<p>On the iPad and the iPhone, the free Apple-provided application for reading digital publications is <a href="http://www.apple.com/ipad/features/ibooks.html" target="_blank">iBooks</a>. It supports the viewing of both commercial and non-commercial digital publications, including those created in the free and open Electronic Publication (<a href="http://www.idpf.org" target="_blank">EPUB</a>) format.</p> 
+			
+			<p>OS&nbsp;X includes an Automator action, named <b>Text to EPUB File</b>, designed to make it very easy to convert selected text or text documents into EPUB books, ideal for transferring to iPads and iPhones. Additionally, the created EPUB books can include images, MPEG audio, or MPEG video files.</p>
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: EPUB -->
+		<div class="content-segment">
+		<div class="segment-header" >What is EPUB?</div>
+			<img src="gfx/epub_logo_color.jpg" width="72" height="99" class="left" border="12" style="margin-top:8px;">
+			
+			<p>The <a href="http://www.idpf.org" target="_blank">International Digital Publishing Forum</a> (IDPF) is the trade and standards association for the digital publishing industry. &quot;.epub&quot; is the file extension of an XML format for reflow-able digital books and publications.</p>
+			
+			<p>&quot;.epub&quot; is composed of three open standards, the Open Publication Structure (OPS), Open Packaging Format (OPF) and Open Container Format (OCF), all produced by the IDPF.</p>
+			
+			<p>&quot;EPUB&quot; allows publishers to produce and send a single digital publication file through distribution and offers consumers interoperability between software/hardware for unencrypted reflow-able digital books and other publications.</p>
+			
+		</div>
+		<!-- END SEGMENT: EPUB -->
+		
+		<!-- BEGIN SEGMENT: BOOKLE -->
+		<div class="content-segment">
+		<div class="segment-header" >Viewing EPUB Publications in OS&nbsp;X</div>
+			
+			
+			<p><img src="gfx/ibooks-256.png" width="64" height="64" class="left" border="0" style="margin-top:8px;" alt="ibooks-256">As stated above, you can use <a href="http://www.apple.com/ipad/features/ibooks.html" target="_blank">iBooks</a> on the iPhone and iPad to view the digital books you create using the tools featured in this workshop. Recently, Apple shipped <a href="http://www.apple.com/osx/" target="_blank">OS&nbsp;X Mavericks (v10.9)</a> with <a href="http://www.apple.com/osx/apps/#ibooks" target="_blank">iBooks</a> installed by default.</p>
+			
+			<p><img src="gfx/bookle128x128.png" width="128" height="128" class="left" border="0" style="margin-top:8px;">For computers running earlier versions of OS&nbsp;, there are third-party applications for displaying EPUB documents on your computer, one of which is <a href="http://itunes.apple.com/us/app/bookle/id496158508?mt=12" target="_blank">Bookle</a>, from <a href="http://www.stairways.com/main/bookle" target="_blank">Stairways Software</a>, and it is available on <a href="macappstore://itunes.apple.com/us/app/bookle/id496158508?mt=12" target="_blank">Mac App Store</a>.</p>
+			
+			<p>For the purposes of this workshop, it is recommend that a digital book reading application for OS X be installed on the computer you are using to view and apply this workshop, if you wish to view the created EPUB documents.</p>
+						
+		</div>
+		<!-- END SEGMENT: BOOKLE -->
+		
+		<!-- BEGIN SEGMENT: SHARING -->
+		<div class="content-segment">
+		<div class="segment-header" >Sharing EPUB Publications Locally</div>
+			<p>Using the built-in sharing technologies of OS&nbsp;, it is easy to share your created EPUB documents with others on your local network, such as in a classroom or in a small business environment. The <a href="../sharing/index.html">Sharing Content Locally</a> workshop covers this topic in detail.</p>
+			<p>As an introduction, here is a <a href="javascript:window.open('../sharing/sharing-scenario-03.html','viewer-window-scenario-003','width=1172,height=720');">short video</a> describing how to share EPUB content in the classroom.</p>
+		</div>
+		<!-- END SEGMENT: SHARING -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li class="hi">Introduction</li>
+				<li><a href="01.html">The Text to EPUB Services</a></li>
+				<li><a href="02.html">The Action Interface</a></li>
+				<li><a href="03.html">Formatted EPUB Demo</a></li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li><a href="05.html">Multiple Chapter EPUB Demo</a></li>
+				<li><a href="06.html">Add Media to the Book</a></li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Session Overview</p>
+			
+			<p>The purpose of this workshop is to acquaint attendees with the built-in digital content creation tools of OS&nbsp;X.</p>
+			
+			<p>You will guide attendees through a hands-on process of creating both a simple formatted digital publication, and a more complex digital book containing multiple chapters and multimedia materials.</p>
+			
+			<p><b>IMPORTANT</b>: The workshop <a href="../sharing/index.html"><b>Sharing Content Locally</b></a> includes segments demonstrating how to share EPUB content over a local network, such a in a classroom, or small business environment. Here is the link to a <a href="javascript:window.open('../sharing/sharing-scenario-03.html','viewer-window-scenario-003','width=1172,height=720');">short video</a> describing such a scenario.</p>
+			
+			<p class="sidebar-subhead">Session Requirements:</p>
+			<ol>
+				<li>A laptop or computer running Mac&nbsp;OS&nbsp;X Lion (v10.7) or newer.</li>
+				
+				<li>Viewing of the created digital publications can be accomplished by transferring the completed files to their iPads or iPhones, or by using a digital reader application available for purchase and download on the Mac App Store, such as <a href="http://itunes.apple.com/us/app/bookle/id496158508?mt=12" target="_blank">Bookle</a>.</li>
+			</ol>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<p>Begin the workshop by discussing the use of digital publications and their prevalence in eduction and business environments.</p>
+			
+			<ol type="1">
+				<li>The rapid adoption of the iPhone and the iPad have hastened the adoption of digital publications, which can easily be stored and viewed on these innovative mobile devices.</li>
+				<li>Ask attendees if they have used iBooks to read a digital publication on their iPads or iPhones.</li>
+				<li>Ask attendees if they have ever needed to quickly adapt some existing documents to be readable as digital publications.</li>				
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

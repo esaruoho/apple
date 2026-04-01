@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- START MOVIE PLAYER SCRIPT -->
+	<script type="text/javascript">
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE PLAYER SCRIPT -->
+	<script type="text/javascript">
+		function SelectAll(id)
+			{
+				document.getElementById(id).focus();
+				document.getElementById(id).select();
+			}
+	</script>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: CREATE AND ADD REMAINING CLIPS -->
+		<div class="content-segment">
+			<div class="segment-header">Create and Add Remaining Clips</div>
+			
+			<p>Now that you&rsquo;ve created and used the Automator services to preview, render, and place the first narration clip, it&rsquo;s time to see how truly time-saving they can be.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Complete the construction of the narration tracks by previewing, rendering, and placing the remaining podcast dialog into the GarageBand project, beginning with the second clip, which uses the female voice. <b>TIP</b>: to select the text for a dialog segment, simply click anywhere within the text field containing the clip. All the text of the dialog segment will automatically be selected for you.</p>
+
+			
+			<p class="content-subhead">SECTION 01 &bull; Welcome</p>
+			
+			<p class="dialog-marker">01-MALE:</p>
+			
+			<textarea rows="1" id="txtarea01" class="dialog-item" onClick="SelectAll('txtarea01');" >Welcome to the Alaskan Adventure Pod cast. I&rsquo;m your host, Alexander Smart.</textarea>
+
+			<p class="dialog-marker">02-FEMALE:</p>
+			
+			<textarea rows="2" id="txtarea02" class="dialog-item" onClick="SelectAll('txtarea02');">And I&rsquo;m Jane Veelander. [[slnc 500]]We are here to guide you through an exciting adventure, to the top of a glayshur.</textarea>
+						
+			<p class="dialog-marker">03-MALE:</p>
+			
+			<textarea rows="1" id="txtarea03" class="dialog-item" onClick="SelectAll('txtarea03');">So, put on your warmest parka, and get ready for an [[emph+]]incredible experience.</textarea>
+
+			<p class="content-subhead">SECTION 02 &bull; The Ride to the Glacier</p>
+			
+			<p class="dialog-marker">04-MALE:</p>
+			
+			<textarea rows="1" id="txtarea04" class="dialog-item" onClick="SelectAll('txtarea04');">Our trip begins at the Juneau airport, where we board a helicopter for the short trip to the glayshur.</textarea>
+			
+			<p class="dialog-marker">05-MALE:</p>
+			
+			<textarea rows="1" id="txtarea05" class="dialog-item" onClick="SelectAll('txtarea05');">A veteran explorer, Jane sits in the front, where she&rsquo;ll get the widest view of the landscape.</textarea>
+			
+			<p class="dialog-marker">06-FEMALE:</p>
+
+			<textarea rows="1" id="txtarea06" class="dialog-item" onClick="SelectAll('txtarea06');">Alex takes his position by the back window, ready to snap pictures during our ascent.</textarea>
+			
+			<p class="dialog-marker">07-FEMALE:</p>
+
+			<textarea rows="2" id="txtarea07" class="dialog-item" onClick="SelectAll('txtarea07');">Our pilot, Jack Teagarden, has been flying this tour for fifteen years, and knows every peak and valley around the glayshur.</textarea>
+
+			<p class="dialog-marker">08-MALE:</p>
+
+			<textarea rows="2" id="txtarea08" class="dialog-item" onClick="SelectAll('txtarea08');">As we fly toward the mountains, we pass over the channel, fed by the water from the glayshur and surrounding valleys.</textarea>
+
+			<p class="dialog-marker">09-MALE:</p>
+
+			<textarea rows="3" id="txtarea09" class="dialog-item" onClick="SelectAll('txtarea09');">Jack turns the helicopter inland, approaching peaks rising steeply from the valley below. [[slnc 500]]This range extends hundreds of miles, into Alaska and Canada, and is home to the Mendenhall glayshur.</textarea>
+
+			<p class="dialog-marker">10-FEMALE:</p>
+
+			<textarea rows="2" id="txtarea10" class="dialog-item" onClick="SelectAll('txtarea10');">The glayshur is about twelve miles long. [[slnc 500]]It straddles the Mendenhall Valley, which is located about a dozen miles from downtown Juneau.</textarea>
+
+			<p class="dialog-marker">11-FEMALE:</p>
+
+			<textarea rows="1" id="txtarea11" class="dialog-item" onClick="SelectAll('txtarea11');">As we fly over the glayshur, you can see the deep cracks that cover its surface.</textarea>
+
+			<p class="content-subhead">SECTION 03 &bull; On the Glacier</p>
+
+			<p class="dialog-marker">12-MALE:</p>
+
+			<textarea rows="2" id="txtarea12" class="dialog-item" onClick="SelectAll('txtarea12');">Looking down, we see our guides below, emerging from their canvas tent to greet us, as we land on the glayshur&rsquo;s surface, and disembark the helicopter.</textarea>
+
+			<p class="dialog-marker">13-MALE:</p>
+
+			<textarea rows="2" id="txtarea13" class="dialog-item" onClick="SelectAll('txtarea13');">Although much of the glayshur&rsquo;s surface appears flat, and fine for walking, our guides gather us together, to warn about the hazards of being on a constantly changing landscape of ice.</textarea>
+
+			<p class="dialog-marker">14-FEMALE:</p>
+
+			<textarea rows="1" id="txtarea14" class="dialog-item" onClick="SelectAll('txtarea14');">The glayshur exerts incredible power, as it moves slowly through the valley.</textarea>
+
+			<p class="dialog-marker">15-FEMALE:</p>
+
+			<textarea rows="2" id="txtarea15" class="dialog-item" onClick="SelectAll('txtarea15');">To a giant river of ice, this very large bolder is merely a pebble, getting crushed into the fine black powder, scattered across the glayshur&rsquo;s surface.</textarea>
+
+			<p class="dialog-marker">16-FEMALE:</p>
+
+			<textarea rows="2" id="txtarea16" class="dialog-item" onClick="SelectAll('txtarea16');">As the glayshur melts, water forms fast moving streams, flowing into pools and openings, that cut through to the bottom of the ice.</textarea>
+
+			<p class="content-subhead">SECTION 04 &bull; Leaving the Glacier</p>
+
+			<p class="dialog-marker">17-MALE:</p>
+
+			<textarea rows="2" id="txtarea17" class="dialog-item" onClick="SelectAll('txtarea17');">As we board our helicopter for the trip back to Juneau, we reflect on the beauty and magnitude of this incredible place.</textarea>
+
+			<p class="dialog-marker">18-MALE:</p>
+
+			<textarea rows="2" id="txtarea18" class="dialog-item" onClick="SelectAll('txtarea18');">Even though the glayshur disappears into the valley behind us, it will remain clear in our minds forever.</textarea>
+
+
+		</div>
+		<!-- END SEGMENT: CREATE AND ADD REMAINING CLIPS -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="07.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li class="hi">Create &amp; Add Remaining Clips</li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, the attendees use the new services they created to preview selected text and render it to an audio file.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Once services are created, they become useful tools, available whenever you need them.</li>
+				<li>Services can be activated not only via assigned keystrokes but also through the use of application and contextual menus. </li>
+				<li>Show how services can also be accessed by Control-clicking in the text seletion to call up the application&rsquo;s contextual menu containing the created services. (<a href="javascript:void(0);" onclick="PopupCenter('gfx/accessservice02.jpg', 'viewer-podcast',624,800);">view</a>)</li>
+				<li>Show how services can also be accessed from an applicaation&rsquo;s Services menu. (<a href="javascript:void(0);" onclick="PopupCenter('gfx/accessservice01.jpg', 'viewer-podcast',624,800);">view</a>)</li>
+			</ol>
+			
+			<p>Mention that the purpose of auditioning the selected text with a voice is to ensure that the text is written correctly and that it contains realistic pauses and inflections. Some of the narration dialog will contain phonetic spelling to force the speech software to speak the words in specific ways.</p>
+			
+			<p>Also, narration text may contain commas, semi-colons, and speech tags to add pauses at important points in the text. For example, the tag <span class="inlinecode">[[slnc 500]]</span> is not spoken by the speech engine, but is instead read as an instruction to pause one-half second (500 milliseconds) before continuing to speak the selected text.</p>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

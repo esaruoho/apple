@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: Automator</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../../automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../../index.html"><img src="../gfx/automator-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../../automator/intro.html">HOME</a></td>
+					<td><a href="../../applescript/intro.html">LEARN APPLESCRIPT</a></td>
+					<td><a href="../../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Tutorial 02: Save and Re-Use the Workflow</h2>
+				
+		<p>A powerful aspect of Automator is its ability to save workflows so that they can be used again and again. And since the process of renaming Finder items is something you're likly to do again, you can save this workflow and apply it to other selected Finder items in the future.</p>
+		
+		<p>Currently, the workflow is designed to work only with the items you've already specified. To enable this workflow to work with other Finder items, you'll need to alter it slightly to make it more "generic" in its approach.</p>
+		
+		<p>Delete the first and second actions from the workflow by clicking on the delete action button in their action title bars. The delete action button is the one with the "X" inside a circle located at the top right of each action view. Leave the <b>Make Finder Item Names Sequential</b> action as the only action in the workflow. Any items processed by the saved workflow will automatically be passed to it.</p>
+		
+		<p>To allow the user of this workflow to edit the action parameters to suite their needs, the action view will need to be displayed when the workflow is run. Do accomplish this, click the Options button at the bottom left of the action view to display any special options related to the action. Click the Show Action When Run checkbox. This will cause this action's view to be displayed when the workflow is executed so that the user can set the parameters to meet the requirements for the selected Finder items.</p>
+		
+		<img src="gfx/10.png" width="555" height="266" class="across">
+		
+		<p>Now you're ready to save the workflow. From Automator's File menu, choose <b>Save As Plug-in...</b> and from the forthcoming sheet in the Automator window, choose <b>Finder</b> from the Plug-in for popup menu to save the workflow as an extension to the Finder's contextual menu. Enter "Rename Finder Items" in the <b>Save Plug-in As</b> text input field and click the <b>Save</b> button.</p>
+		
+		<img src="gfx/16.jpg" width="420" height="158" class="across">
+		
+		<p>You can now quit Automator and switch to the Finder desktop. Select the image files you previously renamed and then click on them with the Control key held down to summon the Finder contextual menu. In the Automator sub-menu you'll now see a menu item representing your saved workflow. Select <b>Rename Finder Items</b> from the menu to rename the selected items using the saved workflow.</p>
+		
+		<img src="gfx/11.png" width="640" height="369" class="across">
+		
+		<p>Workflows saved as plug-ins or applications do not require the Automator application to run and instead will be executed by the system.</p>
+		
+		<p>When a workflow is executed by the system, workflow status and controls are displayed at the top right of the main menu bar. The name of each action in the workflow is shown as it executes. Next to the name is a spinning progress indicator and next to the indicator is a red button that can be used to stop the workflow.</p>
+		
+		<img src="gfx/14.jpg" width="203" height="36" class="across">
+		
+		<p>Once the workflow started, it will display the action view for the <b>Rename Finder Items</b> action in the center of the screen. Set the action parameters as shown and then click the <b>Continue</b> button.</p>
+		
+		<img src="gfx/12.png" width="573" height="325" class="across">
+		
+		<p>The workflow will progress using the settings you input and rename each of the selected items on the desktop!</p>
+		
+		<img src="gfx/13.png" width="635" height="187" class="across">
+		
+		<p>Congratulations, you've now used Automator to create a Finder renaming tool you can use at any time.</p>
+
+
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="../tut03/index.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>TUTORIAL 02</h2>
+			<ul class="square last">
+				<li><a href="index.html">The Renaming Challenge</li>
+				<li><a href="01.html">New Workflow with Selection</a></li>
+				<li><a href="02.html">Finding Actions</a></li>
+				<li><a href="03.html">Adding Actions</a></li>
+				<li><a href="04.html">Set the Action Parameters</a></li>
+				<li><a href="05.html">Run the Workflow</a></li>
+				<li class="hi">Saving the Workflow</li>
+			</ul>
+		</div>
+		<div class="navbox">
+			<h2>WORKFLOW TUTORIALS</h2>
+			<ul class="square last">
+				<li><a href="../intro.html">Introduction</a></li>
+				<li><a href="../tut01/index.html">Message with Snapshot</a></li>
+				<li class="hi">Batch Renaming</li>
+				<li><a href="../tut03/index.html">Daily NASA Desktop</a></li>
+				<li><a href="../tut04/index.html">Toggle Sharing</a></li>
+				<li><a href="../outro.html">What&rsquo;s Next?</a></li>			
+			</ul>
+		</div>
+		<div class="box">
+			<h2>TIP #1</h2>
+			<p>An alternative method for adding Finder items to a workflow is to select them in the Finder and drag them into the workflow area of an Automator window. A new <b>Get Specified Finder Items</b> action containing the dragged items will automatically be added to the end of the workflow.</p>
+		</div>
+		<div class="box">
+			<h2>TIP #2</h2>
+			<p>When an action is selected in the Action List view. its corresponding description is displayed in the Description view at the bottom left of the Automator window. This description contains information about what the action does and the type of data it accepts and provides.</p>
+			<img src="gfx/15.png" width="204" class="across">
+		</div>
+		<div class="box">
+			<h2>TIP #3</h2>
+			<p>You can also add actions to the workflow by dragging their titles from the Action List to a position in the workflow area. When you release the mouse, the action will be added to the workflow at the current cursor position.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

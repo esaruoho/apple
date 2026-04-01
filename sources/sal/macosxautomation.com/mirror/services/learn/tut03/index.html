@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: Services</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="http://www.macosxautomation.com/css/lightbox.css" type="text/css" media="screen" />
+	<script src="http://www.macosxautomation.com/js/prototype.js" type="text/javascript"></script>
+	<script src="http://www.macosxautomation.com/js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="http://www.macosxautomation.com/js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://www.macosxautomation.com/">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../../gfx/services-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../../index.html">Services</a></td>
+			<td><a href="../index.html">Learn</a></td>
+			<td class="middle" width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../../download/index.html">Download</a></td>
+			<td><a href="#">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Paragraph Sorting Service</h2>
+		<p><b><font color="#CC0033">REQUIRES MAC OS X v10.6</font></b></p>
+
+		<p>In this tutorial you'll create a service that alphabetically sorts paragraphs selected in a text editor application.</p>
+		
+		<h3>STEP 1 &#149; Open a New Services Workflow</h3>
+		
+		<p>New services are created using the Automator application located in the Applications folder on your computer. Double-click the icon of Otto the automation robot to open Automator. Select the Services template from the template chooser sheet in the forthcoming workflow window.</p>
+		
+		<img src="gfx/templatechoosertrimmed.jpg" width="516" height="277" align="top" class="across">
+		
+		<p>Click the OK button in the sheet, and a service workflow will be opened.</p>
+		
+		<h3>STEP 2 &#149; Set the Input Settings</h3>
+		
+		<p>A gray bar will be displayed across the top of the workflow area of the Automator window. This bar displays the settings that indicate <b>(1)</b> the type of data to be processed by the workflow, <b>(2)</b> the application in which the service will be available, and <b>(3)</b> whether or not to replace any selected text with the result of the service workflow.</p>
+		
+		<img src="gfx/inputsettingsannotated-01.jpg" width="640" align="top" class="across" height="69">
+		
+		<p>In this tutorial, the service workflow will use the text selected in a word processing application as input, sort the paragraphs of the selected text in alphabetical order, and replace the selected text with the sorted text. Accordingly, these should be the settings for the input dialog in the workflow:</p>
+		
+		<img src="gfx/input-settings.jpg" width="640" align="top" class="across" height="72">
+
+		<h3>STEP 3 &#149; Add Actions</h3>
+		
+		<p>Now that the input settings have been applied, you can build the service by adding Automator actions to the workflow. Unfortunately, the default action library does not contain an Automator action for sorting paragraphs. But that's no problem, as you will create your own action for accomplishing that task! Locate the appropriate Automator action for creating specialized functionality, by entering the keyword &ldquo;run&rdquo; into the search field to the left of the data input bar. A list of actions for performing custom procedures will be displayed in the action list below the search field. Drag the title of the <b>Run Shell Script</b> action to the area after the data settings bar, and release the mouse to add the action to the workflow:</p>
+		
+		<img src="gfx/dragaction.jpg" width="640" align="top" class="across" height="174">
+		
+		<p>Once the mouse is released, the action will be added to the end of the workflow, and its action view will be displayed. The action view contains any setable parameters used by the action to perform its role in the workflow. The <b>Run Shell Script</b> action is used to perform customized procedures by writing UNIX commands that are processed by the operating system. Now before you panic, or think that this is way over your head, take a breath, relax, and realize that you'll only be writing a single word to complete this action.</p>
+		
+		<img src="gfx/addedaction.jpg" width="640" align="top" class="across" height="260">
+
+		
+		<p>In the text field in the action view, change the default command of &ldquo;cat&rdquo; to &ldquo;sort&rdquo; — that's all you have to do. Leave everything else the same. <b>Sort</b> is special UNIX command that will take the text passed from the previous action, sort it alphabetically, and return the results.</p>
+		
+		<img src="gfx/cat2sort.jpg" width="640" align="top" class="across" height="222">		
+		
+		<h3>STEP 4 &#149; Save the Service</h3>
+		
+		<p>Choose Save from Automator's File menu and in the drop-down naming sheet, enter the name for this service: <b>Sort Selected Paragraphs</b></p>
+		
+		<img src="gfx/savesheet.png" width="406" height="104" align="top" class="across">
+		
+		<p>The service is automatically installed into the Services framework for the current user. You may now close the automator window and quit Automator. </p>
+
+		<h3>STEP 5 &#149; Using the Service</h3>
+		
+		<p>This service is designed to sort text selected in a word processing application such as TextEdit. [NOTE: not all applications support contextual services] <a href="pkg/classmates.zip">Download</a>, and open this example text file of names in TextEdit. Select the names, and either right-click in the selection area, or hold down the control key while clicking the selection area, to summon the contextual menu:</p>
+		
+		<img src="gfx/contextualmenu.png" width="451" align="top" height="430" class="across">
+		
+		<p>Choose <b>Sort Selected Paragraphs</b> from the contextual menu, and the names in the list will be sorted alphabetically!</p>
+		
+		<img src="gfx/sortedlist.png" width="451" align="top" height="430" class="across">
+		
+		<h3 >Summary</h3>
+		
+		<p>Congratulations! You've created a service for sorting paragraphs by writing a custom Automator action using shell commands. Oh you Power-User you ;-)</p>
+
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>SERVICE TUTORIALS</h2>
+			<ul class="square last">
+				<li><a href="../index.html">Introduction</a></li>
+				<li><a href="../tut01/index.html">Application Launcher</a></li>
+				<li><a href="../tut02/index.html">Rotate Image</a></li>
+				<li class="hi">Sort Selected Paragraphs</li>
+				<li><a href="../tut04/index.html">Quick Tweet</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>DISCLAIMER</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+ 	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

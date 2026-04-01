@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/dep.html","20230519122654","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1684499214");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230519122654cs_/https://configautomation.com/automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="A collection of Automator actions for the Apple Configurator 2 application.">
+	<link rel="home" href="http://configautomation.com">
+
+	<title>Apple Configurator &amp; Automator: Device Enrollment Program</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230519122654/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230519122654/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230519122654/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Device Enrollment Program</p>
+
+					<p>The Device Enrollment Program (DEP) provides a fast, streamlined way to deploy your corporate-owned Mac or iOS devices, whether purchased directly from Apple or through participating Apple Authorized Resellers.</p>
+
+				</div>
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+				<!-- BEGIN SEGMENT: MANAGEMENT WORKFLOWS -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">The &ldquo;Prepare Devices using Automated Enrollment&rdquo; action</p>
+			
+					<p>The <b>Prepare Devices using Automated Enrollment</b> action, included in the default set of Apple Configurator actions, will use the specified WiFi Configuration Profile to connect devices to WiFi and then initiate the DEP enrollment using the settings provided by your MDM.</p>
+					
+					<p>Devices must be assigned to an MDM server using <a href="http://web.archive.org/web/20230519122654/https://school.apple.com/" target="_blank">Apple School Manager</a> or the <a href="http://web.archive.org/web/20230519122654/https://deploy.apple.com/" target="_blank">Deployment Programs portal</a> and have had enrollment settings specified by the MDM.</p>
+					
+					<p class="segment-note"><b>NOTE</b>: If a device is configured to require enrollment the credentials must be provided otherwise the action will fail.</p>
+					
+					<p class="segment-note"><b>NOTE</b>: If a device is configured not to require enrollment and credentials are provided they will be ignored.</p>
+				
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>WiFi Profile</b>&nbsp;&bull;&nbsp;Use this popup menu to select the WiFi profile to transfer to the devices.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Language</b>&nbsp;&bull;&nbsp;Select the language for the devices from this popup list.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Locale</b>&nbsp;&bull;&nbsp;Select the locale for the devices from this popup list.</p>
+					
+					<img class="action-interface" alt="dep" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/dep.jpg">
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Authentication</b>&nbsp;&bull;&nbsp;Select this checkbox if you want to assign a specified username and password for the devices.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>User Name</b>&nbsp;&bull;&nbsp;Enter the required user name.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Password</b>&nbsp;&bull;&nbsp;Enter the required password.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Confirmation</b>&nbsp;&bull;&nbsp;Enter the required password.</p>
+				
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;<b>Check</b>&nbsp;&bull;&nbsp;Click this button to make sure the password and confirmation match.</p>
+				
+				</div>
+				<!-- END SEGMENT: MANAGEMENT WORKFLOWS -->
+				
+				<!-- BEGIN SEGMENT: SCRIPT LIBRARY -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Prepare Devices using Automated Enrollment using Numbers Sheet*</p>
+
+					<p class="segment-note" style="margin-top:24px;"><b>IMPORTANT</b>: * This action is not designed to be used with attachment workflows</p>
+					
+					<p>The <b>Prepare Devices using Automated Enrollment using Numbers Sheet</b>, available for download below, works in a similar way to the <b>Prepare Devices using Automated Enrollment</b> action but uses a table from a Numbers document to provide directory credentials individually per device.</p>
+
+					<p class="segment-note"><b>NOTE</b>: If a device is not found in the specified Number Document it will be ignored. The ECID of devices not found will be written to the Console log.</p>
+
+					<p class="segment-note"><b>NOTE</b>: If an incorrect password is specified for a device the workflow will halt.  Details on which device has failed can be found in the Console log:<br><span style="font-family:Menlo,san-serif;font-size:small;">7/12/16 2:21:59.061 PM Automator[95835]: prepare: prepareCommandString: '/usr/local/bin/cfgutil' -e 0xA509810520826 prepare --dep --dep-mdm-username 'depuser5' --dep-mdm-password 'notthepassword' --language en --locale en_US
+7/12/16 2:22:07.242 PM Automator[95835]: ACTION: Prepare Devices using Automated Enrollment using Numbers Sheet: cfgutil: error: The username or password was incorrect.
+(Domain: MCCloudConfigErrorDomain Code: 33000)</span></p>
+
+					<p>As with the standard DEP action, in the <b>Enrollment Settings</b> box, select the WiFi profile file <span class="numeric-callout">&nbsp;1&nbsp;</span> to use as well as the Language <span class="numeric-callout">&nbsp;2&nbsp;</span> and Locale <span class="numeric-callout">&nbsp;3&nbsp;</span> for the enrolled devices.</p>
+					
+					<p>In the <b>Source Table</b> box, select the Numbers document <span class="numeric-callout">&nbsp;4&nbsp;</span> containing the table, or select the checkbox <span class="numeric-callout">&nbsp;6&nbsp;</span> to indicate that the action should use the frontmost Numbers document at runtime. You can open the document by clicking the Open button <span class="numeric-callout">&nbsp;5&nbsp;</span></p>
+					
+					<img class="action-interface" alt="dep" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/dep-numbers.jpg">
+					
+					<p>In the <b>Column Names</b> box, enter the names of the columns as they appear in the target spreadsheet: The column title for the serial number data <span class="numeric-callout">&nbsp;8&nbsp;</span> the column title for the username data <span class="numeric-callout">&nbsp;9&nbsp;</span> and the column title for the password data <span class="numeric-callout">&nbsp;10&nbsp;</span></p>
+					
+					<img class="across" width="640" alt="dep-spreadsheet" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/dep-spreadsheet.png">
+										
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/dep-numbers-installer.zip" style="font-weight:700;">&nbsp;DOWNLOAD&nbsp;</a>&nbsp;the installer for the <b>Prepare Devices using Automated Enrollment using Numbers Sheet</b> action.</p>
+				
+				</div>
+				<!-- END SEGMENT: SCRIPT LIBRARY -->
+				
+				<!-- BEGIN SEGMENT: SPECIAL VERSION -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Prepare Devices using Automated Enrollment SPC</p>
+					
+					
+					<p>To enable dynamic generation of the account password, a special version of the <b>Prepare Devices using Automated Enrollment</b> action is available for download, that contains an option enabling the use of workflow variables to dynamically retrieve or generate the password.</p>
+					
+					<img class="action-interface" alt="dep" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/dep-spc-action-view.jpg">
+					
+					<p>The use of an Automator variable in this scenario is described in detail below:</p>
+				
+					<img class="across" width="640" alt="Automator Variables" src="http://web.archive.org/web/20230519122654im_/https://configautomation.com/gfx/Automator-Variables.png">
+					
+					<p>Assuming that you’ve already entered the value for the User Name in the action view, the steps for creating a dynamic workflow variable for the password are:</p>
+				
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Variables Library</b>&nbsp;&bull;&nbsp;To display the Variables Library, click the Variables tab at the top left of the Automator workflow window.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Variables Category</b>&nbsp;&bull;&nbsp;To use a variable whose value is the result of a script, select the Utilities category, containing the Shell Script and AppleScript variables.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Variables Drawer</b>&nbsp;&bull;&nbsp;Open the variables drawer by clicking its icon at the bottom center of the workflow window.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Add Variable</b>&nbsp;&bull;&nbsp;Add one of the script variables (AppleScript/Shell Script) to the drawer by dragging it from the variables list to the drawer.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Edit Variable</b>&nbsp;&bull;&nbsp;Double-click the added variable to reveal the editing window. Name the variable and enter the script code to be used to aquire or generate the password. Click the Done button when finished to close the editing view.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Enable Variable Use</b>&nbsp;&bull;&nbsp;In the action view, select the checkbox &ldquo;Use variable for password&rdquo; to enable the related text input field.</p>
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Insert Variable</b>&nbsp;&bull;&nbsp;Drag the edited variable into the text field in the action view.</p>
+					
+					<p>When the workflow is run, the script will be executed and its result will be used as the value for the password input field.</p>
+
+
+				
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/DepSPCInstaller.zip" style="font-weight:700;">&nbsp;DOWNLOAD&nbsp;</a>&nbsp;the installer for the <b>Prepare Devices using Automated Enrollment SPC</b> action.</p>
+				</div>				
+				
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230519122654/https://configautomation.com/restore.html">Formatting Actions</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/identity-files.html">Supervision Identity</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/selection-actions.html">Selection Actions</a></li>
+						<li class="hi">DEP Actions</li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/restore.html">Formatting Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/backup.html">Backup Actions</a></li>
+						<li><a href="dep.html#">Installation Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/information-actions.html">Information Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/attach-workflow.html">“Attached” Workflows</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></li>
+						<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+						<li><a href="http://web.archive.org/web/20230519122654/https://configautomation.com/classroom.html">iOS Classroom</a></li>
+					</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 12:26:54 May 19, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:19 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.552
+  exclusion.robots: 0.017
+  exclusion.robots.policy: 0.007
+  esindex: 0.01
+  cdx.remote: 35.948
+  LoadShardBlock: 475.268 (3)
+  PetaboxLoader3.datanode: 478.248 (4)
+  load_resource: 171.525
+  PetaboxLoader3.resolve: 110.521
+-->

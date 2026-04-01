@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Reading Data from File</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+	<style type="text/css">
+		table.example-table {
+			background-color: #3B9F43;
+			border: 1px solid white;
+			width: 75%;
+			text-align: center;
+			padding: 2px;
+			margin-left: auto;
+			margin-right: auto;
+		}
+		table.example-table td {
+			border: 2px solid white;
+			width: 15%;
+		}
+	</style>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+				
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Reading Data from File</div>
+					
+			<p>By default, <b>Numbers</b> for Mac and <b>Numbers</b> for iOS support importing the following file formats:</p>
+
+			<ul>
+				<li>Numbers ’09 (2.0 or later)</li>
+				<li>Microsoft Excel - Office Open XML (.xlsx) and Office 97 or later (.xls)</li>
+				<li>Comma Separated Values (CSV)</li>
+				<li>Tab-delimited text files</li>
+			</ul>
+
+			<p>But opening files is not the only way to add data to a document. Using the scripting support in Numbers 3.1, you can read data directly from files, to use in the creation of new tables, or to fill-in a selection range of an existing table.</p>
+			
+			<p>This topic concerns how to read and use the contents of <b>Tab Separated Values</b> (TSV) files, like the one shown below:</p>
+			
+			
+			<img class="centered" alt="tsv" src="gfx/tsv.png" width="624">
+			
+			<p class="segment-note"><b>DEMO CONTENT</b>: <a href="tab-separated-values.zip">Tab-Separated-Values file</a></p>
+			
+			<p>The sub-routine shown below, is used by the example scripts in this section to read tabbed data from TSV files:</p>
+
+			<table class="script-table" role="presentation">
+					<tr><td colspan="3" class="script-title">Read Tab-Separated-Values File Sub-Routine</td></tr>
+					<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=on%20readTabSeparatedValuesFile(thisTSVFile)%0D%09try%0D%09%09set%20dataBlob%20to%20(every%20paragraph%20of%20(read%20thisTSVFile))%0D%09%09set%20the%20tableData%20to%20%7B%7D%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20tab%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20dataBlob%0D%09%09%09set%20the%20end%20of%20the%20tableData%20to%20(every%20text%20item%20of%20(item%20i%20of%20dataBlob))%0D%09%09end%20repeat%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09return%20tableData%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09error%20errorMessage%20number%20errorNumber%0D%09end%20try%0Dend%20readTabSeparatedValuesFile"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">readTabSeparatedValuesFile</span>(<span class="codevariable">thisTSVFile</span>)</td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">dataBlob</span> <b>to</b> (<bdo>every</bdo> <span class="codelibraryclass">paragraph</span> <b>of</b> (<span class="codelibrarycommand">read</span> <span class="codevariable">thisTSVFile</span>))</td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableData</span> <b>to</b> {}</td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeenumeration">AppleScript's text item delimiters</span> <b>to</b> tab</td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">dataBlob</span></td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">tableData</span> <b>to (every</b> <span class="codelibraryclass">text item</span> <b>of</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">dataBlob</span>))</td></tr>
+					<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+					<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeenumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+					<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">tableData</span></td></tr>
+					<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+					<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeenumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+					<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+					<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+					<tr><td class="line-count">15</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">readTabSeparatedValuesFile</span></td></tr>
+			</table>
+			
+			<p>The result of this sub-routine will be an AppleScript list of data lists, like this:</p>
+			
+			<p class="code">{{&quot;Sal&quot;, &quot;Sue&quot;, &quot;Bob&quot;, &quot;Carl&quot;, &quot;Wanda&quot;}, {&quot;Egbert&quot;, &quot;Fred&quot;, &quot;Danita&quot;, &quot;Shirley&quot;, &quot;Scott&quot;}, {&quot;Quincy&quot;, &quot;Bertha&quot;, &quot;Jane&quot;, &quot;Julia&quot;, &quot;Frank&quot;}}</p>
+			
+			<p>For a description of how table data is represented in scripts, see <a href="table-populate.html">Populating Tables with Data</a>, in the previous section of this site.</p>
+
+		</div>
+			
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Reading Data from File into Selection Range</div>
+			
+			<p>This script will import and interpret tabbed data from a TSV file, into the selection range of an existing table. To use, select a tange of cells in a table, that matches the parameters of the data to import. For example, if the data in the file consists of three data groups of five data items, then select three rows of cells crossing five columns in the table.</p>
+			
+			<p>The script will prompt the user to choose the source file, and then declare whether the data is to be row-oriented or column-oriented. It will also check that the data and selection range attributes match.</p>
+			
+			<img class="centered" alt="col-based-table" src="gfx/col-based-table.jpg" width="624">
+			<p class="imagecaption" style="margin-top:-8px;margin-bottom:-4px;"><span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>Data imported into selection range as column-based data.<br>
+			<span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>Data imported into selection range as row-based data.</p>
+			<img class="centered" alt="row-based-table" src="gfx/row-based-table.jpg" width="624">
+			
+			<p class="segment-note"><b>DEMO CONTENT</b>: The tables contained in the <a href="Selection-Import-Example.zip">Selection Import Example Numbers file</a>, are designed to use the example data file, linked in the first segment at the top of this page.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Write Data from TSV File into Table Selection</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%201000%0D%09%09tell%20document%201%0D%09%09%09try%0D%09%09%09%09tell%20active%20sheet%0D%09%09%09%09%09set%20the%20selectedTable%20to%20%C2%AC%0D%09%09%09%09%09%09(the%20first%20table%20whose%20class%20of%20selection%20range%20is%20range)%0D%09%09%09%09end%20tell%0D%09%09%09on%20error%0D%09%09%09%09error%20number%201001%0D%09%09%09end%20try%0D%09%09%09tell%20selectedTable%0D%09%09%09%09--%20determine%20the%20attributes%20of%20the%20selection%20range%0D%09%09%09%09set%20the%20selectionRowCount%20to%20count%20of%20rows%20of%20selection%20range%0D%09%09%09%09set%20the%20selectionColumnCount%20to%20count%20of%20columns%20of%20selection%20range%0D%09%09%09%09set%20the%20selectedCellNames%20to%20the%20name%20of%20every%20cell%20of%20the%20selection%20range%0D%09%09%09%09set%20the%20selectedCellCount%20to%20the%20length%20of%20the%20selectedCellNames%0D%09%09%09%09%0D%09%09%09%09--%20prompt%20user%20for%20the%20TSV%20file%20to%20read%0D%09%09%09%09set%20thisTSVFile%20to%20%C2%AC%0D%09%09%09%09%09(choose%20file%20of%20type%20%22public.tab-separated-values-text%22%20with%20prompt%20%C2%AC%0D%09%09%09%09%09%09%22Pick%20the%20TSV%20(tab%20separated%20values)%20file%20to%20import%3A%22)%0D%09%09%09%09%0D%09%09%09%09--%20read%20the%20data%0D%09%09%09%09set%20thisTSVData%20to%20my%20readTabSeparatedValuesFile(thisTSVFile)%0D%09%09%09%09%0D%09%09%09%09--%20determine%20data%20structure%0D%09%09%09%09set%20the%20dataGroupCount%20to%20the%20count%20of%20thisTSVData%0D%09%09%09%09set%20the%20dataSetCount%20to%20the%20count%20of%20item%201%20of%20thisTSVData%0D%09%09%09%09%0D%09%09%09%09--%20create%20read%20data%20summary%0D%09%09%09%09set%20the%20infoMessage%20to%20%C2%AC%0D%09%09%09%09%09%22The%20read%20TSV%20data%20is%20composed%20of%20%22%20%26%20dataGroupCount%20%26%20%C2%AC%0D%09%09%09%09%09%22%20groups%2C%20with%20each%20group%20containing%20%22%20%26%20dataSetCount%20%26%20%22%20items.%22%20%26%20%C2%AC%0D%09%09%09%09%09return%20%26%20return%0D%09%09%09%09%0D%09%09%09%09--%20prompt%20for%20desired%20data%20layout%20method%0D%09%09%09%09set%20dialogMessage%20to%20%C2%AC%0D%09%09%09%09%09infoMessage%20%26%20%22Is%20the%20tabbed%20data%20to%20be%20grouped%20by%20row%20or%20column%3F%22%0D%09%09%09%09display%20dialog%20dialogMessage%20%C2%AC%0D%09%09%09%09%09buttons%20%7B%22Cancel%22%2C%20%22Row%22%2C%20%22Column%22%7D%20default%20button%201%20with%20icon%201%0D%09%09%09%09set%20the%20groupingMethod%20to%20the%20button%20returned%20of%20the%20result%0D%09%09%09%09%0D%09%09%09%09--%20check%20to%20see%20that%20data%20parameters%20match%20the%20selection%20parameters%0D%09%09%09%09if%20the%20groupingMethod%20is%20%22Row%22%20then%0D%09%09%09%09%09if%20selectionRowCount%20is%20not%20equal%20to%20dataGroupCount%20then%20%C2%AC%0D%09%09%09%09%09%09error%20%22SELECTION%20MISMATCH.%20%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22The%20number%20of%20rows%20in%20the%20table%20selection%20(%22%20%26%20selectionRowCount%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22)%2C%20does%20not%20match%20the%20count%20of%20rows%20in%20the%20imported%20data%20(%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09dataGroupCount%20%26%20%22).%22%0D%09%09%09%09%09if%20selectionColumnCount%20is%20not%20equal%20to%20dataSetCount%20then%20%C2%AC%0D%09%09%09%09%09%09error%20%22SELECTION%20MISMATCH.%20%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22The%20number%20of%20columns%20in%20the%20table%20selection%20(%22%20%26%20selectionColumnCount%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22)%2C%20does%20not%20match%20the%20count%20of%20columns%20in%20the%20imported%20data%20(%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09dataSetCount%20%26%20%22).%22%0D%09%09%09%09else%0D%09%09%09%09%09if%20selectionColumnCount%20is%20not%20equal%20to%20dataGroupCount%20then%20%C2%AC%0D%09%09%09%09%09%09error%20%22SELECTION%20MISMATCH.%20%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22The%20number%20of%20columns%20in%20the%20table%20selection%20(%22%20%26%20selectionColumnCount%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22)%2C%20does%20not%20match%20the%20count%20of%20columns%20in%20the%20imported%20data%20(%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09dataGroupCount%20%26%20%22).%22%0D%09%09%09%09%09if%20selectionRowCount%20is%20not%20equal%20to%20dataSetCount%20then%20%C2%AC%0D%09%09%09%09%09%09error%20%22SELECTION%20MISMATCH.%20%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22The%20number%20of%20rows%20in%20the%20table%20selection%20(%22%20%26%20selectionRowCount%20%26%20%C2%AC%0D%09%09%09%09%09%09%09%22)%2C%20does%20not%20match%20the%20count%20of%20rows%20in%20the%20imported%20data%20(%22%20%26%20%C2%AC%0D%09%09%09%09%09%09%09dataSetCount%20%26%20%22).%22%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09%09--%20THE%20SELECTED%20CELLS%20WILL%20BE%20TARGETED%20USING%20THEIR%20CELL%20NAMES%0D%09%09%09%09--%20So%20order%20the%20cell%20name%20list%20to%20be%20all%20cells%20by%20row%20or%20column%0D%09%09%09%09if%20the%20groupingMethod%20is%20%22Row%22%20then%0D%09%09%09%09%09--%20by%20default%2C%20Numbers%20provides%20cell%20names%20by%20top%20to%20bottom%20row%2C%20left%20to%20right%0D%09%09%09%09%09set%20the%20orderedCellNames%20to%20selectedCellNames%0D%09%09%09%09%09--%20%7B%22B2%22%2C%20%22C2%22%2C%20%22D2%22%2C%20%22E2%22%2C%20%22F2%22%2C%20%22B3%22%2C%20%22C3%22%2C%20%22D3%22%2C%20%22E3%22%2C%20%22F3%22%2C%20%22B4%22%2C%20%22C4%22%2C%20%22D4%22%2C%20%22E4%22%2C%20%22F4%22%7D%0D%09%09%09%09else%0D%09%09%09%09%09--%20sort%20the%20row-based%20list%20of%20cell%20names%20to%20column-based%0D%09%09%09%09%09set%20the%20orderedCellNames%20to%20%7B%7D%0D%09%09%09%09%09set%20groupCount%20to%20selectedCellCount%20div%20selectionRowCount%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20groupCount%0D%09%09%09%09%09%09repeat%20with%20q%20from%20i%20to%20selectedCellCount%20by%20groupCount%0D%09%09%09%09%09%09%09set%20the%20end%20of%20the%20orderedCellNames%20to%20item%20q%20of%20selectedCellNames%0D%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09%09--%20%7B%22B2%22%2C%20%22B3%22%2C%20%22B4%22%2C%20%22C2%22%2C%20%22C3%22%2C%20%22C4%22%2C%20%22D2%22%2C%20%22D3%22%2C%20%22D4%22%2C%20%22E2%22%2C%20%22E3%22%2C%20%22E4%22%2C%20%22F2%22%2C%20%22F3%22%2C%20%22F4%22%7D%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09%09--%20import%20the%20data%0D%09%09%09%09set%20counter%20to%201%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thisTSVData%0D%09%09%09%09%09set%20thisDataGroup%20to%20item%20i%20of%20thisTSVData%0D%09%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20thisDataGroup%0D%09%09%09%09%09%09set%20the%20targetCellName%20to%20item%20counter%20of%20orderedCellNames%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20targetCellName%20to%20item%20q%20of%20thisDataGroup%0D%09%09%09%09%09%09set%20the%20counter%20to%20counter%20%2B%201%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20repeat%0D%09%09%09%09%0D%09%09%09%09(*%0D%09%09%09%09set%20font%20size%20of%20selection%20range%20to%2016%0D%09%09%09%09set%20alignment%20of%20selection%20range%20to%20center%0D%09%09%09%09*)%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%201000%20then%0D%09%09%09set%20alertString%20to%20%22MISSING%20RESOURCE%22%0D%09%09%09set%20errorMessage%20to%20%22Please%20create%20or%20open%20a%20document%20before%20running%20this%20script.%22%0D%09%09else%20if%20errorNumber%20is%201001%20then%0D%09%09%09set%20alertString%20to%20%22SELECTION%20ERROR%22%0D%09%09%09set%20errorMessage%20to%20%22Please%20select%20a%20table%20before%20running%20this%20script.%22%0D%09%09else%0D%09%09%09set%20alertString%20to%20%22EXECUTION%20ERROR%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20alertString%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell%0D%0Don%20readTabSeparatedValuesFile(thisTSVFile)%0D%09try%0D%09%09set%20dataBlob%20to%20(every%20paragraph%20of%20(read%20thisTSVFile))%0D%09%09set%20the%20tableData%20to%20%7B%7D%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20tab%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20dataBlob%0D%09%09%09set%20the%20end%20of%20the%20tableData%20to%20%C2%AC%0D%09%09%09%09(every%20text%20item%20of%20(item%20i%20of%20dataBlob))%0D%09%09end%20repeat%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09return%20tableData%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09error%20errorMessage%20number%20errorNumber%0D%09end%20try%0Dend%20readTabSeparatedValuesFile"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> number 1000</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectedTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>(<b>the first</b> <span class="codelibraryclass">table</span> <b>whose</b> <span class="dictionary-class">class</span> <b>of</b> <span class="codeproperty">selection range</span> <b>is</b> <span class="codelibraryclass">range</span>)</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> 1001</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">selectedTable</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- determine the attributes of the selection range</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectionRowCount</span> <b>to</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">rows</span> <b>of</b> <span class="codeproperty">selection range</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectionColumnCount</span> <b>to</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">columns</span> <b>of</b> <span class="codeproperty">selection range</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectedCellNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">cell</span> <b>of the</b> <span class="codeproperty">selection range</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">selectedCellCount</span> <b>to the</b> <span class="codeproperty">length</span> <b>of the</b> <span class="codevariable">selectedCellNames</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- prompt user for the TSV file to read</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTSVFile</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;public.tab-separated-values-text&quot; <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>&quot;Pick the TSV (tab separated values) file to import:&quot;)</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- read the data</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTSVData</span> <b>to my</b> <span class="codevariable">readTabSeparatedValuesFile</span>(<span class="codevariable">thisTSVFile</span>)</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- determine data structure</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">dataSetCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">item</span> 1 <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- create read data summary</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">infoMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot;The read TSV data is composed of &quot; &amp; <span class="codevariable">data<span class="codevariable">groupCount</span></span> &amp; &not;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot; groups, with each group containing &quot; &amp; <span class="codevariable">dataSetCount</span> &amp; &quot; items.&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codeproperty">return</span> &amp; <span class="codeproperty">return</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- prompt for desired data layout method</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codevariable">infoMessage</span> &amp; &quot;Is the tabbed data to be grouped by row or column?&quot;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> <span class="codevariable">dialogMessage</span> &not;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Row&quot;, &quot;Column&quot;} <span class="codelibraryparameter">default button</span> 1 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">groupingMethod</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codeproperty">result</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- check to see that data parameters match the selection parameters</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">groupingMethod</span> <b>is</b> &quot;Row&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">selectionRowCount</span> <b>is not equal to</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> <b>then</b> &not;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>error</b> &quot;SELECTION MISMATCH. &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;The number of rows in the table selection (&quot; &amp; <span class="codevariable">selectionRowCount</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;), does not match the count of rows in the imported data (&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codevariable">data<span class="codevariable">groupCount</span></span> &amp; &quot;).&quot;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">selectionColumnCount</span> <b>is not equal to</b> <span class="codevariable">dataSetCount</span> <b>then</b> &not;</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>error</b> &quot;SELECTION MISMATCH. &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;The number of columns in the table selection (&quot; &amp; <span class="codevariable">selectionColumnCount</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;), does not match the count of columns in the imported data (&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codevariable">dataSetCount</span> &amp; &quot;).&quot;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">selectionColumnCount</span> <b>is not equal to</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> <b>then</b> &not;</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>error</b> &quot;SELECTION MISMATCH. &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;The number of columns in the table selection (&quot; &amp; <span class="codevariable">selectionColumnCount</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;), does not match the count of columns in the imported data (&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codevariable">data<span class="codevariable">groupCount</span></span> &amp; &quot;).&quot;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">selectionRowCount</span> <b>is not equal to</b> <span class="codevariable">dataSetCount</span> <b>then</b> &not;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>error</b> &quot;SELECTION MISMATCH. &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;The number of rows in the table selection (&quot; &amp; <span class="codevariable">selectionRowCount</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>&quot;), does not match the count of rows in the imported data (&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codevariable">dataSetCount</span> &amp; &quot;).&quot;</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- THE SELECTED CELLS WILL BE TARGETED USING THEIR CELL NAMES</span></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- So order the cell name list to be all cells by row or column</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">groupingMethod</span> <b>is</b> &quot;Row&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- by default, Numbers provides cell names by top to bottom row, left to right</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">orderedCellNames</span> <b>to</b> <span class="codevariable">selectedCellNames</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- {&quot;B2&quot;, &quot;C2&quot;, &quot;D2&quot;, &quot;E2&quot;, &quot;F2&quot;, &quot;B3&quot;, &quot;C3&quot;, &quot;D3&quot;, &quot;E3&quot;, &quot;F3&quot;, &quot;B4&quot;, &quot;C4&quot;, &quot;D4&quot;, &quot;E4&quot;, &quot;F4&quot;}</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- sort the row-based list of cell names to column-based</span></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">orderedCellNames</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">groupCount</span> <b>to</b> <span class="codevariable">selectedCellCount</span> <b>div</b> <span class="codevariable">selectionRowCount</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> <span class="codevariable">groupCount</span></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> <span class="codevariable">i</span> <b>to</b> <span class="codevariable">selectedCellCount</span> <b>by</b> <span class="codevariable">groupCount</span></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">orderedCellNames</span> <b>to</b> item <span class="codevariable">q</span> <b>of</b> <span class="codevariable">selectedCellNames</span></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- {&quot;B2&quot;, &quot;B3&quot;, &quot;B4&quot;, &quot;C2&quot;, &quot;C3&quot;, &quot;C4&quot;, &quot;D2&quot;, &quot;D3&quot;, &quot;D4&quot;, &quot;E2&quot;, &quot;E3&quot;, &quot;E4&quot;, &quot;F2&quot;, &quot;F3&quot;, &quot;F4&quot;}</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- import the data</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">counter</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDataGroup</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetCellName</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">counter</span> <b>of</b> <span class="codevariable">orderedCellNames</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> value <b>of</b> cell <span class="codevariable">targetCellName</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">q</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">counter</span> <b>to</b> <span class="codevariable">counter</span> + 1</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">(* -- optional styling properties</span></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">set font size of selection range to 16</span></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">set alignment of selection range to center</span></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">*)</span></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1000 <b>then</b></td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;MISSING RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please create or open a document before running this script.&quot;</td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1001 <b>then</b></td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;SELECTION ERROR</b>&quot;</td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please select a table before running this script.&quot;</td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">114</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;EXECUTION ERROR&quot;</td></tr>
+				<tr><td class="line-count">115</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">116</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">117</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">alertString</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;}</td></tr>
+				<tr><td class="line-count">118</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">119</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">120</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">121</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">122</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">123</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">readTabSeparatedValuesFile</span>(<span class="codevariable">thisTSVFile</span>)</td></tr>
+				<tr><td class="line-count">124</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">125</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">dataBlob</span> <b>to (every</b> <span class="codelibraryclass">paragraph</span> <b>of</b> (<span class="codelibrarycommand">read</span> <span class="codevariable">thisTSVFile</span>))</td></tr>
+				<tr><td class="line-count">126</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableData</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">127</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> tab</td></tr>
+				<tr><td class="line-count">128</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">dataBlob</span></td></tr>
+				<tr><td class="line-count">129</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">tableData</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">130</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<b>every</b> <span class="codelibraryparameter">text item</span> <b>of</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">dataBlob</span>))</td></tr>
+				<tr><td class="line-count">131</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">132</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">133</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">tableData</span></td></tr>
+				<tr><td class="line-count">134</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">135</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">136</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">137</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">138</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">readTabSeparatedValuesFile</span></td></tr>
+			</table>
+			
+
+		</div>
+		<!-- END SEGMENT: SCRIPT -->
+		
+		
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Table from File Data</div>
+		
+			<p>This script reads tabbed data from a TSV file, and creates a new table, on the active sheet, to match the dimensions of the imported data.</p>
+			
+			<img class="centered" alt="import-dialog" src="gfx/import-dialog.png" width="624">
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Table from TSV File</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20useHeaders%20%3A%20true%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%201000%0D%09%09tell%20document%201%0D%09%09%09tell%20active%20sheet%0D%09%09%09%09--%20prompt%20user%20for%20the%20TSV%20file%20to%20read%0D%09%09%09%09set%20thisTSVFile%20to%20%C2%AC%0D%09%09%09%09%09(choose%20file%20of%20type%20%22public.tab-separated-values-text%22%20with%20prompt%20%C2%AC%0D%09%09%09%09%09%09%22Pick%20the%20TSV%20(tab%20separated%20values)%20file%20to%20import%3A%22)%0D%09%09%09%09%0D%09%09%09%09--%20read%20the%20data%0D%09%09%09%09set%20thisTSVData%20to%20my%20readTabSeparatedValuesFile(thisTSVFile)%0D%09%09%09%09%0D%09%09%09%09--%20determine%20data%20structure%0D%09%09%09%09set%20the%20dataGroupCount%20to%20the%20count%20of%20thisTSVData%0D%09%09%09%09set%20the%20dataSetCount%20to%20the%20count%20of%20item%201%20of%20thisTSVData%0D%09%09%09%09%0D%09%09%09%09--%20create%20read%20data%20summary%0D%09%09%09%09set%20the%20infoMessage%20to%20%C2%AC%0D%09%09%09%09%09%22The%20read%20TSV%20data%20is%20composed%20of%20%22%20%26%20dataGroupCount%20%26%20%C2%AC%0D%09%09%09%09%09%22%20groups%2C%20with%20each%20group%20containing%20%22%20%26%20dataSetCount%20%26%20%22%20items.%22%20%26%20%C2%AC%0D%09%09%09%09%09return%20%26%20return%0D%09%09%09%09%0D%09%09%09%09--%20prompt%20for%20desired%20data%20layout%20method%0D%09%09%09%09set%20dialogMessage%20to%20%C2%AC%0D%09%09%09%09%09infoMessage%20%26%20%22Is%20the%20tabbed%20data%20to%20be%20grouped%20by%20row%20or%20column%3F%22%0D%09%09%09%09display%20dialog%20dialogMessage%20%C2%AC%0D%09%09%09%09%09buttons%20%7B%22Cancel%22%2C%20%22Row%22%2C%20%22Column%22%7D%20default%20button%201%20with%20icon%201%0D%09%09%09%09set%20the%20groupingMethod%20to%20the%20button%20returned%20of%20the%20result%0D%09%09%09%09%0D%09%09%09%09if%20useHeaders%20is%20true%20then%0D%09%09%09%09%09set%20dataGroupCount%20to%20dataGroupCount%20%2B%201%0D%09%09%09%09%09set%20dataSetCount%20to%20dataSetCount%20%2B%201%0D%09%09%09%09%09set%20startingAdjustment%20to%201%0D%09%09%09%09else%0D%09%09%09%09%09set%20startingAdjustment%20to%200%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09%09if%20groupingMethod%20is%20%22Row%22%20then%0D%09%09%09%09%09set%20thisTable%20to%20%C2%AC%0D%09%09%09%09%09%09make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%09%7Brow%20count%3AdataGroupCount%2C%20column%20count%3AdataSetCount%7D%0D%09%09%09%09else%20if%20groupingMethod%20is%20%22Column%22%20then%0D%09%09%09%09%09set%20thisTable%20to%20%C2%AC%0D%09%09%09%09%09%09make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%09%7Brow%20count%3AdataSetCount%2C%20column%20count%3AdataGroupCount%7D%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09%09--%20import%20the%20data%0D%09%09%09%09if%20the%20groupingMethod%20is%20%22Row%22%20then%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thisTSVData%0D%09%09%09%09%09%09set%20thisDataGroup%20to%20item%20i%20of%20thisTSVData%0D%09%09%09%09%09%09tell%20row%20(i%20%2B%20startingAdjustment)%20of%20thisTable%0D%09%09%09%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20thisDataGroup%0D%09%09%09%09%09%09%09%09set%20the%20value%20of%20cell%20(q%20%2B%20startingAdjustment)%20to%20item%20q%20of%20thisDataGroup%0D%09%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09else%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20thisTSVData%0D%09%09%09%09%09%09set%20thisDataGroup%20to%20item%20i%20of%20thisTSVData%0D%09%09%09%09%09%09tell%20column%20(i%20%2B%20startingAdjustment)%20of%20thisTable%0D%09%09%09%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20thisDataGroup%0D%09%09%09%09%09%09%09%09set%20the%20value%20of%20cell%20(q%20%2B%20startingAdjustment)%20to%20item%20q%20of%20thisDataGroup%0D%09%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20if%0D%09%09%09%09%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%201000%20then%0D%09%09%09set%20alertString%20to%20%22MISSING%20RESOURCE%22%0D%09%09%09set%20errorMessage%20to%20%22Please%20create%20or%20open%20a%20document%20before%20running%20this%20script.%22%0D%09%09else%0D%09%09%09set%20alertString%20to%20%22EXECUTION%20ERROR%22%0D%09%09end%20if%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20alertString%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell%0D%0Don%20readTabSeparatedValuesFile(thisTSVFile)%0D%09try%0D%09%09set%20dataBlob%20to%20(every%20paragraph%20of%20(read%20thisTSVFile))%0D%09%09set%20the%20tableData%20to%20%7B%7D%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20tab%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20dataBlob%0D%09%09%09set%20the%20end%20of%20the%20tableData%20to%20%C2%AC%0D%09%09%09%09(every%20text%20item%20of%20(item%20i%20of%20dataBlob))%0D%09%09end%20repeat%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09return%20tableData%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09error%20errorMessage%20number%20errorNumber%0D%09end%20try%0Dend%20readTabSeparatedValuesFile"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">useHeaders</span> : true</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> number 1000</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- prompt user for the TSV file to read</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTSVFile</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;public.tab-separated-values-text&quot; <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>&quot;Pick the TSV (tab separated values) file to import:&quot;)</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- read the data</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTSVData</span> <b>to my</b> <span class="codevariable">readTabSeparatedValuesFile</span>(<span class="codevariable">thisTSVFile</span>)</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- determine data structure</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">dataSetCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">item</span> 1 <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- create read data summary</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">infoMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot;The read TSV data is composed of &quot; &amp; <span class="codevariable">data<span class="codevariable">groupCount</span></span> &amp; &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>&quot; groups, with each group containing &quot; &amp; <span class="codevariable">dataSetCount</span> &amp; &quot; items.&quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codeproperty">return</span> &amp; <span class="codeproperty">return</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- prompt for desired data layout method</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogMessage</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codevariable">infoMessage</span> &amp; &quot;Is the tabbed data to be grouped by row or column?&quot;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>display dialog <span class="codevariable">dialogMessage</span> &not;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Row&quot;, &quot;Column&quot;} <span class="codelibraryparameter">default button</span> 1 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">groupingMethod</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codeproperty">result</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">useHeaders</span> <b>is</b> <span class="dictionary-enumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> <b>to</b> <span class="codevariable">data<span class="codevariable">groupCount</span></span> + 1</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">dataSetCount</span> <b>to</b> <span class="codevariable">dataSetCount</span> + 1</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startingAdjustment</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">startingAdjustment</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">groupingMethod</span> <b>is</b> &quot;Row&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>{row count:<span class="codevariable">data<span class="codevariable">groupCount</span></span>, column count:<span class="codevariable">dataSetCount</span>}</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else if</b> <span class="codevariable">groupingMethod</span> <b>is</b> &quot;Column&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> thisTable <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>make new table <b>with</b> properties &not;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>{<span class="codeproperty">row count</span>:<span class="codevariable">dataSetCount</span>, <span class="codeproperty">column count</span>:<span class="codevariable">data<span class="codevariable">groupCount</span></span>}</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- import the data</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">groupingMethod</span> <b>is</b> &quot;Row&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDataGroup</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">row</span> (<span class="codevariable">i</span> + <span class="codevariable">startingAdjustment</span>) <b>of</b> thisTable</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">q</span> + <span class="codevariable">startingAdjustment</span>) <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">q</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDataGroup</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thisTSVData</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">column</span> (<span class="codevariable">i</span> + <span class="codevariable">startingAdjustment</span>) <b>of</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">q</span> + <span class="codevariable">startingAdjustment</span>) <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">q</span> <b>of</b> <span class="codevariable">thisDataGroup</span></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is</b> 1000 <b>then</b></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;MISSING RESOURCE&quot;</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">errorMessage</span> <b>to</b> &quot;Please create or open a document before running this script.&quot;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">alertString</span> <b>to</b> &quot;EXECUTION ERROR&quot;</td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> <span class="codevariable">alertString</span> <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;}</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">readTabSeparatedValuesFile</span>(<span class="codevariable">thisTSVFile</span>)</td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">dataBlob</span> <b>to (every</b> paragraph <b>of</b> (read <span class="codevariable">thisTSVFile</span>))</td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableData</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> tab</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">dataBlob</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">tableData</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<b>every</b> text item <b>of</b> (item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">dataBlob</span>))</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">tableData</span></td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-enumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codevariable">errorMessage</span> <span class="codelibraryparameter">number</span> <span class="codevariable">errorNumber</span></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">readTabSeparatedValuesFile</span></td></tr>
+			</table>
+		
+		
+		</div>
+		<!-- END SEGMENT: SCRIPT -->
+			
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table-delete.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li class="hi"><a href="table.html">Table</a></li>
+				<li class="navListSectionItem"><a href="table-make.html">Making Tables</a></li>
+				<li class="navListSectionItem"><a href="table-edit.html">Editing Tables</a></li>
+				<li class="navListSectionItem"><a href="table-populate.html">Populating Tables</a></li>
+				<li class="navListSectionItemSelected">Reading Data from File</li>
+				<li class="navListSectionItem"><a href="table-delete.html">Deleting Tables</a></li>
+				<li class="navListSectionItem"><a href="table-sort.html">Sorting Tables</a></li>
+				<li class="navListSectionItem"><a href="table-transpose.html">Transposing Tables</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

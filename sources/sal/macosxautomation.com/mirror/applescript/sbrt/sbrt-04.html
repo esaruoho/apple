@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>HTML Routines</h2>
+		
+		<p>AppleScript scripts are often used to read and write HTML text. The following sub-routines help automate some common tasks involving HTML markup.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Converting RGB to HTML Color</h3></a>
+		
+		<p>The following sub-routine can be used to convert RGB color values to the format used in HTML documents.</p>
+
+
+		<p>An RGB color is stated as list of three numbers, each with a value between 0 and 65535. The following sub-routine converts those values to 8-bit or 256 color-based values which are then converted to their corresponding HEX values.</p>
+		
+		<p>To use the sub-routine, pass it a list of RBG values and it will return the HTML code matching the passed RGB color	</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine to convert RGB values to HTML format:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">RBG_to_HTML</span>(<span class="codevariable">RGB_values</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- NOTE: this sub-routine expects the RBG values to be from 0 to 65535</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">hex_list</span> <b>to</b> {&quot;0&quot;, &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;, &quot;F&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the the</b> <span class="codevariable">hex_value</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of the</b> <span class="codevariable">RGB_values</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_value</span> <b>to</b> (item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">RGB_values</span>) <b>div</b> 256<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_value</span> <b>is</b> 256 <b>then set</b> <span class="codevariable">this_value</span> <b>to</b> 255<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> item ((<span class="codevariable">this_value</span> <b>div</b> 16) + 1) <b>of the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> item (((<span class="codevariable">this_value</span> / 16 <b>mod</b> 1) * 16) + 1) <b>of the</b> <span class="codevariable">hex_list</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">hex_value</span> <b>to</b> (<b>the</b> <span class="codevariable">hex_value</span> &amp; <span class="codevariable">x</span> &amp; y) <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> (&quot;#&quot; &amp; <b>the</b> <span class="codevariable">hex_value</span>) <b>as</b> string<BR>
+		<b>end</b> <span class="codevariable">RBG_to_HTML</span></p>
+	
+		<p>Here's an example of how to call the sub-routine using values from a color picker dialog:</p>
+	
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20RGB_value%20to%20%28choose%20color%20default%20color%20%7B65535%2C%200%2C%200%7D%29%0Dset%20the%20HTML_colorvalue%20to%20my%20RBG_to_HTML%28RGB_value%29%0D%0Don%20RBG_to_HTML%28RGB_values%29%0D%09%2D%2D%20NOTE%3A%20this%20sub%2Droutine%20expects%20the%20RBG%20values%20to%20be%20from%200%20to%2065535%0D%09set%20the%20hex_list%20to%20%7B%220%22%2C%20%221%22%2C%20%222%22%2C%20%223%22%2C%20%224%22%2C%20%225%22%2C%20%226%22%2C%20%227%22%2C%20%228%22%2C%20%229%22%2C%20%22A%22%2C%20%22B%22%2C%20%22C%22%2C%20%22D%22%2C%20%22E%22%2C%20%22F%22%7D%0D%09set%20the%20the%20hex_value%20to%20%22%22%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20RGB_values%0D%09%09set%20this_value%20to%20%28item%20i%20of%20the%20RGB_values%29%20div%20256%0D%09%09if%20this_value%20is%20256%20then%20set%20this_value%20to%20255%0D%09%09set%20x%20to%20item%20%28%28this_value%20div%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20y%20to%20item%20%28%28%28this_value%20%2F%2016%20mod%201%29%20%2A%2016%29%20%2B%201%29%20of%20the%20hex_list%0D%09%09set%20the%20hex_value%20to%20%28the%20hex_value%20%26%20x%20%26%20y%29%20as%20string%0D%09end%20repeat%0D%09return%20%28%22%23%22%20%26%20the%20hex_value%29%20as%20string%0Dend%20RBG_to_HTML"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Using the values from a color picker dialog:<br>&nbsp;<br><br></span><b>set the</b> <span class="codevariable">RGB_value</span> <b>to</b> (choose color default color {65535, 0, 0})<BR>
+		<b>set the</b> <span class="codevariable">HTML_colorvalue</span> <b>to my</b> <span class="codevariable">RBG_to_HTML</span>(<span class="codevariable">RGB_value</span>)</p>
+	
+	
+		<hr><a id="1001" name="1001" title="1001"><h3>Removing Markup Codes From Text</h3></a>
+		
+		<p>This sub-routine can be used to remove angle bracket enclosed tags from text passed to the sub-routine.</p>
+	
+		<p class="code"><b>set</b> <span class="codevariable">this_text</span> <b>to</b> &quot;This is a &lt;B&gt;great&lt;/B&gt; time to own a Mac!&quot;<BR>
+		<span class="codevariable">remove_markup</span>(<span class="codevariable">this_text</span>)<BR>
+		<span class="codecomment">--> returns: &quot;This is a great time to own a Mac!&quot;</span></p>	
+	
+		<p>Here's the sub-routine:</p>
+	
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20remove_markup%28this_text%29%0D%09set%20copy_flag%20to%20true%0D%09set%20the%20clean_text%20to%20%22%22%0D%09repeat%20with%20this_char%20in%20this_text%0D%09%09set%20this_char%20to%20the%20contents%20of%20this_char%0D%09%09if%20this_char%20is%20%22%3C%22%20then%0D%09%09%09set%20the%20copy_flag%20to%20false%0D%09%09else%20if%20this_char%20is%20%22%3E%22%20then%0D%09%09%09set%20the%20copy_flag%20to%20true%0D%09%09else%20if%20the%20copy_flag%20is%20true%20then%0D%09%09%09set%20the%20clean_text%20to%20the%20clean_text%20%26%20this_char%20as%20string%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20the%20clean_text%0Dend%20remove_markup"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for removing tags from text:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">remove_markup</span>(<span class="codevariable">this_text</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">copy_flag</span> <b>to</b> true<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">clean_text</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_char</span> <b>in</b> <span class="codevariable">this_text</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_char</span> <b>to the</b> contents <b>of</b> <span class="codevariable">this_char</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_char</span> <b>is</b> &quot;<&quot; <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">copy_flag</span> <b>to</b> false<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_char</span> <b>is</b> &quot;>&quot; <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">copy_flag</span> <b>to</b> true<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> <span class="codevariable">copy_flag</span> <b>is</b> true <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">clean_text</span> <b>to the</b> <span class="codevariable">clean_text</span> &amp; <span class="codevariable">this_char</span> <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">clean_text</span><BR>
+		<b>end</b> <span class="codevariable">remove_markup</span></p>
+	
+		<hr><a id="1002" name="1002" title="1002"><h2>Parsing an HTML File</h2></a>
+	
+		<p>The following large sub-routine can be used to extract specific tags and their contents from HTML text.</p>
+		
+		<p>The routine will return all matches of a specific opening and closing tag combination passed to the sub-routine.</p>
+		
+		<p>There is also a parameter for indicating whether to include the specific enclosing tags with the returned text.</p>
+		
+		<p>You can use this sub-routine to do the following:</p>
+		
+		<h3>Return All Links in an HTML Document</h3>
+		
+		<p>Pass the file path to the sub-routine as the first parameter. Leave the other settings as shown.</p>
+			
+		<p class="code"><span class="codevariable">read_parse</span> (<span class="codevariable">this_file</span>, "&lt;A HREF=", "&lt;/A&gt;", false)<br>
+		<span class="codecomment">--&gt; &lt;A HREF="http://www.apple.com/fileA.html"&gt;click here&lt;/A&gt;</span><br>
+		<span class="codecomment">--&gt; &lt;A HREF="http://www.apple.com/fileB.html"&gt;click here&lt;/A&gt;</span></p>
+		
+		<h3>Return All Images in an HTML Document</h3>
+		
+		<p>Pass the file path to the sub-routine as the first parameter. Leave the other settings as shown. Note the passed value for the closing tag parameter is a null string (&quot;&quot;). The sub-routine is written to pass the results as single tagged elements if the closing tag parameter is null.</p>
+	
+		<p class="code"><span class="codevariable">read_parse</span>(<span class="codevariable">this_file</span>, &quot;&lt;IMG &quot;, &quot;&quot;, false)<BR>
+		<span class="codecomment">--&gt; &lt;IMG SRC=&quot;gfx/clipboard.gif&quot; BORDER=&quot;0&quot;&gt;</span><BR>
+		<span class="codecomment">--&gt; &lt;IMG SRC=&quot;printer_stopped.gif&quot; ALIGN=TOP WIDTH=&quot;32&quot; HEIGHT=&quot;32&quot; BORDER=&quot;0&quot;&gt;</span><BR>
+		<span class="codecomment">--&gt; &lt;IMG SRC=&quot;printer_on.gif&quot; ALIGN=TOP WIDTH=&quot;32&quot; HEIGHT=&quot;32&quot; BORDER=&quot;0&quot;&gt;</span></p>	
+	
+	
+		<h3>Return All Tables in an HTML Document</h3>
+		
+		<p>Pass the file path to the sub-routine as the first parameter. Leave the other settings as shown.</p>
+	
+		<p class="code"><span class="codevariable">read_parse</span>(<span class="codevariable">this_file</span>, &quot;&lt;TABLE&quot;, &quot;&lt;/TABLE&gt;&quot;, false)<BR>
+		(*<BR>
+		<span class="codecomment">&lt;TABLE WIDTH=&quot;440&quot;&gt;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>&lt;TR&gt;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>&lt;TD ALIGN=&quot;CENTER&quot; VALIGN=&quot;TOP&quot;&gt;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&lt;IMG SRC=&quot;gfx/clipboard.gif&quot; BORDER=&quot;0&quot;&gt;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>&lt;/TD&gt;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>&lt;/TR&gt;<BR>
+		&lt;/TABLE&gt;<BR></span>
+		*)</p>
+	
+		<p>Here's the sub-routine:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20read_parse%28this_file%2C%20opening_tag%2C%20closing_tag%2C%20contents_only%29%0D%09try%0D%09%09set%20this_file%20to%20this_file%20as%20text%0D%09%09set%20this_file%20to%20open%20for%20access%20file%20this_file%0D%09%09set%20the%20combined_results%20to%20%22%22%0D%09%09set%20the%20open_tag%20to%20%22%22%0D%09%09repeat%0D%09%09%09read%20this_file%20before%20%22%3C%22%20%2D%2D%20start%20of%20a%20tag%0D%09%09%09set%20this_tag%20to%20read%20this_file%20until%20%22%3E%22%20%2D%2D%20end%20of%20a%20tag%0D%09%09%09%2D%2D%20to%20make%20up%20for%20a%20bug%20in%20the%20%22read%20before%22%20command%0D%09%09%09if%20this_tag%20does%20not%20start%20with%20%22%3C%22%20then%20set%20this_tag%20to%20%28%22%3C%22%20%26%20this_tag%29%20as%20string%0D%09%09%09%2D%2D%20EXAMINE%20THE%20TAG%0D%09%09%09if%20this_tag%20begins%20with%20the%20opening_tag%20then%0D%09%09%09%09%2D%2Dstore%20the%20complete%20tag%2C%20not%20just%20the%20search%20string%0D%09%09%09%09set%20the%20open_tag%20to%20this_tag%0D%09%09%09%09%2D%2D%20check%20for%20single%20tag%20indicator%0D%09%09%09%09if%20the%20closing_tag%20is%20%22%22%20then%0D%09%09%09%09%09if%20the%20combined_results%20is%20%22%22%20then%0D%09%09%09%09%09%09set%20the%20combined_results%20to%20the%20combined_results%20%26%20the%20open_tag%0D%09%09%09%09%09else%0D%09%09%09%09%09%09set%20the%20combined_results%20to%20the%20combined_results%20%26%20return%20%26%20the%20open_tag%0D%09%09%09%09%09end%20if%0D%09%09%09%09else%0D%09%09%09%09%09%2D%2D%20reset%20the%20text%20buffer%0D%09%09%09%09%09set%20the%20text_buffer%20to%20%22%22%0D%09%09%09%09%09%2D%2D%20extract%20the%20contents%20between%20the%20open%20and%20close%20tags%0D%09%09%09%09%09repeat%0D%09%09%09%09%09%09set%20the%20text_buffer%20to%20the%20text_buffer%20%26%20%28read%20this_file%20before%20%22%3C%22%29%20%2D%2D%20start%20of%20a%20tag%0D%09%09%09%09%09%09set%20the%20tag_buffer%20to%20read%20this_file%20until%20%22%3E%22%20%2D%2D%20end%20of%20a%20tag%0D%09%09%09%09%09%09%2D%2D%20to%20make%20up%20for%20a%20bug%20in%20the%20%22read%20before%22%20command%0D%09%09%09%09%09%09if%20the%20tag_buffer%20does%20not%20start%20with%20%22%3C%22%20then%20set%20the%20tag_buffer%20to%20%28%22%3C%22%20%26%20the%20tag_buffer%29%20as%20string%0D%09%09%09%09%09%09%2D%2D%20check%20for%20the%20closing%20tag%0D%09%09%09%09%09%09if%20the%20tag_buffer%20is%20the%20closing_tag%20then%0D%09%09%09%09%09%09%09if%20contents_only%20is%20false%20then%0D%09%09%09%09%09%09%09%09set%20the%20text_buffer%20to%20the%20open_tag%20%26%20the%20text_buffer%20%26%20the%20tag_buffer%0D%09%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09%09if%20the%20combined_results%20is%20%22%22%20then%0D%09%09%09%09%09%09%09%09set%20the%20combined_results%20to%20the%20combined_results%20%26%20the%20text_buffer%0D%09%09%09%09%09%09%09else%0D%09%09%09%09%09%09%09%09set%20the%20combined_results%20to%20the%20combined_results%20%26%20return%20%26%20the%20text_buffer%0D%09%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09%09exit%20repeat%0D%09%09%09%09%09%09else%0D%09%09%09%09%09%09%09set%20the%20text_buffer%20to%20the%20text_buffer%20%26%20the%20tag_buffer%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20if%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09close%20access%20this_file%0D%09on%20error%20error_msg%20number%20error_num%0D%09%09try%0D%09%09%09close%20access%20this_file%0D%09%09end%20try%0D%09%09if%20error_num%20is%20not%20%2D39%20then%20return%20false%0D%09end%20try%0D%09return%20the%20combined_results%0Dend%20read_parse"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for extracting tags from an HTML file:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">read_parse</span>(<span class="codevariable">this_file</span>, <span class="codevariable">opening_tag</span>, <span class="codevariable">closing_tag</span>, <span class="codevariable">contents_only</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_file</span> <b>to</b> <span class="codevariable">this_file</span> <b>as</b> text<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_file</span> <b>to</b> open for access file <span class="codevariable">this_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">combined_results</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">open_tag</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>read <span class="codevariable">this_file</span> before &quot;&lt;&quot; <span class="codecomment">-- start of <span class="codevariable">a</span> tag</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>set <span class="codevariable">this_tag</span> to read <span class="codevariable">this_file</span> until &quot;&gt;&quot; <span class="codecomment">-- end of <span class="codevariable">a</span> tag</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- to make up for <span class="codevariable">a</span> bug in the &quot;read before&quot; command</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">this_tag</span> does <b>not</b> start <b>with</b> &quot;&lt;&quot; <b>then set</b> <span class="codevariable">this_tag</span> <b>to</b> (&quot;&lt;&quot; &amp; <span class="codevariable">this_tag</span>) <b>as</b> string<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- EXAMINE THE TAG</span><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">this_tag</span> <b>begins with the</b> <span class="codevariable">opening_tag</span> <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">--store the complete tag, not just the search string</span><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">open_tag</span> <b>to</b> <span class="codevariable">this_tag</span><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- check for single tag indicator</span><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">closing_tag</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>if the</b> <span class="codevariable">combined_results</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">combined_results</span> <b>to the</b> <span class="codevariable">combined_results</span> &amp; <b>the</b> <span class="codevariable">open_tag</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">combined_results</span> <b>to the</b> <span class="codevariable">combined_results</span> &amp; <b>return &amp; the</b> <span class="codevariable">open_tag</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- reset the text buffer</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">text_buffer</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- extract the contents between the open and close tags</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>repeat</b><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">text_buffer</span> <b>to the</b> <span class="codevariable">text_buffer</span> &amp; &not;<BR>
+		<span style="float:left; width:70px;">&nbsp;</span>(read <span class="codevariable">this_file</span> before &quot;&lt;&quot;) <span class="codecomment">-- start of <span class="codevariable">a</span> tag</span><BR>
+		<span style="float:left; width:60px;">&nbsp;</span>set the <span class="codevariable">tag_buffer</span> to read <span class="codevariable">this_file</span> until &quot;&gt;&quot; <span class="codecomment">-- end of <span class="codevariable">a</span> tag</span><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- to make up for <span class="codevariable">a</span> bug in the &quot;read before&quot; command</span><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>if the</b> <span class="codevariable">tag_buffer</span> does <b>not</b> start <b>with</b> &quot;&lt;&quot; <b>then set the</b> <span class="codevariable">tag_buffer</span> <b>to</b> (&quot;&lt;&quot; &amp; <b>the</b> <span class="codevariable">tag_buffer</span>)<BR>
+		<span style="float:left; width:60px;">&nbsp;</span><span class="codecomment">-- check for the closing tag</span><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>if the</b> <span class="codevariable">tag_buffer</span> <b>is the</b> <span class="codevariable">closing_tag</span> <b>then</b><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>if</b> <span class="codevariable">contents_only</span> <b>is</b> false <b>then</b><BR>
+		<span style="float:left; width:80px;">&nbsp;</span><b>set the</b> <span class="codevariable">text_buffer</span> <b>to the</b> <span class="codevariable">open_tag</span> &amp; <b>the</b> <span class="codevariable">text_buffer</span> &amp; <b>the</b> <span class="codevariable">tag_buffer</span><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>if the</b> <span class="codevariable">combined_results</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:80px;">&nbsp;</span><b>set the</b> <span class="codevariable">combined_results</span> <b>to the</b> <span class="codevariable">combined_results</span> &amp; <b>the</b> <span class="codevariable">text_buffer</span><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:80px;">&nbsp;</span><b>set the</b> <span class="codevariable">combined_results</span> <b>to the</b> <span class="codevariable">combined_results</span> &amp; <b>return &amp; the</b> <span class="codevariable">text_buffer</span><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>exit repeat</b><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>else</b><BR>
+		<span style="float:left; width:70px;">&nbsp;</span><b>set the</b> <span class="codevariable">text_buffer</span> <b>to the</b> <span class="codevariable">text_buffer</span> &amp; <b>the</b> <span class="codevariable">tag_buffer</span><BR>
+		<span style="float:left; width:60px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>close access <span class="codevariable">this_file</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_msg</span> number <span class="codevariable">error_num</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>close access <span class="codevariable">this_file</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">error_num</span> <b>is not</b> -39 <b>then return</b> false<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">combined_results</span><BR>
+		<b>end</b> <span class="codevariable">read_parse</span></p>	
+	
+	
+	
+	
+	
+	
+	
+	
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li class="hi">HTML Routines</li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

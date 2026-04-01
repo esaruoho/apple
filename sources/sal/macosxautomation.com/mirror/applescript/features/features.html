@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Features</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html" class="hi">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>More Features</h2>
+		<p>AppleScript continues to evolve and improve with each release of Mac&nbsp;OS&nbsp;X. AppleScript in Leopard is a significant update that features <a href="unicode.html">full Unicode support</a>, an <a href="appobject.html">enhanced application object</a>, <a href="system-prefs.html">new scriptable system preferences</a>, <a href="propertylists.html">read/write property list functionality</a>, new <a href="scriptingbridge.html">Scripting Bridge frameworks</a> to enable other languages to send Apple Events, in addition to the following improvements:</p>
+		
+		<a id="1000" name="1000" title="1000"><h3>Updated Folder Action Support</h3></a>
+		<p>Enjoy greater reliability with folder actions, which are triggered by the file system instead of the Finder. Folder actions now have their own server, as each folder action now runs its own copy of the new AppleScript Runner application.</p>
+		
+		<a id="1001" name="1001" title="1001"><h3>Descriptive Error Messages</h3></a>
+		<p>As part of the dramatically improved scripting frameworks, error sensing and reporting have been updated to provide more descriptive reporting. For example, if the following script is run when the Xcode application has no open documents, an error will occur:</p>
+		
+		<p class="code"><b>tell</b> application &quot;Xcode&quot; <b>to get the</b> name <b>of the front</b> document</p>
+		
+		<p>Here's the error message displayed in versions of Mac&nbsp;OS&nbsp;X prior to Leopard:</p>
+		
+		<img src="gfx/error-before.jpg" width="420" height="131" align="top" class="across">
+		
+		<p>And here's the error message displayed in Mac&nbsp;OS&nbsp;X&nbsp; Leopard:</p>
+
+		<img src="gfx/error-after.png" width="434" height="145" align="top" class="across">
+
+		<a id="1002" name="1002" title="1002"><h3>AppleScript Language Guide</h3></a>
+		<p>Have examples and constructs of the AppleScript language at your fingertips. AppleScript Language Guide, updated for Leopard, is the essential guide for scripters and developers.</p>
+
+		<a id="1003" name="1003" title="1003"><h3>64-Bit Support</h3></a>
+		<p>From the user's perspective, AppleScript remains the same but the AppleScript under-pinnings now have built-in 64-bit support, enabling it to continue to evolve with future releases of Mac&nbsp;OS&nbsp;X.</p>
+		
+		<img src="gfx/64-Bit.png" width="64" height="57" align="top" class="across">
+
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<a href="http://macosxautomation.com/lion/index.html"><img src="http://macosxautomation.com/lion/gfx/lioncallout206x79.jpg" width="206" align="top" height="79"></a>
+		</div>
+		<div class="navbox">
+			<h2>New in Mac&nbsp;OS&nbsp;X&nbsp;10.5</h2>
+			<ol>
+				<li><a href="unicode.html">Full Unicode Support</a></li>
+				<li><a href="appobject.html">Enhanced Application Object Model</a></li>
+				<li><a href="system-prefs.html">New Scriptable System Preferences and Applications: Dock, iChat, etc.</a></li>
+				<li><a href="propertylists.html">Read/Write Property Lists</a></li>
+				<li><a href="scriptingbridge.html">Scripting Bridge for Objective-C</a></li>
+				<li class="hi">Updated Folder Action Support</li>
+				<li class="hi">Descriptive Error Messages</li>
+				<li class="hi">AppleScript Language Guide</li>
+				<li class="hi">64-Bit Support</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Release Notes</h2>
+			<p>Developer <a href="http://developer.apple.com/releasenotes/AppleScript/RN-AppleScript/index.html">release notes</a> for AppleScript in Mac&nbsp;OS&nbsp;X.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

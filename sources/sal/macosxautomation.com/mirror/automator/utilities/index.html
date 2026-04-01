@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Utilities</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Utilities for performing special functions with Automator workflows.">
+	<meta property="og:image" content="http://omni-automation.com/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+	<style>
+		a {text-decoration: none;}
+	</style>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav-active.png">
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator Utilities</p>
+			
+			<p>Here are specialized utilities for performing special actions with Automator workflow.</p>
+			
+			<p class="head" style="margin-top:72px;">Run Workflow on Volume Mount</p>
+			
+			<p>This script applet will prompt to execute a chosen Automator workflow when a new volume is mounted. By default, the full POSIX path to the newly mounted volume is passed as input to the workflow.</p>
+			
+			<p>The script uses AppleScriptObj-C to access the <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults?language=occ" target="_blank">NSUserDefaults</a> and <a href="https://developer.apple.com/documentation/foundation/nsfilemanager?language=occ" target="_blank">NSFileManager</a> classes of the <a href="https://developer.apple.com/documentation/foundation?language=objc" target="_blank">Foundation</a> frameworks, and both the <a href="https://developer.apple.com/documentation/appkit/nsworkspace?language=objc" target="_blank">NSWorkspace</a> and <a href="https://developer.apple.com/documentation/foundation/nsnotificationcenter?language=occ" target="_blank">NSNotificationCenter</a> classes of the <a href="https://developer.apple.com/documentation/appkit/core_app?language=objc" target="_blank">AppKit framework</a> to respond when a disk is connected to the computer.</p>
+			
+			<p>To setup the applet for use:</p>
+			
+			<ul>
+				<li>Save the script as an application with the &ldquo;Stay Open&rdquo; option selected, and the &ldquo;Show Startup Screen&rdquo; option deselected.</li>
+				<li><b>IMPORTANT</b>: In the script information pane, assign the applet a unique bundle identifier, (without spaces) such as: com.YourName.AppletName</li>
+				<li>Re-Save the applet.</li>
+				<li>Place the workflow to be executed in the Workflows folder in the Library folder in your Home directory.</li>
+			</ul>
+			
+			<p>To use the applet, double-click its icon, and then select the workflow file from the forthcoming file chooser dialog. To stop using the applet, bring it to the front, and select &ldquo;Quit&rdquo; from the applet’s &ldquo;File&rdquo; menu or type Command-Q (&#8984;Q).</p>
+
+			
+			<div id="run-workflow" class="script-content">use framework "Foundation"
+use framework "AppKit"
+use scripting additions
+
+property ignoredVolumes : {"home", "net", "Recovery HD"}
+
+global pathToWorkflow
+
+on run
+	-- SET VALUE OF PROPERTY TO STORED WORKFLOW PATH
+	my initializeDefaults()
+	
+	-- CHECK STATUS OF STORED WORKFLOW PATH
+	if (pathToWorkflow as text) is "" then
+		my promptForWorkflow()
+	else
+		-- DISPLAY OPENING DIALOG
+		display dialog "Workflow file: " & return & return & (pathToWorkflow as text) buttons {"Quit", "Change", "Start"} default button 3 with title (name of me)
+		set buttonPressed to the button returned of the result
+		if the buttonPressed is "Change" then
+			-- prompt for a new workflow
+			my promptForWorkflow()
+		else if buttonPressed is "Quit" then
+			tell me to quit
+		else -- check to see if workflow file exists
+			if my workflowCheck() is false then
+				display alert "MISSING RESOURCE" message "There is no workflow file at the indicated path:" & ¬
+					return & return & pathToWorkflow buttons {"Select", "Quit"} default button 2
+				if button returned of the result is "Quit" then
+					tell me to quit
+				end if
+				-- prompt for a new workflow
+				my promptForWorkflow()
+			end if
+		end if
+	end if
+	
+	-- REGISTER FOR NOTIFICATION
+	my registerToReceiveNotification()
+	
+end run
+
+on initializeDefaults()
+	-- Initialize default if needed, retrieve current value
+	tell current application's NSUserDefaults to set defaults to standardUserDefaults()
+	tell defaults to registerDefaults:{pathToWorkflow:""}
+	-- set the value of the applet property to the stored value
+	tell defaults to set pathToWorkflow to (objectForKey_("pathToWorkflow")) as text
+end initializeDefaults
+
+on workflowCheck()
+	-- check validity of stored path
+	-- create an instance of the Shared Workspace
+	set workspace to current application's NSWorkspace's sharedWorkspace()
+	-- check for existence
+	set fileExistenceStatus to (workspace's isFilePackageAtPath:pathToWorkflow)
+	-- return result
+	return fileExistenceStatus
+end workflowCheck
+
+on promptForWorkflow()
+	-- prompt user to choose a workflow file
+	try
+		activate
+		set workflowsFolderPath to checkForWorkflowsFolder()
+		if workflowsFolderPath is false then
+			set defaultLocation to (path to desktop folder)
+		else
+			set defaultLocation to workflowsFolderPath as POSIX file as alias
+		end if
+		set thisPOSIXPath to POSIX path of ¬
+			(choose file of type "com.apple.automator-workflow" with prompt ¬
+				"Select the workflow to be run when a volume is mounted:" default location defaultLocation)
+		tell current application's NSUserDefaults to set defaults to standardUserDefaults()
+		tell defaults to setObject:thisPOSIXPath forKey:"pathToWorkflow"
+		return thisPOSIXPath
+	on error
+		tell me to quit
+	end try
+end promptForWorkflow
+
+on checkForWorkflowsFolder()
+	set aFileManager to current application's class "NSFileManager"'s defaultManager()
+	set aURL to aFileManager's URLsForDirectory:(current application's NSLibraryDirectory) inDomains:(current application's NSUserDomainMask)
+	set workflowsFolderPath to (((item 1 of aURL)'s |path|()) as string) & "/Workflows"
+	if (aFileManager's fileExistsAtPath:workflowsFolderPath isDirectory:true) then
+		return workflowsFolderPath
+	else
+		return false
+	end if
+end checkForWorkflowsFolder
+
+on registerToReceiveNotification()
+	-- create an instance of the Shared Workspace
+	set workspace to current application's NSWorkspace's sharedWorkspace()
+	-- identify the Shared Workspace's notification center
+	set noteCenter to workspace's notificationCenter()
+	-- register notification handlers for dealing with volume mounting
+	noteCenter's addObserver:me selector:"volumeWasMounted:" |name|:"NSWorkspaceDidMountNotification" object:(missing value)
+end registerToReceiveNotification
+
+on volumeWasMounted:notif
+	-- CHECK FOR WORKFLOW FILE
+	if my workflowCheck() is false then
+		my promptForWorkflow()
+	end if
+	
+	-- get the path to the mounted volume
+	set mountedVolumePath to (notif's userInfo()'s NSWorkspaceVolumeURLKey's |path|())
+	-- get last path item
+	set thisVolumeName to (mountedVolumePath's lastPathComponent()) as text
+	
+	if thisVolumeName is not in ignoredVolumes then
+		-- display alert
+		tell application (POSIX path of (path to frontmost application))
+			display dialog "The volume “" & thisVolumeName & "” has been mounted on this system." & ¬
+				return & return & "Do you want to run the associated workflow?" buttons {"No", "Yes"} default button 2
+			if the button returned of the result is "No" then error number -128
+		end tell
+		
+		-- RUN WORKFLOW
+		try
+			-- execute the chosen workflow, passing path to volume as workflow input
+			do shell script "automator -i " & (quoted form of (mountedVolumePath as text)) & ¬
+				space & (quoted form of (pathToWorkflow as text))
+		on error errorMessage
+			activate
+			display alert "WORKFLOW EXECUTION ERROR" message errorMessage
+			tell me to quit
+		end try
+	end if
+end volumeWasMounted:</div>
+
+
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Run Workflow on Mount</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('run-workflow');">Copy Script</button>&nbsp;<a href="applescript://com.apple.scripteditor?action=new&name=XXXXX&script=use%20framework%20%22Foundation%22%0Duse%20framework%20%22AppKit%22%0Duse%20scripting%20additions%0D%0Dproperty%20ignoredVolumes%20%3A%20%7B%22home%22%2C%20%22net%22%2C%20%22Recovery%20HD%22%7D%0D%0Dglobal%20pathToWorkflow%0D%0Don%20run%0D%09%2D%2D%20SET%20VALUE%20OF%20PROPERTY%20TO%20STORED%20WORKFLOW%20PATH%0D%09my%20initializeDefaults%28%29%0D%09%0D%09%2D%2D%20CHECK%20STATUS%20OF%20STORED%20WORKFLOW%20PATH%0D%09if%20%28pathToWorkflow%20as%20text%29%20is%20%22%22%20then%0D%09%09my%20promptForWorkflow%28%29%0D%09else%0D%09%09%2D%2D%20DISPLAY%20OPENING%20DIALOG%0D%09%09display%20dialog%20%22Workflow%20file%3A%20%22%20%26%20return%20%26%20return%20%26%20%28pathToWorkflow%20as%20text%29%20buttons%20%7B%22Quit%22%2C%20%22Change%22%2C%20%22Start%22%7D%20default%20button%203%20with%20title%20%28name%20of%20me%29%0D%09%09set%20buttonPressed%20to%20the%20button%20returned%20of%20the%20result%0D%09%09if%20the%20buttonPressed%20is%20%22Change%22%20then%0D%09%09%09%2D%2D%20prompt%20for%20a%20new%20workflow%0D%09%09%09my%20promptForWorkflow%28%29%0D%09%09else%20if%20buttonPressed%20is%20%22Quit%22%20then%0D%09%09%09tell%20me%20to%20quit%0D%09%09else%20%2D%2D%20check%20to%20see%20if%20workflow%20file%20exists%0D%09%09%09if%20my%20workflowCheck%28%29%20is%20false%20then%0D%09%09%09%09display%20alert%20%22MISSING%20RESOURCE%22%20message%20%22There%20is%20no%20workflow%20file%20at%20the%20indicated%20path%3A%22%20%26%20%C2%AC%0D%09%09%09%09%09return%20%26%20return%20%26%20pathToWorkflow%20buttons%20%7B%22Select%22%2C%20%22Quit%22%7D%20default%20button%202%0D%09%09%09%09if%20button%20returned%20of%20the%20result%20is%20%22Quit%22%20then%0D%09%09%09%09%09tell%20me%20to%20quit%0D%09%09%09%09end%20if%0D%09%09%09%09%2D%2D%20prompt%20for%20a%20new%20workflow%0D%09%09%09%09my%20promptForWorkflow%28%29%0D%09%09%09end%20if%0D%09%09end%20if%0D%09end%20if%0D%09%0D%09%2D%2D%20REGISTER%20FOR%20NOTIFICATION%0D%09my%20registerToReceiveNotification%28%29%0D%09%0Dend%20run%0D%0Don%20initializeDefaults%28%29%0D%09%2D%2D%20Initialize%20default%20if%20needed%2C%20retrieve%20current%20value%0D%09tell%20current%20application%27s%20NSUserDefaults%20to%20set%20defaults%20to%20standardUserDefaults%28%29%0D%09tell%20defaults%20to%20registerDefaults%3A%7BpathToWorkflow%3A%22%22%7D%0D%09%2D%2D%20set%20the%20value%20of%20the%20applet%20property%20to%20the%20stored%20value%0D%09tell%20defaults%20to%20set%20pathToWorkflow%20to%20%28objectForKey%5F%28%22pathToWorkflow%22%29%29%20as%20text%0Dend%20initializeDefaults%0D%0Don%20workflowCheck%28%29%0D%09%2D%2D%20check%20validity%20of%20stored%20path%0D%09%2D%2D%20create%20an%20instance%20of%20the%20Shared%20Workspace%0D%09set%20workspace%20to%20current%20application%27s%20NSWorkspace%27s%20sharedWorkspace%28%29%0D%09%2D%2D%20check%20for%20existence%0D%09set%20fileExistenceStatus%20to%20%28workspace%27s%20isFilePackageAtPath%3ApathToWorkflow%29%0D%09%2D%2D%20return%20result%0D%09return%20fileExistenceStatus%0Dend%20workflowCheck%0D%0Don%20promptForWorkflow%28%29%0D%09%2D%2D%20prompt%20user%20to%20choose%20a%20workflow%20file%0D%09try%0D%09%09activate%0D%09%09set%20workflowsFolderPath%20to%20checkForWorkflowsFolder%28%29%0D%09%09if%20workflowsFolderPath%20is%20false%20then%0D%09%09%09set%20defaultLocation%20to%20%28path%20to%20desktop%20folder%29%0D%09%09else%0D%09%09%09set%20defaultLocation%20to%20workflowsFolderPath%20as%20POSIX%20file%20as%20alias%0D%09%09end%20if%0D%09%09set%20thisPOSIXPath%20to%20POSIX%20path%20of%20%C2%AC%0D%09%09%09%28choose%20file%20of%20type%20%22com%2Eapple%2Eautomator%2Dworkflow%22%20with%20prompt%20%C2%AC%0D%09%09%09%09%22Select%20the%20workflow%20to%20be%20run%20when%20a%20volume%20is%20mounted%3A%22%20default%20location%20defaultLocation%29%0D%09%09tell%20current%20application%27s%20NSUserDefaults%20to%20set%20defaults%20to%20standardUserDefaults%28%29%0D%09%09tell%20defaults%20to%20setObject%3AthisPOSIXPath%20forKey%3A%22pathToWorkflow%22%0D%09%09return%20thisPOSIXPath%0D%09on%20error%0D%09%09tell%20me%20to%20quit%0D%09end%20try%0Dend%20promptForWorkflow%0D%0Don%20checkForWorkflowsFolder%28%29%0D%09set%20aFileManager%20to%20current%20application%27s%20class%20%22NSFileManager%22%27s%20defaultManager%28%29%0D%09set%20aURL%20to%20aFileManager%27s%20URLsForDirectory%3A%28current%20application%27s%20NSLibraryDirectory%29%20inDomains%3A%28current%20application%27s%20NSUserDomainMask%29%0D%09set%20workflowsFolderPath%20to%20%28%28%28item%201%20of%20aURL%29%27s%20%7Cpath%7C%28%29%29%20as%20string%29%20%26%20%22%2FWorkflows%22%0D%09if%20%28aFileManager%27s%20fileExistsAtPath%3AworkflowsFolderPath%20isDirectory%3Atrue%29%20then%0D%09%09return%20workflowsFolderPath%0D%09else%0D%09%09return%20false%0D%09end%20if%0Dend%20checkForWorkflowsFolder%0D%0Don%20registerToReceiveNotification%28%29%0D%09%2D%2D%20create%20an%20instance%20of%20the%20Shared%20Workspace%0D%09set%20workspace%20to%20current%20application%27s%20NSWorkspace%27s%20sharedWorkspace%28%29%0D%09%2D%2D%20identify%20the%20Shared%20Workspace%27s%20notification%20center%0D%09set%20noteCenter%20to%20workspace%27s%20notificationCenter%28%29%0D%09%2D%2D%20register%20notification%20handlers%20for%20dealing%20with%20volume%20mounting%0D%09noteCenter%27s%20addObserver%3Ame%20selector%3A%22volumeWasMounted%3A%22%20%7Cname%7C%3A%22NSWorkspaceDidMountNotification%22%20object%3A%28missing%20value%29%0Dend%20registerToReceiveNotification%0D%0Don%20volumeWasMounted%3Anotif%0D%09%2D%2D%20CHECK%20FOR%20WORKFLOW%20FILE%0D%09if%20my%20workflowCheck%28%29%20is%20false%20then%0D%09%09my%20promptForWorkflow%28%29%0D%09end%20if%0D%09%0D%09%2D%2D%20get%20the%20path%20to%20the%20mounted%20volume%0D%09set%20mountedVolumePath%20to%20%28notif%27s%20userInfo%28%29%27s%20NSWorkspaceVolumeURLKey%27s%20%7Cpath%7C%28%29%29%0D%09%2D%2D%20get%20last%20path%20item%0D%09set%20thisVolumeName%20to%20%28mountedVolumePath%27s%20lastPathComponent%28%29%29%20as%20text%0D%09%0D%09if%20thisVolumeName%20is%20not%20in%20ignoredVolumes%20then%0D%09%09%2D%2D%20display%20alert%0D%09%09tell%20application%20%28POSIX%20path%20of%20%28path%20to%20frontmost%20application%29%29%0D%09%09%09display%20dialog%20%22The%20volume%20%E2%80%9C%22%20%26%20thisVolumeName%20%26%20%22%E2%80%9D%20has%20been%20mounted%20on%20this%20system%2E%22%20%26%20%C2%AC%0D%09%09%09%09return%20%26%20return%20%26%20%22Do%20you%20want%20to%20run%20the%20associated%20workflow%3F%22%20buttons%20%7B%22No%22%2C%20%22Yes%22%7D%20default%20button%202%0D%09%09%09if%20the%20button%20returned%20of%20the%20result%20is%20%22No%22%20then%20error%20number%20%2D128%0D%09%09end%20tell%0D%09%09%0D%09%09%2D%2D%20RUN%20WORKFLOW%0D%09%09try%0D%09%09%09%2D%2D%20execute%20the%20chosen%20workflow%2C%20passing%20path%20to%20volume%20as%20workflow%20input%0D%09%09%09do%20shell%20script%20%22automator%20%2Di%20%22%20%26%20%28quoted%20form%20of%20%28mountedVolumePath%20as%20text%29%29%20%26%20%C2%AC%0D%09%09%09%09space%20%26%20%28quoted%20form%20of%20%28pathToWorkflow%20as%20text%29%29%0D%09%09on%20error%20errorMessage%0D%09%09%09activate%0D%09%09%09display%20alert%20%22WORKFLOW%20EXECUTION%20ERROR%22%20message%20errorMessage%0D%09%09%09tell%20me%20to%20quit%0D%09%09end%20try%0D%09end%20if%0Dend%20volumeWasMounted%3A"><button style="padding:4px;">Open Script</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">use</span> <span class="classEnum">framework</span> <span class="stringEnum">&quot;Foundation&quot;</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">use</span> <span class="classEnum">framework</span> <span class="stringEnum">&quot;AppKit&quot;</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">use</span> <span class="ASenum">scripting additions</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">property</span> <span class="variableEnum">ignoredVolumes</span> : {<span class="stringEnum">&quot;home&quot;</span>, <span class="stringEnum">&quot;net&quot;</span>, <span class="stringEnum">&quot;Recovery HD&quot;</span>}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">global</span> <span class="variableEnum">pathToWorkflow</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="methodEnum">run</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- SET VALUE OF PROPERTY TO STORED WORKFLOW PATH</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">initializeDefaults</span>()</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- CHECK STATUS OF STORED WORKFLOW PATH</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">if</span> (<span class="variableEnum">pathToWorkflow</span> <span class="ASterm">as</span> <span class="classEnum">text</span>) <span class="ASterm">is</span> <span class="stringEnum">&quot;&quot;</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">promptForWorkflow</span>()</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">else</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="js-comment">-- DISPLAY OPENING DIALOG</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">display dialog</span> <span class="stringEnum">&quot;Workflow file: &quot;</span> & <span class="returnEnum">return</span> & <span class="returnEnum">return</span> & (<span class="variableEnum">pathToWorkflow</span> <span class="ASterm">as</span> <span class="classEnum">text</span>) <span class="parameterEnum">buttons</span> {<span class="stringEnum">&quot;Quit&quot;</span>, <span class="stringEnum">&quot;Change&quot;</span>, <span class="stringEnum">&quot;Start&quot;</span>} <span class="parameterEnum">default button</span> 3 <span class="parameterEnum">with title</span> (<span class="propertyEnum">name</span> <span class="ASterm">of me</span>)</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">buttonPressed</span> <span class="ASterm">to the</span> <span class="propertyEnum">button returned</span> <span class="ASterm">of the</span> <span class="resultEnum">result</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">if</span> <span class="ASterm">the</span> <span class="variableEnum">buttonPressed</span> <span class="ASterm">is</span> <span class="stringEnum">&quot;Change&quot;</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="js-comment">-- prompt for a new workflow</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">promptForWorkflow</span>()</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">else if</span> <span class="variableEnum">buttonPressed</span> <span class="ASterm">is</span> <span class="stringEnum">&quot;Quit&quot;</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ASterm">tell me to</span> <span class="methodEnum">quit</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">else</span> <span class="js-comment">-- check to see if workflow file exists</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ifEnum">if</span> <span class="ASterm">my</span> <span class="functionNameEnum">workflowCheck</span>() <span class="ASterm">is</span> <span class="boolEnum">false</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">display alert</span> <span class="stringEnum">&quot;MISSING RESOURCE&quot;</span> <span class="parameterEnum">message</span> <span class="stringEnum">&quot;There is no workflow file at the indicated path:&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="returnEnum">return</span> & <span class="returnEnum">return</span> & <span class="variableEnum">pathToWorkflow</span> <span class="parameterEnum">buttons</span> {<span class="stringEnum">&quot;Select&quot;</span>, <span class="stringEnum">&quot;Quit&quot;</span>} <span class="parameterEnum">default button</span> 2</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="ifEnum">if</span> <span class="propertyEnum">button returned</span> <span class="ASterm">of the</span> <span class="resultEnum">result</span> <span class="ASterm">is</span> <span class="stringEnum">&quot;Quit&quot;</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:100px;">&nbsp;</span><span class="ASterm">tell me to</span> <span class="methodEnum">quit</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="js-comment">-- prompt for a new workflow</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">promptForWorkflow</span>()</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- REGISTER FOR NOTIFICATION</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">registerToReceiveNotification</span>()</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="methodEnum">run</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">initializeDefaults</span>()</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- Initialize default if needed, retrieve current value</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ASterm">tell</span> <span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults?language=occ" target="_blank"><span class="classEnum">NSUserDefaults</span></a> <span class="ASterm">to</span> <span class="methodEnum">set</span> <span class="variableEnum">defaults</span> <span class="ASterm">to</span> <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults/1416603-standarduserdefaults?language=objc" target="_blank"><span class="propertyEnum">standardUserDefaults</span></a>()</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ASterm">tell</span> <span class="variableEnum">defaults</span> <span class="ASterm">to</span> <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults/1417065-registerdefaults?language=objc" target="_blank"><span class="methodEnum">registerDefaults</span></a>:{<span class="keyEnum">pathToWorkflow</span>:<span class="valueEnum">&quot;&quot;</span>}</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- set the value of the applet property to the stored value</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ASterm">tell</span> <span class="variableEnum">defaults</span> <span class="ASterm">to</span> <span class="methodEnum">set</span> <span class="variableEnum">pathToWorkflow</span> to (<span class="methodEnum">objectForKey_</span>(<span class="keyEnum">&quot;pathToWorkflow&quot;</span>)) <span class="ASterm">as</span> <span class="classEnum">text</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">initializeDefaults</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">workflowCheck</span>()</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- check validity of stored path</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- create an instance of the Shared Workspace</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">workspace</span> <span class="ASterm">to</span> <span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace?language=objc" target="_blank"><span class="classEnum">NSWorkspace</span></a>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace/1530344-sharedworkspace?language=objc" target="_blank"><span class="propertyEnum">sharedWorkspace</span></a>()</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- check for existence</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">fileExistenceStatus</span> <span class="ASterm">to</span> (<span class="variableEnum">workspace</span>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace/1529991-isfilepackageatpath?language=objc" target="_blank"><span class="methodEnum">isFilePackageAtPath</span></a>:<span class="variableEnum">pathToWorkflow</span>)</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- return result</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="returnEnum">return</span> <span class="variableEnum">fileExistenceStatus</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">workflowCheck</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">promptForWorkflow</span>()</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- prompt user to choose a workflow file</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">try</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">activate</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">workflowsFolderPath</span> <span class="ASterm">to</span> <span class="functionNameEnum">checkForWorkflowsFolder</span>()</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">if</span> <span class="variableEnum">workflowsFolderPath</span> <span class="ASterm">is</span> <span class="boolEnum">false</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">defaultLocation</span> <span class="ASterm">to</span> (<span class="methodEnum">path to</span> <span class="ASenum">desktop folder</span>)</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">else</span></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">defaultLocation</span> <span class="ASterm">to</span> <span class="variableEnum">workflowsFolderPath</span> <span class="ASterm">as</span> <span class="classEnum">POSIX file</span> <span class="ASterm">as</span> <span class="classEnum">alias</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisPOSIXPath</span> <span class="ASterm">to</span> <span class="propertyEnum">POSIX path</span> <span class="ASterm">of</span> ¬</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>(<span class="methodEnum">choose file</span> <span class="parameterEnum">of type</span> <span class="stringEnum">&quot;com.apple.automator-workflow&quot;</span> <span class="parameterEnum">with prompt</span> ¬</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="stringEnum">&quot;Select the workflow to be run when a volume is mounted:&quot;</span> <span class="parameterEnum">default location</span> <span class="variableEnum">defaultLocation</span>)</td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">tell</span> <span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults?language=occ" target="_blank"><span class="classEnum">NSUserDefaults</span></a> <span class="ASterm">to</span> <span class="methodEnum">set</span> <span class="variableEnum">defaults</span> <span class="ASterm">to</span> <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults/1416603-standarduserdefaults?language=objc" target="_blank"><span class="propertyEnum">standardUserDefaults</span></a>()</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">tell</span> <span class="variableEnum">defaults</span> <span class="ASterm">to</span> <span class="methodEnum">setObject</span>:<span class="variableEnum">thisPOSIXPath</span> <span class="methodEnum">forKey</span>:<span class="stringEnum">&quot;pathToWorkflow&quot;</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="returnEnum">return</span> <span class="variableEnum">thisPOSIXPath</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">on error</span></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">tell me to</span> <span class="methodEnum">quit</span></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="tryEnum">end try</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">promptForWorkflow</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">checkForWorkflowsFolder</span>()</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aFileManager</span> to <span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsfilemanager?language=occ" target="_blank"><span class="classEnum">NSFileManager</span></a>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsfilemanager/1409234-defaultmanager?language=objc" target="_blank"><span class="propertyEnum">defaultManager</span></a>()</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">aURL</span> <span class="ASterm">to</span> <span class="variableEnum">aFileManager</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsfilemanager/1407726-urlsfordirectory?language=objc" target="_blank"><span class="methodEnum">URLsForDirectory</span></a>:(<span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nssearchpathdirectory/nslibrarydirectory?language=occ" target="_blank"><span class="ASenum">NSLibraryDirectory</span></a>) <a href="https://developer.apple.com/documentation/foundation/nsfilemanager/1407726-urlsfordirectory?language=objc" target="_blank"><span class="methodEnum">inDomains</span></a>:(<span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nssearchpathdomainmask/nsuserdomainmask?language=occ" target="_blank"><span class="ASenum">NSUserDomainMask</span></a>)</td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">workflowsFolderPath</span> <span class="ASterm">to</span> (((<span class="classEnum">item</span> 1 <span class="ASterm">of</span> <span class="variableEnum">aURL</span>)&#39;s |<span class="propertyEnum">path</span>|()) <span class="ASterm">as</span> <span class="classEnum">string</span>) & <span class="stringEnum">&quot;/Workflows&quot;</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">if</span> (<span class="variableEnum">aFileManager</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsfilemanager/1415645-fileexistsatpath?language=occ" target="_blank"><span class="methodEnum">fileExistsAtPath</span></a>:<span class="variableEnum">workflowsFolderPath</span> <a href="https://developer.apple.com/documentation/foundation/nsfilemanager/1415645-fileexistsatpath?language=occ" target="_blank"><span class="methodEnum">isDirectory</span></a>:<span class="boolEnum">true</span>) <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="returnEnum">return</span> <span class="variableEnum">workflowsFolderPath</span></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">else</span></td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="returnEnum">return</span> <span class="boolEnum">false</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">checkForWorkflowsFolder</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">registerToReceiveNotification</span>()</td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- create an instance of the Shared Workspace</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">workspace</span> <span class="ASterm">to</span> <span class="ASenum">current application</span>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace?language=objc" target="_blank"><span class="classEnum">NSWorkspace</span></a>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace/1530344-sharedworkspace?language=objc" target="_blank"><span class="propertyEnum">sharedWorkspace</span></a>()</td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- identify the Shared Workspace&#39;s notification center</span></td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">noteCenter</span> to <span class="variableEnum">workspace</span>&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspace/1525071-notificationcenter?language=objc" target="_blank"><span class="propertyEnum">notificationCenter</span></a>()</td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- register notification handlers for dealing with volume mounting</span></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="variableEnum">noteCenter</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsnotificationcenter/1415360-addobserver?language=objc" target="_blank"><span class="methodEnum">addObserver</span></a>:<span class="ASterm">me</span> <a href="https://developer.apple.com/documentation/foundation/nsnotificationcenter/1415360-addobserver?language=objc" target="_blank"><span class="methodEnum">selector</span></a>:<span class="stringEnum">&quot;volumeWasMounted:&quot;</span> <a href="https://developer.apple.com/documentation/foundation/nsnotificationcenter/1415360-addobserver?language=objc" target="_blank"><span class="methodEnum">|name|</span></a>:<a href="https://developer.apple.com/documentation/appkit/nsworkspacedidmountnotification?language=objc" target="_blank"><span class="stringEnum">&quot;NSWorkspaceDidMountNotification&quot;</span></a> <a href="https://developer.apple.com/documentation/foundation/nsnotificationcenter/1415360-addobserver?language=objc" target="_blank"><span class="methodEnum">object</span></a>:(<span class="ASenum">missing value</span>)</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">registerToReceiveNotification</span></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">on</span> <span class="functionNameEnum">volumeWasMounted</span>:<span class="functionParamterEnum">notif</span></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- CHECK FOR WORKFLOW FILE</span></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">if</span> <span class="ASterm">my</span> <span class="functionNameEnum">workflowCheck</span>() is <span class="boolEnum">false</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">my</span> <span class="functionNameEnum">promptForWorkflow</span>()</td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- get the path to the mounted volume</span></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">mountedVolumePath</span> <span class="ASterm">to</span> (<span class="functionParamterEnum">notif</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsnotification/1409222-userinfo?language=objc" target="_blank"><span class="propertyEnum">userInfo</span></a>()&#39;s <a href="https://developer.apple.com/documentation/appkit/nsworkspacevolumeurlkey?language=occ" target="_blank"><span class="propertyEnum">NSWorkspaceVolumeURLKey</span></a>&#39;s |<span class="propertyEnum">path</span>|())</td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="js-comment">-- get last path item</span></td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisVolumeName</span> <span class="ASterm">to</span> (<span class="variableEnum">mountedVolumePath</span>&#39;s <a href="https://developer.apple.com/documentation/foundation/nsurl/1417444-lastpathcomponent?language=objc" target="_blank"><span class="propertyEnum">lastPathComponent</span></a>()) <span class="ASterm">as</span> <span class="classEnum">text</span></td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">if</span> <span class="variableEnum">thisVolumeName</span> <span class="ASterm">is not in</span> <span class="variableEnum">ignoredVolumes</span> <span class="ifEnum">then</span></td></tr>
+				<tr><td class="line-count">114</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="js-comment">-- display alert</span></td></tr>
+				<tr><td class="line-count">115</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">tell</span> <span class="classEnum">application</span> (<span class="propertyEnum">POSIX path</span> <span class="ASterm">of</span> (<span class="methodEnum">path to</span> <span class="ASenum">frontmost application</span>))</td></tr>
+				<tr><td class="line-count">116</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">display dialog</span> <span class="stringEnum">&quot;The volume “&quot;</span> & <span class="variableEnum">thisVolumeName</span> & <span class="stringEnum">&quot;” has been mounted on this system.&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">117</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="returnEnum">return</span> & <span class="returnEnum">return</span> & <span class="stringEnum">&quot;Do you want to run the associated workflow?&quot;</span> <span class="parameterEnum">buttons</span> {<span class="stringEnum">&quot;No&quot;</span>, <span class="stringEnum">&quot;Yes&quot;</span>} <span class="parameterEnum">default button</span> 2</td></tr>
+				<tr><td class="line-count">118</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ifEnum">if</span> <span class="ASterm">the</span> <span class="propertyEnum">button returned</span> <span class="ASterm">of the</span> <span class="resultEnum">result</span> <span class="ASterm">is</span> <span class="stringEnum">&quot;No&quot;</span> <span class="ifEnum">then</span> <span class="methodEnum">error</span> <span class="parameterEnum">number</span> -128</td></tr>
+				<tr><td class="line-count">119</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="ASterm">end tell</span></td></tr>
+				<tr><td class="line-count">120</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">121</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="js-comment">-- RUN WORKFLOW</span></td></tr>
+				<tr><td class="line-count">122</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">try</span></td></tr>
+				<tr><td class="line-count">123</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="js-comment">-- execute the chosen workflow, passing path to volume as workflow input</span></td></tr>
+				<tr><td class="line-count">124</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">do shell script</span> <span class="stringEnum">&quot;automator -i &quot;</span> & (<span class="propertyEnum">quoted form</span> <span class="ASterm">of</span> (<span class="variableEnum">mountedVolumePath</span> <span class="ASterm">as</span> <span class="classEnum">text</span>)) & ¬</td></tr>
+				<tr><td class="line-count">125</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="ASenum">space</span> & (<span class="propertyEnum">quoted form</span> <span class="ASterm">of</span> (<span class="variableEnum">pathToWorkflow</span> <span class="ASterm">as</span> <span class="classEnum">text</span>))</td></tr>
+				<tr><td class="line-count">126</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">on error</span> <span class="variableEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">127</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">activate</span></td></tr>
+				<tr><td class="line-count">128</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">display alert</span> <span class="stringEnum">&quot;WORKFLOW EXECUTION ERROR&quot;</span> <span class="parameterEnum">message</span> <span class="variableEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">129</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="ASterm">tell me to</span> <span class="methodEnum">quit</span></td></tr>
+				<tr><td class="line-count">130</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">end try</span></td></tr>
+				<tr><td class="line-count">131</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="ifEnum">end if</span></td></tr>
+				<tr><td class="line-count">132</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="ASterm">end</span> <span class="functionNameEnum">volumeWasMounted</span>:</td></tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">The Automator Workflow</p>
+			
+			<p><a href="workflow-on-mount-files.zip">DOWNLOAD</a> the example disk image and Automator workflow</p>
+
+			<p>Here is a simple example workflow that opens the mounted volume and customizes the display of the disk’s Finder window.</p>
+			
+			<p><b>NOTE</b>: The POSIX path passed as input to the workflow is automatically converted by Automator into a file reference type supported by the first action.</p>
+			
+			<img width="100%" alt="disk-setup-workflow" src="gfx/disk-setup-workflow.png">
+			
+			<p>The resulting Finder window:</p>
+			
+			<img width="100%" alt="disk-folder-after" src="gfx/disk-folder-after.png">		
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <!-- <p class="active-sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Image Capture Plugins</a></p> -->
+			  <p class="active-sub-topic">Utilities</p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

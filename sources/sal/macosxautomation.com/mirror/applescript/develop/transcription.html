@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Application Development</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac&nbsp;OS&nbsp;X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac&nbsp;OS&nbsp;X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="index.html">Develop</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+
+		<h1>Developing AppleScript Applications</h1>
+		
+		<p class="intro">The following is a transcription of the introductory movie, demonstrating how to use outlets and actions to connect the interfaces of AppleScript-Cocoa applications:</p>
+		
+
+			<p>Welcome to an overview, on connecting the interfaces of AppleScript-Cocoa applications, to their corresponding function code.</p>
+			
+			<p>Specifically, you&rsquo;ll learn how to connect, the interface of this example AppleScript-Cocoa application to this AppleScript script, that is included with the example project.</p>
+			
+			<p>The example application, is a simple utility, for converting user-provided values, between three units of temperature: Fahrenheit, Celsius, and Kelvin.</p>
+			
+			<p>The conversion is performed, when the user enters a numeric value in the input field, and presses the return key.</p>
+			
+			<p>The conversion is also triggered, whenever a new unit type, is selected from the pop up menu.</p>
+			
+			<p>The function code for the example application, is an AppleScript script object, containing a series of script properties, that will represent the various visual interface elements, and a script handler, triggered by actions in the interface, to perform a conversion between the three temperature systems.</p>
+			
+			<p>The various interface elements, will be connected to the script object, using standard Cocoa programming constructs, called: outlets, and actions.</p>
+			
+			<p>In Xcode, double-click the main menu nib, in the Groups and Files list.</p>
+			
+			<p>And the application's visual interface, will be opened in the Interface Builder application.</p>
+			
+			<p>The interface project window, contains the various components that make up the application, including a controller for the script object in the Xcode project.</p>
+			
+			<p>This controller, is used to connect the various script elements, to the application's interface.</p>
+			
+			<p>To begin the process of connecting the script to the interface, hold down the control key, and click the script controller object, to open its connections palette.</p>
+			
+			<p>The connections palette, displays the names of all of the properties contained in the project script, as outlets, and the names of all of the handlers contained in the project script, as actions. The connections palette is used to connect script properties and handlers, to their corresponding interface elements in the application window.</p>
+			
+			<p>Interface builder outlets, are a means of connecting an application interface element, to the code that controls or supports it. In AppleScript-based Cocoa applications, interface elements are commonly connected to script properties.</p>
+			
+			<p>Once connected, the script property is used as a reference to its connected interface element.</p>
+			
+			<p>To connect a script property to an interface element, click and hold on the link button, located to the right of the script property's name, and then drag the connection wire to the corresponding interface element: in the application interface. Once the cursor is over the interface element, the element will be highlighted, and a label describing its class type, will be displayed. Release the mouse, and an outlet connection will be made between the script property and interface element, and be displayed on the connections palette.</p>
+			
+			<p>The connection link is a visual representation, of the relationship between the script property, and the interface element. Should you want to cancel this pairing, press the small ex to the left of the class name.</p>
+			
+			<p>Continue the process of assigning outlets to the interface elements, by connecting the remaining items in the outlet list, to their corresponding interface elements.</p>
+			
+			<p>Linking interface elements, that act as action triggers, to their script function code, is a process, similar to connecting outlets to script properties.</p>
+			
+			<p>To connect a script handler to its corresponding interface trigger, click and hold on the link button, located to the right of the handler's name, and then drag the connection wire, to the corresponding interface element. Release the mouse, and an action connection will be made between the script handler and interface element, and displayed on the connections palette.</p>
+			
+			<p>To connect a script handler to a second interface trigger, drag its connection wire, to the second interface element. Release the mouse, and an action connection will be made between the script handler and the second interface element, and be displayed on the connections palette.</p>
+			
+			<p>With all of the connections made, the interface project can now be saved. Close the connections palette, and select the Save option, from the File menu.</p>
+			
+			<p>And return to the open Xcode project.</p>
+			
+			<p>A script object, is a section of AppleScript code, placed within an AppleScript script file.</p>
+			
+			<p>It begins with the term &ldquo;script,&rdquo; immediately followed by the name of the script object, and closes with the terms: end script.</p>
+			
+			<p>A script object, can contain, any: or all, of the standard AppleScript elements, such as properties, and handlers.</p>
+			
+			<p>Script properties: used as outlets for interface elements, are written in the same manner, as standard script properties.</p>
+			
+			<p>The property declaration begins with the term &ldquo;property&rdquo; followed by the variable, that will contain the value of the property.</p>
+			
+			<p>Properties used as outlets, can have names that include underscore characters, or be named, using inner-capped terms.</p>
+			
+			<p>As with standard property declarations, the property variable is delimited from its default value, by a colon.</p>
+			
+			<p>Which is followed: by the enumeration of &ldquo;missing value.&rdquo;</p>
+			
+			<p>All outlet properties, use this enumeration as their initial value, which is automatically replaced, with a cocoa reference to an interface object, once the script is executed.</p>
+			
+			<p>In AppleScript-Cocoa, script handlers, can be triggered by user interaction, with the application interface.</p>
+			
+			<p>To adapt a script handler to be an interface action, begin the handler with the term &ldquo;on,&rdquo; followed by the name of the handler.</p>
+			
+			<p>When script handlers are used as actions, their names should not contain any underscore characters. And instead, should rely on inner-capped characters to delineate terms.</p>
+			
+			<p>The name of the handler, is then followed by a single underscore character, which indicates, the handler&rsquo;s status, as an interface action.</p>
+			
+			<p>The script handler is then closed, with a pair of parentheses, placed around the term &ldquo;sender.&rdquo; Sender is a variable, and will contain a Cocoa object reference, to the interface element, that triggered the execution of the handler.</p>
+			
+			<p>Prior to the release of Mac&nbsp;OS&nbsp;X v10.6 the various elements of an application&rsquo;s interface, were considered to be AppleScript objects, and were managed using standard AppleScript methods.</p>
+			
+			<p>However, starting in Mac&nbsp;OS&nbsp;X v10.6 interface elements: are now Cocoa objects, and are managed using standard Cocoa methods, called from within AppleScript scripts. Let&rsquo;s examine the differences between the two designs.</p>
+			
+			<p>In AppleScript Studio, the individual interface elements, were assigned unique names, as a way of identifying them in their controlling scripts. These names were then used to create object references, which were stored in AppleScript variables, when the scripts were run.</p>
+			
+			<p>The stored object references, could then be used, to get or set, the value of the object&rsquo;s properties.</p>
+			
+			<p>In AppleScript-Cocoa applications, object references to interface elements, are automatically generated, when interface elements are linked to their corresponding script properties.</p>
+			
+			<p>The values of a property of a cocoa object, are retrieved or set, by calling standard cocoa methods, from within the AppleScript script.</p>
+			
+			<p>In other words, in Mac&nbsp;OS&nbsp;X point five, application interface elements, were treated as AppleScript objects, whose property values were retrieved or set, using standard Applescript methods.</p>
+			
+			<p>In Mac&nbsp;OS&nbsp;X v10.6, this behavior changed, and application interface elements are now treated as cocoa objects, whose property values are retrieved or set, using standard Cocoa methods, called from within the AppleScript script.</p>
+			
+			<p>Although different in their syntax, the two implementations perform essentially the same functions.</p>
+			
+			<p>The same distinctions apply to changing the value of an interface object&rsquo;s properties.</p>
+			
+			<p>In AppleScript Studio, the syntax for changing the value of a property, is to tell, the AppleScript object, to set, [[slnc 500]] its property to a new value.</p>
+			
+			<p>In AppleScript-Cocoa, the syntax for changing the value of a property, is to tell, the cocoa object, to execute a cocoa method, using the new value as the function parameter.</p>
+			
+			<p>Even though they are based on different architectures, the two methods, result in the same actions being performed.</p>
+			
+			<p>To complete the process of creating the application, click the Build and Run button, in the Xcode window toolbar.</p>
+			
+			<p>And the temperature converter application will launch.</p>
+			
+			<p>This concludes an overview, on connecting the interfaces, of AppleScript-Cocoa applications.</p>
+			
+			<p>To learn more about AppleScript, or any of the Mac&nbsp;OS&nbsp;X automation technologies, visit: www.macosxautomation.com. Thank you!</p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">INTRO VIDEO</h2>
+			<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);"><img src="gfx/asoc-movie-clip.jpg" width="206" align="top" class="across"></a>
+			<p>A video overview of how to connect application interfaces to their corresponding function code using Interface Builder outlets and actions.<br>(<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001.html', 'viewer-window-ASOC-001',644,380);">watch</a>)&nbsp;(<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);">watch HD</a>)</p>
+			<p><a href="pkg/TemperatureConverterApp.zip">Download</a> the example application</p>
+			<p><a href="pkg/TemperatureConverterProject-Outlets.zip">Download</a> the example Xcode Project</p>
+			<p><font color="#FF0000">REQUIRES Mac&nbsp;OS&nbsp;X v10.6</font></p>
+		</div>
+		<div class="box">
+			<h2>DISCLAIMER</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

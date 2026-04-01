@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Property Lists</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html" class="hi">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Read/Write Property Lists</h2>
+		<p>Prior to Mac OS X v10.5, property lists could only be read using the related suites in the System Events application. In Leopard, property list files can be created and edited. Here's a script example of how to create and populate a property list file:</p>
+		
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22System%20Events%22%0D%09%2D%2D%20create%20an%20empty%20property%20list%20dictionary%20item%0D%09set%20the%20parent_dictionary%20to%20make%20new%20property%20list%20item%20with%20properties%20%7Bkind%3Arecord%7D%0D%09%2D%2D%20create%20new%20property%20list%20file%20using%20the%20empty%20dictionary%20list%20item%20as%20contents%0D%09set%20the%20plistfile_path%20to%20%22%7E%2FDesktop%2Fexample%2Eplist%22%0D%09set%20this_plistfile%20to%20make%20new%20property%20list%20file%20with%20properties%20%7Bcontents%3Aparent_dictionary%2C%20name%3Aplistfile_path%7D%0D%09%2D%2D%20add%20new%20property%20list%20items%20of%20each%20of%20the%20supported%20types%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Aboolean%2C%20name%3A%22booleanKey%22%2C%20value%3Atrue%7D%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Adate%2C%20name%3A%22dateKey%22%2C%20value%3Acurrent%20date%7D%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Alist%2C%20name%3A%22listKey%22%7D%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Anumber%2C%20name%3A%22numberKey%22%2C%20value%3A5%7D%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Arecord%2C%20name%3A%22recordKey%22%7D%0D%09make%20new%20property%20list%20item%20at%20end%20of%20property%20list%20items%20of%20contents%20of%20this_plistfile%20with%20properties%20%7Bkind%3Astring%2C%20name%3A%22stringKey%22%2C%20value%3A%22string%20value%22%7D%0Dend%20tell"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">An example script demonstrating how to create an new property list file:<br>&nbsp;<br><br></span><b>tell</b> application &quot;System Events&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create an empty property list dictionary item</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">parent_dictionary</span> <b>to</b> make new <b>property</b> list item <b>with</b> properties {kind:record}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create new property list file using the empty dictionary list item as contents</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">plistfile_path</span> to &quot;~/Desktop/example.plist&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">this_plistfile</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>make new <b>property</b> list file <b>with</b> properties {contents:<span class="codevariable">parent_dictionary</span>, name:<span class="codevariable">plistfile_path</span>}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- add new property list items of each of the supported types</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:boolean, name:&quot;booleanKey&quot;, value:true}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:date, name:&quot;dateKey&quot;, value:current date}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:list, name:&quot;listKey&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:number, name:&quot;numberKey&quot;, value:5}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:record, name:&quot;recordKey&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span>make new <b>property</b> list item at <b>end of property</b> list items <b>of</b> contents <b>of</b> <span class="codevariable">this_plistfile</span> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>with</b> properties {kind:string, name:&quot;stringKey&quot;, value:&quot;string value&quot;}<BR>
+		<b>end tell</b></p>
+		
+		<p>The resulting XML of the newly created property list will look something like this:</p>
+		
+		<p class="dictionary">&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br>
+		&lt;!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;<br>
+		&lt;plist version="1.0"&gt;<br>
+		<span class="dictionary-indent-01">&lt;dict&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;key&gt;booleanKey&lt;/key&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;true/&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;key&gt;dateKey&lt;/key&gt;<br></span>
+			<span class="dictionary-indent-02">&lt;date&gt;2007-08-07T22:09:04Z&lt;/date&gt;<br></span>
+			<span class="dictionary-indent-02">&lt;key&gt;listKey&lt;/key&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;array/&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;key&gt;numberKey&lt;/key&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;integer&gt;5&lt;/integer&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;key&gt;recordKey&lt;/key&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;dict/&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;key&gt;stringKey&lt;/key&gt;</span><br>
+			<span class="dictionary-indent-02">&lt;string&gt;string value&lt;/string&gt;</span><br>
+		<span class="dictionary-indent-01">&lt;/dict&gt;</span><br>
+		&lt;/plist&gt;</p>
+
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>New in Mac&nbsp;OS&nbsp;X&nbsp;10.5</h2>
+			<ol>
+				<li><a href="unicode.html">Full Unicode Support</a></li>
+				<li><a href="appobject.html">Enhanced Application Object Model</a></li>
+				<li><a href="system-prefs.html">New Scriptable System Preferences and Applications: Dock, iChat, etc.</a></li>
+				<li class="hi">Read/Write Property Lists</li>
+				<li><a href="scriptingbridge.html">Scripting Bridge for Objective</a>-C</li>
+				<li><a href="features.html#1000">Updated Folder Action Support</a></li>
+				<li><a href="features.html#1001">Descriptive Error Messages</a></li>
+				<li><a href="features.html#1002">AppleScript Language Guide</a></li>
+				<li><a href="features.html#1003">64-Bit Support</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Release Notes</h2>
+			<p>Developer <a href="http://developer.apple.com/releasenotes/AppleScript/RN-AppleScript/index.html">release notes</a> for AppleScript in Mac&nbsp;OS&nbsp;X.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

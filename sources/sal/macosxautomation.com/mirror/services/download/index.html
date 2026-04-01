@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: Services Downloads</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="../../../automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+<!-- START TAB LIST STYLE -->
+	<style type="text/css">
+	
+		#tablist{
+		padding: 3px 0;
+		margin-left: 0;
+		margin-bottom: 0;
+		margin-top: 0.1em;
+		font: bold 12px Verdana;
+		border-bottom: 1px solid gray;
+		}
+		
+		#tablist li{
+		list-style: none;
+		display: inline;
+		margin: 0;
+		}
+		
+		#tablist li a
+		{
+			text-decoration: none;
+			padding: 3px 0.5em;
+			margin-right: 3px;
+			border: 1px solid #778;
+			border-bottom: none;
+			background-color: #CCC;
+		}
+		
+		#tablist li a:link, #tablist li a:visited{
+		color: navy;
+		}
+		
+		#tablist li a:hover
+		{
+			color: black;
+			border-color: navy;
+			background-color: #9CC;
+		}
+		
+		#tablist li a.current { background-color: white; }
+	
+	</style>
+<!-- END TAB LIST STYLE -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/services-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Services</a></td>
+			<td><a href="../learn/index.html">Learn</a></td>
+			<td class="middle" width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page">&#149;</a></td>
+			<td><a href="#" class="hi">Download</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<ul id="tablist" style="margin-bottom: 1em;">
+			<li><a class="current" href="#">DOWNLOAD SERVICES</a></li>
+			<li><a href="actions.html">DOWNLOAD ACTIONS</a></li>
+		</ul>
+		
+		<p class="note">These services and Automator actions are provided as free examples of the design and use of Mac&nbsp;OS&nbsp;X automation technologies. All service workflows are fully editable and can be customized as need requires.<br><br><b>ALL EXAMPLE WORKFLOWS AND ACTIONS REQUIRE THE INSTALLATION OF MAC OS X v10.6</b> and may require an adminstrator password for installation.</p>
+				
+		<p><b>COLLECTIONS</b>: <a href="#AppleScriptServices">AppleScript Services</a>, <a href="#AudioServices">Audio Services</a>, <a href="#FacebookServices">Facebook Services</a>, <a href="#FinderServices">Finder Services</a>, <a href="#ImageServices">Image Services</a>, <a href="#InternetServices">Internet Services</a>, <a href="#iPhotoServices">iPhoto Services</a>, <a href="#MailServices">Mail Services</a>, <a href="#MediaPickerServices">Media Picker Services</a>, <a href="#MovieServices">Movie Services</a>, <a href="#NavigationServices">Navigation Services</a>, <a href="#NumbersServices">Numbers Services</a>, <a href="#PDFServices">PDF Services</a>, <a href="#SafariServices">Safari Services</a>, <a href="#UNIXServices">UNIX Services</a></p>
+
+		<table class="service-chart" border="1" width="640" cellspacing="0" cellpadding="4" align="center">
+			<tr bgcolor="#330066">
+				<td><font color="#FFFFFF">NAME &amp; DESCRIPTION</font></td>
+				<td width="72" align="center"><font color="#FFFFFF">CONTEXT</font></td>
+				<td width="72" align="center"><font color="#FFFFFF">SELECTION</font></td>
+				<td width="24" align="center"><font color="#FFFFFF">V</font></td>
+				<td width="72" align="center"><font color="#FFFFFF">DOWNLOAD</font></td>
+			</tr>
+			
+			<!-- NAVIGATION SERVICES -->
+			<tr bgcolor="#CCFFCC">
+				<td align="left" colspan="3" ><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="NavigationServices">&nbsp;&nbsp;NAVIGATION SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.4</td>
+				<td width="72" align="center"><a href="pkg/FolderLauncherServiceInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Go to Folder...</b> &mdash; Displays a list of system-designated folders. Type the first couple of letters of the desired folder, such as L-I-B for the Library folder and then use the up- or down-arrow keys to select either the System, Local, or User Library folder in the list. Once the desired folder destination is selected, hit the Return key to close the dialog and have the folder opened automatically in the Desktop.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-104.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-104HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			
+			<!-- APPLESCRIPT SERVICES -->
+			<tr bgcolor="#FFFFCC">
+				<td align="left" colspan="3" ><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="AppleScriptServices">&nbsp;&nbsp;APPLESCRIPT SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/AppleScriptServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>AScrEd &bull; Open with AppleScript Editor</b> &mdash; Opens application files, selected in the Finder, using the AppleScript Editor application. Selected AppleScript applets and droplets will be opened for editing, while selected application files will have their scripting dictionaries opened.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Application<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>AScrEd &bull; Open Dictionary of Frontmost Application</b> &mdash; Will open the scripting dictionary for the application that is in the front when the service is invoked.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>AScrEd &bull; New Script for Frontmost Application</b> &mdash; Will create a new script document, in the AppleScript Editor application, containing a tell block targeting the application that is in the front when the service is invoked.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>AScrEd &bull; Open Application Scripting Dictionary</b> &mdash; Will open the dictionary for the application whose name or ID is selected in the script document.</td>
+				<td width="72" align="center">AppleScript<br>Editor</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- UNIX SERVICES -->
+			<tr bgcolor="#FFCC99">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="UNIXServices">&nbsp;&nbsp;UNIX SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/UNIXServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Terminal &bull; Get Manual for Command</b> &mdash; Once the user provides a command in the prompt dialog, the corresponding man page for the provided command will be opened in TextEdit.</td>
+				<td width="72" align="center">Terminal</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>UNIX &bull; Apply Command to Selected Items</b> &mdash; Enter the command, in the prompt dialog, to apply to the selected FInder items, and the command will be executed with administrator privileges.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Disk<br>Items</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Terminal &bull; Insert Current Finder Directory</b> &mdash; A POSIX path to the current Finder insertion location will be appended to the selected Terminal window text.</td>
+				<td width="72" align="center">Terminal</td>
+				<td width="72" align="center">Appends<br>Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Terminal &bull; Insert Selected Finder Items</b> &mdash; POSIX paths to the selected Finder items will be appended to the selected Terminal window text.</td>
+				<td width="72" align="center">Terminal</td>
+				<td width="72" align="center">Appends<br>Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>UNIX &bull; New Terminal Window to Insertion Location</b> &mdash; Open a new Terminal window targeting (cd) the current Finder location.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Launch Terminal</b> &mdash; Launch the Terminal application.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- FINDER SERVICES -->
+			<tr bgcolor="#FFCCFF">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="FinderServices">&nbsp;&nbsp;FINDER SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/FinderServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>Disk Item &bull; New Disk Image with Selection</b> &mdash; Creates a new disk image file (.dmg) containing the selected Finder items.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Disk<br>Items</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>Disk Item &bull; Rename Selected Items</b> &mdash; Provide renaming options for the selected Finder items, including: Add Date or Time; Add Text; Change Case; Make Names Sequential; Replace Text; and Name Single Item.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Disk<br>Items</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>Disk Item &bull; Set Spotlight Comments</b> &mdash; Prompts for text to replace or append to the Spotlight comments of the selected Finder items.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Disk<br>Items</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- AUDIO SERVICES -->
+			<tr bgcolor="#CCFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="AudioServices">&nbsp;&nbsp;AUDIO SERVICES&nbsp;&nbsp;</span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/AudioServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Audio &bull; Encode to iTunes Format</b> &mdash; Encodes selected audio files to MPEG (ACC) format. Supported data types for the source files include: AIFF (.aif), Sound Designer II (.sd2), and WAVE (.wav). The service contains options for placing the resulting files in the same folder as their original source files, and for deleting the source files upon completion of the encoding. (installs the <b>Encode to iTunes Audio Format</b> action)</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Audio<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- IPHOTO SERVICES -->
+			<tr bgcolor="#FFFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="iPhotoServices">&nbsp;&nbsp;IPHOTO SERVICES*&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/iPhotoServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Image &bull; Import Into iPhoto</b> &mdash; Imports image files, selected in the Finder, into iPhoto.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>iChat &bull; Add Snapshot to iPhoto</b> &mdash; Will take a snapshot of the active video iChat window and import the resulting JPEG image into iPhoto.</td>
+				<td width="72" align="center">iChat</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>iPhoto &bull; Send Selected Photos with Narration</b> &mdash; Creates a new outgoing message in Mail containing scaled versions of the selected iPhoto images, along with a compressed audio recording of you.</td>
+				<td width="72" align="center">iPhoto</td>
+				<td width="72" align="center">Selected<br>Photos</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>iPhoto &bull; Send Photo to Everyone in the Picture</b> &mdash; Creates a new outgoing message in Mail, containing the selected iPhoto images, addressed to the people in the selected images.  (Requires complete Face detection information for each person be present in iPhoto)</td>
+				<td width="72" align="center">iPhoto</td>
+				<td width="72" align="center">Selected<br>Photos</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('macbreak-236.html','viewer-window-macbreak-236','width=974,height=720');">watch<br>podcast</a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>iPhoto &bull; Show Me Where They Live</b> &mdash; Opens a Google map for each of the detected people in the selected iPhoto images. Scope:  (Requires complete Face detection information for each person be present in iPhoto, along with matching entries for each detected person in Address Book)</td>
+				<td width="72" align="center">iPhoto</td>
+				<td width="72" align="center">Selected<br>Photos</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>iPhoto &bull; Spotlight Search for Detected People</b> &mdash; Creates a Finder Smart Search folder for each of the people detected in the selected iPhoto images. (Requires complete Face detection information for each person be present in iPhoto)</td>
+				<td width="72" align="center">iPhoto</td>
+				<td width="72" align="center">Selected<br>Photos</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- IMAGE SERVICES -->
+			<tr bgcolor="#CCFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="ImageServices">&nbsp;&nbsp;IMAGE SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/ImageServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Add Metadata to JPEGs</b> &mdash; This service will write IPTC tag values into the JPEG image files selected in the Finder. If no tag value is provided, any existing tag value will be replaced with an empty value. The supported IPTC tags are: Title, Credit, Copyright, Keywords, and Caption.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>JPEG<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-103.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-103HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Rotate Clockwise</b> &mdash; This service will rotate the selected image files 90 degrees clockwise.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-102.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-102HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Rotate Counter-Clockwise</b> &mdash; This service will rotate the selected image files 90 degrees counter-clockwise.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Import into iPhoto</b> &mdash; This service will import the selected images into iPhoto.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Print Image Files</b> &mdash; This service displays a print setup dialog with options for setting print count, orientation, and target printer, for printing the selected image files.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Change File Type</b> &mdash; This service will replace the selected image files with versions in the chosen file type.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-105.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-105HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			
+			<!-- MEDIA PICKER SERVICES -->
+			<tr bgcolor="#FFCC99">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="MediaPickerServices">&nbsp;&nbsp;MEDIA PICKER SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/MediaPickerServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Browse Photo Library</b> &mdash; Displays the searchable iLife media picker dialog showing the contents of your installed iPhoto and Aperture libraries. You can drag any image from the dialog to create a duplicate of the original photo.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Browse Movie Library</b> &mdash; Displays a searchable media picker dialog showing the movie files located within the Movies folder. Clicking the Choose button will reveal the selected movie files in the Finder.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Browse iTunes Library</b> &mdash; Displays the searchable iLife media picker dialog showing the contents of your installed iTunes libraries. You can drag any item from the dialog to create a duplicate of the original file. Clicking the Choose button will reveal the selected item in iTunes.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- PDF SERVICES -->
+			<tr bgcolor="#FFCCFF">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="PDFServices">&nbsp;&nbsp;PDF SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/PDFServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>PDF &bull; Encrypt File</b> &mdash; This service will create an encrypted duplicate of the PDF files, selected in the Finder, using a single password provided by the user. The encrypted duplicates will be placed in the same directory as their source files, and will be named the same as their source file with “(encrypted)” appended to the end of their names.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>PDF<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-101.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-101HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>PDF &bull; Set Metadata</b> &mdash; This service will presents a window for entering PDF file information for the selected PDF files, including: Title, Author, Subject, Content Creator, and Keywords.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>PDF<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- MOVIE SERVICES -->
+			<tr bgcolor="#FFFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="MovieServices">&nbsp;&nbsp;MOVIE SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.1</td>
+				<td width="72" align="center"><a href="pkg/MovieServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Movie &bull; Apply Color Profile</b> &mdash; Applies a ColorSync profile into the selected movie files. Options are for SD, HD, and PAL profiles.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Movie<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Browse Movie Library</b> &mdash; Displays the system-wide media picker dialog for choosing movies. To make duplicates, drag selected movies from the dialog to the active document or desktop.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Movie &bull; Play Selection in Sequence</b> &mdash; Opens and plays the selected movies, in sequence, in the QuickTime Player.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Movie<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Movie &bull; Show Info</b> &mdash; Displays a dialog containing pertinent media information for each of the selected movie files. In sequence, each file is selected and its data displayed in the dialog, which contains buttons for advancing to the next or previous file.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Movie<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Movie &bull; Encode Media</b> &mdash; Encodes the selected movie files to formats for AppleTV, iPod/iPhone, audio-only, computer, or mobile. Progress is indicated by the spinning gear in the main menu bar.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Movie<br>Files</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- INTERNET SERVICES -->
+			<tr bgcolor="#CCFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="InternetServices">&nbsp;&nbsp;INTERNET SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/InternetServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>URL &bull; Open URLs in Safari Tabs</b> &mdash; This service will open the URLs, found in the selected text, each in its own tab in a new Safari browser window. (installs the <b>Get URLs from Text</b> action)</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">Selected<br>Text<br>Containing<br>URL</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>MobileMe &bull; Download Image from My Gallery</b> &mdash; This service will present a floating window displaying your MobileMe gallery page. Browse the images, and select one to retrieve. Click the OK button on the window and the currently showing image will be downloaded and opened in Preview. NOTE: requires that the MobileMe gallery have download permissions enabled. (installs the <b>Website Popup</b> action)</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-107.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-107HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>MobileMe &bull; Download Image from Other Gallery</b> &mdash; This service will present a floating window displaying the MobileMe gallery page of a user whose account name you provide. Browse the images, and select one to retrieve. Click the OK button on the window and the currently showing image will be downloaded and opened in Preview. NOTE: requires that the MobileMe gallery have download permissions enabled.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('macbreak-237.html','viewer-window-macbreak-237','width=974,height=720');">watch<br>podcast</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Internet &bull; Lookup in Wikipedia</b> &mdash; This service uses the text selected in the host application as the search term for the the iPhone version of the Wikipedia website. The results of the search are displayed in a floating HUD window. You can drag text and images from the HUD into any document. In addition, any text selected in the HUD will replace the current selection in the host application document.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('macbreak-237.html','viewer-window-macbreak-237','width=974,height=720');">watch<br>podcast</a></td>
+			</tr>
+			
+			<!-- MAIL SERVICES -->
+			<tr bgcolor="#FFCC99">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="MailServices">&nbsp;&nbsp;MAIL SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/MailServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>eMail &bull; New Mail Message with All Addresses</b> &mdash; This service will create a new outgoing message in Mail, addressed to all of the detected email addresses. (installs the <b>Get URLs from Text</b> action)</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">Selected<br>Text<br>Containing<br>Email<br>Addresses</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-100.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-100HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Mail &bull; New Message with Video Snapshot</b> &mdash; This service will take a video snapshot using the built-in iSIght camera in your computer, and add the photo to a new outgoing message in Mail. For a stylized look, apply a stationery template to the new message and you&rsquo;re ready to go!</td>
+				<td width="72" align="center">Mail</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFCC99">
+				<td><b>Mail &bull; New Audio Message</b> &mdash; Using the built-in microphone of your computer, this service creates and compresses an audio recording of you and attaches it to a new outgoing Mail message.</td>
+				<td width="72" align="center">Mail</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- NUMBERS SERVICES -->
+			<tr bgcolor="#FFCCFF">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="NumbersServices">&nbsp;&nbsp;NUMBERS SERVICES*&nbsp;&nbsp;<a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/NumbersServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFCCFF">
+				<td><b>Numbers &bull; New Attendance Table for AB Group</b> &mdash; This service will prompt the user to choose an Address Book group, and then create an attendance table for the current month using the people in the group.</td>
+				<td width="72" align="center">Numbers</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-106.html','viewer-window-small','width=644,height=380');">watch</a><br><a href="javascript:window.open('service-106HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			
+			
+			<!-- SAFARI SERVICES -->
+			<tr bgcolor="#FFFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="SafariServices">&nbsp;&nbsp;SAFARI SERVICES&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.3</td>
+				<td width="72" align="center"><a href="pkg/SafariServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Add to Web Clips</b> &mdash; A great tool for doing online research. This action will write the text, selected in the Safari browser, to a log file in your Documents folder. Other data added with the clipping includes: date stamp, URL of the current webpage, title of the webpage, and user-added comments. In addition, there is an option to open the log file after writing the text.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Currency Converter</b> &mdash; The selected numeric value in Safari will be entered in the Calculator application and the currency conversion sheet activated. Requires support for assistive devices be enabled in the Universal Access preference pane.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Search in YouTube</b> &mdash; This service will open a new browser window displaying an RSS feed of YouTube videos whose tags match the text selected in Safari. Click a feed link to view the related video in YouTube.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-108HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>New Event for Selected Date</b> &mdash; This service will create a new event in iCal for the selected date, and incorporate the current Safari page title as the event summary, and the current Safari URL as the event URL.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Create Formatted Link for Front Document</b> &mdash; This service will create a link, in Rich Text Format, to the URL of the front browser window, and place the results on the clipboard. </td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Open<br>Document</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Pages Pie Chart from 2-Column Selection</b> &mdash; This service will create a new pie chart, on the current page in Pages, using the selected text in Safari as the source data. The text selection must contain two tab-delimited columns of data: the first column is the titles; the second column the corresponding numeric data.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-111HD.html','viewer-window-large','width=1284,height=740');">watch HD</a><br><a href="mda/CaliforniaBudget.webarchive.zip">demo file</a></td>
+			</tr>
+			<tr bgcolor="#FFFFCC">
+				<td><b>Keynote Pie Chart from 2-Column Selection</b> &mdash; This service will create a new pie chart, on the current slide in Keynote, using the selected text in Safari as the source data. The text selection must contain two tab-delimited columns of data: the first column is the titles; the second column the corresponding numeric data.</td>
+				<td width="72" align="center">Safari</td>
+				<td width="72" align="center">Selected<br>Text</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			
+			<!-- FACEBOOK SERVICES -->
+<!-- 
+			<tr bgcolor="#CCFFCC">
+				<td colspan="3" align="left"><span style="font-size: medium;font-weight: bold;background-color: #fff;"><a id="FacebookServices">&nbsp;&nbsp;FACEBOOK SERVICES <b><font color="#FF0000">[BETA]</font></b>&nbsp;&nbsp;</a></span></td>
+				<td width="24" align="center">1.0</td>
+				<td width="72" align="center"><a href="pkg/FacebookServicesInstaller.zip"><img src="gfx/ToolbarDownloadsFolderIcon36x36.png" width="36" height="36" align="top"></a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Image &bull; Upload to Facebook</b> &mdash; This service will upload the selected image files to a Facebook account. If no album name is provided in the input dialog, the default album is used. If the provided album does not exist, it will be created. In addition, caption data for a posted image can be either: the image file name; the embedded IPTC title value; the embedded IPTC caption value; or text input by the user.</td>
+				<td width="72" align="center">Finder</td>
+				<td width="72" align="center">Selected<br>Image<br>File(s)</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Capture Selection to Facebook</b> &mdash; This service will prompt for you to select an area of the screen to capture to file and then upload the image to a Facebook account.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Capture Window to Facebook</b> &mdash; This service will prompt for you to select a window to capture to file and then upload the image to a Facebook account.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-110HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Capture Screen to Facebook</b> &mdash; This service will capture the screen, after a 5-second delay, to file and then upload the image to a Facebook account. </td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">N/A</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Facebook &bull; Share Selected URL</b> &mdash; This service will post the selected URL to a Facebook account.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">Selected<br>Text<br>Containing<br>URL</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center"><a href="javascript:window.open('service-109HD.html','viewer-window-large','width=1284,height=740');">watch HD</a></td>
+			</tr>
+			<tr bgcolor="#CCFFCC">
+				<td><b>Facebook &bull; Share Link on Clipboard</b> &mdash; This service will post a URL copied on the clipboard, to a Facebook account.</td>
+				<td width="72" align="center">ALL</td>
+				<td width="72" align="center">Clipboard<br>Containing<br>URL</td>
+				<td width="24" align="center">&nbsp;</td>
+				<td width="72" align="center">&nbsp;</td>
+			</tr>
+ -->
+
+		</table>
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<a href="http://macosxautomation.com/lion/index.html"><img src="http://macosxautomation.com/lion/gfx/lioncallout206x79.jpg" width="206" align="top" height="79"></a>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">INTRO TO SERVICES VIDEO</h2>
+			<a href="javascript:window.open('../video/services-001HD.html','viewer-window-large','width=1284,height=740');"><img src="gfx/servicevid.jpg" width="206" height="115" align="top" class="across"></a>
+			<p>A video overview of what Services is, its features, and how it works.<br>(<a href="javascript:window.open('../video/services-001.html','viewer-window-small','width=644,height=380');">watch</a>)&nbsp;(<a href="javascript:window.open('../video/services-001HD.html','viewer-window-large','width=1284,height=740');">watch HD</a>)</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">MACBREAK VIDEO PODCAST</h2>
+			<a href="javascript:window.open('macbreak-235.html','viewer-window-macbreak-235','width=974,height=720');"><img src="gfx/macbreak.jpg" width="206" align="top" class="across"></a>
+			<p>A hands-on overview of what Services is, its features, and how it works. <a href="javascript:window.open('macbreak-235.html','viewer-window-macbreak-235','width=974,height=720');">WATCH</a></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">EDITING SERVICES</h2>
+			<p>All of the service workflows on this page are fully editable, and can be opened in Automator. By default, they are installed in the Services folder located at: Home &gt; Library &gt; Services.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">ENABLE-DISABLE SERVICES</h2>
+			<p>Services can be turned off and on in the Keyboard Shortcuts tab of the Keyboard system preference pane (<a href="../gfx/preferences.png" rel="lightbox[frontpage]" title="You can enable-disable services and assign them keyboard shortcuts.">view</a>).</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">CREATING SERVICES</h2>
+			<p>Customized services can be easily created using the new version of Automator in Snow Leopard. (<a href="../learn/index.html">see how</a>)</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">KEYBOARD SHORTCUTS</h2>
+			<p>Each service can have a keyboard shortcut assigned to it. To see how it is done: <a href="javascript:void(0);" onclick="PopupCenter('../video/service-keyboard-shortcuts.html', 'viewer-window-service-keyboard-shortcuts',644,380);">watch</a>, <a href="javascript:void(0);" onclick="PopupCenter('../video/service-keyboard-shortcuts-HD.html', 'viewer-window-service-keyboard-shortcuts-HD',1284,740);">watch HD</a></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">SERVICES MENU ITEM UTILITY</h2>
+			<p>By default, only five service menu items will be displayed on a contextual menu before they are moved to a Services sub-menu on the contextual menu. <a href="pkg/menuutility.zip">Download</a> a <a href="gfx/preferenceutility.png" rel="lightbox[downloads]" title="The Services Contextual Menu Item Utility can be used to adjust the default number of service menu items displayed on the main contextual menu.">utility</a> for changing the default number of service menu items displayed to up to 25 per menu.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">FREE VIDEO LOOPS</h2>
+			<p>Hi-resolution (1280 x 720) video clips featuring some of the services available on this page. Each clip is titled and ends with a site reference. They can be <a href="javascript:void(0);" onclick="PopupCenter('http://public.me.com/macosxautomation', 'viewer-window-idisk',800,600);">downloaded</a> and presented as a group for informational display.</p>
+			
+			<ul>
+				<li><a href="javascript:window.open('service-promo-01.html','viewer-window-large','width=1284,height=740');">Services Promo</a></li>
+				<li><a href="javascript:window.open('service-100PR.html','viewer-window-large','width=1284,height=740');">Message with Selected Addresses</a></li>
+				<li><a href="javascript:window.open('service-105PR.html','viewer-window-large','width=1284,height=740');">Change Image File Type</a></li>
+				<li><a href="javascript:window.open('service-106PR.html','viewer-window-large','width=1284,height=740');">New Attendance Table</a></li>
+				<li><a href="javascript:window.open('service-107PR.html','viewer-window-large','width=1284,height=740');">Download MobileMe Image</a></li>
+				<li><a href="javascript:window.open('service-101PR.html','viewer-window-large','width=1284,height=740');">Encrypt PDF File</a></li>
+				<li><a href="javascript:window.open('service-108PR.html','viewer-window-large','width=1284,height=740');">Search in YouTube</a></li>
+				<li><a href="javascript:window.open('service-109PR.html','viewer-window-large','width=1284,height=740');">Share Selected URL to Facebook</a></li>
+				<li><a href="javascript:window.open('service-110PR.html','viewer-window-large','width=1284,height=740');">Capture Window to Facebook</a></li>
+			</ul>
+			
+			<a href="javascript:void(0);" onclick="PopupCenter('http://public.me.com/macosxautomation', 'viewer-window-idisk',800,600);"><img src="gfx/iDisk64x64.png" width="36" height="36" class="left"></a>
+			
+			<p><a href="javascript:void(0);" onclick="PopupCenter('http://public.me.com/macosxautomation', 'viewer-window-idisk',800,600);">Download</a> the movie files from the Public folder on our iDisk. They&rsquo;re in the Services &gt; Demo Videos folder.</p>
+
+		</div>
+		<div class="box">
+			<a href="http://www.macosxautomation.com/training/video/index.html" target="_blank"><h2 style="background-color: #555;">MORE VIDEOS</h2></a>
+			<p>Collections of <a href="http://www.macosxautomation.com/training/video/index.html" target="_blank">videos</a> from Apple, MacBreak, MacBreak Dev, and PeachPit Press.</p>
+		</div>
+		<div class="navbox">
+			<h2>* ABOUT iLife &amp; iWork</h2>
+			<p style="color:white;">None of the applications in Apple's iLife or iWork suites provide integrated Services support. This means that although it is possible to create services that work with some of the applications in those suites, the services will not be displayed on any of the applications' contextual menus, and will only be available from the Services Menu in each application's Application menu.</p>
+		</div>
+		<div class="navbox">
+			<h2>* ABOUT APPLE PRO APPS</h2>
+			<p style="color:white;">None of the Apple Pro Apps, including the Final Cut Suite or Aperture, provide integrated Services support. This means that although it is possible to create services that work with some of the applications in those suites, the services will not be displayed on any of the applications' contextual menus, and will only be available from the Services Menu in each application's Application menu.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">DISCLAIMER</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+ 	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,34 @@
+site:
+  slug: iworkautomation
+  domain: iworkautomation.com
+  owner: Sal Soghoian
+  role: Keynote, Numbers, and Pages automation
+  status: captured
+capture:
+  first_planned_at: '2026-04-01'
+  captured_at: '2026-04-01T13:05:53Z'
+  method: merlib-mirror wrapper:live
+  mirrored_by: merlib-mirror
+  mirror_root: sources/sal/iworkautomation.com/mirror
+  asset_root: sources/sal/iworkautomation.com/assets
+origin:
+  home: http://iworkautomation.com/
+content:
+  priorities:
+  - Inline AppleScript examples and Open in Script Editor snippets
+  - Automation Utilities section
+  - Keynote, Numbers, and Pages teaching material
+  expected_formats:
+  - html
+  - scpt
+  - txt
+  - images
+extraction:
+  scripts_target: scripts/sal/iworkautomation
+  notes_target: analysis/sal/page-notes
+  concept_target: analysis/sal/concept-notes
+  status: mirrored
+  asset_count: 285
+licensing:
+  status: unknown
+  notes: Preserve page attribution and source URLs for all extracted examples.

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: New Presentation from Image Files</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for themes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Presentation from Image Files</div>
+		
+			<p>A very important aspect of automation is its ability to perform a defined series of actions in repetition. For example, say you want to create a &ldquo;kiosk-style&rdquo; Keynote presentation that displays photos and captions based upon a collection of image files, each embedded with metadata such as their author and description.</p>
+			
+			<p>To create such a presentation would be very labor-intensive, as you would need to:</p>
+			
+			<ul>
+				<li>Create a new presentation layout, designing it to display the image one one side and the caption on the other side.</li>
+				
+				<li>Extract the metadata for each image by either viewing the Finder information window for the file (see sidebar) and copying its displayed metadata, or opening the image file in an image editor application, and then viewing and copying the file info record for the image.</li>
+				
+				<li>Create a slide for each image, importing the image and metadata for that image.</li>
+			
+			</ul>
+			
+			<p>A very detailed process indeed, and one that&rsquo;s ideal for automating.</p>
+			
+			<img class="centered" width="624" alt="finished-slide" src="gfx/finished-slide.png">
+			<p class="imagecaption" style="margin-top:-8px;"><span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> A widescreen presentation slide with the image centered in a 4x3 pane on the left, and the text from its embedded description tag displayed vertically on the right.</p>
+			
+			<p>The following example script demonstrates the power of automation as it builds a <b>Keynote</b> document from a group of image files, as it generates a slide for each image file, scaling and positioning each photo next to the caption extracted from its embedded metadata tags.</p>
+			
+			<p>Follow these steps:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="tropicalfishimages.zip" style="font-weight:bold;">DOWNLOAD</a> and unpack the ZIP archive containing the example images. Place the folder containing the images in your Pictures folder.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the script below in the <b>AppleScript Editor</b> application, and then save and run the script.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the forthcoming file chooser dialog, navigate to and select the demo image files.</p>
+						
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the next dialog, enter the title for the presentation <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+			
+			<img class="centered" width="534" alt="title-slide" src="gfx/title-slide.png" height="275">
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Then, enter the sub-title for the presentation <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+			
+			<img class="centered" width="534" alt="subtitle-slide" src="gfx/subtitle-slide.png" height="275">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>And finally, choose the type size to be used for the caption text <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+			
+			<img class="centered" width="534" alt="type-size" src="gfx/type-size.png" height="234">
+			
+			<p>The presentation will be created and automatically begin playing. Watch the demo creation and playback: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<!-- <img class="centered" width="624" alt="opening-slide" src="gfx/opening-slide.png"> -->
+			
+<!-- 
+			<video id="sampleMovie" width="624" height="360" preload controls>
+				<source src="demopresentation.m4v" />
+			</video>
+ -->
+ 
+			<video id="sampleMovie" width="624" height="390" preload controls>
+				<source src="demo-movie-720.mov" />
+			</video>
+			
+			<table class="script-table" style="margin-top:24px;">
+				<tr><td colspan="3" class="script-title">Image File 16x9 Prezo with Left 4x3 Display and Caption Right</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Image%20File%2016x9%20Prezo%20with%20Left%204x3 Display%20and%20Caption%20Right&&script=--%20STATIC%20PROPERTIES%0Dproperty%20documentWidth%20%3A%201920%0Dproperty%20documentHeight%20%3A%201080%0Dproperty%20fourByThreeAspectWidth%20%3A%20(documentHeight%20*%204)%20%2F%203%0Dproperty%20bufferThickness%20%3A%2024%0D%0D--%20USER%20ADJUSTABLE%20PROPERTIES%0Dproperty%20captionTypeface%20%3A%20%22Helvetica%22%0Dproperty%20captionTypeSize%20%3A%2036%0Dproperty%20captionTypeColor%20%3A%20%7B65535%2C%2065535%2C%2065535%7D%0D%0Dproperty%20defaultTransitionDuration%20%3A%202.0%0Dproperty%20defaultTransitionDelay%20%3A%206.0%0Dproperty%20defaultAutomaticTransition%20%3A%20true%0D%0Dproperty%20placeholderText%20%3A%20%22Praesent%20commodo%20cursus%20magna%2C%20vel%20scelerisque%20nisl%20consectetur%20et.%20Donec%20ullamcorper%20nulla%20non%20metus%20auctor%20fringilla.%20Etiam%20porta%20sem%20malesuada%20magna%20mollis%20euismod.%20Nulla%20vitae%20elit%20libero%2C%20a%20pharetra%20augue.%20Vestibulum%20id%20ligula%20porta%20felis%20euismod%20semper.%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09--%20PROMPT%20USER%20TO%20SELECT%20ONE%20OR%20MORE%20IMAGES%0D%09set%20theseImageFiles%20to%20%C2%AC%0D%09%09(choose%20file%20of%20type%20%22public.image%22%20with%20prompt%20%C2%AC%0D%09%09%09%22Choose%20the%20images%20to%20import%3A%22%20default%20location%20%C2%AC%0D%09%09%09(path%20to%20pictures%20folder)%20with%20multiple%20selections%20allowed)%0D%09%0D%09--%20PROMPT%20USER%20FOR%20TITLE%20OF%20THE%20PRESENTATION%0D%09repeat%0D%09%09display%20dialog%20%22Enter%20the%20title%20for%20the%20presentation%3A%22%20default%20answer%20%22%22%0D%09%09set%20the%20presentationTitle%20to%20the%20text%20returned%20of%20the%20result%0D%09%09if%20presentationTitle%20is%20not%20%22%22%20then%20exit%20repeat%0D%09end%20repeat%0D%09%0D%09--%20PROMPT%20USER%20FOR%20SUB-TITLE%20OF%20THE%20PRESENTATION%0D%09repeat%0D%09%09display%20dialog%20%22Enter%20the%20subtitle%20for%20the%20presentation%3A%22%20default%20answer%20%22%22%0D%09%09set%20the%20presentationSubtitle%20to%20the%20text%20returned%20of%20the%20result%0D%09%09if%20presentationSubtitle%20is%20not%20%22%22%20then%20exit%20repeat%0D%09end%20repeat%0D%09%0D%09--%20PROMPT%20USER%20FOR%20TEXT%20SIZE%20OF%20THE%20PRESENTATION%0D%09display%20dialog%20%22Choose%20the%20caption%20type%20size%3A%22%20buttons%20%7B%2224%22%2C%20%2236%22%2C%20%2248%22%7D%20default%20button%202%0D%09set%20the%20chosenCaptionTypeSize%20to%20(the%20button%20returned%20of%20the%20result)%20as%20integer%0D%09%0D%09--%20CREATE%20THE%20DOCUMENT%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3AdocumentWidth%2C%20height%3AdocumentHeight%7D%0D%09%0D%09tell%20thisDocument%0D%09%09--%20IDENTIFY%20THE%20MASTER%20SLIDES%20THAT%20WILL%20BE%20USED%0D%09%09set%20masterSlideForImage%20to%20master%20slide%20%22Blank%22%0D%09%09set%20masterSlideForTitle%20to%20master%20slide%20%22Title%20%26%20Subtitle%22%0D%09%09%0D%09%09--%20SET%20THE%20PLAYBACK%20PROPERTIES%0D%09%09set%20auto%20loop%20to%20true%0D%09%09%0D%09%09--%20SET%20THE%20PROPERTIES%20OF%20THE%20TITLE%20SLIDE%0D%09%09tell%20slide%201%0D%09%09%09set%20base%20slide%20to%20masterSlideForTitle%0D%09%09%09set%20object%20text%20of%20default%20title%20item%20to%20presentationTitle%0D%09%09%09set%20object%20text%20of%20default%20body%20item%20to%20presentationSubtitle%0D%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%7Btransition%20effect%3Adoorway%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20duration%3AdefaultTransitionDuration%20%C2%AC%0D%09%09%09%09%09%2C%20transition%20delay%3AdefaultTransitionDelay%20%C2%AC%0D%09%09%09%09%09%2C%20automatic%20transition%3AdefaultAutomaticTransition%7D%0D%09%09end%20tell%0D%09%09%0D%09%09--%20ADD%20A%20SLIDE%20FOR%20EACH%20IMAGE%20FILE%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20theseImageFiles%0D%09%09%09set%20thisImageFile%20to%20item%20i%20of%20theseImageFiles%0D%09%09%09%0D%09%09%09--%20EXtrACT%20THE%20EMBEDDED%20IPTC%20CAPTION%20(IF%20ANY)%0D%09%09%09set%20thisImageCaption%20to%20my%20extractkMDItemDescription(thisImageFile)%0D%09%09%09if%20thisImageCaption%20is%20%22%22%20then%20set%20thisImageCaption%20to%20placeholderText%0D%09%09%09set%20the%20authorString%20to%20my%20extractkMDItemAuthors(thisImageFile%2C%20true)%0D%09%09%09if%20authorString%20is%20not%20%22%22%20then%0D%09%09%09%09set%20sidebarText%20to%20%C2%AC%0D%09%09%09%09%09thisImageCaption%20%26%20return%20%26%20return%20%26%20%22Credit%3A%20%22%20%26%20authorString%0D%09%09%09else%0D%09%09%09%09set%20sidebarText%20to%20thisImageCaption%0D%09%09%09end%20if%0D%09%09%09%0D%09%09%09--%20CREATE%20A%20NEW%20SLIDE%0D%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%7Bbase%20slide%3AmasterSlideForImage%7D%0D%09%09%09tell%20thisSlide%0D%09%09%09%09--%20ADD%20THE%20IMAGE%20FILE%0D%09%09%09%09set%20thisImage%20to%20make%20new%20image%20with%20properties%20%7Bfile%3AthisImageFile%7D%0D%09%09%09%09tell%20thisImage%0D%09%09%09%09%09--%20SCALE%20HEIGHT%20TO%20SLIDE%20HEIGHT%0D%09%09%09%09%09set%20height%20to%20documentHeight%0D%09%09%09%09%09--%20GET%20THE%20SCALED%20WIDTH%0D%09%09%09%09%09set%20thisWidth%20to%20width%0D%09%09%09%09%09--%20ADJUST%20THE%20HORIZ-OFFSET%20TO%20CENTER%20IMAGE%20IN%20THE%204x3%20LEFTSIDE%20DISPLAY%0D%09%09%09%09%09if%20thisWidth%20is%20greater%20than%20fourByThreeAspectWidth%20then%0D%09%09%09%09%09%09set%20horizontalValue%20to%20((thisWidth%20-%20fourByThreeAspectWidth)%20div%202)%20*%20-1%0D%09%09%09%09%09%09set%20position%20to%20%7BhorizontalValue%2C%200%7D%0D%09%09%09%09%09else%0D%09%09%09%09%09%09set%20position%20to%20%7B0%2C%200%7D%0D%09%09%09%09%09end%20if%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09--%20ADD%20THE%20CAPTION%20BACKGOUND%20SHAPE%20WHICH%20WILL%20OVERLAY%20THE%20IMAGE%20IF%20NEEDED%09%09%09%09%0D%09%09%09%09set%20the%20captionBackground%20to%20make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bwidth%3AdocumentWidth%20-%20fourByThreeAspectWidth%20%C2%AC%0D%09%09%09%09%09%09%2C%20height%3AdocumentHeight%20%C2%AC%0D%09%09%09%09%09%09%2C%20position%3A%7BfourByThreeAspectWidth%2C%200%7D%7D%0D%09%09%09%09%0D%09%09%09%09--%20CREATE%20THE%20CAPTION%20TEXT%20ITEM%0D%09%09%09%09set%20itemWidth%20to%20%C2%AC%0D%09%09%09%09%09documentWidth%20-%20fourByThreeAspectWidth%20-%20bufferThickness%20-%20bufferThickness%0D%09%09%09%09set%20captionTextItem%20to%20%C2%AC%0D%09%09%09%09%09make%20new%20text%20item%20with%20properties%20%C2%AC%0D%09%09%09%09%09%09%7Bwidth%3AitemWidth%2C%20object%20text%3AsidebarText%7D%0D%09%09%09%09%0D%09%09%09%09tell%20captionTextItem%0D%09%09%09%09%09--%20FORMAT%20THE%20CAPTION%20TEXT%0D%09%09%09%09%09tell%20object%20text%0D%09%09%09%09%09%09set%20font%20to%20captionTypeface%0D%09%09%09%09%09%09set%20size%20to%20chosenCaptionTypeSize%0D%09%09%09%09%09%09set%20color%20of%20it%20to%20captionTypeColor%0D%09%09%09%09%09end%20tell%0D%09%09%09%09%09--%20MOVE%20THE%20CAPTION%20TEXT%20ITEM%20TO%20THE%20TOP%20RIGHT%20OF%20SLIDE%20(USE%20BUFFER%20OFFSET)%0D%09%09%09%09%09set%20position%20to%20%7BfourByThreeAspectWidth%20%2B%20bufferThickness%2C%20bufferThickness%7D%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09--%20APPLY%20SLIDE%20TRANSISTION%0D%09%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%09%7Btransition%20effect%3Adissolve%20%C2%AC%0D%09%09%09%09%09%09%2C%20transition%20duration%3AdefaultTransitionDuration%20%C2%AC%0D%09%09%09%09%09%09%2C%20transition%20delay%3AdefaultTransitionDelay%20%C2%AC%0D%09%09%09%09%09%09%2C%20automatic%20transition%3AdefaultAutomaticTransition%7D%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0D%09%0D%09--%20START%20PLAYING%20THE%20PRESENTATION%20FROM%20THE%20BEGINNING%0D%09start%20thisDocument%20from%20slide%201%20of%20thisDocument%0Dend%20tell%0D%0Don%20extractkMDItemDescription(thisImageFile)%0D%09try%0D%09%09set%20thisImagePOSIXPath%20to%20the%20POSIX%20path%20of%20thisImageFile%0D%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09do%20shell%20script%20%22mdls%20-name%20kMDItemDescription%20%22%20%26%20%C2%AC%0D%09%09%09%09(quoted%20form%20of%20thisImagePOSIXPath)%0D%09%09if%20embeddedDescription%20is%20%22kMDItemDescription%20%3D%20(null)%22%20then%0D%09%09%09set%20embeddedDescription%20to%20%22%22%0D%09%09else%0D%09%09%09set%20the%20embeddedDescription%20to%20%C2%AC%0D%09%09%09%09(text%20from%20((length%20of%20%22kMDItemDescription%20%3D%20%5C%22%22)%20%2B%201)%20to%20%C2%AC%0D%09%09%09%09%09-2%20of%20embeddedDescription)%0D%09%09end%20if%0D%09%09return%20embeddedDescription%0D%09on%20error%0D%09%09return%20%22%22%0D%09end%20try%0Dend%20extractkMDItemDescription%0D%0Don%20extractkMDItemAuthors(thisImageFile%2C%20returnAsString)%0D%09try%0D%09%09set%20thisImagePOSIXPath%20to%20the%20POSIX%20path%20of%20thisImageFile%0D%09%09set%20the%20embeddedAuthorsList%20to%20%C2%AC%0D%09%09%09do%20shell%20script%20%22mdls%20-name%20kMDItemAuthors%20%22%20%26%20%C2%AC%0D%09%09%09%09(quoted%20form%20of%20thisImagePOSIXPath)%0D%09%09if%20embeddedAuthorsList%20is%20%22kMDItemAuthors%20%3D%20(null)%22%20then%0D%09%09%09if%20returnAsString%20is%20true%20then%0D%09%09%09%09return%20%22%22%0D%09%09%09else%0D%09%09%09%09return%20%7B%7D%0D%09%09%09end%20if%0D%09%09else%0D%09%09%09set%20the%20authorList%20to%20%C2%AC%0D%09%09%09%09(text%20from%20((length%20of%20%22kMDItemAuthors%20%3D%20%5C%22%22)%20%2B%202)%20%C2%AC%0D%09%09%09%09%09to%20-3%20of%20embeddedAuthorsList)%0D%09%09%09set%20the%20authorList%20to%20every%20paragraph%20of%20authorList%0D%09%09%09set%20cleanedList%20to%20%7B%7D%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20authorList%0D%09%09%09%09set%20thisAuthor%20to%20item%20i%20of%20authorList%0D%09%09%09%09set%20x%20to%20the%20offset%20of%20%22%5C%22%22%20in%20thisAuthor%0D%09%09%09%09if%20x%20is%20not%200%20then%0D%09%09%09%09%09set%20thisAuthor%20to%20text%20from%20(x%20%2B%201)%20to%20-1%20of%20thisAuthor%0D%09%09%09%09end%20if%0D%09%09%09%09if%20thisAuthor%20ends%20with%20%22%5C%22%22%20then%20%C2%AC%0D%09%09%09%09%09set%20thisAuthor%20to%20text%201%20thru%20-2%20of%20thisAuthor%0D%09%09%09%09set%20the%20end%20of%20cleanedList%20to%20thisAuthor%0D%09%09%09end%20repeat%0D%09%09%09if%20returnAsString%20is%20true%20then%0D%09%09%09%09set%20the%20authorCount%20to%20the%20count%20of%20cleanedList%0D%09%09%09%09if%20authorCount%20is%201%20then%20return%20(cleanedList%20as%20string)%0D%09%09%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%2C%20%22%0D%09%09%09%09set%20the%20authorString%20to%20cleanedList%20as%20string%0D%09%09%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09%09else%0D%09%09%09%09return%20cleanedList%0D%09%09%09end%20if%0D%09%09end%20if%0D%09on%20error%0D%09%09return%20%22%22%0D%09end%20try%0Dend%20extractkMDItemAuthors"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><span class="codecomment">-- STATIC PROPERTIES</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">documentWidth</span> : 1920</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">documentHeight</span> : 1080</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">fourByThreeAspectWidth</span> : (<span class="codevariable">documentHeight</span> * 4) / 3</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">bufferThickness</span> : 24</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span class="codecomment">-- USER ADJUSTABLE PROPERTIES</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">captionTypeface</span> : &quot;Helvetica&quot;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">captionTypeSize</span> : 36</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">captionTypeColor</span> : {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultTransitionDuration</span> : 2.0</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultTransitionDelay</span> : 6.0</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultAutomaticTransition</span> : true</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><b>property</b> <span class="codevariable">placeholderText</span> : &quot;Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec ullamcorper nulla non metus auctor fringilla. Etiam porta sem malesuada magna mollis euismod. Nulla vitae elit libero, A pharetra augue. Vestibulum id ligula porta felis euismod semper.&quot;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PROMPT USER TO SELECT ONE OR MORE IMAGES</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">theseImageFiles</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose file</span> <span class="codelibraryparameter">of type</span> &quot;public.image&quot; <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;Choose the images to import:&quot; <span class="codelibraryparameter">default location</span> &not;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>(<span class="codelibrarycommand">path to</span> <span class="codeenumeration">pictures folder</span>) <b>with</b> <span class="codelibraryparameter">multiple selections allowed</span>)</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PROMPT USER FOR TITLE OF THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Enter the title for the presentation:&quot; <span class="codelibraryparameter">default answer</span> &quot;&quot;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">presentationTitle</span> <b>to the</b> <span class="codeproperty">text returned</span> <b>of the</b> <span class="codelibraryparameter">result</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">presentationTitle</span> <b>is not</b> &quot;&quot; <b>then exit repeat</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PROMPT USER FOR SUB-TITLE OF THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Enter the subtitle for the presentation:&quot; <span class="codelibraryparameter">default answer</span> &quot;&quot;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">presentationSubtitle</span> <b>to the</b> <span class="codeproperty">text returned</span> <b>of the</b> <span class="codelibraryparameter">result</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">presentationSubtitle</span> <b>is not</b> &quot;&quot; <b>then exit repeat</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PROMPT USER FOR TEXT SIZE OF THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Choose the caption type size:&quot; <span class="codelibraryparameter">buttons</span> {&quot;24&quot;, &quot;36&quot;, &quot;48&quot;} <span class="codelibraryparameter">default button</span> 2</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">chosencaptionTypeSize</span> <b>to</b> (<b>the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryparameter">result</span>) <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- CREATE THE DOCUMENT</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;, <span class="codeproperty">width</span>:<span class="codevariable">documentWidth</span>, <span class="codeproperty">height</span>:<span class="codevariable">documentHeight</span>}</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- IDENTIFY THE MASTER SLIDES THAT WILL BE USED</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">masterSlideForImage</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Blank&quot;</td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">masterSlideForTitle</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title &amp; Subtitle&quot;</td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- SET THE PLAYBACK PROPERTIES</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">auto loop</span> <b>to</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- SET THE PROPERTIES OF THE TITLE SLIDE</span></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">base slide</span> <b>to</b> <span class="codevariable">masterSlideForTitle</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">object text</span> <b>of</b> <span class="codeproperty">default title item</span> <b>to</b> <span class="codevariable">presentationTitle</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">object text</span> <b>of</b> <span class="codeproperty">default body item</span> <b>to</b> <span class="codevariable">presentationSubtitle</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codelibraryclass">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">doorway</span> &not;</td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">defaultTransitionDuration</span> &not;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:<span class="codevariable">defaultTransitionDelay</span> &not;</td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codevariable">defaultAutomaticTransition</span>}</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- ADD A SLIDE FOR EACH IMAGE FILE</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">theseImageFiles</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImageFile</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">theseImageFiles</span></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- EXtrACT THE EMBEDDED IPTC CAPTION (IF ANY)</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable"><span class="codevariable">thisImage</span>Caption</span> <b>to my</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable"><span class="codevariable">thisImage</span>Caption</span> <b>is</b> &quot;&quot; <b>then set</b> <span class="codevariable"><span class="codevariable">thisImage</span>Caption</span> <b>to</b> <span class="codevariable">placeholderText</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">authorString</span> <b>to my</b> <span class="codevariable">extractkMDItemAuthors</span>(<span class="codevariable">thisImageFile</span>, true)</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">authorString</span> <b>is not</b> &quot;&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">sidebarText</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codevariable"><span class="codevariable">thisImage</span>Caption</span> &amp; <b>return &amp; return</b> &amp; &quot;Credit: &quot; &amp; <span class="codevariable">authorString</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">sidebarText</span> <b>to</b> <span class="codevariable"><span class="codevariable">thisImage</span>Caption</span></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- CREATE A NEW SLIDE</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codevariable">masterSlideForImage</span>}</td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- ADD THE IMAGE FILE</span></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImage</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">image</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">file</span>:<span class="codevariable">thisImageFile</span>}</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisImage</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- SCALE HEIGHT TO SLIDE HEIGHT</span></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">height</span> <b>to</b> <span class="codevariable">documentHeight</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- GET THE SCALED WIDTH</span></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWidth</span> <b>to</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- ADJUST THE HORIZ-OFFSET TO CENTER IMAGE IN THE 4x3 LEFTSIDE DISPLAY</span></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codevariable">thisWidth</span> <b>is greater than</b> <span class="codevariable">fourByThreeAspectWidth</span> <b>then</b></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">horizontalValue</span> <b>to</b> ((<span class="codevariable">thisWidth</span> - <span class="codevariable">fourByThreeAspectWidth</span>) <b>div</b> 2) * -1</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">horizontalValue</span>, 0}</td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {0, 0}</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- ADD THE CAPTION BACKGOUND SHAPE WHICH WILL OVERLAY THE IMAGE IF NEEDED</span></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">captionBackground</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">width</span>:<span class="codevariable">documentWidth</span> - <span class="codevariable">fourByThreeAspectWidth</span> &not;</td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">height</span>:<span class="codevariable">documentHeight</span> &not;</td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">position</span>:{<span class="codevariable">fourByThreeAspectWidth</span>, 0}}</td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- CREATE THE CAPTION TEXT ITEM</span></td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">captionTextItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">width</span>:<span class="codevariable">documentWidth</span> - <span class="codevariable">fourByThreeAspectWidth</span> - <span class="codevariable">bufferThickness</span> - <span class="codevariable">bufferThickness</span> &not;</td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span>, <span class="codeproperty">object text</span>:<span class="codevariable">sidebarText</span>}</td></tr>
+				<tr><td class="line-count">114</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">115</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">captionTextItem</span></td></tr>
+				<tr><td class="line-count">116</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- FORMAT THE CAPTION TEXT</span></td></tr>
+				<tr><td class="line-count">117</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codeproperty">object text</span></td></tr>
+				<tr><td class="line-count">118</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> <span class="codevariable">captionTypeface</span></td></tr>
+				<tr><td class="line-count">119</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> <span class="codevariable">chosencaptionTypeSize</span></td></tr>
+				<tr><td class="line-count">120</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">color</span> <b>of it to</b> <span class="codevariable">captionTypeColor</span></td></tr>
+				<tr><td class="line-count">121</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">122</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- MOVE THE CAPTION TEXT ITEM TO THE TOP RIGHT OF SLIDE (USE BUFFER OFFSET)</span></td></tr>
+				<tr><td class="line-count">123</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">fourByThreeAspectWidth</span> + <span class="codevariable">bufferThickness</span>, <span class="codevariable">bufferThickness</span>}</td></tr>
+				<tr><td class="line-count">124</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">125</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">126</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- APPLY SLIDE TRANSISTION</span></td></tr>
+				<tr><td class="line-count">127</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">128</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">dissolve</span> &not;</td></tr>
+				<tr><td class="line-count">129</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">defaultTransitionDuration</span> &not;</td></tr>
+				<tr><td class="line-count">130</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">transition delay</span>:<span class="codevariable">defaultTransitionDelay</span> &not;</td></tr>
+				<tr><td class="line-count">131</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">automatic transition</span>:<span class="codevariable">defaultAutomaticTransition</span>}</td></tr>
+				<tr><td class="line-count">132</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">133</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">134</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">135</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">136</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- START PLAYING THE PRESENTATION FROM THE BEGINNING</span></td></tr>
+				<tr><td class="line-count">137</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from</b> <span class="codelibraryclass">slide</span> 1 <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">138</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">139</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">140</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">extractkMDItemDescription</span>(<span class="codevariable">thisImageFile</span>)</td></tr>
+				<tr><td class="line-count">141</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">142</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImagePOSIXpath</span> to <b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisImageFile</span></td></tr>
+				<tr><td class="line-count">143</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">144</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;mdls -name kMDItemDescription &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">145</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImagePOSIXpath</span>)</td></tr>
+				<tr><td class="line-count">146</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">embeddedDescription</span> <b>is</b> &quot;kMDItemDescription = (null)&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">147</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">148</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">149</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedDescription</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">150</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codelibraryclass">text</span> <b>from</b> ((<span class="codeproperty">length</span> <b>of</b> &quot;kMDItemDescription = \&quot;&quot;) + 1) <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">151</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>-2 <b>of</b> <span class="codevariable">embeddedDescription</span>)</td></tr>
+				<tr><td class="line-count">152</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">153</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codevariable">embeddedDescription</span></td></tr>
+				<tr><td class="line-count">154</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">155</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">156</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">157</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">extractkMDItemDescription</span></td></tr>
+				<tr><td class="line-count">158</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">159</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">extractkMDItemAuthors</span>(<span class="codevariable">thisImageFile</span>, <span class="codevariable">returnAsString</span>)</td></tr>
+				<tr><td class="line-count">160</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">161</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisImagePOSIXpath</span> to <b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> <span class="codevariable">thisImageFile</span></td></tr>
+				<tr><td class="line-count">162</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">embeddedAuthorsList</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">163</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">do shell script</span> &quot;mdls -name kMDItemAuthors &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">164</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codeproperty">quoted form</span> <b>of</b> <span class="codevariable">thisImagePOSIXpath</span>)</td></tr>
+				<tr><td class="line-count">165</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">embeddedAuthorsList</span> <b>is</b> &quot;kMDItemAuthors = (null)&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">166</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">returnAsString</span> <b>is</b> true <b>then</b></td></tr>
+				<tr><td class="line-count">167</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>return</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">168</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">169</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>return</b> {}</td></tr>
+				<tr><td class="line-count">170</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">171</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">172</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">authorList</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">173</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codelibraryclass">text</span> <b>from</b> ((<span class="codeproperty">length</span> <b>of</b> &quot;kMDItemAuthors = \&quot;&quot;) + 2) &not;</td></tr>
+				<tr><td class="line-count">174</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>to</b> -3 <b>of</b> <span class="codevariable">embeddedAuthorsList</span>)</td></tr>
+				<tr><td class="line-count">175</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">authorList</span> <b>to every</b> <span class="codelibraryclass">paragraph</span> <b>of</b> <span class="codevariable">authorList</span></td></tr>
+				<tr><td class="line-count">176</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">cleanedList</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">177</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">authorList</span></td></tr>
+				<tr><td class="line-count">178</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisAuthor</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">authorList</span></td></tr>
+				<tr><td class="line-count">179</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> <span class="codelibrarycommand">offset of</span> &quot;\&quot;&quot; <b>in</b> <span class="codevariable">thisAuthor</span></td></tr>
+				<tr><td class="line-count">180</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">x</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">181</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisAuthor</span> <b>to</b> <span class="codelibraryclass">text</span> <b>from</b> (<span class="codevariable">x</span> + 1) <b>to</b> -1 <b>of</b> <span class="codevariable">thisAuthor</span></td></tr>
+				<tr><td class="line-count">182</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">183</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">thisAuthor</span> <b>ends with</b> &quot;\&quot;&quot; <b>then</b> &not;</td></tr>
+				<tr><td class="line-count">184</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisAuthor</span> <b>to</b> text 1 <b>thru</b> -2 <b>of</b> <span class="codevariable">thisAuthor</span></td></tr>
+				<tr><td class="line-count">185</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">cleanedList</span> <b>to</b> <span class="codevariable">thisAuthor</span></td></tr>
+				<tr><td class="line-count">186</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">187</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">returnAsString</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">188</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">authorCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">cleanedList</span></td></tr>
+				<tr><td class="line-count">189</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>if</b> <span class="codevariable">authorCount</span> <b>is</b> 1 <b>then return</b> (<span class="codevariable">cleanedList</span> <b>as</b> <span class="codelibraryclass">string</span>)</td></tr>
+				<tr><td class="line-count">190</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">AppleScript's text item delimiters</span> <b>to</b> &quot;, &quot;</td></tr>
+				<tr><td class="line-count">191</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">authorString</span> <b>to</b> <span class="codevariable">cleanedList</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">192</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">193</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">194</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>return</b> <span class="codevariable">cleanedList</span></td></tr>
+				<tr><td class="line-count">195</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">196</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">197</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">198</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">199</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">200</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">extractkMDItemAuthors</span></td></tr>
+			</table>
+
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-pano-preso.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-outline.html">New Presentation from Outline</a></li>
+				<li class="navListSectionItemSelected">New Presentation from Image Files</li>
+				<li class="navListSectionItem"><a href="examples-pano-preso.html">Pano to Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-movie-export-droplet.html">Movie Export Droplet</a></li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItem"><a href="examples-music-helper.html">Music Helper Applet</a></li>
+				<li class="navListSectionItem"><a href="examples-translation-helper-scripts.html">Translation Helper Scripts</a></li>
+				<li class="navListSectionItemSelected"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">ISTOCKPHOTO.COM</h2>
+			<p>The colorful <a href="http://www.istockphoto.com/stock-photo-11289540-tropical-fish-lionfish.php?st=c371d08" target="_blank">images</a> used in this example presentation can be found at <a href="http://www.istockphoto.com" target="_blank">ISTOCKPHOTO.COM</a>.</p>	
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">FINDER INFO WINDOW</h2>
+			<p>The Finder information window for an image file will display the values for some the metadata tags embedded in the image.</p>
+			<img class="centered" width="220" alt="info-window" src="gfx/info-window.png">	
+		</div>
+		
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

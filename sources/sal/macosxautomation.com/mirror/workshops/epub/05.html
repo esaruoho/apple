@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: One-Step Creation of Digital Books: Multi-Chapter EPUB Demo</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: VIEW DEMO RESULTS -->
+		<div class="content-segment">
+		<div class="segment-header" >Creating a Multiple Chapter EPUB Book</div>
+			
+			<p>As you learned from the previous tutorial, in which you created a single chapter digital document, the minimum requirement for creating an EPUB book with the <b>Text to EPUB</b> services is the <b>text</b> for the book. Images, audio and/or video clips, are optional media that can be added to a book using the service&rsquo;s interface when the service workflow is run.</p>
+			
+			<p>In this workshop segment, you will create a multi-chpater digital publication that includes text <span style="font-family:serif;font-style:italic;font-size:125%;">and</span> media, specifically, spoken narration audio clips (provided by <a href="http://librivox.org" target="_blank">Librivox</a>) placed at the beginning of each chapter, and a <a href="http://www.alice-in-wonderland.net/alice2a.html" target="_blank">collection of images</a> from the original Alice in Wonderland book placed in an illustrations chapter at the end of the book. In addition, the digital book will be assigned a cover image that appears as the book&rsquo;s cover in the iBooks library.</p>
+			
+			<p class="segment-note">As a convenience, you can <a href="AIWexcerpt.epub.zip" style="font-weight:bold;">DOWNLOAD</a> the completed example EPUB document.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Demo Kit</p>
+			
+			<p>For this workshop, a demo kit has been created that contains all of the elements necessary to create the digital book.</p>
+						
+			<p class="do-this" style="margin-bottom:12px;"><span class="do-this">DO THIS &#9658;</span>Begin the tutorial by <a href="EPUB-Demo-Kit.zip"><font color="#FF0000">downloading the demo kit archive</font></a>, unpacking the archive, and opening the folder containing the demo contents on your desktop: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+
+			<img src="gfx/multi-01.jpg" width="624" height="366" class="centered">
+
+			<p>The demo kit <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> contains:</p>
+			
+			<ol>
+			
+				<li>(Chapters folder) The text from three chapters of <i>Alice in Wonderland</i>, saved as individual text files;</li>
+				
+				<li>(Cover folder) A cover image;</li>
+				
+				<li>(Audio folder) Three audio files, each being a spoken reading of a chapter;</li>
+				
+				<li>(Illustrations folder) A collection of original book illustrations.</li>
+				
+			</ol>
+
+			<p class="segment-note"><b>IMPORTANT</b>: Audio files included in an EPUB document must be saved in MPEG (.m4a) format. Video files must be saved in MPEG (.m4v) format. The media files included in the demo kit are already encoded correctly for inclusion in an EPUB document. However, note that OS&nbsp;X includes powerful but easy-to-use built-in services for performing desktop <a href="http://macosxautomation.com/automator/encodeaudio/index.html" target="_blank"><font color="#FF0000">encoding of audio files</font></a> and <a href="http://macosxautomation.com/automator/encodemedia/index.html" target="_blank"><font color="#FF0000">encoding of video files</font></a> in preparation for inclusion in EPUB documents.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Creating the Book</p>
+			
+			<p>We&rsquo;ll create a multi-chapter EPUB in two-steps, in this workshop segment start the process and enter the metadata about the digital file. In the next workshop segment, you&rsquo;ll add media to the publication.</p>
+			
+			<p>To create an EPUB book containing multiple chapters, you must first select the text files that will be used as the source for each chapter, and then launch the EPUB creation service.</p>
+
+			<p class="do-this" style="margin-bottom:12px;"><span class="do-this">DO THIS &#9658;</span>Open the folder named &quot;Chapters,&quot; select the three text files, and then choose the <b>Create EPUB Book with Selected Files</b> service from the Finder action menu: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img src="gfx/multi-02.jpg" width="624" height="447" class="centered">
+			
+			<p>The &quot;Text to EPUB&quot; dialog will appear. The dialog is the view for the Automator action that does the work of creating the publication. The left side of the dialog is for entering information about the publication and determining the name and location for the created EPUB document. The right side of the dialog is for identifying any optional media you wish to add to the publication.</p>
+			
+			<img src="gfx/multi-03.png" width="640" height="369" class="across">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Enter a title for the example publication (Alice in Wonderland Excerpt), the author&rsquo;s name (Lewis Carroll), and a name for the EPUB document (AIWExcerpt.epub). Be sure to end the EPUB file name with the name extension: .epub</p>
+			
+			<p>For the pursposes of this tutorial, leave the destination folder indicated in the &ldquo;Where&rdquo; popup menu, set to the Desktop.</p>
+			
+			<img src="gfx/multi-04.png" width="640" height="369" class="across">
+			
+			<p>Now that the file and book information has been entered, you can add media to the book.</p>
+			
+			
+		</div>
+		<!-- END SEGMENT: VIEW DEMO RESULTS -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="06.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">The Text to EPUB Services</a></li>
+				<li><a href="02.html">The Action Interface</a></li>
+				<li><a href="03.html">Formatted EPUB Demo</a></li>
+				<li><a href="04.html">View the EPUB Document</a></li>
+				<li class="hi">Multiple Chapter EPUB Demo</li>
+				<li><a href="06.html">Adding Media</a></li>
+				<li><a href="07.html">View the EPUB Book</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this workshop segment, attendees will begin the creation of a multi-chapter digital book that also contains audio files and a collection of images.</p>
+			
+			<p>The demo kit for the workshop leader contains all of the materials provided in the attendee demo kit, <span style="font-family:serif;font-style:italic;font-size:125%;">plus</span> unencoded versions of the media files, and encoded and unencoded video files should you opt to use them in a separate demonstration. The unencoded media files can be used to demonstrate the built-in OS&nbsp;X services for encoding <a href="http://www.macosxautomation.com/lion/encodeaudio/index.html" target="_blank">audio</a> and <a href="http://www.macosxautomation.com/lion/encodemedia/index.html" target="_blank">video</a> files.</p>
+			
+			<p><a href="EPUB-Demo-Kit-Lg.zip">Large Demo Kit</a> (100 MB)</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol>
+				<li>When creating a multi-chapter digital book using the Text to EPUB services, text files are used as input to the action. The text files can be in plain text (.txt) or RTF (.rtf) format. Text files in RTF format will retain much of their orignial formatting. Files in RTFD format (those containing media) are not supported as input.</li>
+				
+				<li>Text files used as input for the service will be sorted alphabetically by their filenames. In addition, the filenames of the text files will be used as the individual chapter titles. So a text file named <b>CH-01 The Story Begins.txt</b> will provide the text for a chapter named: <b>CH-01 The Story Begins</b></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

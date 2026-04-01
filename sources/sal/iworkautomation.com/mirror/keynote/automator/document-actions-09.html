@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;Get Fonts of Keynote Documents&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;Get Fonts of Keynote Documents&rdquo; Automator action extracts Font Book references to the typefaces used by the Keyote-compatible document files passed to this action as input.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Get Fonts of Keynote Documents</div>
+			<p>The &ldquo;Get Fonts of Keynote Documents&rdquo; Automator action extracts Font Book references to the typefaces used by the Keyote-compatible document files passed to this action as input.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">References to Keynote-compatible document files</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">Font Book references to the typefaces used by the presentation files passed to the action as input</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Enable the action to post a workflow-stopping alert listing any typefaces from the input document files, not installed on the hosting system.</p></li>
+						<li><p>Whether the action should place a text list of the PostScript names of the typefaces used by the Keynote-compatible documents passed as input to the action.</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that may precede this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Get Specified Files</p></li>
+					</ul>
+				</td></tr>
+				<tr><td class="data-key">Related:</td><td class="data-value"><p>Other actions that may follow this action:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Activate Fonts</p></li>
+						<li><p>Export Fonts</p></li>
+					</ul>
+				</td></tr>
+			</table>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<img class="action-interface" alt="The &ldquo;Get Fonts of Keynote Documents&rdquo; action interface" src="gfx/get-fonts-action.jpg">
+		
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Alert for Missing Typefaces</b>&nbsp;-&nbsp;Selecting this option will enable the display of an alert dialog listing any typefaces, used by the presentation document, that are not installed on the host system. This alert will stop the workflow from continuing to execute.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Copy Font List to Clipboard</b>&nbsp;-&nbsp;Selecting this option will place a list of the typefaces, used by the presentation document, on the clipboard.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Example Workflows</div>
+			<p>Using this Font Book action, workflows can activate disabled fonts and alert the user for typefaces not installed on the host system. Here are two example service workflows demonstrating these techniques.</p>
+		
+			<p class="segment-note"><a href="installers/Keyote-Fonts-Services.zip">DOWNLOAD</a> an installer for the example service workflow files.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Activate Fonts Service Workflow</p>
+			
+			<p>This system-service is useful for making sure that typefaces are installed and active on the system before opening a presentation file.</p>
+			
+			<p>Once installed, control-click (right-click) one or more presentation files selected in the Finder to access the service from the Services sub-menu on the Finder contextual menu.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Service Input Data Type</b>&nbsp;-&nbsp;Since this system-service is designed to work on Keynote-compatible presentation files, select &ldquo;Documents&rdquo; from the input data type popup menu.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Target Application</b>&nbsp;-&nbsp;Select the Finder application from this menu to indicate that this system-service will only be available when the Finder is the frontmost application.</p>
+			
+			<img class="across" width="640" alt="activate-fonts-workflow" src="gfx/activate-fonts-workflow.png" style="margin-top:-24px;">
+			
+			<p class="caption-callout" style="margin-top:-24px;"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Filter for Presentations</b>&nbsp;-&nbsp;Create a Finder filter for removing non-presentation files passed as input to the workflow.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Alert for Missing Typefaces</b>&nbsp;-&nbsp;Set the parameters of the action to display an alert if typefaces used by the referenced presentation documents are not installed on the host system.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Activate Fonts</b>&nbsp;-&nbsp;This Font Book action will activate the typefaces passed to it as input.</p>
+
+			
+			<p class="content-subhead" role="heading" aria-level="2">Export Fonts Service Workflow</p>
+			<p>If your presentation files use typefaces that are not included in the standard OS&nbsp;X installation, here’s a really useful system-service for ensuring that a shared presentation will be able to be viewed on its host computer. This service will export the typefaces used by the selected presentation file into a designated folder.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: Links to lists of Apple’s default installed typefaces: <a href="http://iosfonts.com" target="_blank">(iOS)</a>&nbsp;<a href="http://en.wikipedia.org/wiki/List_of_typefaces_included_with_OS_X" target="_blank">(OS&nbsp;X)</a></p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Service Input Data Type</b>&nbsp;-&nbsp;Since this system-service is designed to work on Keynote-compatible presentation files, select &ldquo;Documents&rdquo; from the input data type popup menu.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Target Application</b>&nbsp;-&nbsp;Select the Finder application from this menu to indicate that this system-service will only be available when the Finder is the frontmost application.</p>
+			
+			<img class="across" width="640" alt="export-fonts-workflow" src="gfx/export-fonts-workflow.png" style="margin-top:-24px;">
+			
+			<p class="caption-callout" style="margin-top:-24px;"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Filter for Presentations</b>&nbsp;-&nbsp;Create a Finder filter for removing non-presentation files passed as input to the workflow.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Alert for Missing Typefaces</b>&nbsp;-&nbsp;Set the parameters of the action to display an alert if typefaces used by the referenced presentation documents are not installed on the host system.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Export Folder Name</b>&nbsp;-&nbsp;Enter a name for the folder that will contain the exported typefaces. Select the adjacent checkbox to move any existing folder to the trash.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Export Folder Location</b>&nbsp;-&nbsp;Choose a folder in which to place the export folder.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Reveal Export Folder</b>&nbsp;-&nbsp;Add this action to switch to the Finder and show the export folder.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="index.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li class="hi">Document Actions</a></li>
+				<li class="navListSectionItem"><a href="document-actions-01.html">New Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-02.html">Open Keynote Files</a></li>
+				<li class="navListSectionItem"><a href="document-actions-03.html">Get Specified Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-04.html">Export Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-05.html">Save Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-06.html">Close Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-07.html">Begin Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-08.html">Present Slideshow with Narration</a></li>
+				<li class="navListSectionItemSelected">Get Fonts of Keynote Documents</li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

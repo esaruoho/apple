@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h1>Chapter Review</h1>
+		
+		<p>Congratulations, you’ve finished your initial foray into the world of AppleScript. You’ve learned what AppleScript is, how it works, and how to script the Finder application to control the display of Finder windows.</p>
+		
+		<p>In addition to creating a useful script tool, you&rsquo;ve learned these important AppleScript concepts:</p>
+		
+		<ul class="square">
+			<li>On the computer, everything is an object.</li>
+			
+			<li>On the computer, everything belongs to, is related to, is contained in, or is part of something else. For example, the Finder application contains windows and folders.</li>
+			
+			<li>Scriptable objects are referred to by their positions in their object hierarchy or where they are in their &ldquo;chain of command.&rdquo; For example:<br>
+			
+			<span class="indentscripthilite">file &quot;cars.pdf&quot; of folder &quot;Documents&quot; of folder &quot;sal&quot; of folder &quot;Users&quot; of startup disk</span></li>
+			
+			<li>Scriptable objects have properties with values that can be read and  sometimes manipulated. For example, a Finder window has <span class="dictionary-term">name</span>, <span class="dictionary-term">position</span>, and <span class="dictionary-term">bounds</span> properties.</li>
+			
+			<li>The AppleScript verb <span class="dictionary-term">get</span> is used to retrieve the value of a property, as in:<br>
+			<span class="indentscripthilite">get the name of the front window</span></li>
+			
+			<li>The AppleScript verb <span class="dictionary-term">set</span> is used to alter the value of editable properties, as in:<br>
+			<span class="indentscripthilite">set the position of the front window to {0, 44}</span></li>
+			
+			<li>Scripts are written using single-line <span class="dictionary-term">tell statements</span> or multiple-line <span class="dictionary-term">tell blocks</span> that target one or more actions at a scriptable object.</li>
+			
+			<li>Textual content used in a script is placed within straight quotation marks (&nbsp;&quot;&nbsp;&quot;&nbsp;).</li>
+			
+			<li>Lists in AppleScript begin with the opening brace character (&nbsp;{&nbsp;), contain items separated by commas, and end with a closing brace character (&nbsp;}&nbsp;).</li>
+		</ul>
+
+		<h2>Finder Window Properties</h2>
+
+		<p>For reference, the following is a summary of the Finder window properties and commands used to create the Desktop Setup script. Review these items, keeping in mind that the principles you&rsquo;ve learned here apply to all scriptable applications, not just the Finder.</p>
+		
+		<h3>Read-Only Properties</h3>
+		
+		<p>Read-only properties are properties whose corresponding values can be accessed or read only; they cannot be changed.</p>
+		
+		<p class="dictionary"><span class="dictionary-term">name</span>: the text displayed in the title bar of the window<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to get the name of the front window</span></p>
+
+		<h3>Editable Properties</h3>
+		
+		<p>Editable properties are properties whose corresponding values can be both read and changed.</p>
+
+		<p class="dictionary"><span class="dictionary-term">index</span>: an integer (whole number) indicating the position of the window in the stack of open windows<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to get the index of the front window</span><br><br>
+		
+		<span class="dictionary-term">bounds</span>: a list of coordinates defining the top-left and bottom-right corners of a window<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the bounds of Finder window 1 to {0, 44, 400, 300}</span><br><br>
+
+		<span class="dictionary-term">collapsed</span>: a true or false value indicating whether the window has been minimized to the Dock<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; toset collapsed of every window to false</span><br><br>
+		
+		<span class="dictionary-term">current view</span>: the method currently used to display content in the window. Values for this property are one of the following: icon view, list view, column view, and, in Leopard, flow view<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the current view of Finder window 1 to icon view</span><br><br>
+
+		<span class="dictionary-term">position</span>: a list of coordinates indicating the horizontal and vertical offset of the window from the left and top sides of the screen<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the position of the front Finder window to {0, 22}</span><br><br>
+
+		<span class="dictionary-term">target</span>: a reference to the folder or directory whose contents are displayed in the window.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the target of the front Finder window to home</span><br><br>
+		
+		<span class="dictionary-term">toolbar visible</span>: (Mac OS X 10.3) a true or false value that indicates whether the Finder window displays a toolbar.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set toolbar visible of the front Finder window to false</span><br><br>
+		
+		<span class="dictionary-term">statusbar visible</span>: (Mac OS X 10.4) a true or false value that indicates whether the Finder window displays a status bar. This works only when the toolbar is not visible.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set statusbar visible of the front Finder window to false</span><br><br>
+
+		<span class="dictionary-term">sidebar width</span>: (Mac OS X 10.4) an integer value that indicates the width of the Finder window’s sidebar in pixels. To close the sidebar in Mac OS X 10.4 (Tiger) without hiding the toolbar or the status bar, assign this property a value of 0. In Leopard, setting the sidebar width property to 0 reduces it to a width of 135 pixels.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the sidebar width of the front Finder window to 0</span><br><br>
+		
+		<span class="dictionary-term">zoomed</span>: a true or false value that indicates whether the window has been expanded.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set zoomed of the front Finder window to true</span>
+
+		</p>
+
+		<h2>Referring to a Finder Window</h2>
+		
+		<p>Finder windows, and other scriptable objects as well, can be referenced in a variety of ways:</p>
+		
+		<p class="dictionary">by <span class="dictionary-term">name</span>:<br>
+			<span class="dictionary-indent-02">Finder window "Documents"</span><br>
+		by <span class="dictionary-term">numeric index</span>:<br>
+			<span class="dictionary-indent-02">Finder window 1</span><br>
+		by <span class="dictionary-term">descriptive index</span>:<br>
+			<span class="dictionary-indent-02">the first Finder window</span><br>
+			<span class="dictionary-indent-02">the second Finder window</span><br>
+			<span class="dictionary-indent-02">the fifth Finder window</span><br>
+			<span class="dictionary-indent-02">the 1st Finder window</span><br>
+			<span class="dictionary-indent-02">the 23rd Finder window</span><br>
+		by <span class="dictionary-term">By position relative to other windows</span>:<br>
+			<span class="dictionary-indent-02">the front Finder window</span><br>
+			<span class="dictionary-indent-02">the middle Finder window</span><br>
+			<span class="dictionary-indent-02">the back Finder window</span><br>
+			<span class="dictionary-indent-02">the last Finder window</span><br>
+			<span class="dictionary-indent-02">the Finder window before the last Finder window</span><br>
+			<span class="dictionary-indent-02">the Finder window after the first Finder window</span><br>
+		by <span class="dictionary-term">random index</span>:<br>
+			<span class="dictionary-indent-02">some Finder window</span></p>
+
+		<h2>Verbs Used with Finder Windows</h2>
+		
+		<p>AppleScript verbs are the commands targeted at scriptable objects to retrieve or manipulate property values and to perform actions with the scriptable objects.</p>
+		
+		<h3>Accessing the Values of a Window&rsquo;s Property</h3> 
+		
+		<p class="dictionary"><span class="dictionary-term">get</span>: used to access the current values of a window property.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to get the target of the front Finder window</span></p>
+
+		<h3>Changing the Values of a Window’s Property</h3>
+		
+		<p class="dictionary"><span class="dictionary-term">set</span>: used to apply a new value to a window property.<br>
+		<span class="indentscripthilite">tell application &quot;Finder&quot; to set the target of the front Finder window to home</span></p>
+
+		<h3>Controlling Windows</h3>
+		
+		<p class="dictionary"><span class="dictionary-term">open</span>: causes a window to become visible in the Finder<br>
+		<span class="indentscripthilite">tell application "Finder" to open the Finder window of the startup disk</span><br>
+		<span class="indentscripthilite">tell application "Finder" to open the startup disk</span><br><br>
+
+		<span class="dictionary-term">close</span>: causes a window to close<br>
+		<span class="indentscripthilite">tell application "Finder" to close every Finder window</span><br><br>
+
+		<span class="dictionary-term">select</span>: causes a window to come to the front<br>
+		<span class="indentscripthilite">tell application "Finder" to select the last Finder window</span></p>
+
+		<h2>The Tell Statement</h2>
+		
+		<p>A <span class="dictionary-term">tell statement</span> is a single AppleScript statement, beginning with the verb tell, that contains a reference to the target object and the action to be performed:</p>
+		
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to set the</b> target <b>of the last</b> Finder window <b>to</b> home</p>
+
+		<p>The target object in this example is the last Finder window displayed on the Desktop. The action to be performed is to change the contents of the window by altering the value of the window’s target property to be the user’s home directory.</p>
+		
+		<h2>The Tell Block</h2>
+		
+		<p>Use <span class="dictionary-term">tell blocks</span> to replace multiple <span class="dictionary-term">tell statements</span> and target multiple actions at a scriptable object or objects. All <span class="dictionary-term">tell blocks</span> begin with the verb <span class="inlinecode">tell</span> followed by a reference to a target object or parent application. Statements defining the actions to be performed are placed after the opening line, with each statement getting its own line. The <span class="dictionary-term">tell block</span> is closed with the statement <span class="inlinecode">end tell</span>.</p>
+		
+		<p class="code"><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> target <b>of the front</b> Finder window <b>to</b> home<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> icon<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> position <b>of the front</b> Finder window <b>to</b> {0, 22}<BR>
+		<b>end tell</b></p>
+
+		<p><span class="dictionary-term">tell blocks</span> within other <span class="dictionary-term">tell blocks</span> are called <span class="dictionary-term">nested tell blocks</span>. When compiled, the hierarchy of the scriptable objects is revealed by the indentation applied to the formatted script text.</p>
+
+		<p class="code"><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> Finder window<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> target <b>to</b> home<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> current view <b>to</b> icon<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> position <b>to</b> {0, 22}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<b>end tell</b></p>
+
+
+
+
+
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="18.html" target="_self">CONTINUE</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+<div class="navbox">
+	<h2>Chapter 01</h2>
+	<ul class="square last">
+		<li><a href="index.html">The First Step</a></li>
+		<li><a href="01.html">Properties and Values</a></li>
+		<li><a href="02.html">The Script Editor</a></li>
+		<li><a href="03.html">The Name Property</a></li>
+		<li><a href="04.html">The Index Property</a></li>
+		<li><a href="05.html">The Target Property</a></li>
+		<li><a href="06.html">The Toolbar Visible Property</a></li>
+		<li><a href="07.html">The Statusbar Visible Property</a></li>
+		<li><a href="08.html">The Sidebar Width Property</a></li>
+		<li><a href="09.html">The Current View Property</a></li>
+		<li><a href="10.html">The Position Property</a></li>
+		<li><a href="11.html">The Bounds Property</a></li>
+		<li><a href="12.html">Verbs Used with Windows</a></li>
+		<li><a href="13.html">The Desktop Setup Script</a></li>
+		<li><a href="14.html">The Tell Block</a></li>
+		<li><a href="15.html">Nested Tell Blocks</a></li>
+		<li><a href="16.html">Saving the Setup Script</a></li>
+		<li class="hi">Chapter Review</li>
+		<li><a href="18.html">The Principles Remain the Same</a></li>
+	</ul>
+</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

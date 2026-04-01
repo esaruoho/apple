@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>BridgePlus Script Library</title>
+	<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Shane Stanley">
+	<META NAME="Keywords" CONTENT="AppleScriptObjC, ASObjC Explorer, AppleScript, BridgePlus, script library, keyboard input source">
+	<META NAME="Description" CONTENT="BridgePlus is a powerful free script library for Mac OS X users.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+	<!-- END META INFO -->
+	<!-- IMAGE LIGHTBOX -->
+  	<link rel="stylesheet" href="lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="lightbox.js" type="text/javascript" charset="utf-8"></script>
+	<!-- IMAGE LOADING -->
+  	<link rel="stylesheet" href="imageload.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="imageload.js" type="text/javascript" charset="utf-8"></script>
+  	<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<!--<body onload="loadImages();"> -->
+<!-- page cover and spinner are added for the loading routines -->
+<!-- <div id="page-cover"></div> -->
+<!-- <img src="spinner.png" alt="" style="display: none" width="67" height="67"> -->
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="index.html">AppleScriptObjC</a> | <a href="Script_Libs.html">Libraries</a> | BridgePlus <br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+</div>
+<div id="main">
+	<div id="content" class="column">
+<br/>
+		<h1>BridgePlus Script Library v1.3.2</h1>
+		<br/>
+		
+	<h2>Important: Scripts using BridgePlus cannot be edited in Script Editor in Mojave and later because of new security settings. You need to use Script Debugger. Also, if you are running Catalina, you may receive a message saying the library is damaged, when it is not. This is the result of new Gatekeeper checks. Unfortunately there is no equivalent to control-click-and-open for script libraries, which resolves this issue for applications. If you face this issue, you will need to remove the quarantine attributes of the library before you can use it. A longer-term solution is still in development.</h4>
+<br/>
+<p><big><span class="inlinecode">BridgePlus</span> is an AppleScript <span class="inlinecode">script library</span> for use under OS X 10.9 and later. For typical scripters, it includes a collection of handlers based on the functionality of ASObjC Runner.app. For AppleScriptObjC users, there are commands that support improved bridging between AppleScript and Cocoa, as well as direct access to the extended functionality.</big></p>
+
+<p>OS X <span class="inlinecode">El Capitan</span> has introduced several great improvements to AppleScriptObjC, including bridging of file/NSURL and date/NSDate classes. <span class="inlinecode">BridgePlus</span> provides similar functionality for users of OS X 10.9 and 10.10, making it easier to create backwards-compatible scripts. It also simplifies the process for El Capitan users.</p>
+
+<p><span class="inlinecode">BridgePlus</span> should be installed with any other script libraries in a folder called <span class="inlinecode">Script Libraries</span> inside your <span class="inlinecode">~/Library</span> folder. You can also <span class="inlinecode">embed it directly</span> in script applications and bundles; see below.</p>
+
+<p>To use it, you insert the line <span class="inlinecode">use BridgePlus : script "BridgePlus"</span> near the start of your script. Your script is likely to also require a <span class="inlinecode">use scripting additions</span> statement, and if you wish to use AppleScriptObjC, a <span class="inlinecode">use framework "Foundation"</span> statement. By including <span class="inlinecode">use BridgePlus : script "BridgePlus"</span>, the library's terminology will be loaded and can be used anywhere in the script.</p>
+
+<h2>Basic use</h2>
+
+<p>
+If you do not intend to use AppleScriptObjC, <span class="inlinecode">BridgePlus</span> has one relevant command defined in its dictionary: <span class="inlinecode">open lib description</span>. Calling this command will open the ReadMe document listing all the available handlers. You call it like this:
+</p>
+
+<p class="code">
+use BridgePlus : script "BridgePlus"<BR>
+open lib description
+</p>
+
+<p>To call one of the handlers, you address the library. For example, there is a sorting handler:
+</p>
+
+<p class="code">
+on sortListOfNumbers:listOfNumbers
+</p>
+
+<p>
+You would use it like this:
+</p>
+
+<p class="code">
+use BridgePlus : script "BridgePlus"<BR>
+set sortedList to BridgePlus's sortListOfNumbers:{9, 2, 7, 3, 6, 4}
+</p>
+
+<p>
+Use the <span class="inlinecode">open lib description</span> command to see the full list of supported handlers.
+</p>
+
+<h2>Basic AppleScriptObjC use</h2>
+
+<p><span class="inlinecode">BridgePlus</span> has two commands for conversion between Cocoa and AppleScript classes when using AppleScriptObjC. The commands are <span class="inlinecode">Cocoaify</span>, which takes an AppleScript value and attempts to turn it it into its Cocoa equivalent, and <span class="inlinecode">Asify from</span>, which takes a Cocoa value and attempts to convert it to its AppleScript equivalent.</p>
+
+<p>To see the library's dictionary you can option-drag it over Script Debugger's icon, or via <span class="inlinecode">Open Dictionary&#x2026;</span> in Script Editor after you have added it to <span class="inlinecode">~/Library/Script Libraries</span>.</p>
+
+<p>In many cases, uses of AppleScriptObjC involves three steps: converting an AppleScript value to its Cocoa equivalent, calling instance method(s) on the Cocoa object, and converting the resulting Cocoa value back to an AppleScript value. For example:</p>
+
+<p class="code">use framework "Foundation"<BR>
+<BR>
+set anArray to current application's NSArray's arrayWithArray:someList<BR>
+set anArray to anArray's sortedArrayUsingSelector:"compare:"<BR>
+set aList to anArray as list</p>
+
+<p>This can be rewritten using BridgePlus.scptd as:</p>
+
+<p class="code">use framework "Foundation"<BR> 
+use script "BridgePlus"<BR>
+<BR>
+set anArray to Cocoaify someList<BR>
+set anArray to anArray's sortedArrayUsingSelector:"compare:"<BR>
+set aList to ASify from anArray</p>
+
+<p>That's a bit simpler, but not drastically so. However, the advantage of using <span class="inlinecode">Cocoaify</span> and <span class="inlinecode">ASify from</span> is that they provide conversions that are otherwise not available before El Capitan. The specific differences are these:</p>
+
+<p>* With <span class="inlinecode">Cocoaify</span>, if the AppleScript value is a date, or a list or record containing a date, those dates will be converted to NSDates. Similarly, any aliases or files will be converted to NSURLs. This matches the ability of El Capitan.</p>
+
+<p>* With <span class="inlinecode">ASify from</span>, if the Cocoa value is an NSDate, or it is an NSArray or NSDictionary containing an NSDate, such NSDates will be converted to AppleScript dates. Similarly, any NSURLs will be converted to files («class furl»). This matches the ability of El Capitan.</p>
+
+<p>* When Cocoa values containing floating-point numbers are converted to reals either by using <span class="inlinecode">as real</span> or as part of the coercion of a list or record, before OS X 10.11 they can <span class="inlinecode">lose precision</span> &mdash; for example, 1.2 will be returned as 1.200000047684. With <span class="inlinecode">ASify from</span>, this does not happen.</p>
+
+<p>So, for example, if the list in the example above was a list of AppleScript dates, they would be sorted under Mavericks or later; without BridgePlus or El Capitan they would first have to be individually converted via handlers, and individually converted back after the sort. The code would be considerably more complex.</p>
+
+<h2>Advanced AppleScriptObjC use</h2>
+
+<p>The <span class="inlinecode">BridgePlus.scptd</span> bundle contains a framework that includes many methods useful to scripters. The library does not contain terminology for these methods, but by including <span class="inlinecode">use script "BridgePlus"</span> in your scripts, you can access these methods directly.</p>
+
+<p>These methods are in a class called <span class="inlinecode">SMSForder</span>, and many of them are based on the functionality of the now-deprecated <span class="inlinecode">ASObjC Runner.app</span>. To see the header for this class, use the command <span class="inlinecode">open framework header</span>. The framework is, in fact, an updated version of the <span class="inlinecode">ASObjCExtras.framework</span>, renamed to avoid any clashes.</p>
+
+<p>Before you can use a method from <span class="inlinecode">SMSForder</span>, you need to use at least one command from the <span class="inlinecode">BridgePlus.scptd</span> library. This can be <span class="inlinecode">load framework</span>, or any other command (for example, <span class="inlinecode">Cocoaify ""</span>).</p>
+
+<p>Here is a simple example:</p>
+
+<p class="code">use script "BridgePlus" version "1.3"<BR>
+<BR>
+load framework<BR>
+set newList to ASify from (current application's SMSForder's colsToRowsIn:{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12}} |error|:(missing value))<BR>
+  -->	{{1, 4, 7, 10}, {2, 5, 8, 11}, {3, 6, 9, 12}}</p>
+  
+<p>Note that you do not &mdash; indeed, should not &mdash; include <span class="inlinecode">use framework "BridgePlus"</span> if you are using the script library; the framework will not be found that way. The combination of <span class="inlinecode">use script "BridgePlus"</span> and a call to one of the framework's commands will load it.</p>
+
+<p>As of version 1.3.1, the load framework command returns a reference to the SMSForder class. So you can do this:</p>
+
+<p class="code">use script "BridgePlus" version "1.3.1"<BR>
+<BR>
+set theForder to load framework<BR>
+set newList to ASify from (theForder's colsToRowsIn:{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12}} |error|:(missing value))<BR>
+  -->	{{1, 4, 7, 10}, {2, 5, 8, 11}, {3, 6, 9, 12}}</p>
+
+
+<p>The <span class="inlinecode">SMSForder</span> methods are <a href="BridgePlus_Manual/Index.html">documented here</a>. This is a work in progress.
+</p>
+
+<h2>Deployment</h2>
+
+<p>By putting <span class="inlinecode">BridgePlus.scptd</span> in your <span class="inlinecode">~/Library/Script Libraries</span> folder, you make it available to all your scripts. To use it in scripts you deploy elsewhere, you can add it to a script bundle &mdash; either an applet, or a .scptd file. It needs to be in a folder called <span class="inlinecode">Script Libraries</span>, inside the bundle's <span class="inlinecode">/Contents/Resources</span> folder.</p>
+
+<p>If you plan to codesign a bundle containing the library, you need to codesign the <span class="inlinecode">BridgePlus.framework</span> within <span class="inlinecode">BridgePlus.scptd</span> first.</p>
+
+<p>If you use it in an Xcode project, you can also add <span class="inlinecode">BridgePlus.framework</span> separately as a normal framework, and then remove it from within the <span class="inlinecode">BridgePlus.scptd</span> bundle. In this way, recent versions of Xcode will take care of codesigning the framework for you.</p>
+
+<p>You can download <span class="inlinecode">BridgePlus 1.3.2</span> <a href="BridgePlus_stuff.zip"> here</a>.</p>
+
+<p>You can use and distribute this library and framework, together or separately, free of charge. There are no guarantees or warranties whatsoever. Use at your own risk.
+
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">EVERYDAY APPLESCRIPTObjC</h2>
+			
+			<img src="gfx/Everyday3_300.jpg" alt="" width="100" align="right" caption="'Everyday AppleScriptObjC' 2ed by Shane Stanley">
+
+			<p><b>Everyday AppleScriptObjC, Third Edition</b> by Shane Stanley is the perfect introduction to AppleScriptObjC scripting in Mavericks and later. This new edition covers the changes introduced in El Capitan, and contains several new chapters.</p>
+			
+			<ol>
+				<li>Learn how to use AppleScriptObjC directly in your scripts in El Capitan and Yosemite</li>
+				<li>Learn how to write and deploy AppleScriptObjC-based script libraries in Mavericks and later</li>
+				<li>Full of useful snippets of code</li>
+				<li>Explains how to make sense of the Cocoa documentation</li>
+				<li>Covers the main classes useful to scripters</li>
+			</ol>
+			<p style="text-align:center;"><a href="everyday_book.html" target="_self"><input type="button" value=" LEARN MORE " style="background-color:#009933;color:white;font-size:large;-webkit-border-radius:14px;"></a></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">ASObjC RUNNER</h2>
+<!--			<p style="text-align:center;"><a href="runner.html" target="_self"><input type="button" value="DON'T MISS OUT" style="background-color:#FF0055;color:white;font-size:large;-webkit-border-radius:1px;"></a></p> -->
+			<p>ASObjC Runner is a free application that lets you run scripts that include AppleScriptObjC code from script menus/panels/launchers, and works in versions 10.6 thru 10.9. Now includes a range of &ldquo;vanilla&rdquo; scripting commands for non-ASObjC users. Read more and download it here: <a href="runner.html">ASObjC Runner</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">MYRIAD HELPERS</h2>
+			<p>These helper files can greatly simplify using some Cocoa classes. Read more and download them here: <a href="helpers.html">Myriad Helpers</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">ABOUT THE AUTHOR</h2>
+			<img src="gfx/shane-TH.jpg" highresurl="gfx/shane.jpg" width="200" caption="Shane Stanely (center) discusses techniques for the creation of AppleScript Objective-C applications with Sal Soghoian (right), Product Manager Automation Technologies at Apple. (photo by Björn Zitting)" onclick="void(0);lightboxThisImage(this);" class="across" height="150">
+			<p>Shane Stanley (center, in white) is a long-time AppleScript user and trainer from Melbourne, Australia. He co-presented the <a href="http://scriptingmatters.com/aspro.php" target="_blank">AppleScript Pro Sessions</a> training events in the US for 10 years, and specializes in automating workflows in the publishing industry. (photo by Björn Zitting)</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">VIDEO: ACTIONS AND OULETS</h2>
+			<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosxautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);"><img src="gfx/asoc-movie-clip.jpg" width="206" align="top" class="across"></a>
+			<p>A <a href="javascript:void(0);" onclick="PopupCenter('http://www.macosxautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);">video</a> demonstrating the connection of application interface elements to their corresponding AppleScript function code using Interface Builder outlets and actions. More <a href="../develop/index.html" target="_blank">here</a>.
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

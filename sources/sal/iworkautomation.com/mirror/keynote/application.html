@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: The Keynote Application</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for the application class of the Keynote application of iWork.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: OVERVIEW -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Keynote Application</div>
+		
+			<p>The scripting terminology for the <b>Keynote</b> <span class="codelibraryclass">application</span> class is spread across three suites in the <b>Keynote</b> dictionary:</p>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Standard Suite Application Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">application</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [see also <span class="dictionary-suite">Keynote Suite</span>, <span class="dictionary-suite">Compatibility Suite</span>] : The application’s top-level scripting object.</p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">documents</span>, <span class="dictionary-class">windows</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">frontmost</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;r/o ) : Is this the active application?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;r/o ) : The name of the application.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">version</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;r/o ) : The version number of the application.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">open</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">quit</span>, <span class="dictionary-verb">print</span></p>
+			</div>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Keynote Suite Application Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">application</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [see also <span class="dictionary-suite">Standard Suite</span>, <span class="dictionary-suite">Compatibility Suite</span>] : The Keynote application.</p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">themes</span></p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">open</span>, <span class="dictionary-verb">quit</span>, <span class="dictionary-verb">print</span></p>
+			</div>
+			
+			<p>The <span class="dictionary-suite">Keynote Compatibility Suite</span> <span class="codelibraryclass">application</span> class contains a set of commands for controlling the delivery of presentation documents:</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Keynote Compatibility Suite Application Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term" style="text-indent:-78px;padding-left:78px;"><span class="dictionary-term">application</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: [see also <span class="dictionary-suite">Standard Suite</span>, <span class="dictionary-suite">Keynote Suite</span>] : The Keynote application.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">start slideshow</span>, <span class="dictionary-verb">stop slideshow</span>, <span class="dictionary-verb">show next</span>, <span class="dictionary-verb">show previous</span>, <span class="dictionary-verb">show slide switcher</span>, <span class="dictionary-verb">cancel slide switcher</span>, <span class="dictionary-verb">move slide switcher forward</span>, <span class="dictionary-verb">move slide switcher backward</span>, <span class="dictionary-verb">accept slide switcher</span>.</p>
+			</div>
+		
+			<p class="content-subhead" role="heading" aria-level="2">Intrinsic and Hidden Properties</p>
+		
+			<p>In addition to the three suites shown above, <b>Keynote</b> has intrinsic application properties shared by all applications. These properties can provide the application identifier and the activity state of an application (is the application open).</p>
+			
+			<p>Also, as a very useful bonus, the <b>Keynote</b> dictionary contains a set of hidden properties, including one for indicating whether <b>Keynote</b> is presenting a document, and whether the slide switcher is visible or not:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Intrinsic Application Properties and Hidden Keynote Properties</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Intrinsic%20Application%20Properties%20and%20Hidden%20Keynote%20Properties&script=--%20INTRINSIC%20APPLICATION%20PROPERTIES%20FOR%20ALL%20APPLICATIONS%0Dget%20the%20id%20of%20application%20%22Keynote%22%0D--%3E%20%22com.apple.iWork.Keynote%22%0Dget%20running%20of%20application%20%22Keynote%22%0D--%3E%20true%0Dget%20the%20version%20of%20application%20%22Keynote%22%0D--%3E%20%226.2%22%0D%0D--%20HIDDEN%20KEYNOTE%20APPLICATION%20PROPERTIES%0Dtell%20application%20%22Keynote%22%0D%09get%20properties%0D%09%7Bfrozen%3Atrue%2C%20class%3Aapplication%2C%20playing%3Afalse%2C%20version%3A%226.2%22%2C%20slide%20switcher%20visible%3Afalse%2C%20name%3A%22Keynote%22%2C%20frontmost%3Afalse%7D%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- INTRINSIC PROPERTIES FOR ALL APPLICATIONS</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>get the</b> <span class="codeproperty">id</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">--> &quot;com.apple.iWork.Keynote&quot;</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>get</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">--> true</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>get the</b> <span class="codeproperty">version</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">--> &quot;6.2&quot;</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- HIDDEN KEYNOTE APPLICATION PROPERTIES</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>get</b> <span class="codeproperty">properties</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>-- RETURNS: {<span class="codeproperty">frozen</span>:<span class="codeenumeration">true</span>, <span class="codeproperty">class</span>:<span class="codelibraryclass">application</span>, <span class="codeproperty">playing</span>:<span class="codeenumeration">false</span>, <span class="codeproperty">version</span>:&quot;6.2&quot;, <span class="codeproperty">slide switcher visible</span>:<span class="codeenumeration">false</span>, <span class="codeproperty">name</span>:&quot;Keynote&quot;, <span class="codeproperty">frontmost</span>:<span class="codeenumeration">false</span>}</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Starting and Stopping Presentations</p>
+			
+			<p>Using elements from the sources and methods shown above, the following script contains a statement for <b>Keynote</b> to stop presenting. This statement will only run if: 1) <b>Keynote</b> is currently launched and running; and 2) a presentation is currently playing:</p>	
+					
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Stop Presentation</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Stop%20Presentation&script=--%20IF%20KEYNOTE%20IS%20ACTIVE%20AND%20PLAYING%20THEN%20STOP%20IT%0Dif%20running%20of%20application%20%22Keynote%22%20is%20true%20then%0D%09tell%20application%20%22Keynote%22%0D%09%09if%20playing%20is%20true%20then%20stop%20the%20front%20document%0D%09end%20tell%0Dend%20if"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- IF KEYNOTE IS ACTIVE AND PLAYING THEN STOP IT</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b> <span class="codelibrarycommand">stop</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>end if</b></td></tr>
+			</table>
+			
+			<p>And a script for presenting the front document. It will start the presentation only if <b>Keynote</b> is open with a document open:</p>	
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Start Presentation</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Start%20Presentation&script=--%20IF%20KEYNOTE%20IS%20ACTIVE%20AND%20NOT%20PLAYING%20THEN%20START%20IT%0Dif%20running%20of%20application%20%22Keynote%22%20is%20true%20then%0D%09tell%20application%20%22Keynote%22%0D%09%09activate%0D%09%09try%0D%09%09%09if%20playing%20is%20false%20then%20start%20the%20front%20document%0D%09%09end%20try%0D%09end%20tell%0Dend%20if"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- IF KEYNOTE IS ACTIVE AND NOT PLAYING THEN START IT</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>if</b> <span class="codeproperty">running</span> <b>of</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot; <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b> <span class="codelibrarycommand">start</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>end if</b></td></tr>
+			</table>					
+		</div>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="theme.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li class="hi">Application</li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, macOS, Photos, iWork, Apple Configurator">
+	<meta name="Description" content="A collection of websites about automation in macOS.">
+	<link rel="home" href="https://macosxautomation.com">
+	<title>macOS Automation</title>
+	<style type="text/css">
+		body {background-color:white;}
+		body a {text-decoration:none;color:#444;}
+		body p.site-name {font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-size:24px;font-weight:200;letter-spacing:1px;color:#777;margin-top:0px;margin-bottom:0;}
+		body p.site-description {font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-size:18px;font-weight:200;letter-spacing:1px;color:#777;margin-top:2px;}
+		#table-row-link {height:48px;background-color:#eee;padding-top:12px;}
+		#table-cell-link {padding-top:18px;}
+		#table-row-title {height:58px;text-align:center;}
+		#creed-row, creed-cell {height:24px;text-align:center;}
+		.table-row-content {height:128px;}
+		.table-cell-left {width:40%;padding-left:36px;padding-right:8px;padding-top:12px;text-align:right;vertical-align:top;}
+		.table-cell-center-left {width:10%;min-width:128px;text-align:center;background-color:#eee;vertical-align:middle;                                                                                                                                                                                                                                                                                                                                             }
+		.table-cell-center-right {width:10%;min-width:128px;text-align:center;background-color:#eee;vertical-align:middle;}
+		.table-cell-right {width:40%;padding-right:36px;padding-left:8px;padding-top:12px;text-align:left;vertical-align:top;}
+	</style>
+	
+		<!-- BEGIN LIGHTBOX -->
+			<link rel="stylesheet" href="lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+			<script src="lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+		<!-- END LIGHTBOX -->
+		<!-- BEGIN FIRST RUN CHECK AND DISPLAY -->
+			<script type="text/javascript">
+				function checkFirstRunStatus() {
+					var x = getCookie('macosxautomationVisitationStatus')
+					if (x != "" && x != null) {
+						// do nothing, let the page be displayed
+					} else {
+						document.cookie = "macosxautomationVisitationStatus=true";
+						lightboxDisclaimerImage();
+					}
+				}
+				function getCookie(cname) {
+					var name = cname + "=";
+					var ca = document.cookie.split(';');
+					for (var i=0; i<ca.length; i++) {
+						var c = ca[i].trim();
+						if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+					}
+					return "";
+				}
+			</script>
+		<!-- END FIRST RUN CHECK AND DISPLAY -->
+</head>
+<body onLoad="checkFirstRunStatus();">
+	<table id="main-table" role="presentation">
+		<tr id="table-row-link">
+			<td id="table-cell-link" colspan="4">
+				<div style="float:left;text-align:left;padding-left:24px;font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-size:18px;font-weight:200;letter-spacing:1px;"><a href="about.html">About</a>&nbsp;&bull;&nbsp;<a href="AutomationToolsInstaller.zip">Example Tools Installer</a></div>
+				<div style="float:right;text-align:right;padding-right:24px;font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-size:18px;font-weight:200;letter-spacing:1px;"><span style="color:#777;font-size:16px;">OS NOTES</span>:&nbsp;<a href="https://macosxautomation.com/lion/index.html">Lion</a> | <a href="https://macosxautomation.com/mavericks/index.html">Mavericks</a> | <a href="https://macosxautomation.com/yosemite/index.html">Yosemite</a></p>
+			</td>
+		</tr>
+		<tr id="table-row-title">
+			<td id="table-title-link" colspan="4">
+				<p style="font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-size:72px;font-weight:300;color:#777;margin-top:0px;margin-bottom:-32px;">The macOS Automation Sites</p>
+			</td>
+		</tr>
+		<tr id="creed-row">
+			<td id="creed-cell" colspan="4">
+				<p style="text-align:center;font-family:-apple-system,'Helvetica Neue',Helvetica,san-serif;font-style:italic;font-size:24px;font-weight:300;color:#777;">&ldquo;The power of the computer should reside in the hands of the one using it.&rdquo;</p>
+			</td>
+		</tr>
+		<tr class="table-row-content">
+			<td class="table-cell-left">
+				<p class="site-name" style="margin-top:0px;"><a href="https://photosautomation.com" style="font-weight:300;">photosautomation.com</a></p>
+				<p class="site-description">A website about automating the Photos application using Automator and AppleScript</p>
+			</td>
+			<td class="table-cell-center-left">
+				<a href="https://photosautomation.com"><img class="across" width="128" alt="photos-256" src="main-page-gfx/photos-256.png" height="128"></a>
+			</td>
+			<td class="table-cell-center-right">
+				<a href="https://macosxautomation.com/automator"><img class="across" width="110" alt="photos-256" src="main-page-gfx/automator-256.png" height="110"></a>
+			</td>
+			<td class="table-cell-right">
+				<p class="site-name" style="margin-top:0px;"><a href="https://macosxautomation.com/automator/index.html" style="font-weight:300;">macosautomation.com/Automator</a></p>
+				<p class="site-description">Learn how to use OS X’s Automator application to create “automation recipes”&nbsp;<a href="https://vimeo.com/271390639" target="_blank" style="color:blue;">(VIDEO)</a></p>
+			</td>
+		</tr>
+		<tr class="table-row-content">
+			<td class="table-cell-left">
+				<p class="site-name" style="margin-top:0px;"><a href="https://iworkautomation.com" style="font-weight:300;">iworkautomation.com</a></p>
+				<p class="site-description">A website about automating the iWork suite of applications using AppleScript and Automator</p>
+			</td>
+			<td class="table-cell-center-left">
+				<a href="https://iworkautomation.com"><img class="across" width="100" alt="iwork" src="main-page-gfx/iwork-500.png" height="100"></a>
+			</td>
+			<td class="table-cell-center-right">
+				<a href="https://macosxautomation.com/applescript"><img class="across" width="110" alt="AppleScript" src="main-page-gfx/applescript.png" height="110"></a>
+			</td>
+			<td class="table-cell-right">
+				<p class="site-name" style="margin-top:0px;"><a href="https://macosxautomation.com/applescript/index.html" style="font-weight:300;">macosautomation.com/AppleScript</a></p>
+				<p class="site-description">An English-like scripting language for controlling the OS and the applications that run on it.&nbsp;(<a href="applescript/firsttutorial/index.html" style="color:blue;">TUTORIAL</a>)&nbsp;<a href="https://vimeo.com/271378967" target="_blank" style="color:blue;">(VIDEO)</a></p>
+				<p class="site-description">The ultimate AppleScript overview for programmers: <a style="color:blue;" href="https://macosxautomation.com/applescript/wwdc-session-138.html">WWDC 2005 • Session 138</a></p>
+				
+			</td>
+		</tr>
+		<tr class="table-row-content">
+			<td class="table-cell-left">
+				<p class="site-name" style="margin-top:0px;"><a href="https://configautomation.com" style="font-weight:300;">configautomation.com</a></p>
+				<p class="site-description">Automating the setup and management of iOS devices using the Apple Configurator application</p>
+			</td>
+			<td class="table-cell-center-left">
+				<a href="https://configautomation.com"><img class="across" width="128" alt="iwork" src="main-page-gfx/configurator.png" height="128"></a>
+			</td>
+			<td class="table-cell-center-right">
+				<a href="http://dictationcommands.com"><img class="across" width="112" alt="iwork" src="main-page-gfx/dictation-256.png" height="112"></a>
+			</td>
+			<td class="table-cell-right">
+				<p class="site-name" style="margin-top:0px;"><a href="http://dictationcommands.com" style="font-weight:300;">dictationcommands.com</a></p>
+				<p class="site-description">Total voice control of the Mac. Free command set with hundreds of commands for iWork, Photos, and the Finder.</p>
+			</td>
+		</tr>
+		<tr class="table-row-content">
+			<td class="table-cell-left">
+				<p class="site-name" style="margin-top:0px;"><a href="https://omni-automation.com" style="font-weight:300;">omni-automation.com</a></p>
+				<p class="site-description">Cross-platform application object-model scripting based on JavaScript Core. Wicked!</p>
+			</td>
+			<td class="table-cell-center-left">
+				<a href="https://omni-automation.com"><img width="112" alt="omni-automation" src="main-page-gfx/omni.png" height="112"></a>
+			</td>
+			<td class="table-cell-center-right">
+				<a href="https://cmddconf.com"><img class="across" width="112" alt="cmd-d" src="main-page-gfx/CMD-D-Bug-Square.jpg" height="112"></a>
+			</td>
+			<td class="table-cell-right">
+				<p class="site-name" style="margin-top:0px;"><a href="https://cmddconf.com" style="font-weight:300;">cmddconf.com</a></p>
+				<p class="site-description">The CMD-D &ldquo;Down-Home&rdquo; Scripting Boot Camp (Oct 15-17, 2018) is a 3-day hands-on AppleScript training seminar taught by Ray Robertson and Sal Soghoian.</p>
+			</td>
+		</tr>
+		<tr><td colspan="4" style="background-color:white;text-align:center;"><hr></td></tr>
+		<tr class="table-row-content">
+			<td class="table-cell-left">
+				<p class="site-name" style="margin-top:0px;"><a href="https://developer.apple.com/library/mac/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/index.html#//apple_ref/doc/uid/TP40016239" style="font-weight:300;">Mac Automation Scripting Guide</a></p>				
+				<p class="site-description">Apple’s official documentation for the Automation languages in OS X.</p>
+			</td>
+			<td class="table-cell-center-left">
+				<a href="https://developer.apple.com/library/mac/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/index.html#//apple_ref/doc/uid/TP40016239"><img class="across" width="96" height="104" alt="AppleScript" src="main-page-gfx/apple_s4@2x.png" height="128"></a>
+			</td>
+			<td class="table-cell-center-right">
+				<a href="https://www.raywenderlich.com/133007/making-mac-app-scriptable-tutorial"><img class="across" width="112" alt="xcode" src="main-page-gfx/xcode-256.png" height="112"></a>
+			</td>
+			<td class="table-cell-right">
+				<p class="site-name" style="margin-top:0px;"><a href="https://www.raywenderlich.com/133007/making-mac-app-scriptable-tutorial" style="font-weight:300;">Scriptable Swift App</a></p>				
+				<p class="site-description">An excellent tutorial from Ray Wenderlich on making a macOS Swift app scriptable.</p>
+			</td>
+		</tr>
+	</table>
+	<div style="height:128px;">&nbsp;</div>
+	 		
+</body>
+</html>

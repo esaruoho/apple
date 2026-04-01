@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Tell Block</h2>
+		
+		<p>To set the Desktop window display to the arrangement you have set up, the following script performs a series of 12 commands that open and manipulate the two windows:</p>
+		
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to</b> close <b>every</b> window<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to</b> open home<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set</b> toolbar visible <b>of the front</b> Finder window <b>to</b> true<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set the</b> sidebar width <b>of the front</b> Finder window <b>to</b> 135<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set the</b> current view <b>of the front</b> Finder window <b>to</b> column view<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set the</b> bounds <b>of the front</b> Finder window <b>to</b> {36, 116, 511, 674}<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to</b> open folder &quot;Documents&quot; <b>of</b> home<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set</b> toolbar visible <b>of the front</b> Finder window <b>to</b> false<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set</b> statusbar visible <b>of the front</b> Finder window <b>to</b> true<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set the</b> current view <b>of the front</b> Finder window <b>to</b> flow view<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to set the</b> bounds <b>of the front</b> Finder window <b>to</b> {528, 116, 1016, 674}<BR>
+<b>tell</b> application &quot;Finder&quot; <b>to</b> select <b>the last</b> Finder window</p>
+
+			<p>Don&rsquo;t bother entering this script in Script Editor. As you see, it is rather long, is very dense, and would take some effort to type into Script Editor. There’s an easier way to compose your scripts.</p>
+			
+			<p>Notice that the script is a series of <span class="dictionary-term">tell statements</span> targeting the same application, namely, the Finder.</p>
+			
+			<p>Instead of writing a group of 12 <span class="dictionary-term">tell statements</span>, each beginning with <span class="inlinecode">tell application "Finder" to</span>, we&rsquo;ll shorten the time it takes to write the script and make it easier to read by enclosing the commands within a single <span class="dictionary-term">tell block</span>.</p>
+			
+			<p>A <span class="dictionary-term">tell block</span> is used to target multiple actions at a single scriptable object, in this case the Finder application, which makes scripts easier to understand. You&rsquo;ll always want to use a <span class="dictionary-term">tell block</span> in your scripts when addressing more than one action at one scriptable object.</p>
+			
+			<p>A <span class="dictionary-term">tell block</span> begins with the verb <span class="dictionary-term">tell</span> followed by a reference to a target object. The various actions to be performed by or to that object are then listed, each on its own line. After all the actions have been entered, the <span class="dictionary-term">tell block</span> ends with the closing statement <span class="dictionary-term">end tell</span>. All actions inside the <span class="dictionary-term">tell block</span> target the object referenced in the first line of the <span class="dictionary-term">tell block</span>.</p>
+			 
+			<p>Enter, compile, and run the following script as shown, except you may optionally substitute the window <span class="dictionary-term">bounds</span> values you previously wrote down.</p>
+			
+			<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%0D%09close%20every%20window%0D%09open%20home%0D%09set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20true%0D%09set%20the%20sidebar%20width%20of%20the%20front%20Finder%20window%20to%20135%0D%09set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20column%20view%0D%09set%20the%20bounds%20of%20the%20front%20Finder%20window%20to%20%7B36%2C%20116%2C%20511%2C%20674%7D%0D%09open%20folder%20%22Documents%22%20of%20home%0D%09set%20toolbar%20visible%20of%20the%20front%20Finder%20window%20to%20false%0D%09set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20flow%20view%0D%09set%20the%20bounds%20of%20front%20Finder%20window%20to%20%7B528%2C%20116%2C%201016%2C%20674%7D%0D%09select%20the%20last%20Finder%20window%0Dend%20tell"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The individual script statements have been placed inside of a tell block targeting the Finder application.<br>&nbsp;<br></span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>close <b>every</b> window<BR>
+<span style="float:left; width:10px;">&nbsp;</span>open home<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> toolbar visible <b>of the front</b> Finder window <b>to</b> true<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> sidebar width <b>of the front</b> Finder window <b>to</b> 135<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> column view<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> bounds <b>of the front</b> Finder window <b>to</b> {36, 116, 511, 674}<BR>
+<span style="float:left; width:10px;">&nbsp;</span>open folder &quot;Documents&quot; <b>of</b> home<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> toolbar visible <b>of the front</b> Finder window <b>to</b> false<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> flow view<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> bounds <b>of front</b> Finder window <b>to</b> {528, 116, 1016, 674}<BR>
+<span style="float:left; width:10px;">&nbsp;</span>select <b>the last</b> Finder window<BR>
+<b>end tell</b></p>
+
+
+			<p>You should now see two Finder windows placed side by side on the Desktop, one in column view, the other in flow view, with your home directory the active window and your Documents folder displayed in the other window. Instant Desktop organization!</p>
+			
+			<p>We&rsquo;ll do more with this script in a moment, but first let&rsquo;s return to the subject of <span class="dictionary-term">tell blocks</span>. A <span class="dictionary-term">tell block</span> is a much cleaner, more concise, and easier to read than a series of separate <span class="dictionary-term">tell statements</span>. Compare the previous script to the same script written as a series of <span class="dictionary-term">tell statements</span> (top of this page).</p>
+			
+			<p>It is not only easier to write the script using a <span class="dictionary-term">tell block</span>, but you can clearly see the relationship between scriptable objects and the commands that target them, because of the indentations automatically placed in the script text by Script Editor when you compile the script. It&rsquo;s very easy to see where a section of a script targeting a specific object begins (<span class="inlinecode">tell</span>) and ends (<span class="inlinecode">end tell</span>).</p>
+
+			<p>In summary, <span class="dictionary-term">tell blocks</span> are easy to use if you remember these simple rules:</p>
+			
+			<ul class="square">
+				<li>If you begin a <span class="dictionary-term">tell block</span>, you must end a <span class="dictionary-term">tell block</span> with an <span class="inlinecode">end tell</span> statement.</li>
+				
+				<li>Commands within a <span class="dictionary-term">tell block</span> target the object addressed in the <span class="inlinecode">tell block</span>&rsquo;s opening statement.</li>
+			</ul>
+			
+			<p>Next we&rsquo;ll examine to improve and save the Desktop Cleanup script.</p>
+			
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="15.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li class="hi">The Tell Block</li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

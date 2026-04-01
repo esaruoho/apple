@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../index.html">Lion Release Notes</a> | <a href="../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+		<h1>Website Popup</h1>
+						
+		<p>More and more, services and functionality are moving to the <q>Cloud.</q> Accessing internet-hosted server-based content without the hassle and overhead of using a browser can prove to be invaluable in providing simple, quick, and elegant workflow soltuions. The Website Popup action displays specified HTML or web-based content in a floating HUD-like palette that can provide fast access to important content and then quicly get out of the way.</p>
+					
+		<h2>The Action Interface</h2>
+		
+		<p>The following desccribes the various controls and parameters used in the action interface.</p>
+		
+		<ol>
+			<li><b>Webview Size Presets</b> - Select a preset for determining the size of the floating palette: <b>Large</b> (1280w x 1024h), <b>Medium</b> (1024w x 768h), <b>iPhone</b> (320 x 480), <b>iPhone Landscape</b> (480 x 320), <b>iPad</b> (960 x 1024), <b>iPad Landscape</b> (1024 x 960), or <b>Custom</b>.</li>
+			
+			<li><b>Window Dimensions</b> - If <b>Custom</b> is selected from the <b>Webview Size Presets</b> menu <font color="#FF0000"><b>(1)</b></font> these two text input fields become enabled, allowing you to enter any values for the width and height of the palette display.</li>
+			
+			<li><b>Reverse Dimensions</b> - Click this button to swap the values in the width and height input fields <font color="#FF0000"><b>(2)</b></font>.</li>	
+		</ol>
+		
+		<img src="gfx/websitepopup.png" width="598" align="top" class="across" height="296">
+		
+		<ol start="4">
+			<li><b>User Agent</b> - Many websites may display differently, depending upon the device they are viewed on. For example, the mobile version of a website may be automatically displayed when viewed on an iPhone rather than on a Mac. The webview can mimic one of three devices by setting the user agent options: as <b>Safari</b> on the Mac;  as the <b>iPhone</b>; or as the <b>iPad</b>.</li>
+			
+			<li><b>Display Position</b> - You can choose where the floating palette will appear by selecting either: <b>Centered</b> on the screen; or <b>At Mouse Pointer</b>.</li>
+			
+			<li><b>Action Output</b> - The Website Popup action can return one of three types of data to the workflow: the currently <b>Selected Text</b> in the webview; the <b>Input URL</b> of the first webpage displayed; or the <b>Current URL</b> displaying in the webview.</li>	
+		</ol>
+		
+		<p class="note"><b>NOTE</b>: the floating palette can be dismissed, when frontmost, by pressing the Escape key.</p>
+		
+		<p class="note"><b>NOTE</b>: The HTML-5 <span class="inlinecode" style="font-weight:700;">LocalStorage</span> object is not currently supported.</p>
+
+				
+		<h2>Example Workflows</h2>
+		
+		<p>Here are a few examples of how this action can be used in the creation of a Mac&nbsp;OS&nbsp;X services:</p>
+		
+		<h2>Quick Tweet</h2>
+		
+		<p>The first example is a simple workflow that displays the website of a URL passed to the <b>Website Popup</b> action. It is saved as a system service, available at anytime from within any application, that displays the mobile Twitter website.</p>
+		
+		<p>This service takes no input and comprised of two actions: one for passing a specific URL to the next action, and the Website Popup action set to display in the center of the screen as an iPhone. Note the specified URL of http://mobile.twitter.com:</p>
+		
+		<img src="gfx/twitterworkflow.png" width="640" height="642" align="top" class="across">
+		
+		<p>When the service is selected from the Application &gt; Services menu (or by typing an assigned keystroke), the mobile Twitter website is displayed in a floating iPhone-sized palette:</p>
+		
+		<img src="gfx/twittermobilewindows.png" width="640" height="480" align="top">
+		
+		<p class="imagecaption">The Twitter Mobile login window (left), and the same window displaying search results (right).</p>
+		
+		
+		<p class="principle"><a href="twitterservice.zip"><img src="gfx/download.png" width="36" height="36" align="left" hspace="6" vspace="6"></a><b>TRY IT YOURSELF!</b> <a href="twitterservice.zip">Download</a> a zip archive of the service workflow. To install, double-click the workflow file, and then click the <b>Install</b> button in the forthcoming dialog:<br><img src="gfx/installdialog.png" width="624" height="292" align="top">Once installed, the service will be available from the <b>Application &gt; Services</b> menu.</p>
+		
+		<hr>
+		
+		<h2>Wikipedia Lookup</h2>
+		
+		<p>This example service workflow displays the Wikipedia search results for the currently selected text. As with the previous example, the Wikipedia content is displayed as viewed on an iPhone.</p>
+
+		<img src="gfx/wikipediaworkflow.png" width="640" height="725" align="top">
+		
+		<p>The Wikipedia search URL is contructed by appending the currently selected text to the Wikipedia URL in the first action. The URL is then displayed in the website popup palette. Note that any text selected in the floating palette will be placed on the clipboard for easy pasting into the front document once the OK button is pressed on the palette.</p>
+		
+		<p>(Below) A term is selected in a document and the service is summoned by displaying the application's contextual menu (Control-Click).</p>
+		
+		<img src="gfx/wikipediamenu.jpg" width="640" height="640" align="top" class="across">
+		
+		<p>(Left) The wiki entry for the search term is displayed. (Right) Content from the page is selected. The selection will be placed on the clipboard when the OK button is pressed.</p>
+		
+		<img src="gfx/wikientry.png" width="640" height="480" align="top" class="across">
+		
+		<p>The clipboard content has been pasted into the document:</p>
+		
+		<img src="gfx/lookupresult.png" width="561" height="630" align="top" class="across">
+		
+		<p class="principle"><a href="wikipediaservice.zip"><img src="gfx/download.png" width="36" height="36" align="left" hspace="6" vspace="6"></a><b>TRY IT YOURSELF!</b> <a href="wikipediaservice.zip">Download</a> a zip archive of the service workflow. To install, double-click the workflow file and click the Install button in the forthcoming dialog. Once installed, the service will be available from the <b>Application &gt; Services</b> menu.</p>
+		
+		<hr>
+		
+		<h2>Watch Latest Macbreak Weekly Episode</h2>
+		
+		<p>Here's a convenient way to watch the latest Macbreakly Weekly podcast! This service workflow gets the URL of the current episode from the Macbreak Weekly small video RSS feed and then displays the video in a small custom-sized floating window.</p>
+
+		<img src="gfx/macbreakworkflow.png" width="640" height="811" align="top">
+		
+		<p class="note"><b>NOTE</b>: If you want to dismiss the palette, click the <b>OK</b> button at the bottom right of the palette. Clicking the <b>Cancel</b> button, or typing the <b>Escape</b> key, may not stop the video playback.</p>
+
+		<img src="gfx/macbreakvideo.png" width="640" height="428" align="top">
+		
+		<p class="principle"><a href="macbreakservice.zip"><img src="gfx/download.png" align="left" hspace="6" vspace="6"></a><b>TRY IT YOURSELF!</b> <a href="macbreakservice.zip">Download</a> a zip archive of the service workflow. To install, double-click the workflow file and click the <b>Install</b> button in the forthcoming dialog. Once installed, the service will be available from the <b>Application &gt; Services</b> menu.</p>
+		
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>NEW ACTIONS IN LION</h2>
+			<ol>
+				<li><a href="../epub/index.html">Text to EPUB File</a></li>
+				<li class="hi">Website PopUp</li>
+				<li><a href="../createbanner/index.html">Create Banner Image from Text</a></li>
+				<li><a href="../encodeaudio/index.html">Encode to MPEG Audio</a></li>
+				<li><a href="../encodemedia/index.html">Encode Media</a></li>
+				<li><a href="../annotatedversion/index.html">Create Annotated Media File</a></li>
+				<li><a href="../webcontent/index.html">Get Web Content/Save Images from Web Content</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

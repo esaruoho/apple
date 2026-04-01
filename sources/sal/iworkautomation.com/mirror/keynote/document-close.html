@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Closing Documents</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for closing documents in the Keynote application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		
+		<!-- BEGIN SEGMENT: OVERVIEW -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Closing Documents</div>
+						
+			<p>The closing of documents is a fundamental action performed by scripts, and is accomplished using the <span class="codelibrarycommand">close</span> command from the <span class="dictionary-suite">Standard Suite</span>.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">close</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Close a document.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>close</b> <span class="dictionary-class">specifier</span> : the document(s) or window(s) to close.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">saving</span> <span class="dictionary-enumeration">yes</span>/‌<span class="dictionary-enumeration">no</span>/‌<span class="dictionary-enumeration">ask</span> ] : Should changes be saved before closing?</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">saving in</span> <span class="dictionary-class">file</span> ] : The file in which to save the document, if so.</p>	
+			</div>
+			
+			<p>The <span class="codelibrarycommand">close</span> command has two optional parameters that determine: 1) whether changes made to the document should be saved before it is closed; and 2) in which file the document should be saved.</p>
+			
+			<p>The example scripts provided below, demonstrate typical uses of the <span class="codelibrarycommand">close</span> command:</p>
+				
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Close All Documents without Saving</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Close%20All%20Documents%20without%20Saving&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09close%20every%20document%20without%20saving%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">close</span> <b>every</b> <span class="codelibraryclass">document</span> <b>without</b> <span class="codelibraryparameter">saving</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The following script examines all open documents, closing those which have not yet been saved to file:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Close All Un-Saved Documents</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Close%20All%20Un-Saved%20Documents&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09repeat%20with%20i%20from%20(count%20of%20documents)%20to%201%20by%20-1%0D%09%09set%20thisDocument%20to%20document%20i%0D%09%09if%20file%20of%20thisDocument%20is%20missing%20value%20then%0D%09%09%09close%20thisDocument%20without%20saving%0D%09%09end%20if%0D%09end%20repeat%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="dictionary-class">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> (<span class="codelibrarycommand">count</span> <b>of</b> <span class="dictionary-class">documents</span>) <b>to</b> 1 <b>by</b> -1</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibraryclass">document</span> i</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">file</span> <b>of</b> <span class="codevariable">thisDocument</span> <b>is</b> <span class="codelibraryclass">missing value</span> <b>then</b></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">close</span> <span class="codevariable">thisDocument</span> <b>without</b> <span class="codelibraryparameter">saving</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+		
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+				
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-export.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li class="hi"><a href="document.html">Document</a></li>
+				<li class="navListSectionItem"><a href="document-open.html">Opening Documents</a></li>
+				<li class="navListSectionItem"><a href="document-play.html">Playing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-make.html">Making Documents</a></li>
+				<li class="navListSectionItem"><a href="document-save.html">Saving Documents</a></li>
+				<li class="navListSectionItemSelected">Closing Documents</li>
+				<li class="navListSectionItem"><a href="document-export.html">Exporting Documents</a></li>
+				<li class="navListSectionItem"><a href="document-kiosk.html">Making Kiosks</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

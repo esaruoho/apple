@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Current View Property</h2>
+		
+		<p>The next Finder window property we&rsquo;ll examine is the <span class="dictionary-term">current view</span> property. The value of this property is the method used to display the contents of the Finder window, and can be one of four enumerations: <span class="dictionary-term">icon view</span>, <span class="dictionary-term">list view</span>, <span class="dictionary-term">column view</span>, and (new in Mac&nbsp;OS&nbsp;X v10.5) <span class="dictionary-term">flow view</span>. Like the <span class="dictionary-term">target</span> and <span class="dictionary-term">toolbar visible</span> properties, this property can be both read and edited:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20current%20view%20of%20the%20front%20Finder%20window%0D%2D%2D%3E%20returns%20either%3A%20icon%20view%2C%20list%20view%2C%20flow%20view%2C%20or%20column%20view"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The value of the current view property matches the view mode currently used by the Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> current view <b>of the front</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns either: icon view, list view, flow view, or column view</span></p>
+		
+		<p>Try these scripts and watch as the front Finder window changes its method of display:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20current%20view%20of%20the%20front%20Finder%20window%20to%20list%20view"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Scripts to change the view mode of the frontmost Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> list view<BR>
+		<BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> column view<BR>
+		<BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> flow view<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> flow view is new in Mac OS X v10.5 (Leopard)</span><BR>
+		<BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> current view <b>of the front</b> Finder window <b>to</b> icon view</p>
+		
+		<a href="gfx/CH01_image23.jpg" title="The flow view in Mac OS X v10.5 (Leopard)" rel="lightbox"><img src="gfx/CH01_image23.jpg" width="450" align="top"></a>
+		<p class="imagecaption">The flow view in Mac OS X v10.5 (Leopard)</p>
+		
+		<p>Window management is an issue that most of us deal with on a daily basis. We&rsquo;re often moving, resizing, and adjusting windows to facilitate the access and control of information. The current view property controls how the contents of Finder window are displayed. The next two properties pertain to the placement and sizing of Finder windows.</p>
+
+		<p class="note"><b>TIP</b>: If you&rsquo;re the kind of person who likes all folders to open in the same view mode, here&rsquo;s a simple tell statement that will change the view display mode of every folder within an indicated folder, such as your home directory:</p>
+		
+		<p class="note"><b>tell</b> application &quot;Finder&quot; <b>to set the</b> current view <b>of</b> &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>the</b> window <b>of every</b> folder <b>of</b> home <b>to</b> icon view</p>
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="10.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</a></li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li class="hi">The Current View Property</li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

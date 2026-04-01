@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Rotating an Image</h2>
+		
+		<p>From the Image Events dictionary:</p>
+		
+		<p class="dictionary">rotate v : Rotate an image<br>
+		<span class="dictionary-indent-01"><span class="dictionary-term">rotate</span> (reference): the object for the command</span><br>
+		<span class="dictionary-indent-02"><span class="dictionary-term">to angle</span> (real): rotate using an angle</span></p>
+
+		
+		
+		<p>The rotate command is used to rotate an image clockwise around its center point. The value for the to angle parameter is a positive integer from 1 to 359.</p>
+		
+		<p>To convert a negative rotation angle (counter-clockwise values), such as -90, to a positive value, add 360:</p>
+		
+		<p class="code">-90 + 360 = 270</p>
+		
+		<p class="note"><b>NOTE</b>: Images rotated to values other than 90, 180, or 270 will have their &ldquo;non-image&rdquo; areas padded with black pixels to maintain the resulting image shape as a rectangle.</p>
+		
+		<p>To rotate an image, follow the same steps as the script used to flip an image.</p>
+		
+<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09rotate%20this_image%20to%20angle%20270%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top"></a><br>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>rotate <span class="codevariable">this_image</span> <b>to</b> angle 270<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<img src="gfx/23_image03.png" width="640" height="227" align="top" class="across">
+		
+		<p class="imagecaption">Use of the roate command. (L to R) Normal, rotated 270 degrees or -90 degrees (90 degress counter-clockwise), rotated 45 degrees (note the automatic padding of the space around the rotated image).</p>
+		
+		
+		<h3>Example Accepting User Input</h3>
+				
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20rotation_angle%20to%2090%0Drepeat%0D%09display%20dialog%20%22Enter%20the%20rotation%20angle%3A%22%20default%20answer%20rotation_angle%20buttons%20%7B%22Cancel%22%2C%20%22Counter%2DClockwise%22%2C%20%22Clockwise%22%7D%0D%09copy%20the%20result%20as%20list%20to%20%7Brotation_angle%2C%20rotation_direction%7D%0D%09try%0D%09%09set%20rotation_angle%20to%20rotation_angle%20as%20number%0D%09%09if%20the%20rotation_angle%20is%20greater%20than%200%20and%20the%20rotation_angle%20is%20less%20than%20360%20then%0D%09%09%09if%20the%20rotation_direction%20is%20%22Counter%2DClockwise%22%20then%0D%09%09%09%09set%20the%20rotation_angle%20to%20360%20%2D%20the%20rotation_angle%0D%09%09%09end%20if%0D%09%09%09exit%20repeat%0D%09%09end%20if%0D%09on%20error%0D%09%09beep%0D%09end%20try%0Dend%20repeat%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09rotate%20this_image%20to%20angle%20rotation_angle%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image"></a><span class="script-caption">will allow the user to enter the rotation information when the script is executed:</span><img src="gfx/23_imageA4.png" width="374" height="149" align="top" class="script-image"><br>&nbsp;<BR><br>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">rotation_angle</span> <b>to</b> 90<BR>
+<b>repeat</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>&quot;Enter the rotation angle:&quot; default answer <span class="codevariable">rotation_angle</span> &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>buttons {&quot;Cancel&quot;, &quot;Counter-Clockwise&quot;, &quot;Clockwise&quot;}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>copy the</b> result <b>as</b> list <b>to</b> {<span class="codevariable">rotation_angle</span>, <span class="codevariable">rotation_direction</span>}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">rotation_angle</span> <b>to</b> <span class="codevariable">rotation_angle</span> <b>as</b> number<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">rotation_angle</span> <b>is greater than</b> 0 <b>and</b> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>the</b> <span class="codevariable">rotation_angle</span> <b>is less than</b> 360 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codevariable">rotation_direction</span> <b>is</b> &quot;Counter-Clockwise&quot; <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">rotation_angle</span> <b>to</b> 360 - <b>the</b> <span class="codevariable">rotation_angle</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>exit repeat</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>beep<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end repeat</b><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>rotate <span class="codevariable">this_image</span> <b>to</b> angle <span class="codevariable">rotation_angle</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Image Properties</a></li>
+				<li><a href="02.html">Flipping Images</a></li>
+				<li class="hi">Rotating Images</li>
+				<li><a href="04.html">Scaling Images</a></li>
+				<li><a href="05.html">Padding Images</a></li>
+				<li><a href="06.html">Framing Images</a></li>
+				<li><a href="07.html">Croping Images</a></li>
+				<li><a href="08.html">File Conversion</a></li>
+				<li><a href="09.html">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

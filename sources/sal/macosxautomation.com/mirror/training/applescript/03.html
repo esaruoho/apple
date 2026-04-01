@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X Automation: AppleScript</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../index.html">Automation</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+		<div id="header">
+			<a href="../index.html"><img src="gfx/applescript-sm-banner.png" width="900" height="144" align="top" border="0"></a>
+			<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+				<tr>
+					<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+					<td width="72"><a href="../index.html">HOME</a></td>
+					<td><a href="#" class="hi">LEARN APPLESCRIPT</a></td>
+					<td><a href="../services/intro.html">LEARN SERVICES</a></td>
+					<td><a href="../automator/intro.html">LEARN AUTOMATOR</a></td>
+					<td width="72"><a href="../video/index.html">VIDEOS</a></td>
+					<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+				</tr>
+			</table>
+		</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Name Property</h2>
+		
+		<p>The first property of a Finder window we&rsquo;ll examine is its <span class="inlinecode">name</span> property.</p> 
+
+		<p>A window&rsquo;s name is the window title displayed in the title bar of the window. In the case of Finder windows, the value of the name property is the name of the folder or disk whose contents are displayed within the Finder window.</p>
+
+		<p>To retrieve the value of the <span class="inlinecode">name</span> property of a window, we&rsquo;ll use the command &ldquo;<span class="inlinecode">get</span>.&rdquo; This verb is used when we want to extract information or data from a scriptable element or object.</p>
+
+		<p>Delete the previous script from the open script window, then enter, compile, and run the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20front%20Finder%20window"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to retrieve the title of the frontmost Finder window.<br>&nbsp;<br><br></span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to get the</b> name <b>of front</b> Finder window</p>
+
+		<p>To see the result of our request, look in the Result Pane at the bottom the script window. To activate the Result Pane, click the tab titled Result at the bottom of the script window.  In the Result pane you&rsquo;ll see the result, if any, of the last script action. In the previous example, the result is the title of the open Finder window, which also happens to be the name of your startup disk.</p>
+
+
+		<a href="gfx/CH01_image05.jpg" rel="lightbox" title="A script window displays the result of the last script action in the Results pane at the bottom of the window."><img src="gfx/CH01_image05.jpg" width="450" align="top" class="across"></a>
+
+		<p class="imagecaption">A script window displays the result of the last script action in the Results pane at the bottom of the window.</p>
+
+		<p>For Finder windows, the <span class="dictionary-term">name</span> property is a read-only property. It can be used to refer to a Finder window, however,  its value cannot be changed by a script. The value of the <span class="dictionary-term">name</span> property of a Finder window will always be the name of the folder or disk whose contents it displays.</p>
+
+		<p>Delete the previous script from the script window, then enter, compile, and run the following script. Be sure to replace &ldquo;Macintosh HD&rdquo; with the name of the open Finder window if it is different on your computer.</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20close%20Finder%20window%20%22Macintosh%20HD%22"><img src="gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that closes a specific Finder window.<br>&nbsp;<br><br></span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> close Finder window &quot;Macintosh HD&quot;</p>
+
+		<p>As the previous script demonstrates, you can use the name property as a means to refer to a specific Finder window. When the script is run, the Finder window named &ldquo;Macintosh HD&rdquo; is closed.</p> 
+
+		<p>The previous script worked because it is a fully qualified <span class="inlinecode">tell statement</span>, in that it both refers to the object receiving the commands, in this case the open window, and indicates the desired action to be performed, closing the window. All <span class="inlinecode">tell statements</span> are constructed in this manner.</p>
+
+		<a href="gfx/CH01_image06.jpg" rel="lightbox" title="A script consisting of a single tell statement targeting a Finder window."><img src="gfx/CH01_image06.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">A script consisting of a single tell statement targeting a Finder window.</p>
+
+
+		<p>Also note that the result of the script action is a set of curly brace characters. This is an AppleScript list. We&rsquo;ll talk more about that in a couple pages.</p>
+
+
+<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li class="hi">The Name Property</li>
+				<li><a href="04.html">The Index Property</a></li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

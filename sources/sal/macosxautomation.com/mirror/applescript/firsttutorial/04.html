@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Beginner's Tutorial</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START LIGHTBOX -->
+	<link rel="stylesheet" href="../css/lightbox.css" type="text/css" media="screen" />
+	<script src="../js/prototype.js" type="text/javascript"></script>
+	<script src="../js/scriptaculous.js?load=effects"type="text/javascript"></script>
+	<script src="../js/lightbox.js" type="text/javascript"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>The Index Property</h2>
+		
+		<p>If you&rsquo;re writing a script that will be used on multiple computers, using the <span class="dictionary-term">name</span> property to refer to Finder windows is not always the most reliable way to locate a specific window. It&rsquo;s possible that two windows may have the same name. Another more generic way to refer to an open Finder window is through its <span class="dictionary-term">index</span> property.</p>
+
+		<p>The value of this read-only property is a number corresponding to the window&rsquo;s layer position in the stacking order of open Finder windows. On the computer, no two windows can occupy the same layer. One window is always on top of or in front of another window. The <span class="dictionary-term">index</span> property reflects this fact.</p>
+
+		<p>For example, the front Finder window will always have an <span class="dictionary-term">index</span> value of &ldquo;1,&rdquo; since it is the first window in the stack of open window, while the last Finder window will always have an <span class="dictionary-term">index</span> value equal to the number of open Finder windows.</p> 
+
+		<p>Let&rsquo;s see how the <span class="dictionary-term">index</span> property can be used to refer to Finder windows.</p>
+
+		<p>First, let&rsquo;s re-open the previous window using this script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20open%20the%20startup%20disk"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that creates a new Finder window displaying the contents of the startup disk.<br>&nbsp;<br><br></span>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> open <b>the</b> startup disk</p>
+		
+		<p>Now delete the previous script from the script window, then enter, compile, and run the following script:</p> 		
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20Finder%20window%20%22Macintosh%20HD%22"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that retrieves the value of the index property of the frontmost Finder window.<br>&nbsp;<br><br></span>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of</b> Finder window &quot;Macintosh HD&quot;</p>		
+		
+		<p>The result of this script, shown in the Results pane, will be the numeric value  &ldquo;1,&rdquo; since there is only one window currently open on the desktop.</p> 
+		
+		<p class="note"><b>IMPORTANT</b>: Note the use of the special character (&not;) in the script text in the following example. This character, generated by typing option-L or option-Return, is used by the Script Editor to indicate that a single line statement has been placed on multiple lines in order to make it easier read. Due to the space restrictions involved in displaying scripts in a book, this character will be used in all script examples containing long statements. The Script Editor has an auto-wrapping feature that makes the use of this character unnecessary. If you are using the Script Editor, ignore the special character and continuing entering the script on the same line.</p> 
+		
+		<p>Let&rsquo;s open a second window. Delete the previous script from the script window, then enter, compile, and run the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20open%20home"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script to open a second Finder window.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> open home</p>
+		
+		<p>A second window displaying the contents of your home directory will now appear on the desktop.</p>
+		
+		<p class="note"><b>TIP</b>: Note the use of the word &ldquo;home&rdquo; and &ldquo;startup disk&rdquo; in the previous scripts. &ldquo;Startup disk&rdquo; and &ldquo;home&rdquo; are special terms, reserved by the Finder application, to identify important locations. These terms are generic and will work regardless of how drives and folders are named on the computer.</p> 
+		
+		<p>Now, let&rsquo;s see if the addition of the new window on the Desktop has effected the index value of our previously targeted window. Delete the existing script from the script window, then enter, compile, and run the following script:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20Finder%20Window%20%22Macintosh%20HD%22%0D"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that retrieves the value of the index property of a Finder window specified by its name.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> <span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of</b> Finder Window &quot;Macintosh HD&quot;</p>
+		
+		<p>The result of this script is now the numeric value &ldquo;2&rdquo; since the target window is the second window in the stack of open windows on the desktop.</p> 
+		
+		<a href="gfx/CH01_image07.jpg" rel="lightbox" title="The Finder window displaying the contents of the startup disk is now the second window in the stack of open windows, and therefore has an index value of: 2"><img src="gfx/CH01_image07.jpg" width="450" align="top" class="across"></a>
+		
+		<p class="imagecaption">In the Finder, all windows occupy a layer in the stack of open windows. No two windows can occupy the same layer and therefore can overlap each other.</p>
+		
+		<p>The index property can be also be used to refer to any open window. Try these scripts one a time and note their results:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20Finder%20Window%201%0D%09%2D%2D%3E%20returns%20the%20name%20of%20your%20home%20directory"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Script statements using the value of the index property to retrieve the name of specified Finder windows. <br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> name <b>of</b> Finder Window 1<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns the name of your home directory</span></p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20name%20of%20Finder%20Window%202%0D%09%2D%2D%3E%20returns%20the%20name%20of%20your%20startup%20disk"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to get the</b> name <b>of</b> Finder Window 2<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns the name of your startup disk</span></p>
+		
+		<h3>Descriptive Index Values</h3>
+
+		<p>As you've seen in the previous scripts, the AppleScript language is designed to be &ldquo;English-like&rdquo; and can be written in a conversational manner. Because of this, the value of the <span class="dictionary-term">index</span> property can also be described using descriptive terms as well as numeric values. For example, try these two scripts:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20first%20Finder%20window%0D%09%2D%2D%3E%20returns%3A%201"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">Script statements using descriptive index values.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of the first</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 1</span></p>		
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20get%20the%20index%20of%20the%20second%20Finder%20window%0D%09%2D%2D%3E%20returns%3A%202"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of the second</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 2</span></p>
+		
+		<p>Note the use of the words &ldquo;first&rdquo; and &ldquo;second&rdquo; for the value of the index property instead of the numbers &ldquo;1&rdquo; and &ldquo;2&rdquo;. The AppleScript language will accept the terms: first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, and tenth, in place of their corresponding numeric character equivalents.</p>
+
+		<p>As a matter of fact, the value of the index property of the previous scripts could also be written like this:</p>
+
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to get the</b> index <b>of the</b> 1st Finder window<BR>
+		<span class="codecomment">--> returns: 1</span><BR>
+		<BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to get the</b> index <b>of the</b> 2nd Finder window<BR>
+		<span class="codecomment">--> returns: 2</span></p>
+		
+		<p>The use of descriptive suffixes works with any number, not just the first ten: 22nd, 312th, 3rd, etc.</p>
+
+		<h3>Relative Position</h3>
+		
+		<p>In addition to recognizing index values written as text, AppleScript will also accept index values described in terms of a window&rsquo;s position relative to other windows. For example:</p>
+
+		<p class="code"><b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of the front</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 1</span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of the</b> back Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 2</span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>get the</b> index <b>of the last</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 2</span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to get the</b> index <b>of the</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window before <b>the last</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 1</span><BR>
+		<b>tell</b> application &quot;Finder&quot; <b>to get the</b> index <b>of the</b> 
+		<span style="float:left; width:10px;">&nbsp;</span>Finder window after <b>the front</b> Finder window<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> returns: 2</span></p>
+		
+		<p>The index values in the previous scripts examples were written using the terms: <span class="dictionary-term">front</span>, <span class="dictionary-term">back</span>, and <span class="dictionary-term">last</span>. AppleScript will accept the term <span class="dictionary-term">middle</span> as well. Also note that the additional terms <span class="dictionary-term">before</span> and <span class="dictionary-term">after</span> were used to further define the target window&rsquo;s location.</p>
+		
+		<h3>Finder Window Index References</h3>
+		
+		<p>The value of the index property can be expressed using any of the previous methods. All are valid and can be used freely and interchangeably. Here&rsquo;s a summary of the ways a Finder window can be referenced:</p>
+
+		<p class="dictionary">by <span class="dictionary-term">name</span>:<br>
+			<span class="dictionary-indent-02">Finder window "Documents"</span><br>
+		by <span class="dictionary-term">numeric index</span>:<br>
+			<span class="dictionary-indent-02">Finder window 1</span><br>
+		by <span class="dictionary-term">descriptive index</span>:<br>
+			<span class="dictionary-indent-02">the first Finder window</span><br>
+			<span class="dictionary-indent-02">the second Finder window</span><br>
+			<span class="dictionary-indent-02">the fifth Finder window</span><br>
+			<span class="dictionary-indent-02">the 1st Finder window</span><br>
+			<span class="dictionary-indent-02">the 23rd Finder window</span><br>
+		by <span class="dictionary-term">relative position index</span>:<br>
+			<span class="dictionary-indent-02">the front Finder window</span><br>
+			<span class="dictionary-indent-02">the middle Finder window</span><br>
+			<span class="dictionary-indent-02">the back Finder window</span><br>
+			<span class="dictionary-indent-02">the last Finder window</span><br>
+		by <span class="dictionary-term">random index</span>:<br>
+			<span class="dictionary-indent-02">some Finder window</span></p>
+
+		<h3>Changing a Finder window&rsquo;s index value</h3>
+
+		<p>So far we&rsquo;ve examined the name and index properties by using them to refer to specific Finder windows. The name property is a read-only property, in other words, its value can be gotten but not changed. However, the index property of a Finder window is an editable property, meaning its value can be altered.</p>
+
+		<p>Next, we&rsquo;ll change the value of the index property of the open Finder windows. To change the value of a property, we&rsquo;ll use the verb &ldquo;set&rdquo; in our scripts. Set is the verb or command used to change the value of a property.</p> 
+
+		<p>Delete the previous script from the script window, then enter, compile, and run the following script:</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%20to%20set%20the%20index%20of%20the%20last%20Finder%20window%20to%201"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script statement that moves the last Finder window to the front.<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot; <b>to</b> 
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> index <b>of the last</b> Finder window <b>to</b> 1</p>
+		
+		<p>The Finder window displaying the contents of your home directory is now the front Finder window again. The script accomplishes this by using the value of the index property of the last Finder window as the value for the index property of the front Finder window.</p>
+		
+		<p class="note"><b>NOTE</b>: When you change the value of the index property of a Finder window, you may change the index value of some of the open Finder windows behind it.</p>
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="05.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Chapter 01</h2>
+			<ul class="square last">
+				<li><a href="index.html">The First Step</a></li>
+				<li><a href="01.html">Properties and Values</a></li>
+				<li><a href="02.html">The Script Editor</a></li>
+				<li><a href="03.html">The Name Property</li>
+				<li class="hi">The Index Property</li>
+				<li><a href="05.html">The Target Property</a></li>
+				<li><a href="06.html">The Toolbar Visible Property</a></li>
+				<li><a href="07.html">The Statusbar Visible Property</a></li>
+				<li><a href="08.html">The Sidebar Width Property</a></li>
+				<li><a href="09.html">The Current View Property</a></li>
+				<li><a href="10.html">The Position Property</a></li>
+				<li><a href="11.html">The Bounds Property</a></li>
+				<li><a href="12.html">Verbs Used with Windows</a></li>
+				<li><a href="13.html">The Desktop Setup Script</a></li>
+				<li><a href="14.html">The Tell Block</a></li>
+				<li><a href="15.html">Nested Tell Blocks</a></li>
+				<li><a href="16.html">Saving the Setup Script</a></li>
+				<li><a href="17.html">Chapter Review</a></li>
+				<li><a href="18.html">The Principles Remain the Same</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

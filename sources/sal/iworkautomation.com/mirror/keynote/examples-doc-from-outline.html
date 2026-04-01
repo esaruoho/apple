@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: New Presentation from Outline</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for themes in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Presentation from Outline</div>
+		
+			<p>Part of the fundamental magic of Automation, is its inherent ability to express the data contained in one application, in a different way in another application. What would normally be an intricate laborious process when done by hand, is reduced to a quick effortless operation through AppleScript&rsquo;s ability to control and link the targeted applications.</p>
+			
+			<p>The following example script demonstrates these concepts perfectly as it builds a <b>Keynote</b> document from an <b>OmniOutliner</b> outline document.</p>
+					
+			<p class="segment-note"><b>NOTE</b>: <b>OmniOutliner</b> is productivity software from the <a href="http://www.omnigroup.com/omnioutliner/" target="_blank" style="font-weight:bold;">Omni Group</a>, and is available for purchase from the <a href="https://itunes.apple.com/us/app/omnioutliner/id404478020?mt=12" target="_blank" style="font-weight:bold;">Mac&nbsp;App&nbsp;Store</a>, or as a <a href="http://www.omnigroup.com/omnioutliner#download" target="_blank" style="font-weight:bold;">trial version</a> from the <b>Omni Group</b> website.</p>
+			
+			<img class="centered" width="500" alt="omni-document" class="centered" src="gfx/omni-document.png">
+			
+			<p>To try the demo, follow these steps:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="OmniOutlinerSlidesExample.zip" style="font-weight:bold;">DOWNLOAD</a> and open the <b>OmniOutliner</b> example document.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>If it isn&rsquo;t already activated, turn on the system-wide <b>Script Menu</b> and create a <b>OmniOutliner</b> scripts folder (<a href="../script-menu.html" target="_blank">details here</a>)</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the example script <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> in the <b>AppleScript Editor</b>, and save the script into the <b>OmniOutliner</b> scripts folder.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>With the example document open in <b>OmniOutliner</b>, select the saved script from the <b>Script Menu</b>.</p>
+			
+			<p>The script will create a new <b>Keynote</b> document and add a slide, with transitions, for each of the outline sections, filling in titles and body content as indicated. Once the document is created, the presentation will be played from the beginning, and auto-advanced throughout.</p>
+			
+			<div style="background-color:white;color:black;padding:6px;"><p><b>IMPORTANT</b>: For non-English language users. In order for the script to work as expected, you will need to replace the master slide names in the script with versions using the current language of your computer. For example:</p>
+				<table style="width:500px;background-color:transparent;-webkit-user-select:text;padding:0;border-width:0;">
+					<tr><td>English-German</td><td>"Title - Center"</td><td>"Titel - Mitte"</td></tr>
+					<tr><td>English-German</td><td>"Title & Subtitle"</td><td>"Titel & Untertitel"</td></tr>
+					<tr><td>English-German</td><td>"Title & Bullets"</td><td>"Titel & Aufzählung"</td></tr>
+					<tr><td>English-Norwegian</td><td>"Title - Center"</td><td>"Tittel – sentrert"</td></tr>
+					<tr><td>English-Norwegian</td><td>"Title & Subtitle"</td><td>"Tittel og undertittel"</td></tr>
+					<tr><td>English-Norwegian</td><td>"Title & Bullets"</td><td>"Tittel og punkttegn"</td></tr>
+					<tr><td>English-Japanese</td><td>"Title - Center"</td><td>"タイトル（中央）"</td></tr>
+					<tr><td>English-Japanese</td><td>"Title & Subtitle"</td><td>"タイトル & サブタイトル"</td></tr>
+					<tr><td>English-Japanese</td><td>"Title & Bullets"</td><td>"タイトル & 箇条書き"</td></tr>
+				</table>
+				<p>If you are not sure what the master slide titles are for the current document, then run this script:</p>
+				<p class="code" style="-webkit-user-select:text;">tell application "Keynote" to get the name of every master slide of the front document</p>
+			</div>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Presentation from Outline</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=New%20Presentation%20from%20Outline&script=property%20defaultTransitionDuration%20%3A%200.5%0Dproperty%20defaultTransitionDelay%20%3A%202.0%0Dproperty%20defaultAutomaticTransition%20%3A%20true%0D%0Dtell%20application%20%22OmniOutliner%22%0D%09activate%0D%09%0D%09set%20dialogParagraphBreak%20to%20return%20%26%20return%0D%09display%20dialog%20%22This%20script%20will%20create%20a%20new%20Keynote%20document%20based%20on%20the%20content%20of%20the%20frontmost%20OmniOutliner%20document.%22%20%26%20dialogParagraphBreak%20%26%20%22Each%20section%20head%20of%20the%20OmniOutliner%20document%20will%20be%20used%20as%20the%20title%20for%20a%20new%20slide%20in%20the%20Keynote%20document.%22%20%26%20dialogParagraphBreak%20%26%20%22If%20a%20section%20contains%20no%20children%2C%20the%20%E2%80%9CTitle%20-%20Center%E2%80%9D%20master%20will%20be%20used.%22%20%26%20dialogParagraphBreak%20%26%20%22If%20a%20section%20contains%20one%20child%2C%20the%20%E2%80%9CTitle%20%26%20Subtitle%E2%80%9D%20master%20will%20be%20used%2C%20with%20the%20name%20of%20the%20child%20becoming%20the%20subtitle.%22%20%26%20dialogParagraphBreak%20%26%20%22If%20a%20section%20contains%20more%20than%20one%20child%2C%20the%20%E2%80%9CTitle%20%26%20Bullets%E2%80%9D%20master%20will%20be%20used%2C%20and%20the%20section%E2%80%99s%20children%20will%20become%20the%20bullet%20points%20for%20the%20created%20slide.%22%20%26%20dialogParagraphBreak%20%26%20%22The%20new%20slideshow%20will%20automatically%20play%20from%20the%20beginning%20and%20auto-advance.%22%20with%20icon%201%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20front%20document%0D%09%09set%20the%20slideCount%20to%20the%20count%20of%20sections%0D%09end%20tell%0Dend%20tell%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09set%20the%20themeNames%20to%20the%20name%20of%20every%20theme%0D%09%0D%09set%20the%20chosenTheme%20to%20%C2%AC%0D%09%09(choose%20from%20list%20themeNames%20with%20prompt%20%C2%AC%0D%09%09%09%22Choose%20a%20theme%20to%20use%3A%22%20default%20items%20(item%201%20of%20themeNames))%0D%09%0D%09if%20chosenTheme%20is%20false%20then%20error%20number%20-128%0D%09%0D%09set%20dialogMessage%20to%20%22Standard%20Size%20or%20Widescreen%3F%22%0D%09display%20dialog%20dialogMessage%20buttons%20%7B%22Cancel%22%2C%20%22Standard%22%2C%20%22Widescreen%22%7D%20default%20button%203%0D%09if%20the%20button%20returned%20of%20the%20result%20is%20%22Standard%22%20then%0D%09%09set%20targetWidth%20to%201024%20--%201440%20%3C--%20higher%20resolution%0D%09%09set%20targetHeight%20to%20768%20--%201080%20%3C--%20higher%20resolution%0D%09else%0D%09%09set%20targetWidth%20to%201920%0D%09%09set%20targetHeight%20to%201080%0D%09end%20if%0D%09%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20theme%3Atheme%20(chosenTheme%20as%20string)%2C%20width%3AtargetWidth%2C%20height%3AtargetHeight%7D%0Dend%20tell%0D%0Dtell%20application%20%22OmniOutliner%22%0D%09tell%20front%20document%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20sections%0D%09%09%09tell%20section%20i%0D%09%09%09%09set%20thisSectionText%20to%20name%20of%20it%0D%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20children%0D%09%09%09%09%09tell%20child%20q%0D%09%09%09%09%09%09set%20thisSectionText%20to%20thisSectionText%20%26%20return%20%26%20name%20of%20it%0D%09%09%09%09%09%09set%20the%20childCount%20to%20the%20count%20of%20children%0D%09%09%09%09%09%09if%20the%20childCount%20is%20not%200%20then%0D%09%09%09%09%09%09%09--%202nd-level%20bullets%0D%09%09%09%09%09%09%09repeat%20with%20z%20from%201%20to%20the%20childCount%0D%09%09%09%09%09%09%09%09set%20thisSectionText%20to%20thisSectionText%20%26%20return%20%26%20tab%20%26%20name%20of%20child%20z%0D%09%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09%09set%20the%20paragraphCount%20to%20the%20count%20of%20paragraphs%20of%20thisSectionText%0D%09%09%09if%20paragraphCount%20is%201%20then%0D%09%09%09%09set%20the%20masterSlideName%20to%20%22Title%20-%20Center%22%0D%09%09%09%09set%20thisSlideTitle%20to%20thisSectionText%0D%09%09%09%09set%20thisSlideBody%20to%20%22%22%0D%09%09%09else%20if%20paragraphCount%20is%202%20then%0D%09%09%09%09set%20the%20masterSlideName%20to%20%22Title%20%26%20Subtitle%22%0D%09%09%09%09set%20thisSlideTitle%20to%20the%20first%20paragraph%20of%20thisSectionText%0D%09%09%09%09set%20thisSlideBody%20to%20the%20second%20paragraph%20of%20thisSectionText%0D%09%09%09else%20if%20paragraphCount%20is%20greater%20than%20or%20equal%20to%203%20then%0D%09%09%09%09set%20the%20masterSlideName%20to%20%22Title%20%26%20Bullets%22%0D%09%09%09%09set%20thisSlideTitle%20to%20the%20first%20paragraph%20of%20thisSectionText%0D%09%09%09%09set%20thisSlideBodyElements%20to%20paragraphs%202%20thru%20-1%20of%20thisSectionText%0D%09%09%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20return%0D%09%09%09%09set%20thisSlideBody%20to%20thisSlideBodyElements%20as%20string%0D%09%09%09%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09%09%09end%20if%0D%09%09%09my%20createSlide(masterSlideName%2C%20thisSlideTitle%2C%20thisSlideBody)%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20tell%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09tell%20thisDocument%20to%20delete%20slide%201%0D%09%0D%09start%20thisDocument%20from%20first%20slide%20of%20thisDocument%0Dend%20tell%0D%0Don%20createSlide(masterSlideName%2C%20thisSlideTitle%2C%20thisSlideBody)%0D%09try%0D%09%09tell%20application%20%22Keynote%22%0D%09%09%09tell%20front%20document%0D%09%09%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20masterSlideName%7D%0D%09%09%09%09tell%20thisSlide%0D%09%09%09%09%09set%20the%20transition%20properties%20to%20%C2%AC%0D%09%09%09%09%09%09%7Btransition%20effect%3Adissolve%2C%20transition%20duration%3AdefaultTransitionDuration%2C%20transition%20delay%3AdefaultTransitionDelay%2C%20automatic%20transition%3AdefaultAutomaticTransition%7D%0D%09%09%09%09%09if%20title%20showing%20is%20true%20then%0D%09%09%09%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20thisSlideTitle%0D%09%09%09%09%09end%20if%0D%09%09%09%09%09if%20body%20showing%20is%20true%20then%0D%09%09%09%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20thisSlideBody%0D%09%09%09%09%09end%20if%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09return%20true%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20createSlide"><button type="button">Open in Script Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultTransitionDuration</span> : 0.5</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultTransitionDelay</span> : 2.0</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>property</b> <span class="codevariable">defaultAutomaticTransition</span> : true</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;OmniOutliner&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogParagraphBreak</span> <b>to</b> <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will create <span class="codevariable">a</span> new Keynote document based on the content of the frontmost OmniOutliner document.&quot; &amp; <span class="codevariable">dialogParagraphBreak</span> &amp; &quot;Each section head of the OmniOutliner document will be used as the title for <span class="codevariable">a</span> new slide in the Keynote document.&quot; &amp; <span class="codevariable">dialogParagraphBreak</span> &amp; &quot;If <span class="codevariable">a</span> section contains no children, the &ldquo;Title - Center&rdquo; master will be used.&quot; &amp; <span class="codevariable">dialogParagraphBreak</span> &amp; &quot;If <span class="codevariable">a</span> section contains one child, the &ldquo;Title &amp; Subtitle&rdquo; master will be used, with the name of the child becoming the subtitle.&quot; &amp; <span class="codevariable">dialogParagraphBreak</span> &amp; &quot;If <span class="codevariable">a</span> section contains more than one child, the &ldquo;Title &amp; Bullets&rdquo; master will be used, and the section&rsquo;s children will become the bullet points for the created slide.&quot; &amp; <span class="codevariable">dialogParagraphBreak</span> &amp; &quot;The new slideshow will automatically play from the beginning and auto-advance.&quot; <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">slideCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">sections</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">themeNames</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">theme</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">chosenTheme</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>(<span class="codelibrarycommand">choose from list</span> <span class="codevariable">themeNames</span> <span class="codelibraryparameter">with prompt</span> &not;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span>&quot;Choose a theme to use:&quot; <span class="codelibraryparameter">default items</span> (<span class="codelibraryclass">item</span> 1 <b>of</b> <span class="codevariable">themeNames</span>))</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">chosenTheme</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogMessage</span> <b>to</b> &quot;Standard Size or Widescreen?&quot;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> <span class="codevariable">dialogMessage</span> <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Standard&quot;, &quot;Widescreen&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryparameter">result</span> <b>is</b> &quot;Standard&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetWidth</span> <b>to</b> 1024 <span class="codecomment">-- 1440 <-- higher resolution</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetHeight</span> <b>to</b> 768 <span class="codecomment">-- 1080 <-- higher resolution</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetWidth</span> <b>to</b> 1920</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">targetHeight</span> <b>to</b> 1080</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> (<span class="codevariable">chosenTheme</span> <b>as</b> <span class="codelibraryclass">string</span>), <span class="codeproperty">width</span>:<span class="codevariable">targetWidth</span>, <span class="codeproperty">height</span>:<span class="codevariable">targetHeight</span>}</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;OmniOutliner&quot;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">sections</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">section</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSectionText</span> <b>to</b> <span class="codeproperty">name</span> <b>of it</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">children</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">child</span> <span class="codevariable">q</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSectionText</span> <b>to</b> <span class="codevariable">thisSectionText</span> &amp; <span class="codeenumeration">return</span> &amp; <span class="codeproperty">name</span> <b>of it</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codevariable">childCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">children</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>if the</b> <span class="codevariable">childCount</span> <b>is not</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- 2nd-level bullets</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">z</span> <b>from</b> 1 <b>to the</b> <span class="codevariable">childCount</span></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:80px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSectionText</span> <b>to</b> <span class="codevariable">thisSectionText</span> &amp; <span class="codeenumeration">return</span> &amp; tab &amp; <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">child</span> <span class="codevariable">z</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:70px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">paragraphCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">paragraphs</span> <b>of</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">paragraphCount</span> <b>is</b> 1 <b>then</b></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">masterSlideName</span> <b>to</b> &quot;Title - Center&quot;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideTitle</span> <b>to</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideBody</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">paragraphCount</span> <b>is</b> 2 <b>then</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">masterSlideName</span> <b>to</b> &quot;Title &amp; Subtitle&quot;</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideTitle</span> <b>to the first</b> <span class="codelibraryclass">paragraph</span> <b>of</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideBody</span> <b>to the second</b> <span class="codelibraryclass">paragraph</span> <b>of</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">paragraphCount</span> <b>is greater than or equal to</b> 3 <b>then</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">masterSlideName</span> <b>to</b> &quot;Title &amp; Bullets&quot;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideTitle</span> <b>to the first</b> <span class="codelibraryclass">paragraph</span> <b>of</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideBody</span>Elements <b>to</b> <span class="codelibraryclass">paragraphs</span> 2 <b>thru</b> -1 <b>of</b> <span class="codevariable">thisSectionText</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeenumeration">AppleScript's text item delimiters</span> <b>to <span class="codeenumeration">return</span></b></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideBody</span> <b>to</b> <span class="codevariable">thisSlideBody</span>Elements <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeenumeration">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>my</b> <span class="codevariable">createSlide</span>(<span class="codevariable">masterSlideName</span>, <span class="codevariable">thisSlideTitle</span>, <span class="codevariable">thisSlideBody</span>)</td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">delete</span> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <span class="codelibraryparameter">from</span> <b>first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">createSlide</span>(<span class="codevariable">masterSlideName</span>, <span class="codevariable">thisSlideTitle</span>, <span class="codevariable">thisSlideBody</span>)</td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> thisSlide <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> <span class="codevariable">masterSlideName</span>}</td></tr>
+				<tr><td class="line-count">97</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">98</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">transition properties</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">99</td><td class="line-buffer"></td><td style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>{<span class="codeproperty">transition effect</span>:<span class="codeenumeration">dissolve</span>, <span class="codeproperty">transition duration</span>:<span class="codevariable">defaultTransitionDuration</span>, <span class="codeproperty">transition delay</span>:<span class="codevariable">defaultTransitionDelay</span>, <span class="codeproperty">automatic transition</span>:<span class="codevariable">defaultAutomaticTransition</span>}</td></tr>
+				<tr><td class="line-count">100</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codeproperty">title showing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">101</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> <span class="codevariable">thisSlideTitle</span></td></tr>
+				<tr><td class="line-count">102</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">103</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>if</b> <span class="codeproperty">body showing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+				<tr><td class="line-count">104</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> <span class="codevariable">thisSlideBody</span></td></tr>
+				<tr><td class="line-count">105</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">106</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">107</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">108</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">109</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">110</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+				<tr><td class="line-count">111</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+				<tr><td class="line-count">112</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">113</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">createSlide</span></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-doc-from-image-files.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItemSelected">New Presentation from Outline</li>
+				<li class="navListSectionItem"><a href="examples-doc-from-image-files.html">New Presentation from Image Files</a></li>
+				<li class="navListSectionItem"><a href="examples-pano-preso.html">Pano to Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-movie-export-droplet.html">Movie Export Droplet</a></li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItem"><a href="examples-music-helper.html">Music Helper Applet</a></li>
+				<li class="navListSectionItem"><a href="examples-translation-helper-scripts.html">Translation Helper Scripts</a></li>
+				<li class="navListSectionItem"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Sorting Routines</h2>
+		
+		<p>AppleScript routines for sorting a variety of data.</p>
+		
+		<hr><a id="1000" name="1000" title="1000"><h3>Simple Sort</h3></a>
+		
+		<p>This sub-routine can be used to sort a list of text strings, or a list of numbers.</p>
+
+		<p class="code"><b>set the</b> <span class="codevariable">composer_list</span> <b>to</b> {&quot;Ellington&quot;, &quot;Copland&quot;, &quot;Bach&quot;, &quot;Mozart&quot;}<BR>
+		<span class="codevariable">simple_sort</span>(<b>the</b> <span class="codevariable">composer_list</span>)<BR>
+		<span class="codecomment">--> returns: {&quot;Bach&quot;, &quot;Copland&quot;, &quot;Ellington&quot;, &quot;Mozart&quot;}</span></p>
+	
+	
+		<p class="code"><b>set the</b> <span class="codevariable">number_list</span> <b>to</b> {56, 32, -6, 0.01}<BR>
+		<span class="codevariable">simple_sort</span>(<b>the</b> <span class="codevariable">number_list</span>)<BR>
+		<span class="codecomment">--> returns: {&quot;-6&quot;, &quot;0.01&quot;, &quot;32&quot;, &quot;56&quot;}</span></p>
+	
+		<p>By default, the sub-routine returns the list in ascending order. If you wish to have the list read in descending order, use the <span class="inlinecode">reverse</span> command:</p>
+	
+		<p class="code"><b>set the</b> <span class="codevariable">composer_list</span> <b>to</b> {&quot;Ellington&quot;, &quot;Copland&quot;, &quot;Bach&quot;, &quot;Mozart&quot;}<BR>
+		<b>get the</b> reverse <b>of</b> <span class="codevariable">simple_sort</span>(<b>the</b> <span class="codevariable">composer_list</span>)<BR>
+		<span class="codecomment">--> returns: {&quot;Mozart&quot;, &quot;Ellington&quot;, &quot;Copland&quot;, &quot;Bach&quot;}</span></p>
+		
+		<p>Here's the sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20simple_sort%28my_list%29%0D%09set%20the%20index_list%20to%20%7B%7D%0D%09set%20the%20sorted_list%20to%20%7B%7D%0D%09repeat%20%28the%20number%20of%20items%20in%20my_list%29%20times%0D%09%09set%20the%20low_item%20to%20%22%22%0D%09%09repeat%20with%20i%20from%201%20to%20%28number%20of%20items%20in%20my_list%29%0D%09%09%09if%20i%20is%20not%20in%20the%20index_list%20then%0D%09%09%09%09set%20this_item%20to%20item%20i%20of%20my_list%20as%20text%0D%09%09%09%09if%20the%20low_item%20is%20%22%22%20then%0D%09%09%09%09%09set%20the%20low_item%20to%20this_item%0D%09%09%09%09%09set%20the%20low_item_index%20to%20i%0D%09%09%09%09else%20if%20this_item%20comes%20before%20the%20low_item%20then%0D%09%09%09%09%09set%20the%20low_item%20to%20this_item%0D%09%09%09%09%09set%20the%20low_item_index%20to%20i%0D%09%09%09%09end%20if%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09set%20the%20end%20of%20sorted_list%20to%20the%20low_item%0D%09%09set%20the%20end%20of%20the%20index_list%20to%20the%20low_item_index%0D%09end%20repeat%0D%09return%20the%20sorted_list%0Dend%20simple_sort"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine to sort a list of text items or a list of numbers:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">simple_sort</span>(<span class="codevariable">my_list</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">index_list</span> <b>to</b> {}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">sorted_list</span> <b>to</b> {}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>repeat (the</b> number <b>of</b> items <b>in</b> <span class="codevariable">my_list</span>) <b>times</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_item</span> <b>to</b> &quot;&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> (number <b>of</b> items <b>in</b> <span class="codevariable">my_list</span>)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is not in the</b> <span class="codevariable">index_list</span> <b>then</b><BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_item</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">my_list</span> <b>as</b> text<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">low_item</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_item</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_item_index</span> <b>to</b> i<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_item</span> comes before <b>the</b> <span class="codevariable">low_item</span> <b>then</b><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_item</span> <b>to</b> <span class="codevariable">this_item</span><BR>
+		<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">low_item_index</span> <b>to</b> i<BR>
+		<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">sorted_list</span> <b>to the</b> <span class="codevariable">low_item</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the end of the</b> <span class="codevariable">index_list</span> <b>to the</b> <span class="codevariable">low_item_index</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return the</b> <span class="codevariable">sorted_list</span><BR>
+		<b>end</b> <span class="codevariable">simple_sort</span></p>
+	
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li class="hi">Sorting Routines</li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

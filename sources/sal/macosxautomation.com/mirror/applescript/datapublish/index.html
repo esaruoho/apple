@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Database Publishing Demo</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Database Publishing Demo</h2>
+		
+		<p>The Ad Builder application, created using AppleScript Studio, demonstrates how the construction of a Real Estate catalog can be automated by controlling multiple third-party applications with AppleScript.</p>
+		
+		<p>This publishing example links tagged text and graphic frames in an <b>Adobe InDesign</b> catalog template to corresponding images and text in <b>Microsoft Expression Media</b> and <b>FileMaker Pro</b> databases. This technique is a standard method used in professional automated database publishing workflows.</p>
+		
+		<img src="gfx/finished.png" width="640" height="414" align="top" class="across">
+		
+		<h3>How it Works</h3>
+		
+		<p>The technique of tagged container publishing relies on a unique identifier existing in both the data sources and the target layout template. The unique identifer can be a product SKU number, a customer number, an address, or even a name, as long as it is unique to each entry record in the source database files. It the Ad Builder example, the MLS (Multiple Listing Service) number assigned to each of the real estate properties is used as the unique identifer.</p>
+		
+		<p>In the <b>FileMaker Pro</b> database, the MLS number is the contents of the MLS Number field in the Listings Database:</p>
+		
+		<img src="gfx/filemaker.jpg" width="320" height="229" align="top" class="across">
+		
+		<p>In <b>Expression Media</b>, the MLS number begins the name of the related images in the database file:</p>		
+
+		<img src="gfx/iview.jpg" width="285" height="150" align="top" class="across">
+		
+		<p>To enable the automation of extracting and placing image and text data into a layout, text and graphic frames in an <b>Abode InDesign</b> template are tagged with MLS numbers using the Script Label pallette:</p>
+		
+		<img src="gfx/indesign.02.jpg" width="318" height="215" align="top" class="across">
+		
+		<p>Once a template has been tagged, launch the Ad Builder application. From its application menu, select Setup Demo to have the application automatically launch Expression Media and FileMaker Pro, and open the database files used in the demo.</p>
+		
+		<img src="gfx/setupdemo.png" width="224" height="199" align="top" class="across">
+		
+		<p>The Ad Builder application will display a completion dialog when the setup is complete. Next, in the Step 1 tab, select the layout design to use.</p>
+		
+		<img src="gfx/adbuilder01.png" width="403" height="452" align="top" class="across">
+		
+		<p>Next, click the Step 2 tab, and select the option to import both the text and graphics from the releated databases.</p>
+		
+		<img src="gfx/adbuilder02.png" width="403" height="452" align="top" class="across">
+		
+		<p>Click the <b>Build Document</b> button to begin the automated publishing process. AppleScript scripts will be run that perform the following steps:</p>
+		
+		<ol>
+			<li>The AppleScript script in the Ad Builder application asks InDesign for a list of references to the text frames in the open template that have a tag assigned to them.</li>
+			
+			<li>The script script then iterates the returned list and extracts the tag for each page item in the list of found page items.</li>
+			
+			<li>The script then uses the extracted tag to locate a record in the FileMaker Pro database whose MLS Number cell contains the extracted tag.</li>
+			
+			<li>The script then extracts the contents of the other cells of the matched FileMaker Pro record and inserts the data into the targeted text frame in the InDesign template. The inserted text is then formatted using stylesheets.</li>
+		</ol>
+			
+<p class="code"><b>tell</b> application &quot;Adobe InDesign CS3&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the</b> active document<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">the_list</span> <b>to every</b> text frame <b>of every</b> spread <b>whose</b> label <b>is not</b> &quot;&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;There are no tagged text frames.&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> number <b>of</b> items <b>in</b> <span class="codevariable">the_list</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_frame</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">the_list</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> active document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_identifier</span> <b>to the</b> label <b>of</b> <span class="codevariable">this_frame</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;Runtime&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> database 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span>show (<b>the first</b> record <b>whose</b> cell &quot;MLS Number&quot; <b>contains</b> <span class="codevariable">this_identifier</span>)<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">the_data</span> <b>to</b> cell &quot;Ad Text&quot; <b>of the</b> current record<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> active document<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> contents <b>of</b> <span class="codevariable">this_frame</span> <b>to</b> <span class="codevariable">the_data</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">this_frame</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> paragraph 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font style <b>to</b> &quot;Bold&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> point size <b>to</b> 12.0<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> leading <b>to</b> 12.0<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> paragraph 2<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> space before <b>to</b> 0.167<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font style <b>to</b> &quot;Light&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> point size <b>to</b> 10.0<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> leading <b>to</b> 11.0<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> paragraph 3<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> space before <b>to</b> 0.167<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font style <b>to</b> &quot;Regular&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> point size <b>to</b> 10.0<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> leading <b>to</b> 12.0<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> paragraph 4<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> font style <b>to</b> &quot;Regular&quot;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> point size <b>to</b> 10.0<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> leading <b>to</b> 12.0<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+<b>end tell</b></p>
+
+		<ol start="5">
+			<li>The AppleScript script in the Ad Builder application asks InDesign for a list of references to the graphic frames in the open template that have a tag assigned to them.</li>
+			
+			<li>Then the script extracts and uses the tag to locate an image in the Expression Media database whose name begins with the extracted tag.</li>
+			
+			<li>The script then imports the image into the target graphic frame and sizes the image to fit the frame appropriately.</li>
+		</ol>
+	
+<p class="code"><b>tell</b> application &quot;Adobe InDesign CS3&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the</b> active document<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">rectangle_list</span> <b>to every</b> rectangle <b>of every</b> spread &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>whose</b> label <b>is not</b> &quot;&quot; and content type <b>is</b> graphic type<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">rectangle_list</span> <b>is {} then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>error</b> &quot;There are no tagged image rectangles.&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> class <b>of the</b> <span class="codevariable">rectangle_list</span> <b>is not</b> list <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">rectangle_list</span> <b>to the</b> <span class="codevariable">rectangle_list</span> <b>as</b> list<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of the</b> <span class="codevariable">rectangle_list</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">error_indicator</span> <b>to</b> 1<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_rectangle</span> <b>to</b> item <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">rectangle_list</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">this_tag</span> <b>to the</b> label <b>of</b> <span class="codevariable">this_rectangle</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> application &quot;Expression Media&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> (<b>the</b> path <b>of first</b> media item <b>of the front</b> catalog &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>whose</b> name <b>begins with</b> <span class="codevariable">this_tag</span>)<BR>
+<span style="float:left; width:40px;">&nbsp;</span>select (<b>first</b> media item <b>of the front</b> catalog <b>whose</b> name <b>begins with</b> <span class="codevariable">this_tag</span>)<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">error_indicator</span> <b>to</b> 2<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">this_rectangle</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> place <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if the</b> class <b>of</b> <span class="codevariable">this_image</span> <b>is</b> list <b>then set</b> <span class="codevariable">this_image</span> <b>to</b> item 1 <b>of</b> <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span>fit given content <b>to</b> frame<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">image_h</span> <b>to the</b> horizontal scale <b>of</b> <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">image_v</span> <b>to the</b> vertical scale <b>of</b> <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if the</b> <span class="codevariable">image_v</span> <b>is greater than</b> or <b>equal to</b> <span class="codevariable">image_h</span> <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> horizontal scale <b>of</b> <span class="codevariable">this_image</span> <b>to</b> <span class="codevariable">image_v</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> vertical scale <b>of</b> <span class="codevariable">this_image</span> <b>to</b> <span class="codevariable">image_h</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span>fit given center content<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> color value <b>of the</b> fill color <b>to</b> {255, 255, 255}<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if the</b> <span class="codevariable">error_indicator</span> <b>is</b> 1 <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">error_message</span> <b>to</b> &quot;Image &ldquo;&quot; &amp; <span class="codevariable">this_tag</span> &amp; &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>&quot;&rdquo; could <b>not</b> be found <b>in the</b> database.&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:30px;">&nbsp;</span>beep<BR>
+<span style="float:left; width:30px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;, &quot;Continue&quot;} default button 2<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+<b>end tell</b></p>
+	
+	
+	
+		<p>This process is repeated until all the tagged page items have been filled. That's all there is to it!</p>
+		
+		
+		<h3>Download</h3>
+		
+		<p class="note"><b>NOTE</b>: this demo requires Mac&nbsp;OS&nbsp;X&nbsp;Leopard, Adobe InDesign CS3, FileMaker Pro 7 or higher, and Microsoft Expression Media (available separately or included in the Media Edition of Microsoft Office 2008).</p>
+		
+		<p>You may download the Ad Builder demo application <a href="agreement.html">here</a>.</p>
+		
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Video &#149; 14:23</h2>
+			<a href="http://www.pixelcorps.tv/mbkd_004" target="_blank"><img src="gfx/movie32x32.png" width="32" height="32" class="left"></a>
+			<p>Watch a video of this tutorial hosted on <a href="http://www.pixelcorps.tv/mbkd_004" target="_blank">MacBreak Dev</a>, an online podcast series created by Pixel Corps.</p>			
+		</div>
+	
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	
+		<div class="box">
+			<h2>Expression Media</h2>
+			<p align="center"><a href="http://www.microsoft.com/mac/products/expression-media.mspx" target="_blank"><img src="gfx/office2008lm_screen_expression.jpg" width="186" height="140" align="top"></a></p><p>Microsoft Expression Media is a scriptable media asset database for managing images, video, and other media content. It is included in the Office 2008 for Mac  Special Media Edition, available on the Apple Store, <a href="http://store.apple.com/1-800-MY-APPLE/WebObjects/AppleStore.woa/wa/RSLID?mco=7E4F2D7D&amp;nplm=TQ745LL/A" target="_blank">here</a>.</p>
+		</div>
+		
+		<div class="box">
+			<h2>iStockPhoto</h2>
+			<p align="center"><a href="http://www.istockphoto.com/file_search.php?action=file&amp;lightboxID=2706519=" target="_blank"><img src="gfx/127563.JPG" width="200" height="133" align="top"></a>
+			<p>The low-resolution watermarked images used in the Ad Builder demo are from iStockPhoto.com (the <a href="http://www.istockphoto.com/file_search.php?action=file&amp;lightboxID=2706519=" target="_blank">Dreams House Lightbox</a>).</p>
+		</div>
+
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

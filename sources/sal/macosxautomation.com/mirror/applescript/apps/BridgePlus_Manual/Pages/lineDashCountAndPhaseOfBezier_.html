@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #812fdc}
+span.s4 {color: #ee2200}
+span.s5 {color: #012fbe}
+span.s6 {color: #4f8f00}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="pathOfBezier_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="componentsOfColor_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>Miscellaneous methods</p>
+<h3>Method</h3>
+<code>lineDashCountAndPhaseOfBezier:</code>
+<h3>Summary</h3>
+<p>This provides access to the result of the -getLineDash:count:phase: method of NSBezierPath.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>lineDashCountAndPhaseOfBezier:<span class="sigParens">(NSBezierPath *)</span><span class="param">theBezier</span></code>
+<h3>Parameters</h3>
+<p><span class="param">theBezier</span> = an NSBezierPath</p>
+<h3>Result</h3>
+<p>Array/list of the three values</p>
+<h3>Availability</h3>
+<p>Version 1.2.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span>theNSBezierPath<span class="s1"> <b>to</b> </span><span class="s3"><i>current application's</i></span><span class="s1"> </span>NSBezierPath's<span class="s1"> </span><span class="s4">bezierPath</span><span class="s1">()</span></p>
+<p class="p5"><span class="s1"><b>set</b> </span>theResult<span class="s1"> <b>to</b> </span><span class="s3"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s4">lineDashCountAndPhaseOfBezier</span><span class="s1">:</span>theNSBezierPath</p>
+<p class="p5"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{0.0, 0, 0.0}</p>
+<p class="p6"><span class="s6">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.11 only</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{0.0, 0, 0.0}</p>
+<p class="p6"><span class="s6">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.9 and 10.10</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>&lt;as above, but real values lose precision&gt;</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20theNSBezierPath%20to%20current%20application's%20NSBezierPath's%20bezierPath()%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20lineDashCountAndPhaseOfBezier:theNSBezierPath%0DASify%20from%20theResult%0D--%3E%09%7B0.0,%200,%200.0%7D%0DtheResult%20as%20list%20--%2010.11%20only%0D--%3E%09%7B0.0,%200,%200.0%7D%0DtheResult%20as%20list%20--%2010.9%20and%2010.10%0D--%3E%09%3Cas%20above,%20but%20real%20values%20lose%20precision%3E%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

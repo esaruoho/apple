@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Launching Scripts From Links</title>
+<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Launch Scripts from Webpage Links</h2>
+		<p>AppleScript applications can interact with websites displayed on your computer to perform tasks and display information. This is done through the process of the AppleScript application registering itself with the OS as the handler of specific URL protocols and schemes.</p> 
+		
+		<p>The following describes how to create your own helper script applications.</P>
+				
+		<h3>The Info.plist File</h3>
+		<p>When you save the script as an application bundle, it will contain the standard Mac OS X bundle elements including an XML property list file defining important aspects of the script application.</p>
+		
+		<p>To access the Info.plist property list, click on the script application with the Control key held down to access the Finder Contextual Menu. Choose <b>Show Package Contents</b> from this menu to open the script application bundle in a new window. Open the <b>Contents</b> folder within the new window to reveal the <b>Info.plist</b> file. Open this file in a text or property list editor and add the following XML keys and values to the property list.</p>
+		
+		<p>To identify the Application, add the following lines to the property list, replacing the blue placeholder text shown here with a unique bundle identifier for your application:</p>
+		
+		<pre>&lt;key&gt;<font color="#FF6666">CFBundleIdentifier</font>&lt;/key&gt;
+&lt;string&gt;<font color="#6666FF">com.apple.AppleScript.WebpageHelper</font>&lt;/string&gt;</pre>
+		
+		
+		<p>To identify the URL handler that triggers the applet, add the following item to the property list, replacing the blue text with title of your URL protocol and the URL scheme of your protocol:</p>
+		
+<pre>&lt;key&gt;<font color="#FF6666">CFBundleURLTypes</font>&lt;/key&gt;
+&lt;array&gt;
+	&lt;dict&gt;
+		&lt;key&gt;<font color="#FF6666">CFBundleURLName</font>&lt;/key&gt;
+		&lt;string&gt;<font color="#6666FF">Webpage Helper</font>&lt;/string&gt;
+		&lt;key&gt;<font color="#FF6666">CFBundleURLSchemes</font>&lt;/key&gt;
+		&lt;array&gt;
+			&lt;string&gt;<font color="#6666FF">webpagehelper</font>&lt;/string&gt;
+		&lt;/array&gt;
+	&lt;/dict&gt;
+&lt;/array&gt;</pre>
+
+<h3>The Script Code</h3>
+
+<p>In order to respond to the links embedded in webpages, the script application must contain a handler for the <b>open location</b> Apple event. Place within this handler the AppleScript code necessary to parse the URL passed by the OS to determine the action the script should perform.</p>
+
+<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20open%20location%20this_url%0D%09%2D%2D%20When%20the%20link%20is%20clicked%20in%20thewebpage%2C%20this%20handler%20will%20be%20passed%20%0D%09%2D%2D%20the%20URL%20that%20triggered%20the%20action%2C%20similar%20to%3A%0D%09%2D%2D%3E%20yourURLProtocol%3A%2F%2FyourBundleIdentifier%3Fkey%3Dvalue%26key%3Dvalue%0D%09%0D%09%2D%2D%20EXTRACT%20ARGUMENTS%0D%09set%20x%20to%20the%20offset%20of%20%22%3F%22%20in%20this_url%0D%09set%20the%20argument_string%20to%20text%20from%20%28x%20%2B%201%29%20to%20%2D1%20of%20this_url%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%26%22%0D%09set%20these_arguments%20to%20every%20text%20item%20of%20the%20argument_string%0D%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09%0D%09%2D%2D%20PROCESS%20ACTIONS%0D%09%2D%2D%20This%20loop%20will%20execute%20scripts%20located%20within%20the%20Resources%20folder%0D%09%2D%2D%20of%20this%20applet%20depending%20on%20the%20key%20and%20value%20passed%20in%20the%20URL%0D%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20these_arguments%0D%09%09set%20this_pair%20to%20item%20i%20of%20these_arguments%0D%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%3D%22%0D%09%09copy%20every%20text%20item%20of%20this_pair%20to%20%7Bthis_key%2C%20this_value%7D%0D%09%09set%20AppleScript%27s%20text%20item%20delimiters%20to%20%22%22%0D%09%09if%20this_key%20is%20%22action%22%20then%0D%09%09%09if%20this_value%20is%20%221%22%20then%0D%09%09%09%09if%20my%20run_scriptfile%28%22Action%20Script%2001%2Escpt%22%29%20is%20false%20then%20error%20number%20%2D128%0D%09%09%09else%20if%20this_value%20is%20%222%22%20then%0D%09%09%09%09if%20my%20run_scriptfile%28%22Action%20Script%2002%2Escpt%22%29%20is%20false%20then%20error%20number%20%2D128%0D%09%09%09else%20if%20this_value%20is%20%223%22%20then%0D%09%09%09%09if%20my%20run_scriptfile%28%22Action%20Script%2003%2Escpt%22%29%20is%20false%20then%20error%20number%20%2D128%0D%09%09%09end%20if%0D%09%09end%20if%0D%09end%20repeat%0Dend%20open%20location%0D%0Don%20run_scriptfile%28this_scriptfile%29%0D%09%2D%2D%20This%20handler%20will%20execute%20a%20script%20file%20%0D%09%2D%2D%20located%20in%20the%20Resources%20folder%20of%20this%20applet%0D%09try%0D%09%09set%20the%20script_file%20to%20path%20to%20resource%20this_scriptfile%0D%09%09return%20%28run%20script%20script_file%29%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20run_scriptfile%0D%0Don%20load_run%28this_scriptfile%2C%20this_property_value%29%0D%09%2D%2D%20This%20handler%20will%20load%2C%20then%20execute%2C%20a%20script%20file%20%0D%09%2D%2D%20located%20in%20the%20Resources%20folder%20of%20this%20applet%2E%0D%09%2D%2D%20This%20method%20allows%20you%20to%20change%20property%20values%0D%09%2D%2D%20within%20the%20loaded%20script%20before%20execution%2C%0D%09%2D%2D%20or%20to%20execute%20handlers%20within%20the%20loaded%20script%2E%0D%09try%0D%09%09set%20the%20script_file%20to%20path%20to%20resource%20this_scriptfile%0D%09%09%0D%09%09set%20this_script%20to%20load%20script%20script_file%0D%09%09set%20main_property%20of%20this_script%20to%20this_property_value%0D%09%09%0D%09%09return%20%28run%20script%20this_script%29%0D%09on%20error%0D%09%09return%20false%0D%09end%20try%0Dend%20load_run"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top"></a><br>
+<b>on</b> open location <span class="codevariable">this_URL</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- When the link is clicked in thewebpage, this handler will be passed </span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- the URL that triggered the action, similar to:</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">--> yourURLProtocol://yourBundleIdentifier?key=value&key=value</span><BR>
+	<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- EXTRACT ARGUMENTS</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> offset <b>of</b> &quot;?&quot; <b>in</b> <span class="codevariable">this_URL</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">argument_string</span> <b>to</b> text <b>from</b> (<span class="codevariable">x</span> + 1) <b>to</b> -1 <b>of</b> <span class="codevariable">this_URL</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">these_arguments</span> <b>to every</b> text item <b>of the</b> <span class="codevariable">argument_string</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&quot;<BR>
+	<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PROCESS ACTIONS</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- This loop will execute scripts located within the Resources folder</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- of this applet depending on the key and value passed in the URL</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> count <b>of</b> <span class="codevariable">these_arguments</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_pair</span> <b>to</b> item <span class="codevariable">i</span> <b>of</b> <span class="codevariable">these_arguments</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;=&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy every</b> text item <b>of</b> <span class="codevariable">this_pair</span> <b>to</b> {<span class="codevariable">this_key</span>, <span class="codevariable">this_value</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> AppleScript's text item delimiters <b>to</b> &quot;&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">this_key</span> <b>is</b> &quot;action&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">this_value</span> <b>is</b> &quot;1&quot; <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if my</b> <span class="codevariable">run_scriptfile</span>(&quot;Action Script 01.scpt&quot;) <b>is</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>false <b>then error</b> number -128<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_value</span> <b>is</b> &quot;2&quot; <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if my</b> <span class="codevariable">run_scriptfile</span>(&quot;Action Script 02.scpt&quot;) <b>is</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>false <b>then error</b> number -128<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else if</b> <span class="codevariable">this_value</span> <b>is</b> &quot;3&quot; <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if my</b> <span class="codevariable">run_scriptfile</span>(&quot;Action Script 03.scpt&quot;) <b>is</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>false <b>then error</b> number -128<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b><BR>
+<b>end</b> open location<BR>
+<BR>
+<b>on</b> <span class="codevariable">run_scriptfile</span>(<span class="codevariable">this_scriptfile</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- This handler will execute a script file </span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- located in the Resources folder of this applet</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">script_file</span> <b>to</b> path to resource <span class="codevariable">this_scriptfile</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> (run script <span class="codevariable">script_file</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end</b> <span class="codevariable">run_scriptfile</span><BR>
+<BR>
+<b>on</b> <span class="codevariable">load_run</span>(<span class="codevariable">this_scriptfile</span>, <span class="codevariable">this_property_value</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- This handler will load, then execute, a script file </span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- located in the Resources folder of this applet.</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- This method allows you to change property values</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- within the loaded script before execution,</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- or to execute handlers within the loaded script.</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">script_file</span> <b>to</b> path to resource <span class="codevariable">this_scriptfile</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_script</span> <b>to</b> load script <span class="codevariable">script_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> script <span class="codevariable">this_script</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">some_script_property</span> <b>to</b> <span class="codevariable">this_property_value</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> (run script <span class="codevariable">this_script</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end</b> <span class="codevariable">load_run</span></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Webpage Helper</h2>
+			<a href="webpagehelper.zip"><img src="WebpageHelper32x32.png" alt="Download Link" width="32" height="32" border="0" class="left"></a>
+			<p><a href="webpagehelper.zip" target="_self">Download</a> the Webpage Helper script application.</P>
+		</div>
+		<div class="box">
+			<h2>Example Links</h2>
+			<p>Example links for the Webpage Helper application:</p>
+			<ol>
+				<li><a href="webpagehelper://com.apple.AppleScript.WebpageHelper?action=1" target="_self">Click</a> to view the passed URL.<BR></li>
+				<li><a href="webpagehelper://com.apple.AppleScript.WebpageHelper?action=1&action=2" target="_self">Click</a> to view the passed URL and then switch to the Finder, hide other applications, and show the Webpage Helper application.<BR></li>
+				<li><a href="webpagehelper://com.apple.AppleScript.WebpageHelper?action=1&action=3" target="_self">Click</a> to view the passed URL and then open a folder in your home directory named Webpage Helper. The folder will be created if it doesn't exist.<BR></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Image Import Link</h2>
+			<p>Click the image thumbnail to trigger the Webpage Helper application to download and import a large version of this image into the frontmost Pages document:</p>
+			<a href="webpagehelper://com.apple.AppleScript.WebpageHelper?action=1&action=4!-http://www.macosxautomation.com/applescript/linktrigger/hummingbird.jpg" target="_self"><img src="hummingbird-th.jpg" width="200" height="132"></a>
+		</div>
+
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

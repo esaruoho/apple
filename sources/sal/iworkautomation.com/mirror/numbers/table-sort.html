@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Sorting Tables</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Sorting Tables</div>
+										
+			<p>The <span class="codelibraryclass">table</span> class can be the target of the <span class="codelibrarycommand">sort</span> command, which takes as its required parameter, the column to be used as the sorting reference.</p>
+						
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">sort</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Sort the rows of the table.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>sort</b>&nbsp;<span class="dictionary-class">table</span></p>
+				<p class="dictionary-double-indent"><span class="codelibraryparameter">by</span> <span class="dictionary-class">column</span> : The column to sort by.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">direction</span> <span class="dictionary-enumeration">ascending</span>/‌<span class="dictionary-enumeration">descending</span> ] : The location at which to insert the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">in rows</span> <span class="dictionary-class">range</span> ] : Limit the sort to the specified rows.</p>	
+			</div>
+			
+			<p>The command includes two optional parameters: one for determining the sorting direction; and another for limiting the sort to the indicated rows.</p>
+			
+			<p>For example, the table shown below is an attendance table:</p>
+		
+			<img class="centered" alt="sort-table-01" src="gfx/sort-table-01.jpg" width="624">
+		
+			<p>To sort the rows of the table based on the column of containing the names, pass a reference to the first column as the direct parameter of the <span class="codelibrarycommand">sort</span> command, and indicate the desired sorting order using the optional <span class="codelibraryparameter">direction</span> parameter:</p>
+		
+			<p class="code"><b>tell</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">sort</span> <span class="codelibraryparameter">by</span> <span class="codelibraryclass">column</span> 1 <span class="codelibraryparameter">direction</span> <span class="dictionary-enumeration">ascending</span></p>
+			
+			<p>The table is then sorted:</p>
+			
+			<img class="centered" alt="sort-table-02" src="gfx/sort-table-02.jpg" width="624">
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li class="hi"><a href="table.html">Table</a></li>
+				<li class="navListSectionItem"><a href="table-make.html">Making Tables</a></li>
+				<li class="navListSectionItem"><a href="table-edit.html">Editing Tables</a></li>
+				<li class="navListSectionItem"><a href="table-populate.html">Populating Tables</a></li>
+				<li class="navListSectionItem"><a href="table-read-file.html">Reading Data from File</a></li>
+				<li class="navListSectionItem"><a href="table-delete.html">Deleting Tables</a></li>
+				<li class="navListSectionItemSelected">Sorting Tables</li>
+				<li class="navListSectionItem"><a href="table-transpose.html">Transposing Tables</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

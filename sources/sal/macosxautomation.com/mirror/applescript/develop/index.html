@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Application Development</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+
+		<h1>Developing AppleScript Applications</h1>
+		
+		<p>At some point in your career as an AppleScript scripter, you'll want to incorporate more features and abilities into the script solutions you create. For example, you might want to add an application interface for accepting user input, or show a floating window to display content for review, etc. Starting with Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard) you have the complete library of Macintosh interface elements available for your use, including access to the entire Cocoa frameworks of functions.</p>
+		
+		<h3>What's New?</h3>
+		
+		<p>Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard) has added significant updates and improvements to AppleScript and the construction of AppleScript-based applications. Here are a few:</p>
+		
+		<ol>
+			<li><b>The AppleScript-Cocoa Bridge</b>. AppleScript is now closely integrated with the Cocoa frameworks in Mac&nbsp;OS&nbsp;X, making it a first-class application development language. A new bridge architecture now gives AppleScript direct access to entire library of Cocoa methods and calls installed in Mac&nbsp;OS&nbsp;X. Cocoa methods can be called from within AppleScript scripts comprising the source of AppleScript-Cocoa applications.
+			</li>
+						
+			<li><b>AppleScript-Cocoa Templates</b>. Application templates in Xcode now include one for developing a Cocoa-AppleScript application. These templates include a new interface nib that provides access to the entire library of Interface Builder elements, which can now be linked to AppleScript source code using the same outlets, actions, and bindings that are used by the other development languages of Mac&nbsp;OS&nbsp;X.
+			</li>
+		</ol>
+			
+			<img src="gfx/XCODETEMPLATEPICKER.png" width="640" height="446" align="top" class="across">
+
+		<h3>What About AppleScript Studio?</h3>
+
+		<p>Prior to Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard), AppleScript-based applications were developed using a set of Xcode templates commonly referred to as AppleScript Studio. A fundamental concept of AppleScript Studio is that user interface elements were treated as AppleScript objects, referenced by their position in their object hierarchy. Because of this, communicating with UI elements required a great deal of supporting AppleScript code, breakable if the UI objects were rearranged or changed. In the new AppleScript-Cocoa development environment, UI object are treated as Cocoa objects and can easily be bound to AppleScript source code using outlets, actions, and bindings. Linked UI elements can be rearranged or moved without effecting the AppleScript source code at all.</P>
+
+		<p>In Mac&nbsp;OS&nbsp;X v10.6 (Snow Leopard), AppleScript Studio applications and projects are supported but deprecated. Specifically:</p>
+
+		<ol>
+			<li><b>Running Existing Studio Applications</b>. The AppleScript Studio frameworks from Mac&nbsp;OS&nbsp;X v.10.5 (Leopard) are included with Mac&nbsp;OS&nbsp;X v.10.6 (Snow Leopard), so existing applications created with AppleScript Studio still run on Mac&nbsp;OS&nbsp;X v.10.6 as they did on Mac&nbsp;OS&nbsp;X v.10.5.
+			</li>
+			
+			<li><b>Editing Existing Studio Projects</b>. Since the AppleScript Studio frameworks from Mac&nbsp;OS&nbsp;X v.10.5 are included with Mac&nbsp;OS&nbsp;X v.10.6, existing Studio projects remain editable in Xcode. However, any new projects will be created using the new AppleScript-Cocoa templates.
+			</li>
+			
+			<li><b>What changes?</b>. Most of the obvious changes between AppleScript Studio and AppleScript-Cocoa involve how the user interfaces of the applications are implemented. In AppleScript Studio, UI elements such as text fields were named and then referenced in the supporting scripts by their position in the hierarchy of items in their parent window, such as: 
+			
+			<br><br><span class="inlinecode">text field &quot;item cost&quot; of box &quot;input values&quot; of tab view &quot;user input&quot; of window &quot;main&quot;</span>
+			
+			<br><br>In AppleScript-Cocoa applications, this type of referencing is unnecessary as controls are bound directly to script properties and functions through the use of Cocoa Bindings and IB actions and IB outlets.
+			</li>
+			
+			<li><b>What remains the same?</b> The AppleScript code you used to perform the functions of the Studio application, remain the same. For example, the AppleScript code you used to copy, move, upload, or download files is the same. So does the AppleScript code you used to communicate with and control other applications, remains the same as well.
+			</li>
+	</ol>
+	
+	<p>To quickly understand some of the differences between AppleScript Studio and the new AppleScript-Cocoa development environments, watch this <a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);">introductory video</a> about connecting application interfaces.</p>
+		
+	<p class="note"><b>NOTE:</b> If it necessary to access AppleScript Studio templates in Snow Leopard, enter the following in the Terminal application:</p>
+	
+	<p class="code">defaults write com.apple.InterfaceBuilder3 IBEnableAppleScriptStudioSupport -bool YES</p>
+	
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">INTRO VIDEO</h2>
+			<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);"><img src="gfx/asoc-movie-clip.jpg" width="206" align="top" class="across"></a>
+			<p>A video overview of how to connect application interfaces to their corresponding function code using Interface Builder outlets and actions.<br>(<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001.html', 'viewer-window-ASOC-001',644,380);">watch</a>)&nbsp;(<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);">watch HD</a>)&nbsp;(<a href="transcription.html">transcription</a>)</p>
+			<p><a href="pkg/TemperatureConverterApp.zip">Download</a> the example application</p>
+			<p><a href="pkg/TemperatureConverterProject-Outlets.zip">Download</a> the example Xcode Project</p>
+			<p><font color="#FF0000">REQUIRES Mac&nbsp;OS&nbsp;X v10.6</font></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">LEARN APPLESCRIPT/OBJ-C</h2>
+			
+			<img src="../apps/gfx/cover.jpg" alt="" width="90" align="left">
+			
+			<p><b>AppleScriptObjC Explored</b> by Shane Stanley is the definitive resource on AppleScript Objective-C.</p>
+			
+			<p>In addition to documenting how to build applications using AppleScriptObjC, this PDF book comes with fully-editable and annotated example projects for you to explore in detail.</p>
+			<ol>
+				<li>The best documentation about AppleScript Objective-C</li>
+				<li>Written from an AppleScript scripter's perspective</li>
+				<li>Learn by building a range of projects</li>
+				<li>Includes an overview of the tools you use</li>
+				<li>More than 20 sample projects</li>
+				<li>Learn the <q>gotchas</q> and how to work-around them</li>
+				<li>Second edition contains 50% more content</li>
+			</ol>
+			
+			<p><a href="../apps/index.html"><b>MORE&hellip;</b></a></p>
+			
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">MACBREAK DEV VIDEO</h2>
+			<a href="javascript:window.open('macbreakdev-036.html','viewer-window-macbreakdev-036','width=974,height=720');"><img src="gfx/macbreak.jpg" width="206" align="top" class="across"></a>
+			<p>A demonstration of the differences between connecting application interfaces using AppleScript Studio and AppleScript-Objective-C. <a href="javascript:window.open('macbreakdev-036.html','viewer-window-macbreakdev-036','width=974,height=720');">WATCH</a></p>
+		</div>
+		<div class="box">
+			<h2>APPLESCRIPT ACTIONS</h2>
+			<p><b><font color="#FF0000">New!</font></b> Two Xcode projects have been posted demonstrating how to use the new AppleScript-Objective-C templates to creating Automator actions using lists. The automated publishing example can be viewed <a href="http://www.macosxautomation.com/automator/examples/ex04/index.html">here</a>.</p>
+		</div>
+		<div class="box">
+			<h2>DISCLAIMER</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

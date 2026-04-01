@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Placeholder Text, Script Tags, and Data Merge</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="macOS, AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="A macOS application using script tags in the iWork Pages application to perform data merges and exports. with spreadsheet data.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Placeholder Text, Script Tags, and Data Merge</div>
+			
+<!-- 
+			<p class="note" style="width:600px;"><b>IMPORTANT</b>: You can <a href="PagesDataMergeAppMojave.zip">DOWNLOAD</a> a beta version of the Pages Data Merge application designed to work with macOS v10.4 Mojave. Its use requires the approval of three security dialogs, similar to this one: <br><img width="500" height="auto" alt="security-approval-03" src="gfx/security-approval-03.png"></p>
+ -->
+			<p class="note" style="width:600px;"><b>IMPORTANT</b>: You can <a href="data-merge-2-1.zip">DOWNLOAD</a> a beta version (2.1) of the Pages Data Merge application designed to work with macOS v10.4 Mojave. Its use requires the approval of three security dialogs, similar to this one: <br><img width="500" height="auto" alt="security-approval-03" src="gfx/security-approval-03.png"></p>
+			
+			<p class="content-subhead" role="heading" aria-level="2" style="margin-top:36px;">Merging Data</p>
+			
+			<p>A task often performed using productivity software such as Pages, is to create multiple documents based upon a template, where text placeholders in the template are replaced with data from a row of a spreadsheet. A <a href="http://en.wikipedia.org/wiki/Mail_merge" target="_blank">Mail Merge</a> is an example of this process.</p>
+			
+			<p>While the ability to merge data with documents in not a feature available within the user-interface of the application, Pages includes scripting support for performing automated replacement of the content of text placeholders.</p>
+			
+			<p>The <b>Pages Data Merge</b> application uses this specialized scripting support to make it easy for you to merge spreadsheet data with tagged Pages documents.</p>
+					
+			<img class="across" width="640" alt="The interface for the Pages Data Merge application" src="gfx/data-merge-interface-01.png">
+			
+			
+			<p class="content-subhead" role="heading" aria-level="2" style="margin-top:-36px;">Preparation for Merging Data</p>
+			
+			<p>Before running the <b>Pages Data Merge</b> application, make sure you have followed these steps in preparation:</p>
+			
+			<ol>
+				<li>Add text placeholders to the document to be merged. Each text placeholder will be associated with the contents of a row cell from the imported spreadsheet data.<p class="segment-note"><b>NOTE</b>: Text placeholders used within tables or charts are not “visible” to scripts and cannot be used for data merging.</p></li>
+				
+				<li>Assign a unique Script Tag to each of the text placeholders, by selecting a placeholder and entering its related Script Tag in the text input at the bottom of the More tab view in the Pages document window. You can name the Script Tags anything you like, they don’t have to match the headers from the source table or data file.</li>
+				<li>Save the Pages document to be used as the template, and leave it open. Close all other open documents.<p class="segment-note"><b>IMPORTANT</b>: The Pages document used as the merge template must NOT be password protected.</p></li>
+				<li>Switch to Numbers, and select a range of rows from the table containing the data you wish to import. Don’t select any row or column headers, just select the data to be merged.</li>
+				<li>Follow the instructions outlined in the movie below:</li>
+			</ol>
+			
+			<video width="624" height="436" controls poster="gfx/merge-movie-placeholder.jpg">
+			  <!-- <source src="Merge-720P.mov" type="video/mp4"> -->
+			  <source src="merge.m4v" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+
+			
+			
+			<p class="content-subhead" role="heading" aria-level="2">Download</p>
+			
+			<p>The ZIP archive linked below contains the Pages Data Merge application and example Pages document and Numbers spreadsheet.</p>
+			
+			<p class="segment-note"><a href="PagesDataMergeApp.zip">DOWNLOAD</a> the Pages Data Merge application and example files shown in the movie above.</p>
+			
+			<p class="segment-note"><b>TIP</b>: Here’s an easy way to combine PDF documents exported using the <b>Pages Data Merge</b> application into a single PDF file. Use this free and easy <a href="http://macosxautomation.com/automator/combinePDFs/index.html">system-service</a>.</p>
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="text-item.html" target="_self">CONTINUE</a></p>
+	</div>	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi"><a href="text-item.html">Text Item</a></li>
+				<li class="navListSectionItem"><a href="script-tags-placeholder-text.html">Placeholder Text</a></li>
+				<li class="navListSectionItemSelected">Data Merge</li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">ABOUT THE APPLICATION</h2>
+			<p>The <b>Pages Data Merge</b> application is a powerful utility that transfers data and controls applications by using the built-in AppleScript scripting support of the iWork suite of applications.</p>
+			<p>This application is a native OS&nbsp;X application written using AppleScriptObjective-C (ASOC), a dynamic fusion of the AppleScript and Objective-C languages. For more information about how to create your own ASOC applications, and script libraries, click <a href="http://macosxautomation.com/applescript/apps/index.html" target="_blank">here</a>.</p>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">MACWORLD ARTICLES</h2>
+			<p>Here are links to two Macworld articles concerning the use of the Pages Data Merge application:</p>
+			<ul>
+				<li><a href="http://www.macworld.com/article/2864355/how-to-create-mail-merge-documents-with-pages-and-numbers.html" target="_blank">Using the Data Merge application</a></li>
+				<li><a href="http://www.macworld.com/article/2876323/how-to-easily-print-mail-merged-pages-documents.html" target="_blank">Printing merged documents</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">COMBINING PDF FILES</h2>
+			<p><b>TIP</b>: Here’s an easy way to combine PDF documents exported using the <b>Pages Data Merge</b> application into a single PDF file. Use this free and easy <a href="http://macosxautomation.com/automator/combinePDFs/index.html">system-service</a>.</p>
+		</div>
+		
+		<!-- 
+<div class="box">
+			<h2 style="text-align:center;">PAGES DATA MERGE PRO</h2>
+			<p>The Pages Mail Merge application is designed to be a general-purpose tool for quickly and easily using Numbers data to create new Pages documents.</p>
+			<p>For those whose publishing needs require more options and controls, a more advanced version of the application is available offering these extra features:</p>
+			<ul>
+				<li>Savable settings that allow you to store and retrieve often-used data sets and output parameters.</li>
+				<li>Advanced naming options for the exported files and directories.</li>
+			</ul>
+			<p>For more information about Pages Mail Merge Pro, click <a href="#" target="_blank">here</a>.</p>
+		</div>
+ -->
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

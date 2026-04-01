@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Aperture Caption Palette</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../../index.html">Automation</a> | <a href="../../index.html">AppleScript</a> | <a href="../../learn.html">Learn</a> | <a href="../../examples.html">Examples</a> | <a href="../index.html">Aperture</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../../index.html">Home</a></td>
+			<td><a href="../../features/">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../../learn.html">Learn</a></td>
+			<td><a href="../../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Aperture Caption Palette</h2>
+		
+		<p>Hands-free captioning and rating! Image this: you've just finished importing your latest award-winning shots, and it's time to caption and rate the images. Instead of crouching over a keyboard, you sit back in your easy-chair sipping a mug of your favorite brew while speaking your thoughts to the computer screen, which somehow magically understands and transcribes your musings and executes your commands.</p> 
+		
+		<p>Just a dream? Nope, it's here. Enhanced AppleScript support in Aperture 2.1 combines with the latest in Macintosh speech recognition technology to provide you with the ultimate in time-saving, coffee-drinking, hands-free photograhic workflow ease.</p>
+		
+		<p>The Aperture Caption Palette is a resizable window that floats over the full-screen display of your selected images, allowing instant access and input to both the displayed image's caption and ratings data. Simply select the images to process, launch the Caption Palette application and you're ready to go!</p>
+		
+		
+		<img src="gfx/palette.png" width="534" height="353" class="across">
+		
+		
+		<h3>Palette Controls</h3>
+		
+		<p>The Aperture Caption Palette (shown in actual size above) can be controlled either by: pressing controls on the floating palette; using keyboard shortcuts; or via voice commands and dictation using MacSpeech Dictate. Here is a summary of the options and shortcuts for controlling the Caption Palette from the keyboard:</p>
+		
+		<ol>
+			<li><b>Caption Input Field</b> &#149; Enter the caption text in this field. When the palette is frontmost, this field will accept input.<br>&nbsp;</li>
+			
+			<li><b>Existing Caption Field</b> &#149; This area will display the current caption, if any, for the displayed image. This field is not editable.<br>&nbsp;</li>
+			
+			<li><b>Image Counter</b> &#149; This combination of two numbers indicates the index of the currently displayed image in the list of selected images, followed by the total number of selected images.<br>&nbsp;</li>
+			
+			<li><b>Ratings Menu</b> (Command-Option-0 thru 5) &#149; This popup menu shows the current rating for the displayed image. You can change the rating by selecting another option from the popup menu.<br>&nbsp;</li>
+			
+			<li><b>Copy Caption Button</b> (Command-5) &#149; Click this control to replace the contents of the caption input field (1) with the existing caption.<br>&nbsp;</li>
+			
+			<li><b>Start Button</b> (Command-1) &#149; Click this button to display the first image in the list of selected images.<br>&nbsp;</li>
+			
+			<li><b>Back Button</b> (Command-2) &#149; Click this button to display the previous image in the list of selected images. Any text in the caption input field will not be stored or applied to the current image.<br>&nbsp;</li>
+			
+			<li><b>Next Button</b> (Command-3) &#149; Click this button to display the next image in the list of selected images. Any text in the caption input field will not be stored or applied to the current image.<br>&nbsp;</li>
+			
+			<li><b>Write Button</b> (Command-4) &#149; Click this button to write the contents of the caption input field to the image caption tag. After writing the data, the next image in the list of selected images will be displayed.<br>&nbsp;</li>
+						
+			<li><b>Close Button</b> (Command-W) &#149; Click this button to close the palette and automatically exit full-screen mode.<br>&nbsp;</li>
+		</ol>
+		
+		<h3>Other Commands</h3>
+		
+		<p>In addition, there are two keyboard commands for speaking text contained in the Caption Palette:</p>
+		
+		<ol>
+			<li><b>Speak New Caption</b> (Command-Option-E) &#149; This command uses the text-to-speech technology built into Mac&nbsp;OS&nbsp;X to speak the contents of caption input field.<br>&nbsp;</li>
+			
+			<li><b>Speak Current Caption</b> (Command-Option-R) &#149; This command uses the text-to-speech technology built into Mac&nbsp;OS&nbsp;X to speak the contents of current caption  field.<br>&nbsp;</li>
+		</ol>
+
+		<h3>Display Preferences</h3>
+		
+		<p>For those that want to sit back (way back) from the screen, you can increase the size of the text displayed in the caption input field to 36-point by using the keyboard shortcut Command-Option-F to summon this drop-down preference dialog:</p>
+		
+		<img src="gfx/fontoptions.png" width="534" height="353" class="across">
+		
+		<p>Also, if you prefer to have existing captions automatically displayed in the caption inut field in addition to the current caption field, type Command-Option-S to summon this preference dialog:</p>
+
+		<img src="gfx/captionoptions.png" width="534" height="353" class="across">
+
+		<hr>
+
+		<h3>Try It For Yourself</h3>
+		
+		<p>If you're one of the &quot;seeing is believing&quot; types, download the Aperture Caption Palette installer, and enjoy hands-free captioning.</p>
+		
+		<p><a href="agreement.html">Download</a> the installer.</p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+		
+<!-- 
+		<div class="box">
+			<h2>Setup for MacSpeech Dictate</h2>
+			<a href="dicate.html"><img src="gfx/dictate32x32.png" width="32" height="32" class="left"></a>
+			<p>A step-by-step overview of how to use the Aperture Caption Palette with MacSpeech Dictate.</p>			
+		</div>
+ -->
+		
+		<div class="box">
+			<h2>MacSpeech Dictate</h2>
+			<p align="left"><a href="http://www.macspeech.com/" target="_blank"><img src="gfx/boxshot.png" width="99" height="140" class="left"></a>Written from the ground up for the Mac, MacSpeech Dictate’s features, accuracy, and capabilities make it as fun, productive, and intuitive to use as the Mac itself.</p><p>MacSpeech Dictate provides astounding accuracy and productivity. With just five minutes or less of training, you'll be using MacSpeech Dictate's superior capabilities.</p><p>At the core of MacSpeech Dictate is the world-renowned Dragon speech recognition engine by Nuance. It’s the brains and brawn behind MacSpeech Dictate’s phenomenal accuracy capabilities.</p>  
+			<p>MacSpeech Dictate is available on the Apple Store, <a href="http://www.macspeech.com/" target="_blank">here</a>.</p>
+		</div>
+
+		<div class="box">
+			<h2>Aperture Scripting</h2>
+			<p>Want to learn more about the AppleScript support in Aperture? Here's a <a href="http://homepage.mac.com/jlarson7/index.html">website</a> dedicated to explaining the basics of how to script Aperture.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

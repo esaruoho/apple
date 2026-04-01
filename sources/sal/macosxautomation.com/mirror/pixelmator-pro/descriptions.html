@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Pixelmator Pro</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="AppleScript scripts demonstratig automation support in Pixelmator Pro.">
+	<link rel="stylesheet" type="text/css" href="omni-automation-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="stylesheet" type="text/css" href="applescriptcode.css" />
+	<link rel="stylesheet" type="text/css" href="mobile-main.css" />
+	<meta name="keywords" content="AppleScript, Pixelmator, automation">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<style>
+		.script-code-text {
+			padding: 2vw;
+			/* background-color: white; */
+			/* color: black; */
+			font-family: "Menlo", san-serif;
+			font-size: 1vw;
+		}
+		#code
+		{
+			font: 14px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+			font-size: 14px;
+			margin: 12px 0px 12px 0px;
+			color: #fff;
+			background-color: #333;
+			padding: 8px;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div class="banner">
+			<img width="100%" alt="banner image" src="gfx/banner.jpg">
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head" role="heading" aria-level="1">Overlay Image Descriptions</p>
+			
+			<p>Many images marked for public distribution or used by wire services contain descriptions as part of the embedded image metadata. For example, the images in the <a href="https://images.nrel.gov/mx/Profiles/en/landing/" target="_blank">Wind Power</a> galleries hosted by the <a href="https://www.nrel.gov" target="_blank">National Renewable Energy Laboratory (NREL)</a> are saved with description metadata.</p>
+
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="overlay-description" x-webkit-airplay="allow" webkit-playsinline width="100%" height="auto" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/overlay-poster.jpg">
+				  <source src="overlay-description.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('overlay-description').play();">PLAY</button>
+				<button onclick="document.getElementById('overlay-description').pause();">PAUSE</button>
+				<button onclick="document.getElementById('overlay-description').currentTime=(document.getElementById('overlay-description').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('overlay-description').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>The AppleScript script will extract the embedded IPTC description from the image and create a next text layer placed over a corresponding shape layer background. The color picker dialog will appear from which you can select the back ground color for the backing shape. TIP: use the eye drpper tool in the color picker to select a color form the image!</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td class="rightside"><p><a href="description-demo.zip">DOWNLOAD</a> a zip archive (84mb) containing the Pixelmator example images, and the example AppleScript script file.</p></td>
+				</tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">The AppleScript Script</p>
+			
+			<p>Here is the AppleScript script that automates the process of extracting the description metadata from the image and placing it over the image.</p>
+			
+			
+<p id="code"><a href="applescript://com.apple.scripteditor?action=new&name=Overlay%20Image%20Description&script=use%20AppleScript%20version%20%222%2E4%22%20%2D%2D%20Yosemite%20%2810%2E10%29%20or%20later%0Duse%20scripting%20additions%0D%0Dproperty%20backgroundShapeOpacity%20%3A%2070%0Dproperty%20defaultBackgroundColor%20%3A%20%7B6425%2C%206425%2C%206425%7D%0D%0Dtell%20application%20id%20%22com%2Epixelmatorteam%2Epixelmator%2Ex%22%0D%09activate%0D%09tell%20the%20front%20document%0D%09%09%0D%09%09set%20imageDescription%20to%20the%20caption%20of%20the%20document%20info%20of%20it%0D%09%09if%20imageDescription%20is%20%22%22%20then%0D%09%09%09display%20dialog%20%22This%20images%20does%20not%20have%20a%20description%2E%22%20%26%20return%20%26%20return%20%26%20%22Would%20you%20like%20to%20use%20placeholder%20text%20instead%3F%22%20with%20icon%202%0D%09%09%09set%20imageDescription%20to%20%22Cras%20mattis%20consectetur%20purus%20sit%20amet%20fermentum%2E%20Integer%20posuere%20erat%20a%20ante%20venenatis%20dapibus%20posuere%20velit%20aliquet%2E%20Donec%20ullamcorper%20nulla%20non%20metus%20auctor%20fringilla%2E%20Integer%20posuere%20erat%20a%20ante%20venenatis%20dapibus%20posuere%20velit%20aliquet%2E%20Maecenas%20faucibus%20mollis%20interdum%2E%22%0D%09%09end%20if%0D%09%09%0D%09%09set%20the%20docWidth%20to%20the%20width%20of%20it%0D%09%09set%20the%20docHeight%20to%20the%20height%20of%20it%0D%09%09%0D%09%09set%20hypot%20to%20%28the%20docWidth%20%5E%202%20%2B%20docHeight%20%5E%202%29%0D%09%09%0D%09%09if%20docWidth%20%3D%20docHeight%20then%0D%09%09%09set%20fontSize%20to%20hypot%20div%20docWidth%0D%09%09else%20if%20docWidth%20%3E%20docHeight%20then%0D%09%09%09set%20fontSize%20to%20hypot%20div%20docWidth%0D%09%09else%0D%09%09%09set%20fontSize%20to%20hypot%20div%20docHeight%0D%09%09end%20if%0D%09%09set%20fontSize%20to%20fontSize%20div%20100%0D%09%09%0D%09%09set%20descriptionOffset%20to%20docWidth%20div%2010%0D%09%09set%20textLayerWidth%20to%20docWidth%20%2D%20descriptionOffset%20%2A%202%0D%09%09%0D%09%09set%20textLayer%20to%20make%20new%20text%20layer%20with%20properties%20%7Btext%20content%3AimageDescription%2C%20width%3AtextLayerWidth%2C%20name%3A%22Description%22%7D%0D%09%09tell%20textLayer%0D%09%09%09tell%20its%20text%20content%0D%09%09%09%09set%20font%20to%20%22Helvetica%22%0D%09%09%09%09set%20size%20to%20fontSize%0D%09%09%09end%20tell%0D%09%09%09set%20horizontal%20alignment%20to%20left%0D%09%09%09set%20textLayerHeight%20to%20height%20of%20it%0D%09%09%09set%20position%20to%20%7BdescriptionOffset%2C%20docHeight%20%2D%20textLayerHeight%20%2D%20descriptionOffset%7D%0D%09%09end%20tell%0D%09%09%0D%09%09set%20shapeLayerWidth%20to%20docWidth%20%2D%20descriptionOffset%0D%09%09set%20shapeLayer%20to%20make%20new%20rounded%20rectangle%20shape%20layer%20with%20properties%20%7Bwidth%3AshapeLayerWidth%2C%20name%3A%22Description%20Background%22%2C%20height%3AtextLayerHeight%20%2B%20descriptionOffset%20div%201%2E5%7D%20at%20beginning%20of%20shape%20layers%0D%09%09set%20fill%20color%20of%20styles%20of%20shapeLayer%20to%20defaultBackgroundColor%0D%09%09set%20opacity%20of%20shapeLayer%20to%20backgroundShapeOpacity%0D%09%09set%20shapeLayerHeight%20to%20height%20of%20shapeLayer%0D%09%09set%20position%20of%20shapeLayer%20to%20%7BdescriptionOffset%20div%202%2C%20docHeight%20%2D%20shapeLayerHeight%20%2D%20descriptionOffset%20div%201%2E5%7D%0D%09%09%0D%09%09move%20textLayer%20to%20before%20layer%201%0D%09%09move%20shapeLayer%20to%20after%20layer%201%0D%09%09%0D%09%09set%20fill%20color%20of%20styles%20of%20shapeLayer%20to%20choose%20color%20default%20color%20defaultBackgroundColor%0D%09end%20tell%0Dend%20tell"><button style="padding:4px;">Open Script</button></a><br><br>
+use AppleScript version &quot;2.4&quot; <span class="codecomment">-- Yosemite (10.10) or later</span><BR>
+use scripting additions<BR>
+<BR>
+<b>property</b> backgroundShapeOpacity : 70<BR>
+<b>property</b> defaultBackgroundColor : {6425, 6425, 6425}<BR>
+<BR>
+<b>tell</b> application id &quot;com.pixelmatorteam.pixelmator.x&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> document<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> imageDescription <b>to the</b> caption <b>of the</b> document info <b>of it</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> imageDescription <b>is</b> &quot;&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;This images does not have <span class="codevariable">a</span> description.&quot; &amp; return &amp; return &amp; &quot;Would you like to use placeholder text instead?&quot; with icon 2<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> imageDescription <b>to</b> &quot;Cras mattis consectetur purus sit amet fermentum. Integer posuere erat <span class="codevariable">a</span> ante venenatis dapibus posuere velit aliquet. Donec ullamcorper nulla non metus auctor fringilla. Integer posuere erat <span class="codevariable">a</span> ante venenatis dapibus posuere velit aliquet. Maecenas faucibus mollis interdum.&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> docWidth <b>to the</b> width <b>of it</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> docHeight <b>to the</b> height <b>of it</b><BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> hypot <b>to</b> (<b>the</b> docWidth ^ 2 + docHeight ^ 2)<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> docWidth = docHeight <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> fontSize <b>to</b> hypot <b>div</b> docWidth<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else if</b> docWidth > docHeight <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> fontSize <b>to</b> hypot <b>div</b> docWidth<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> fontSize <b>to</b> hypot <b>div</b> docHeight<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> fontSize <b>to</b> fontSize <b>div</b> 100<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> descriptionOffset <b>to</b> docWidth <b>div</b> 10<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> textLayerWidth <b>to</b> docWidth - descriptionOffset * 2<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> textLayer <b>to</b> make new text layer <b>with</b> properties {text content:imageDescription, width:textLayerWidth, name:&quot;Description&quot;}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> textLayer<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell its</b> text content<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> font <b>to</b> &quot;Helvetica&quot;<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> size <b>to</b> fontSize<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> horizontal alignment <b>to</b> left<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> textLayerHeight <b>to</b> height <b>of it</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> position <b>to</b> {descriptionOffset, docHeight - textLayerHeight - descriptionOffset}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> shapeLayerWidth <b>to</b> docWidth - descriptionOffset<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> shapeLayer <b>to</b> make new rounded rectangle shape layer <b>with</b> properties {width:shapeLayerWidth, name:&quot;Description Background&quot;, height:textLayerHeight + descriptionOffset <b>div</b> 1.5} at <b>beginning of</b> shape layers<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> fill color <b>of</b> styles <b>of</b> shapeLayer <b>to</b> defaultBackgroundColor<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> opacity <b>of</b> shapeLayer <b>to</b> backgroundShapeOpacity<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> shapeLayerHeight <b>to</b> height <b>of</b> shapeLayer<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> position <b>of</b> shapeLayer <b>to</b> {descriptionOffset <b>div</b> 2, docHeight - shapeLayerHeight - descriptionOffset <b>div</b> 1.5}<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span>move textLayer <b>to</b> before layer 1<BR>
+<span style="float:left; width:20px;">&nbsp;</span>move shapeLayer <b>to</b> after layer 1<BR>
+		<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> fill color <b>of</b> styles <b>of</b> shapeLayer <b>to</b> choose color default color defaultBackgroundColor<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end tell</b></p>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">DEMOS</div>
+			  <p><a href="index.html">Home</a></p>
+			  <p><a href="numbers.html">Numbers &amp; Captions</a></p>
+			  <p class="active-topic">Description Overlays</p>
+			  <p><a href="maps.html">Open in Maps</a></p>
+			  <p><a href="callouts.html">Callouts</a></p>
+			</nav>	
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

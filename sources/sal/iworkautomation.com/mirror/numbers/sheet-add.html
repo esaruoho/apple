@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Adding Sheets</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Adding Sheets</div>
+											
+			<p><span class="codelibraryclass">Sheets</span> are added to a <span class="codelibraryclass">document</span> by using the <span class="codelibrarycommand">make</span> command of the <span class="dictionary-suite">Standard Suite</span>.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">make</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Create a new object.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>make</b></p>
+				<p class="dictionary-double-indent"><span class="codelibraryparameter">new</span> <span class="dictionary-class">class</span> : The class of the new object.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">at location</span> <span class="dictionary-class">specifier</span> ] : The location at which to insert the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with data</span> <span class="dictionary-class">any</span> ] : The initial contents of the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with properties</span> <span class="dictionary-class">record</span> ] : The initial values for properties of the object.</p>	
+				<p class="dictionary-double-indent">&rArr;&nbsp;<span class="dictionary-class">specifier</span> : The new object.</p>
+			</div>
+			
+			<p>When creating a <span class="codelibraryclass">sheet</span>, the optional <span class="codelibraryparameter" style="font-weight:bold;">with properties</span> parameter of the <span class="codelibrarycommand">make</span> command is supported, so that <span class="codelibraryclass">sheets</span> can be created and named with a single statement.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Document with Sheet for Every Month</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20monthNames%20to%20%7B%22January%22%2C%20%22February%22%2C%20%22March%22%2C%20%22April%22%2C%20%22May%22%2C%20%22June%22%2C%20%22July%22%2C%20%22August%22%2C%20%22September%22%2C%20%22October%22%2C%20%22November%22%2C%20%22December%22%7D%0Dset%20thisYearName%20to%20(year%20of%20(current%20date))%20as%20string%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09--%20confirmation%20dialog%0D%09display%20dialog%20%22This%20script%20will%20create%20a%20new%20document%20containing%20a%20sheet%2C%20%22%20%26%20%C2%AC%0D%09%09%22with%20a%20named%20table%2C%20for%20every%20month%20of%20the%20year.%22%20buttons%20%C2%AC%0D%09%09%7B%22Cancel%22%2C%20%22Continue%22%7D%20default%20button%202%20with%20icon%201%0D%09--%20make%20a%20new%20document%0D%09set%20thisDocument%20to%20make%20new%20document%0D%09--%20create%20a%20sheet%20with%20a%20named%20table%20for%20every%20month%0D%09tell%20thisDocument%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20the%20monthNames%0D%09%09%09set%20thisMonthName%20to%20item%20i%20of%20the%20monthNames%0D%09%09%09set%20thisTableName%20to%20thisMonthName%20%26%20%22-%22%20%26%20thisYearName%0D%09%09%09if%20i%20is%201%20then%0D%09%09%09%09--%20name%20the%20sheet%0D%09%09%09%09set%20the%20name%20of%20sheet%201%20to%20thisMonthName%0D%09%09%09%09tell%20sheet%201%0D%09%09%09%09%09--%20delete%20default%20table%20and%20create%20new%20one%0D%09%09%09%09%09delete%20every%20table%0D%09%09%09%09%09make%20new%20table%20with%20properties%20%7Bname%3AthisTableName%7D%0D%09%09%09%09end%20tell%0D%09%09%09else%0D%09%09%09%09--%20make%20a%20new%20sheet%0D%09%09%09%09set%20thisSheet%20to%20%C2%AC%0D%09%09%09%09%09make%20new%20sheet%20with%20properties%20%7Bname%3AthisMonthName%7D%0D%09%09%09%09tell%20thisSheet%0D%09%09%09%09%09--%20delete%20default%20table%20and%20create%20new%20one%0D%09%09%09%09%09delete%20every%20table%0D%09%09%09%09%09make%20new%20table%20with%20properties%20%7Bname%3AthisTableName%7D%0D%09%09%09%09end%20tell%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09delay%200.5%0D%09%09--%20display%20the%20first%20sheet%20by%20selecting%20table%20on%20current%20sheet%2C%20then%20table%20on%20first%20sheet%0D%09%09set%20selection%20range%20of%20table%201%20of%20sheet%2012%20to%20cell%20range%20of%20table%201%20of%20sheet%2012%0D%09%09delay%201%0D%09%09set%20selection%20range%20of%20table%201%20of%20sheet%201%20to%20cell%20range%20of%20table%201%20of%20sheet%201%0D%09end%20tell%0D%09display%20dialog%20%22Document%20created.%22%20buttons%20%7B%22OK%22%7D%20default%20button%201%20with%20icon%201%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">monthNames</span> <b>to</b> {&quot;January&quot;, &quot;February&quot;, &quot;March&quot;, &quot;April&quot;, &quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, &quot;September&quot;, &quot;October&quot;, &quot;November&quot;, &quot;December&quot;}</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>set</b> <span class="codevariable">thisYearName</span> <b>to</b> (<span class="codelibraryparameter">year</span> <b>of</b> (<span class="codelibrarycommand">current date</span>)) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- confirmation dialog</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;This script will create a new document containing a sheet, &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>&quot;with a named table, for every month of the year.&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Continue&quot;} <span class="codelibraryparameter">default button</span> 2 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- make a new document</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a sheet with a named table for every month</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">monthNames</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMonthName</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of the</b> <span class="codevariable">monthNames</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTableName</span> <b>to</b> <span class="codevariable">thisMonthName</span> &amp; &quot;-&quot; &amp; <span class="codevariable">thisYearName</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> 1 <b>then</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- name the sheet</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">sheet</span> 1 <b>to</b> <span class="codevariable">thisMonthName</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">sheet</span> 1</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- delete default table and create new one</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">thisTableName</span>}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- make a new sheet</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSheet</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">sheet</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">thisMonthName</span>}</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSheet</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- delete default table and create new one</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="dictionary-class">table</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">thisTableName</span>}</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 0.5</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- display the first sheet by selecting table on current sheet, then table on first sheet</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">selection range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="dictionary-class">sheet</span> 12 <b>to</b> <span class="codeproperty">cell range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="dictionary-class">sheet</span> 12</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 1</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="dictionary-property">selection range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="codelibraryclass">sheet</span> 1 <b>to</b> <span class="codeproperty">cell range</span> <b>of</b> <span class="dictionary-class">table</span> 1 <b>of</b> <span class="dictionary-class">sheet</span> 1</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Document created.&quot; <span class="codelibraryparameter">buttons</span> {&quot;OK&quot;} <span class="codelibraryparameter">default button</span> 1 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>The script below, adds a <span class="codelibraryclass">sheet</span>, titled for every day of the current month, to the front <span class="codelibraryclass">document</span>.</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Document with Sheet for Every Day of This Month</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=copy%20my%20deriveNameIndexLengthYearOfCurrentMonth()%20to%20%C2%AC%0D%09%7BthisMonthName%2C%20thisMonthIndex%2C%20monthLengthInDays%2C%20thisYearName%7D%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09--%20confirmation%20dialog%0D%09display%20dialog%20%22This%20script%20will%20create%20a%20new%20document%20%22%20%26%20%C2%AC%0D%09%09%22containing%20a%20sheet%20for%20every%20day%20of%20the%20month.%22%20buttons%20%C2%AC%0D%09%09%7B%22Cancel%22%2C%20%22Continue%22%7D%20default%20button%202%20with%20icon%201%0D%09--%20make%20a%20new%20document%0D%09set%20thisDocument%20to%20make%20new%20document%0D%09--%20create%20a%20sheet%20with%20a%20named%20table%20for%20every%20month%0D%09tell%20thisDocument%0D%09%09repeat%20with%20i%20from%201%20to%20monthLengthInDays%0D%09%09%09set%20the%20sheetName%20to%20%C2%AC%0D%09%09%09%09(thisMonthName%20%26%20space%20%26%20i%20%26%20space%20%26%20thisYearName)%20as%20string%0D%09%09%09set%20the%20tableName%20to%20%C2%AC%0D%09%09%09%09(thisMonthIndex%20%26%20%22-%22%20%26%20i%20%26%20%22-%22%20%26%20thisYearName)%20as%20string%0D%09%09%09if%20i%20is%201%20then%0D%09%09%09%09--%20name%20the%20sheet%0D%09%09%09%09set%20the%20name%20of%20sheet%201%20to%20the%20sheetName%0D%09%09%09%09--%20delete%20default%20table%20and%20create%20new%20one%0D%09%09%09%09tell%20sheet%201%0D%09%09%09%09%09delete%20every%20table%0D%09%09%09%09%09make%20new%20table%20with%20properties%20%7Bname%3AtableName%7D%0D%09%09%09%09end%20tell%0D%09%09%09else%0D%09%09%09%09--%20make%20a%20new%20sheet%0D%09%09%09%09set%20thisSheet%20to%20%C2%AC%0D%09%09%09%09%09make%20new%20sheet%20with%20properties%20%7Bname%3Athe%20sheetName%7D%0D%09%09%09%09tell%20thisSheet%0D%09%09%09%09%09--%20delete%20default%20table%20and%20create%20new%20one%0D%09%09%09%09%09delete%20every%20table%0D%09%09%09%09%09make%20new%20table%20with%20properties%20%7Bname%3AtableName%7D%0D%09%09%09%09end%20tell%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09%09delay%200.5%0D%09%09--%20display%20the%20first%20sheet%20by%20selecting%20table%20on%20current%20sheet%2C%20then%20table%20on%20first%20sheet%0D%09%09set%20selection%20range%20of%20table%201%20of%20sheet%2012%20to%20cell%20range%20of%20table%201%20of%20sheet%2012%0D%09%09delay%201%0D%09%09set%20selection%20range%20of%20table%201%20of%20sheet%201%20to%20cell%20range%20of%20table%201%20of%20sheet%201%0D%09end%20tell%0D%09display%20dialog%20%22Document%20created.%22%20buttons%20%7B%22OK%22%7D%20default%20button%201%20with%20icon%201%0Dend%20tell%0D%0Don%20deriveNameIndexLengthYearOfCurrentMonth()%0D%09set%20thisDate%20to%20(current%20date)%0D%09set%20day%20of%20thisDate%20to%201%0D%09set%20thisMonth%20to%20month%20of%20thisDate%0D%09set%20thisMonthName%20to%20thisMonth%20as%20string%0D%09set%20thisMonthIndex%20to%20thisMonth%20as%20integer%0D%09set%20thisYearName%20to%20(year%20of%20thisDate)%20as%20string%0D%09repeat%20with%20i%20from%201%20to%2032%0D%09%09set%20thisDate%20to%20thisDate%20%2B%20(1%20*%20days)%0D%09%09if%20month%20of%20thisDate%20is%20not%20thisMonth%20then%0D%09%09%09set%20monthLengthInDays%20to%20i%0D%09%09%09exit%20repeat%0D%09%09end%20if%0D%09end%20repeat%0D%09return%20%7BthisMonthName%2C%20thisMonthIndex%2C%20monthLengthInDays%2C%20thisYearName%7D%0Dend%20deriveNameIndexLengthYearOfCurrentMonth"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>copy my</b> <span class="codevariable">deriveNameIndexLengthYearOfCurrentMonth</span>() <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span>{<span class="codevariable">thisMonthName</span>, <span class="codevariable">thisMonthIndex</span>, <span class="codevariable">monthLengthInDays</span>, <span class="codevariable">thisYearName</span>}</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- confirmation dialog</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will create a new document &quot; &amp; &not;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>&quot;containing a sheet for every day of the month.&quot; <span class="codelibraryparameter">buttons</span> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Continue&quot;} <span class="codelibraryparameter">default button</span> 2 with icon 1</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- make a new document</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- create a sheet with a named table for every month</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> <span class="codevariable">monthLengthInDays</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">sheetName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codevariable">thisMonthName</span> &amp; <span class="codeenumeration">space</span> &amp; <span class="codevariable">i</span> &amp; <span class="codeenumeration">space</span> &amp; <span class="codevariable">thisYearName</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">tableName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>(<span class="codevariable">thisMonthIndex</span> &amp; &quot;-&quot; &amp; <span class="codevariable">i</span> &amp; &quot;-&quot; &amp; <span class="codevariable">thisYearName</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> 1 <b>then</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- name the sheet</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">name</span> <b>of</b> <span class="codelibraryclass">sheet</span> 1 <b>to the</b> <span class="codevariable">sheetName</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- delete default table and create new one</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">sheet</span> 1</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">tableName</span>}</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- make a new sheet</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSheet</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">sheet</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">sheetName</span>}</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSheet</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- delete default table and create new one</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">name</span>:<span class="codevariable">tableName</span>}</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 0.5</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- display the first sheet by selecting table on current sheet, then table on first sheet</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">selection range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="dictionary-class">sheet</span> 12 <b>to</b> <span class="codeproperty">cell range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="codelibraryclass">sheet</span> 12</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 1</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">selection range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="codelibraryclass">sheet</span> 1 <b>to</b> <span class="codeproperty">cell range</span> <b>of</b> <span class="codelibraryclass">table</span> 1 <b>of</b> <span class="codelibraryclass">sheet</span> 1</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Document created.&quot; <span class="codelibraryparameter">buttons</span> {&quot;OK&quot;} <span class="codelibraryparameter">default button</span> 1 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">deriveNameIndexLengthYearOfCurrentMonth</span>()</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDate</span> <b>to</b> (<span class="codelibrarycommand">current date</span>)</td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryparameter">day</span> <b>of</b> <span class="codevariable">thisDate</span> <b>to</b> 1</td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMonth</span> <b>to</b> <span class="codelibraryparameter">month</span> <b>of</b> <span class="codevariable">thisDate</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMonthName</span> <b>to</b> <span class="codevariable">thisMonth</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisMonthIndex</span> <b>to</b> <span class="codevariable">thisMonth</span> <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisYearName</span> <b>to</b> (<span class="codelibraryparameter">year</span> <b>of</b> <span class="codevariable">thisDate</span>) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> 32</td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDate</span> <b>to</b> <span class="codevariable">thisDate</span> + (1 * <span class="codelibraryclass">days</span>)</td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codelibraryclass">month</span> <b>of</b> <span class="codevariable">thisDate</span> <b>is not</b> <span class="codevariable">thisMonth</span> <b>then</b></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">monthLengthInDays</span> <b>to</b> i</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>return</b> {<span class="codevariable">thisMonthName</span>, <span class="codevariable">thisMonthIndex</span>, <span class="codevariable">monthLengthInDays</span>, <span class="codevariable">thisYearName</span>}</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">deriveNameIndexLengthYearOfCurrentMonth</span></td></tr>
+			</td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="sheet-delete.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="sheet.html">Sheet</a></li>
+				<li class="navListSectionItemSelected">Adding Sheets</li>
+				<li class="navListSectionItem"><a href="sheet-delete.html">Deleting Sheets</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

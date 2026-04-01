@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Charts</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for charts in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Chart</div>
+			<p>The <span class="codelibraryclass">chart</span> class is an element of the <span class="dictionary-suite">iWork Suite</span> shared by all the iWork applications. Its current dictionary entry has no elements and no properties, and does not support the use of the <span class="codelibrarycommand">make</span> command. </p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">chart</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">chart</span>&nbsp;<span style="font-size: 12px;"><n>v&nbsp;</i>&nbsp;[ inh. <span class="dictionary-class">iWork Item</span> ] : A chart.</span></p>
+			</div>
+			
+			<p>To add charts to <b>Keynote</b> documents, scripts can use the <span class="codelibrarycommand">add chart</span> command from the <span class="dictionary-suite">Keynote 2009 Compatibility Suite</span>:</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Compatibility Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">add chart</span> Command</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">add chart</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Add a chart to a slide.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>add chart</b> <span class="dictionary-class">slide</span> : The slide to add the chart to.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">column names</span> ( <span class="dictionary-class">list</span> ) ] : A list of text strings that are the names of the data columns.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">data</span> ( <span class="dictionary-class">list</span> ) ] : A list of data lists. The number of data lists must match the number of items in the row names, and the number of items in each data list, must match the number of items in the column names. Ex: {{23, 56, 2, 13}, {67, 22, 86, 53}} = 2 rows containing 4 columns of data.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">group by</span> ( <span class="dictionary-enumeration">chart row</span>/‌<span class="dictionary-enumeration">chart column</span> ) ] : The organizational method used to display the data.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">row names</span> ( <span class="dictionary-class">list</span> ) ] : A list of text strings that are the names of the data rows.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">type</span> ( <span class="dictionary-enumeration">pie_2d</span> /‌ <span class="dictionary-enumeration">vertical_bar_2d</span> /‌ <span class="dictionary-enumeration">stacked_vertical_bar_2d</span> /‌ <span class="dictionary-enumeration">horizontal_bar_2d</span> /‌ <span class="dictionary-enumeration">stacked_horizontal_bar_2d</span> /‌ <span class="dictionary-enumeration">pie_3d</span> /‌ <span class="dictionary-enumeration">vertical_bar_3d</span> /‌ <span class="dictionary-enumeration">stacked_vertical_bar_3d</span> /‌ <span class="dictionary-enumeration">horizontal_bar_3d</span> /‌ <span class="dictionary-enumeration">stacked_horizontal_bar_3d</span> /‌ <span class="dictionary-enumeration">area_2d</span> /‌ <span class="dictionary-enumeration">stacked_area_2d</span> /‌ <span class="dictionary-enumeration">line_2d</span> /‌ <span class="dictionary-enumeration">line_3d</span> /‌ <span class="dictionary-enumeration">area_3d</span> /‌ <span class="dictionary-enumeration">stacked_area_3d</span> /‌ <span class="dictionary-enumeration">scatterplot_2d</span> ) ] : The type of chart to create. (include underscore characters)</p>	
+			</div>
+			
+			<p>Pie charts are one of the most commonly used chart types, since their creation incorporates the use of a single data set, as in this example:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Simple Pie Cart</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bheight%3A764%2C%20width%3A1024%2C%20document%20theme%3Atheme%20%22Black%22%7D%0D%09%0D%09tell%20thisDocument%0D%09%09tell%20slide%201%0D%09%09%09set%20the%20base%20slide%20to%20master%20slide%20%22Title%20-%20Top%22%20of%20thisDocument%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%222D%20Pie%20Chart%22%0D%09%09%09add%20chart%20row%20names%20%7B%22ROW%20A%22%7D%20column%20names%20%7B%22COL%20A%22%2C%20%22COL%20B%22%2C%20%22COL%20C%22%7D%20%C2%AC%0D%09%09%09%09data%20%7B%7B45%2C%2025%2C%2030%7D%7D%20type%20pie_2d%20group%20by%20chart%20column%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">height</span>:764, <span class="codeproperty">width</span>:1024, <span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title - Top&quot; <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;2D Pie Chart&quot;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">add chart</span> <span class="codelibraryparameter">row names</span> {&quot;ROW A&quot;} <span class="codelibraryparameter">column names</span> {&quot;COL A&quot;, &quot;COL B&quot;, &quot;COL C&quot;} &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryparameter">data</span> {{45, 25, 30}} <span class="codelibraryparameter">type</span> <span class="codeenumeration">pie_2d</span> <span class="codelibraryparameter">group by</span> <span class="codeenumeration">chart column</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+						
+			<img class="centered" width="624" alt="simple-pie" src="gfx/simple-pie-chart.png">
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="chart-vertical-bar.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li class="hi">Chart</li>
+				<li class="navListSectionItem"><a href="chart-vertical-bar.html">Vertical Bar Charts</a></li>
+				<li class="navListSectionItem"><a href="chart-table.html">Data to Table &amp; Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

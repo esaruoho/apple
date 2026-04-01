@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Making Slides</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for making slides in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Making Slides</div>
+			
+			<p>When it comes to automation and presentations, the creation of slides will be one of the things that&rsquo;s done most often. AppleScript scripts can be used to easily create and populate presentations, creating slides as needed.</p>
+		
+			<p>Slides are created using the <span class="codelibrarycommand">make</span> command from the <span class="dictionary-suite">Standard Suite</span> of the Keynote dictionary. Use of the make command is covered in detail on the pages of this topic group (linked on the right), beginning with demonstrating how to create new slides at specific locations of a presentation.</p>
+			
+			<p>The other pages of this topic section cover: how to apply master pages to slides; how to set the text of a slide&rsquo;s default text items; how to apply transitions to slides; how to hide and delete slides in a presentation; and how to work with presenter notes.</p>
+			
+			<p>The following example scripts are shown addressing this small example presentation (<a href="ThreeColoredSlides.zip">DOWNLOAD</a>):</p>
+			
+			<p>Let&rsquo;s begin with a basic script showing how to create a slide:</p>
+			
+		</div>
+			
+		<!-- BEGIN SEGMENT: NEW SLIDE -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Default Slide</div>
+						
+			<p>The simple way to add a slide to a presentation is to use the <span class="codelibrarycommand">make</span> command, as shown in the following script. Note that the newly created slide will be added to the end of presentation.  </p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09set%20the%20newSlide%20to%20make%20new%20slide%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">newSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>When the script is run, a new slide will be <b>added at the end</b> of the frontmost presentation document. (The black slide is the new slide) <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+						
+			<img class="across" width="640" alt="new-slide" src="gfx/new-slide.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A new slide (in black) has been added to a presentation through the use of the <b>make</b> command.</p>
+			
+			<p class="segment-note">NOTE: The <span class="codelibrarycommand">make</span> command usually returns a reference to the newly created item. In the script example above, the reference to the newly created <span class="codelibraryclass">slide</span> is stored in the variable <span class="codevariable">newSlide</span> for possible use later in the script.</p>
+		</div>
+		<!-- END SEGMENT: NEW SLIDE -->
+		
+		
+		<!-- BEGIN SEGMENT: NEW SLIDE AT BEGINNING -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Slide at the Beginning</div>
+					
+			<p>Another common practice when creating slides is to insert the new slide at a specific place in the slideshow, such as the <b>beginning</b> or <b>end</b> of the presentation. This is accomplished by using the optional <span class="codelibraryparameter">at</span> parameter with the <span class="codelibrarycommand">make</span> command.</p>
+			
+			<p>To insert a slide, include the <span class="codelibraryparameter">at</span> parameter in the command statement, followed by a reference to the target location in the presentation, which in this case, is the <b>beginning</b> of the slides:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Slide at Beginning</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09set%20the%20newSlide%20to%20make%20new%20slide%20at%20beginning%20of%20slides%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">newSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>the beginning of the</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>When the script is run, a new slide will be <b>added at the beginning</b> of the frontmost presentation document. (The black slide is the new slide) <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+
+						
+			<img class="across" width="640" alt="new-slide-beginning" src="gfx/new-slide-beginning.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A new slide (in black) has been inserted into a presentation at a specific location, through the use of the positional <b>at</b> parameter.</p>
+		</div>
+		<!-- END SEGMENT: NEW SLIDE AT BEGINNING -->
+		
+		<!-- BEGIN SEGMENT: NEW SLIDE AT END -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Slide at the End</div>
+					
+			<p>Slides can be inserted at the end of a presentation, by using the same technique as shown in the example above. Simply include the optional positional parameter <span class="codelibraryparameter">at</span>, followed by a reference to the target insertion location (the end of the slides): <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Slide at End</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09set%20the%20newSlide%20to%20make%20new%20slide%20at%20the%20end%20of%20slides%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">newSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>the end of the</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>When the script is run, a new slide will be <b>added at the end</b> of the frontmost presentation document. (The black slide is the new slide) <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+						
+			<img class="across" width="640" alt="new-slide" src="gfx/new-slide.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A new slide (in black) has been inserted into a presentation at a specific location, through the use of the positional <b>at</b> parameter.</p>
+		</div>
+		<!-- END SEGMENT: NEW SLIDE AT END -->
+		
+		<!-- BEGIN SEGMENT: NEW SLIDE AFTER CURRENT SLIDE -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Slide After the Current Slide</div>
+					
+			<p>Some scripts are designed to perform their magic based upon the current user selection in a document. This example demonstrates how a script inserts a slide after the slide currently selected by the user.</p>
+			
+			<p>The <span class="codeproperty">current slide</span> property of the document class will provide the script with the location reference necessary to place the new slide at the desired location.</p>
+			
+			<p>First, get and store (in a <span class="codevariable">variable</span>) the value of the <span class="codeproperty">current slide</span> document property. Next, use the reference stored in the variable as the value for the positional <span class="codelibraryparameter">at</span> parameter, as show below: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Slide After Current Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09set%20the%20currentSlide%20to%20the%20current%20slide%0D%09%09set%20the%20newSlide%20to%20make%20new%20slide%20at%20after%20the%20currentSlide%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">currentSlide</span> <b>to the</b> current slide</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">newSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>after the</b> <span class="codevariable">currentSlide</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>When the script is run, a new slide will be <b>added after the current slide</b> of the frontmost presentation document. (The black slide is the new slide) <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+						
+			<img class="across" width="640" alt="new-slide-after-current" src="gfx/new-slide-after-current.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A new slide (in black) has been inserted into a presentation at a specific location, through the use of the <b>current slide</b> document property and the positional <b>at</b> parameter.</p>
+		</div>
+		<!-- END SEGMENT: NEW SLIDE AFTER CURRENT SLIDE -->
+					
+		<!-- BEGIN SEGMENT: NEW SLIDE BEFORE CURRENT SLIDE -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">New Slide Before the Current Slide</div>
+					
+			<p>This example is the same as the previous example, with the exception that the new slide is inserted <b>before</b> the current slide.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">New Slide Before Current Slide</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09set%20the%20currentSlide%20to%20the%20current%20slide%0D%09%09set%20the%20newSlide%20to%20make%20new%20slide%20at%20before%20the%20currentSlide%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">currentSlide</span> <b>to the</b> current slide</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">newSlide</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>before the</b> <span class="codevariable">currentSlide</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>When the script is run, a new slide will be <b>added before the current slide</b> of the frontmost presentation document. (The black slide is the new slide) <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+						
+			<img class="across" width="640" alt="new-slide-before-current" src="gfx/new-slide-before-current.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A new slide (in black) has been inserted into a presentation at a specific location, through the use of the <b>current slide</b> document property and the positional <b>at</b> parameter.</p>
+		</div>
+		<!-- END SEGMENT: NEW SLIDE BEFORE CURRENT SLIDE -->
+		
+		<!-- BEGIN SEGMENT: OTHER EXAMPLES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Other Positional Examples</div>
+			<p>Here are some more slide insertion examples using variations of the positional reference syntax:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">More Make Examples</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20front%20document%0D%09%09make%20new%20slide%20at%20before%20the%20last%20slide%0D%09%09make%20new%20slide%20at%20after%20the%20second%20slide%0D%09%09make%20new%20slide%20at%20after%20slide%203%0D%09%09make%20new%20slide%20at%20before%20(the%20first%20slide%20whose%20skipped%20is%20true)%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>before the last</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>after the second</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>after</b> <span class="codelibraryclass">slide</span> 3</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">at</span> <b>before</b> (<b>the first</b> <span class="codelibraryclass">slide</span> <b>whose</b> <span class="codeproperty">skipped</span> <b>is</b> <span class="codeenumeration">true</span>)</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>								
+		</div>
+		<!-- END SEGMENT: OTHER EXAMPLES -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="slide-duplicate.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="slide.html">Slide</a></li>
+				<li class="navListSectionItemSelected">Making Slides</li>
+				<li class="navListSectionItem"><a href="slide-duplicate.html">Duplicating Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-move.html">Moving Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-masters.html">Applying Master Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-default-text.html">Default Text Items</a></li>
+				<li class="navListSectionItem"><a href="slide-transition.html">Slide Transitions</a></li>
+				<li class="navListSectionItem"><a href="slide-skipped.html">Show|Hide Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-delete.html">Deleting Slides</a></li>
+				<li class="navListSectionItem"><a href="slide-presenter-notes.html">Presenter Notes</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

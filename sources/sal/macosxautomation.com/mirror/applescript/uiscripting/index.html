@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Graphic User Interface (GUI) Scripting</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/">Features</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Graphic User Interface (GUI) Scripting</h2>
+		
+		<p>While creating scripting workflows, you may occasionally need to control applications that either do not have AppleScript support or are only partially scriptable. Mac&nbsp;OS&nbsp;X includes built-in support for the control of the computer's graphic user interface via AppleScript.</p>
+		
+		<p>Graphic User interface (GUI) control is performed by writing scripts incorporating terms and commands from the Processes Suite in the System Events application's scripting dictionary. By addressing the System Events application, AppleScript scripts can select menu items, push buttons, enter text into text fields, and generally control the interfaces of many applications.</p>
+		
+		<h3>Activating GUI Scripting</h3>
+		
+		<p>The GUI Scripting architecture is based upon the Mac&nbsp;OS&nbsp;X Accessibility Frameworks that provide alternative methods of querying and controlling the interfaces of the OS and applications.</p>
+		
+		<p>By default, the Accessibility Frameworks are disabled. They are enabled by clicking the checkbox labeled &quot;<b>Enable access for assistive devices</b>&quot; in the Universal Access System Preference pane:</p>
+		
+		<img src="gfx/prefpane.png" width="450" height="407" align="top" class="across">
+		
+		<p>Once the accessibility frameworks have been activated, AppleScript can be used to query and control the user interface of most applications. Scripted actions are performed by addressing the System Events application which has a special script suite for communicating with the GUI Scripting architecture.</p>
+		
+		
+		
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20GUIScripting_status%28%29%0D%09%2D%2D%20check%20to%20see%20if%20assistive%20devices%20is%20enabled%0D%09tell%20application%20%22System%20Events%22%0D%09%09set%20UI_enabled%20to%20UI%20elements%20enabled%0D%09end%20tell%0D%09if%20UI_enabled%20is%20false%20then%0D%09%09tell%20application%20%22System%20Preferences%22%0D%09%09%09activate%0D%09%09%09set%20current%20pane%20to%20pane%20id%20%22com%2Eapple%2Epreference%2Euniversalaccess%22%0D%09%09%09display%20dialog%20%22This%20script%20utilizes%20the%20built%2Din%20Graphic%20User%20Interface%20Scripting%20architecture%20of%20Mac%20OS%20X%20which%20is%20currently%20disabled%2E%22%20%26%20return%20%26%20return%20%26%20%22You%20can%20activate%20GUI%20Scripting%20by%20selecting%20the%20checkbox%20%5C%22Enable%20access%20for%20assistive%20devices%5C%22%20in%20the%20Universal%20Access%20preference%20pane%2E%22%20with%20icon%201%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0D%09%09end%20tell%0D%09end%20if%0Dend%20GUIScripting_status"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A sub-routine for checking to see if GUI Scripting support is enabled.<br><br><br></span><b>on</b> <span class="codevariable">GUIScripting_status</span>()<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- check to see if assistive devices is enabled</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;System Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">UI_enabled</span> <b>to</b> UI elements enabled<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">UI_enabled</span> <b>is</b> false <b>then</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;System Preferences&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> current pane <b>to</b> pane id &quot;com.apple.preference.universalaccess&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;This script utilizes the built-in Graphic User Interface Scripting architecture of Mac OS <span class="codevariable">x</span> which is currently disabled.&quot; &amp; return &amp; return &amp; &quot;You can activate GUI Scripting by selecting the checkbox \&quot;Enable access for assistive devices\&quot; in the Universal Access preference pane.&quot; with icon 1 buttons {&quot;Cancel&quot;} default button 1<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+<b>end</b> <span class="codevariable">GUIScripting_status</span></p>
+		
+	<h3>GUI Scripting Examples</h3>
+	
+	<p>The following script examples demonstrate the use of UI scripting to access menu items and sub-menu items:</p>
+	
+	<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20do_menu%28app_name%2C%20menu_name%2C%20menu_item%29%0D%09try%0D%09%09%2D%2D%20bring%20the%20target%20application%20to%20the%20front%0D%09%09tell%20application%20app_name%0D%09%09%09activate%0D%09%09end%20tell%0D%09%09tell%20application%20%22System%20Events%22%0D%09%09%09tell%20process%20app_name%0D%09%09%09%09tell%20menu%20bar%201%0D%09%09%09%09%09tell%20menu%20bar%20item%20menu_name%0D%09%09%09%09%09%09tell%20menu%20menu_name%0D%09%09%09%09%09%09%09click%20menu%20item%20menu_item%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09return%20true%0D%09on%20error%20error_message%0D%09%09return%20false%0D%09end%20try%0Dend%20do_menu"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><b>Selecting a Menu Item</b> - A sub-routine for selecting a menu item in an application:<br><br><br></span><b>on</b> <span class="codevariable">do_menu</span>(<span class="codevariable">app_name</span>, <span class="codevariable">menu_name</span>, <span class="codevariable">menu_item</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- bring the target application to the front</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application <span class="codevariable">app_name</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;System Events&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> process <span class="codevariable">app_name</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> menu bar 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>tell</b> menu bar item <span class="codevariable">menu_name</span><BR>
+<span style="float:left; width:60px;">&nbsp;</span><b>tell</b> menu <span class="codevariable">menu_name</span><BR>
+<span style="float:left; width:70px;">&nbsp;</span>click menu item <span class="codevariable">menu_item</span><BR>
+<span style="float:left; width:60px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> true<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end</b> <span class="codevariable">do_menu</span></p>
+	
+	<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20do_submenu%28app_name%2C%20menu_name%2C%20menu_item%2C%20submenu_item%29%0D%09try%0D%09%09%2D%2D%20bring%20the%20target%20application%20to%20the%20front%0D%09%09tell%20application%20app_name%0D%09%09%09activate%0D%09%09end%20tell%0D%09%09tell%20application%20%22System%20Events%22%0D%09%09%09tell%20process%20app_name%0D%09%09%09%09tell%20menu%20bar%201%0D%09%09%09%09%09tell%20menu%20bar%20item%20menu_name%0D%09%09%09%09%09%09tell%20menu%20menu_name%0D%09%09%09%09%09%09%09tell%20menu%20item%20menu_item%0D%09%09%09%09%09%09%09%09tell%20menu%20menu_item%0D%09%09%09%09%09%09%09%09%09click%20menu%20item%20submenu_item%0D%09%09%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20tell%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09return%20true%0D%09on%20error%20error_message%0D%09%09return%20false%0D%09end%20try%0Dend%20do_submenu"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption"><b>Selecting a Sub-menu Item</b> - A sub-routine for selecting a sub-menu item in an application<br><br></span><br><b>on</b> <span class="codevariable">do_submenu</span>(<span class="codevariable">app_name</span>, <span class="codevariable">menu_name</span>, <span class="codevariable">menu_item</span>, <span class="codevariable">submenu_item</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- bring the target application to the front</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application <span class="codevariable">app_name</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;System Events&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>tell</b> process <span class="codevariable">app_name</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> menu bar 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>tell</b> menu bar item <span class="codevariable">menu_name</span><BR>
+<span style="float:left; width:60px;">&nbsp;</span><b>tell</b> menu <span class="codevariable">menu_name</span><BR>
+<span style="float:left; width:70px;">&nbsp;</span><b>tell</b> menu item <span class="codevariable">menu_item</span><BR>
+<span style="float:left; width:80px;">&nbsp;</span><b>tell</b> menu <span class="codevariable">menu_item</span><BR>
+<span style="float:left; width:90px;">&nbsp;</span>click menu item <span class="codevariable">submenu_item</span><BR>
+<span style="float:left; width:80px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:70px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:60px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> true<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>return</b> false<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end</b> <span class="codevariable">do_submenu</span></p>
+
+<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=property%20drive_identifier%20%3A%20%22Mac%20OS%20X%2C%2010%2E5%2E4%20on%20Macintosh%20HD%22%20%2D%2D%20must%20be%20exactly%20as%20it%20appears%20in%20pane%0D%0D%2D%2D%20MAKE%20SURE%20SUPPORT%20FOR%20ASSISTIVE%20DEVICES%20IS%20ACTIVE%0Dtell%20application%20%22System%20Events%22%0D%09if%20UI%20elements%20enabled%20is%20false%20then%0D%09%09tell%20application%20%22System%20Preferences%22%0D%09%09%09activate%0D%09%09%09set%20current%20pane%20to%20pane%20id%20%22com%2Eapple%2Epreference%2Euniversalaccess%22%0D%09%09%09display%20dialog%20%22This%20script%20requires%20access%20for%20assistive%20evices%20be%20enabled%2E%22%20%26%20return%20%26%20return%20%26%20%22To%20continue%2C%20click%20the%20OK%20button%20and%20enter%20an%20administrative%20password%20in%20the%20forthcoming%20security%20dialog%2E%22%20with%20icon%201%0D%09%09end%20tell%0D%09%09set%20UI%20elements%20enabled%20to%20true%0D%09%09if%20UI%20elements%20enabled%20is%20false%20then%20return%20%22user%20cancelled%22%0D%09%09delay%201%0D%09end%20if%0Dend%20tell%0D%2D%2D%20SWITCH%20TO%20THE%20DESIRED%20PANE%0Dtell%20application%20%22System%20Preferences%22%0D%09activate%0D%09set%20current%20pane%20to%20pane%20id%20%22com%2Eapple%2Epreference%2Estartupdisk%22%0D%09tell%20application%20%22System%20Events%22%0D%09%09tell%20process%20%22System%20Preferences%22%0D%09%09%09%2D%2D%20UNLOCK%20CHECKS%0D%09%09%09if%20%28exists%20checkbox%20%22Click%20the%20lock%20to%20make%20changes%2E%22%20of%20window%201%29%20is%20true%20then%0D%09%09%09%09click%20checkbox%20%22Click%20the%20lock%20to%20make%20changes%2E%22%20of%20window%201%0D%09%09%09%09%2D%2D%20wait%20for%20security%20login%20or%20dismissal%0D%09%09%09%09repeat%20until%20%28count%20of%20every%20window%29%20is%20not%200%0D%09%09%09%09%09delay%201%0D%09%09%09%09end%20repeat%0D%09%09%09%09if%20%28exists%20checkbox%20%22Click%20the%20lock%20to%20make%20changes%2E%22%20of%20window%201%29%20then%0D%09%09%09%09%09set%20perform_changes%20to%20false%0D%09%09%09%09else%0D%09%09%09%09%09set%20perform_changes%20to%20true%0D%09%09%09%09end%20if%0D%09%09%09else%0D%09%09%09%09set%20perform_changes%20to%20true%0D%09%09%09end%20if%0D%09%09%09if%20perform_changes%20is%20true%20then%0D%09%09%09%09%2D%2D%20MAKE%20CHANGES%0D%09%09%09%09tell%20radio%20group%201%20of%20scroll%20area%201%20of%20group%201%20of%20splitter%20group%201%20of%20window%201%0D%09%09%09%09%09click%20button%20drive_identifier%0D%09%09%09%09end%20tell%0D%09%09%09%09delay%201%0D%09%09%09%09click%20button%20%22Restart%28REPLACE%20THIS%20TEXT%2C%20INCLUDING%20PARENS%2C%20WITH%20THE%20ELIPSIS%20CHARACTER%3A%20OPTION%20SEMI%2DCOLON%29%22%20of%20window%201%0D%09%09%09%09delay%201%0D%09%09%09%09click%20button%20%22Restart%22%20of%20sheet%201%20of%20window%201%0D%09%09%09end%20if%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for restarting the computer using a specified installation of Mac&nbsp;OS&nbsp;X:<br><br></span><br><b>property</b> <span class="codevariable">drive_identifier</span> : &quot;Mac OS X, 10.5.4 on Macintosh HD&quot; <span class="codecomment">-- must be exactly as it appears in pane</span><BR>
+<BR>
+<span class="codecomment">-- MAKE SURE SUPPORT FOR ASSISTIVE DEVICES IS ACTIVE</span><BR>
+<b>tell</b> application &quot;System Events&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>if</b> UI elements enabled <b>is</b> false <b>then</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;System Preferences&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> current pane <b>to</b> pane id &quot;com.apple.preference.universalaccess&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;This script requires access for assistive evices be enabled.&quot; &amp; return &amp; return &amp; &quot;To continue, click the OK button and enter an administrative password in the forthcoming security dialog.&quot; with icon 1<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> UI elements enabled <b>to</b> true<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> UI elements enabled <b>is</b> false <b>then return</b> &quot;user cancelled&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>delay 1<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+<b>end tell</b><BR>
+<span class="codecomment">-- SWITCH TO THE DESIRED PANE</span><BR>
+<b>tell</b> application &quot;System Preferences&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span>activate<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>set</b> current pane <b>to</b> pane id &quot;com.apple.preference.startupdisk&quot;<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;System Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> process &quot;System Preferences&quot;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- UNLOCK CHECKS</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> (exists checkbox &quot;Click <b>the</b> lock <b>to</b> make changes.&quot; <b>of</b> window 1) <b>is</b> true <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span>click checkbox &quot;Click <b>the</b> lock <b>to</b> make changes.&quot; <b>of</b> window 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- wait for security login or dismissal</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>repeat</b> until (count <b>of every</b> window) <b>is not</b> 0<BR>
+<span style="float:left; width:50px;">&nbsp;</span>delay 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if</b> (exists checkbox &quot;Click <b>the</b> lock <b>to</b> make changes.&quot; <b>of</b> window 1) <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">perform_changes</span> <b>to</b> false<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">perform_changes</span> <b>to</b> true<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">perform_changes</span> <b>to</b> true<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">perform_changes</span> <b>is</b> true <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- MAKE CHANGES</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>tell</b> radio group 1 <b>of</b> scroll area 1 <b>of</b> group 1 <b>of</b> splitter group 1 <b>of</b> window 1<BR>
+<span style="float:left; width:50px;">&nbsp;</span>click button <span class="codevariable">drive_identifier</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span>delay 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span>click button &quot;Restart…&quot; <b>of</b> window 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span>delay 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span>click button &quot;Restart&quot; <b>of</b> sheet 1 <b>of</b> window 1<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end tell</b></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>System Preferences Scripts</h2>
+			<p><a href="ScriptsInstaller.zip"><img src="gfx/PrefApp32x32.png" width="32" height="32" align="top" class="left"></a>Although many of the System Preference Panes are <a href="../features/system-prefs.html">scriptable</a>, you can use GUI Scripting to access and control some of the panes that don't support Apple Events.</p><p><a href="ScriptsInstaller.zip">Download</a> this collection of GUI-Scripting example scripts.</p>
+		</div>
+		<div class="box">
+			<h2>UI Browser</h2>
+			<p><a href="http://pfiddlesoft.com/uibrowser" target="_blank"><img src="gfx/GenericURLIcon.png" width="32" height="32" align="top" class="left"></a>For an easy, non-technical means of generating script statements for GUI elements, the <a href="http://pfiddlesoft.com/uibrowser">UI Browser</a>, is the premier user interface scripting utility.</p>
+		</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

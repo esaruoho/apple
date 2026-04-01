@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Translation Helper Scripts</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="Applescript scripts for assisting in the translation of a presentation&rsquo;s presenter notes using the online Google Translate service.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Translation Helper Scripts</div>
+		
+		<p>Large international corporations often create sales and marketing materials that are replicated by their marketing and communications teams into publications designed for use with various languages.</p>
+		
+		<p>But for smaller organizations or individuals, translating materials can be a challenging process. This tutorial features two Applescript scripts that will make is easier for you to translate a presentation&rsquo;s presenter notes using the online Google Translate service.</p>
+		
+		<p class="segment-note"><b>NOTE</b>: These scripts are compelling examples of how AppleScript can dynamically create and interact with HTML content via the Safari web-browser application.</p>
+		
+			<video width="624" height="436" controls loop preload="auto" style="margin-top:-24px;" poster="gfx/translation-video-poster.jpg">
+			  <source src="Keynote-Translation-720P.mov" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+		
+		<p class="segment-note"><a href="Localization-Helper-Scripts.zip" style="font-weight:700;background-color:#bbb;">&nbsp;DOWNLOAD&nbsp;</a>&nbsp;an archive containing three scripts and the example presentation file. In the unpacked archive folder, launch the &ldquo;Automation Tools Installer&rdquo; applet to install the scripts.</p>
+		
+		<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Setup Presenter Notes for Translation</td></tr>
+			<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Setup%20Presenter%20Notes%20for%20Translation&script=property%20sourceLanguageID%20%3A%20%22en%22%20--%20(en%3DEnglish%2C%20fr%3DFrench%2C%20es%3DSpanish%2C%20de%3DGerman%2C%20it%3DItalian%2C%20sv%3DSwedish%2C%20nl%3DDutch)%0Dproperty%20sourceLanguageTitle%20%3A%20%22English%22%0Dproperty%20destinationLanguageID%20%3A%20%22es%22%0Dproperty%20destinationLanguageTitle%20%3A%20%22Spanish%22%0D%0Dproperty%20languageAbbreviations%20%3A%20%7B%22en%22%2C%20%22fr%22%2C%20%22es%22%2C%20%22de%22%2C%20%22it%22%2C%20%22sv%22%2C%20%22nl%22%7D%0Dproperty%20languageTitles%20%3A%20%7B%22English%22%2C%20%22French%22%2C%20%22Spanish%22%2C%20%22German%22%2C%20%22Italian%22%2C%20%22Swedish%22%2C%20%22Dutch%22%7D%0D%0Dproperty%20bodyStyleCSS%20%3A%20%22margin-left%3A36px%3B-webkit-user-select%3Anone%3Bwidth%3A50%25%3Bbackground-color%3A%23555%3Bcolor%3Awhite%3B%22%0D%0Dproperty%20slideIdentiferOpeningTag%20%3A%20%22%3Ch4%20style%3D%5C%22margin-bottom%3A4px%3Bmargin%3A0%3B%5C%22%3E%22%0Dproperty%20slideIdentiferClosingTag%20%3A%20%22%3C%2Fh4%3E%22%0D%0Dproperty%20noteOpeningTag%20%3A%20%22%3Ctextarea%20rows%3D%5C%225%5C%22%20id%3D%5C%22txtareaXXXX%5C%22%20onClick%3D%5C%22SelectAll('txtareaXXXX')%3B%5C%22%3E%22%0Dproperty%20noteClosingTag%20%3A%20%22%3C%2Ftextarea%3E%22%0D%0Dproperty%20blankLineHTML%20%3A%20%22%3Chr%3E%22%0D%0Dproperty%20introductionOpeningTag%20%3A%20%22%3Ch3%20style%3D%5C%22margin-bottom%3A0%3Bfont-style%3Aitalic%3B%5C%22%3E%22%0Dproperty%20introductionClosingTag%20%3A%20%22%3C%2Fh3%3E%22%0D%0Dproperty%20documentTitleHTMLOpeningTag%20%3A%20%22%3Ch2%20style%3D%5C%22margin-left%3A24px%3Bmargin-bottom%3A12px%3Bmargin-top%3A8px%3B%5C%22%3E%22%0Dproperty%20documentTitleHTMLClosingTag%20%3A%20%22%3C%2Fh2%3E%22%0D%0Dproperty%20instructionsOpeningTag%20%3A%20%22%3Cp%20style%3D%5C%22font-size%3Asmall%3Bfont-style%3Aitalic%3B%5C%22%3E%22%0Dproperty%20instructionsClosingTag%20%3A%20%22%3C%2Fp%3E%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09repeat%0D%09%09display%20dialog%20%22This%20script%20will%20open%20a%20new%20window%20in%20Safari%20containing%20a%20tab%20listing%20the%20presenters%20notes%20from%20the%20front%20presentation%2C%20and%20a%20second%20tab%20displaying%20the%20Google%20Translate%20website.%22%20%26%20linefeed%20%26%20linefeed%20%26%20%22Translate%20from%3A%20%22%20%26%20sourceLanguageTitle%20%26%20linefeed%20%26%20%22Translate%20to%3A%20%22%20%26%20destinationLanguageTitle%20buttons%20%7B%22Cancel%22%2C%20%22Set%20Prefs%22%2C%20%22Begin%22%7D%20default%20button%203%20with%20title%20%22Translation%20Helper%22%0D%09%09if%20button%20returned%20of%20the%20result%20is%20%22Set%20Prefs%22%20then%0D%09%09%09set%20thisLanguage%20to%20(choose%20from%20list%20languageTitles%20with%20prompt%20%22Language%20to%20translate%20from%3A%22%20default%20items%20%7BsourceLanguageTitle%7D)%0D%09%09%09if%20thisLanguage%20is%20not%20false%20then%0D%09%09%09%09set%20sourceLanguageTitle%20to%20(thisLanguage%20as%20string)%0D%09%09%09%09set%20sourceLanguageID%20to%20my%20matchItemByIndexToCorrespondingList(sourceLanguageTitle%2C%20languageTitles%2C%20languageAbbreviations)%0D%09%09%09end%20if%0D%09%09%09set%20thisLanguage%20to%20(choose%20from%20list%20languageTitles%20with%20prompt%20%22Language%20to%20translate%20to%3A%22%20default%20items%20%7BdestinationLanguageTitle%7D)%0D%09%09%09if%20thisLanguage%20is%20not%20false%20then%0D%09%09%09%09set%20destinationLanguageTitle%20to%20(thisLanguage%20as%20string)%0D%09%09%09%09set%20destinationLanguageID%20to%20my%20matchItemByIndexToCorrespondingList(destinationLanguageTitle%2C%20languageTitles%2C%20languageAbbreviations)%0D%09%09%09end%20if%0D%09%09else%0D%09%09%09exit%20repeat%0D%09%09end%20if%0D%09end%20repeat%0D%09tell%20the%20front%20document%0D%09%09set%20thisDocumentName%20to%20the%20name%20of%20it%0D%09%09set%20the%20HTMLBody%20to%20%C2%AC%0D%09%09%09introductionOpeningTag%20%26%20%22Presenter%20notes%20for%3A%22%20%26%20%C2%AC%0D%09%09%09introductionClosingTag%20%26%20linefeed%20%26%20%C2%AC%0D%09%09%09documentTitleHTMLOpeningTag%20%26%20%22%E2%80%9C%22%20%26%20thisDocumentName%20%26%20%C2%AC%0D%09%09%09%22%E2%80%9D%22%20%26%20documentTitleHTMLClosingTag%20%26%20linefeed%20%26%20%C2%AC%0D%09%09%09instructionsOpeningTag%20%26%20%22(Click%20the%20text%20of%20a%20presenter%20note%20to%20select%20it)%22%20%26%20%C2%AC%0D%09%09%09instructionsClosingTag%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09tell%20slide%20i%0D%09%09%09%09if%20skipped%20is%20false%20then%0D%09%09%09%09%09set%20thisSlideNotes%20to%20its%20presenter%20notes%0D%09%09%09%09%09set%20thisSlideNotesHTML%20to%20thisSlideNotes%0D%09%09%09%09%09set%20thisNoteOpeningTag%20to%20my%20replaceText(noteOpeningTag%2C%20%22XXXX%22%2C%20(i%20as%20string))%0D%09%09%09%09%09set%20the%20HTMLBody%20to%20%C2%AC%0D%09%09%09%09%09%09HTMLBody%20%26%20linefeed%20%26%20%C2%AC%0D%09%09%09%09%09%09blankLineHTML%20%26%20linefeed%20%26%20%C2%AC%0D%09%09%09%09%09%09slideIdentiferOpeningTag%20%26%20%22Slide%20%22%20%26%20(i%20as%20string)%20%26%20%C2%AC%0D%09%09%09%09%09%09slideIdentiferClosingTag%20%26%20linefeed%20%26%20%C2%AC%0D%09%09%09%09%09%09thisNoteOpeningTag%20%26%20thisSlideNotesHTML%20%26%20noteClosingTag%0D%09%09%09%09end%20if%0D%09%09%09end%20tell%0D%09%09end%20repeat%0D%09end%20tell%0Dend%20tell%0D%0D--%20MEGE%20HTML%20CONTENT%0Dset%20HTMLOutline%20to%20%22%3C!DOCTYPE%20html%3E%0D%3Chtml%20lang%3D%5C%22en%5C%22%3E%0D%3Chead%3E%0D%09%3Cmeta%20charset%3D%5C%22utf-8%5C%22%20%2F%3E%0D%09%3Cmeta%20name%3D%5C%22description%5C%22%20content%3D%5C%22Page%20Generated%20for%20Translation%5C%22%3E%0D%09%3Ctitle%3E%22%20%26%20thisDocumentName%20%26%20%22%3C%2Ftitle%3E%0D%09%3Cscript%20type%3D%5C%22text%2Fjavascript%5C%22%3E%0D%09%09function%20SelectAll(id)%0D%09%09%09%7B%0D%09%09%09%09document.getElementById(id).focus()%3B%0D%09%09%09%09document.getElementById(id).select()%3B%0D%09%09%09%7D%0D%09%3C%2Fscript%3E%0D%09%3Cstyle%3E%0D%09%09textarea%20%7Bwidth%3A96%25%3B%7D%0D%09%3C%2Fstyle%3E%0D%3C%2Fhead%3E%0D%3Cbody%20style%3D%5C%22%22%20%26%20bodyStyleCSS%20%26%20%22%5C%22%3E%22%20%26%20linefeed%20%26%20HTMLBody%20%26%20%C2%AC%0D%09linefeed%20%26%20%22%3C%2Fbody%3E%22%20%26%20linefeed%20%26%20%22%3C%2Fhtml%3E%22%0D%0D--%20CREATE%20THE%20HTML%20FILE%0Dset%20fileName%20to%20(do%20shell%20script%20%22uuidgen%22)%20%26%20%22.html%22%0Dset%20temporaryFolder%20to%20(path%20to%20temporary%20items%20folder%20from%20user%20domain)%0Dset%20targetFileHFSPath%20to%20(temporaryFolder%20as%20string)%20%26%20fileName%0Dif%20my%20writeToFile(HTMLOutline%2C%20targetFileHFSPath%2C%20false)%20is%20true%20then%0D%09tell%20application%20%22System%20Events%22%0D%09%09set%20thisURL%20to%20the%20URL%20of%20disk%20item%20targetFileHFSPath%0D%09end%20tell%0Delse%0D%09beep%0D%09error%20number%20-128%0Dend%20if%0D%0D--%20OPEN%20HTML%20FILE%20IN%20NEW%202-TAB%20WINDOW%20WITH%20GOOGLE%20TRANSLATE%20%3Chttps%3A%2F%2Ftranslate.google.com%2F%23en%2Fes%2F%3E%0Dset%20GoogleTranslateURL%20to%20%C2%AC%0D%09%22https%3A%2F%2Ftranslate.google.com%2F%23%22%20%26%20sourceLanguageID%20%26%20%C2%AC%0D%09%22%2F%22%20%26%20destinationLanguageID%20%26%20%22%2F%22%0Dtell%20application%20%22Safari%22%0D%09activate%0D%09set%20thisWindow%20to%20make%20new%20document%20with%20properties%20%7BURL%3AthisURL%7D%0D%09tell%20window%201%0D%09%09make%20new%20tab%20with%20properties%20%7BURL%3AGoogleTranslateURL%7D%0D%09end%20tell%0Dend%20tell%0D%0Don%20writeToFile(thisData%2C%20targetFile%2C%20appendData)%0D%09try%0D%09%09set%20the%20targetFile%20to%20the%20targetFile%20as%20string%0D%09%09set%20the%20openTargetFile%20to%20%C2%AC%0D%09%09%09open%20for%20access%20file%20targetFile%20with%20write%20permission%0D%09%09if%20appendData%20is%20false%20then%20set%20eof%20of%20the%20openTargetFile%20to%200%0D%09%09write%20thisData%20to%20the%20openTargetFile%20starting%20at%20eof%20as%20%C2%ABclass%20utf8%C2%BB%0D%09%09close%20access%20the%20openTargetFile%0D%09%09return%20true%0D%09on%20error%0D%09%09try%0D%09%09%09close%20access%20file%20targetFile%0D%09%09end%20try%0D%09%09return%20false%0D%09end%20try%0Dend%20writeToFile%0D%0Don%20replaceText(sourceText%2C%20searchString%2C%20replacementString)%0D%09set%20AppleScript's%20text%20item%20delimiters%20to%20the%20searchString%0D%09set%20the%20itemList%20to%20every%20text%20item%20of%20sourceText%0D%09set%20AppleScript's%20text%20item%20delimiters%20to%20the%20replacementString%0D%09set%20sourceText%20to%20the%20itemList%20as%20string%0D%09set%20AppleScript's%20text%20item%20delimiters%20to%20%22%22%0D%09return%20sourceText%0Dend%20replaceText%0D%0Don%20matchItemByIndexToCorrespondingList(itemToMatch%2C%20sourceList%2C%20matchingList)%0D%09if%20length%20of%20sourceList%20is%20equal%20to%20length%20of%20matchingList%20then%0D%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20sourceList%0D%09%09%09if%20item%20i%20of%20sourceList%20is%20itemToMatch%20then%0D%09%09%09%09return%20item%20i%20of%20matchingList%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09end%20if%0D%09return%20false%0Dend%20matchItemByIndexToCorrespondingList"><button type="button">Open in Script Editor</button></a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">sourceLanguageID</span> : &quot;en&quot; <span class="codecomment">-- (en=English, fr=French, es=Spanish, de=German, it=Italian, sv=Swedish, nl=Dutch)</span></td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">destinationLanguageID</span> : &quot;es&quot;</td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">bodyStyleCSS</span> : &quot;margin-left:36px;-webkit-user-select:none;width:50%;background-color:#555;color:white;&quot;</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">slideIdentiferOpeningTag</span> : &quot;&lt;h4 style=\&quot;margin-bottom:4px;margin:0;\&quot;&gt;&quot;</td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">slideIdentiferClosingTag</span> : &quot;&lt;/h4&gt;&quot;</td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">noteOpeningTag</span> : &quot;&lt;textarea rows=\&quot;5\&quot; id=\&quot;txtareaXXXX\&quot; onClick=\&quot;SelectAll('txtareaXXXX');\&quot;&gt;&quot;</td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">noteClosingTag</span> : &quot;&lt;/textarea&gt;&quot;</td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">blankLineHTML</span> : &quot;&lt;hr&gt;&quot;</td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">introductionOpeningTag</span> : &quot;&lt;h3 style=\&quot;margin-bottom:0;font-style:italic;\&quot;&gt;&quot;</td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">introductionClosingTag</span> : &quot;&lt;/h3&gt;&quot;</td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">documentTitleHTMLOpeningTag</span> : &quot;&lt;h2 style=\&quot;margin-left:24px;margin-bottom:12px;margin-top:8px;\&quot;&gt;&quot;</td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">documentTitleHTMLClosingTag</span> : &quot;&lt;/h2&gt;&quot;</td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">instructionsOpeningTag</span> : &quot;&lt;p style=\&quot;font-size:small;font-style:italic;\&quot;&gt;&quot;</td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">instructionsClosingTag</span> : &quot;&lt;/p&gt;&quot;</td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+			<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+			<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocumentName</span> <b>to the</b> <span class="codeproperty">name</span> <b>of it</b></td></tr>
+			<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">HTMLBody</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">introductionOpeningTag</span> &amp; &quot;Presenter notes for:&quot; &amp; &not;</td></tr>
+			<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">introductionClosingTag</span> &amp; <span class="codelibraryclass">linefeed</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">documentTitleHTMLOpeningTag</span> &amp; &quot;&ldquo;&quot; &amp; <span class="codevariable">thisDocumentName</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>&quot;&rdquo;&quot; &amp; <span class="codevariable">documentTitleHTMLClosingTag</span> &amp; <span class="codelibraryclass">linefeed</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">instructionsOpeningTag</span> &amp; &quot;(Click the text of a presenter note to select it)&quot; &amp; &not;</td></tr>
+			<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codevariable">instructionsClosingTag</span></td></tr>
+			<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> slides</td></tr>
+			<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> <span class="codevariable">i</span></td></tr>
+			<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> skipped <b>is</b> <span class="codeenumeration">false</span> <b>then</b></td></tr>
+			<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideNotes</span> <b>to its</b> <span class="codeproperty">presenter notes</span></td></tr>
+			<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlideNotesHTML</span> <b>to</b> <span class="codevariable">thisSlideNotes</span></td></tr>
+			<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> this<span class="codevariable">noteOpeningTag</span> <b>to my</b> <span class="codevariable">replaceText</span>(<span class="codevariable">noteOpeningTag</span>, &quot;XXXX&quot;, (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>))</td></tr>
+			<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">HTMLBody</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">HTMLBody</span> &amp; <span class="codelibraryclass">linefeed</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">blankLineHTML</span> &amp; <span class="codelibraryclass">linefeed</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">slideIdentiferOpeningTag</span> &amp; &quot;Slide &quot; &amp; (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; &not;</td></tr>
+			<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codevariable">slideIdentiferClosingTag</span> &amp; <span class="codelibraryclass">linefeed</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>this<span class="codevariable">noteOpeningTag</span> &amp; <span class="codevariable">thisSlideNotesHTML</span> &amp; <span class="codevariable">noteClosingTag</span></td></tr>
+			<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			<tr><td class="line-count">52</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- MERGE HTML CONTENT</span></td></tr>
+			<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">HTMLOutline</span> <b>to</b> &quot;&lt;!DOCTYPE html&gt;</td></tr>
+			<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap">&lt;html lang=\&quot;en\&quot;&gt;</td></tr>
+			<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap">&lt;head&gt;</td></tr>
+			<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;meta charset=\&quot;utf-8\&quot; /&gt;</td></tr>
+			<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;meta name=\&quot;description\&quot; content=\&quot;Page Generated for Translation\&quot;&gt;</td></tr>
+			<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;title&gt;&quot; &amp; <span class="codevariable">thisDocumentName</span> &amp; &quot;&lt;/title&gt;</td></tr>
+			<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;script type=\&quot;text/javascript\&quot;&gt;</td></tr>
+			<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>function SelectAll(id)</td></tr>
+			<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{</td></tr>
+			<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>document.getElementById(id).focus();</td></tr>
+			<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>document.getElementById(id).select();</td></tr>
+			<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>}</td></tr>
+			<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;/script&gt;</td></tr>
+			<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;style&gt;</td></tr>
+			<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>textarea {width:96%;}</td></tr>
+			<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&lt;/style&gt;</td></tr>
+			<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap">&lt;/head&gt;</td></tr>
+			<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap">&lt;body style=\&quot;&quot; &amp; <span class="codevariable">bodyStyleCSS</span> &amp; &quot;\&quot;&gt;&quot; &amp; <span class="codelibraryclass">linefeed</span> &amp; <span class="codevariable">HTMLBody</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>linefeed &amp; &quot;&lt;/body&gt;&quot; &amp; <span class="codelibraryclass">linefeed</span> &amp; &quot;&lt;/html&gt;&quot;</td></tr>
+			<tr><td class="line-count">73</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- CREATE THE HTML FILE</span></td></tr>
+			<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">fileName</span> <b>to</b> (<span class="codelibrarycommand">do shell script</span> &quot;uuidgen&quot;) &amp; &quot;.html&quot;</td></tr>
+			<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">temporaryFolder</span> <b>to</b> (<span class="codelibrarycommand">path to</span> <span class="codeenumeration">temporary items folder</span> <b>from</b> <span class="codelibraryparameter">user domain</span>)</td></tr>
+			<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable"><span class="codevariable">targetFile</span>HFSPath</span> to (<span class="codevariable">temporaryFolder</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; <span class="codevariable">fileName</span></td></tr>
+			<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><b>if my</b> <span class="codevariable">writeToFile</span>(<span class="codevariable">HTMLOutline</span>, <span class="codevariable"><span class="codevariable">targetFile</span>HFSPath</span>, <span class="codeenumeration">false</span>) <b>is</b> <span class="codeenumeration">true</span> <b>then</b></td></tr>
+			<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;System Events&quot;</td></tr>
+			<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisURL</span> <b>to the</b> <span class="codeproperty">URL</span> <b>of</b> <span class="codelibraryclass">disk item</span> <span class="codevariable"><span class="codevariable"><span class="codevariable">targetFile</span>HFSPath</span></span></td></tr>
+			<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><b>else</b></td></tr>
+			<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">beep</span></td></tr>
+			<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+			<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><b>end if</b></td></tr>
+			<tr><td class="line-count">86</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- OPEN HTML FILE IN NEW 2-TAB WINDOW WITH GOOGLE TRANSLATE &lt;https://translate.google.com/#en/es/&gt;</span></td></tr>
+			<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><b>set</b> <span class="codevariable">GoogleTranslateURL</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&quot;https://translate.google.com/#&quot; &amp; <span class="codevariable">sourceLanguageID</span> &amp; &not;</td></tr>
+			<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span>&quot;/&quot; &amp; <span class="codevariable">destinationLanguageID</span> &amp; &quot;/&quot;</td></tr>
+			<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Safari&quot;</td></tr>
+			<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisWindow</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">URL</span>:<span class="codevariable">thisURL</span>}</td></tr>
+			<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> window 1</td></tr>
+			<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">tab</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">URL</span>:<span class="codevariable">GoogleTranslateURL</span>}</td></tr>
+			<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">97</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			<tr><td class="line-count">98</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">99</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">writeToFile</span>(<span class="codevariable">thisData</span>, <span class="codevariable">targetFile</span>, <span class="codevariable">appendData</span>)</td></tr>
+			<tr><td class="line-count">100</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">101</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">targetFile</span> <b>to the</b> <span class="codevariable">targetFile</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+			<tr><td class="line-count">102</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">openTargetFile</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">103</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">open for access</span> <span class="codelibraryclass">file</span> <span class="codevariable">targetFile</span> <b>with</b> <span class="codelibraryparameter">write permission</span></td></tr>
+			<tr><td class="line-count">104</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">appendData</span> <b>is</b> <span class="codeenumeration">false</span> <b>then set</b> eof <b>of the</b> open<span class="codevariable">targetFile</span> <b>to</b> 0</td></tr>
+			<tr><td class="line-count">105</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>write <span class="codevariable">thisData</span> <b>to the</b> <span class="codevariable">openTargetFile</span> <span class="codelibraryparameter">starting at</span> <span class="codeenumeration">eof</span> <b>as</b> <span class="codelibraryparameter">&laquo;class utf8&raquo;</span></td></tr>
+			<tr><td class="line-count">106</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">close access</span> <b>the</b> <span class="codevariable">openTargetFile</span></td></tr>
+			<tr><td class="line-count">107</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">true</span></td></tr>
+			<tr><td class="line-count">108</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b></td></tr>
+			<tr><td class="line-count">109</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">110</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">close access</span> <span class="codelibraryclass">file</span> <span class="codevariable">targetFile</span></td></tr>
+			<tr><td class="line-count">111</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">112</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">false</span></td></tr>
+			<tr><td class="line-count">113</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">114</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:0px;">&nbsp;</span><b>end</b> <span class="codevariable">writeToFile</span></td></tr>
+			<tr><td class="line-count">115</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:0px;">&nbsp;</span></td></tr>
+			<tr><td class="line-count">116</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:0px;">&nbsp;</span><b>on</b> <span class="codevariable">replaceText</span>(<span class="codevariable">sourceText</span>, <span class="codevariable">searchString</span>, <span class="codevariable">replacementString</span>)</td></tr>
+			<tr><td class="line-count">117</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">AppleScript's text item delimiters</span> <b>to the</b> <span class="codevariable">searchString</span></td></tr>
+			<tr><td class="line-count">118</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">itemList</span> <b>to every</b> <span class="codelibraryclass">text item</span> <b>of</b> <span class="codevariable">sourceText</span></td></tr>
+			<tr><td class="line-count">119</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">AppleScript's text item delimiters</span> <b>to the</b> <span class="codevariable">replacementString</span></td></tr>
+			<tr><td class="line-count">120</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">sourceText</span> <b>to the</b> <span class="codevariable">itemList</span> <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+			<tr><td class="line-count">121</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">AppleScript's text item delimiters</span> <b>to</b> &quot;&quot;</td></tr>
+			<tr><td class="line-count">122</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">sourceText</span></td></tr>
+			<tr><td class="line-count">123</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:0px;">&nbsp;</span><b>end</b> <span class="codevariable">replaceText</span></td></tr>
+		</table>
+		
+		<p class="content-subhead" role="heading" aria-level="2">Running the Setup Script</p>
+		
+		<p>With the installation of the scripts completed, and the presentation opened in Keynote, you are now ready to begin the process of translating the document’s presenter notes.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the installed script &ldquo;Setup Presenter Notes for Translation&rdquo; from the system-wide Script Menu. A confirmation dialog will appear:</p>
+
+		
+		<p class="imagecaption" style="width:608px;margin-top:36px;margin-bottom:-6px;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The opening dialog of the &ldquo;Setup Presenter Notes for Translation&rdquo; script. Click the &ldquo;Set Prefs&rdquo; button to select the languages to be translated from and to.</p>
+		<img class="centered" width="536" alt="translate-dialog-01" src="gfx/translate-dialog-01.png" height="317">
+		
+		<p>When run, the script will open a new window in Safari containing two tabs: </p>
+		
+		
+		<img class="across" width="640" alt="translate-window-01-partial" src="gfx/translate-window-01-partial.png">
+		
+		<p class="imagecaption" style="width:608px;margin-top:0px;margin-bottom:0px;"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>The new Safari browser window with two tabs: the current tab displaying the presenter notes of the frontmost presentation, and second tab displaying the Google Translate website.</p>
+		<p class="imagecaption" style="width:608px;margin-top:0px;margin-bottom:12px;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The second browser tab displaying the Google Translate website, with two text fields: the left for entering the text to be translated, and the right containing the translation of the source text.</p>
+		
+		
+		<img class="across" width="640" alt="translate-window-02-partial" src="gfx/translate-window-02-partial.png">
+		
+		<p class="content-subhead" role="heading" aria-level="2">Translating the Slide Notes</p>
+		
+		<p>Translating the slide presenter notes involves following these simple steps for each slide note:</p>
+		
+		<ol>
+		<li><b>Select &amp; Copy the Slide&rsquo;s Notes</b> &bull; Select the text of a slide note by clicking in the text area of the note. The text will auto-select. Copy the selected text to the clipboard (&#8984;C).</li>
+		
+		<li><b>Paste &amp; Translate</b> &bull; In the browser window select the Google Translate tab, and paste the copied text into the text input field on the left. Click the <b>Translate</b> button over the right text field to translate the text.</li>
+		
+		<li><b>Select, Copy, &amp; Replace</b> &bull; Under the text field containing the translation, click the button for selecting the text. Copy the selected text to the clipboard (&#8984;C). Click the inactive browser window tab to reveal the slide notes, and replace the selected text of the source slide note with the translation text that&rsquo;s currently on the clipboard (&#8984;V).</li>
+		
+		</ol>
+		
+		<p>Repeat these steps for each slide note.</p>
+		
+		<p class="content-subhead" role="heading" aria-level="2">Replacing Existing Presenter Notes</p>
+		
+		<p>Once the slide notes in the browser window have been replaced with their translations, they can be used to replace the presenter notes in the open Keynote presentation file. This process can be completed quickly using the script provided here.</p>
+		
+		<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the installed script &ldquo;Replace Notes with Localized Notes&rdquo; from the system-wide Script Menu. A confirmation dialog will appear:</p>
+		
+		<img class="centered" width="532" height="266" alt="translate-dialog-02" src="gfx/translate-dialog-02.png">
+		
+		<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Replace Notes with Localized Notes</td></tr>
+			<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&name=Replace%20Notes%20with%20Localized%20Notes&script=tell%20application%20%22Keynote%22%0D%09set%20KeynoteStatus%20to%20(exists%20document%201)%0Dend%20tell%0D%0Dtell%20application%20%22Safari%22%0D%09activate%0D%09if%20KeynoteStatus%20is%20false%20then%20%22There%20is%20no%20document%20in%20Keynote.%22%0D%09if%20not%20(exists%20document%201)%20then%20error%20%22There%20is%20no%20document%20open%20in%20Safari.%22%0D%09display%20dialog%20%22This%20script%20will%20replace%20the%20presenter%20notes%20in%20the%20current%20Keynote%20document%20with%20the%20notes%20from%20this%20webpage.%22%20with%20icon%201%0D%09try%0D%09%09set%20pageSource%20to%20source%20of%20current%20tab%20of%20window%201%0D%09%09if%20pageSource%20contains%20%22Page%20Generated%20for%20Translation%22%20then%0D%09%09%09set%20elementCount%20to%20%C2%AC%0D%09%09%09%09(do%20JavaScript%20%22document.getElementsByTagName('textarea').length%3B%22%20in%20current%20tab%20of%20window%201)%20as%20integer%0D%09%09%09set%20translatedNotes%20to%20%7B%7D%0D%09%09%09repeat%20with%20i%20from%201%20to%20elementCount%0D%09%09%09%09set%20thisNote%20to%20%C2%AC%0D%09%09%09%09%09(do%20JavaScript%20%22document.getElementById('txtarea%22%20%26%20(i%20as%20string)%20%26%20%22').value%3B%22%20in%20current%20tab%20of%20window%201)%0D%09%09%09%09set%20the%20end%20of%20translatedNotes%20to%20thisNote%0D%09%09%09end%20repeat%0D%09%09else%0D%09%09%09display%20alert%20%22INCORRECT%20PAGE%22%20message%20%22The%20current%20page%20was%20not%20generated%20by%20the%20translation%20script.%22%0D%09%09%09error%20number%20-128%0D%09%09end%20if%0D%09%09display%20dialog%20%22Notes%20extraction%20complete.%20Click%20%E2%80%9CContinue%E2%80%9D%20to%20switch%20to%20Keynote%20and%20replace%20the%20notes%20in%20the%20current%20document.%22%20buttons%20%7B%22Cancel%22%2C%20%22Continue%22%7D%20default%20button%202%20with%20icon%201%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20%22EXTRACTION%20ERROR%22%20message%20errorMessage%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09try%0D%09%09tell%20document%201%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20translatedNotes%0D%09%09%09%09set%20targetSlide%20to%20(first%20slide%20whose%20slide%20number%20is%20i)%0D%09%09%09%09tell%20targetSlide%0D%09%09%09%09%09set%20presenter%20notes%20to%20(item%20i%20of%20translatedNotes)%0D%09%09%09%09end%20tell%0D%09%09%09end%20repeat%0D%09%09end%20tell%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%20not%20-128%20then%0D%09%09%09display%20alert%20%22ERROR%22%20message%20errorMessage%0D%09%09end%20if%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell"><button type="button">Open in Script Editor</button></a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">KeynoteStatus</span> <b>to</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1)</td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Safari&quot;</td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">KeynoteStatus</span> <b>is</b> <span class="codeenumeration">false</span> <b>then</b> &quot;There is no document in Keynote.&quot;</td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> &quot;There is no document open in Safari.&quot;</td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will replace the presenter notes in the current Keynote document with the notes from this webpage.&quot; <span class="codelibraryparameter">with icon</span> 1</td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">pageSource</span> <b>to</b> <span class="codeproperty">source</span> <b>of</b> <span class="codeproperty">current tab</span> <b>of</b> <span class="codelibraryclass">window</span> 1</td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">pageSource</span> <b>contains</b> &quot;Page Generated for Translation&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">elementCount</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>(do JavaScript &quot;document.getElementsByTagName('textarea').length;&quot; <b>in</b> <span class="codeproperty">current tab</span> <b>of</b> <span class="codelibraryclass">window</span> 1) <b>as</b> <span class="codelibraryclass">integer</span></td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">translatedNotes</span> <b>to</b> {}</td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to</b> <span class="codevariable">elementCount</span></td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">thisNote</span> <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>(do JavaScript &quot;document.getElementById('txtarea&quot; &amp; (<span class="codevariable">i</span> <b>as</b> <span class="codelibraryclass">string</span>) &amp; &quot;').value;&quot; <b>in</b> <span class="codeproperty">current tab</span> <b>of</b> <span class="codelibraryclass">window</span> 1)</td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">translatedNotes</span> <b>to</b> <span class="codevariable">thisNote</span></td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;INCORRECT PAGE&quot; <span class="codelibraryparameter">message</span> &quot;The current page was not generated by the translation script.&quot;</td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;Notes extraction complete. Click &ldquo;Continue&rdquo; to switch to Keynote and replace the notes in the current document.&quot; buttons {&quot;Cancel&quot;, &quot;Continue&quot;} <span class="codelibraryparameter">default button</span> 2 <span class="codelibraryparameter">with icon</span> 1</td></tr>
+			<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+			<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+			<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;EXTRACTION ERROR&quot; <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+			<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+			<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			<tr><td class="line-count">33</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+			<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+			<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+			<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">translatedNotes</span></td></tr>
+			<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">targetSlide</span> <b>to</b> (<b>the first</b> <span class="codelibraryclass">slide</span> <b>whose</b> <span class="codeproperty">slide number</span> <b>is</b> i)</td></tr>
+			<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codevariable">targetSlide</span></td></tr>
+			<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">presenter notes</span> <b>to</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">translatedNotes</span>)</td></tr>
+			<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+			<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span> number <span class="codevariable">errorNumber</span></td></tr>
+			<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">errorNumber</span> <b>is not</b> -128 <b>then</b></td></tr>
+			<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">display alert</span> &quot;<b>ERROR</b>&quot; <span class="codelibraryparameter">message</span> <span class="codevariable">errorMessage</span></td></tr>
+			<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+			<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+		</table>
+		
+		<p>Once the script has finished, the presenter notes in the frontmost Keynote document will be replaced with the translations entered in the Safari browser tab.</p>
+		
+		<p class="segment-note"><b>TIP</b>: You can use the<a href="https://iworkautomation.com/keynote/slide-presenter-notes.html">&nbsp;Simple Play &amp; Say&nbsp;</a>script (included with the installer) to have your slideshow spoken and presented to you using the default system voice. Upgrade your system voices to the free high-quality voices in multiple languages available from the <b>Speech &amp; Dictation</b> system preference pane.</p>
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples-QR-code.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-outline.html">New Presentation from Outline</a></li>
+				<li class="navListSectionItem"><a href="examples-doc-from-image-files.html">New Presentation from Image Files</a></li>
+				<li class="navListSectionItem"><a href="examples-pano-preso.html">Pano to Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-movie-export-droplet.html">Movie Export Droplet</a></li>
+				<li class="navListSectionItem"><a href="examples-dup-to-images.html">Duplicate Preso as Image Preso</a></li>
+				<li class="navListSectionItem"><a href="examples-grid-kiosk.html">Image Grid Kiosk</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li class="navListSectionItem"><a href="examples-music-helper.html">Music Helper Applet</a></li>
+				<li class="navListSectionItemSelected">Translation Helper Scripts</li>
+				<li class="navListSectionItemSelected"><a href="examples-QR-code.html">Generate QR Code</a></li>
+				<li class="navListSectionItem"><a href="examples-countdown.html">Countdown Clock</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

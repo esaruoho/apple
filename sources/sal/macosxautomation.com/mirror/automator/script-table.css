@@ -1,0 +1,423 @@
+/* SCRIPT STUFF */
+table.script-table {
+	width: 100%;
+	border: 0;
+	background-color: #eeeeee;
+	color: black;
+	font-family: -apple-system,'Verdana',san-serif;
+	font-size: 1.5vw;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	padding-left: 6px;
+	padding-right: 6px;
+	margin-top: 0px;
+	margin-bottom: 6px;
+	/* border-bottom-right-radius: 24px; */
+	/* border-bottom-left-radius: 24px; */
+}
+div.script-explanation
+{
+	background-color: #3F3F3F;
+	padding: 8px;
+	color: white;
+}
+table.javascript-table
+{
+	width: 100%;
+	border: 0;
+	background-color: #3F3F3F;
+	color: #F0EFD0;
+	font-family: Menlo, monospace;
+	font-size: 1.5vw;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	padding-left: 6px;
+	padding-right: 6px;
+	margin-top: 0px;
+	margin-bottom: 6px;
+	/* border-bottom-right-radius: 24px; */
+	/* border-bottom-left-radius: 24px; */
+	word-wrap: break-word;
+}
+td.script-title {
+	font: 18px  -apple-system, 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-weight: 700;
+	color: white;
+	/* background-color: #1E3153; */
+	background-color: #333;
+	padding: 6px;
+}
+td.encoded-script {
+	padding-top: 6px;
+}
+td.line-count {
+	padding-left: 4px;
+	padding-right: 4px;
+	background-color: #C1C1C1;
+	color: #333333;
+	width: 18px;
+	font-family: -apple-system,'Verdana',san-serif;
+	font-size: small;
+}
+td.line-blank {
+	/* background-color: #eeeeee; */
+	background-color: #3F3F3F;
+	color: #535353;
+	width: 18px;
+	font-family: 'Helvetica',san-serif;
+	font-size: small;
+}
+td.line-buffer {
+	background-color: #3F3F3F;
+	/* background-color: #eeeeee; */
+	color: #3F3F3F;
+	/* color: #535353; */
+	width: 8px;
+	font-family: 'Helvetica',san-serif;
+	font-size: small;
+}
+td.line-wrap {
+	word-wrap: break-word;
+}
+.indentscripthilite
+{
+	vertical-align: sub;
+	margin-left: 1.5em;
+	color: #69F;
+}
+
+.codecomment {
+ color: #CC9393;
+}
+
+.codevariable {
+	color: #408000;
+}
+
+.codeenumeration {
+	color: #4A1E7F;
+}
+
+.codeproperty {
+	color: #6600CC;
+}
+
+.codelibrarycommand {
+	color: #0016B0;
+	font-weight: bold;
+}
+
+.codelibraryparameter {
+	color: #0016B0;
+	/* font-weight: bold; */
+}
+
+.codelibraryclass {
+	color: #0016B0;
+	font-style: italic;
+}
+
+.script-caption
+{
+	color: #000;
+}
+
+.inlinecode { color: #F60; }
+
+span.dictionary-term {
+	color: #000000;
+	font-weight: bold;
+	font-size: 14px;
+	letter-spacing: 0;
+}
+
+p.dictionary-term {
+	margin-top: 0;
+	margin-left: 0;
+	margin-bottom; 0;
+}
+
+span.dictionary-text {
+	color: black;
+	font-size: 12px;
+	letter-spacing: 0;
+}
+
+span.dictionary-parameter {
+	color: black;
+	font-size: 13px;
+	letter-spacing: 0;
+	font-weight: bold;
+}
+
+span.dictionary-suite {
+	color: #0000FF;
+}
+
+span.dictionary-verb {
+	color: #0000FF;
+}
+
+span.dictionary-property {
+	color: #6600CC;
+}
+
+span.dictionary-enumeration {
+	color: #4A1E7F;
+}
+
+.dictionary-class {
+	color: #0016B0;
+	font-style: italic;
+	letter-spacing: 0;
+}
+
+.dictionary-definition
+{
+	margin-left: 2em;
+}
+
+.dictionary-indent-01
+{
+	margin-left: 1em;
+}
+
+.dictionary-indent-02
+{
+	margin-left: 2em;
+}
+
+span.functionEnum
+{
+	color: #F0DFAF;
+	font-weight: 700;
+}
+span.functionNameEnum
+{
+	color: #9C6;
+	font-weight: 500;
+}
+span.functionParamterEnum
+{
+	color: #9C6;
+	font-weight: 400;
+}
+span.ASterm
+{
+	color: #CCCCCC;
+	font-weight: 900;
+}
+span.ASenum
+{
+	color: #66CCFF;
+	font-weight: 300;
+	font-style: italic;
+}
+span.varEnum
+{
+	color: #F0DFAF;
+	font-weight: 700;
+}
+span.thisEnum
+{
+	color: #F0DFAF;
+	font-weight: 700;
+}
+span.libraryEnum
+{
+	color: #B89FD5;
+	font-weight: 500;
+}
+span.throwEnum
+{
+	color: #F0DFAF;
+	font-weight: 700;
+}
+span.variableEnum
+{
+	color: #FF9;
+	font-weight: 500;
+}
+span.classEnum
+{
+	color: #DFAF8F;
+	font-weight: 500;
+}
+span.methodEnum
+{
+	/* color: #DFAF8F; */
+	color: #99F;
+	font-weight: 500;
+}
+span.returnEnum {color:#F0DFAF;font-weight:700;}
+span.forEnum {color:#F0DFAF;font-weight:700;}
+span.ifEnum {color:#F0DFAF;font-weight:700;}
+span.boolEnum
+{
+	color: #B3EBBF;
+	font-weight: 500;
+}
+span.nullEnum
+{
+	color: #B3EBBF;
+	font-weight: 500;
+}
+span.consoleEnum
+{
+	color: #CF9;
+	font-weight: 500;
+}
+span.newEnum 
+{
+	color: #F0DFAF;
+	font-weight: 700;
+}
+span.rectEnum {color:blue;font-weight:500;}
+span.colorEnum {color:blue;font-weight:500;}
+span.throwEnum {color:#F0DFAF;font-weight:700;}
+span.shapeEnum {color:red;font-weight:500;}
+span.stringEnum
+{
+	color: #CC9393;
+	font-weight: 500;
+}
+span.keyEnum
+{
+	color: #F9F;
+	font-weight: 500;
+}
+span.valueEnum
+{
+	color: #CCF;
+	font-weight: 500;
+}
+span.resultEnum
+{
+	color: #DCAC8D;
+	font-weight: 500;
+}
+span.propertyEnum
+{
+	color: #0CC;
+	font-weight: 400;
+}
+span.parameterEnum
+{
+	color: #DFAF8F;
+	font-weight: 500;
+}
+span.tryEnum
+{
+	color: #9CF;
+	font-weight: 500;
+}
+span.errorEnum {color:#DFAF8F;;font-weight:500;}
+span.catchEnum
+{
+	color: #9CF;
+	font-weight: 500;
+}
+span.scriptEnum {color:blue;font-weight:500;}
+span.json-value
+{
+	color: #CC9393;
+	font-weight: 500;
+}
+span.json-key
+{
+	color: #DFAF8F;
+	font-weight: 500;
+}
+span.js-comment
+{
+	color: #7F9F7F;
+	font-weight: 500;
+}
+span.scriptString {color:red;font-weight:500;}
+
+
+@media screen and (max-width: 900px) {
+	table.script-table {
+		font-size: 14px;
+	}
+	table.javascript-table {
+		font-size: 15px;
+	}
+}
+/* DICTIONARY */
+p.dictionary
+{
+	font: 10px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-size: 12px;
+	margin: 0px 0px 12px 0px;
+	color: #333;
+	background-color: #F7F7F7;
+	padding: 8px;
+	width: 620px;
+	border: 2px solid #ccc;
+}
+
+div.dictionary
+{
+	font: 12px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-size: 12px;
+	margin: 0px 0px 12px 0px;
+	color: #333;
+	background-color: #F7F7F7;
+	padding: 8px;
+	width: 100%;
+	border: 2px solid #ccc;
+}
+
+div.dictionary p
+{
+	margin:0;
+	font: 12px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-size: 12px;
+}
+
+div.dictionary p.dictionary-single-indent {
+	margin: 0 0 3px 24px;
+	font: 12px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-size: 12px;
+	text-indent: -48px;
+	padding-left: 48px;
+}
+
+div.dictionary p.dictionary-double-indent {
+	margin: 0 0 3px 48px;
+	font: 12px 'Lucida Grande', Geneva, Verdana, Arial, sans-serif;
+	font-size: 12px;
+	text-indent: -48px;
+	padding-left: 48px;
+}
+
+div.dictionary p.dictionary-elements-header {
+	color: #000000;
+	font-weight: normal;
+	font-size: 14px;
+	font-variant:small-caps;
+	margin-top:8px;
+	margin-left: 24px;
+	margin-bottom: 0;
+}
+
+div.dictionary p.dictionary-properties-header {
+	color: #000000;
+	font-weight: normal;
+	font-size: 14px;
+	font-variant:small-caps;
+	margin-top:8px;
+	margin-bottom: 0;
+	margin-left: 24px;
+}
+
+div.dictionary p.dictionary-responds-header {
+	color: #000000;
+	font-weight: normal;
+	font-size: 14px;
+	font-variant:small-caps;
+	margin-top:8px;
+	margin-bottom: 0;
+	margin-left: 24px;
+}

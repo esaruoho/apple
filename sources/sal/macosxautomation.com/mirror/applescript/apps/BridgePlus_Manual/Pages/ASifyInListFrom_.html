@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #812fdc}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #ee2200}
+span.s5 {color: #812fdc}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="ASifyFrom_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="ASifyFrom_forTypes_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>Cocoa to AppleScript conversion methods</p>
+<h3>Method</h3>
+<code>ASifyInListFrom:</code>
+<h3>Summary</h3>
+<p>As above, but returns the result in a single-item list. Use this when unsure of the class of the result, and extract the first item from the result coerced to a list. Works around coercion problem.</p><p>Typical use: set theThing to item 1 of (current application's SMSForder's ASifyFrom:anArray as list)</p><p>Bridge does the conversion under 10.11 and later.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(id)</span>ASifyInListFrom:<span class="sigParens">(id)</span><span class="param">anItem</span></code>
+<h3>Parameters</h3>
+<p><span class="param">anItem</span> = a Cocoa item</p>
+<h3>Result</h3>
+<p>An AppleScript equivalent if available, enclosed in a list</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>If possible, use BridgePlus script library&#8217;s ASify from command instead.</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">anItem</span><span class="s1"> <b>to</b> </span><i>current application's</i><span class="s1"> </span><span class="s3">NSDate's</span><span class="s1"> </span><span class="s4">|date|</span><span class="s1">()</span></p>
+<p class="p6"><span class="s1"><b>set</b> </span>theResult<span class="s1"> <b>to</b> </span><span class="s5"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s4">ASifyInListFrom</span><span class="s1">:</span>anItem</p>
+<p class="p2"><span class="s2"><i>item</i></span> 1 <b>of</b> (<span class="s3">theResult</span> <b>as</b> <span class="s2"><i>list</i></span>)</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>date "Monday, 23 November 2015 at 12:15:16 PM"</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20anItem%20to%20current%20application's%20NSDate's%20%7Cdate%7C()%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20ASifyInListFrom:anItem%0Ditem%201%20of%20(theResult%20as%20list)%0D--%3E%09date%20%22Monday,%2023%20November%202015%20at%2012:15:16%20PM%22%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

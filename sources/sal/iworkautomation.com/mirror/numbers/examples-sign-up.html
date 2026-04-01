@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Collaborated Sign-Up Sheet</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An example of using Automation with the built-in collaboration features of the iWork Numbers application.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Collaborated Sign-Up Sheet</div>
+											
+		<p>An example of using automation with the built-in collaboration features of the iWork Numbers application.</p>
+		
+		<p>In this example, instructors use the following AppleScript script to automate the sign-up process for a conference. In turn, each instructor selects a table cell whose row and column headers indicate the class they would like to teach.</p>
+		
+		<p>When the script is run, their name is inserted into the selected table cell and its background color is changed from red to green. In addition, a new Calendar even for the class is added to their default calendar.</p>
+		
+		<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+			<video id="sign-up-spreadsheet-50" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto">
+			  <source src="sign-up-spreadsheet-50.mp4" type="video/mp4">
+			  Your browser does not support the video tag.
+			</video>
+		</div>
+		<div style="text-align:center;margin-bottom:18px;">
+			<button onclick="document.getElementById('sign-up-spreadsheet-50').play();">PLAY</button>
+			<button onclick="document.getElementById('sign-up-spreadsheet-50').pause();">PAUSE</button>
+			<button onclick="document.getElementById('sign-up-spreadsheet-50').currentTime=(document.getElementById('sign-up-spreadsheet-50').currentTime-5);">BACK</button>
+			<button onclick="document.getElementById('sign-up-spreadsheet-50').currentTime=0;">REWIND</button>
+		</div>
+		
+		<p>Items to note:</p>
+		
+		<ul>
+			<li>The script uses the name of the current user for the instructor&rsquo;s name</li>
+			<li>The script assumes the default calendar is the one in which to add new events</li>
+			<li>The top header row of the table has a value representing the day of the session, that is a date object.</li>
+			<li>The bottom header of the table has a value, representing the class start time and end time, that is a string. (13:45-17:15)</li>
+			<li>The times expressed in the bottom header of the table has a value are in &ldquo;military time format&rdquo; (13:45-17:15)</li>
+		</ul>
+				
+		<p><a href="sign-up-doc-script.zip">DOWNLOAD</a> the Numbers document and AppleScript script files. Information about how to activate the Script Menu and install scripts to it, can be found <a href="script-menu.html">here</a>.</p>
+		
+			
+			
+			<table class="script-table" role="presentation"></td></tr>
+			<tr><td colspan="3" class="script-title">Collaborated Sign-Up Sheet</td></tr>
+			<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Collaborated%20Sign-Up%20Sheet&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09try%0D%09%09if%20not%20(exists%20document%201)%20then%20error%20number%201000%0D%09%09tell%20document%201%0D%09%09%09try%0D%09%09%09%09tell%20active%20sheet%0D%09%09%09%09%09set%20the%20selectedTable%20to%20%C2%AC%0D%09%09%09%09%09%09(the%20first%20table%20whose%20class%20of%20selection%20range%20is%20range)%0D%09%09%09%09end%20tell%0D%09%09%09on%20error%0D%09%09%09%09error%20number%201001%0D%09%09%09end%20try%0D%09%09%09tell%20selectedTable%0D%09%09%09%09if%20the%20(count%20of%20cells%20of%20selection%20range)%20is%20not%201%20then%20%C2%AC%0D%09%09%09%09%09error%20number%201002%0D%09%09%09%09%0D%09%09%09%09set%20cellID%20to%20the%20name%20of%20item%201%20of%20selection%20range%0D%09%09%09%09%0D%09%09%09%09if%20address%20of%20row%20of%20cell%20cellID%20is%20less%20than%20or%20equal%20to%202%20or%20%C2%AC%0D%09%09%09%09%09address%20of%20column%20of%20cell%20cellID%20is%201%20then%20error%20number%201003%0D%09%09%09%09%0D%09%09%09%09set%20taskName%20to%20the%20formatted%20value%20of%20cell%201%20of%20row%20of%20cell%20cellID%0D%09%09%09%09%0D%09%09%09%09set%20sessionDate%20to%20the%20value%20of%20cell%201%20of%20column%20of%20cell%20cellID%0D%09%09%09%09set%20sessionTimeString%20to%20%C2%AC%0D%09%09%09%09%09the%20formatted%20value%20of%20cell%202%20of%20column%20of%20cell%20cellID%0D%09%09%09%09--%3E%20%2208%3A45-13%3A00%22%0D%09%09%09%09%0D%09%09%09%09set%20startHour%20to%20(word%20-4%20of%20sessionTimeString)%20as%20integer%0D%09%09%09%09set%20startMinute%20to%20(word%20-3%20of%20sessionTimeString)%20as%20integer%0D%09%09%09%09set%20endHour%20to%20(word%20-2%20of%20sessionTimeString)%20as%20integer%0D%09%09%09%09set%20endMinute%20to%20(word%20-1%20of%20sessionTimeString)%20as%20integer%0D%09%09%09%09%0D%09%09%09%09copy%20sessionDate%20to%20startTime%0D%09%09%09%09set%20hours%20of%20startTime%20to%20startHour%0D%09%09%09%09set%20minutes%20of%20startTime%20to%20startMinute%0D%09%09%09%09set%20seconds%20of%20startTime%20to%200%0D%09%09%09%09%0D%09%09%09%09copy%20sessionDate%20to%20endTime%0D%09%09%09%09set%20hours%20of%20endTime%20to%20endHour%0D%09%09%09%09set%20minutes%20of%20endTime%20to%20endMinute%0D%09%09%09%09set%20seconds%20of%20endTime%20to%200%0D%09%09%09%09%0D%09%09%09%09tell%20current%20application%0D%09%09%09%09%09set%20userName%20to%20long%20user%20name%20of%20(get%20system%20info)%0D%09%09%09%09%09set%20firstName%20to%20word%201%20of%20userName%0D%09%09%09%09end%20tell%0D%09%09%09%09set%20value%20of%20cell%20cellID%20to%20firstName%0D%09%09%09%09set%20the%20background%20color%20of%20cell%20cellID%20to%20%7B38390%2C%2064038%2C%2022477%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09tell%20current%20application%0D%09%09%09set%20calendarID%20to%20%C2%AC%0D%09%09%09%09(do%20shell%20script%20%22defaults%20read%20com.apple.iCal%20CalDefaultCalendar%22)%0D%09%09end%20tell%0D%09%09%0D%09%09tell%20application%20%22Calendar%22%0D%09%09%09activate%0D%09%09%09if%20calendarID%20is%20%22UseLastSelectedAsDefaultCalendar%22%20then%0D%09%09%09%09set%20defaultCalendar%20to%20calendar%201%0D%09%09%09else%0D%09%09%09%09set%20defaultCalendar%20to%20first%20calendar%20whose%20uid%20is%20calendarID%0D%09%09%09end%20if%0D%09%09%09tell%20defaultCalendar%0D%09%09%09%09set%20newEvent%20to%20make%20new%20event%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bsummary%3AtaskName%2C%20start%20date%3AstartTime%2C%20end%20date%3AendTime%7D%0D%09%09%09end%20tell%0D%09%09%09show%20newEvent%0D%09%09end%20tell%0D%09%09%0D%09on%20error%20errorMessage%20number%20errorNumber%0D%09%09if%20errorNumber%20is%201000%20then%0D%09%09%09set%20alertString%20to%20(errorNumber%20as%20string)%20%26%20space%20%26%20%22MISSING%20RESOURCE%22%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22Please%20create%20or%20open%20a%20document%20before%20running%20this%20script.%22%0D%09%09else%20if%20errorNumber%20is%201001%20then%0D%09%09%09set%20alertString%20to%20%22SELECTION%20ERROR%22%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22Please%20select%20a%20single%20cell%20in%20a%20table%20before%20running%20this%20script.%22%0D%09%09else%20if%20errorNumber%20is%201002%20then%0D%09%09%09set%20alertString%20to%20%22SELECTION%20ERROR%22%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22Please%20select%20a%20single%20cell%20in%20the%20table%20before%20running%20this%20script.%22%0D%09%09else%20if%20errorNumber%20is%201003%20then%0D%09%09%09set%20alertString%20to%20%22SELECTION%20ERROR%22%0D%09%09%09set%20errorMessage%20to%20%C2%AC%0D%09%09%09%09%22Please%20select%20a%20single%20cell%20in%20the%20table%20that%20is%20not%20in%20a%20row%20or%20column%20header.%22%0D%09%09else%0D%09%09%09set%20alertString%20to%20%22EXECUTION%20ERROR%22%0D%09%09end%20if%0D%09%09display%20alert%20alertString%20message%20errorMessage%20buttons%20%7B%22Cancel%22%7D%0D%09%09error%20number%20-128%0D%09end%20try%0Dend%20tell" style="text-decoration:none;background-color:#eee;" onmouseover='this.style.color="black"' onmouseout='this.style.color="red"'>Open in Script Editor</a></td></tr>
+			<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>tell</b> application &quot;Numbers&quot;</td></tr>
+			<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span>activate</td></tr>
+			<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>if not</b> (exists document 1) <b>then error</b> number 1000</td></tr>
+			<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> document 1</td></tr>
+			<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>try</b></td></tr>
+			<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> active sheet</td></tr>
+			<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> selectedTable <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>(<b>the first</b> table <b>whose</b> class <b>of</b> selection range <b>is</b> range)</td></tr>
+			<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>on error</b></td></tr>
+			<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>error</b> number 1001</td></tr>
+			<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> selectedTable</td></tr>
+			<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>if the</b> (count <b>of</b> cells <b>of</b> selection range) <b>is not</b> 1 <b>then</b> &not;</td></tr>
+			<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>error</b> number 1002</td></tr>
+			<tr><td class="line-count">17</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> cellID <b>to the</b> name <b>of</b> item 1 <b>of</b> selection range</td></tr>
+			<tr><td class="line-count">19</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>if</b> address <b>of</b> row <b>of</b> cell cellID <b>is less than</b> or <b>equal to</b> 2 or &not;</td></tr>
+			<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span>address <b>of</b> column <b>of</b> cell cellID <b>is</b> 1 <b>then error</b> number 1003</td></tr>
+			<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> taskName <b>to the</b> formatted value <b>of</b> cell 1 <b>of</b> row <b>of</b> cell cellID</td></tr>
+			<tr><td class="line-count">24</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> sessionDate <b>to the</b> value <b>of</b> cell 1 <b>of</b> column <b>of</b> cell cellID</td></tr>
+			<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> sessionTimeString <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>the</b> formatted value <b>of</b> cell 2 <b>of</b> column <b>of</b> cell cellID</td></tr>
+			<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">--&gt; &quot;08:45-13:00&quot;</span></td></tr>
+			<tr><td class="line-count">29</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> startHour <b>to</b> (word -4 <b>of</b> sessionTimeString) <b>as</b> integer</td></tr>
+			<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> startMinute <b>to</b> (word -3 <b>of</b> sessionTimeString) <b>as</b> integer</td></tr>
+			<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> endHour <b>to</b> (word -2 <b>of</b> sessionTimeString) <b>as</b> integer</td></tr>
+			<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> endMinute <b>to</b> (word -1 <b>of</b> sessionTimeString) <b>as</b> integer</td></tr>
+			<tr><td class="line-count">34</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>copy</b> sessionDate <b>to</b> startTime</td></tr>
+			<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> hours <b>of</b> startTime <b>to</b> startHour</td></tr>
+			<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> minutes <b>of</b> startTime <b>to</b> startMinute</td></tr>
+			<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> seconds <b>of</b> startTime <b>to</b> 0</td></tr>
+			<tr><td class="line-count">39</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>copy</b> sessionDate <b>to</b> endTime</td></tr>
+			<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> hours <b>of</b> endTime <b>to</b> endHour</td></tr>
+			<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> minutes <b>of</b> endTime <b>to</b> endMinute</td></tr>
+			<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> seconds <b>of</b> endTime <b>to</b> 0</td></tr>
+			<tr><td class="line-count">44</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> current application</td></tr>
+			<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> userName <b>to</b> long user name <b>of (get</b> system info)</td></tr>
+			<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> firstName <b>to</b> word 1 <b>of</b> userName</td></tr>
+			<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> value <b>of</b> cell cellID <b>to</b> firstName</td></tr>
+			<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> background color <b>of</b> cell cellID <b>to</b> {38390, 64038, 22477}</td></tr>
+			<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">53</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> current application</td></tr>
+			<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> calendarID <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>(do shell script &quot;defaults read com.apple.iCal CalDefaultCalendar&quot;)</td></tr>
+			<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">58</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application &quot;Calendar&quot;</td></tr>
+			<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>activate</td></tr>
+			<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> calendarID <b>is</b> &quot;UseLastSelectedAsDefaultCalendar&quot; <b>then</b></td></tr>
+			<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> defaultCalendar <b>to</b> calendar 1</td></tr>
+			<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> defaultCalendar <b>to first</b> calendar <b>whose</b> uid <b>is</b> calendarID</td></tr>
+			<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> defaultCalendar</td></tr>
+			<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> newEvent <b>to</b> make new event <b>with</b> properties &not;</td></tr>
+			<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:50px;">&nbsp;</span>{summary:taskName, start date:startTime, end date:endTime}</td></tr>
+			<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span>show newEvent</td></tr>
+			<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+			<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+			<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>on error</b> errorMessage number errorNumber</td></tr>
+			<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> errorNumber <b>is</b> 1000 <b>then</b></td></tr>
+			<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> (errorNumber <b>as</b> string) &amp; space &amp; &quot;MISSING RESOURCE&quot;</td></tr>
+			<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> errorMessage <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>&quot;Please create or open a document before running this script.&quot;</td></tr>
+			<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> errorNumber <b>is</b> 1001 <b>then</b></td></tr>
+			<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;SELECTION ERROR&quot;</td></tr>
+			<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> errorMessage <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>&quot;Please select a single cell in a table before running this script.&quot;</td></tr>
+			<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> errorNumber <b>is</b> 1002 <b>then</b></td></tr>
+			<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;SELECTION ERROR&quot;</td></tr>
+			<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> errorMessage <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>&quot;Please select a single cell before running this script.&quot;</td></tr>
+			<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>else if</b> errorNumber <b>is</b> 1003 <b>then</b></td></tr>
+			<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;SELECTION ERROR&quot;</td></tr>
+			<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> errorMessage <b>to</b> &not;</td></tr>
+			<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>&quot;Please select a single cell that is not in a row or column header.&quot;</td></tr>
+			<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+			<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> alertString <b>to</b> &quot;EXECUTION ERROR&quot;</td></tr>
+			<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+			<tr><td class="line-count">93</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>display alert</b> alertString message errorMessage buttons {&quot;Cancel&quot;}</td></tr>
+			<tr><td class="line-count">94</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><b>error</b> number -128</td></tr>
+			<tr><td class="line-count">95</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:10px;">&nbsp;</span><b>end try</b></td></tr>
+			<tr><td class="line-count">96</td><td class="line-buffer"></td><td class="line-wrap"  style="text-indent:-64px;padding-left:64px;"><b>end tell</b></td></tr>
+			</table>
+			
+		</div>
+		<!-- END SEGMENT: OVERVIEW -->
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+		<!-- #624187; -->
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li class="hi"><a href="examples.html">Examples</a></li>
+				<li class="navListSectionItem"><a href="examples-attendance.html">Attendance Table for Contacts Group</a></li>
+				<li class="navListSectionItem"><a href="examples-highlight-intersection.html">Colorize Intersection of Selection</a></li>
+				<li class="navListSectionItem"><a href="examples-table-as-image.html">Save Table|Selection as Image File</a></li>
+				<li class="navListSectionItem"><a href="examples-state-names.html">Table with State Names as Headers</a></li>
+				<li class="navListSectionItemSelected">Collaborated Sign-Up Sheet</li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

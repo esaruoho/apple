@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AppleScript Libraries: Examples</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, AppleScript Libraries, Big Honking Text, BigHonkingText, Automation, Automator, Services, OS X, Snow Leopard, Lion, Mountain Lion, Movericks">
+	<META NAME="Description" CONTENT="Overview and examples of AppleScript Libraries in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="applescript-sm-banner" src="gfx/applescript-sm-banner.png" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Example AppleScript Libraries</div>
+		
+			<img class="left" alt="ScriptLibraryIcon-256" src="gfx/ScriptLibraryIcon-256.png" width="128" height="128">
+			<p>AppleScript Libraries are written to extend existing AppleScript functionality, and/or to provide commands &ldquo;missing&rdquo; from the default set of AppleScript tools.</p>
+
+			<p>Each of the AppleScript Libraries downloadable from this page, are fully editable, and are intended to function as examples and to provide ideas for the creation of your own libraries. Feel free to edit, alter, or expand them to suit your needs.</p>
+			
+			<p class="content-subhead">NOTE:</p> 
+			
+			<ol>
+				<li>For instructions on how to install the libraries, refer to the documentation on the <a href="index.html">Overview</a> page.</li>
+			
+				<li>When analyzing their scripting dictionaries, refer to the section titled <a href="terminology.html">Libraries with Terminology</a>.</li>
+				
+				<li>Many of the example libraries contain <b>&ldquo;use&rdquo; statements</b>. For detail information regarding this new AppleScript construct, refer to the documentation in the <a href="#">Use Statements</a> section.</li>
+
+			
+			</ol>
+						
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: VIEWING DICTIONARY -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Viewing a Library&rsquo;s Dictionary</div>
+			
+			<p>Viewing the scripting dictionary of an installed AppleScript Library is easy:</p>
+			
+			<p class="segment-note">To view the scripting dictionary of an installed AppleScript Library, choose <b>Open Dictionary&hellip;</b> from the <b>File</b> menu in the <b>AppleScript Editor</b> application. Select the library to view in the list of scriptable resources on your computer, and click the <b>Open</b> button in the dialog.</p>
+			
+		</div>
+		<!-- END SEGMENT: VIEWING DICTIONARY -->
+		
+		<!-- BEGIN SEGMENT: USING LIBRARIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+			<div class="segment-header" >Using AppleScript Libraries</div>
+			
+			<p>Once installed, the commands contained in AppleScript Libraries can be accessed by AppleScript scripts using either of two techniques:</p>
+			
+			<ol>
+				<li>Libraries can be addressed directly via <b>tell statements</b> or <b>tell blocks</b>:
+				<p class="code"><b>tell</b> <span class="codelibraryclass">script</span> &quot;Sharing Utilities&quot; <b>to</b> <span class="codelibrarycommand">tweet text</span> <span class="codevariable">sourceText</span></p></li>
+			
+				<li style="margin-top:24px;">A library&rsquo;s terminology can be imported with a global scope via <b>use statements</b> placed at the top of scripts:
+				<p class="code"><b>use</b> <span class="codelibraryclass">script</span> &quot;Sharing Utilities&quot;<br><br> 
+				
+				<span class="codelibrarycommand">tweet text</span> <span class="codevariable">sourceText</span></p></li>
+			</ol>
+		</div>
+		<!-- END SEGMENT: USING LIBRARIES -->
+		
+		<!-- BEGIN SEGMENT: TEXT UTILITIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Example: Text Utilities Library</div>
+			<p>Written using AppleScript/Objective-C, the <b>Text Utilities</b> library contains terminology for three commands designed to perform common text manipulation tasks:</p>
+						
+			<ol>  <!-- style="list-style-type:none;" -->
+				<li><p class="code"><span class="codelibrarycommand">transform text</span> <span class="codevariable">sourceText</span> <span class="codelibraryparameter">to</span> <span class="codeenumeration">upper case</span>&nbsp;|&nbsp;<span class="codeenumeration">lower case</span>&nbsp;|&nbsp;<span class="codeenumeration">word case</span></p></li>
+				<li><p class="code"><span class="codelibrarycommand">replace text</span> <span class="codevariable">searchString</span> <span class="codelibraryparameter">with</span> <span class="codevariable">replacementString</span> <span class="codelibraryparameter">in</span> <span class="codevariable">sourceText</span></p></li>
+				<li><p class="code"><span class="codelibrarycommand">remove white space around</span> <span class="codevariable">sourceText</span></p></li>
+			</ol>
+			
+			<p class="segment-note"><b>DOWNLOAD:</b> <a href="dwnlds/text-utilities.zip">Text Utilities library</a></p>
+						
+		</div>
+		<!-- END SEGMENT: TEXT UTILITIES -->
+		
+		<!-- BEGIN SEGMENT: SHARING UTILITIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Example: Sharing Utilities Library</div>
+			<p>Written using AppleScript/Objective-C, the <b>Sharing Utilities</b> library contains terminology for three sharing commands that implement OS X&rsquo;s native sharing services. The first two are designed to Tweet using the current user&rsquo;s default Twitter account:</p>
+						
+			<ol start="1">
+				<li><p class="code"><span class="codelibrarycommand">tweet text</span> <span class="codevariable">sourceText</span></p></li>
+				
+				<li><p class="code"><span class="codelibrarycommand">tweet image</span> <span class="codevariable">imageFile</span> <span class="codelibraryparameter">with text</span> <span class="codevariable">sourceText</span></p></li>
+			</ol>
+			
+			<p>The third command is for beginning an AirDrop session containing one or more disk items:</p>
+			
+			<ol start="3">
+				<li><p class="code"><span class="codelibrarycommand">begin AirDrop with</span> <span class="codevariable">theseItems</span></p></li>
+			</ol>
+			
+			<p class="segment-note"><b>DOWNLOAD:</b> <a href="dwnlds/sharing-utilities.zip">Sharing Utilities library</a> (v1.1 updated 5-30-14)</p>
+						
+		</div>
+		<!-- END SEGMENT: SHARING UTILITIES -->
+		
+		<!-- BEGIN SEGMENT: WEBKIT UTILITIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Example: WebKit Utilities Library</div>
+		
+			<p>Written using AppleScript/Objective-C, the <b>Text Utilities</b> library contains terminology for a single command designed to display the contents of a URL in a created web viewer window:</p>
+						
+			<ol>
+				<li><p class="code"><span class="codelibrarycommand">display URL</span> <span class="codevariable">targetURL</span> <span class="codelibraryparameter">window size</span> <span class="codevariable">widthHeightList</span></p></li>
+			</ol>
+		
+			<p class="segment-note"><b>IMPORTANT</b>: Because the WebKit Utilities library draws windows using Cococa framework methods, it must be called from <b>Cocoa-AppleScript</b> applets (ASOC) instead of standard AppleScript Applets, in order to display windows correctly. Cocoa-AppleScript applets can created via the <b>New from Template</b> menu item in the <b>File</b> menu in the <b>AppleScript Editor</b> application.</p>
+		
+			<p class="segment-note"><b>DOWNLOAD:</b> <a href="dwnlds/webkit-utilities.zip">WebKit Utilities library</a> • <a href="dwnlds/WebKitViewerAndLibrary.zip">WebKit Utilities library and Example ASOC applet</a></p>
+						
+		</div>
+		<!-- END SEGMENT: WEBKIT UTILITIES -->
+		
+		<!-- BEGIN SEGMENT: ALERT UTILITIES -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Example: Alert Utilities Library</div>
+		
+			<p>The <b>Alert Utilities</b> library is an example of using an AppleScript Library to provide an AppleScript terminology interface to a UNIX command-line utility. View the library’s dictionary for more example scripts and detail.</p> 
+			
+			<p>Click magnifying glass icon to view dictionary: <a href="javascript:void(0);"><img alt="" src="gfx/magnifying.png" height="32" width="32" highresurl="gfx/alertdictionary.png" caption="<b>The dictionary for the Alert Utilities Library" displaywidth="932" displayheight="980" onclick="void(0);lightboxThisImage(this);"></a></p>
+			
+			<p class="segment-note"><b>NOTE</b>: This AppleScript Library incorporates the infamous <b>BigHonkingText</b> UNIX utility. Used with permission.</p>
+			
+			<p>The script shown below will display a text message overlaid on the computer screen:</p>
+						
+			<ol start="1">
+				<li><p class="code">set <span class="codevariable">advancedSettings</span> <b>to</b> {<span class="codelibraryparameter">background color</span>:{65535, 0, 0}, <span class="codelibraryparameter">background dimensions</span>:{1024, 90}, <span class="codelibraryparameter">opacity</span>:100}<br><span class="codelibrarycommand">display overlay text</span> "Warning. Boss approaching&hellip;" <span class="codelibraryparameter">duration</span> 1 <span class="codelibraryparameter">advanced settings</span> <span class="codevariable">advancedSettings</span> <b>with</b> <span class="codelibraryparameter">goose honk</span></p></li>
+			</ol>
+						
+			<p class="segment-note"><b>DOWNLOAD:</b> <a href="dwnlds/alert-utilities.zip">Alert Utilities library</a></p>
+						
+		</div>
+		<!-- END SEGMENT: ALERT UTILITIES -->
+		
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="#" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li class="hi">AppleScript Libraries</li>
+					<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+						<li><a href="index.html">Overview</a></li>
+						<li><a href="simple.html">Simple Script Library</a></li>
+						<li><a href="asoc.html">ASOC Script Library</a></li>
+						<li><a href="terminology.html">Libraries with Terminology</a></li>
+						<li class="hi">Example Libraries</li>
+					</ol>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>
+		<div class="box">
+		<h2 style="text-align:center;">ASObjC Explorer</h2>
+		<a href="javascript:void(0);"><img alt="ExplorerMav300" src="gfx/ExplorerMav300.jpg" width="222" highresurl="gfx/ExplorerMavBig.jpg" caption="<b>The ASObjC Explorer application for OS&nbsp;X Mavericks</b>" displaywidth="900" displayheight="818" onclick="void(0);lightboxThisImage(this);" height="202"></a>
+		<p>The <b>ASObjC Explorer</b> application is an advanced script editor for composing scripts written using AppleScript/Objective-C. Version 3 for OS&nbsp;X Mavericks, offers the ability to create and edit and AppleScript Libraries, including their scripting definition files (SDEF).</p>
+		
+		<p><a href="http://macosxautomation.com/applescript/apps/index.html" target="_blank">Learn more&hellip;</a></p>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

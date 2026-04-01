@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Working with Text</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for body text in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Find and Replace</div>
+			
+			<p>In addition to creating new documents, scripts may be called upon to edit existing documents, including locating and replacing words in the main body text. The current Pages scripting dictionary does not contain a <span class="codelibrarycommand">search</span> command, so editing long text flows efficiently requires the use of a script sub-routine optimized for that purpose.</p>
+			
+			<p>The sub-routine included in the following example script (<span class="codevariable">replaceWordWithStringInBodyText</span>) is designed to work with long documents, by targeting the search and replace process at the paragraph-level, reducing the amount of text a script processes at a time. In addition, the script works from the end of the document to the beginning, thereby avoiding any issues with possible script-triggered reflow of the document.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Long Document Example</p>
+			
+			<p>In this example, the script will find and replace all of the occurrences of &ldquo;Alice&rdquo; in the &ldquo;Alice in Wonderland&rdquo; book by Lewis Carroll.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>For use with this tutorial <a href="AliceInWonderlandDocument.zip">DOWNLOAD</a> the example <i>Alice in Wonderland</i> <b>Pages</b> document.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;For execution optimization, open the example script in the <b>AppleScript Editor</b> application, and then install (save) it into the system-wide <b>Script Menu</b> (<a href="../script-menu.html">instructions</a>). Once installed, run the script from the <b>Script Menu</b>.</p>
+			
+			<p>Here’s a script for demonstrating replacing a word with a text string, in a long document:</p>
+			
+			<table class="script-table">
+				<tr><td colspan="3" class="script-title">Find-Change Example</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09display%20dialog%20%22This%20script%20will%20replace%20all%20occurences%20of%20%E2%80%9CAlice%E2%80%9D%20and%20%E2%80%9CAlice's%E2%80%9D%20with%20%E2%80%9CWanda%E2%80%9D%20and%20%E2%80%9CWanda's%E2%80%9D%20in%20the%20%E2%80%9CAlice%20in%20Wonderland%E2%80%9D%20example%20Pages%20document.%22%20with%20icon%201%20buttons%20%7B%22Cancel%22%2C%20%22Download%20Document%22%2C%20%22Begin%22%7D%20default%20button%203%0D%09if%20the%20button%20returned%20of%20the%20result%20is%20%22Download%20Document%22%20then%0D%09%09open%20location%20%22http%3A%2F%2Fiworkautomation.com%2Fpages%2Fbody-text-replace.html%22%0D%09else%0D%09%09my%20replaceWordWithStringInBodyText(%22Alice%22%2C%20%22Wanda%22)%0D%09%09%0D%09%09set%20thisTitle%20to%20%22Pages%3A%20Find%20%26%20Change%22%0D%09%09set%20thisNotification%20to%20%22Beginning%202nd%20replacement%E2%80%A6%22%0D%09%09set%20thisSubtitle%20to%20%22%E2%80%9CAlice%E2%80%9D%20to%20%E2%80%9CWanda%E2%80%9D%20completed.%22%0D%09%09my%20displayThisNotification(thisTitle%2C%20thisNotification%2C%20thisSubtitle)%0D%09%09%0D%09%09my%20replaceWordWithStringInBodyText(%22Alice's%22%2C%20%22Wanda's%22)%0D%09%09%0D%09%09set%20thisNotification%20to%20%22Replacement%20completed%3A%20%E2%80%9CAlice's%E2%80%9D%20to%20%E2%80%9CWanda's%E2%80%9D%22%0D%09%09set%20thisSubtitle%20to%20%22%22%0D%09%09my%20displayThisNotification(thisTitle%2C%20thisNotification%2C%20thisSubtitle)%0D%09end%20if%0Dend%20tell%0D%0Don%20displayThisNotification(thisTitle%2C%20thisNotification%2C%20thisSubtitle)%0D%09tell%20current%20application%0D%09%09display%20notification%20thisNotification%20with%20title%20thisTitle%20subtitle%20thisSubtitle%0D%09end%20tell%0Dend%20displayThisNotification%0D%0Don%20replaceWordWithStringInBodyText(searchWord%2C%20replacementString)%0D%09tell%20application%20%22Pages%22%0D%09%09activate%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20body%20text%0D%09%09%09%09--%20start%20at%20the%20end%20and%20go%20to%20the%20beginning%0D%09%09%09%09repeat%20with%20i%20from%20the%20(count%20of%20paragraphs)%20to%201%20by%20-1%0D%09%09%09%09%09tell%20paragraph%20i%0D%09%09%09%09%09%09repeat%0D%09%09%09%09%09%09%09try%0D%09%09%09%09%09%09%09%09if%20exists%20searchWord%20then%0D%09%09%09%09%09%09%09%09%09set%20(last%20word%20where%20it%20is%20searchWord)%20to%20replacementString%0D%09%09%09%09%09%09%09%09else%0D%09%09%09%09%09%09%09%09%09exit%20repeat%0D%09%09%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09%09on%20error%20errorMessage%0D%09%09%09%09%09%09%09%09exit%20repeat%0D%09%09%09%09%09%09%09end%20try%0D%09%09%09%09%09%09end%20repeat%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09return%20true%0D%09end%20tell%0Dend%20replaceWordWithStringInBodyText"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> &quot;This script will replace all occurences of &ldquo;Alice&rdquo; and &ldquo;Alice's&rdquo; with &ldquo;Wanda&rdquo; and &ldquo;Wanda's&rdquo; in the &ldquo;Alice in Wonderland&rdquo; example Pages document.&quot; <span class="codelibraryparameter">with icon</span> 1 <span class="codelibraryparameter">buttons</span> {&quot;Cancel&quot;, &quot;Download Document&quot;, &quot;Begin&quot;} <span class="codelibraryparameter">default button</span> 3</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codelibraryclass">result</span> <b>is</b> &quot;Download Document&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">open location</span> &quot;http://iworkautomation.com/pages/body-text-replace.html&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">replaceWordWithStringInBodyText</span>(&quot;Alice&quot;, &quot;Wanda&quot;)</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTitle</span> <b>to</b> &quot;Pages: Find &amp; Change&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisNotification</span> <b>to</b> &quot;Beginning 2nd replacement&hellip;&quot;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSubtitle</span> <b>to</b> &quot;&ldquo;Alice&rdquo; to &ldquo;Wanda&rdquo; completed.&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">displaythisNotification</span>(<span class="codevariable">thisTitle</span>, <span class="codevariable">thisNotification</span>, <span class="codevariable">thisSubtitle</span>)</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">replaceWordWithStringInBodyText</span>(&quot;Alice's&quot;, &quot;Wanda's&quot;)</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisNotification</span> <b>to</b> &quot;Replacement completed: &ldquo;Alice's&rdquo; to &ldquo;Wanda's&rdquo;&quot;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSubtitle</span> <b>to</b> &quot;&quot;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>my</b> <span class="codevariable">displaythisNotification</span>(<span class="codevariable">thisTitle</span>, <span class="codevariable">thisNotification</span>, <span class="codevariable">thisSubtitle</span>)</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">displaythisNotification</span>(<span class="codevariable">thisTitle</span>, <span class="codevariable">thisNotification</span>, <span class="codevariable">thisSubtitle</span>)</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">current application</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">display notification</span> <span class="codevariable">thisNotification</span> <span class="codelibraryparameter">with title</span>  <span class="codevariable">thisTitle</span> subtitle <span class="codevariable">thisSubtitle</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">displaythisNotification</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><b>on</b> <span class="codevariable">replaceWordWithStringInBodyText</span>(<span class="codevariable">searchWord</span>, <span class="codevariable">replacementString</span>)</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- start at the end and go to the beginning</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from the</b> (<span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">paragraphs</span>) <b>to</b> 1 <b>by</b> -1</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">paragraph</span> <span class="codevariable">i</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>repeat</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>try</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>if</b> <span class="codelibrarycommand">exists</span> <span class="codevariable">searchWord</span> <b>then</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:90px;">&nbsp;</span><b>set</b> (<b>last</b> <span class="codelibraryclass">word</span> <b>where it is</b> <span class="codevariable">searchWord</span>) <b>to</b> <span class="codevariable">replacementString</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:90px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>on error</b> <span class="codevariable">errorMessage</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:80px;">&nbsp;</span><b>exit repeat</b></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>end try</b></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>return</b> <span class="codeenumeration">true</span></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><b>end</b> <span class="codevariable">replaceWordWithStringInBodyText</span></td></tr>
+			</table>
+			
+			<p class="segment-note"><b>TIP</b>:For another example of the use of this sub-routine for performing text replacement, view the <a href="examples-mail-merge.html">Mail Merge example</a>.</p>
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="body-text.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li class="hi"><a href="body-text.html">Body Text</a></li>
+				<li class="navListSectionItem"><a href="body-text-basics.html">Working with Text</a></li>
+				<li class="navListSectionItemSelected">Find &amp; Replace</li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

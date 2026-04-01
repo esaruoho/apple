@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" >The Single-Page Web App</div>
+			
+			<p class="content-intro">The <b>Single-Page Web-App</b> incorporates one of the simplest but most useful webpage designs, placing the focus on the content rather than the page layout. The compact layout provides limited use of supporting media (images, audio, video), combined with a vertical scrolling one-column display of the story. Even though it is simple to execute, this system service still offers detailed controls for setting type parameters, paper style, and the ability to assign a Creative Commons license to the work.</p>
+			
+			<p class="content-subhead">The Layout Design</p>
+					
+			<p>The Single-Page Web-App is a publishing design well suited for short papers and stories that require speedy publishing in an attractive layout.</p>
+		
+			<table style="width:624px;background-color:#ccc;border:0;">
+				<tr style="text-align:center;color:black;"><td>TEXT</td><td>IMAGE</td><td>AUDIO</td><td>VIDEO</td></tr>
+				<tr>
+					<td><a href="javascript:void(0);" style="color:gray;" onclick="PopupCenterWithScrolls('sp-text/index.html', 'viewer-window-single-page-app',768,1024);"><img src="gfx/sp-text-th.jpg" width="150" border="1" alt="Single Page Text"></a></td>
+					<td><a href="javascript:void(0);" style="color:gray;" onclick="PopupCenterWithScrolls('sp-image/index.html', 'viewer-window-single-page-app',768,1024);"><img src="gfx/sp-image-th.jpg" width="150" border="1" alt="Single Page Image"></a></td>
+					<td><a href="javascript:void(0);" style="color:gray;" onclick="PopupCenterWithScrolls('sp-audio/index.html', 'viewer-window-single-page-app',768,1024);"><img src="gfx/sp-audio-th.jpg" width="150" border="1" alt="Single Page Audio"></a></td>
+					<td><a href="javascript:void(0);" style="color:gray;" onclick="PopupCenterWithScrolls('sp-video/index.html', 'viewer-window-single-page-app',768,1024);"><img src="gfx/sp-video-th.jpg" width="150" border="1" alt="Single Page Video"></a></td>
+				</tr>
+				<tr style="text-align:center;color:black;"><td>iPad tap <a href="sp-text/index.html">HERE</a></td><td>iPad tap <a href="sp-image/index.html">HERE</a></td><td>iPad tap <a href="sp-audio/index.html">HERE</a></td><td>iPad tap <a href="sp-video/index.html">HERE</a></td></tr>
+			</table>
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >Installation</div>
+			<p>Installing the various system components to enable the use of the <b>Single-Page Web App</b> service is an easy process, involving double-clicking some files in the Finder.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;<a href="Single-Page-App-Installs.zip">DOWNLOAD</a> the ZIP archive containing the installation items.</p>
+			
+			<p>Unpacking the downloaded ZIP archive will create a folder containing the system components for creating a single-page web-app (see below):</p>
+			
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Create Single-Page iPad Web App</b> Automator action</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Create Single-Page Web-App with Clipboard Text</b> contextual system service</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Create Single-Page Web-App with Selected Text</b> contextual system service</p>
+							
+			<img alt="SP-Install-01" src="gfx/SP-Install-01.png" width="624" height="420" class="centered">
+			
+			<p class="content-subhead">Install the Automator Action</p>
+			
+			<p>The first step of the installation process is to install the Automator action file that contains the code and interface for creating a web-application. Its file is the item in the folder whose icon displays ACTION.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;To install the Automator action, double-click its file icon <span class="numeric-callout">&nbsp;1&nbsp;</span> (see above).</p>
+			
+			<p>A confirmation dialog will appear (see below), asking for your approval to install the Automator action:</p>
+			
+			<img alt="SP-Install-02" src="gfx/SP-Install-02.png" width="624" height="309" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Install</b> button in the confirmation dialog to begin the installation process.</p>
+			
+			<p>The operating system will install the Automator action file by automatically moving it into the <b>Automator</b> folder within your home <b>Library</b> folder. A second dialog will confirm the installation (see below). The action is now part of the installed Automator action library, and will appear in the action library in any Automator document window.</p>
+			
+			<img alt="SP-Install-03" src="gfx/SP-Install-03.png" width="624" height="268" class="centered">
+			
+			<p class="content-subhead">Install the System Services</p>
+			
+			<p>As mentioned at the start of this segment, <b>Automator actions</b> are used by <b>system services</b> to perform tasks, such as creating a web-application from selected textual content. The next step in the installation process is to install the downloaded system services.
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Double-click the icon for the system service file titled <b>Create Single-Page Web-App with Clipboard Text</b> <span class="numeric-callout">&nbsp;2&nbsp;</span> (see above).</p>
+			
+			<p>A security dialog will appear, informing you that the Automator service workflow was downloaded from the internet. <b>NOTE</b>: the dialog incorrectly mislabels the workflow as an application.
+			
+			<img alt="SP-Install-04" src="gfx/SP-Install-04.png" width="595" height="323" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Open</b> button in the security dialog (see above) to continue the installation process for the system service.</p>
+			
+			<p>The Service Installer dialog appears, asking you to confirm the installation of the <b>Create Single-Page Web-App with Clipboard Text</b> contextual system service: (see below).</p>
+
+			<img alt="SP-Install-05" src="gfx/SP-Install-05.png" width="624" height="309" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Install</b> button to install the system service. (see above)</p>
+			
+			<p>A dialog will appear, confirming the installation of the service. (see below)</p>
+			
+			<img alt="SP-Install-08" src="gfx/SP-Install-08.png" width="624" height="268" class="centered">
+			
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Double-click the icon for the system service file titled <b>Create Single-Page Web-App with Selected Text</b> <span class="numeric-callout">&nbsp;3&nbsp;</span> (see above).</p>
+			
+			<p>A security dialog appears, informing you that the service was downloaded from the internet. <b>NOTE</b>: the dialog incorrectly identifies the service as an application.</p>
+			
+			
+			<img alt="SP-Install-06" src="gfx/SP-Install-06.png" width="595" height="323" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Open</b> button in the security dialog to continue the installation process.</p>
+			
+			<p>The Service Installer dialog appears, asking you to confirm the installation of the <b>Create Single-Page Web-App with Selected Text</b> contextual system service: (see below).</p>
+			
+			<img alt="SP-Install-07" src="gfx/SP-Install-07.png" width="624" height="309" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Install</b> button to install the system service. (see above)</p>
+			
+			<p>A dialog will appear, confirming the installation of the service. (see below)</p>
+			
+			<img alt="SP-Install-08" src="gfx/SP-Install-08.png" width="624" height="268" class="centered">
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, we&rsquo;ll examine the interface for the Automator action that creates the HTML content.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="05.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Multi-Column Article</a></li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li><a href="03.html">Multi-Column Article: Demo</a></li>
+				<li class="hi">Single-Page Web App</li>
+				<li><a href="05.html">Single-Page Web-App: Interface</a></li>
+				<li><a href="06.html">Single-Page Web-App: Demo</a></li>
+				<li><a href="07.html">Desktop Web-Apps</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>The second tutorial is also about quickly creating attractive publications that incorporate a limited amount of supporting media.</p>
+			
+			<p>As with the first tutorial, the focus of the featured one-page design is on the text content, with optional media items (images, audio, video) taking a supporting role to the main story, paper, or report.</p>
+			
+			<p>Have the attendees view the variations of the example document, and then discuss their impressions of the single-page document design that scrolls vertically rather than horizontally.</p>
+			
+			<p>After the initial discussion, guide them through the installation of the automation components.</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<p>Continue the workshop discussion by focusing on the use of a simplified layout design such as the Single-Page publication.</p>
+			
+			<ol type="1">
+				<li>Ask attendees if they have viewed sites that use this type of page layout.</li>
+				<li>Discuss the use of simplified HTML templates, with limited use of supporting media. Do they put the focus on the content rather than its presentation?</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>File Conversion</h2>
+		
+		<p>When working with images, it is very common to make duplicates in various file formats and to convert images between formats.  The <span class="dictionary-term">save</span> command in Image Events can accomplish this easily.</p>
+		
+		<p>From the Image Events scripting dictionary:</p>
+		
+		<p class="dictionary"><b>save</b> v : Save an image to a file in one of various formats<br>
+		<span class="dictionary-term">save</span> (reference) : the object for the command<br>
+		<span class="dictionary-indent-01">[<span class="dictionary-term">as</span> (BMP/JPEG/JPEG2/PICT/PNG/PSD/QuickTime Image/TIFF)]: file type in which to save the image (default is to make no change)</span><br>
+		<span class="dictionary-indent-01">[<span class="dictionary-term">icon</span> (boolean)]: Shall an icon be added? (default is false )</span><br>
+		<span class="dictionary-indent-01">[<span class="dictionary-term">in</span> (disk item)]: file path in which to save the image, in HFS or POSIX form</span><br>
+		<span class="dictionary-indent-01">[<span class="dictionary-term">PackBits</span> (boolean)]: Are the bytes to be compressed with PackBits? (default is false, applies only to TIFF)</span><br>
+		<span class="dictionary-indent-02">--> alias reference</span></p>
+		
+		<p>The supported file formats for <i>reading</i> an image with the Image Events application are: PICT, BMP, QuickTime Image, GIF, JPEG, MacPaint, JPEG2, SGI, PSD, TGA, Text, PDF, PNG, and TIFF.</p>
+		
+		<p>The supported file formats for <i>saving</i> an image with the Image Events application are: JPEG2, TIFF, JPEG, PICT, BMP, PSD, PNG, and QuickTime Image.</p>
+		
+		<p class="note"><b>IMPORTANT</b>: when saving image data in a format other than its original format, always save the image data to a new file, do not attempt to save the image data into the existing source file.</p>
+
+		<p>Here&rsquo;s a script that relies on user-interaction to convert a chosen image file to a TIFF image:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20target_file%20to%20%28choose%20file%20name%20default%20name%20%22newimage%2Etif%22%29%0D%2D%2D%20convert%20file%20reference%20in%20alias%20format%20to%20path%20string%0Dset%20the%20target_path%20to%20the%20target_file%20as%20Unicode%20text%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20save%20in%20new%20file%0D%09%09save%20this_image%20as%20TIFF%20in%20target_path%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that save a copy of an image in TIFF format.</span><br><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">target_file</span> <b>to</b> (choose file name default name &quot;newimage.tif&quot;)<BR>
+<span class="codecomment">-- convert file reference in alias format to path string</span><BR>
+<b>set the</b> <span class="codevariable">target_path</span> to <b>the</b> <span class="codevariable">target_file</span> <b>as</b> Unicode text<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save in new file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>as</b> TIFF <b>in</b> <span class="codevariable">target_path</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+
+		<p>Note in the previous script that the reference to the destination file must be converted to an HFS path string or POSIX path, as the in parameter of the save command will not accept file references generated by methods other than its own Disk-Folder-File suite.</p>
+		
+		
+		<p>Here&rsquo;s a script that &ldquo;converts&rdquo; an image to another format by saving a copy of the image in the same parent directory as the source image and then deleting the original image. Note that the derive_filename sub-routine is particularly useful for determing the name for the new file based on the original filename using a different name extension, such as tif, jpg, etc. Use it in your scripts when you need to create or save a file which may have pre-existing copies in the destination folder.</p>
+		
+		<p>Be sure to change the value of the <span class="inlinecode">new_format</span> and <span class="inlinecode">nme_ext</span> properties to the your desired file format and name extension.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09set%20the%20new_format%20to%20TIFF%0D%09%09set%20the%20nme_ext%20to%20%22tif%22%0D%09%09%2D%2D%20derive%20new%20name%20for%20the%20new%20image%20file%0D%09%09copy%20my%20derive_filename%28this_file%2C%20nme_ext%2C%20%22%2D%22%2C%20%22%22%29%20to%20%7Bnew_name%2C%20target_HFSpath%7D%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20save%20in%20new%20file%2E%20The%20result%20is%20a%20file%20ref%20to%20the%20new%20file%0D%09%09set%20the%20new_image%20to%20save%20this_image%20as%20new_format%20in%20file%20target_HFSpath%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09tell%20application%20%22Finder%22%0D%09%09%2D%2D%20delete%20the%20original%20file%0D%09%09delete%20this_file%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try%0D%0Don%20derive_filename%28this_item%2C%20new_extension%2C%20increment_separator%2C%20target_folder%29%0D%09%2D%2D%20A%20sub%2Droutine%20used%20for%20deriving%20the%20name%20and%20path%20of%20a%20new%20file%20using%20the%20name%20of%20an%20existing%20file%0D%09%2D%2D%20Pass%20in%20file%20ref%20in%20alias%20format%2C%20the%20new%20name%20extension%2C%20an%20increment%20separator%2C%20and%20any%20target%20directory%20%28in%20alias%20format%29%0D%09%2D%2D%20Name%20and%20HFS%20path%20for%20new%20file%20are%20returned%2E%20The%20name%20is%20incremented%20if%20a%20file%20exists%20in%20the%20target%20location%2E%0D%09%2D%2D%20Pass%20a%20null%20string%20for%20the%20target%20directory%20to%20use%20the%20item%27s%20parent%20directory%0D%09%2D%2D%20Pass%20a%20null%20string%20for%20the%20new%20name%20extension%20to%20use%20the%20item%27s%20current%20name%20extension%0D%09tell%20application%20%22Finder%22%0D%09%09if%20target_folder%20is%20%22%22%20then%0D%09%09%09set%20the%20target_folder%20to%20the%20container%20of%20this_item%0D%09%09end%20if%0D%09%09set%20the%20file_name%20to%20the%20name%20of%20this_item%0D%09%09set%20file_extension%20to%20the%20name%20extension%20of%20this_item%0D%09%09if%20the%20file_extension%20is%20%22%22%20then%0D%09%09%09set%20the%20trimmed_name%20to%20the%20file_name%0D%09%09%09set%20extension_separator%20to%20%22%22%0D%09%09else%0D%09%09%09set%20the%20trimmed_name%20to%20text%201%20thru%20%2D%28%28length%20of%20file_extension%29%20%2B%202%29%20of%20the%20file_name%0D%09%09%09set%20extension_separator%20to%20%22%2E%22%0D%09%09end%20if%0D%09%09if%20the%20new_extension%20is%20%22%22%20then%0D%09%09%09set%20target_name%20to%20file_name%0D%09%09%09set%20target_extension%20to%20file_extension%0D%09%09else%0D%09%09%09set%20target_extension%20to%20new_extension%0D%09%09%09set%20target_name%20to%20%28the%20trimmed_name%20%26%20extension_separator%20%26%20target_extension%29%20as%20Unicode%20text%0D%09%09end%20if%0D%09%09if%20%28exists%20document%20file%20target_name%20of%20target_folder%29%20then%0D%09%09%09set%20the%20name_increment%20to%201%0D%09%09%09repeat%0D%09%09%09%09set%20the%20new_name%20to%20%28the%20trimmed_name%20%26%20increment_separator%20%26%20%28name_increment%20as%20Unicode%20text%29%20%26%20extension_separator%20%26%20target_extension%29%20as%20Unicode%20text%0D%09%09%09%09if%20not%20%28exists%20document%20file%20new_name%20of%20the%20target_folder%29%20then%0D%09%09%09%09%09set%20the%20target_HFSpath%20to%20%28%28target_folder%20as%20Unicode%20text%29%20%26%20new_name%29%0D%09%09%09%09%09return%20%7Bnew_name%2C%20target_HFSpath%7D%0D%09%09%09%09else%0D%09%09%09%09%09set%20the%20name_increment%20to%20the%20name_increment%20%2B%201%0D%09%09%09%09end%20if%0D%09%09%09end%20repeat%0D%09%09else%0D%09%09%09set%20the%20target_HFSpath%20to%20%28%28target_folder%20as%20Unicode%20text%29%20%26%20target_name%29%0D%09%09%09return%20%7Btarget_name%2C%20target_HFSpath%7D%0D%09%09end%20if%0D%09end%20tell%0Dend%20derive_filename"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for replacing an image file with another version in a different format. THis example uses TIFF as the target format.</span><br><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_format</span> <b>to</b> TIFF<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">nme_ext</span> <b>to</b> &quot;tif&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- derive new name for the new image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy my</b> <span class="codevariable">derive_filename</span>(<span class="codevariable">this_file</span>, <span class="codevariable">nme_ext</span>, &quot;-&quot;, &quot;&quot;) <b>to</b> {<span class="codevariable">new_name</span>, <span class="codevariable">target_HFSpath</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save in new file. The result is a file ref to the new file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_image</span> <b>to</b> save <span class="codevariable">this_image</span> <b>as</b> <span class="codevariable">new_format</span> <b>in</b> file <span class="codevariable">target_HFSpath</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- delete the original file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>delete <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b><BR>
+<BR>
+<b>on</b> <span class="codevariable">derive_filename</span>(<span class="codevariable">this_item</span>, <span class="codevariable">new_extension</span>, <span class="codevariable">increment_separator</span>, <span class="codevariable">target_folder</span>)<BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- a sub-routine used for deriving the name and path of a new file using the name of an existing file</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- Pass in file ref in alias format, the new name extension, an increment separator, and any target directory (in alias format)</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- Name and HFS path for new file are returned. The name is incremented if a file exists in the target location.</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- Pass a null string for the target directory to use the item's parent directory</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- Pass a null string for the new name extension to use the item's current name extension</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">target_folder</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_folder</span> <b>to the</b> container <b>of</b> <span class="codevariable">this_item</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">file_name</span> <b>to the</b> name <b>of</b> <span class="codevariable">this_item</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">file_extension</span> <b>to the</b> name extension <b>of</b> <span class="codevariable">this_item</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">file_extension</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">trimmed_name</span> <b>to the</b> <span class="codevariable">file_name</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">extension_separator</span> <b>to</b> &quot;&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">trimmed_name</span> <b>to</b> text 1 <b>thru</b> -((length <b>of</b> <span class="codevariable">file_extension</span>) + 2) <b>of the</b> <span class="codevariable">file_name</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">extension_separator</span> <b>to</b> &quot;.&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">new_extension</span> <b>is</b> &quot;&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">target_name</span> <b>to</b> <span class="codevariable">file_name</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">target_extension</span> <b>to</b> <span class="codevariable">file_extension</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">target_extension</span> <b>to</b> <span class="codevariable">new_extension</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">target_name</span> <b>to</b> (<b>the</b> <span class="codevariable">trimmed_name</span> &amp; <span class="codevariable">extension_separator</span> &amp; <span class="codevariable">target_extension</span>) <b>as</b> Unicode text<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> (exists document file <span class="codevariable">target_name</span> <b>of</b> <span class="codevariable">target_folder</span>) <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">name_increment</span> <b>to</b> 1<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>repeat</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_name</span> <b>to</b> (<b>the</b> <span class="codevariable">trimmed_name</span> &amp; <span class="codevariable">increment_separator</span> &amp; (<span class="codevariable">name_increment</span> <b>as</b> Unicode text) &amp; <span class="codevariable">extension_separator</span> &amp; <span class="codevariable">target_extension</span>) <b>as</b> Unicode text<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>if not</b> (exists document file <span class="codevariable">new_name</span> <b>of the</b> <span class="codevariable">target_folder</span>) <b>then</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_HFSpath</span> to ((<span class="codevariable">target_folder</span> <b>as</b> Unicode text) &amp; <span class="codevariable">new_name</span>)<BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>return</b> {<span class="codevariable">new_name</span>, <span class="codevariable">target_HFSpath</span>}<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">name_increment</span> <b>to the</b> <span class="codevariable">name_increment</span> + 1<BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_HFSpath</span> to ((<span class="codevariable">target_folder</span> <b>as</b> Unicode text) &amp; <span class="codevariable">target_name</span>)<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>return</b> {<span class="codevariable">target_name</span>, <span class="codevariable">target_HFSpath</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>end</b> <span class="codevariable">derive_filename</span></p>
+
+		<p>You can use a variation of the previous file conversion script to create a thumbnail image from a source image for use on a website. Note that this script uses the <span class="inlinecode">derive_filename</span> sub-routine that is contained in the previous example.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09set%20the%20new_format%20to%20PNG%0D%09%09set%20the%20nme_ext%20to%20%22png%22%0D%09%09set%20the%20thumb_size%20to%20128%0D%09%09%2D%2D%20derive%20new%20name%20for%20the%20new%20image%20file%0D%09%09copy%20my%20derive_filename%28this_file%2C%20nme_ext%2C%20%22%2D%22%2C%20%22%22%29%20to%20%7Bnew_name%2C%20target_HFSpath%7D%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20scale%20to%20thumnail%20size%0D%09%09scale%20this_image%20to%20size%20thumb_size%0D%09%09%2D%2D%20save%20in%20new%20file%2E%20The%20result%20is%20a%20file%20ref%20to%20the%20new%20file%0D%09%09set%20the%20new_image%20to%20save%20this_image%20as%20new_format%20in%20file%20target_HFSpath%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0D%09tell%20application%20%22Finder%22%0D%09%09%2D%2D%20delete%20the%20original%20file%0D%09%09delete%20this_file%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%20buttons%20%7B%22Cancel%22%7D%20default%20button%201%0Dend%20try%0D%0Don%20derive_filename%28this_item%2C%20new_extension%2C%20increment_separator%2C%20target_folder%29%0D%09%2D%2D%20A%20sub%2Droutine%20used%20for%20deriving%20the%20name%20and%20path%20of%20a%20new%20file%20using%20the%20name%20of%20an%20existing%20file%0D%09%2D%2D%20Pass%20in%20file%20ref%20in%20alias%20format%2C%20the%20new%20name%20extension%2C%20an%20increment%20separator%2C%20and%20any%20target%20directory%20%28in%20alias%20format%29%0D%09%2D%2D%20Name%20and%20HFS%20path%20for%20new%20file%20are%20returned%2E%20The%20name%20is%20incremented%20if%20a%20file%20exists%20in%20the%20target%20location%2E%0D%09%2D%2D%20Pass%20a%20null%20string%20for%20the%20target%20directory%20to%20use%20the%20item%27s%20parent%20directory%0D%09%2D%2D%20Pass%20a%20null%20string%20for%20the%20new%20name%20extension%20to%20use%20the%20item%27s%20current%20name%20extension%0D%09tell%20application%20%22Finder%22%0D%09%09if%20target_folder%20is%20%22%22%20then%0D%09%09%09set%20the%20target_folder%20to%20the%20container%20of%20this_item%0D%09%09end%20if%0D%09%09set%20the%20file_name%20to%20the%20name%20of%20this_item%0D%09%09set%20file_extension%20to%20the%20name%20extension%20of%20this_item%0D%09%09if%20the%20file_extension%20is%20%22%22%20then%0D%09%09%09set%20the%20trimmed_name%20to%20the%20file_name%0D%09%09%09set%20extension_separator%20to%20%22%22%0D%09%09else%0D%09%09%09set%20the%20trimmed_name%20to%20text%201%20thru%20%2D%28%28length%20of%20file_extension%29%20%2B%202%29%20of%20the%20file_name%0D%09%09%09set%20extension_separator%20to%20%22%2E%22%0D%09%09end%20if%0D%09%09if%20the%20new_extension%20is%20%22%22%20then%0D%09%09%09set%20target_name%20to%20file_name%0D%09%09%09set%20target_extension%20to%20file_extension%0D%09%09else%0D%09%09%09set%20target_extension%20to%20new_extension%0D%09%09%09set%20target_name%20to%20%28the%20trimmed_name%20%26%20extension_separator%20%26%20target_extension%29%20as%20Unicode%20text%0D%09%09end%20if%0D%09%09if%20%28exists%20document%20file%20target_name%20of%20target_folder%29%20then%0D%09%09%09set%20the%20name_increment%20to%201%0D%09%09%09repeat%0D%09%09%09%09set%20the%20new_name%20to%20%28the%20trimmed_name%20%26%20increment_separator%20%26%20%28name_increment%20as%20Unicode%20text%29%20%26%20extension_separator%20%26%20target_extension%29%20as%20Unicode%20text%0D%09%09%09%09if%20not%20%28exists%20document%20file%20new_name%20of%20the%20target_folder%29%20then%0D%09%09%09%09%09set%20the%20target_HFSpath%20to%20%28%28target_folder%20as%20Unicode%20text%29%20%26%20new_name%29%0D%09%09%09%09%09return%20%7Bnew_name%2C%20target_HFSpath%7D%0D%09%09%09%09else%0D%09%09%09%09%09set%20the%20name_increment%20to%20the%20name_increment%20%2B%201%0D%09%09%09%09end%20if%0D%09%09%09end%20repeat%0D%09%09else%0D%09%09%09set%20the%20target_HFSpath%20to%20%28%28target_folder%20as%20Unicode%20text%29%20%26%20target_name%29%0D%09%09%09return%20%7Btarget_name%2C%20target_HFSpath%7D%0D%09%09end%20if%0D%09end%20tell%0Dend%20derive_filename"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that creates a thumbnail of the indicated image file.</span><br><br><br><b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_format</span> <b>to</b> PNG<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">nme_ext</span> <b>to</b> &quot;png&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">thumb_size</span> <b>to</b> 128<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- derive new name for the new image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy my</b> <span class="codevariable">derive_filename</span>(<span class="codevariable">this_file</span>, <span class="codevariable">nme_ext</span>, &quot;-&quot;, &quot;&quot;) <b>to</b> {<span class="codevariable">new_name</span>, <span class="codevariable">target_HFSpath</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- scale to thumnail size</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">thumb_size</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save in new file. The result is <span class="codevariable">a</span> file ref to the new file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">new_image</span> <b>to</b> save <span class="codevariable">this_image</span> <b>as</b> <span class="codevariable">new_format</span> <b>in</b> file <span class="codevariable">target_HFSpath</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- delete the original file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>delete <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;Cancel&quot;} default button 1<BR>
+<b>end try</b></p>
+		
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="09.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html" target="_self">Introduction</a></li>
+				<li><a href="01.html" target="_self">Image Properties</a></li>
+				<li><a href="02.html" target="_self">Flipping Images</a></li>
+				<li><a href="03.html" target="_self">Rotating Images</a></li>
+				<li><a href="04.html" target="_self">Scaling Images</a></li>
+				<li><a href="05.html" target="_self">Padding Images</a></li>
+				<li><a href="06.html" target="_self">Framing Images</a></li>
+				<li><a href="07.html" target="_self">Croping Images</a></li>
+				<li class="hi">File Conversion</li>
+				<li><a href="09.html" target="_self">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers: Making Tables</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Making Tables</div>
+										
+			<p>Tables are the heart of Numbers, and their creation is a common task that scripts perform. All it takes is a basic understanding of the relationship between tables and sheets.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Tables and Sheets</p>
+			
+			<p>Tables are elements of sheets. When creating a table, the script must address the sheet on which the table is to be created. Sheets can be addressed using any of these methods:</p>
+			
+			<ul>
+				<li>By sheet name, such as <b>sheet &quot;2014 Expenses&quot;</b></li>
+				<li>By sheet index number, such as <b>sheet 5</b></li>
+				<li>By using the document property <b>active sheet</b> to target the currently displayed sheet</li>
+				<li>By sheet object reference, possibly stored in a variable</li>
+			</ul>
+			
+			<p>Examples of addressing sheets is shown in the script below:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Addressing a Table&rsquo;s Parent Sheet</td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="dictionary-class">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- addressing a sheet by its name</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">sheet</span> &quot;2014 Expenses&quot;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- table making command goes here</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- addressing a sheet by its index value</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="dictionary-class">sheet</span> 5</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- table making command goes here</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- addressing the currently displayed sheet</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">active sheet</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- table making command goes here</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- addressing a stored reference to a specific sheet</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSheet</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="dictionary-class">sheet</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSheet</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- table making command goes here</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+			
+			<p>Many of the script examples in this section use the document property <b>active sheet</b> as the means of targeting the sheet the user is currently viewing.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+				
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Making a Default Table</div>
+						
+			<p>Tables are created using the <b>make</b> verb from the <span class="dictionary-suite">Standard Suite</span> of the <b>Numbers</b> scripting dictionary.</p>
+						
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">make</span>&nbsp;<span style="font-size: 12px;"><i>v&nbsp;</i>&nbsp;: Create a new object.</span></p>
+				<p class="dictionary-single-indent" style="margin-top:6px;"><b>make</b></p>
+				<p class="dictionary-double-indent"><span class="codelibraryparameter">new</span> <span class="dictionary-class">class</span> : The class of the new object.</p>
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">at location</span> <span class="dictionary-class">specifier</span> ] : The location at which to insert the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with data</span> <span class="dictionary-class">any</span> ] : The initial contents of the object.</p>	
+				<p class="dictionary-double-indent">[ <span class="codelibraryparameter">with properties</span> <span class="dictionary-class">record</span> ] : The initial values for properties of the object.</p>	
+				<p class="dictionary-double-indent">&rArr;&nbsp;<span class="dictionary-class">specifier</span> : The new object.</p>
+			</div>
+			
+			<p>Since <b>tables</b> are an element of a <b>sheet</b>, which in turn is an element of a <b>document</b>, the table creation statement containing the <b>make</b> verb (08) must reflect this hierarchy, by occurring within nested <b>tell blocks</b> addressing the parent <b>sheet</b> (07-09) and its parent <b>document</b> (06-10).</p>
+			
+			<p>Note the use of the <b>document</b> property <b>active sheet</b> (07), the value of which, is the <b>sheet</b> whose content is currently being displayed in the <b>document</b>. This generic property allows scripts to work correctly, regardless of which sheet is currently displayed in the document window.</p>
+			
+			<p>When the <b>make</b> verb is used (08), it will return a reference, to the newly created table, which can be stored in a variable (<span class="codevariable">thisTable</span>) for later use in the script.</p>
+			
+
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Table on Active Sheet</td></tr>
+				<tr><td colspan="3" class="encoed-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Numbers%22%0D%09activate%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20the%20front%20document%0D%09%09tell%20active%20sheet%0D%09%09%09set%20thisTable%20to%20make%20new%20table%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">active sheet</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: SCRIPT -->
+				
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Indicating Initial Row and Column Counts</div>
+						
+			<p>To define the number of initial rows and columns for the created table, use the optional <b>with properties</b> parameter of the <b>make</b> verb. Simply follow the parameter with an AppleScript record containing colon-delimited pairings of the property names and their initial values (see 13).</p>
+			
+			<p>In the script example below, the property values are stored within variables included in the parameter&rsquo;s record. This optional technique is useful for passing values that are generated dynamically.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: the character &not; (placed at the ends of lines 11 &amp; 12) is used to indicate that lines 11-13 are part of a single script statement, which has been segmented and placed on separate lines, for the purpose of fitting within the width constrictions of this column.</p>
+			
+
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Table with N-Rows &amp; N-Columns on Active Sheet</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20columnCount%20to%204%0Dset%20the%20rowCount%20to%206%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20document%201%0D%09%09tell%20active%20sheet%0D%09%09%09set%20thisTable%20to%20make%20new%20table%20with%20properties%20%7Bcolumn%20count%3AcolumnCount%2C%20row%20count%3ArowCount%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">columnCount</span> <b>to</b> 4</td><tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">rowCount</span> <b>to</b> 6</td><tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">active sheet</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeenumeration">column count</span>:<span class="codevariable">columnCount</span>, <span class="codeenumeration">row count</span>:<span class="codevariable">rowCount</span>}</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>
+
+		</div>
+		<!-- END SEGMENT: SCRIPT -->
+		
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">The Table Name Property</div>
+		
+			<p>The <b>name</b> property of a table can be used to get or set the name assigned to the table. The value of this property can be set during table creation, by including the property and its value in the AppleScript record provided as the value for the <b>with properties</b> parameter of the <b>make</b> verb (see line 15 below).</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Named Table on Blank Active Sheet</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20columnCount%20to%204%0Dset%20the%20rowCount%20to%206%0Dset%20the%20tableName%20to%20%22Project%20Costs%22%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20document%201%0D%09%09set%20thisSheet%20to%20make%20new%20sheet%0D%09%09tell%20thisSheet%0D%09%09%09delete%20every%20table%0D%09%09%09set%20thisTable%20to%20make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bcolumn%20count%3AcolumnCount%2C%20row%20count%3ArowCount%2C%20name%3AtableName%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">columnCount</span> <b>to</b> 4</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">rowCount</span> <b>to</b> 6</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">tableName</span> <b>to</b> &quot;Project Costs&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> document 1</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSheet</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">sheet</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSheet</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delete</span> <b>every</b> table</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> thisTable <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codelibraryparameter">column count</span>:<span class="codevariable">columnCount</span>, <span class="codelibraryparameter">row count</span>:<span class="codevariable">rowCount</span>, <span class="codelibraryparameter">name</span>:<span class="codevariable">tableName</span>}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+			</table>		
+			
+			<p class="content-subhead" role="heading" aria-level="2">Table Names and Parent Sheets</p>
+			
+			<p>It is important to note that the value of the <b>name</b> property of a table, must be unique to its parent <b>sheet</b>. Each table on a sheet must have a name different than the other tables on the sheet. Documents can have multiple tables named the same name, but sheets cannot.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: creating a <span class="codelibraryclass">table</span> on a <span class="codelibraryclass">sheet</span> that contains a <span class="codelibraryclass">table</span> with the same name, will cause a script error. Use the sub-routine provided in the script below, to avoid a name conflict.</p>
+			
+			<p>From a script perspective, the required uniqueness of a table name only becomes an issue, if you are writing a script that adds a table to an existing sheet. In such cases, it is good scripting practice to have the script check for the names of any existing tables on the target sheet, and to alter the desired name if necessary.</p>
+			
+			<p>The sub-routine <span class="codevariable">incrementTableNameIfNeeded</span> (lines 19-39 below), can be used to avoid table name conflicts by adding a numeric suffix, if needed, to the desired table name.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Make New Named Table on Active Sheet</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=set%20the%20columnCount%20to%204%0Dset%20the%20rowCount%20to%206%0Dset%20the%20tableName%20to%20%22Project%20Costs%22%0D%0Dtell%20application%20%22Numbers%22%0D%09activate%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20the%20front%20document%0D%09%09tell%20active%20sheet%0D%09%09%09set%20tableName%20to%20my%20incrementTableNameIfNeeded(tableName%2C%20%22-%22)%0D%09%09%09set%20thisTable%20to%20make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%7Bcolumn%20count%3AcolumnCount%2C%20row%20count%3ArowCount%2C%20name%3AtableName%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell%0D%0Don%20incrementTableNameIfNeeded(thisTableName%2C%20thisDivider)%0D%09--%20a%20routine%20for%20deriving%20a%20unique%20table%20name%20based%20on%20a%20provided%20table%20name%0D%09tell%20application%20%22Numbers%22%0D%09%09tell%20the%20front%20document%0D%09%09%09tell%20active%20sheet%0D%09%09%09%09--%20get%20a%20list%20of%20the%20names%20of%20the%20tables%20on%20the%20active%20sheet%0D%09%09%09%09set%20the%20theseTableNames%20to%20the%20name%20of%20every%20table%0D%09%09%09%09set%20the%20testTableName%20to%20the%20thisTableName%0D%09%09%09%09set%20incrementor%20to%200%0D%09%09%09%09--%20increment%20the%20passed%20name%2C%20if%20needed%0D%09%09%09%09repeat%20until%20testTableName%20is%20not%20in%20the%20theseTableNames%0D%09%09%09%09%09set%20incrementor%20to%20incrementor%20%2B%201%0D%09%09%09%09%09set%20the%20testTableName%20to%20%C2%AC%0D%09%09%09%09%09%09the%20thisTableName%20%26%20thisDivider%20%26%20(incrementor%20as%20string)%0D%09%09%09%09end%20repeat%0D%09%09%09%09--%20return%20the%20non-conflicting%20table%20name%0D%09%09%09%09return%20the%20testTableName%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20incrementTableNameIfNeeded"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">columnCount</span> <b>to</b> 4</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">rowCount</span> <b>to</b> 6</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><b>set the</b> <span class="codevariable">tableName</span> <b>to</b> &quot;Project Costs&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">active sheet</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">tableName</span> <b>to my</b> <span class="codevariable">incrementTableNameIfNeeded</span>(<span class="codevariable">tableName</span>, &quot;-&quot;)</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span>{<span class="codeenumeration">column count</span>:<span class="codevariable">columnCount</span>, <span class="codeenumeration">row count</span>:<span class="codevariable">rowCount</span>, <span class="codeenumeration">name</span>:<span class="codevariable">tableName</span>}</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">incrementTableNameIfNeeded</span>(<span class="codevariable">thisTableName</span>, <span class="codevariable">thisDivider</span>)</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- a routine for deriving a unique table name based on a provided table name</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">application</span> &quot;Numbers&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">active sheet</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- get a list of the names of the tables on the active sheet</span></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">theseTableNames</span> <b>to the</b> name <b>of every</b> table</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">testTableName</span> <b>to the</b> <span class="codevariable">thisTableName</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementor</span> <b>to</b> 0</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- increment the passed name, if needed</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat until</b> <span class="codevariable">testTableName</span> <b>is not in</b> <span class="codevariable">theseTableNames</span></td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">incrementor</span> <b>to</b> <span class="codevariable">incrementor</span> + 1</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codevariable">testTableName</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>the</b> <span class="codevariable">thisTableName</span> &amp; <span class="codevariable">thisDivider</span> &amp; (<span class="codevariable">incrementor</span> <b>as</b> string)</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- return the non-conflicting table name</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>return the</b> <span class="codevariable">testTableName</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">incrementTableNameIfNeeded</span></td></tr>
+			</table>		
+		</div>		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table-edit.html" target="_self">CONTINUE</a></p>
+	
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li class="hi"><a href="table.html">Table</a></li>
+				<li class="navListSectionItemSelected">Making Tables</li>
+				<li class="navListSectionItem"><a href="table-edit.html">Editing Tables</a></li>
+				<li class="navListSectionItem"><a href="table-populate.html">Populating Tables</a></li>
+				<li class="navListSectionItem"><a href="table-read-file.html">Reading Data from File</a></li>
+				<li class="navListSectionItem"><a href="table-delete.html">Deleting Tables</a></li>
+				<li class="navListSectionItem"><a href="table-sort.html">Sorting Tables</a></li>
+				<li class="navListSectionItem"><a href="table-transpose.html">Transposing Tables</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

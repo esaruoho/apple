@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Sharing Content Locally</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AirDrop, WiFi, AppleScript, Automation, Automator, Services, Share">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Sharing Content</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: ASSIGN SHORTCUTS TO SERVICES -->
+		<div class="content-segment">
+		<div class="segment-header" >AirDrop</div>
+			<img src="gfx/airdrop-512.png" alt="airdrop-512" width="128" height="128" class="left">
+			<p class="content-intro">AirDrop lets you quickly send files, clippings, webpages, and more to anyone near you—wirelessly. AirDrop doesn&rsquo;t require passwords, setup, or special settings. It makes sharing with neighbors as simple as dragging and dropping.</p>
+			
+			<p>Introduced in OS&nbsp;X v10.6 Lion, AirDrop uses the built-in WiFi hardware in Apple computers to allow them to easily share files, without the need of a Wi-Fi network or any special setup or configuration.</p>
+			
+			<p>The following steps detail how to send a file between two computers using AirDrop:</p>
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Enabling AirDrop on the receiver&rsquo;s computer</div>
+			<p>The first step is for the person who will receive the file, to make their computer visible to other nearby computers, via AirDrop. This is done by opening the AirDrop viewer window.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: a computer will only be visible to other computers via AirDrop, when the AirDrop window is open in the Finder.</p>
+			
+			<p>An AirDrop viewer window can be opened using any of these methods:</p>
+			
+			<ul style="color:black;font-size:120%;margin-bottom:24px;">
+				<li style="margin-bottom:4px;">Clicking the AirDrop icon in a Finder window&rsquo;s sidebar (see below)</li>
+				<img alt="airdrop-sidebar" src="gfx/airdrop-sidebar.jpg" height="31">
+				<li style="margin-bottom:4px;">Choosing <b>AirDrop</b> from the Finder&rsquo;s <b>Go</b> menu (introduced in OS X 10.8.1)</li>
+				<li style="margin-bottom:4px;">By pressing <b>Shift-Command-R</b> (<span style="font-family:'AppleSDGothicNeo-Bold','Lucida Grande',Helvetica;">&#8679;</span>&#8984;R) while in the Finder</li>
+			</ul>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> On the receiver&rsquo;s computer, open the AirDrop viewer window.</p>
+
+			<img alt="airdrop-folder" src="gfx/airdrop-folder.png" width="624" class="centered">
+		
+			<p>A special window will open in the Finder, displaying the current user&rsquo;s picture or icon, and the icons of other AirDrop-enabled computers in the vicinity.</p>
+		</div>	
+			
+			
+		<div class="content-segment">
+		<div class="segment-header" >Initiating an AirDrop from the sender&rsquo;s computer</div>
+		
+			<p>The next step is for the sender to select a file on their computer and initiate an AirDrop of the file to the receiver&rsquo;s computer.</p>
+			
+			<p>The AirDrop of a file can be initiated using any of these methods:</p>
+			
+			<ul style="color:black;font-size:120%;margin-bottom:24px;">
+				<li style="margin-bottom:4px;">Drop the icon of the file to send, onto the receiver&rsquo;s icon displayed in an open AirDrop window.</li>
+				<li style="margin-bottom:4px;">In a Finder window, select the file to send, and press the <b>Share</b> button in the Finder window&rsquo;s toolbar to reveal the <b>Share</b> menu containing an <b>AirDrop</b> option.</li>
+				<img alt="share-menu" src="gfx/share-menu.png" width="149" height="105">
+				<li style="margin-bottom:4px;">In the Finder, click the file to send while holding down the <b>Control</b> key. From the forthcoming contextual menu, select <b>AirDrop</b> from the <b>Share</b> sub-menu. (see below)</li>
+			</ul>
+			
+			<img alt="AirDropMenu" src="gfx/AirDropMenu.png" width="528" class="centered" height="505">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> On the sender&rsquo;s computer, click the file to send while holding down the <b>Control</b> key. From the forthcoming contextual menu, select <b>AirDrop</b> from the <b>Share</b> sub-menu. (see above)</p>
+			
+			<p>A dialog will appear displaying the file&rsquo;s icon and a list of the other AirDrop-active computers in the vicinity. The dialog may initially appear blank (see below) while your computer is searching for other computers.</p>
+			
+			<img alt="airdrop-palette-01" src="gfx/airdrop-palette-01.png" width="458" class="centered" height="284">
+			
+			<p>In a few moments, a list of AirDrop-ready computers will be displayed in the dialog (see below).</p>
+			
+			<img alt="airdrop-palette-02" src="gfx/airdrop-palette-02.png" width="458" class="centered" height="284">
+
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span> Select the receiver&rsquo;s computer from the list, and click the <b>Send</b> button to begin the file transfer.</p>
+
+			<img alt="airdrop-palette-03" src="gfx/airdrop-palette-03.png" width="458" class="centered" height="284">
+			
+		</div>
+		
+		<div class="content-segment">
+		<div class="segment-header" >Approving an AirDrop on the receiver&rsquo;s computer</div>
+
+			<p>After the sender has initiated the AirDrop transfer, an dialog will appear in the receiver&rsquo;s AirDrop window (see below), asking the user to approve or decline the file transfer from the sender.</p>
+			
+			<img alt="sharing-request" src="gfx/sharing-request.png" width="624" class="centered">
+			
+			<p>The receiving user has two approval options:
+			
+			<ul style="color:black;font-size:120%;margin-bottom:24px;">
+				<li style="margin-bottom:4px;">Clicking the <b>Save</b> button in the dialog, will save the transfered file into the Downloads folder.</li>
+				<li style="margin-bottom:4px;">Clicking the <b>Save and Open</b> button will save the transfered file to the Downloads folder, and open it in the default application for the file type.</li>
+			</ul>
+			
+			<p class="do-this" style="margin-bottom:24px;"><span class="do-this">DO THIS &#9658;</span> On the receiver’s computer, click the <b>Save</b> button in the approval dialog.</p>
+
+		</div>
+		
+		
+		<div class="content-segment">
+		<div class="segment-header" >Completing the AirDrop from the sender&rsquo;s computer</div>
+
+			<p>On the sender’s computer, during the transfer, a progress dialog will be displayed (see below):</p>
+			
+			<img alt="airdrop-sending" src="gfx/airdrop-sending.png" width="478" class="centered" height="203">
+			
+			<p>The progress dialog will indicate when the transfer has completed (see below):</p>
+
+			<img alt="airdrop-done" src="gfx/airdrop-done.png" width="478" class="centered" height="203">
+
+		</div>
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li class="hi">AirDrop</li>
+				<li><a href="02.html">Public Folder</a></li>
+				<li><a href="03.html">Personal Web-Sharing</a></li>
+				<li><a href="05.html">Sharing Scenarios</a></li>
+			</ol>
+		</div>
+	
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+						
+			<p>In this segment, attendees will learn about how to share items using the built-in AirDrop feature of OS&nbsp;X.</p>
+			
+			<p>You will guide them through the process of both sending and receiving a file.</p>
+			
+			<p class="sidebar-subhead">Guided Tutorial</p>
+			
+			<ol style="margin-bottom:18px;">
+				<li>Begin by having all attendees click the thumbnail image below, to download the full-size image file their computers. Attendees will use the downloaded file as an item to AirDrop to each other.</li>
+			</ol>
+			
+				<a href="airdrop-image.zip"><img alt="airdrop-image" src="gfx/AirDrop-Image.jpg" width="220" height="146"></a>
+				
+			<ol start="2" style="margin-top:18px;">
+				<li>Instruct all attendees to open an AirDrop viewer window in the Finder on their computers. You can discuss the various methods used to open an AirDrop window.</li>
+				
+				<li>Point out to the attendees that the icons and/or images representing them in the AirDrop window, are controlled by the settings in the Users &amp; Groups system preference pane.</li>
+				
+				<li>Instruct the attendees to take turns using AirDrop to send and receive the downloaded image file to each other.</li>
+				
+				<li>To demonstrate AirDrop integration with Apple apps, have the attendees launch Photo Booth, take a snapshot of themselves, then select the snapshot, and use the Share menu in the Photo Booth window, to AirDrop the snapshot to other attendees. (see below):</li>
+				
+				
+			</ol>
+			
+<!-- 
+			<a href="gfx/photo-booth-sm.png" target="_blank"><img alt="photo-booth" src="gfx/photo-booth.png" width="220"></a>
+ -->
+			
+			<a href="javascript:void(0);"><img alt="photo-booth" src="gfx/photo-booth-sm.png" width="220" highresurl="gfx/photo-booth.png" caption="<b>To AirDrop a snapshot from Photo Booth, select the photo thumbnail, and select AirDrop from the Share popup menu.</b>" displaywidth="640" displayheight="602" onclick="void(0);lightboxThisImage(this);"></a>
+
+									
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Discuss how AirDrop is a computer-to-computer WiFi service for sharing files, that doesn’t require a network to work.</li>
+				
+				<li>Discuss possible usage scenarios and integration ideas.</li>
+			</ol>
+			
+			
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">COMPATIBLE COMPUTERS</h2>
+			<p>AirDrop support comes standard on all currently shipping Apple computers, as well as these older models:</p>
+
+			<ul style="color:black;">
+				<li>MacBook Pro (Late 2008) (white MacBook (Late 2008) does not support AirDrop.)</li>
+				<li>MacBook Air (Late 2010)</li>
+				<li>MacBook (Late 2008)</li>
+				<li>iMac (Early 2009)</li>
+				<li>Mac Mini (Mid 2010)</li>
+				<li>Mac Pro (Mid 2010; Early 2008 or Early 2009 with AirDrop-supporting AirPort Extreme card)</li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

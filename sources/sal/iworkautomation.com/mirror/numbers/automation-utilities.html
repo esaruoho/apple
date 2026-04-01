@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Numbers</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting, tables">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Numbers: Doing crunches just got easier!" src="gfx/applescript-numbers-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main" role="region" aria-label="The outer content wrapper">
+	<div id="content" class="column" role="region" aria-label="The primary content column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Automation Utilities</div>
+			
+			<p class="content-intro">Because using a Mac means more than just using one particular application, Automation is most effective when it is integrated throughout the operating system and all of the programs it runs. OS&nbsp;X includes built-in tools for creating, editing, and running scripts and automation files, when and where you need them. The following short overview describes some of the useful automation features of OS&nbsp;X.</p>
+			
+			<img alt="script-menu-populated" src="gfx/script-menu-populated.png" width="425" height="320" class="centered">
+			
+			<p class="imagecaption">The Script Menu <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span> provides an easy way to access your scripts, organized by application or function.</p>
+								
+			<p>This section provides an overview of how to use some of the built-in automation utilities of OS&nbsp;X. Specifically, it describes:</p> 
+			
+			<ul>
+			<li>how to view the Numbers scripting dictionary in the <b>AppleScript Editor</b> application;</li>
+			<li>how to activate and setup the system-wide <b>Script Menu</b> utility;</li> 
+			<li>how to take advantage of the new Services support in Numbers 3.1 using <b>Automator;</b></li>
+			<li>how application developers can enable their applications to provide user scripts for interacting with <b>Numbers</b>.</li>
+			</ul>
+			
+			<p class="segment-note"><b>IMPORTANT</b>: The documentation provided here on these topics assumes a basic knowledge of <b>AppleScript</b>, and how to use the <b>AppleScript Editor</b> to create and edit <b>AppleScript</b> scripts. If you are new to these topics, we suggest a short <a href="http://macosxautomation.com/applescript/firsttutorial/index.html" target="_blank">online tutorial</a>, and/or one of the excellent available books on the subject, such as <b>AppleScript 1-2-3</b> (available in <a href="http://www.peachpit.com/store/apple-training-series-applescript-1-2-3-9780321149312" target="_blank">print</a> and on the <a href="https://itunes.apple.com/us/book/applescript-1-2-3/id394135296?mt=11">iBooks Store</a>).</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+						
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="applescript-editor.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column" role="region" aria-label="The sidebar content column">
+		<div class="navbox" role="navigation" aria-label="The sidebar navigation box">
+			<h2 style="text-align:center;">NUMBERS SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="hi">Automation Utilities</li>
+				<li class="navListSectionItem"><a href="applescript-editor.html">Viewing the Numbers Dictionary</a></li>
+				<li class="navListSectionItem"><a href="script-menu.html">The Script Menu</a></li>
+				<li class="navListSectionItem"><a href="services-support.html">Numbers &amp; Services</a></li>
+				<li class="navListSectionItem"><a href="application-developers.html">Running Numbers Scripts from 3rd-Party Applications</a></li>
+				<hr>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="sheet.html">Sheet</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="range.html">Range</a></li>
+				<li><a href="cell.html">Cell</a></li>
+				<li><a href="column.html">Column</a></li>
+				<li><a href="row.html">Row</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="media-items.html">Media Items</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="keynote.html">Exporting to Keynote</a></li>
+				<li><a href="sqlite.html">SQLite &amp; Numbers</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts. (<a href="https://itunes.apple.com/us/book/applescript-1-2-3/id394135296?mt=11" target="_blank">iBooks Store</a>)</p>
+			<!-- <a href="https://itunes.apple.com/us/book/applescript-1-2-3/id394135296?mt=11"><img alt="AppleScript 1-2-3 Book Cover" src="gfx/mzi.blfzcnsw.225x225-75.jpg" width="169" height="225" class="centered"></a> -->
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box" role="region" aria-label="The disclaimer box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- 
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+ -->
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+<!~~ START IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcast.m4a\" width=\"320\" height=\"338\" scale=\"2\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!~~ END IMAGE SWAP SCRIPT ~~>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+				
+		<!-- BEGIN SEGMENT: CREATE READING SERVICES -->
+		<div class="content-segment">
+			<div class="segment-header">Create Automator Voice Reading Services</div>
+			
+			<p>Once the high-quality voices have been installed on your computer, you can create the automation tools for speaking selected text using the installed voices, and for rendering selected text, using the installed voices, as spoken audio files to be added to a GarageBand slideshow podcast.</p>
+			
+			<p>The automate the processing of text, we'll create four OS&nbsp;X services using Automator, the application with the robot icon in the Launchpad, that serves as your personal automation assistant.</p>
+					
+			<p>Automator is a special application used to create <span style="font-style:italic;font-family:serif;font-size:110%;">automation recipies</span> (called &ldquo;workflows&rdquo;), using a simple drag-and-drop process that connects the individual steps of the <span style="font-style:italic;font-family:serif;font-size:110%;">automation recipe</span> (called &ldquo;actions&rdquo;) into a Automator document. Automator documents can be saved in a variety of formats, including as self-running applets, PDF Print plugins, iCal alarms, Image Capture plugins, amd even as OS&nbsp;X services that are accessed via contextual menus and keyboard shortcuts throughout the system.</p>
+			
+			<p class="segment-note"><b>TIP</b>: For a thorough introduction to Automator, <a href="http://www.macosxautomation.com/automator/video/automator-001A.html">watch this short movie</a>. For a thorough introduction to Services, <a href="http://www.macosxautomation.com/services/video/services-001HD.html">watch this short movie</a>.</p>
+			
+			<p>So let&rsquo;s create some services, starting with the ones for speaking selected text using either a male or female voice.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: The Workshop Session Kit includes a folder containing four Automator workflow files whose creation is described in this section. If you wish to install the existing workflows instead of creating them, follow <a href="installservice.html">these instructions</a>.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Click the robot icon (his name is &ldquo;Otto&rdquo;) in Launchpad to launch Automator:</p>
+			
+			<img src="gfx/launchpad.jpg" width="624" height="161" class="centered">
+			
+			<p>Once Automator has launched, a workflow window displaying a drop-down sheet of workflow template icons, will appear (see below). These icons represent the various ways in which the workflows can be saved and implemented on your computer.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>For the purposes of this example, choose to create a OS&nbsp;X Service by clicking the gear icon <span class="numeric-callout">&nbsp;1&nbsp;</span>, follwed by clicking the &ldquo;Choose&rdquo; button <span class="numeric-callout">&nbsp;2&nbsp;</span>.</p>
+			
+			<img src="gfx/newworkflow.png" width="640" height="488" class="across">
+					
+			<p>Once the Service option has been chosen, the workflow window will be transformed into a blank OS&nbsp;X service workflow (see below). Service workflows begin with an input data panel where you indicate the type of data the service is to accept, and the application in which the service is to be available. The default settings of selected text <span class="numeric-callout">&nbsp;1&nbsp;</span> from any application <span class="numeric-callout">&nbsp;2&nbsp;</span>, will be perfect as input for our first service that speaks the selected text using a specified voice.</p>
+	
+			
+			<img src="gfx/serviceworkflow.png" width="640" height="488" class="across">
+			
+			<p>With the data input for the service chosen, we can now add the Automator actions that will perform the task of reading aloud the selected text, to the workflow (see above).</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the &ldquo;Utilities&rdquo; category in the Automator actions library list on the left side of the document window <span class="numeric-callout">&nbsp;3&nbsp;</span>, to reveal the available actions for that category. Drag the &ldquo;Speak Text&rdquo; action from the actions list <span class="numeric-callout">&nbsp;4&nbsp;</span> into the workflow area of the window. Release the mouse and a view containing the controls for the added action will be displayed <span class="numeric-callout">&nbsp;5&nbsp;</span>. Next, select the name of the male voice you installed, from the list of voice names displayed on the popup menu in the action view <span class="numeric-callout">&nbsp;5&nbsp;</span>.</p>
+			
+			<p>The service workflow is now complete and is ready to be saved and installed in the system.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Choose &ldquo;Save&rdquo; from the Automator &ldquo;File&rdquo; menu, and in the forthcoming naming sheet <span class="numeric-callout">&nbsp;1&nbsp;</span> (see below) name the new service: <b>Read Selection Aloud (male)</b>. Click the &ldquo;Save&rdquo; button <span class="numeric-callout">&nbsp;2&nbsp;</span> to complete the creation and installation process.</p>
+			
+			<img src="gfx/savemaleread.png" width="624" height="320" class="centered">
+			
+			<p>The new service will automatically be saved into the Services folder in your Library folder and installed in the system.</p>
+			
+			<p>Now that the service for reading selected text using a male voice is created, let&rsquo;s create one using the female voice. This can easily be accomplished by duplicating the existing service workflow and changing the selected voice in the &ldquo;Speak Text&rdquo; action to the female voice you installed.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>From the Automator &ldquo;File&rdquo; menu select the menu option titled: <b>Duplicate</b></p>
+			
+			<p>A dupicate of the existing service workflow will be created and displayed, ready for editing.</p>
+			
+			<img src="gfx/savefemaleread.png" width="624" height="320" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Change the voice on the popup menu <span class="numeric-callout">&nbsp;1&nbsp;</span> to be the high-quality female voice you installed. Choose &ldquo;Save&rdquo; from the &ldquo;File&rdquo; menu and in the forthcoming naming sheet <span class="numeric-callout">&nbsp;2&nbsp;</span> (see above), change the workflow service name to &ldquo;Read Selection Aloud (female)&rdquo;. Finally, click the &ldquo;Save&rdquo; button <span class="numeric-callout">&nbsp;3&nbsp;</span> to complete the creation and installation of the new service.</p>
+			
+			<p>Congratualtions! You have now created and installed two services for reading aloud text selected in any application. You will use them shorlty, but first, we&rsquo;ll create services that render selected text to an audio file using the voices you installed.</p>
+		</div>
+		<!-- END SEGMENT: CREATE READING SERVICES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="02.html" target="_self">CONTINUE</a></p>
+
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li class="hi">Create Reading Services</li>
+				<li><a href="02.html">Create Rendering Services</a></li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, attendees will create and save two simple Automator services for reading aloud text selected in a document.</p>
+			
+			<p>You will guide attendees through the process of locating and launching Automator, and then demonstrating how to create and save services.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Automator is the application for creating personalized automation workflows or &ldquo;automation recipies&rdquo;.</li>
+				<li>Automator offers a variety of templates as starting points for creating automation workflows. This example uses the service template.</li>
+				<li>Service workflows use data selected by the user as input for the workflow. This could be selected folders or files, or any of the text types recognized by the built-in data detectors, such as addresses, URLs, phone numbers, etc.</li>
+				<li>Service workflows begin by indicating the data type processed by the workflow, followed by the actions necessary to process the data used as input.</li>
+				<li>Workflows can be complex, containing many actions (steps), or simple, containing only a single action (step). These first workflows are a simple design.</li>
+			</ol>
+			
+			<p><b>NOTE</b>: If you need to save time, the Workshop Session Kit includes a folder containing the four Automator workflow files whose creation is described in this section. If you wish to install the existing workflows in lieu of creating them, follow <a href="installservice.html">these instructions</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

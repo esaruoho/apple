@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Quick Actions: Extensions</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Welcome to OMNI-AUTOMATION.COM, a resource for information about the new dual-platform automation support (macOS/iOS) in the apps from The Omni Group.">
+	<meta property="og:image" content="http://omni-automation.com/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav-active.png">
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left" style="-webkit-user-select:text;user-select:text;">
+		
+			<p class="head">Extensions</p>
+			
+			<p>macOS provides a customizable way for the feature-set of applications to be extended via plug-ins called &ldquo;Extensions.&rdquo; Typically, extensions are Apple-provided, or come from 3rd-party developers. However, starting with macOS Mojave (v10.14), users can make their own macOS extensions by using the &ldquo;Quick Action&rdquo; Automator template to create workflows that are automatically installed as macOS extensions when the workflows are saved.</p>
+			
+			<p>By default, user-created &ldquo;Quick Actions&rdquo; are auto-saved into the Services folder in the user Library folder and may be managed by the user in the Extensions system preference pane in either the <b>Touch Bar</b> or <b>Finder</b> extension categories.</p>
+			
+			<p>To access the Extensions system preference pane, open the System Preferences app by selecting &ldquo;System Preferences&hellip;&rdquo; from the Apple menu (&#63743;), and then choose &ldquo;Extensions&rdquo; from the app’s &ldquo;View&rdquo; menu.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Touch Bar Quick Actions</p>
+			
+			<p>Installed Quick Actions for the Touch Bar can be managed by selecting the <b>Touch Bar</b> category in the extension categories list on the left side of the preference pane window.</p>
+			
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/touch-bar-extensions.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Extensions</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Touch Bar</b> category of the <b>Extensions</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;A re-orderable list of the installed Touch Bar Quick Actions. List items can be enabled and disabled by selecting the checkbox to the left of the action’s title.</p>
+			</div>
+			
+			<p>Installed Touch Bar Quick Actions are displayed on the Touch Bar and can be run by pressing them with your finger.</p>
+			
+			<img width="100%" alt="full-touch-bar" src="gfx/full-touch-bar.png" style="border-style:solid;border-color:black;border-width:medium;">
+			
+			<p>Caveats:</p>
+			
+			<ul>				
+				<li>Quick Actions on the Touch Bar are &ldquo;contextual&rdquo; in that they will be disabled (grayed-out) if the current application is not the target application of the Quick Action workflow, or the type of data selected is not the type required as input by the workflow. Disabled Quick Actions retain their display and position on the Touch Bar.</li>
+								
+				<li>If the <b>Touch Bar Zoom</b> option in the Accessibility preference pane (see below) is active, then only up to six (6) actions can be accessed from the Touch Bar at any time, regardless of how many are installed and activated. The Touch Bar will not horizontally scroll to display available actions.</li>
+			</ul>
+			
+			<img width="100%" alt="touch-bar-zoom" src="gfx/touch-bar-zoom.png">
+			
+			<p class="subhead" role="heading" aria-level="2">Finder Quick Actions</p>
+			
+			<p>Installed Quick Actions for the Finder can be managed by selecting the <b>Finder</b> category in the extension categories list on the left side of the preference pane window.</p>
+			
+			<img width="100%" alt="touch-bar-key-settings" src="gfx/finder-extensions.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Extensions</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Finder</b> category of the <b>Extensions</b> preference pane of the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;A re-orderable list of the installed Finder Quick Actions. List items can be enabled and disabled by selecting the checkbox to the left of the action’s title.</p>
+			</div>
+			
+			<p>Finder Quick Actions are accessed from the Preview pane of a Finder window. Here are the various Finder window view modes with the Preview pane displayed:</p>
+			
+			<img width="100%" alt="finder-preview-pane" src="gfx/finder-gallery-view-qa.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The view control of the Finder window set to <b>Gallery</b> (&#8984;4) view.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The selected item(s).</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Preview</b> (&#8679;&#8984;P) pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;Item metadata.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Contextual Finder <b>Quick Actions</b>.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>More&hellip;</b> popup menu for accessing other <b>Quick Actions</b>.</p>
+			</div>
+			
+			<img width="100%" alt="finder-preview-pane" src="gfx/finder-icon-view-qa.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The view control of the Finder window set to <b>Icon</b> (&#8984;1) view.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The selected item(s).</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Preview</b> (&#8679;&#8984;P) pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;Item metadata.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Contextual Finder <b>Quick Actions</b>.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>More&hellip;</b> popup menu for accessing other <b>Quick Actions</b>.</p>
+			</div>
+			
+			<img width="100%" alt="finder-preview-pane" src="gfx/finder-list-view-qa.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The view control of the Finder window set to <b>List</b> (&#8984;2) view.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The selected item(s).</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Preview</b> (&#8679;&#8984;P) pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;Item metadata.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Contextual Finder <b>Quick Actions</b>.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>More&hellip;</b> popup menu for accessing other <b>Quick Actions</b>.</p>
+			</div>
+			
+			<img width="100%" alt="finder-preview-pane" src="gfx/finder-column-view-qa.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The view control of the Finder window set to <b>Column</b> (&#8984;3) view.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The selected item(s).</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Preview</b> (&#8679;&#8984;P) pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;Item metadata.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Contextual Finder <b>Quick Actions</b>.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>More&hellip;</b> popup menu for accessing other <b>Quick Actions</b>.</p>
+			</div>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <p class="sub-topic"><a href="index.html">Quick Actions</a></p>
+			  <p class="active-sub-sub-topic">Extensions</p>
+			  <p class="sub-sub-topic"><a href="services.html">Services</a></p>
+			  <p class="sub-sub-topic"><a href="keyboard.html">Keyboard Settings</a></p>
+			  <p class="sub-sub-topic"><a href="https://support.apple.com/en-us/HT207055" target="_blank">&#63743; Using Touch Bar</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+<!-- 
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+ -->
+			</nav>
+
+			<aside style="font-size:75%;margin-bottom:72px;">
+				<h3>Videos from MacBreak</h3>
+
+				<p>Here are links to podcast videos with <a href="https://twitter.com/alexlindsay" target="_blank">Alex Lindsey</a> about Services.</p>
+				<ul>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkv_235_540p_h264.mov">Services in Snow Leopard</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_012_540p_h264.mov">Services and Apple Remote Desktop</a></p></li>
+					<li><p><a href="https://pixelcorps.cachefly.net/mbkd_013_540p_h264.mov">Creating Automator Actions</a></p></li>
+				</ul>
+			</aside>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

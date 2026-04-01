@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://photosautomation.com/slideshow-control.html","20230528222757","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1685312877");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230528222757cs_/https://photosautomation.com/photos-automation.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Photos">
+	<meta name="Description" content="An automator action for creating and controlling the playback of an instant slideshow in Photos.">
+	<link rel="home" href="http://photosautomation.com">
+	<title>Photos &amp; Automator: The &ldquo;Slideshow Controller&rdquo; Action</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="photos-automation-banner" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/photos-automation-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230528222757/https://macosxautomation.com/" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">OS X AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230528222757/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230528222757/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">The &ldquo;Slideshow Controller&rdquo; Action</p>
+					
+					<p>The Photos application offers two methods for displaying a collection of images as a slideshow:</p>
+			
+					<ul>
+						<li><p class="list-text">Instant Slideshows</p></li>
+						<li><p class="list-text">Slideshow Projects</p></li>
+					</ul>
+						
+					<p>In the Photos application, an <b>Instant Slideshow</b> occurs when you select a group of images and press the &ldquo;Play&rdquo; arrow button at the top of the Photos window:</p>
+					
+					<img class="centered" width="386" height="45" alt="play-button-02" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/play-button-02.png">
+					
+					<p>or when you press the &ldquo;Play&rdquo; arrow button next to a Moment or Collection of images:</p>
+					
+					<img class="centered" width="109" height="37" alt="play-button-01" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/play-button-01.png">
+			
+					<p><b>Slideshow Projects</b> are created by first selecting a group of images to initially include in the slideshow, and selecting the &ldquo;Create Slideshow&hellip;&rdquo; menu option from the <b>File</b> menu in Photos. In a <b>Slideshow Project</b> you can set the parameters for side duration, background music, and transition type and duration.</p>
+			
+					<p class="content-subhead" role="heading" aria-level="2">The &ldquo;Slideshow Controller&rdquo; Action</p>
+			
+					<p>The current version of Photos provides automation support for only creating and controlling the display of <b>instant slideshows</b>. This can be accomplished by using the &ldquo;Slideshow Controller&rdquo; action and selecting the slideshow command to be executed from the popup list of commands in the action view.</p>
+			
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/slideshow-controller.jpg">
+					
+					<img class="centered" width="240" alt="" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/slideshow-controller-menu.png">
+			
+					<p class="segment-note"><b>NOTE</b>: The <b>Start Slideshow</b> command requires that the action be passed references to the Photos media items you wish to include in the instant slideshow. The action offers no options for indicating slideshow style or music background.</p>
+
+					<p class="content-subhead" role="heading" aria-level="2">Use in Workflow</p>
+
+					<p>Here's a simple workflow demonstrating how to automate the display of an Instant Slideshow:</p>
+			
+					<img class="action-interface" alt="" src="http://web.archive.org/web/20230528222757im_/https://photosautomation.com/gfx/slideshow-controller-workflow.png">
+
+				</div>
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/play-narrated-slideshow.html">Play Narrated Slideshow</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/selection-actions.html">Selection &amp; Content</a></li>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/import-action.html">Importing Media Items</a></li>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/export-action.html">Exporting Media Items</a></li>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/maps-action.html">Metadata</a></li>
+						<li class="hi">Slideshow Actions</li>
+						<li class="navListSectionItemSelected">Slideshow Controller</li>
+						<li class="navListSectionItem"><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/play-narrated-slideshow.html">Play Narrated Slideshow</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/scripting/index.html">Scripting Overview</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/workflows.html">Workflow Recipes</a></li>
+						<li><a href="http://web.archive.org/web/20230528222757/https://photosautomation.com/dictation-commands.html">Dictation Commands</a></li>
+					</ul>
+				</div>
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. PHOTOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. PHOTOSAUTOMATION.COM provides this only as a convenience to our users. PHOTOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and PHOTOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from PHOTOSAUTOMATION.COM and that PHOTOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 22:27:57 May 28, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:57:13 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.574
+  exclusion.robots: 0.019
+  exclusion.robots.policy: 0.009
+  esindex: 0.009
+  cdx.remote: 60.85
+  LoadShardBlock: 465.125 (3)
+  PetaboxLoader3.datanode: 371.843 (4)
+  PetaboxLoader3.resolve: 1396.451 (3)
+  load_resource: 1429.169
+-->

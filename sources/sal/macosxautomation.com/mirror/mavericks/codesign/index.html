@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Automation Applet Code Signing</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Code signing support in OS X Automation editor applications">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="mavericks-sm-banner" src="gfx/mavericks-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header" >Automation Applet Code Signing</div>
+		
+			<img class="centered" alt="banner" src="gfx/banner.png" width="624">
+		
+			<p class="content-intro">Code Signing support has been added as an export feature to both the AppleScript Editor and Automator applications, enabling Apple developers to easily generate signed copies of their applets and droplets.</p>
+		
+			<p class="content-subhead">GateKeeper and Security</p>
+			
+			<p>Gatekeeper is a feature in Mountain Lion and OS X Lion v10.7.5 that builds on OS X&rsquo;s existing malware checks to help protect your Mac from malware and misbehaving apps downloaded from the Internet.</p>
+			
+			<p class="segment-note"><b>NOTE</b>: GateKeeper has no effect upon the launching of applets and droplets you create yourself and use on your computer. The restrictions applied by GateKeeper only target applications, applets, and droplets, downloaded to your computer, or received as attachments to email messages.</p>
+			
+			<p>By default, the security settings on your computer are set to only allow the launching of applications (and applets and droplets) that have been downloaded from the Mac App Store, or are created by developers identified to Apple. <span style="font-size:small;background-color:#444;color:white;font-variant:small-caps;">&nbsp;(&#11015;&nbsp;<span style="vertical-align:+1px;">see&nbsp;below</span>)&nbsp;</span></p>
+					
+			<img alt="gatekeeper" class="centered" src="gfx/gatekeeper.jpg" width="624" height="390">
+			
+			<p>Automation applets code signed with an Apple Developer ID, will not trigger GateKeeper security warnings on computers that are using the default Gatekeeper security setting.</p>
+			
+			<img class="centered" alt="summary" src="gfx/summary.jpg" width="624" height="390">
+
+			<p>Code Signing of Automation applets is a boon for developers of automation-supporting Mac applications, and solution-providers, allowing them to distribute smooth-launching automation solutions to their customers and clients.</p>
+									
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li class="hi">Applet Code Signing</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li class="hi">Code Signing</li>
+					<li><a href="01.html">Developer Certificate</a></li>
+					<li><a href="02.html">AppleScript Editor</a></li>
+					<li><a href="03.html">Automator</a></li>
+				</ol>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li><a href="../notifications/index.html">System Notifications Support</a></li>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">ABOUT GATEKEEPER</h2>
+			<p>Apple has posted a <a href="http://support.apple.com/kb/HT5290" target="_blank">tech note</a> on its support website concerning GateKeeper and security. 
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

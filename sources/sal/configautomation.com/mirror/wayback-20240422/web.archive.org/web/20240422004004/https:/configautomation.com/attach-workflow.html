@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/attach-workflow.html","20230929211426","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1696022066");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230929211426cs_/https://configautomation.com/automation-full.css" media="all">
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230929211426cs_/https://configautomation.com/script-table.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="Execute setup and refresh processes when iOS devices are connected to a Mac.">
+	<link rel="home" href="http://configautomation.com">
+	<style type="text/css">
+		#segment-note {color:black;font-size:x-small;text-align:center;}
+		#segment-note a.contactLink {color:#888;font-size:x-small;}
+		#content-left p.code-example
+		{
+			font-family: Menlo-Regular, monospace;
+			color:red;
+			word-wrap: break-word;
+			line-height: 100%;
+			margin-bottom: .5em;
+			margin-top: 0;
+			font-size:small;
+		}
+	</style>
+	<title>Apple Configurator &amp; Automator: Attached Devices</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230929211426/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230929211426/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230929211426/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<a name="1000"></a><div class="content-segment">
+				<p class="header" role="heading" aria-level="1">Auto-run a workflow when devices are connected</p>
+				
+					<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-top:36px;margin-bottom:6px;">
+						<video id="moov1" x-webkit-airplay="allow" webkit-playsinline width="624" height="390" style="margin-top:4px;" controls="controls" preload="auto">
+						  <source src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/refresh-on-attachment-75.mp4" type="video/mp4">
+						  Your browser does not support the video tag.
+						</video>
+					</div>
+					<div style="text-align:center;">
+						<button onclick="document.getElementById('moov1').play();">PLAY</button>
+						<button onclick="document.getElementById('moov1').pause();">PAUSE</button>
+						<button onclick="document.getElementById('moov1').currentTime=(document.getElementById('moov1').currentTime-5);">BACK</button>
+						<button onclick="document.getElementById('moov1').currentTime=0;">REWIND</button>
+					</div>
+					
+					<p id="segment-note"><script type="text/javascript">
+				
+					  <!--
+				
+					  var contact = "CONTACT";
+				
+					  var x = "macosxautomation";
+				
+					  var y = "me.com";
+				
+					  document.write("Apple employees can request a copy of the Keynote presentation related to this video.</span>" + " <a class=\"contactLink\" href=" + "mail" + "to:" + x + "@" + y + "?" + "sub" + "ject=PRESENTATION-REQUEST-ATTACH-REFRESH>" + "(request)<\/a>");
+				
+					  //-->
+				
+					</script></p>
+					
+					<p>And here is a detailed presentation from the <a mailto="https://www.jamf.com/events/jamf-nation-user-conference/2018/" target="_blank">Jamf JNUC 2018</a> regarding the tools provided on this website:</p>
+					
+					<iframe width="640" height="360" src="http://web.archive.org/web/20230929211426if_/https://www.youtube.com/embed/5aSW_47rXKE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+				
+				
+				<p>A popular device management scenario is one in which the act of connecting an iOS device to a computer running device management software, will automatically trigger the restoration and formatting of the connected devices without requiring any user-interaction.</p>
+							
+				<p>Such a scenario is possible using Apple Configurator 2, but requires some initial setup involving the Terminal application, the built-in &ldquo;cfgutil&rdquo; command-line utility, and a special set of Automator actions.</p>
+				
+				<p class="segment-note"><b>IMPORTANT</b>: The attachment mechanism and tools provided here <span style="color:red;font-weight:bold;">will work with both macOS Sierra, and macOS High Sierra</span>. To use these tools with macOS High Sierra, install the provided attachment tools and actions after removing earlier versions of the Automator actions and command files that are incompatible with macOS High Sierra.</p>
+				
+				<img class="across" width="640" alt="attach" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/attach.png">
+
+				
+				<p>There are three elements of this automated scenario:</p>
+				
+				<ul>
+					<li>The Automator workflow file comprised of actions for managing the connected devices</li>
+					<li>A Shell-script command file that will execute the target Automator workflow file</li>
+					<li>An active Terminal session running Apple Configurator’s <b>cfgutil</b> utility’s &ldquo;exec&rdquo; command that will run an instance of the Shell-script command for each attached iOS device</li>
+				</ul>
+				
+				<p>Here is how these elements are implemented to create an automated setup solution triggered when a device is connected to the host computer:</p>
+				
+				<ul>
+					<li><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>In a new window in the Terminal application, the &ldquo;exec&rdquo; command <span class="numeric-callout">&nbsp;1&nbsp;</span> is entered and run. The execution of the &ldquo;exec&rdquo; command begins a new active session process <span class="numeric-callout">&nbsp;2&nbsp;</span> whose log is displayed in the Terminal window. The &ldquo;exec&rdquo; command <span class="numeric-callout">&nbsp;1&nbsp;</span> references the path to a shell-script command file <span class="numeric-callout">&nbsp;4&nbsp;</span> that in turn, uses the &ldquo;automator&rdquo; command <span class="numeric-callout">&nbsp;5&nbsp;</span> to run a specified workflow <span class="numeric-callout">&nbsp;7&nbsp;</span> that contains the actions for processing the devices.</li>
+				</ul>
+
+				<img class="centered" width="640" alt="attachment-design" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/attachment-design.png">
+				
+				<ul>
+					<li><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>With the session active, connecting an iOS device to the managing computer, triggers the execution <span class="numeric-callout">&nbsp;3&nbsp;</span> of the shell command file  <span class="numeric-callout">&nbsp;4&nbsp;</span> that contains as its code, a shell script <span class="numeric-callout">&nbsp;5&nbsp;</span> that tells the OS to load and run <span class="numeric-callout">&nbsp;6&nbsp;</span> a specified Automator workflow file <span class="numeric-callout">&nbsp;7&nbsp;</span> designed to be used with attached iOS devices.</li>
+					
+					<li><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>The targeted workflow <span class="numeric-callout">&nbsp;7&nbsp;</span> begins and ends with specialized Automator actions that are designed to keep track of iOS devices as they are processed and to return logging data <span class="numeric-callout">&nbsp;8&nbsp;</span> back to the Terminal window <span class="numeric-callout">&nbsp;2&nbsp;</span> displaying the feedback of the initial attachment command.</li>
+					
+					<li><b>NOTE</b>: The Terminal session <span class="numeric-callout">&nbsp;2&nbsp;</span> makes sure that each connected iOS device is &ldquo;attached&rdquo; to its own instance of the OS automation runner that executes the targeted Automator workflow. So if 24 devices are connected, 24 instances of the workflow will be created run simultaneously.</li>
+					
+					<li><b>NOTE</b>: This auto-proccessing scenario only works while the Terminal session for the &ldquo;exec&rdquo; command is active. When the Terminal session is stopped (the Terminal session window is closed), the attachment triggers cease, and connected devices will no longer be automatically processed.</li>
+				</ul>
+												
+				<p class="content-subhead" role="heading" aria-level="2">The &ldquo;exec&rdquo; Command</p>
+				
+				<p>The Apple Configurator 2 built-in command-line utility &ldquo;cfgutil&rdquo; provides the &ldquo;exec&rdquo; command which will run an instance of a specified shell-script command whenever iOS devices are either attached or detached from the host computer. 
+				</p>
+				
+				<p>The structure of the &ldquo;exec&rdquo; command, entered in a new Terminal window, follows a simple structure:</p>
+				
+				<pre>/usr/local/bin/cfgutil exec -a path/to/shell/script.command</pre>
+				
+				<p>The <b>-a</b> option is used to identify the shell command file to execute when a device is attached, and the <b>-d</b> option (not shown here) is used to run a specified shell command file when the device is detached from the computer.</p>
+				
+				<p class="content-subhead" role="heading" aria-level="2">The Shell-Script Command File</p>
+				
+				<p>The Shell-Script Command File is basically a text file containing multiple lines of UNIX shell code that use the &ldquo;automator&rdquo; command to execute a specific workflow file.</p>
+				
+				<p>The UNIX command file whose contents are shown below, auto-attachment.command, is placed in the Home &gt; Library &gt; Workflows folder when the installer is run.</p>
+				
+				<p>In the command (line 7), the names and values of UNIX environment variables pertaining to the attached device are passed as input to the Begin Attach Workflow action, which then parses the passed string to retrieve the values, and write them to a property list file used to track the status of the attached device (line 10).</p>
+				
+				<p>The default environment variables that are automatically set when a device is attached, are: <span class="codelibraryclass">$ECID</span>, <span class="codelibraryclass">$PATH</span>, <span class="codelibraryclass">$UDID</span>, <span class="codelibraryclass">$attachPID</span>, <span class="codelibraryclass">$deviceName</span>, <span class="codelibraryclass">$deviceType</span>, <span class="codelibraryclass">$buildVersion</span>, <span class="codelibraryclass">$firmwareVersion</span>, and <span class="codelibraryclass">$locationID</span>.</p>
+								
+				<table class="javascript-table" role="presentation" style="font-size:small;">
+					<tr><td colspan="3" class="script-title">auto-attachment.command</td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">#!/bin/bash</td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"># set attachPID to Process ID of THIS thread</td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">export attachPID=$$</td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"># Set Attached Device Directory Value</td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">workflowPath=$(echo ~/Library/Workflows/attachment-workflow.workflow)</td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><nobr>automator -i &quot;</nobr>ECID=$ECID&attachPID;=$attachPID&PATH;=$PATH&UDID;=$UDID&amp;<br>deviceName=$deviceName&deviceType;=$deviceType&buildVersion;=<br>$buildVersion&firmwareVersion;=$firmwareVersion&locationID;=<br>$locationID&quot; &quot;${workflowPath}&quot;</td></tr>
+					<tr><td class="line-count">08</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"># Check if Cache File exists</td></tr>
+					<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">if [ ! -f ~/Library/Caches/com.apple.configurator.AttachedDevices/<br>$ECID.plist ]; then</td></tr>
+					<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>echo <span class="stringEnum">&quot;Cache file not found - Automator Workflow completed successfully&quot;</span></td></tr>
+					<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">else</td></tr>
+					<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span># Cache file found - Need to check if the PID matches</td></tr>
+					<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>echo <span class="stringEnum">&quot;Cache File Found - Test PID&quot;</span></td></tr>
+					<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span># Get the PID from the file</td></tr>
+					<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>filePID=$(defaults&nbsp;read&nbsp;~/Library/Caches/com.apple.configurator.<br>AttachedDevices/$ECID.plist attachPID)</td></tr>
+					<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>if test $attachPID -eq $filePID</td></tr>
+					<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>then</td></tr>
+					<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span># The file was created by this PID so the Workflow Failed - Clean up</td></tr>
+					<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>echo <span class="stringEnum">&quot;PID Match - Workflow has failed - Clean up&quot;</span></td></tr>
+					<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>rm ~/Library/Caches/com.apple.configurator.AttachedDevices/<br>$ECID.plist</td></tr>
+					<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>else </td></tr>
+					<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span># Re-Entry - Do Nothing</td></tr>
+					<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>echo <span class="stringEnum">&quot;Re-Entry - Do Nothing&quot;</span></td></tr>
+					<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>fi</td></tr>
+					<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">fi</td></tr>
+				</table>
+				
+				<p style="word-wrap: break-word;"></p>
+
+
+				<p>You can compose a shell command file in any text editor such as BBEdit, TextWrangler, TextEdit, etc. and save it as a standard (non-RTF) text file with the &ldquo;commmand&rdquo; file extension. Once saved, you convert the text file into a executable command file by entering and running the following in a new Terminal window:</p>
+				
+				<pre>chmod +x path/to/shell/script.command</pre>
+				
+<!-- 
+				<p class="content-subhead" role="heading" aria-level="2">Specifying Workflows for Device Groups</p>
+				
+				<p>Another common practice in device management is to organize devices into groups and apply various management schemes to devices based-upon which management group they belong to.</p>
+				
+				<p>This technique can be accomplished using Automator workflows by editing the shell command to include routines for filtering devices based upon the value of one of the default environment variables that are automatically set when a device is attached, such as <span class="codelibraryclass">$ECID</span>, <span class="codelibraryclass">$PATH</span>, <span class="codelibraryclass">$UDID</span>, <span class="codelibraryclass">$attachPID</span>, <span class="codelibraryclass">$deviceName</span>, <span class="codelibraryclass">$deviceType</span>, <span class="codelibraryclass">$buildVersion</span>, <span class="codelibraryclass">$firmwareVersion</span>, or <span class="codelibraryclass">$locationID</span>.</p>
+				
+				<p>The following example shell command code <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span> compares the attached device’s ECID (using the value of the <span class="codelibraryclass">$ECID</span> environment variable) against two lists of device ECIDs to determine which workflow to execute. If the device is not in either list, the command returns an error.</p>
+				
+				<pre>#!/bin/bash
+deviceGroupA=(0xB498C20090826 0xD694C109B0826 0x10398C20090826)
+deviceGroupB=(0x1578EC109B0826 0x12705810520826 0xB4Z8C20030826)
+thisECID=$ECID
+for i in "${deviceGroupA[@]}"
+do
+if [ $i = $thisECID ]; then 
+	automator '/Users/Johnny/Documents/Group A Workflow.workflow'
+	exit
+fi
+done
+for i in "${deviceGroupB[@]}"
+do
+if [ $i = $thisECID ]; then 
+	automator '/Users/Johnny/Documents/Group B Workflow.workflow'
+	exit
+fi
+done
+echo "Device $thisECID is not listed."
+exit 0</pre>
+ -->
+				
+				<p class="content-subhead" role="heading" aria-level="2">The Attachment Actions</p>
+				
+				<p>During the process of being erased or restored, deices will often detach themselves from their host computer and reattach after completing a restoration or erasure.</p>
+				
+				<p>On a computer running an &ldquo;exec&rdquo; attachment session in the Terminal, reattachment by a device will re-trigger the running of a desginated attachment workflow. In order to prevent a workflow from running repeatedly on the same device, use the Attachment Actions provided here, to track the status of devices and protect them from looping workflows.</p>
+				
+				<p>To create a thread-safe workflow, simply begin the workflow with the &ldquo;Begin Attached Workflow&rdquo; action, and end the workflow with the &ldquo;End Attached Workflow&rdquo; action:</p>
+				
+				<img class="action-interface" alt="attach-workflow" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/attach-workflow.jpg">
+				
+				<p class="content-subhead" role="heading" aria-level="2">The &ldquo;Begin Attached Workflow&rdquo; action (v1.5)</p>
+				
+				<p>Both of the attachment actions perform their functions by monitoring the contents of the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder located within the user’s Cache folder:</p>
+				
+				<pre>/Users/Johnny/Library/Caches/com.apple.configurator.AttachedDevices</pre>
+				
+				<p>When a workflow beginning with the &ldquo;Begin Attached Workflow&rdquo; action is run, the action will first determine the ECID of the device that the workflow is targeting by reading the value of the <span class="codelibraryclass">$ECID</span> environment variable. It then then checks the contents of the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder to see if it contains a property list file whose name matches the ECID of the attached device.</p>
+				
+				<p>If the folder contains a matching property list file, the &ldquo;Begin Attached Workflow&rdquo; will stop the execution of its parent workflow, since it is assumed that the iOS device is still in mid-process and is re-attaching to the host computer thereby re-triggering its related workflow.</p>
+				
+				<p>However, if there is no matching property list file, then the &ldquo;Begin Attached Workflow&rdquo; action will read the values for all of the environment variables and write the retrieved data into a new property file it creates within the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder. This created property list file is named using the ECID of the attached device.</p>
+				
+				<p>The action view of the &ldquo;Begin Attached Workflow&rdquo; action contains three controls: <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+				
+				<img class="action-interface" alt="begin-action" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/begin-action.jpg">
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Enable Logging</b>&nbsp;&bull;&nbsp;Select this check box to have the action display a on-going log of its processes in the Termnial session window.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Add Serial Number</b>&nbsp;&bull;&nbsp;If this option is selected (it is off by default) the serial number of the attached device will be retrieved and added to the property list file in the Caches folder. Workflow variable scripts or script in the Run AppleScript, Run Shell Script, or Run JavaScript actions can then retrieve the serial number for use without having to query the device again. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Clear</b>&nbsp;&bull;&nbsp;Click this button to delete any existing property list files from the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Reveal</b>&nbsp;&bull;&nbsp;Click this button to select and show the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder in the Finder.</p>
+								
+				<!-- 
+<p class="content-subhead" role="heading" aria-level="2">Retrieving Stored Serial Number</p>
+				
+				<p>Here is an example AppleScript script for retrieving the serial number (or other device information) from the attached device’s ECID property list file in the Cache folder. This script can be used within the Run AppleScript action or within an AppleScript workflow variable:</p>
+				
+				<table class="script-table" role="presentation"></td></tr>
+					<tr><td colspan="3" class="script-title">Retrieve Device Serial Number from Cache Property List (AppleScript)</td></tr>
+					<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Retrieve%20Device%20Serial%20Number%20from%20Cache%20Property%20List&script=use%20framework%20%22Foundation%22%0Duse%20scripting%20additions%0D%0Dset%20thisECID%20to%20%28do%20shell%20script%20%22echo%20%24ECID%22%29%20as%20string%0Dset%20aPath%20to%20%28the%20POSIX%20path%20of%20%28path%20to%20%22cach%22%20from%20user%20domain%29%29%20%26%20%22com.apple.configurator.AttachedDevices%2F%22%20%26%20thisECID%20%26%20%22.plist%22%0Dset%20aDictionary%20to%20current%20application%27s%20class%20%22NSDictionary%22%27s%20dictionaryWithContentsOfFile%3AaPath%0Dset%20serialNumber%20to%20%28aDictionary%27s%20valueForKey%3A%22serialNumber%22%29%20as%20text" style="text-decoration:none;background-color:#eee;"><button type="button" style="margin:0;padding:4px;">Open in Script Editor</button></a></td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="codelibraryclass">framework</span> &quot;Foundation&quot;</td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="codelibraryclass">scripting additions</span></td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">thisECID</span> <b>to</b> (<span class="codelibrarycommand">do shell script</span> &quot;echo $ECID&quot;) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aPath</span> <b>to</b> (<b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> (<span class="codelibrarycommand">path to</span> &quot;cach&quot; <b>from</b> <span class="dictionary-class">user domain</span>)) &amp; &quot;com.apple.configurator.AttachedDevices/&quot; &amp; <span class="codevariable">thisECID</span> &amp; &quot;.plist&quot;</td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aDictionary</span> <b>to</b> <span class="dictionary-class">current application</span>'s <span class="dictionary-class">class</span> &quot;NSDictionary&quot;'s <span class="codevariable">dictionaryWithContentsOfFile</span>:<span class="codevariable">aPath</span></td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">serialNumber</span> <b>to</b> (<span class="codevariable">aDictionary</span>'s <span class="codevariable">valueForKey</span>:&quot;serialNumber&quot;) <b>as</b> text</td></tr>
+				</table>				
+				
+				<p><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The example serial number retrieval script used in an Automator workflow variable:</p>
+				
+				<img class="action-interface" alt="begin-action" src="gfx/Variable-Script.png">
+				
+				<p>And just-in-case you want to store other information in the ECID property list file, here’s a script example of how to write a key/value pair to the property list:</p>
+
+				<table class="script-table" role="presentation"></td></tr>
+					<tr><td colspan="3" class="script-title">Writing a Key/Value pair to the ECID plist</td></tr>
+					<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><a href="applescript://com.apple.scripteditor?action=new&name=Add%20KVPair%20to%20ECID%20plist&script=use%20framework%20%22Foundation%22%0Duse%20scripting%20additions%0D%0Dset%20aKey%20to%20%22favorite%20color%22%0Dset%20aValue%20to%20%22blue%22%0D%0Dset%20thisECID%20to%20%28do%20shell%20script%20%22echo%20%24ECID%22%29%20as%20string%0Dset%20aPath%20to%20%28the%20POSIX%20path%20of%20%28path%20to%20%22cach%22%20from%20user%20domain%29%29%20%26%20%22com.apple.configurator.AttachedDevices%2F%22%20%26%20thisECID%20%26%20%22.plist%22%0Dset%20aDictionary%20to%20current%20application%27s%20class%20%22NSMutableDictionary%22%27s%20dictionaryWithContentsOfFile%3AaPath%0DaDictionary%27s%20setObject%3AaValue%20forKey%3AaKey%0DaDictionary%27s%20writeToFile%3AaPath%20atomically%3Atrue" style="text-decoration:none;background-color:#eee;"><button type="button" style="margin:0;padding:4px;">Open in Script Editor</button></a></td></tr>
+					<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="dictionary-class">framework</span> &quot;Foundation&quot;</td></tr>
+					<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>use</b> <span class="dictionary-class">scripting additions</span></td></tr>
+					<tr><td class="line-count">03</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aKey</span> <b>to</b> &quot;favorite color&quot;</td></tr>
+					<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aValue</span> <b>to</b> &quot;blue&quot;</td></tr>
+					<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+					<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">thisECID</span> <b>to</b> (<span class="codelibrarycommand">do shell script</span> &quot;echo $ECID&quot;) <b>as</b> <span class="codelibraryclass">string</span></td></tr>
+					<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aPath</span> <b>to</b> (<b>the</b> <span class="codeproperty">POSIX path</span> <b>of</b> (<span class="codelibrarycommand">path to</span> &quot;cach&quot; <b>from</b> <span class="codeenumeration">user domain</span>)) &amp; &quot;com.apple.configurator.AttachedDevices/&quot; &amp; <span class="codevariable">thisECID</span> &amp; &quot;.plist&quot;</td></tr>
+					<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><b>set</b> <span class="codevariable">aDictionary</span> <b>to</b> <span class="dictionary-class">current application</span>'s <span class="codelibraryclass">class</span> &quot;NSMutableDictionary&quot;'s <span class="codevariable">dictionaryWithContentsOfFile</span></span>:<span class="codevariable">aPath</span></td></tr>
+					<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="codevariable">aDictionary</span>'s <span class="codevariable">setObject</span>:<span class="codevariable">aValue</span> <span class="codevariable">forKey</span>:<span class="codevariable">aKey</span></td></tr>
+					<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span class="codevariable">aDictionary</span>'s <span class="codevariable">writeToFile</span>:<span class="codevariable">aPath</span> <span class="codevariable">atomically</span>:<span class="codeenumeration">true</span></td></tr>
+				</table>		
+ -->		
+				
+				<p class="content-subhead" role="heading" aria-level="2">The &ldquo;End Attached Workflow&rdquo; action</p>
+				
+				
+				<p>Like the &ldquo;Begin Attached Workflow&rdquo; action, the &ldquo;End Attached Workflow&rdquo; action monitors the contents of the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder.</p>
+				
+				<p>Since this action is placed at the end of a device-processing workflow, it is used to indicate that a device has completed processing. Therefore, it deletes the property list named for the ECID its receives as its input.</p>
+				
+				<p>The action view of the &ldquo;End Attached Workflow&rdquo; action contains three controls: <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+				
+				<img class="action-interface" alt="begin-action" src="http://web.archive.org/web/20230929211426im_/https://configautomation.com/gfx/end-action.png">
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Enable Logging</b>&nbsp;&bull;&nbsp;Select this check box to have the action display a on-going log of its processes in the Termnial session window.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Clear</b>&nbsp;&bull;&nbsp;Click this button to delete any existing property list files from the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder.</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Reveal</b>&nbsp;&bull;&nbsp;Click this button to select and show the &ldquo;com.apple.configurator.AttachedDevices&rdquo; folder in the Finder.</p>
+				
+				<p class="segment-note"><b>NOTE</b>: If no property list matching the passed ECID is found in the attached devices folder, this action will log an error message that will appear in the log displayed in the Terminal session window.</p>
+				
+			</div>
+			
+			<!-- BEGIN SEGMENT: INSTALLER -->
+				<a name="1001"></a><div class="content-segment">
+				<p class="header" role="heading" aria-level="1">The Installer</p>
+				
+				<p>An archive is provided here for downloading that contains an installer applet for the two attachment actions and their related AppleScript scripts, as well as example command and workflow files.</p>
+				
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/attach-actions-installer.zip">&nbsp;DOWNLOAD&nbsp;</a> the installer for the attachment actions and related files, and then follow the these steps:</p>
+				
+				<ol>
+					<li>Run the Automation Tools Installer applet and provide an administrator password in the forthcoming security dialog. The installer will place the required Automator actions, UNIX command file, and AppleScript script files in their required locations in the user Library folder. In addition, the example “attachment-workflow.workflow” Automator workflow file will be placed in the Workflows folder in the user Library folder.</li>
+					<li>IMPORTANT: the “attachment-workflow.workflow” workflow is provided as an example, and is specifically referenced in the “auto-attachment.command” file also installed in the Home &gt; Library &gt; Workflows folder. This workflow will speak the ECID number of the connected device. Use this workflow file as your template for creating the attachment workflow. Replace the Speak Text action with the Apple Configurator actions you want to use to process connected devices. Leave the file named as it is and in the Workflows folder.</li>
+					<li>Disconnect all connected iOS devices.</li>
+					<li>Launch the Terminal application.</li>
+					<li>With the Terminal as the frontmost application, select the “Activate Chosen Attachment Command” menu option from the system-wide Script Menu displaying on the top right of the main menu bar. In the forthcoming chooser dialog, navigate to and select the “auto-attachment.command” file located in the Workflows folder in your home Library folder.<br>The script will complete by beginning a new Terminal session that will respond when iOS devices are attached to the host computer.</li>
+					<li>Attach an iOS device to the computer and watch the Terminal window while an individual instance of the workflow executes for each attached device. If logging is enabled in the Automator actions, all of the steps taken by the actions will be logged and displayed in the Terminal session window.</li>
+					<li>To disable auto-attachment processing, close the Terminal session window.</li>
+				</ol>
+
+				<p class="content-subhead" role="heading" aria-level="1">Attachment Files</p>
+
+				<p>The “auto-attachment.command” and “auto-attachment.plist” files are provided in the Attachment Files folder in the installer folder. You can edit and install the “auto-attachment.plist” file to enable automatic attachment action whenever an iOS device is connected.</p>
+					
+				</div>
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+				<!-- BEGIN SEGMENT: AUTO-RUN -->
+				<a name="1002"></a><div class="content-segment">
+				<p class="header" role="heading" aria-level="1">Auto-Launch Setup (Optional)</p>
+				
+					<p>With <b>Apple Configurator 2.2.1</b>, you can now bypass the requirement for manually beginning a Terminal session for the cfgutil exec command, by creating and installing a Launch Services instruction file.</p>
+										
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the provided Launch Services property list (auto-attachment.plist), change the placeholder to path to the Command File you are using (auto-attachment.command). After making the change, put the property list file in the <b>LaunchAgents</b> folder in the user Library folder. The process will load automatically at next login or can be toggled manually using the launchctl command</p>
+				<p></p>
+				</div>
+				<!-- END SEGMENT: AUTO-RUN -->
+				
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="http://web.archive.org/web/20230929211426/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/identity-files.html">Supervision Identity</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/selection-actions.html">Selection Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/dep.html">DEP Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/restore.html">Formatting Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/backup.html">Backup Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/install-apps.html">Installation Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/information-actions.html">Information Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+						<li class="hi">“Attached” Workflows</li>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/attach-workflow-jamf.html">JAMF Pro Attachment</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></li>
+						<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+						<li><a href="http://web.archive.org/web/20230929211426/https://configautomation.com/classroom.html">iOS Classroom</a></li>
+					<ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 21:14:26 Sep 29, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:32 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.609
+  exclusion.robots: 0.02
+  exclusion.robots.policy: 0.009
+  esindex: 0.01
+  cdx.remote: 15.814
+  LoadShardBlock: 75.647 (3)
+  PetaboxLoader3.datanode: 98.308 (4)
+  load_resource: 130.007
+  PetaboxLoader3.resolve: 37.191
+-->

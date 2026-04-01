@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Text Item Overlay</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for text items in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Text Item Overlays</div>
+						
+			<p>If your presentations are developed using a process that includes review by others, here’s a script that makes it very easy to visibly identify the developmental status of the reviewed presentation.</p>
+			
+			<p>The script shown below can be used to <b>add</b> and <b>remove</b> text overlays to or from all the slides in presentation, in a single action. The overlay <span class="codeproperty">text items</span> may contain phrases such as &ldquo;DRAFT&rdquo; or &ldquo;CONFIDENTIAL&rdquo; or &ldquo;INTERNAL USE ONLY&rdquo;, or any word or phrase you want to use. In addition, you can set the color and opacity of the text overlay.
+			
+			<p><b>TIP</b>: If you use more than one status phrase or term, create multiple versions of this example script, each with different default settings.</p>
+
+			<p class="imagecaption" style="margin-bottom:0px;"><span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>Exported slide images. The DRAFT watermark was created by adding a text overlay, set to a low opacity, on each of the presentation slides, using the script provided at the bottom of this page.</p>
+			
+			<img class="centered" width="624" alt="draft-slide-001" src="gfx/draft-slide-001.jpg">
+			
+			<img class="centered" width="624" alt="draft-slide-002" src="gfx/draft-slide-002.jpg">
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Add|Remove Text Overlay</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=--%20OBJECT%20TEXT%20PROPERTIES%0Dproperty%20textOverlayString%20%3A%20%22DRAFT%22%0Dproperty%20textOverlayTypeface%20%3A%20%22Impact%22%0Dproperty%20textOverlayFontSize%20%3A%20144%0Dproperty%20textOverlayColorName%20%3A%20%22white%22%0Dproperty%20textOverlayRGBColorValues%20%3A%20%7B65535%2C%2065535%2C%2065535%7D%0D--%20red%3D%7B65535%2C%200%2C%200%7D%2C%20white%3D%7B65535%2C%2065535%2C%2065535%7D%2C%20black%3D%7B0%2C%200%2C%200%7D%0D--%20to%20derive%20custom%20color%20value%2C%20run%20following%20script%20statement%20and%20copy%20result%3A%20%0D--%20return%20(choose%20color%20default%20color%20%7B65535%2C%200%2C%200%7D)%0D%0D--%20TEXT%20ITEM%20PROPERTIES%0Dproperty%20textOverlayOpacityValue%20%3A%2020%0Dproperty%20textOverlayDefaultPosition%20%3A%204%0D--%200%3Dcenter%2C%201%3Dtop%20left%2C%202%3Dtop%20right%2C%203%3Dbottom%20left%2C%204%3Dbottom%20right%0Dproperty%20textItemOverlayOffset%20%3A%2036%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09if%20playing%20is%20true%20then%20tell%20the%20front%20document%20to%20stop%0D%09%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09set%20textOverlayDefaultPositionName%20to%20item%20(textOverlayDefaultPosition%20%2B%201)%20of%20%C2%AC%0D%09%09%7B%22center%22%2C%20%22top%20left%22%2C%20%22top%20right%22%2C%20%22bottom%20left%22%2C%20%22bottom%20right%22%7D%0D%09%0D%09set%20dialogText%20to%20%22Overlay%20Text%3A%20%22%20%26%20textOverlayString%20%26%20return%20%26%20%C2%AC%0D%09%09%22Text%20Color%3A%20%22%20%26%20textOverlayColorName%20%26%20return%20%26%20%C2%AC%0D%09%09%22Text%20Size%3A%20%22%20%26%20textOverlayFontSize%20%26%20return%20%26%20%C2%AC%0D%09%09%22Typeface%3A%20%22%20%26%20textOverlayTypeface%20%26%20return%20%26%20%C2%AC%0D%09%09%22Text%20Opacity%3A%20%22%20%26%20textOverlayOpacityValue%20%26%20return%20%26%20%C2%AC%0D%09%09%22Text%20Position%3A%20%22%20%26%20textOverlayDefaultPositionName%0D%09%0D%09display%20dialog%20dialogText%20%26%20return%20%26%20return%20%26%20%22Add%20or%20Remove%20text%20overlays%3F%22%20buttons%20%C2%AC%0D%09%09%7B%22Cancel%22%2C%20%22Add%22%2C%20%22Remove%22%7D%20default%20button%201%0D%09set%20addDeleteOverlay%20to%20the%20button%20returned%20of%20the%20result%0D%09%0D%09tell%20the%20front%20document%0D%09%09set%20documentWidth%20to%20its%20width%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09%0D%09%09if%20addDeleteOverlay%20is%20%22Add%22%20then%0D%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20slides%0D%09%09%09%09tell%20slide%20i%0D%09%09%09%09%09set%20thisTextItem%20to%20%C2%AC%0D%09%09%09%09%09%09make%20new%20text%20item%20with%20properties%20%7Bobject%20text%3AtextOverlayString%7D%0D%09%09%09%09%09tell%20thisTextItem%0D%09%09%09%09%09%09tell%20object%20text%0D%09%09%09%09%09%09%09set%20font%20to%20textOverlayTypeface%0D%09%09%09%09%09%09%09set%20size%20to%20textOverlayFontSize%0D%09%09%09%09%09%09%09set%20color%20of%20it%20to%20textOverlayRGBColorValues%0D%09%09%09%09%09%09end%20tell%0D%09%09%09%09%09%09set%20textItemWidth%20to%20its%20width%0D%09%09%09%09%09%09set%20textItemHeight%20to%20its%20height%0D%09%09%09%09%09%09set%20opacity%20to%20textOverlayOpacityValue%0D%09%09%09%09%09%09if%20textOverlayDefaultPosition%20is%200%20then%0D%09%09%09%09%09%09%09--%20center%0D%09%09%09%09%09%09%09set%20x%20to%20(documentWidth%20-%20textItemWidth)%20div%202%0D%09%09%09%09%09%09%09set%20y%20to%20(documentHeight%20-%20textItemHeight)%20div%202%0D%09%09%09%09%09%09else%20if%20textOverlayDefaultPosition%20is%201%20then%0D%09%09%09%09%09%09%09--%20top%20left%0D%09%09%09%09%09%09%09set%20x%20to%20textItemOverlayOffset%0D%09%09%09%09%09%09%09set%20y%20to%20textItemOverlayOffset%0D%09%09%09%09%09%09else%20if%20textOverlayDefaultPosition%20is%202%20then%0D%09%09%09%09%09%09%09--%20top%20right%0D%09%09%09%09%09%09%09set%20x%20to%20documentWidth%20-%20textItemWidth%20-%20textItemOverlayOffset%0D%09%09%09%09%09%09%09set%20y%20to%20textItemOverlayOffset%0D%09%09%09%09%09%09else%20if%20textOverlayDefaultPosition%20is%203%20then%0D%09%09%09%09%09%09%09--%20bottom%20left%0D%09%09%09%09%09%09%09set%20x%20to%20textItemOverlayOffset%0D%09%09%09%09%09%09%09set%20y%20to%20documentHeight%20-%20textItemHeight%20-%20textItemOverlayOffset%0D%09%09%09%09%09%09else%20if%20textOverlayDefaultPosition%20is%204%20then%0D%09%09%09%09%09%09%09--%20bottom%20right%0D%09%09%09%09%09%09%09set%20x%20to%20documentWidth%20-%20textItemWidth%20-%20textItemOverlayOffset%0D%09%09%09%09%09%09%09set%20y%20to%20documentHeight%20-%20textItemHeight%20-%20textItemOverlayOffset%0D%09%09%09%09%09%09end%20if%0D%09%09%09%09%09%09set%20position%20to%20%7Bx%2C%20y%7D%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20tell%0D%09%09%09end%20repeat%0D%09%09else%0D%09%09%09delete%20(every%20text%20item%20of%20every%20slide%20whose%20object%20text%20of%20it%20is%20textOverlayString)%0D%09%09end%20if%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- OBJECT TEXT PROPERTIES</span></td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayString</span> : &quot;DRAFT&quot;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayTypeface</span> : &quot;Impact&quot;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayFontSize</span> : 144</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayColorName</span> : &quot;white&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayRGBColorValues</span> : {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- red={65535, 0, 0}, white={65535, 65535, 65535}, black={0, 0, 0}</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- to derive custom color value, run following script statement and copy result: </span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- return (choose color default color {65535, 0, 0})</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- TEXT ITEM PROPERTIES</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayOpacityValue</span> : 20</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textOverlayDefaultPosition</span> : 4</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span class="codecomment">-- 0=center, 1=top left, 2=top right, 3=bottom left, 4=bottom right</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">textItemOverlayOffset</span> : 36</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then tell the front</b> <span class="codelibraryclass">document</span> <b>to</b> <span class="codelibrarycommand">stop</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">textOverlayDefaultPositionName</span> <b>to</b> <span class="codelibraryclass">item</span> (<span class="codevariable">textOverlayDefaultPosition</span> + 1) <b>of</b> &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{&quot;center&quot;, &quot;top left&quot;, &quot;top right&quot;, &quot;bottom left&quot;, &quot;bottom right&quot;}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">dialogText</span> <b>to</b> &quot;Overlay Text: &quot; &amp; <span class="codevariable">textOverlayString</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>&quot;Text Color: &quot; &amp; <span class="codevariable">textOverlayColorName</span> &amp; <span class="codeenumeration">return</span>> &amp; &not;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>&quot;Text Size: &quot; &amp; <span class="codevariable">textOverlayFontSize</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>&quot;Typeface: &quot; &amp; <span class="codevariable">textOverlayTypeface</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>&quot;Text Opacity: &quot; &amp; <span class="codevariable">textOverlayOpacityValue</span> &amp; <span class="codeenumeration">return</span> &amp; &not;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>&quot;Text Position: &quot; &amp; <span class="codevariable">textOverlayDefaultPositionName</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display dialog</span> <span class="codevariable">dialogText</span> &amp; <span class="codeenumeration">return</span> &amp; <span class="codeenumeration">return</span> &amp; &quot;Add or Remove text overlays?&quot; buttons &not;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span>{&quot;Cancel&quot;, &quot;Add&quot;, &quot;Remove&quot;} default button 1</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">addDeleteOverlay</span> <b>to the</b> <span class="codeproperty">button returned</span> <b>of the</b> <span class="codeproperty">result</span></td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">addDeleteOverlay</span> <b>is</b> &quot;Add&quot; <b>then</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">slides</span></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> i</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTextItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">object text</span>:<span class="codevariable">textOverlayString</span>}</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTextItem</span></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>tell</b> <span class="codeproperty">object text</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">font</span> <b>to</b> <span class="codevariable">textOverlayTypeface</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codeproperty">size</span> <b>to</b> <span class="codevariable">textOverlayFontSize</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codelibraryclass">color</span> <b>of it to</b> <span class="codevariable">textOverlayRGBColorValues</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">textItemWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codevariable">textItemHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">opacity</span> <b>to</b> <span class="codevariable">textOverlayOpacityValue</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>if</b> <span class="codevariable">textOverlayDefaultPosition</span> <b>is</b> 0 <b>then</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- center</span></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> (<span class="codevariable">documentWidth</span> - <span class="codevariable">textItemWidth</span>) <b>div</b> 2</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> (<span class="codevariable">documentHeight</span> - <span class="codevariable">textItemHeight</span>) <b>div</b> 2</td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>else if</b> <span class="codevariable">textOverlayDefaultPosition</span> <b>is</b> 1 <b>then</b></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- top left</span></td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>else if</b> <span class="codevariable">textOverlayDefaultPosition</span> <b>is</b> 2 <b>then</b></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- top right</span></td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> <span class="codevariable">documentWidth</span> - <span class="codevariable">textItemWidth</span> - <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>else if</b> <span class="codevariable">textOverlayDefaultPosition</span> <b>is</b> 3 <b>then</b></td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- bottom left</span></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> <span class="codevariable">documentHeight</span> - <span class="codevariable">textItemHeight</span> - <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>else if</b> <span class="codevariable">textOverlayDefaultPosition</span> <b>is</b> 4 <b>then</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><span class="codecomment">-- bottom right</span></td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to</b> <span class="codevariable">documentWidth</span> - <span class="codevariable">textItemWidth</span> - <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:70px;">&nbsp;</span><b>set</b> <span class="codevariable">y</span> <b>to</b> <span class="codevariable">documentHeight</span> - <span class="codevariable">textItemHeight</span> - <span class="codevariable">textItemOverlayOffset</span></td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>to</b> {<span class="codevariable">x</span>, <span class="codevariable">y</span>}</td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delete</span> (<b>every</b> <span class="codelibraryclass">text item</span> <b>of every</b> <span class="codelibraryclass">slide</span> <b>whose</b> <span class="codeproperty">object text</span> <b>of it is</b> <span class="codevariable">textOverlayString</span>)</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="shape-line.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi"><a href="text-item.html">Text Item</a></li>
+				<li class="navListSectionItem"><a href="text-item-behavior.html">The Text Item Container</a></li>
+				<li class="navListSectionItem"><a href="text-item-styling.html">Styling Object Text</a></li>
+				<li class="navListSectionItemSelected">Text Item Overlays</li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Sections</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for sections in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Sections</div>
+			
+			<p><img class="right" width="144" alt="document-body-control" src="gfx/document-body-control.jpg"> A <span class="codelibraryclass">section</span> is a collection of contiguous pages within a document that its main text flow enabled (sometimes referred to as being in &ldquo;word-processing mode&rdquo;). When a document&rsquo;s <span class="codeproperty">body text</span> is enabled, the <b>document body</b> checkbox, located in the <b>Document Tab</b> of the <b>Document Pane</b> in the document window, will be selected. <span class="numeric-callout">&nbsp;1&nbsp;</span></p>
+			
+			<p>Functionally, <span class="codelibraryclass">sections</span> act as  wrappers for <span class="codelibraryclass">pages</span>, providing a means of identifying the <span class="codelibraryclass">pages</span> for access and manipulation. Although <span class="codelibraryclass">pages</span> can be added to <span class="codelibraryclass">sections</span> using the <span class="codelibrarycommand">make</span> verb, it is better to rely upon the built-in auto-flow mechanism of <b>Pages</b> to add <span class="codelibraryclass">pages</span> as needed.</p>
+			
+			<p>Here is the dictionary excerpt for the <span class="codelibraryclass">section</span> class:</p>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Section Class</p>
+							
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">section</span> <span style="font-size: 12px;"><i>n&nbsp;</i> : A collection of contiguous pages comprising a section within a document.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="codelibraryclass">audio clips</span>, <span class="codelibraryclass">charts</span>, <span class="codelibraryclass">groups</span>, <span class="codelibraryclass">images</span>, <span class="codelibraryclass">iWork items</span>, <span class="codelibraryclass">lines</span>, <span class="codelibraryclass">movies</span>, <span class="codelibraryclass">pages</span>, <span class="codelibraryclass">shapes</span>, <span class="codelibraryclass">tables</span>, <span class="codelibraryclass">text items</span>; contained by <span class="dictionary-class">document.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">body text</span> (<span class="dictionary-class">text</span> ) : The section body text.</p>
+			</div>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Script Examples</p>
+						
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>For use with the examples scripts, <a href="AliceInWonderLandChapters.zip" style="font-weight:bold;">DOWNLOAD</a> a ZIP archive of a <b>Pages</b> document containing the text of <i>Alice in Wonderland</i>, with each chapter as its own section.<br><br>(A special &ldquo;thank you&rdquo; to <a href="http://www.gutenberg.org" target="_blank">Project Gutenberg</a> for making this content available to the public!)</p>
+			
+			<p>Here&rsquo;s a simple script showing the relationship between sections and pages:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Counting Pages in Sections</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script="><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>get the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">sections</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> 12</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>get the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">pages</span> <b>of the first</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> 5</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>get the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">pages</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">--> 64</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+		
+			<p>Because <span class="codeproperty">body text</span> is a property of a <span class="codelibraryclass">document</span>, of a <span class="codelibraryclass">section</span>, and of a <span class="codelibraryclass">page</span>, it can used to target specific parts of a document, such as a specific <span class="codelibraryclass">section</span>, a specific <span class="codelibraryclass">page</span>, and even a specific <span class="codelibraryclass">paragraph</span>:</p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Formatting Body Text</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Pages%22%0D%09activate%0D%09--%20if%20there%20is%20no%20open%20document%20then%20stop%20the%20script%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09%0D%09tell%20front%20document%0D%09%09--%20stop%20if%20the%20document%20does%20not%20contain%20a%20default%20text%20flow%0D%09%09if%20document%20body%20is%20false%20then%20error%20number%20-128%0D%09%09%0D%09%09--%20CHANGE%20PROPERTIES%20OF%20THE%20DOCUMENT%20TEXT%0D%09%09tell%20body%20text%0D%09%09%09set%20the%20font%20to%20%22Verdana%22%0D%09%09end%20tell%0D%09%09%0D%09%09--%20CHANGE%20THE%20PROPERTIES%20OF%20THE%20TEXT%20OF%20EVERY%20SECTION%0D%09%09tell%20body%20text%20of%20every%20section%0D%09%09%09set%20the%20size%20to%2012%0D%09%09%09set%20the%20color%20of%20it%20to%20%7B13107%2C%2013107%2C%2013107%7D%0D%09%09%09--%20set%20the%20properties%20of%20the%201st%20paragraph%20of%20every%20section%0D%09%09%09tell%20its%20first%20paragraph%0D%09%09%09%09set%20the%20font%20to%20%22Times%20New%20Roman%20Bold%22%0D%09%09%09%09set%20the%20size%20to%2018%0D%09%09%09%09set%20its%20color%20to%20%7B0%2C%200%2C%200%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20CHANGE%20THE%20PROPERTIES%20OF%20THE%20TEXT%20OF%20THE%20LAST%20PAGE%20OF%20A%20SECTION%0D%09%09set%20the%20sectionCount%20to%20the%20count%20of%20sections%0D%09%09repeat%20with%20i%20from%20the%20sectionCount%20to%201%20by%20-1%0D%09%09%09if%20i%20is%20sectionCount%20then%0D%09%09%09%09set%20the%20color%20of%20the%20body%20text%20of%20the%20last%20page%20to%20%7B65535%2C%200%2C%200%7D%0D%09%09%09else%0D%09%09%09%09tell%20section%20i%20of%20it%0D%09%09%09%09%09tell%20body%20text%20of%20the%20last%20page%0D%09%09%09%09%09%09set%20the%20color%20of%20it%20to%20%7B65535%2C%200%2C%200%7D%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20tell%0D%09%09%09end%20if%0D%09%09end%20repeat%0D%09end%20tell%0D%09%0D%09--%20notify%20the%20user%0D%09display%20notification%20%22Section%20formating%20completed.%22%20with%20title%20%22Pages%20AppleScript%22%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Pages&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- if there is no open document then stop the script</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- stop if the document does not contain a default text flow</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codeproperty">document body</span> <b>is</b> <span class="codeenumeration">false</span> <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHANGE PROPERTIES OF THE DOCUMENT TEXT</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font</span> <b>to</b> &quot;Verdana&quot;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHANGE THE PROPERTIES OF THE TEXT OF EVERY SECTION</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span> <b>of every</b> <span class="codelibraryclass">section</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">size</span> <b>to</b> 12</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of it to</b> {13107, 13107, 13107}</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set the properties of the 1st paragraph of every section</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell its first</b> <span class="codelibraryclass">paragraph</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font</span> <b>to</b> &quot;Times New Roman Bold&quot;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">size</span> <b>to</b> 18</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set its</b> <span class="codeproperty">color</span> <b>to</b> {0, 0, 0}</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- CHANGE THE PROPERTIES OF THE TEXT OF THE LAST PAGE OF a SECTION</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">sectionCount</span> <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">sections</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from the</b> <span class="codevariable">sectionCount</span> <b>to</b> 1 <b>by</b> -1</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">i</span> <b>is</b> <span class="codevariable">sectionCount</span> <b>then</b></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of the</b> <span class="codeproperty">body text</span> <b>of the last</b> <span class="codelibraryclass">page</span> <b>to</b> {65535, 0, 0}</td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>else</b></td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">section</span> <span class="codevariable">i</span> <b>of it</b></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codeproperty">body text</span> <b>of the last</b> page</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">color</span> <b>of it to</b> {65535, 0, 0}</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end if</b></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- notify the user</span></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">display notification</span> &quot;Section formating completed.&quot; <span class="codelibraryparameter">with title</span>  &quot;Pages AppleScript&quot;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="section-import.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li class="hi"><a href="section.html">Section</a></li>
+				<li class="navListSectionItem"><a href="section-import.html">Create Sections from Imported Files</a></li>
+				<li class="navListSectionItem"><a href="section-export.html">Export Sections to Files</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

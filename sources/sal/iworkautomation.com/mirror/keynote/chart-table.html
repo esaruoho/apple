@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Table &amp; Charts from Shared Data</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for charts in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Table &amp; Charts from Shared Data</div>
+			
+			<p>A compelling reason for using automation is its ability to quickly display data in a variety of formats. For example, a single data set can be displayed as a table, or as a chart, or as both &mdash; in seconds. With the AppleScript support in <b>Keynote</b>, connecting data to display becomes a hands-free process, as demonstrated by the following script that generates a presentation containing slides showing a table and multiple charts from a single data set: <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+		
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Table &amp; Charts From Shared Data</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09%0D%09--%20STOP%20ANY%20PLAYING%20PRESENTATION%0D%09if%20playing%20is%20true%20then%20stop%20the%20front%20document%0D%09%0D%09activate%0D%09%0D%09--%20MAKE%20NEW%20DOCUMENT%0D%09set%20thisDocument%20to%20make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%7Bheight%3A764%2C%20width%3A1024%2C%20document%20theme%3Atheme%20%22Black%22%7D%0D%09%0D%09tell%20thisDocument%0D%09%09%0D%09%09--%20THE%20SOURCE%20DATA%0D%09%09set%20rowNames%20to%20%7B%22ROW%20A%22%2C%20%22ROW%20B%22%2C%20%22ROW%20C%22%7D%0D%09%09set%20columnNames%20to%20%7B%22COL%201%22%2C%20%22COL%202%22%2C%20%22COL%203%22%2C%20%22COL%204%22%7D%0D%09%09set%20rowCount%20to%20count%20of%20rowNames%0D%09%09set%20columnCount%20to%20count%20of%20columnNames%0D%09%09set%20thisData%20to%20my%20generateRandomData(rowCount%2C%20columnCount)%0D%09%09%0D%09%09--%20THE%20EXISTING%20SLIDE%0D%09%09tell%20slide%201%0D%09%09%09set%20the%20base%20slide%20to%20master%20slide%20%22Title%20-%20Top%22%20of%20thisDocument%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Table%22%0D%09%09%09%0D%09%09%09--%20MAKE%20A%20TABLE%20FROM%20DATA%0D%09%09%09--%20include%20headers%20in%20counts%0D%09%09%09set%20the%20rowCount%20to%20(the%20count%20of%20thisData)%20%2B%201%0D%09%09%09set%20the%20columnCount%20to%20(the%20count%20of%20(item%201%20of%20thisData))%20%2B%201%0D%09%09%09%0D%09%09%09--%20make%20the%20table%0D%09%09%09set%20thisTable%20to%20%C2%AC%0D%09%09%09%09make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Brow%20count%3ArowCount%2C%20column%20count%3AcolumnCount%7D%0D%09%09%09%0D%09%09%09--%20populate%20the%20table%0D%09%09%09tell%20thisTable%0D%09%09%09%09--%20column%20headers%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20the%20count%20of%20the%20columnNames%0D%09%09%09%09%09set%20the%20value%20of%20cell%20(i%20%2B%201)%20of%20row%201%20to%20item%20i%20of%20columnNames%0D%09%09%09%09end%20repeat%0D%09%09%09%09%0D%09%09%09%09--%20row%20headers%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20the%20count%20of%20the%20rowNames%0D%09%09%09%09%09set%20the%20value%20of%20cell%20(i%20%2B%201)%20of%20column%201%20to%20item%20i%20of%20rowNames%0D%09%09%09%09end%20repeat%0D%09%09%09%09%0D%09%09%09%09--%20insert%20data%2C%20which%20is%20assumed%20to%20be%20grouped%20by%20rows%0D%09%09%09%09repeat%20with%20q%20from%201%20to%20the%20count%20of%20thisData%0D%09%09%09%09%09set%20thisDataItem%20to%20item%20q%20of%20thisData%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20the%20count%20of%20thisDataItem%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20(i%20%2B%201)%20of%20row%20(q%20%2B%201)%20to%20item%20i%20of%20thisDataItem%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20repeat%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09%09%0D%09%09--%20MAKE%20NEW%20SLIDE%0D%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Title%20-%20Top%22%7D%0D%09%09tell%20thisSlide%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Grouped%20by%20Column%22%0D%09%09%09%0D%09%09%09--%20MAKE%20A%20CHART%20FROM%20DATA%20(GROUPED%20BY%20COLUMN)%0D%09%09%09add%20chart%20row%20names%20rowNames%20column%20names%20columnNames%20%C2%AC%0D%09%09%09%09data%20thisData%20type%20line_2d%20group%20by%20chart%20column%0D%09%09end%20tell%0D%09%09%0D%09%09--%20MAKE%20NEW%20SLIDE%0D%09%09set%20thisSlide%20to%20make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Title%20-%20Top%22%7D%0D%09%09tell%20thisSlide%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22Grouped%20by%20Row%22%0D%09%09%09%0D%09%09%09--%20MAKE%20A%20CHART%20FROM%20DATA%20(GROUPED%20BY%20ROW)%0D%09%09%09add%20chart%20row%20names%20rowNames%20column%20names%20columnNames%20%C2%AC%0D%09%09%09%09data%20thisData%20type%20line_2d%20group%20by%20chart%20row%0D%09%09end%20tell%0D%09end%20tell%0D%09%0D%09--%20PLAY%20THE%20PRESENTATION%0D%09start%20thisDocument%20from%20first%20slide%20of%20thisDocument%0D%09%0Dend%20tell%0D%0D--%20SUB-ROUTINE%20FOR%20GENERATING%20RANDOM%20ROW%2FCOLUMN%20DATA%0Don%20generateRandomData(rowCount%2C%20columnCount)%0D%09set%20thisData%20to%20%7B%7D%0D%09repeat%20rowCount%20times%0D%09%09set%20thisDataItem%20to%20%7B%7D%0D%09%09repeat%20columnCount%20times%0D%09%09%09set%20thisValue%20to%20random%20number%20from%200%20to%20100%0D%09%09%09set%20the%20end%20of%20thisDataItem%20to%20thisValue%0D%09%09end%20repeat%0D%09%09set%20the%20end%20of%20thisData%20to%20thisDataItem%0D%09end%20repeat%0D%09return%20thisData%0Dend%20generateRandomData"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- STOP ANY PLAYING PRESENTATION</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codeproperty">playing</span> <b>is</b> <span class="codeenumeration">true</span> <b>then</b> <span class="codelibrarycommand">stop</span> <b>the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- MAKE NEW DOCUMENT</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span>{<span class="codeproperty">height</span>:764, <span class="codeproperty">width</span>:1024, <span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;}</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- THE SOURCE DATA</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">rowNames</span> <b>to</b> {&quot;ROW A&quot;, &quot;ROW B&quot;, &quot;ROW C&quot;}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">columnNames</span> <b>to</b> {&quot;COL 1&quot;, &quot;COL 2&quot;, &quot;COL 3&quot;, &quot;COL 4&quot;}</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">rowCount</span> <b>to</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">rowNames</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">columnCount</span> <b>to</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">columnNames</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisData</span> <b>to my</b> <span class="codevariable">generateRandomData</span>(<span class="codevariable">rowCount</span>, <span class="codevariable">columnCount</span>)</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- THE EXISTING SLIDE</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">slide</span> 1</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title - Top&quot; <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Table&quot;</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- MAKE A TABLE FROM DATA</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- include headers in counts</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">rowCount</span> <b>to</b> (<b>the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisData</span>) + 1</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">columnCount</span> <b>to</b> (<b>the</b> <span class="codelibrarycommand">count</span> <b>of</b> (<span class="codelibraryclass">item</span> 1 <b>of</b> <span class="codevariable">thisData</span>)) + 1</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- make the table</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">row count</span>:<span class="codevariable">rowCount</span>, <span class="codeproperty">column count</span>:<span class="codevariable">columnCount</span>}</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- populate the table</span></td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- column headers</span></td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">columnNames</span></td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">i</span> + 1) <b>of</b> <span class="codelibraryclass">row</span> 1 <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">columnNames</span></td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- row headers</span></td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the the</b> <span class="codelibrarycommand">count</span> <b>of the</b> <span class="codevariable">rowNames</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">i</span> + 1) <b>of</b> column 1 <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">rowNames</span></td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- insert data, which is assumed to be grouped by rows</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">q</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisData</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDataItem</span> <b>to</b> item <span class="codevariable">q</span> <b>of</b> <span class="codevariable">thisData</span></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">thisDataItem</span></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> (<span class="codevariable">i</span> + 1) <b>of</b> <span class="codelibraryclass">row</span> (<span class="codevariable">q</span> + 1) <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">thisDataItem</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- MAKE NEW SLIDE</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> thisSlide <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Title - Top&quot;}</td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> thisSlide</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Grouped by Column&quot;</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- MAKE A CHART FROM DATA (GROUPED BY COLUMN)</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">add chart</span> <span class="codelibraryparameter">row names</span> <span class="codevariable">rowNames</span> <span class="codelibraryparameter">column names</span> <span class="codevariable">columnNames</span> &not;</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryparameter">data</span> <span class="codevariable">thisData</span> <span class="codelibraryparameter">type</span> <span class="codeenumeration">line_2d</span> <span class="codelibraryparameter">group by</span> <span class="codeenumeration">chart column</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- MAKE NEW SLIDE</span></td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> thisSlide <b>to</b> <span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Title - Top&quot;}</td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;Grouped by Row&quot;</td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- MAKE A CHART FROM DATA (GROUPED BY ROW)</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">add chart</span> <span class="codelibraryparameter">row names</span> <span class="codevariable">rowNames</span> <span class="codelibraryparameter">column names</span> <span class="codevariable">columnNames</span> &not;</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td><span style="float:left; width:40px;">&nbsp;</span><span class="codelibraryparameter">data</span> <span class="codevariable">thisData</span> <span class="codelibraryparameter">type</span> <span class="codeenumeration">line_2d</span> <span class="codelibraryparameter">group by</span> <span class="codeenumeration">chart row</span></td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codecomment">-- PLAY THE PRESENTATION</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">start</span> <span class="codevariable">thisDocument</span> <b>from first</b> <span class="codelibraryclass">slide</span> <b>of</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td><b>end tell</b></td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td><span class="codecomment">-- SUB-ROUTINE FOR GENERATING RANDOM ROW/COLUMN DATA</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td><b>on</b> <span class="codevariable">generateRandomData</span>(<span class="codevariable">rowCount</span>, <span class="codevariable">columnCount</span>)</td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisData</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>repeat</b> <span class="codevariable">rowCount</span> <b>times</b></td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDataItem</span> <b>to</b> {}</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>repeat</b> <span class="codevariable">columnCount</span> <b>times</b></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisValue</span> <b>to</b> <span class="codelibrarycommand">random number</span> <span class="codelibraryparameter">from</span> 0 <span class="codelibraryparameter">to</span> 100</td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td><span style="float:left; width:30px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">thisDataItem</span> <b>to</b> <span class="codevariable">thisValue</span></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">93</td><td class="line-buffer"></td><td><span style="float:left; width:20px;">&nbsp;</span><b>set the end of</b> <span class="codevariable">thisData</span> <b>to</b> <span class="codevariable">thisDataItem</span></td></tr>
+				<tr><td class="line-count">94</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">95</td><td class="line-buffer"></td><td><span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">thisData</span></td></tr>
+				<tr><td class="line-count">96</td><td class="line-buffer"></td><td><b>end</b> <span class="codevariable">generateRandomData</span></td></tr>
+			</table>
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The slides created by the script:</p>
+			
+			<img class="centered" width="624" alt="table-chart.001" src="gfx/table-chart.001.jpg">
+			<img class="centered" width="624" alt="table-chart.002" src="gfx/table-chart.002.jpg">
+			<img class="centered" width="624" alt="table-chart.003" src="gfx/table-chart.003.jpg">
+
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="examples.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li class="hi"><a href="chart.html">Chart</a></li>
+				<li class="navListSectionItem"><a href="chart-vertical-bar.html">Vertical Bar Charts</a></li>
+				<li class="navListSectionItemSelected">Data to Table &amp; Chart</li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Essential Sub-Routines</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Essential Sub-routines</h2>
+		
+		<p>This section contains dozens of AppleScript sub-routines designed to address a variety of common scripting tasks such as sorting lists of names or parsing HTML files. You can click the small Script Editor icons to open the examples in the Script Editor application on your computer.</P.
+
+		<hr><h3>What is a Sub-routine?</h3>
+		
+		<p>Sub-routines are valuable tools and a necessary part of every scripter's repertoire. In many respects, a sub-routine is very similar to having an assistant who can perform a specific set of actions to aid you in accomplishing a task.</p>
+		
+		<p>Sub-routines exist in scripts as sections of specialized AppleScript code placed at the end of your scripts. They are named and function as commands which can be evoked from anywhere within your script.</p>
+		
+		<p>Most often, sub-routines are created to handle a task which is performed multiple times throughout a script. Instead of inserting a section of AppleScript code many times throughout a script, it is placed at the end of the script as a sub-routine and is called when needed.</p>
+		
+		<p class="note"><b>NOTE</b>: For a complete overview of all aspects of creating and using sub-routines, refer to the <a href="#"><font color="#003399">AppleScript Language Guide</font></a>. The material presented here is a general overview of some standard techniques.</p>
+		
+		<p>For example, the following script code checks the amount of free space of the startup disk and if it is less than 10 percent of the capacity of the startup disk, will post a dialog to the user alerting them to the situation and asking if the script should continue:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Finder%22%0D%09set%20the%20percent_free%20to%20%28%28%28the%20free%20space%20of%20the%20startup%20disk%29%20%2F%20%28the%20capacity%20of%20the%20startup%20disk%29%29%20%2A%20100%29%20div%201%0Dend%20tell%0Dif%20the%20percent_free%20is%20less%20than%2010%20then%0D%09tell%20application%20%28path%20to%20frontmost%20application%20as%20text%29%0D%09%09display%20dialog%20%22The%20startup%20disk%20has%20only%20%22%20%26%20the%20percent_free%20%26%20%22%20percent%20of%20its%20capacity%20available%2E%22%20%26%20return%20%26%20return%20%26%20%22Should%20this%20script%20continue%3F%22%20with%20icon%201%0D%09end%20tell%0Dend%20if"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script that checks to see if a specified percentage of disk space is available:<br>&nbsp;<br><br></span><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set the</b> <span class="codevariable">percent_free</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>(((<b>the</b> free space <b>of the</b> startup disk) / (<b>the</b> capacity <b>of the</b> startup disk)) * 100) <b>div</b> 1<BR>
+		<b>end tell</b><BR>
+		<b>if the</b> <span class="codevariable">percent_free</span> <b>is less than</b> 10 <b>then</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application (path to frontmost application <b>as</b> text)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span>display dialog &quot;The startup disk has only &quot; &amp; the <span class="codevariable">percent_free</span> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot; percent of its capacity available.&quot; &amp; <b>return &amp; return</b> &amp; &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>&quot;Should this script continue?&quot; <b>with</b> icon 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<b>end if</b></p>
+		
+		<p>To convert this section of AppleScript code to a sub-routine, it is placed within special opening and closing statements which identify the section as a sub-routine. In this example, the sub-routine is named:</p>
+		
+		<p class="code"><span class="codevariable">space_check</span></p>
+		
+		<p>You can name your sub-routines whatever you like as long as the name contains no special characters or spaces. The sub-routine name is then preceded by the word "on" and followed by an open and close parens. This is the opening part of the sub-routine handler and is placed before the section of AppleScript code we wish to identify as a sub-routine.</p>
+		
+		<p class="code"><b>on</b> <span class="codevariable">space_check</span>()</p>
+		
+		<p>To complete the sub-routine, the code segment is followed by a closing statement which begins with the word "end" and the sub-routine name.</p>
+		
+		<p class="code"><b>end</b> <span class="codevariable">space_check</span></p>
+		
+		<p>Here's the previous code made into a sub-routine:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=on%20space_check%28%29%0D%09tell%20application%20%22Finder%22%0D%09%09set%20the%20percent_free%20to%20%28%28%28the%20free%20space%20of%20the%20startup%20disk%29%20%2F%20%28the%20capacity%20of%20the%20startup%20disk%29%29%20%2A%20100%29%20div%201%0D%09end%20tell%0D%09if%20the%20percent_free%20is%20less%20than%2010%20then%0D%09%09tell%20application%20%28path%20to%20frontmost%20application%20as%20text%29%0D%09%09%09display%20dialog%20%22The%20startup%20disk%20has%20only%20%22%20%26%20the%20percent_free%20%26%20%22%20percent%20of%20its%20capacity%20available%2E%22%20%26%20return%20%26%20return%20%26%20%22Should%20this%20script%20continue%3F%22%20with%20icon%201%0D%09%09end%20tell%0D%09end%20if%0Dend%20space_check"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A code segment turned into a callable sub-routine:<br>&nbsp;<br><br></span><b>on</b> <span class="codevariable">space_check</span>()<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">percent_free</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>(((<b>the</b> free space <b>of the</b> startup disk) / (<b>the</b> capacity <b>of the</b> startup disk)) * 100) <b>div</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">percent_free</span> <b>is less than</b> 10 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application (path to frontmost application <b>as</b> text)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;The startup disk has only &quot; &amp; the <span class="codevariable">percent_free</span> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot; percent <b>of its</b> capacity available.&quot; &amp; <b>return &amp; return</b> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot;Should this script continue?&quot; <b>with</b> icon 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">space_check</span><BR>
+		</p>
+		
+		
+		<hr><h3>Calling a Sub-routine</h3>
+		
+		<p>Sub-routines can be called from anywhere within a script. To call a sub-routine, just place the sub-routine name and its following parens on a line in the script. When the script gets to that line, it will jump to the sub-routine and execute its AppleScript code. When the execution of the sub-routine has completed, the script will return to its previous position in the script and continue onward.</p>
+
+		<p>There is one special requirement for evoking a sub-routine within a <span class="dictionary-term">tell block</span>: it must be preceded by the word "<span class="dictionary-term">my</span>". Doing so identifies to the script that the sub-routine name belongs to the script and not to the object targeted by the <span class="dictionary-term">tell block</span>.</p>
+
+		<p>The following example demonstrates how a sub-routine is called from within a script. Notice that the word "<span class="dictionary-term">my</span>" is placed before the sub-routine command the second time it is used in the script. This is because the second evocation was placed within a <span class="dictionary-term">tell block</span>.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=space_check%28%29%0D%0Dtell%20application%20%22Finder%22%0D%09display%20dialog%20%22This%20script%20will%20backup%20every%20document%20file%20in%20the%20top%2Dlevel%20of%20your%20Documents%20folder%20to%20a%20folder%20on%20the%20desktop%20named%20EXAMPLE%20BACKUP%2E%22%20%26%20return%20%26%20return%20%26%20%22Continue%3F%22%0D%09if%20not%20%28exists%20folder%20%22EXAMPLE%20BACKUP%22%29%20then%0D%09%09make%20new%20folder%20at%20desktop%20with%20properties%20%7Bname%3A%22EXAMPLE%20BACKUP%22%7D%0D%09end%20if%0D%09try%0D%09%09repeat%20with%20this_file%20in%20%28every%20document%20file%20of%20folder%20%22Documents%22%20of%20home%29%0D%09%09%09duplicate%20this_file%20to%20folder%20%22EXAMPLE%20BACKUP%22%20with%20replacing%0D%09%09%09my%20space_check%28%29%0D%09%09end%20repeat%0D%09on%20error%20error_message%20number%20error_number%0D%09%09if%20the%20error_number%20is%20not%20%2D128%20then%0D%09%09%09display%20dialog%20error_message%20buttons%20%7B%22OK%22%7D%20default%20button%201%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20space_check%28%29%0D%09tell%20application%20%22Finder%22%0D%09%09set%20the%20percent_free%20to%20%28%28%28the%20free%20space%20of%20the%20startup%20disk%29%20%2F%20%28the%20capacity%20of%20the%20startup%20disk%29%29%20%2A%20100%29%20div%201%0D%09end%20tell%0D%09if%20the%20percent_free%20is%20less%20than%2010%20then%0D%09%09tell%20application%20%28path%20to%20frontmost%20application%20as%20text%29%0D%09%09%09display%20dialog%20%22The%20startup%20disk%20has%20only%20%22%20%26%20the%20percent_free%20%26%20%22%20percent%20of%20its%20capacity%20available%2E%22%20%26%20return%20%26%20return%20%26%20%22Should%20this%20script%20continue%3F%22%20with%20icon%201%0D%09%09end%20tell%0D%09end%20if%0Dend%20space_check"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating how to call a sub-routine:<br>&nbsp;<br><br></span>
+		<b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (exists folder &quot;EXAMPLE BACKUP&quot;) <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>make new folder at desktop <b>with</b> properties {name:&quot;EXAMPLE BACKUP&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_file</span> <b>in (every</b> document file <b>of</b> folder &quot;Documents&quot; <b>of</b> home)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>duplicate <span class="codevariable">this_file</span> <b>to</b> folder &quot;EXAMPLE BACKUP&quot; <b>with</b> replacing<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>my</b> <span class="codevariable">space_check</span>()<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_message</span> number <span class="codevariable">error_number</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">error_number</span> <b>is not</b> -128 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;OK&quot;} default button 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+		<b>end tell</b><BR>
+		<BR>
+		<b>on</b> <span class="codevariable">space_check</span>()<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">percent_free</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>(((<b>the</b> free space <b>of the</b> startup disk) / &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>(<b>the</b> capacity <b>of the</b> startup disk)) * 100) <b>div</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">percent_free</span> <b>is less than</b> 10 <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application (path to frontmost application <b>as</b> text)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;The startup disk has only &quot; &amp; the <span class="codevariable">percent_free</span> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot; percent <b>of its</b> capacity available.&quot; &amp; <b>return &amp; return</b> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot;Should this script continue?&quot; <b>with</b> icon 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">space_check</span></p>
+		
+		<hr><h3>Passing Parameters to a Sub-routine</h3>
+		
+		<p>Sub-routines can receive information passed to them from the script. The passed information can alter the way the sub-routine works or be data that the sub-routine processes and returns to the script.</p>
+
+		<p>The following is an example of the previously shown sub-routine now adapted to require a passed parameter. Notice that there is now a variable within the parens: <span class="inlinecode">threshold_percentage</span>. This variable will contain the information passed to the sub-routine. In this example, the sub-routine is expecting a numeric value indicating the lowest percentage of disk space available before the sub-routine posts a dialog to the user.</p>
+		
+		<p class="code"><b>on</b> <span class="codevariable">space_check</span>(<span class="codevariable">threshold_percentage</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">percent_free</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>(((<b>the</b> free space <b>of the</b> startup disk) / &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>(<b>the</b> capacity <b>of the</b> startup disk)) * 100) <b>div</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">percent_free</span> <b>is less than the</b> <span class="codevariable">threshold_percentage</span> <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application (path to frontmost application <b>as</b> text)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;The startup disk has only &quot; &amp; the <span class="codevariable">percent_free</span> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot; percent <b>of its</b> capacity available.&quot; &amp; <b>return &amp; return</b> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot;Should this script continue?&quot; <b>with</b> icon 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">space_check</span></p>
+		
+		
+		<p>Here is a version of the example script using the new version of the sub-routine. Notice that when the sub-routine is called from within the script, a numeric value is placed within the parens to be passed to sub-routine.</p>
+
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=space_check%2820%29%0D%0Dtell%20application%20%22Finder%22%0D%09display%20dialog%20%22This%20script%20will%20backup%20every%20document%20file%20in%20the%20top%2Dlevel%20of%20your%20Documents%20folder%20to%20a%20folder%20on%20the%20desktop%20named%20EXAMPLE%20BACKUP%2E%22%20%26%20return%20%26%20return%20%26%20%22Continue%3F%22%0D%09if%20not%20%28exists%20folder%20%22EXAMPLE%20BACKUP%22%29%20then%0D%09%09make%20new%20folder%20at%20desktop%20with%20properties%20%7Bname%3A%22EXAMPLE%20BACKUP%22%7D%0D%09end%20if%0D%09try%0D%09%09repeat%20with%20this_file%20in%20%28every%20document%20file%20of%20folder%20%22Documents%22%20of%20home%29%0D%09%09%09duplicate%20this_file%20to%20folder%20%22EXAMPLE%20BACKUP%22%20with%20replacing%0D%09%09%09my%20space_check%2820%29%0D%09%09end%20repeat%0D%09on%20error%20error_message%20number%20error_number%0D%09%09if%20the%20error_number%20is%20not%20%2D128%20then%0D%09%09%09display%20dialog%20error_message%20buttons%20%7B%22OK%22%7D%20default%20button%201%0D%09%09end%20if%0D%09end%20try%0Dend%20tell%0D%0Don%20space_check%28threshold_percentage%29%0D%09tell%20application%20%22Finder%22%0D%09%09set%20the%20percent_free%20to%20%28%28%28the%20free%20space%20of%20the%20startup%20disk%29%20%2F%20%28the%20capacity%20of%20the%20startup%20disk%29%29%20%2A%20100%29%20div%201%0D%09end%20tell%0D%09if%20the%20percent_free%20is%20less%20than%20the%20threshold_percentage%20then%0D%09%09tell%20application%20%28path%20to%20frontmost%20application%20as%20text%29%0D%09%09%09display%20dialog%20%22The%20startup%20disk%20has%20only%20%22%20%26%20the%20percent_free%20%26%20%22%20percent%20of%20its%20capacity%20available%2E%22%20%26%20return%20%26%20return%20%26%20%22Should%20this%20script%20continue%3F%22%20with%20icon%201%0D%09%09end%20tell%0D%09end%20if%0Dend%20space_check"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating how to pass data into a sub-routine:<br>&nbsp;<br><br></span><span class="codevariable">space_check</span>(20)<BR>
+		<BR>
+		<b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (exists folder &quot;EXAMPLE BACKUP&quot;) <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span>make new folder at desktop <b>with</b> properties {name:&quot;EXAMPLE BACKUP&quot;}<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">this_file</span> <b>in (every</b> document file <b>of</b> folder &quot;Documents&quot; <b>of</b> home)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>duplicate <span class="codevariable">this_file</span> <b>to</b> folder &quot;EXAMPLE BACKUP&quot; <b>with</b> replacing<BR>
+		<span style="float:left; width:30px;">&nbsp;</span><b>my</b> <span class="codevariable">space_check</span>(20)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end repeat</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>on error</b> <span class="codevariable">error_message</span> number <span class="codevariable">error_number</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">error_number</span> <b>is not</b> -128 <b>then</b><BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span> buttons {&quot;OK&quot;} default button 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+		<b>end tell</b><BR>
+		<BR>
+		<b>on</b> <span class="codevariable">space_check</span>(<span class="codevariable">threshold_percentage</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Finder&quot;<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">percent_free</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>(((<b>the</b> free space <b>of the</b> startup disk) / &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>(<b>the</b> capacity <b>of the</b> startup disk)) * 100) <b>div</b> 1<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if the</b> <span class="codevariable">percent_free</span> <b>is less than the</b> <span class="codevariable">threshold_percentage</span> <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>tell</b> application (path to frontmost application <b>as</b> text)<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>display dialog &quot;The startup disk has only &quot; &amp; the <span class="codevariable">percent_free</span> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot; percent <b>of its</b> capacity available.&quot; &amp; <b>return &amp; return</b> &amp; &not;<BR>
+		<span style="float:left; width:40px;">&nbsp;</span>&quot;Should this script continue?&quot; <b>with</b> icon 1<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<b>end</b> <span class="codevariable">space_check</span></p>
+		
+		
+		<hr><h3>Returning Data from the Sub-routine</h3>
+		
+		<p>Often sub-routines are used to process passed information and return the result back to the script. To enable this functionality, place in your sub-routine the return command followed by the value to return to the script.</p>
+
+		<p>In the example script below, the sub-routine is passed a file name which ends with a file type extension. The sub-routine located and removes the extension and returns the file name without an extension to the script.</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20file_name%20to%20%22RESTORATION%2ETXT%22%0Ddisplay%20dialog%20%22The%20name%20of%20the%20file%20is%3A%20%22%20%26%20return%20%26%20return%20%26%20file_name%20buttons%20%7B%22OK%22%7D%20default%20button%201%0Dset%20file_name%20to%20remove_extension%28file_name%29%0Ddisplay%20dialog%20%22The%20name%20of%20the%20file%20without%20the%20extension%20is%3A%20%22%20%26%20return%20%26%20return%20%26%20file_name%20buttons%20%7B%22OK%22%7D%20default%20button%201%0D%0Don%20remove_extension%28this_name%29%0D%09if%20this_name%20contains%20%22%2E%22%20then%0D%09%09set%20this_name%20to%20%28the%20reverse%20of%20every%20character%20of%20this_name%29%20as%20string%0D%09%09set%20x%20to%20the%20offset%20of%20%22%2E%22%20in%20this_name%0D%09%09set%20this_name%20to%20%28text%20%28x%20%2B%201%29%20thru%20%2D1%20of%20this_name%29%0D%09%09set%20this_name%20to%20%28the%20reverse%20of%20every%20character%20of%20this_name%29%20as%20string%0D%09end%20if%0D%09return%20this_name%0Dend%20remove_extension"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script demonstrating how to return data from a sub-routine:<br>&nbsp;<br><br></span><b>set</b> <span class="codevariable">file_name</span> <b>to</b> &quot;RESTORATION.TXT&quot;<BR>
+		display dialog &quot;The name of the file is: &quot; &amp; &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return &amp; return</b> &amp; <span class="codevariable">file_name</span> buttons {&quot;OK&quot;} default button 1<BR>
+		<b>set</b> <span class="codevariable">file_name</span> <b>to</b> <span class="codevariable">remove_extension</span>(<span class="codevariable">file_name</span>)<BR>
+		display dialog &quot;The name of the file without the extension is: &quot; &amp; &not;<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return &amp; return</b> &amp; <span class="codevariable">file_name</span> buttons {&quot;OK&quot;} default button 1<BR>
+		<BR>
+		<b>on</b> <span class="codevariable">remove_extension</span>(<span class="codevariable">this_name</span>)<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> <span class="codevariable">this_name</span> <b>contains</b> &quot;.&quot; <b>then</b><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_name</span> <b>to</b> &not;<BR>
+		<span style="float:left; width:30px;">&nbsp;</span>(<b>the</b> reverse <b>of every</b> character <b>of</b> <span class="codevariable">this_name</span>) <b>as</b> string<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">x</span> <b>to the</b> offset <b>of</b> &quot;.&quot; <b>in</b> <span class="codevariable">this_name</span><BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_name</span> <b>to</b> (text (<span class="codevariable">x</span> + 1) <b>thru</b> -1 <b>of</b> <span class="codevariable">this_name</span>)<BR>
+		<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_name</span> <b>to</b> (<b>the</b> reverse <b>of every</b> character <b>of</b> <span class="codevariable">this_name</span>) <b>as</b> string<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>return</b> <span class="codevariable">this_name</span><BR>
+		<b>end</b> <span class="codevariable">remove_extension</span></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Topics</h2>
+			<ul class="square">
+				<li class="hi">Overview</li>
+				<li><a href="sbrt-00.html">AppleScriptObjective-C (ASOC)</a></li>
+				<li><a href="sbrt-01.html">Math Routines</a></li>
+				<li><a href="sbrt-02.html">Number to Text</a></li>
+				<li><a href="sbrt-03.html">Filtering Routines</a></li>
+				<li><a href="sbrt-04.html">HTML Routines</a></li>
+				<li><a href="sbrt-05.html">Sorting Routines</a></li>
+				<li><a href="sbrt-06.html">Text Manipulation</a></li>
+				<li><a href="sbrt-07.html">Working With Lists</a></li>
+				<li><a href="sbrt-08.html">Text Encoding | Decoding</a></li>
+				<li><a href="sbrt-09.html">Writing to File</a></li>
+				<li><a href="sbrt-10.html">Finder Droplets</a></li>
+				<li><a href="sbrt-11.html">AppleScript CGI</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

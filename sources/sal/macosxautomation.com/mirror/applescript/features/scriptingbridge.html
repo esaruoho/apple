@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Scripting Bridge</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html" class="hi">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Scripting Bridge</h2>
+		<p>AppleScript is an English-like language interface to the Apple Event messaging architecture of Mac&nbsp;OS&nbsp;X. AppleScript scripts, when executed, are translated by the AppleScript frameworks into Apple Events used to query and control &quot;scriptable&quot; applications.</p> 
+		
+		<p>For years, developers and solution providers have sought an easy way to include similar abilities within other common programming languages.  Mac&nbsp;OS&nbsp;X&nbsp;v.10.5 includes a new framework called Scripting Bridge that enables common languages, such as Ruby, Python, and Objective-C, to easily send Apple Events to scriptable applications.</p>
+		
+		<p>Detailed information for developers wanting to take advantage of the new Scripting Bridge frameworks is available <a href="http://developer.apple.com">here</a>.</p>
+		
+		<img src="gfx/scriptingbridge.jpg" width="640" align="top" class="across" height="383">
+		
+		<p class="imagecaption">&ldquo;Scriptable&rdquo; applications in Mac&nbsp;OS&nbsp;X&nbsp;v.10.5 (those with a built-in Apple Events dictionary) can be queried and controlled directly by AppleScript, or by a variety of other programing languages using the new Scripting Bridge frameworks.</p>
+		
+		<h2>Examples</h2>
+		<p>Here are examples of how a variety of languages can be used to get the name of the current track playing in the iTunes application:</p>
+		
+		<h3>AppleScript</h3>
+		<p>AppleScript is the native scripting language of Mac&nbsp;OS&nbsp; and does not require the Scripting Bridge frameworks. AppleScript scripts written in the Script Editor application use the default Mac&nbsp;OS&nbsp;X scripting architecture and require no special coding to execute:</p>
+		
+		<p class="code"><b>tell</b> application &quot;iTunes&quot; <b>to get the</b> name <b>of the</b> current track</p>
+		
+		<h3>Ruby</h3>
+		<p>Ruby can be used with the Scripting Bridge frameworks to query and control scriptable applications.</p>
+		
+		<p class="code">#!/usr/bin/ruby<BR>
+		<BR>
+		require &quot;osx/cocoa&quot;<BR>
+		include OSX<BR>
+		OSX.require_framework 'ScriptingBridge'<BR>
+		<BR>
+		iTunes = OSX::SBApplication.applicationWithBundleIdentifier_(&quot;com.apple.iTunes&quot;)<BR>
+		<BR>
+		puts iTunes.currentTrack.name</p>
+		
+		<h3>Python</h3>
+		<p>Python can be used with the Scripting Bridge frameworks to query and control scriptable applications.</p>
+		<p class="code">#!/usr/bin/python<br>
+		<br>
+		from Foundation import *<br>
+		from ScriptingBridge import *<br>
+		<br>
+		iTunes = SBApplication.applicationWithBundleIdentifier_("com.apple.iTunes")<br>
+		<br>
+		print iTunes.currentTrack().name()</p>
+		
+		<h3>Objective-C</h3>
+		<p>Although the Objective-C language has existing mechanisms for sending Apple Events, the new Scripting Bridge architecture greatly simplifies the coding necessary to query and control scriptable applications.</p>
+		<p class="code">#import &lt;Foundation/Foundation.h&gt;<br>
+		#import &lt;ScriptingBridge/ScriptingBridge.h&gt;<br>
+		#import "iTunes.h"<br>
+		<br>
+		int main()<br>
+		{<br>
+		iTunesApplication *iTunes = [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];<br>
+		<br>
+		NSLog(iTunes.currentTrack.name);<br>
+		}</p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>New in Mac&nbsp;OS&nbsp;X&nbsp;10.5</h2>
+			<ol>
+				<li><a href="unicode.html">Full Unicode Support</a></li>
+				<li><a href="appobject.html">Enhanced Application Object Model</a></li>
+				<li><a href="system-prefs.html">New Scriptable System Preferences and Applications: Dock, iChat, etc.</a></li>
+				<li><a href="propertylists.html">Read/Write Property Lists</a></li>
+				<li class="hi">Scripting Bridge for Objective-C</li>
+				<li><a href="features.html#1000">Updated Folder Action Support</a></li>
+				<li><a href="features.html#1001">Descriptive Error Messages</a></li>
+				<li><a href="features.html#1002">AppleScript Language Guide</a></li>
+				<li><a href="features.html#1003">64-Bit Support</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Release Notes</h2>
+			<p>Developer <a href="http://developer.apple.com/releasenotes/AppleScript/RN-AppleScript/index.html">release notes</a> for AppleScript in Mac&nbsp;OS&nbsp;X.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

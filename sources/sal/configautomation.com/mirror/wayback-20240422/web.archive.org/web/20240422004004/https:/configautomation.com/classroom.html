@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/wombat.js?v=txqj7nKC" charset="utf-8"></script>
+<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":true};</script>
+<script type="text/javascript" src="https://web-static.archive.org/_static/js/ruffle/ruffle.js"></script>
+<script type="text/javascript">
+    __wm.init("http://web.archive.org/web");
+  __wm.wombat("https://configautomation.com/classroom.html","20230519123238","http://web.archive.org/","web","https://web-static.archive.org/_static/",
+	      "1684499558");
+</script>
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/banner-styles.css?v=1utQkbB3" />
+<link rel="stylesheet" type="text/css" href="https://web-static.archive.org/_static/css/iconochive.css?v=3PDvdIFv" />
+<!-- End Wayback Rewrite JS Include -->
+
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="http://web.archive.org/web/20230519123238cs_/https://configautomation.com/automation-full.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+		<meta name="Keywords" content="Apple Configurator, Apple Configurator 2, AppleScript, Automation, Automator, Services, OS X">
+	<meta name="Description" content="Using Automator and Apple Configurator to configure an iOS Classroom.">
+	<link rel="home" href="http://configautomation.com">
+
+	<title>Apple Configurator &amp; Configuring an iOS Classroom</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="auto-config-banner" src="http://web.archive.org/web/20230519123238im_/https://configautomation.com/gfx/configautomation-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="http://web.archive.org/web/20230519123238/https://macosxautomation.com/" title="Go to MACOSAUTOMATION website"><div class="nav-tab">MACOS AUTOMATION</div></a>
+				<a href="http://web.archive.org/web/20230519123238/https://macosxautomation.com/automator" title="Go to AUTOMATOR website"><div class="nav-tab">AUTOMATOR</div></a>
+				<a href="http://web.archive.org/web/20230519123238/https://iworkautomation.com/" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<!-- BEGIN SEGMENT: INTRODUCTION -->
+				<a name="1000"></a><div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Configuring an iOS Classroom</p>
+					<p><a href="http://web.archive.org/web/20230519123238/https://itunes.apple.com/us/app/classroom/id1085319084?mt=8" target="_blank">Classroom</a> turns your iPad into a powerful teaching assistant, helping a teacher guide students through a lesson, see their progress, and keep them on track. With Classroom, you can easily launch the same app on every student device at the same time or launch a different app for each group of students. Classroom helps teachers focus on teaching so students can focus on learning.</p>
+					
+					<p>While MDM is the preferred way to configure the iOS Classroom App, there are certain circumstances where this is not possible. The <b>Configure Classroom</b> action will enable you to configure a class of iPads for use in a 1:1 scenario.</p>
+
+<p class="segment-note"><b>NOTE</b>: All of the class iPads must be supervised, and you need to have their supervision certificate and key files, available when creating and running the Automator workflow. Click <a href="http://web.archive.org/web/20230519123238/https://configautomation.com/identity-files.html">here</a> for detailed instruction on creating those files.</p> 
+					
+					<img class="across" style="margin-top:24px;" width="640" alt="class-ipad" src="http://web.archive.org/web/20230519123238im_/https://configautomation.com/gfx/class-ipad.jpg">
+				
+					<p class="content-subhead" role="heading" aria-level="2">The Configure Classroom action</p>
+					
+					<p>Follow the following instructions for installing and using the &ldquo;Configure Classroom&rdquo; Automator action.</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/ConfigureClassInstaller.zip">&nbsp;DOWNLOAD&nbsp;</a> the installer for the Configure Classroom Automator action.</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Once you’ve downloaded and installed the action, create an Automator workflow that begins with either the “Get Connected Devices” action or the “Choose Connected Devices” action from the Apple Configurator action set in the Automator library. If you decide to use the “Get Connected Devices,” select the checkbox labeled:  “iPad” <span class="numeric-callout">&nbsp;1&nbsp;</span><span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="across" width="640" alt="class-workflow" src="http://web.archive.org/web/20230519123238im_/https://configautomation.com/gfx/class-workflow.png">
+					
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Next add the <b>Configure Class</b> action to the end of the workflow.</p>
+					
+					<p>Here’s how to set the parameters of the Configure Classroom action:</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Class Name</b>&nbsp;&bull;&nbsp; Enter a Classname. <span class="see-above">&nbsp;(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span></p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Beacon ID</b>&nbsp;&bull;&nbsp;The Beacon ID will populate with a random number and should not need to be modified.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>iPad Serial Number</b>&nbsp;&bull;&nbsp;Either enter the serial number of the Leader iPad or check “Choose Leader device on run” <span class="numeric-callout">&nbsp;5&nbsp;</span></p>
+	
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Certificate &amp; Key</b>&nbsp;&bull;&nbsp;Drag the Supervision Identity certificate <span class="numeric-callout">&nbsp;6&nbsp;</span> and private key files <span class="numeric-callout">&nbsp;7&nbsp;</span> onto their corresponding popup menus.</p>
+
+					<p>If you selected the “Choose Leader device on run” checkbox in the action view, a dialog will be displayed during the execution of the workflow <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> Select the iPad to be designated as the instructor device from the list of devices.</p>
+				
+				
+					<img class="centered" alt="class-ask" src="http://web.archive.org/web/20230519123238im_/https://configautomation.com/gfx/class-ask.png" width="522">
+				
+				</div>
+				<!-- END SEGMENT: INTRODUCTION -->
+				
+<!-- 
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="workflow-recipes.html">Workflow Recipes</a></p>
+				</div>
+ -->
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/index.html">Overview</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/automator-Quick-Start.html">Automator Quick-Start</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/identity-files.html">Supervision Identity</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/selection-actions.html">Selection Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/dep.html">DEP Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/restore.html">Formatting Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/backup.html">Backup Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/install-apps.html">Installation Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/information-actions.html">Information Actions</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/script-library.html">Configuration Utility Script Library</a></li>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/attach-workflow.html">“Attached” Workflows</a></li>
+						<hr>
+						<li><a href="http://web.archive.org/web/20230519123238/https://configautomation.com/workflow-recipes.html">Workflow Recipes</a></li>
+						<!-- <li><a href="jamf-actions.html">Actions for JAMF</a></li> -->
+						<li class="hi">iOS Classroom</li>
+					</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+<!--
+     FILE ARCHIVED ON 12:32:38 May 19, 2023 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 13:23:38 Apr 01, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+-->
+<!--
+playback timings (ms):
+  captures_list: 0.443
+  exclusion.robots: 0.017
+  exclusion.robots.policy: 0.006
+  esindex: 0.006
+  cdx.remote: 15.323
+  LoadShardBlock: 102.507 (3)
+  PetaboxLoader3.datanode: 151.679 (4)
+  load_resource: 486.285
+  PetaboxLoader3.resolve: 406.674
+-->

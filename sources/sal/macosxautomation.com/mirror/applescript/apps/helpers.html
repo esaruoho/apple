@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Myriad Helpers</title>
+	<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Shane Stanley">
+	<META NAME="Keywords" CONTENT="Everyday AppleScriptObjC, ASObjC Explorer, AppleScript, Mac OS X, AppleScriptObjC">
+	<META NAME="Description" CONTENT="Myriad Helpers is a collection of Objective-C files that simplify some of the coding involved in AppleScriptObjC.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+	<!-- END META INFO -->
+	<!-- IMAGE LIGHTBOX -->
+  	<link rel="stylesheet" href="lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="lightbox.js" type="text/javascript" charset="utf-8"></script>
+	<!-- IMAGE LOADING -->
+  	<link rel="stylesheet" href="imageload.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="imageload.js" type="text/javascript" charset="utf-8"></script>
+  	<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="index.html">Apps</a> | Helpers<br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h1>Myriad Helpers v2.0.2</h1>
+		</p>
+		<h2><span class="codecomment">Now compatible with OS X 10.11 El Capitan and later</span></h2>
+		</p>
+		<h2>What are they?</h2>
+
+<p>Myriad Helpers is a collection of Objective-C files that simplify some of the coding involved in AppleScriptObjC. It consists of a class, <span class="inlinecode">ObjectWithFords</span>, that is designed to be used as a superclass for your AppleScript classes, and several categories that add new methods to a range of Cocoa classes, to make them easier to use from AppleScript.</p>
+
+<h2>What is a category?</h2>
+
+<p>In Objective-C, a category is a simple way of adding new methods to existing classes. Many of the methods added by the categories in this collection are designed to make it easier to use AppleScript&rsquo;s aliases, files, and colon-delimted HFS paths with Cocoa classes, which normally deal only in POSIX paths and NSURLs.</p>
+
+<h2>What is <span class="codecomment">ObjectWithFords</span> for?</h2>
+
+<p>AppleScriptObjC is built on technology called the scripting bridge, which bridges between various AppleScript classes and Cocoa classes. This allows us, for example, to provide AppleScript text where NSStrings are required, and to coerce returned NSStrings to AppleScript text.</p>
+
+<p>However, not all classes are bridged. For example, there is no bridging between AppleScript dates and Cocoa's NSDates &mdash; the two differ. <span class="inlinecode">ObjectWithFords</span> has a catch-all method, <span class="inlinecode">ford:</span>, that does these conversions intelligently for you. Pass it an AppleScript date and it will return the NSDate equivalent; pass it an NSDate and it will return the AppleScript equivalent. It will also convert aliases, files, data and NSURLs.</p>
+
+<p>As well, it includes the <span class="inlinecode">fordDeep:</span> method, which will perform the same conversions on lists and records and their elements, including those in any sublists and records.</p>
+
+<p>If you find the idea of a catch-all method confusing, you can use any of the various dedicated conversion methods that <span class="inlinecode">ford:</span> uses.</p>
+
+<h2>Is that all it does?</h2>
+
+<p>No. It has a method called <span class="inlinecode">fordDateString:</span> that lets you easily create an AppleScript date from a string. Because of a bug in AppleScriptObjC, you cannot do this the normal AppleScript way (which has become pretty difficult in 10.6 anyway).</p>
+
+<p>It has a method <span class="inlinecode">fordEvent</span> that can be called repeatedly in time-consuming code to keep the UI of your app responsive.</p>
+
+<p>It has a method <span class="inlinecode">theClass:</span> that is a simpler and more obvious way of referring to a class.</p>
+
+<p>And it provides a simple way of making instances of the classes that are bridged, rather than using long-winded calls like <span class="inlinecode">current application's NSString's stringWithString_</span>.</p>
+
+<p>Version 1.0.2 introduced a new method, <span class="inlinecode">fordTrig:</span>, which gives you access to a range of <span class="inlinecode">trigonometry</span> functions.</p>
+
+<h2>How do I install <span class="codecomment">ObjectWithFords</span>?</h2>
+
+<p>Add the two files, <span class="inlinecode">ObjectWithFords.h</span> and <span class="inlinecode">ObjectWithFords.m</span>, to your project. Then change the parent property of your script(s) from <span class="inlinecode">NSObject</span> to <span class="inlinecode">ObjectWithFords</span>. Your script will inherit the methods.</p>
+
+<p>If you cannot use subclassing, you can use <span class="inlinecode">alloc</span> and <span class="inlinecode">init</span> to load an instance of the class, and call the methods on the instance.</p>
+
+<h2>Are there any gotchas with <span class="codecomment">ObjectWithFords</span>?</h2>
+
+<p>Obviously you have to watch out for name clashes &mdash; avoid names beginning with &ldquo;ford&rdquo; and you will be fine. Other than that, there are the usual issues of calling methods. For example, even though <span class="inlinecode">ford:</span> will return an AppleScript date if pass an NSDate, you will still have to coerce the result using <span class="inlinecode">as date</span>.</p>
+
+<h2>How do I use the categories?</h2>
+
+<p>Add the appropriate .h and .m files to your project, and call the methods as if they belonged to the relevant class.</p>
+
+<h2>What does <span class="codecomment">NSDatePicker+MyriadHelpers</span> do?</h2>
+
+<p>This is a category on the NSDatePicker class, adding two new methods:</p>
+
+<p><span class="inlinecode">dateAS</span> returns the date displayed in the picker as an AppleScript date, and <span class="inlinecode">setDateAS:</span> sets the picker&rsquo;s date to an AppleScript date.</p>
+
+<h2>What does <span class="codecomment">NSPathControl+MyriadHelpers</span> do?</h2>
+
+<p>This is a category on the NSPathControl class, adding three new methods:</p>
+
+<p><span class="inlinecode">HFSFilepath</span> returns a string containing the colon-delimited equivalent of the path displayed by the control. (If the control is showing a folder, it will append a colon to the end of the path.) <span class="inlinecode">setHFSFilepath:</span> lets you pass the control a colon-delimited path for display. <span class="inlinecode">setPathAny:</span> lets you pass an alias, file, colon-delimted path, NSURL or POSIX path for display.</p>
+
+<h2>What does <span class="codecomment">NSAlert+MyriadHelpers</span> do?</h2>
+
+<p>This is a category on NSAlert, and adds three methods to simplify showing both modal alerts and alerts as sheets. <span class="inlinecode">setMessage:buttons:text:</span> lets you set the main properties of an alert. <span class="inlinecode">showModal</span> shows an alert modally, and returns the name of the button pressed. <span class="inlinecode">showOver:telling:selector:</span> shows an alert as a sheet, and when complete triggers the selector, passing the name of the button pressed.</p>
+
+<h2>What does <span class="codecomment">NSOpenSave+MyriadHelpers</span> do?</p>
+
+<p>Lots of stuff. It gives you methods to set up open and save panels, and to show them modally and as sheets. In both cases, the result is a colon-delimited path, or if multiple selection is allowed, a list of paths (or NSURLs if you prefer). You can set the opening location with an alias, file, colon-delimited path, NSURL, or POSIX path.</p>
+
+<h2>What does <span class="codecomment">NSWindow+MyriadHelpers</span> do?</h2>
+
+<p>This is a category on NSWindow that has a method that makes it easier to show a window as a custom sheet.</p>
+
+<h2>What&rsquo;s the big deal with sheets?</h2>
+
+<p>Because of a problem in AppleScriptObjC, you cannot display sheets without using some Objective-C code. You can do it with a protocol (which defines but does not implement methods) and, in the case of open and save panels, a deprecated method, but it is a fairly tedious affair. These categories aim to make the process a bit more AppleScript-like. Why do things the hard way?</p>
+
+<h2>When you say easier, can you give an example?</h2>
+
+<p>Sure. This is how you show a modal save panel normally:</p>
+
+<p class="code"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> thePanel <b>to</b> current application's NSSavePanel's savePanel()<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> thePanel<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>setMessage_("Save the file")<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>setAllowedFileTypes_({"txt"})<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>setDirectoryURL_(POSIX path <b>of</b> (path to home folder))<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>setTitle_("My Save Title")<BR>
+			<span style="float:left; width:20px;">&nbsp;</span>setNameFieldStringValue_("Some filename")<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set</b> returnCode <b>to</b> runModal()<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>set</b> returnCode <b>to</b> returnCode as integer<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> returnCode = (current application's NSFileHandlingPanelOKButton) as integer <b>then</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set</b> theURL <b>to</b> thePanel's |URL|()<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>set</b> POSIXPath <b>to</b> theURL's |path|()<BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>log</b> (((POSIXPath as text) as POSIX file) as text) <span class="codecomment">-- HFS path</span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>log</b> "Cancel pressed"<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR></p>
+<p>And this is how you would do the same thing with the relevant category file in your project:</p>
+
+<p class="code"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> current application's NSSavePanel <b>to set</b> thePanel <b>to</b> makeSaveAt_types_name_prompt_title_(path to home folder, {"txt"}, "Some filename", "Save the file", "My Save Title")<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> thePanel <b>to set</b> thePath <b>to</b> showModal()<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>if</b> thePath = missing value <b>then</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>log</b> "Cancel pressed"<BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>else</b><BR>
+			<span style="float:left; width:20px;">&nbsp;</span><b>log</b> thePath <span class="codecomment">-- HFS path </span><BR>
+		<span style="float:left; width:10px;">&nbsp;</span><b>end if</b><BR>		
+	</p>
+<p>The simplification is greater for sheets.</p>
+
+<h2>But aren&rsquo;t <span class="codecomment">choose file, choose file name</span> and <span class="codecomment">choose folder</span> easier still? Can&rsquo;t I keep using them instead?</h2>
+
+<p>Yes they are, and yes you can. But the Cocoa versions give you extra control, the ablility to present as sheets, access to delegate methods, plus the ability to add an accessory view. If you don&rsquo;t need any of these things, you might as well stick to the AppleScript panels.</p>
+
+<h2>Is there some dependency between the categories and the class?</h2>
+
+<p>No. You can add just the <span class="inlinecode">ObjectWithFords</span> class, just one or more categories, or the lot.</p>
+
+<h2>So I can use these in my projects, free of charge?</h2>
+
+<p>That's the whole idea. Just remember that when you do, there are no guarantees or warranties whatsoever. </p>
+
+<h2>Is there any more documentation?</h2>
+
+<p>There's a ReadMe file. The individual methods are also documented in the .h files.</p>
+
+<h2>What&rsquo;s with the <span class="codecomment">Myriad Helpers</span> project?</h2>
+
+<p>It&rsquo;s just a sample project showing the methods in use. The various handlers are in different classes for the sake of clarity, not function. The category and <span class="inlinecode">ObjectWithFords</span> files are in a folder called <span class="inlinecode">Helper Files</span>, but they can be put pretty much anywhere you like.</p>
+
+<h2>What is the latest version?</h2>
+<p>Version 2.0.2. These files can be used in either garbage-collected projects or OS X 10.8-and-above apps that use Automatic Reference Counting.</p>
+
+<h2>Why <span class="codecomment">ford</span>?</h2>
+
+<p>When you come to a river and there is no bridge, sometimes the answer is to ford it.</p>
+</p>
+<p style="font-size:14px;margin-top:6px;"><a href="Myriad_Helpers_2.0.2.zip">&bull;&nbsp;Click to download Myriad Helpers 2.0.2</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">EVERYDAY APPLESCRIPTObjC</h2>
+			
+			<img src="gfx/Everyday3_300.jpg" alt="" width="100" align="right" caption="'Everyday AppleScriptObjC' 2ed by Shane Stanley">
+
+			<p><b>Everyday AppleScriptObjC, Third Edition</b> by Shane Stanley is the perfect introduction to AppleScriptObjC scripting in Mavericks and later. This new edition covers the changes introduced in El Capitan, and contains several new chapters.</p>
+			
+			<ol>
+				<li>Learn how to use AppleScriptObjC directly in your scripts in El Capitan and Yosemite</li>
+				<li>Learn how to write and deploy AppleScriptObjC-based script libraries in Mavericks and later</li>
+				<li>Full of useful snippets of code</li>
+				<li>Explains how to make sense of the Cocoa documentation</li>
+				<li>Covers the main classes useful to scripters</li>
+			</ol>
+			<p style="text-align:center;"><a href="everyday_book.html" target="_self"><input type="button" value=" LEARN MORE " style="background-color:#009933;color:white;font-size:large;-webkit-border-radius:14px;"></a></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">BRIDGEPLUS LIBRARY</h2>
+			<p>BridgePlus is a free script library for use under OS X 10.9 and later, designed to improve and simplify the use of AppleScriptObjC. Read more and download it here: <a href="BridgePlus.html">BridgePlus Script Library</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">ABOUT THE AUTHOR</h2>
+			<img src="gfx/shane-TH.jpg" highresurl="gfx/shane.jpg" width="200" caption="Shane Stanely (center) discusses techniques for the creation of AppleScript Objective-C applications with Sal Soghoian (right), Product Manager Automation Technologies at Apple. (photo by Björn Zitting)" onclick="void(0);lightboxThisImage(this);" class="across" height="150">
+			<p>Shane Stanley (center, in white) is a long-time AppleScript user and trainer from Melbourne, Australia. He co-presented the <a href="http://scriptingmatters.com/aspro.php" target="_blank">AppleScript Pro Sessions</a> training events in the US for 10 years, and specializes in automating workflows in the publishing industry. (photo by Björn Zitting)</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">VIDEO: ACTIONS AND OULETS</h2>
+			<a href="javascript:void(0);" onclick="PopupCenter('http://www.macosxautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);"><img src="gfx/asoc-movie-clip.jpg" width="206" align="top" class="across"></a>
+			<p>A <a href="javascript:void(0);" onclick="PopupCenter('http://www.macosxautomation.com/applescript/video/ASOC-001HD.html', 'viewer-window-ASOC-001HD',1284,740);">video</a> demonstrating the connection of application interface elements to their corresponding AppleScript function code using Interface Builder outlets and actions. More <a href="../develop/index.html" target="_blank">here</a>.
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html> 
+<head>
+<title>Aperture: Publish for Approval</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../../index.html">Automation</a> | <a href="../../index.html">AppleScript</a> | <a href="../../learn.html">Learn</a> | <a href="../../examples.html">Examples</a> | <a href="../index.html">Aperture</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header-grayscale">
+	<img src="banner.jpg" width="680" height="226" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../../index.html">Home</a></td>
+			<td><a href="../../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../../learn.html">Learn</a></td>
+			<td><a href="../../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Publish for Approval v1.5</h2><br>
+		
+		<p>Finally, a no-hassle, easy way to for customers to approve images remotely over the internet. With a single button-click, you can web-publish selected images and know exactly which ones the customer wants to use &mdash; with their choices automatically displayed for you in Aperture. No special engineering or web-coding is required, it's literally a one-button solution that even the least computer-savy photographer can use.</p>
+		
+		<hr><h3>How it Works</h3><br>
+		
+		<p>The <b>Publish for Approval</b> system uses the built-in web sharing abilities of Mac OS X, and the power of AppleScript, to create and display webpages, containing your images, to the client <font color="#FF9933"><b>(1)</b></font>. On the webpage, the client selects the images they approve <font color="#FF9933"><b>(2)</b></font>, and clicks a button to submit their choices to you <font color="#FF9933"><b>(3)</b></font>. Immediately, their selections are displayed in a Smart Album in your Aperture project <font color="#FF9933"><b>(4)</b></font>&mdash;on your computer!</p>
+		
+		<img src="webpage.jpg" alt="" width="450" height="502" border="0" class="across">
+		<img src="project.jpg" alt="" width="450" height="308" border="0" class="across">
+		
+		<hr><h3>Setup</h3><br>
+		
+		<p>The <b>Publish for Approval</b> system uses the built-in web-hosting abilities of your computer, to serve webpages from your computer over the Internet for your clients to view. Naturally, this requires that the computer containing your Aperture library be connected to the Internet, preferably via ethernet to a cable or DSL modem. If your computer is connected to the Internet via a wireless network, see the sidebar on how to enable your network to publish to the Internet.</p>
+		
+		<p>Follow these simple steps to setup the <b>Publish for Approval</b> system:</p>
+		
+		<ol>
+			<li><a href="publish.zip">Download</a> and unpack the archive that contains the <b>Publish for Approval</b> application and related banner template files.</li><br>
+
+			<li>Create a banner image for your webpages using the templates included with the <b>Publish for Approval</b> system. You can create multiple banners as each set of published client images can have its own banner. Be sure to save the banner images in PNG format.</li><br>
+			
+			<li>Turn on Personal Web Sharing in the Services tab of the Sharing system preference.</li>
+		</ol>
+		
+			<img src="sharing.png" alt="" width="450" height="235" border="0" class="across">	
+		
+		<hr><h3>Publish a Photo Collection</h3><br>
+		
+		<p>Follow these simple steps to web-publish your images:</p>
+		
+		<ol>
+			<li>Within an Aperture project, select the images you wish to publish.</li><br>
+
+			<li>Launch the <b>Publish for Approval</b> application. The application will install any resources it requires. Once done with its initial resource installation, the following window will appear in Aperture:</li><br>
+		</ol>
+			
+		<img src="app.png" width="450" align="top" class="across">
+
+		<ol start="3">
+			<li>In the first text field in the application window, enter a unique ID for the published content, something like: smith-wed-01, or argon-art-23. Avoid using spaces or special characters in the ID. Note that you can publish multiple collections for any client, however you can only use an image in one published collection.</li><br>
+
+			<li>In the second text field, enter the title for the webpages that will be generated to display the images you selected. Although spaces are allowed, avoid using other special characters in the title.</li><br>
+			
+			<li>Click the Choose button, and in the forthcoming dialog, select one of the banner images you created to use as the banner for the published webpages.</li><br>
+			
+			<li>Select an Aperture Export Setting from the popup list to determine the size and format of the published images. Usually images sized smaller than 900 pixels work fine. You may wish to create a custom export setting that also inserts a watermark into the published image.</li><br>
+			
+			<li>Click the Publish button to start the process of exporting the images, and generating and installing the webpages into your computer's WebServer directory. During export, the application window will display a progress bar showing the status of the publishing process.</li><br>
+			
+			<li>Once the publishing process has completed, the collection home page will be opened in Safari on your computer. If the results are to your liking, send your client a link to the home page by choosing <b>Mail Link to This Page</b> from the Safari <b>File</b> menu:<br><br>
+			
+			<img src="maillink.jpg" alt="" width="194" height="227" border="0" class="across"></li>
+			
+			<li>When the client clicks on the link in your message, they will be taken to the home page for the published collection. They can then browse and approve images from the collection. In order for you to see what images they have chosen, create a new <b>Smart Album</b> in the published project that will display images whose custom metadata tag <b>Approved</b> has a value of <b>true</b>. <br><br>When you select this <b>Smart Album</b> in Aperture, you will see the images they have chosen. Note that the Smart Album does not update dynamically. You must refresh its contents by selecting another project or album and then selecting the Smart Album again.</li>
+		</ol>
+		
+		<img src="smartsettings.jpg" alt="" width="450" height="190" border="0" class="across">
+		
+		<hr><h3>Webcasting Options</h3><br>
+		
+		<p>If you want to stop serving published collections, click the <b>Stop</b> button in the <b>Publish for Approval</b> application, and the ACGI Dispatcher application and its support applets will quit. In addition, the Sharing system preference pane will be displayed for you turn off Personal Web Sharing.</p>
+		
+		<img src="app.png" width="450" align="top" class="across">
+
+		<p>If you want to re-enable serving of already published image collections, click the <b>Start</b> button in the <b>Publish for Approval</b> application. If Personal Web Sharing is off, the Sharing system preference pane will be displayed for you turn it on.</p>
+		
+		<hr><h3>Un-Publishing</h3><br>
+		
+		<p>If you wish to permanently remove a published collection, launch the <b>Publish for Approval</b> application and click the <b>Remove</b> button to be presented with a list of the currently active collections. Select the collections to remove, and the folders containing the images and webpages will be moved to the trash.</p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2>Link</h2>
+				<p><a href="http://www.apple.com/aperture">Aperture Home Page</a></p>
+		</div>
+		<div class="box">
+			<h2>Publish for Approval</h2>
+			<a href="publish.zip"><img src="publish32x32.png" alt="" width="32" height="32" border="0" class="left"></a>
+			<p><a href="publish.zip">Download</a> the <b>Publish for Approval (v1.8)</b> application and related banner template files. Version 1.8 is Leopard/Snow Leopard-compatible and requires no third-party applications.</p>
+		</div>
+		<div class="box">
+			<h2>Setting Up Your Mac as a Server</h2>
+				<p>For those using a home airport network, <a href="http://www.freemacblog.com/mac-server-series-initial-set-up/" target="_blank">FREEMACBLOG.COM</a> has an excellent two video series on how to enable a local wireless network to publish to the internet.</p>
+		</div>
+		<div class="box">
+			<h2>Example Pages</h2>
+			<a href="smith-wed-01/index.html" target="_blank"><img src="publish32x32.png" alt="" width="32" height="32" border="0" class="left"></a>
+			<p><a href="smith-wed-01/index.html" target="_blank">View</a> some sample published pages.</p>
+		</div>
+		<div class="box">
+			<h2>Aperture Scripting</h2>
+			<p>A <a href="http://homepage.mac.com/jlarson7/index.html">website</a> dedicated to explaining the basics of how to script Aperture.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

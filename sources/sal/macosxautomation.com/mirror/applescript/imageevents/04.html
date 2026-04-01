@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Scaling an Image</h2>
+		
+		<p>From the Image Events scripting dictionary:</p>
+		
+		<p class="dictionary">
+			<b>scale</b> v : Scale an image<br>
+			<span class="dictionary-indent-01"><span class="dictionary-term">scale</span> (reference): the object for the command</span><br>
+			<span class="dictionary-indent-02">[<span class="dictionary-term">by factor</span> (real)]: scale using a scaling factor</span><br>
+			<span class="dictionary-indent-02">[<span class="dictionary-term">to size</span> (integer)]: scale using a maximum width/length</span>
+		</p>
+		
+		<p>Scaling an image will proportionally increase or decrease the dimensions of an image.</p> 
+		
+		<p>The scaling process will not change the resolution of an image. In other words, an image with a resolution of 72 DPI, scaled to 50% of its current dimensions, will still have a resolution of 72 DPI. An image with a resolution of 300 DPI, scaled to 200% of its current dimensions, will still have a resolution of 300 DPI.</p>
+		
+		<p>The <span class="inlinecode">scale</span> command must include one of two parameters indicating the method used to calculate the scale and the amount of scaling to apply:</p>
+		
+		<ol>
+		<li>If you choose to scale the image based on a percentage of its current dimensions, the value you provide for the <span class="inlinecode">by factor</span> parameter is a number indicating the percentage of scaling to apply. The value 1 is equivalent to 100%. The value .5 is 50%. The value 1.5 is 150% and so on. Use this formula to determine the scaling factor:<br><br>
+		
+		desired percentage * .01<br>&nbsp;</li>
+		
+		<li>If you choose to scale the image to a specific dimension, the value you provide for the <span class="inlinecode">to size</span> parameter is a single integer indicating the new value for longest dimension to be scaled (either height or width, whichever is longer).</li>
+		</ol>
+		
+		<h3>Scaling by Percentage</h3>
+
+		<p>Here are some script examples using each method. First, a script for scaling an image by percentage (%50):</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20by%20factor%200%2E5%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top" alt="Click to open example in the Script Editor application"></a><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>by</b> factor 0.5<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<img src="gfx/23_image04.png" width="640" height="201" class="across">
+		
+		<p class="imagecaption">Scaling by percentage. (L to R) Normal, scaled to 50%, normal, scaled to 50%.</p>
+
+		<h3>Scaling to Size</h3>
+
+		<p>Scaling by percentage is a simple matter of entering the percentage factor as the value for the <span class="inlinecode">by factor</span> parameter of the scale command. If you want to scale the image to a specific dimension, use the <span class="inlinecode">to size</span> parameter.</p>
+		
+		<p>The <span class="inlinecode">to size</span> parameter only takes one value, namely the length to be assigned to the longest side of the image. If you want the longest side of an image to scaled to a specific length, then the script is straightforward as in this example where the image is proportionally scaled so that its longest side is 128 pixels in length:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20target_length%20to%20128%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20target_length%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top" alt="Click to open example in the Script Editor application"></a><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file without invisibles<BR>
+<b>set the</b> <span class="codevariable">target_length</span> <b>to</b> 128<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">target_length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		<p>However, if you want the <b>shortest</b> side of an image to be a specific length, then you'll have to add a calculation to the script to determine the new length for the longest side of the image, based on the current length of the shortest side of the image. Like this:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20target_length%20to%20128%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20determine%20the%20shortest%20side%20and%20then%0D%09%09%2D%2D%20calculate%20the%20new%20length%20for%20the%20longer%20side%0D%09%09if%20W%20is%20less%20than%20H%20then%0D%09%09%09set%20the%20scale_length%20to%20%28H%20%2A%20target_length%29%20%2F%20W%0D%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09else%0D%09%09%09set%20the%20scale_length%20to%20%28W%20%2A%20target_length%29%20%2F%20H%0D%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_length%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">A script for scaling an image so its shortest side is a desired value.</span><BR><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">target_length</span> <b>to</b> 128<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- determine the shortest side and then</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- calculate the new length for the longer side</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if</b> <span class="codevariable">W</span> <b>is less than</b> <span class="codevariable">H</span> <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">target_length</span>) / <span class="codevariable">W</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:40px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">target_length</span>) / <span class="codevariable">H</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:40px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding as taught in school<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">scale_length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+		
+		
+		<img src="gfx/23_image05.png" width="598" height="360" class="across">
+		
+		<p class="imagecaption">Scaling to size. (L to R) Normal, longest side scaled to 128 pixels, shortest side scaled to 128 pixels.</p>
+		
+		<p>Note that the previous script used the value of the <span class="inlinecode">dimensions</span> property of the image to determine the appropriate action to take. Scripts will often examine image properties like <span class="inlinecode">dimensions</span>, <span class="inlinecode">color space</span>, and <span class="inlinecode">file type</span> to intelligently process them in workflows.</p>
+		
+		<p>Also notice the use of the <span class="inlinecode">round</span> command in the previous script example. It is used to deal with fractions of a pixel by rounding the values appropriately, or as the optional rounding parameter says: <span class="inlinecode">as taught in school</span></p>
+
+		<h3>Examples Accepting User Input</h3>
+				
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20scale_percentage%20to%2050%0Drepeat%0D%09display%20dialog%20%22Enter%20the%20scale%20percentage%3A%22%20default%20answer%20scale_percentage%0D%09try%0D%09%09set%20the%20scale_percentage%20to%20the%20text%20returned%20of%20the%20result%20as%20number%0D%09%09if%20the%20scale_percentage%20is%20greater%20than%200%20then%0D%09%09%09set%20the%20scale_factor%20to%20the%20scale_percentage%20%2A%200%2E01%0D%09%09%09exit%20repeat%0D%09%09else%0D%09%09%09error%0D%09%09end%20if%0D%09on%20error%0D%09%09beep%0D%09end%20try%0Dend%20repeat%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20by%20factor%20scale_factor%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">The following script will scale a chosen image to a user-specified percentage:</span><br><img src="gfx/23_imageA2.png" width="360" height="149" align="top" class="script-image"><br><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">scale_percentage</span> <b>to</b> 50<BR>
+<b>repeat</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>&quot;Enter the scale percentage:&quot; default answer <span class="codevariable">scale_percentage</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_percentage</span> <b>to</b> &not;<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>the</b> text returned <b>of the</b> result <b>as</b> number<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">scale_percentage</span> <b>is greater than</b> 0 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_factor</span> <b>to the</b> <span class="codevariable">scale_percentage</span> * 0.01<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>exit repeat</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>beep<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end repeat</b><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>by</b> factor <span class="codevariable">scale_factor</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Dset%20the%20target_length%20to%20640%0Drepeat%0D%09display%20dialog%20%22Enter%20the%20target%20length%20and%20choose%20the%20dimension%20of%20the%20image%20to%20scale%20to%20the%20target%20length%3A%22%20default%20answer%20target_length%20buttons%20%7B%22Cancel%22%2C%20%22Height%22%2C%20%22Width%22%7D%0D%09copy%20the%20result%20as%20list%20to%20%7Btarget_length%2C%20target_dimension%7D%0D%09try%0D%09%09set%20the%20target_length%20to%20the%20target_length%20as%20number%0D%09%09if%20the%20target_length%20is%20greater%20than%200%20then%0D%09%09%09exit%20repeat%0D%09%09else%0D%09%09%09error%0D%09%09end%20if%0D%09on%20error%0D%09%09beep%0D%09end%20try%0Dend%20repeat%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20get%20dimensions%20of%20the%20image%0D%09%09copy%20dimensions%20of%20this_image%20to%20%7BW%2C%20H%7D%0D%09%09%2D%2D%20determine%20scale%20length%0D%09%09if%20the%20target_dimension%20is%20%22Height%22%20then%0D%09%09%09if%20W%20is%20less%20than%20H%20then%0D%09%09%09%09set%20the%20scale_length%20to%20the%20target_length%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20%28W%20%2A%20target_length%29%20%2F%20H%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09end%20if%0D%09%09else%20%2D%2D%20target%20dimension%20is%20Width%0D%09%09%09if%20W%20is%20less%20than%20H%20then%0D%09%09%09%09set%20the%20scale_length%20to%20%28H%20%2A%20target_length%29%20%2F%20W%0D%09%09%09%09set%20the%20scale_length%20to%20round%20scale_length%20rounding%20as%20taught%20in%20school%0D%09%09%09else%0D%09%09%09%09set%20the%20scale_length%20to%20the%20target_length%0D%09%09%09end%20if%0D%09%09end%20if%0D%09%09%2D%2D%20perform%20action%0D%09%09scale%20this_image%20to%20size%20scale_length%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">If you want to scale a chosen image so that either its width or height is a specified length, the use the following script:</span><img src="gfx/23_imageA1.png" width="360" height="165" class="script-image"><br><BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+<b>set the</b> <span class="codevariable">target_length</span> <b>to</b> 640<BR>
+<b>repeat</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog &quot;Enter the target length &quot; &amp; &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>&quot;and choose the dimension of the &quot; &amp; &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span>&quot;image to scale to the target length:&quot; default answer &not;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codevariable">target_length</span> buttons {&quot;Cancel&quot;, &quot;Height&quot;, &quot;Width&quot;}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>copy the</b> result <b>as</b> list <b>to</b> {<span class="codevariable">target_length</span>, <span class="codevariable">target_dimension</span>}<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>try</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">target_length</span> <b>to the</b> <span class="codevariable">target_length</span> <b>as</b> number<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">target_length</span> <b>is greater than</b> 0 <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>exit repeat</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>on error</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>beep<BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end try</b><BR>
+<b>end repeat</b><BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- get dimensions of the image</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>copy</b> dimensions <b>of</b> <span class="codevariable">this_image</span> <b>to</b> {<span class="codevariable">W</span>, <span class="codevariable">H</span>}<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- determine scale length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">target_dimension</span> <b>is</b> &quot;Height&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">W</span> <b>is less than</b> <span class="codevariable">H</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to the</b> <span class="codevariable">target_length</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">W</span> * <span class="codevariable">target_length</span>) / <span class="codevariable">H</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding <b>as</b> taught <b>in</b> school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span>else <span class="codecomment">-- target dimension is Width</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>if</b> <span class="codevariable">W</span> <b>is less than</b> <span class="codevariable">H</span> <b>then</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> (<span class="codevariable">H</span> * <span class="codevariable">target_length</span>) / <span class="codevariable">W</span><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to</b> &not;<BR>
+<span style="float:left; width:50px;">&nbsp;</span>round <span class="codevariable">scale_length</span> rounding <b>as</b> taught <b>in</b> school<BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">scale_length</span> <b>to the</b> <span class="codevariable">target_length</span><BR>
+<span style="float:left; width:30px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform action</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>scale <span class="codevariable">this_image</span> <b>to</b> size <span class="codevariable">scale_length</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="05.html" target="_self">CONTINUE</a></p>
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html" target="_self">Introduction</a></li>
+				<li><a href="01.html" target="_self">Image Properties</a></li>
+				<li><a href="02.html" target="_self">Flipping Images</a></li>
+				<li><a href="03.html" target="_self">Rotating Images</a></li>
+				<li class="hi">Scaling Images</li>
+				<li><a href="05.html" target="_self">Padding Images</a></li>
+				<li><a href="06.html">Framing Images</a></li>
+				<li><a href="07.html" target="_self">Croping Images</a></li>
+				<li><a href="08.html" target="_self">File Conversion</a></li>
+				<li><a href="09.html" target="_self">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

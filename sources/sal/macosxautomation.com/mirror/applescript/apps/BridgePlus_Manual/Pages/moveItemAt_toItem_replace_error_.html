@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #ee2200}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="copyItemAt_toItem_replace_error_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="UTIForExtension_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>URL and File related methods</p>
+<h3>Method</h3>
+<code>moveItemAt:toItem:replace:error:</code>
+<h3>Summary</h3>
+<p>Moves item, with atomic replacement if replaceFlag is true and destination item already exists. Pass aliases, files, HFS paths, POSIX paths or NSURLs.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(BOOL)</span>moveItemAt:<span class="sigParens">(id)</span><span class="param">urlFileOrPath</span> toItem:<span class="sigParens">(id)</span><span class="param">destUrlFileOrPath</span> replace:<span class="sigParens">(BOOL)</span><span class="param">replaceFlag</span> error:<span class="sigParens">(NSError *__autoreleasing *)</span><span class="param">outError</span></code>
+<h3>Parameters</h3>
+<p><span class="param">urlFileOrPath</span> = source alias, file, HFS path, POSIX path or NSURL</p><p><span class="param">destUrlFileOrPath</span> = destination alias, file, HFS path, POSIX path or NSURL</p><p><span class="param">replaceFlag</span> = whether to replace existing file</p><p><span class="param">outError</span> = missing value or reference</p>
+<h3>Result</h3>
+<p>True if it succeeds, false if not. See Notes.</p>
+<h3>Availability</h3>
+<p>Version 1.3.0</p>
+<h3>Notes</h3>
+<p>If you set outError to reference, the result will be a list of two items. If there is no error, the first item will be the result of the method and the second will be missing value. If there is an error, the first item will be missing value and the second item with be an NSError.</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> {<span class="s3">theResult</span>, <span class="s3">theError</span>} <b>to</b> (<span class="s4"><i>current application's</i></span> <span class="s3">SMSForder's</span> <span class="s5">moveItemAt</span>:"~/Documents/Something" <span class="s5">toItem</span>:"~/Desktop/Something Else" <span class="s5">replace</span>:<span class="s4"><i>true</i></span> <span class="s5">|error|</span>:(<span class="s2"><i>reference</i></span>))</p>
+<p class="p2"><b>if</b> <span class="s3">theResult</span> <b>as</b> <span class="s2"><i>boolean</i></span> <b>is</b> <span class="s4"><i>false</i></span> <b>then</b> <b>error</b> (<span class="s3">theError's</span> <span class="s5">localizedDescription</span>() <b>as</b> <span class="s2"><i>text</i></span>)</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20%7BtheResult,%20theError%7D%20to%20(current%20application's%20SMSForder's%20moveItemAt:%22~/Documents/Something%22%20toItem:%22~/Desktop/Something%20Else%22%20replace:true%20%7Cerror%7C:(reference))%0Dif%20theResult%20as%20boolean%20is%20false%20then%20error%20(theError's%20localizedDescription()%20as%20text)%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

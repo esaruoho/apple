@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #ee2200}
+span.s6 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="sizeInfoForFile_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="resourceValuesForKeys_forURLsOrFiles_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>URL and File related methods</p>
+<h3>Method</h3>
+<code>resourceValueForKey:forURLsOrFiles:</code>
+<h3>Summary</h3>
+<p>Equivalent to calling getResourceValue:forKey:error: on a list or array of aliases, files, HFS paths, POSIX paths or NSURLs. Returns the results as an array.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>resourceValueForKey:<span class="sigParens">(NSString *)</span><span class="param">resourceKey</span> forURLsOrFiles:<span class="sigParens">(NSArray *)</span><span class="param">urlsFilesOrPaths</span></code>
+<h3>Parameters</h3>
+<p><span class="param">resourceKey</span> = URL resource key</p><p><span class="param">urlsFilesOrPaths</span> = list or array of aliases, files, HFS paths, POSIX paths or NSURLs</p>
+<h3>Result</h3>
+<p>Array of resource values</p>
+<h3>Availability</h3>
+<p>Version 1.2.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p3"><span class="s1"><b>set</b> </span><span class="s3">fileAliasOrPath</span><span class="s1"> <b>to</b> (</span><b>choose file</b><span class="s1"> <b>with</b> </span>multiple selections allowed<span class="s1">)</span></p>
+<p class="p5"><span class="s1"><b>set</b> </span>theResult<span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s5">resourceValueForKey</span><span class="s1">:(</span><span class="s4"><i>current application's</i></span><span class="s1"> </span>NSURLAddedToDirectoryDateKey<span class="s1">) </span><span class="s5">forURLsOrFiles</span><span class="s1">:</span>fileAliasOrPath</p>
+<p class="p5"><span class="s6"><b>ASify</b></span><span class="s1"> </span><span class="s6">from</span><span class="s1"> </span>theResult</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{date "Thursday, 19 November 2015 at 2:07:27 PM", date "Thursday, 29 October 2015 at 3:12:21 PM", date "Friday, 25 September 2015 at 6:07:40 PM"}</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.11 only</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{date "Thursday, 19 November 2015 at 2:07:27 PM", date "Thursday, 29 October 2015 at 3:12:21 PM", date "Friday, 25 September 2015 at 6:07:40 PM"}</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.9 and 10.10</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{(NSDate) 2015-11-19 03:07:27 +0000, (NSDate) 2015-10-29 04:12:21 +0000, (NSDate) 2015-09-25 08:07:40 +0000}</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20fileAliasOrPath%20to%20(choose%20file%20with%20multiple%20selections%20allowed)%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20resourceValueForKey:(current%20application's%20NSURLAddedToDirectoryDateKey)%20forURLsOrFiles:fileAliasOrPath%0DASify%20from%20theResult%0D--%3E%09%7Bdate%20%22Thursday,%2019%20November%202015%20at%202:07:27%20PM%22,%20date%20%22Thursday,%2029%20October%202015%20at%203:12:21%20PM%22,%20date%20%22Friday,%2025%20September%202015%20at%206:07:40%20PM%22%7D%0DtheResult%20as%20list%20--%2010.11%20only%0D--%3E%09%7Bdate%20%22Thursday,%2019%20November%202015%20at%202:07:27%20PM%22,%20date%20%22Thursday,%2029%20October%202015%20at%203:12:21%20PM%22,%20date%20%22Friday,%2025%20September%202015%20at%206:07:40%20PM%22%7D%0DtheResult%20as%20list%20--%2010.9%20and%2010.10%0D--%3E%09%7B(NSDate)%202015-11-19%2003:07:27%20+0000,%20(NSDate)%202015-10-29%2004:12:21%20+0000,%20(NSDate)%202015-09-25%2008:07:40%20+0000%7D%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

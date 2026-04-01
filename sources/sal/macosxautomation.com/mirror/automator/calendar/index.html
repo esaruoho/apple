@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Calendar Alarms</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Automator workflows can be saved as applets assigned as alarms to Calendar events.">
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav-active.png">
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Calendar Alarms</p>
+			
+			<p>By default, Automator includes a template for workflows that can be assigned as an alarm to Calendar events. For example, an Automator Calendar Alarm workflow could send reminder notices to attendees, gather materials and applications in preparation, create a new Notes document for entering the meeting notes, or all of these &mdash; it’s up to you.</p>
+			
+			<img width="100%" alt="calendar-workflow-window" src="gfx/calendar-workflow-window.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The input banner for a Calendar Alarm workflow indicates that it is triggered by a calendar alarm. When saved, the workflow is installed as an applet in the <b>Home &gt; Library &gt; Workflows &gt; Applications &gt; Calendar</b> folder and receives no input upon launch.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The workflow assembly area where actions are added in the order in which they will be executed.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Example: Auto-Generate Notes for Meeting</p>
+			
+			<p>Use the Automator Calendar Alarm template in macOS to create a calendar alarm applet that automatically generates a new meeting outline note in the Notes app prior to the specified event.</p>
+			
+			<!-- <img width="100%" alt="meeting-note" src="gfx/meeting-note.png"> -->
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="calendar-alarm-applet" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/calendar-alarm-poster.jpg">
+				  <source src="calendar-alarm.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('calendar-alarm-applet').play();">PLAY</button>
+				<button onclick="document.getElementById('calendar-alarm-applet').pause();">PAUSE</button>
+				<button onclick="document.getElementById('calendar-alarm-applet').currentTime=(document.getElementById('calendar-alarm-applet').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('calendar-alarm-applet').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p>The workflow contains a single Automator action that runs an AppleScript script to open the Notes application and create a new note containing a meeting outline.</p>
+			
+			<p><a href="calendar-workflow-applet.zip">DOWNLOAD</a> the completed applet.</p>
+			
+			<img width="100%" alt="calendar-alarm-workflow-01" src="gfx/calendar-alarm-workflow-01.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator Calendar Alarm workflow document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The workflow input banner indicates the saved applet is triggered by a Calendar event alarm action, specifically the &ldquo;Open File…&rdquo; event alarm action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;A <b>Run AppleScript</b> action contains the AppleScript script for performing the task.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The AppleScript script is composed of two elements: a <b>run handler</b> that is passed whatever input the action receives, and a <b>support handler</b> for returning an object reference to the Notes account in which to add a new note. If there is more than one account, the user is prompted to choose to one to target.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Interestingly, the Notes application supports the use of HTML in its content and automatically interprets the HTML tags inserted into the note body generated by the script. In this example, an ordered list (&lt;ol&gt;&hellip;&lt;/ol&gt;) is created.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The <b>Run Script</b> button allows you to test the script without running the whole workflow. Any script results can be viewed in the results pane revealed by clicking the Results button at the bottom of the action view.</p>
+			</div>
+			
+			
+			<p class="subhead" role="heading" aria-level="2">AppleScript Script for Creating Meeting Notes</p>
+			
+			<p>The AppleScript script is composed of two elements: a <b>run handler</b> (lines 01-28) that is passed whatever input the action receives, and a <b>support handler</b> (lines 30-43) for returning an object reference to the Notes account in which to add a new note. If there is more than one account, the user is prompted to choose to one to target.</p>
+			
+			<p>Interestingly, the Notes application supports the use of HTML in its content and automatically interprets the HTML tags inserted into the note body generated by the script. In this example, an ordered list (&lt;ol&gt;&hellip;&lt;/ol&gt;) is created (lines 09-19).</p>
+			
+			<div id="create-note" class="script-content">on run {input, parameters}
+	
+	tell application id "com.apple.Notes"
+		activate
+		
+		set dateString to date string of (get current date)
+		
+		set noteName to "Meeting of the Board"
+		set noteBody to dateString & "<br><br>" & ¬
+			"<ol>" & ¬
+			"<li>CALL TO ORDER</li>" & ¬
+			"<li>CHANGES TO THE AGENDA</li>" & ¬
+			"<li>APPROVAL OF MINUTES</li>" & ¬
+			"<li>REPORTS</li>" & ¬
+			"<li>OLD BUSINESS</li>" & ¬
+			"<li>NEW BUSINESS</li>" & ¬
+			"<li>COMMENTS, ANNOUNCEMENTS, AND OTHER BUSINESS</li>" & ¬
+			"<li>ADJOURNMENT</li>" & ¬
+			"</ol>"
+		
+		set thisAccountName to my getNameOfTargetAccount("Choose an account:")
+		
+		make new note at folder "Notes" of account thisAccountName ¬
+			with properties {name:noteName, body:noteBody}
+	end tell
+	
+	return input
+end run
+
+on getNameOfTargetAccount(thisPrompt)
+	tell application id "com.apple.Notes"
+		if the (count of accounts) is greater than 1 then
+			set theseAccountNames to the name of every account
+			set thisAccountName to ¬
+				(choose from list theseAccountNames with prompt thisPrompt)
+			if thisAccountName is false then error number -128
+			set thisAccountName to thisAccountName as string
+		else
+			set thisAccountName to the name of account 1
+		end if
+		return thisAccountName
+	end tell
+end getNameOfTargetAccount</div>
+
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Note for Meeting</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('create-note');">Copy Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">on <span class="methodEnum">run</span> {<span class="functionParamterEnum">input</span>, <span class="functionParamterEnum">parameters</span>}</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>tell <span class="classEnum">application</span> <span class="propertyEnum">id</span> <span class="stringEnum">&quot;com.apple.Notes&quot;</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">activate</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">dateString</span> to <span class="propertyEnum">date string</span> of (<span class="methodEnum">get</span> <span class="propertyEnum">current date</span>)</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">noteName</span> to <span class="stringEnum">&quot;Meeting of the Board&quot;</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">noteBody</span> to <span class="variableEnum">dateString</span> & <span class="stringEnum">&quot;&lt;br&gt;&lt;br&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;ol&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;CALL TO ORDER&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;CHANGES TO THE AGENDA&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;APPROVAL OF MINUTES&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;REPORTS&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;OLD BUSINESS&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;NEW BUSINESS&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;COMMENTS, ANNOUNCEMENTS, AND OTHER BUSINESS&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;li&gt;ADJOURNMENT&lt;/li&gt;&quot;</span> & ¬</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="stringEnum">&quot;&lt;/ol&gt;&quot;</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisAccountName</span> to my <span class="functionNameEnum">getNameOfTargetAccount</span>(<span class="stringEnum">&quot;Choose an account:&quot;</span>)</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="methodEnum">make</span> <span class="newEnum">new</span> <span class="classEnum">note</span> at <span class="classEnum">folder</span> <span class="stringEnum">&quot;Notes&quot;</span> of <span class="classEnum">account</span> <span class="variableEnum">thisAccountName</span> ¬</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>with <span class="functionParamterEnum">properties</span> {<span class="propertyEnum">name</span>:<span class="variableEnum">noteName</span>, <span class="propertyEnum">body</span>:<span class="variableEnum">noteBody</span>}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="returnEnum">return</span> <span class="functionParamterEnum">input</span></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="methodEnum">run</span></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">on <span class="functionNameEnum">getNameOfTargetAccount</span>(<span class="functionParamterEnum">thisPrompt</span>)</td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>tell <span class="classEnum">application</span> <span class="propertyEnum">id</span> <span class="stringEnum">&quot;com.apple.Notes&quot;</span></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>if the (<span class="propertyEnum">count</span> of <span class="classEnum">accounts</span>) is greater than 1 then</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">theseAccountNames</span> to the <span class="propertyEnum">name</span> of every <span class="classEnum">account</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisAccountName</span> to ¬</td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span>(<span class="methodEnum">choose from list</span> <span class="variableEnum">theseAccountNames</span> <span class="functionParamterEnum">with prompt</span> <span class="variableEnum">thisPrompt</span>)</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>if <span class="variableEnum">thisAccountName</span> is <span class="boolEnum">false</span> then <span class="methodEnum">error</span> <span class="functionParamterEnum">number</span> -128</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisAccountName</span> to <span class="variableEnum">thisAccountName</span> as <span class="classEnum">string</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>else</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">set</span> <span class="variableEnum">thisAccountName</span> to the <span class="propertyEnum">name</span> of <span class="classEnum">account</span> 1</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span>end if</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="returnEnum">return</span> <span class="variableEnum">thisAccountName</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="functionNameEnum">getNameOfTargetAccount</span></td></tr>
+			</table>
+			
+			<p class="subhead" role="heading" aria-level="2">Save & Install</p>
+			
+			<p>To save and install the Calendar Alarm workflow, type Command-S (&#8984;S) or choose &ldquo;Save&hellip;&rdquo; from the <b>File</b> menu in Automator. The naming sheet will be displayed in which you enter the name for the saved Automator applet file. Note that by default, this name is used as the created event name, which you can edit.</p>
+			
+			<img width="100%" alt="calendar-save-sheet-segment" src="gfx/calendar-save-sheet-segment.png">
+
+			<p class="subhead" role="heading" aria-level="2">Security Validation</p>
+			
+			<p>When you save the Calendar Alarm applet, it is run once automatically in order to gain approval from the macOS security architecture.</p>
+			
+			<p>In macOS, applets and applications running for the first time require user approval to do so. This approval is only required once, prior to the initial execution of the applet or application.</p>
+			
+			<img style="display:block;margin-left:auto;margin-right:auto;" width="599" alt="first-opening-dialog" src="gfx/first-opening-dialog.png">
+			
+			<p>Beginning with macOS Mojave (v10.14) applets and applications that uses Apple Events to control other applications must receive user approval to do so. This approval is only required once, prior to the initial execution of the applet or application.</p>
+			
+			<img style="display:block;margin-left:auto;margin-right:auto;" width="532" height="320" alt="meeting-notes-security-dialog" src="gfx/meeting-notes-security-dialog.png">
+			
+			<p>Once an applet or application is approved for executing Apple Events, it is added to the access list in the Security &amp; Privacy system preference pane.</p>
+
+			<img width="100%" alt="meeting-notes-security-pref-pane" src="gfx/meeting-notes-security-pref-pane.png">	
+		
+			<p><b>IMPORTANT</b>: Once the Automator Calendar Alarm applet has been approved and added to the Automation Access List, it can be used as alarms for other Calendar events without requiring additional approval.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Edit the Event</p>
+			
+			<p>By default, when the workflow is saved for he first time a new Calendar event is created for the current date and time. The event is titled using the file name you provided is the naming sheet.</p>
+			
+			<img width="100%" alt="new-event" src="gfx/new-event.png">
+			
+			<p>In the Calendar application, double-click the event to summon its edit window and change the event parameters to match the date, time, name, etc. that you want.</p>
+			
+			<img width="100%" alt="edited-meeting" src="gfx/edited-meeting.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The event edit window. Change the event title, date, time, and other parameters to their desired value.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;To change the parameters for the alarm, select &ldquo;Custom&hellip;&rdquo; from the Alarm popup menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The default action that launches the applet is &ldquo;Open file&rdquo;</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The saved Calendar Alarm workflow applet title.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Set the time value for when you wish the alarm to execute. In this example, the applet will be launched 5 minutes before the event.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Alarm Result</p>
+			
+			<p>When the saved Automator Calendar Alarm applet is triggered by the event it will run the AppleScript script in the <b>Run AppleScript</b> action, which will create a new stylized note in the Notes application. This note contains a meeting outline for the event.</p>
+			
+			<img width="100%" alt="new-event" src="gfx/new-note.png">		
+			
+			<p class="subhead" role="heading" aria-level="2">Editing the Alarm Applet</p>
+		
+			<p>Should you later wish to edit the saved applet, you can open it for editing in Automator by choosing &ldquo;Open&hellip;&rdquo; from the <b>File</b> menu, and then selecting &ldquo;Calendar Alarm&rdquo; from the <b>Type</b> popup menu displayed by clicking the <b>Options</b> button in the forthcoming dialog. The contents of the <b>Home &gt; Library &gt; Workflows &gt; Applications &gt; Calendar</b> folder.</p>
+			
+			<img width="100%" alt="automator-open-calendar-dialog" src="gfx/automator-open-calendar-dialog.png">
+			
+			<p>Select the applet to edit, and click the <b>Open</b> button in the dialog.</p>
+			
+			<p><b>PRO TIP</b>: to view an applet in the Finder, select it in the dialog list and type Command-R (&#8984;R) and the Finder will become the frontmost application with the containing folder displayed with the applet selected:</p>
+			
+			<img width="100%" alt="calendar-alarm-applet-in-folder" src="gfx/calendar-alarm-applet-in-folder.png">
+		
+			<p style="text-align:center;">Home &gt; Library &gt; Workflows &gt; Applications &gt; Calendar</p>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <p class="active-sub-topic">Calendar Alarms</p>
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

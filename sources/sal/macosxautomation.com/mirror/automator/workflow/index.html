@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Workflows</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Welcome to OMNI-AUTOMATION.COM, a resource for information about the new dual-platform automation support (macOS/iOS) in the apps from The Omni Group.">
+	<meta property="og:image" content="http://macosautomation.com/automator/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav-active.png">
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Workflows</p>
+			
+			<p>The basic format for Automator documents is as a <b>standard workflow</b>, created using the <b>Workflow</b> template. A &ldquo;standard workflow&rdquo; contains no input settings, is not self-running, and must be executed from within Automator, or by another workflow, or by the macOS Script Menu.</p>
+			
+			<p>The standard workflow is very flexible and can be used to perform a variety of tasks, and is also useful for designing and pre-flighting automation ideas and concepts.</p>
+			
+			<img width="100%" alt="workflow-workflow-window" src="gfx/workflow-workflow-window.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator workflow document window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The workflow assembly pane where Automator actions are placed in the order in which they are executed.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Set the Desktop Picture to the NASA Image of the Day</p>
+			
+			<p>Here’s an example workflow that sets the macOS desktop picture to the <b>NASA Image of the Day</b> dowloaded from the NASA website. The saved workflow file is accessed and run using the built-in macOS system-wide <b>Script Menu</b>.</p>
+			
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="nasa-iod" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/video-poster.jpg">
+				  <source src="nasa-iod.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('nasa-iod').play();">PLAY</button>
+				<button onclick="document.getElementById('nasa-iod').pause();">PAUSE</button>
+				<button onclick="document.getElementById('nasa-iod').currentTime=(document.getElementById('nasa-iod').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('nasa-iod').currentTime=0;">REWIND</button>
+			</div>
+						
+			<p>This workflow will parse the <a href="https://www.nasa.gov/rss/dyn/lg_image_of_the_day.rss" target="_blank">NASA Image of the Day</a> RSS feed, listed on <a href="http://www.nasa.gov/rss/index.html" target="_blank">NASA RSS Feeds</a> webpage, download the latest image file, and make it the current desktop picture.</p>
+			
+			<p>To construct the workflow, follow the steps outlined below. (Optionally, you can <a href="nasa-workflow.zip">DOWNLOAD</a> the example completed workflow file.)</p>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td><p>Open a new browser window, and navigate to the <a href="https://www.nasa.gov/content/nasa-rss-feeds" target="_blank">NASA RSS Feeds</a> webpage: https://www.nasa.gov/content/nasa-rss-feeds</p></td>
+				</tr>
+			</table>
+			
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td><p>Next, launch Automator and position a new workflow window in behind and to the right of the browser window.</p></td>
+				</tr>
+			</table>
+												
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td><p>Drag the <b>Image of the Day</b> link from the browser webpage into the workflow assembly area of the Automator document and release the cursor (see illustration below).</p></td>
+				</tr>
+			</table>
+						
+			<img width="100%" alt="nasa-drag-feed" src="gfx/nasa-drag-feed.jpg">
+			
+			<p>A new <b>Get Specified URLs</b> action containing the RSS feed URL will be added to the Automator workflow (see below). The feed URL will be passed as input to the next action when the workflow is run.</p>
+			
+			<p>Construct the rest of the workflow as detailed below:</p>
+
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;A standard Automator workflow file will no specified input controls.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Get Specified URLs</b> action containing the RSS feed URL. When the workflow is executed, this URL will be passed to the next action for processing.</p>
+				<p>(instructions continued below image)</p>
+			</div>
+			
+			<img width="100%" alt="nasa-iod-workflow" src="gfx/nasa-iod-workflow.png">
+			
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Next, add the <b>Get Image URLs from Articles</b> action, found in the Internet library category, to the end of the workflow. Set the action’s parameter setting to &ldquo;Get URLs of images linked from the articles&rdquo; from the popup menu. When the workflow is executed, this action will parse the passed RSS feeds and extract any image links from their text. The resulting collection of image URLs will be passed to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;To extract today’s image link from the passed list of image links, add the <b>Run AppleScript</b> action to the end of the workflow and edit the main contant of its script to: <span class="keyEnum">return item 1 of input</span> which will pass the first, and most current link in the list of passed links, to the next action in the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Next, add the <b>Download URLs</b> action, found in the Internet library category, to the end of the workflow. Choose a destination folder for the downloaded image from the popup menu in the action view. This action will download the image file from the passed URL and place it in the destination folder. The result of this action will be a file reference to the downloaded image file, which is passed to the next action in the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;The final action in the workflow wil be one for setting the desktop picture to the downloaded image file. Locate and add the <b>Set Desktop Picture</b> action (in the &ldquo;Files &amp; Folders&rdquo; library) to the end of the workflow.</p>
+				<!-- <p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p> -->
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Save and Install the Workflow</p>
+			
+			<p>Since the workflow is not a self-running application, it must be executed by Automator, another application or workflow, or by the system-wide <b>Script Menu</b> utility.</p>
+						
+			<table class="do-this">
+				<tr>
+					<td class="leftside"><span class="do-this">DO THIS &#9658;</span></td>
+					<td><p>If it is not already on, activate the macOS <b>Script Menu</b> by launching the <b>Script Editor</b> application (Launch Pad > type: Script Editor), and select the &ldquo;Show Script Menu in menu bar&rdquo; checkbox in the <b>Script Editor</b>’s Preferences window (&#8984;,) Leave the &ldquo;Show computer scripts&rdquo; option unselected.<br><img width="100%" alt="script-menu-prefs" src="gfx/script-menu-prefs.png"></p></td>
+				</tr>
+			</table>
+			
+			<p>When you turn on the macOS Script Menu, it will create a &ldquo;Scripts&rdquo; folder in your user Library folder. Script and workflow files placed or saved within the <b>Scripts folder</b> will appear on the <b>Script Menu</b>, which will appear as a script icon in the top right menu bar.</p>
+			
+			<img width="257" alt="script-menu" src="gfx/script-menu.png">
+			
+			<p>Follow the steps detailed below to save and install the workflow for access using the <b>Scripts Menu</b> utility.</p>
+			
+			<img width="100%" alt="workflow-save" src="gfx/workflow-save.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;In Automator, type Command-S (&#8984;S) or choose &ldquo;Save&rdquo; from the <b>File</b> menu to display the saving sheet for the workflow document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;Enter a name for the workflow as you want it to appear in the <b>Script Menu</b>.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Choose the <b>Scripts folder</b> (Home &gt; Library &gt; Scripts) as the directory in which to save the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;Select &ldquo;Worfklow&rdquo; as the file format for the saved Automator document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Click the &ldquo;Save&rdquo; button to complete the saving and installation process.</p>
+			</div>
+			
+			<p>Run the workflow whenever you wish to update the desktop picture to the current NASA &ldquo;Image of the Day.&rdquo;</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Edit the Workflow</p>
+			
+			<p>To edit the saved workflow, choose &ldquo;Open&hellip;&rdquo; from the File menu in Automator. The file chooser dialog will appear:</p>
+			
+			<img width="100%" alt="open-script-menu-dialog" src="gfx/open-script-menu-dialog.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The file chooser dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;Press the <b>Options</b> button to toggle the display of the Type popup menu <span class="numeric-callout">&nbsp;3&nbsp;</span></p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Select &ldquo;Script Menu&rdquo; from the workflow <b>Type</b> popup menu to reveal the contents of the system <b>Scripts</b> folder <span class="numeric-callout">&nbsp;4&nbsp;</span> in the dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The system <b>Scripts</b> folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Select the workflow in the <b>Scripts</b> folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;Press the <b>Open</b> button to edit the workflow in Automator.</p>
+			</div>
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <p class="active-sub-topic">Workflows</p>
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../folder-action/index.html">Folder Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+			
+			<div class="under-construction">
+				<div class="head">Free RSS Feeds</div>
+				<!-- <img src="gfx/RSS32x32.png" width="32" height="32" class="left"> -->
+				<p>There are hundreds of free RSS feeds to information and podcasts. Here are links to a few free public RSS feeds:</p>
+				<ul>
+					<li><a href="https://www.apple.com/rss/" target="_blank">Apple RSS Feeds</a></li>
+					<li><a href="https://www.nasa.gov/rss/index.html" target="_blank">NASA RSS Feeds</a></li>
+					<li><a href="https://www.govinfo.gov/feeds" target="_blank">US GPO RSS Feeds</a></li>
+				</ul>
+			</div>
+		
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

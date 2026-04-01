@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: TUTORIAL -->
+		<div class="content-segment">
+			<div class="segment-header" >The Multi-Column Article Demo</div>
+			
+			<p>Once the Automator action and service workflow files have been installed, they can be used to create a web-app. In this tutorial, you will create a multi-column web-app by following these steps:</p>
+			
+		</div>
+		
+		<div class="content-segment">
+			
+			<div class="segment-header" >The Demo Files</div>
+					
+			<p>To begin the tutorial, download the provided demo kit.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="Multi-Column-Demo.zip">Download</a> the ZIP archive containing the Multi-Column demo materials. If needed, double-click the ZIP archive to unpack it to a new folder containing the tutorial items.</p>
+		
+			<p>The demo kit provided with this tutorial contains a text file to be used as the content for the article, and various supporting media files, including an audio file, video file, and image file (see below).</p>
+		
+			<img alt="mc-demo-files" src="gfx/mc-demo-files.png" width="624" class="centered" height="354">
+		
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" >Building a Multi-Column Article Publication</div>
+			
+			<p>Begin the process of creating a multi-column publication by following these steps:</p>
+			
+			<p class="content-subhead">Open the Source Text File</p>
+					
+			<p>The installed Automator action and service are designed process text selected in applications that support the standard contextual menu, such as TextEdit.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Open the text file <b>Fox Squirrel.rtf</b> by double-clicking its icon. By default, the file should open in the TextEdit application.</p>
+		
+			<p class="content-subhead">Activate the Service</p>
+					
+			<p>With the document open in TextEdit, you are now ready to use its content to create a multi-column web-app.</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Select all of the text in the document by selecting <b>Select All</b> from the <b>Edit</b> menu, or typing <b>Command-A</b> (&#8984;-A)</p>
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;With the document text selected, summon the contextual menu by right-clicking in the selection, or clicking in the selection while holding down the <b>Control</b> key. (see below)</p>
+
+			<img alt="mc-TextEditWindow-02" src="gfx/mc-TextEditWindow-02.png" width="624" height="664" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;At the bottom of the contextual menu, select the menu option titled <b>Create Article with Selected Text</b> (see above). NOTE: on some computers, the service may be listed within a <b>Services</b> sub-menu on the contextual menu.</p>
+
+			<p class="content-subhead">Enter Information in the Action Interface</p>
+					
+			<p>Once the service has been selected from the contextual menu, it will run the corresponding Automator service workflow, using the selected text as input for the workflow. The interface for the Create Multi-Column Article Web App action will be displayed for your input and choices. (see below)</p>
+		
+			<img alt="action-interface-filled" src="gfx/action-interface-filled.png" width="624" class="centered">
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Enter the name for the web-app, along with the corresponding content information, metadata, and license choice.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Include a media item by selecting <b>Other&hellip;</b> from the <b>Media File</b> popup menu, and locating and selecting one of the media files from the demo kit, in the forthcoming file picker dialog. If the media file is the provided image, you can select the checkbox to use its embedded caption.</p>
+			
+			<img class="centered" alt="spwa-demo-05" src="gfx/spwa-demo-05.png" width="244" height="86" style="margin-top:24px;">
+		
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Once a media item has been chosen, and the information and metadata have been entered, click the <b>Continue</b> button to have the workflow create a folder on the desktop containing the web-app.</p>
+		
+			<p class="content-subhead">View the Result</p>
+					
+			<p>Once the service has completed, it will open the created web-app in Safari for viewing (see below).</p>
+		
+			<a href="javascript:void(0);" onclick="PopupCenterWithScrolls('mc-example-image/index.html', 'viewer-window-article-picture',768,1024);"><img alt="safari-page" src="gfx/safari-page.png" width="624" height="724" class="centered"></a>
+			
+			<p>The article can be scrolled horizontally, and the type size of the article text adjusted using the buttons at the top right of the first page (see above).</p>
+		</div>
+		<!-- END SEGMENT: TUTORIAL -->
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, we&rsquo;ll examine the use of the Single-Page Web-App design.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="04.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Multi-Column Article</a></li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li class="hi">Multi-Column Article: Demo</li>
+				<li><a href="04.html">Single-Page Web-App</a></li>
+				<li><a href="05.html">Single-Page Web-App: Interface</a></li>
+				<li><a href="06.html">Single-Page Web-App: Demo</a></li>
+				<li><a href="07.html">Desktop Web-Apps</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, you will guide the attendees through the process of:</p>
+			
+			<ol>
+				<li>Downloading and installing the demo kit containing the materials used in the tutorial</li>
+				<li>Using the previously installed service to create an example publication that incorporates a multi-column layout design.</li>
+			</ol>
+			
+			<p>NOTE: the topic of sharing and viewing the created web-applications is covered at the beginning of the <a href="07.html"><b>Desktop Web-Apps</b></a> segment of this workshop.</p>
+			
+			<p class="sidebar-subhead">Special Features</p>	
+					
+			<p>The Automator action used in to create a multi-column web-app, has the ability to automatically assign a special CSS stylesheet to article paragraphs that function as sub-heads.</p>
+			
+			<p>To trigger the auto-styling, place the tag <b>[SH]</b> (include brackets) at the beginning of each sub-head paragraph. The tag will be removed, and the stylesheet applied to the paragraph, when the web-application is created.</p>
+
+			<p>In addition, any paragraph can have italic styling applied to it by placing the tag [I] (include brackets) at the beginning of the paragraph to italicize. The tag will be removed, and the paragraph italicized, when the web-application is created.</p>
+			
+			<p>The example text file included with this tutorial, makes use of these two auto-styling tags.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+						
+			<ol type="1">
+				<li>Ask attendees if they have used Automator or System Services before.</li>
+				<li>Like a chef following a recipe, use of workflows sometimes require preparation of materials, such as processing audio, video, or image files for use by the workflow. You may want to point out that are built-in System Services for <a href="http://macosxautomation.com/lion/encodeaudio/index.html" target="_blank">processing audio</a>, and for <a href="http://macosxautomation.com/lion/encodemedia/index.html" target="_blank">processing video</a> files.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

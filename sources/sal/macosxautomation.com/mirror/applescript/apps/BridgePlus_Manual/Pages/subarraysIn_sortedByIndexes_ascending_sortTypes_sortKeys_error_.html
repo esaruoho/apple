@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #ee2200}
+span.s6 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="subarraysIn_sortedByIndexes_ascending_sortTypes_error_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="arrayByMergingTextAtIndexes_inArray_inserting_error_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>List manipulation methods</p>
+<h3>Method</h3>
+<code>subarraysIn:sortedByIndexes:ascending:sortTypes:sortKeys:error:</code>
+<h3>Summary</h3>
+<p>As in subarraysIn:sortedByIndexes:ascending:sortTypes:error:, but you can also pass a list of key strings to be used for the sort. Pass an empty list to use "self" throughout, which is what the above method uses. For example, if you pass {"length"}, the sorting will be done on the basis of the length. The values being sorted must support the key or an error will be thrown.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>subarraysIn:<span class="sigParens">(NSArray *)</span><span class="param">listOrArray</span> sortedByIndexes:<span class="sigParens">(NSArray *)</span><span class="param">theIndexes</span> ascending:<span class="sigParens">(NSArray *)</span><span class="param">orderBooleans</span> sortTypes:<span class="sigParens">(NSArray *)</span><span class="param">sortSelctorStrings</span> sortKeys:<span class="sigParens">(NSArray *)</span><span class="param">sortKeys</span> error:<span class="sigParens">(NSError *__autoreleasing *)</span><span class="param">outError</span></code>
+<h3>Parameters</h3>
+<p><span class="param">listOrArray</span> = list or array of sublists</p><p><span class="param">theIndexes</span> = a list of the zero-based indexes of the sublist items to sort on, in order</p><p><span class="param">orderBooleans</span> = a list of booleans setting the sort order. Can be empty; see summary</p><p><span class="param">sortSelctorStrings</span> = a list of the sort selectors to use. Can be empty; see summary</p><p><span class="param">sortKeys</span> = a list of the sort keys to use. Can be empty; see summary</p><p><span class="param">outError</span> = missing value or reference</p>
+<h3>Result</h3>
+<p>Sorted array of sublists</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>If you set outError to reference, the result will be a list of two items. If there is no error, the first item will be the result of the method and the second will be missing value. If there is an error, the first item will be missing value and the second item with be an NSError.</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">listOrArray</span> <b>to</b> {{5, 2.1, 7}, {1, 2.2, 3}, {4, 2.3, 6}, {7, 3, 9}, {10, 1, 12}}</p>
+<p class="p2"><b>set</b> <span class="s3">theIndexes</span> <b>to</b> {1, 0}</p>
+<p class="p2"><b>set</b> <span class="s3">theOrders</span> <b>to</b> {<span class="s4"><i>true</i></span>, <span class="s4"><i>true</i></span>}</p>
+<p class="p2"><b>set</b> <span class="s3">sortTypes</span> <b>to</b> {"compare:", "compare:"}</p>
+<p class="p5"><span class="s1"><b>set</b> </span>theResult<span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s5">subarraysIn</span><span class="s1">:</span>listOrArray<span class="s1"> </span><span class="s5">sortedByIndexes</span><span class="s1">:</span>theIndexes<span class="s1"> </span><span class="s5">ascending</span><span class="s1">:</span>theOrders<span class="s1"> </span><span class="s5">sortTypes</span><span class="s1">:</span>sortTypes<span class="s1"> </span><span class="s5">sortKeys</span><span class="s1">:{"integerValue"} </span><span class="s5">|error|</span><span class="s1">:(</span><span class="s2"><i>missing value</i></span><span class="s1">)</span></p>
+<p class="p5"><span class="s6"><b>ASify</b></span><span class="s1"> </span><span class="s6">from</span><span class="s1"> </span>theResult</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{{10, 1, 12}, {1, 2.2, 3}, {4, 2.3, 6}, {5, 2.1, 7}, {7, 3, 9}}</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.11 only</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{{10, 1, 12}, {1, 2.2, 3}, {4, 2.3, 6}, {5, 2.1, 7}, {7, 3, 9}}</p>
+<p class="p6"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span><span class="s1"> </span>-- 10.9 and 10.10</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>{{10, 1, 12}, {1, 2.200000047684, 3}, {4, 2.299999952316, 6}, {5, 2.099999904633, 7}, {7, 3, 9}}</p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">theIndexes</span> <b>to</b> {1, 3}</p>
+<p class="p5"><span class="s1"><b>set</b> {</span>theResult<span class="s1">, </span>theError<span class="s1">} <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s5">subarraysIn</span><span class="s1">:</span>listOrArray<span class="s1"> </span><span class="s5">sortedByIndexes</span><span class="s1">:</span>theIndexes<span class="s1"> </span><span class="s5">ascending</span><span class="s1">:</span>theOrders<span class="s1"> </span><span class="s5">sortTypes</span><span class="s1">:</span>sortTypes<span class="s1"> </span><span class="s5">sortKeys</span><span class="s1">:{} </span><span class="s5">|error|</span><span class="s1">:(</span><span class="s2"><i>reference</i></span><span class="s1">)</span></p>
+<p class="p2"><b>if</b> <span class="s3">theResult</span> = <span class="s2"><i>missing value</i></span> <b>then</b> <b>error</b> (<span class="s3">theError's</span> <span class="s5">localizedDescription</span>() <b>as</b> <span class="s2"><i>text</i></span>)</p>
+<p class="p6">--&gt;<span class="Apple-tab-span">	</span>error number -2700<span class="Apple-converted-space">  </span>Sublist has fewer items than in sort indexes list.</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20listOrArray%20to%20%7B%7B5,%202.1,%207%7D,%20%7B1,%202.2,%203%7D,%20%7B4,%202.3,%206%7D,%20%7B7,%203,%209%7D,%20%7B10,%201,%2012%7D%7D%0Dset%20theIndexes%20to%20%7B1,%200%7D%0Dset%20theOrders%20to%20%7Btrue,%20true%7D%0Dset%20sortTypes%20to%20%7B%22compare:%22,%20%22compare:%22%7D%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20subarraysIn:listOrArray%20sortedByIndexes:theIndexes%20ascending:theOrders%20sortTypes:sortTypes%20sortKeys:%7B%22integerValue%22%7D%20%7Cerror%7C:(missing%20value)%0DASify%20from%20theResult%0D--%3E%09%7B%7B10,%201,%2012%7D,%20%7B1,%202.2,%203%7D,%20%7B4,%202.3,%206%7D,%20%7B5,%202.1,%207%7D,%20%7B7,%203,%209%7D%7D%0DtheResult%20as%20list%20--%2010.11%20only%0D--%3E%09%7B%7B10,%201,%2012%7D,%20%7B1,%202.2,%203%7D,%20%7B4,%202.3,%206%7D,%20%7B5,%202.1,%207%7D,%20%7B7,%203,%209%7D%7D%0DtheResult%20as%20list%20--%2010.9%20and%2010.10%0D--%3E%09%7B%7B10,%201,%2012%7D,%20%7B1,%202.200000047684,%203%7D,%20%7B4,%202.299999952316,%206%7D,%20%7B5,%202.099999904633,%207%7D,%20%7B7,%203,%209%7D%7D%0D%0Dset%20theIndexes%20to%20%7B1,%203%7D%0Dset%20%7BtheResult,%20theError%7D%20to%20current%20application's%20SMSForder's%20subarraysIn:listOrArray%20sortedByIndexes:theIndexes%20ascending:theOrders%20sortTypes:sortTypes%20sortKeys:%7B%7D%20%7Cerror%7C:(reference)%0Dif%20theResult%20=%20missing%20value%20then%20error%20(theError's%20localizedDescription()%20as%20text)%0D--%3E%09error%20number%20-2700%20%20Sublist%20has%20fewer%20items%20than%20in%20sort%20indexes%20list.%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

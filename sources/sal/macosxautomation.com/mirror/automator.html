@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator</title>
+	<link rel="apple-touch-icon" href="automator-nav-active.png">
+	<meta name="description" content="Automator is your personal automation assistant for creating &ldquo;automation recipes&rdquo; in macOS.">
+	<link rel="stylesheet" type="text/css" href="automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<img class="nav-icon" alt="Automator" src="gfx/automator-nav-active.png">
+			<a href="workflow/index.html"><img class="nav-icon" alt="Workflows" src="gfx/workflow-nav.png"></a>
+			<a href="application/index.html"><img class="nav-icon" alt="Applications" src="gfx/application-nav.png"></a>
+			<a href="services/index.html"><img class="nav-icon" alt="Quick Actions" src="gfx/services-nav.png"></a>
+			<a href="print/index.html"><img class="nav-icon" alt="Print Plugins" src="gfx/print-plugin-nav.png"></a>
+			<a href="folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="gfx/folder-action-nav.png"></a>
+			<a href="calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="gfx/calendar-alarm-nav.png"></a>
+			<a href="image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="gfx/image-capture-plugin-nav.png"></a>
+			<a href="dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="gfx/dictation-command-nav.png"></a>
+			<a href="utilities/index.html"><img class="nav-icon" alt="Utilities" src="gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator</p>
+			
+			<p>Automator is your personal automation assistant for creating &ldquo;automation recipes&rdquo; in macOS.</p>
+			
+			
+			<p class="subhead" role="heading" aria-level="2">What is Automator? (2m)</p>
+			
+			<p>What is the Automator application?</p>
+			
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="what-is-automator" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/what-is-automator-poster.png">
+				  <source src="What-is-Automator.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('what-is-automator').play();">PLAY</button>
+				<button onclick="document.getElementById('what-is-automator').pause();">PAUSE</button>
+				<button onclick="document.getElementById('what-is-automator').currentTime=(document.getElementById('what-is-automator').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('what-is-automator').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Automation Recipes (3m)</p>
+			
+			<p>“Workflows” can be thought of as “Automation Recipes” that share design concepts with common kitchen recipes.</p>
+			
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="automation-recipes" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/automation-recipes-poster.png">
+				  <source src="Automation-Recipes.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('automation-recipes').play();">PLAY</button>
+				<button onclick="document.getElementById('automation-recipes').pause();">PAUSE</button>
+				<button onclick="document.getElementById('automation-recipes').currentTime=(document.getElementById('automation-recipes').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('automation-recipes').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Workflow Variables (28m)</p>
+			
+			<p>A thorough overview of the workflow variables in Automator.</p>
+			
+			<div style="text-align:center;">
+				<iframe src="https://player.vimeo.com/video/320071579" width="640" height="360" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+			</div>
+<!-- 
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="assign-key-shortcuts" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/workflow-variables-poster.png">
+				  <source src="workflow-variables.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('workflow-variables').play();">PLAY</button>
+				<button onclick="document.getElementById('workflow-variables').pause();">PAUSE</button>
+				<button onclick="document.getElementById('workflow-variables').currentTime=(document.getElementById('workflow-variables').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('workflow-variables').currentTime=0;">REWIND</button>
+			</div>
+ -->
+			
+			<p class="subhead" role="heading" aria-level="2">Training Video (52m)</p>
+			
+			<p>There’s more to Automator than the drag-and-drop creation of “automation recipes.” The following video from the <a href="https://cmddconf.com" target="_blank">CMD-D Conference</a> shows what workflow variables, contextual system integration, and direct access to all of the automation power of the OS can do for you.</p>
+			
+			<div style="text-align:center;">
+				<iframe src="https://player.vimeo.com/video/271390639" width="640" height="360" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+			</div>
+
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="active-topic">Automator</p>
+			  <p class="sub-topic"><a href="workflow/index.html">Workflows</a></p>
+			  <p class="sub-topic"><a href="application/index.html">Applications</a></p>
+			  <p class="sub-topic"><a href="services/index.html">Quick Actions</a></p>
+			  <p class="sub-topic"><a href="print/index.html">Print Plugins</a></p>
+			  <p class="sub-topic"><a href="folder-action/index.html">Folder Actions</a></p>
+			  <p class="sub-topic"><a href="calendar/index.html">Calendar Alarms</a></p>
+			  <p class="sub-topic"><a href="image-capture/index.html">Image Capture Plugins</a></p>
+			  <p class="sub-topic"><a href="dictation/index.html">Dictation Commands</a></p>
+			  <p class="sub-topic"><a href="utilities/index.html">Utilities</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="security.html">Automation Security</a></p>
+			  <p class="topic"><a href="accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="examples.html">Examples</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p><iframe src="https://duckduckgo.com/search.html?width=100&site=macosautomation.com/automator/&prefill=Search" style="overflow:hidden;margin:0;padding:0;width:178px;height:40px;" frameborder="0"></iframe></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

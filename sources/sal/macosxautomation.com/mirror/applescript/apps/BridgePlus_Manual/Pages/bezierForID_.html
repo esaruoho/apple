@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p6 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana; color: #ee2200}
+p.p8 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana; color: #5e6161}
+p.p9 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana}
+p.p10 {margin: 0.0px 0.0px 0.0px 84.0px; text-indent: -84.0px; font: 12.0px Verdana}
+p.p11 {margin: 0.0px 0.0px 0.0px 112.0px; text-indent: -112.0px; font: 12.0px Verdana; color: #0433ff}
+p.p12 {margin: 0.0px 0.0px 0.0px 112.0px; text-indent: -112.0px; font: 12.0px Verdana}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #812fdc}
+span.s4 {color: #ee2200}
+span.s5 {color: #4f8f00}
+span.s6 {color: #5e6161}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="bezierForAI_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="pathOfBezier_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>Miscellaneous methods</p>
+<h3>Method</h3>
+<code>bezierForID:</code>
+<h3>Summary</h3>
+<p>This returns a record containing the entire path and *path type* value for a bezier, in a format suitable for use in Adobe InDesign. After converting to a record you can use it directly -- for example: "set properties of path 1 of page item x to theRecord". The bezier should consist of a single unbroken path.</p><p>Because InDesign's vertical coordinates run from top to bottom, angles are rotated 180 degrees.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSAppleEventDescriptor *)</span>bezierForID:<span class="sigParens">(NSBezierPath *)</span><span class="param">theBezier</span></code>
+<h3>Parameters</h3>
+<p><span class="param">theBezier</span> = an NSBezierPath</p>
+<h3>Result</h3>
+<p>Dictionary/record for Adobe InDesign path</p>
+<h3>Availability</h3>
+<p>Version 1.2.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span>theNSBezierPath<span class="s1"> <b>to</b> </span><span class="s3"><i>current application's</i></span><span class="s1"> </span>NSBezierPath's<span class="s1"> </span><span class="s4">bezierPath</span><span class="s1">()</span></p>
+<p class="p2"><b>set</b> <span class="s5">theVals</span> <b>to</b> {10, 15, 20, 25, 30, 40, 60}</p>
+<p class="p2"><b>set</b> <span class="s5">theTotal</span> <b>to</b> <span class="s2"><i>item</i></span> 1 <b>of</b> (<span class="s3"><i>current application's</i></span> <span class="s5">SMSForder's</span> <span class="s4">sumMaxMinOf</span>:<span class="s5">theVals</span> <span class="s4">|error|</span>:(<span class="s2"><i>missing value</i></span>)) <b>as</b> <span class="s2"><i>list</i></span></p>
+<p class="p2"><b>set</b> <span class="s5">startDeg</span> <b>to</b> -90</p>
+<p class="p2"><b>set</b> <span class="s5">theCentre</span> <b>to</b> {200, 200}</p>
+<p class="p2"><b>set</b> <span class="s5">theRadius</span> <b>to</b> 100</p>
+<p class="p2"><b>repeat</b> <b>with</b> <span class="s5">aVal</span> <b>in</b> <span class="s5">theVals</span></p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span><b>set</b> </span>endDeg<span class="s1"> <b>to</b> </span>startDeg<span class="s1"> + </span>aVal<span class="s1"> / </span>theTotal<span class="s1"> * 360</span></p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span><b>set</b> </span>theNSBezierPath<span class="s1"> <b>to</b> </span><span class="s3"><i>current application's</i></span><span class="s1"> </span>NSBezierPath's<span class="s1"> </span><span class="s4">bezierPath</span><span class="s1">()</span></p>
+<p class="p7"><span class="s1"><span class="Apple-tab-span">	</span>(</span><span class="s5">theNSBezierPath's</span><span class="s1"> </span>appendBezierPathWithArcWithCenter<span class="s1">:</span><span class="s5">theCentre</span><span class="s1"> </span>radius<span class="s1">:</span><span class="s5">theRadius</span><span class="s1"> </span>startAngle<span class="s1">:</span><span class="s5">startDeg</span><span class="s1"> </span>endAngle<span class="s1">:</span><span class="s5">endDeg</span><span class="s1">)</span></p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span>(</span>theNSBezierPath's<span class="s1"> </span><span class="s4">lineToPoint</span><span class="s1">:</span>theCentre<span class="s1">)</span></p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span></span>theNSBezierPath's<span class="s1"> </span><span class="s4">closePath</span><span class="s1">()</span></p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span><b>set</b> </span>startDeg<span class="s1"> <b>to</b> </span>endDeg</p>
+<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span><b>set</b> </span>idProps<span class="s1"> <b>to</b> (</span><span class="s3"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s4">bezierForID</span><span class="s1">:</span>theNSBezierPath<span class="s1">) <b>as</b> </span><span class="s2"><i>record</i></span></p>
+<p class="p8"><span class="s1"><span class="Apple-tab-span">	</span></span>--&gt;<span class="Apple-tab-span">	</span>{path type:closed path, entire path:{{{104.894348370485, 230.901699437495}, {104.894348370485, 230.901699437495}, {87.827811027302, 178.376298419793}}, {{116.572899544804, 121.960885713668}, {169.098300562505, 104.894348370485}, {179.078270045052, 101.651659717802}}, {{189.506439090051, 100.0}, {200.0, 100.0}, {200.0, 100.0}}, {200.0, 200.0}}}</p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>tell</b> <span class="s2"><i>application</i></span> <span class="s3"><i>id</i></span> "com.adobe.InDesign" <span class="s6">-- Adobe InDesign CC 2014.app</span></p>
+<p class="p10"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>tell</b> <span class="s2"><i>document</i></span> 1</p>
+<p class="p11"><span class="s1"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span></span><b>make</b><span class="s1"> </span><i>rectangle</i><span class="s1"> </span>with properties<span class="s1"> {</span><span class="s3">stroke weight</span><span class="s1">:0.5}</span></p>
+<p class="p12"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>set</b> <span class="s3">properties</span> <b>of</b> <span class="s2"><i>path</i></span> 1 <b>of</b> <span class="s2"><i>page item</i></span> 1 <b>to</b> <span class="s5">idProps</span></p>
+<p class="p10"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>end</b> <b>tell</b></p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>end</b> <b>tell</b></p>
+<p class="p2"><b>end</b> <b>repeat</b></p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20theNSBezierPath%20to%20current%20application's%20NSBezierPath's%20bezierPath()%0Dset%20theVals%20to%20%7B10,%2015,%2020,%2025,%2030,%2040,%2060%7D%0Dset%20theTotal%20to%20item%201%20of%20(current%20application's%20SMSForder's%20sumMaxMinOf:theVals%20%7Cerror%7C:(missing%20value))%20as%20list%0Dset%20startDeg%20to%20-90%0Dset%20theCentre%20to%20%7B200,%20200%7D%0Dset%20theRadius%20to%20100%0Drepeat%20with%20aVal%20in%20theVals%0D%09set%20endDeg%20to%20startDeg%20+%20aVal%20/%20theTotal%20*%20360%0D%09set%20theNSBezierPath%20to%20current%20application's%20NSBezierPath's%20bezierPath()%0D%09(theNSBezierPath's%20appendBezierPathWithArcWithCenter:theCentre%20radius:theRadius%20startAngle:startDeg%20endAngle:endDeg)%0D%09(theNSBezierPath's%20lineToPoint:theCentre)%0D%09theNSBezierPath's%20closePath()%0D%09set%20startDeg%20to%20endDeg%0D%09set%20idProps%20to%20(current%20application's%20SMSForder's%20bezierForID:theNSBezierPath)%20as%20record%0D%09--%3E%09%7Bpath%20type:closed%20path,%20entire%20path:%7B%7B%7B104.894348370485,%20230.901699437495%7D,%20%7B104.894348370485,%20230.901699437495%7D,%20%7B87.827811027302,%20178.376298419793%7D%7D,%20%7B%7B116.572899544804,%20121.960885713668%7D,%20%7B169.098300562505,%20104.894348370485%7D,%20%7B179.078270045052,%20101.651659717802%7D%7D,%20%7B%7B189.506439090051,%20100.0%7D,%20%7B200.0,%20100.0%7D,%20%7B200.0,%20100.0%7D%7D,%20%7B200.0,%20200.0%7D%7D%7D%0D%09tell%20application%20id%20%22com.adobe.InDesign%22%20--%20Adobe%20InDesign%20CC%202014.app%0D%09%09tell%20document%201%0D%09%09%09make%20rectangle%20with%20properties%20%7Bstroke%20weight:0.5%7D%0D%09%09%09set%20properties%20of%20path%201%20of%20page%20item%201%20to%20idProps%0D%09%09end%20tell%0D%09end%20tell%0Dend%20repeat%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

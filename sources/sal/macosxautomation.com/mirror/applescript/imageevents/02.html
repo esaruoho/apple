@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Image Events</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="../learn.html">Learn</a> | <a href="../examples.html">Examples</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="../features/index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>Manipulating Images</h2>
+		
+		<p>Altering images has become a common task in our digital world, and AppleScript can make manipulating groups of images a simple proceedure. The following section reviews each of the image manipulation commands in the Image Suite.</p>
+		
+		<p>To manipulate an image, your scripts must contain the following steps:</p>
+				
+		<ol>
+			<li>Start the Image Events application using the launch verb. Do not use the activate verb as the Image Events application has no user interface and runs invisibly.</li>
+	
+			<li>A file reference to the target image must be passed to the open command within an Image Events tell block. Doing so will load the image data from the image file. Once the image data has been successfully accessed, the script will return a reference to the opened image which can be stored in variable for use elsewhere in the script.</li>
+		
+			<li>Apply any manipulation commands to the image data.</li>
+		
+			<li>Save the altered data back into the source file or to another file.</li>
+		
+			<li>The image data is purged from memory by using the close command targeting the opened image data.</li>
+		</ol>
+		
+		<p>These steps are used in all of the script examples for image manipulation commands.</p> 
+		
+		<h2>Flipping an Image</h2>
+		
+		<p>From the Image Events dictionary:</p>
+		
+		<p class="dictionary"><b>flip</b> v : Flip an image<br>
+		<span class="dictionary-indent-01"><span class="dictionary-term">flip</span> (reference) : the object for the command</span><br>
+		<span class="dictionary-indent-02">[<span class="dictionary-term">horizontal</span> (boolean)] : flip horizontally</span><br>
+		<span class="dictionary-indent-02">[<span class="dictionary-term">vertical</span> (boolean)] : flip vertically</span></p>
+
+		<p>The <span class="dictionary-term">flip</span> command is used to reverse the axis of an image. It has two options for the required parameter, <span class="dictionary-term">horizontal</span> for changing the axis of the image on a horizontal plane, and <span class="dictionary-term">vertical</span> for changing the axis of the image on a vertical plane. Here's an example:</p>
+		
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20the%20manipulation%0D%09%09flip%20this_image%20with%20horizontal%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" align="top" alt="Click to open example in the Script Editor application"></a><br>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform the manipulation</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>flip <span class="codevariable">this_image</span> <b>with</b> horizontal<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<p>You can even flip in both directions at the same time by including both parameters in the flip command:</p>
+
+		<p class="code">flip <span class="codevariable">this_image</span> with horizontal and vertical</p>
+		
+		<p>An image flipped using Image Events:</p>
+
+		<img src="gfx/23_image02.png" width="640" height="157" align="top" class="across">
+
+		<p class="imagecaption">(L to R) normal, horizontal flip, vertical flip, both directions.</p>
+		
+		<p>Here are a couple of things to note regarding the save command in the previous script:</p>
+		
+		<p>First, the command takes an optional parameter of <b>in</b>, followed by a path, ether in HFS or POSIX format, to a file to be created. Since the in parameter was not used in the previous example, the script will save the altered image data back into the source image file. We'll examine the save command in detail later in this topic.</p>
+		
+		<p>Second, the example script uses the optional <b>icon</b> parameter to indicate to Image Events to generate a new icon for the altered image file when it is saved. The icon will be a standard Mac OS X image icon.</p>
+
+		<h3>Example Accepting User Input</h3>
+				
+		<p class="code"><a href="applescript://com.apple.scripteditor?action=new&script=set%20this_file%20to%20choose%20file%20without%20invisibles%0Ddisplay%20dialog%20%22Flip%20direction%3A%22%20buttons%20%7B%22Horizontal%22%2C%20%22Vertical%22%2C%20%22Both%22%7D%0Dset%20the%20flip_direction%20to%20the%20button%20returned%20of%20the%20result%0Dtry%0D%09tell%20application%20%22Image%20Events%22%0D%09%09%2D%2D%20start%20the%20Image%20Events%20application%0D%09%09launch%0D%09%09%2D%2D%20open%20the%20image%20file%0D%09%09set%20this_image%20to%20open%20this_file%0D%09%09%2D%2D%20perform%20the%20manipulation%0D%09%09if%20the%20flip_direction%20is%20%22Horizontal%22%20then%0D%09%09%09flip%20this_image%20with%20horizontal%0D%09%09else%20if%20the%20flip_direction%20is%20%22Vertical%22%20then%0D%09%09%09flip%20this_image%20with%20vertical%0D%09%09else%0D%09%09%09flip%20this_image%20with%20horizontal%20and%20vertical%0D%09%09end%20if%0D%09%09%2D%2D%20save%20the%20changes%0D%09%09save%20this_image%20with%20icon%0D%09%09%2D%2D%20purge%20the%20open%20image%20data%0D%09%09close%20this_image%0D%09end%20tell%0Don%20error%20error_message%0D%09display%20dialog%20error_message%0Dend%20try"><img src="../gfx/ScriptEditor32x32.png" width="32" height="32" class="edit-image" alt="Click to open example in the Script Editor application"></a><span class="script-caption">This script allows the user to choose the axis on which to flip the image:</span><img src="gfx/23_imageA3.png" width="360" height="113" align="top" class="script-image"><br>&nbsp;<BR>
+<b>set</b> <span class="codevariable">this_file</span> <b>to</b> choose file <b>without</b> invisibles<BR>
+display dialog &quot;Flip direction:&quot; buttons {&quot;Horizontal&quot;, &quot;Vertical&quot;, &quot;Both&quot;}<BR>
+<b>set the</b> <span class="codevariable">flip_direction</span> <b>to the</b> button returned <b>of the</b> result<BR>
+<b>try</b><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>tell</b> application &quot;Image Events&quot;<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- start the Image Events application</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>launch<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- open the image file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">this_image</span> <b>to</b> open <span class="codevariable">this_file</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- perform the manipulation</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>if the</b> <span class="codevariable">flip_direction</span> <b>is</b> &quot;Horizontal&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>flip <span class="codevariable">this_image</span> <b>with</b> horizontal<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else if the</b> <span class="codevariable">flip_direction</span> <b>is</b> &quot;Vertical&quot; <b>then</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>flip <span class="codevariable">this_image</span> <b>with</b> vertical<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>else</b><BR>
+<span style="float:left; width:30px;">&nbsp;</span>flip <span class="codevariable">this_image</span> <b>with</b> horizontal and vertical<BR>
+<span style="float:left; width:20px;">&nbsp;</span><b>end if</b><BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- save the changes</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>save <span class="codevariable">this_image</span> <b>with</b> icon<BR>
+<span style="float:left; width:20px;">&nbsp;</span><span class="codecomment">-- purge the open image data</span><BR>
+<span style="float:left; width:20px;">&nbsp;</span>close <span class="codevariable">this_image</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span><b>end tell</b><BR>
+<b>on error</b> <span class="codevariable">error_message</span><BR>
+<span style="float:left; width:10px;">&nbsp;</span>display dialog <span class="codevariable">error_message</span><BR>
+<b>end try</b></p>
+
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+
+		
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>Image Events</h2>
+			<ul class="square last">
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Image Properties</a></li>
+				<li class="hi">Flipping Images</li>
+				<li><a href="03.html">Rotating Images</a></li>
+				<li><a href="04.html">Scaling Images</a></li>
+				<li><a href="05.html">Padding Images</a></li>
+				<li><a href="06.html">Framing Images</a></li>
+				<li><a href="07.html">Croping Images</a></li>
+				<li><a href="08.html">File Conversion</a></li>
+				<li><a href="09.html">Extracting Metadata</a></li>
+			</ul>
+		</div>
+		<div class="box">
+			<h2>Scripts &amp; Templates</h2>
+			<p>Example scripts for common uses:</p>
+			<ul class="square last">
+				<li><a href="../pkg/droplet-templates.zip">Droplet Templates</a></li>
+				<li><a href="../pkg/image-templates.zip">Image Processing Templates</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

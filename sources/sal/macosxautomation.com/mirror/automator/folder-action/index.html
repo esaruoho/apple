@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Folder Actions</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="Folder Actions are a powerful feature of macOS that enable automated processing of items placed into &ldquo;attached folders&rdquo; in the Finder.">
+	<meta name="keywords" content="automation, macOS, Automator, Folder Actions, AppleScript, JavaScript">
+	<meta name="author" content="Sal Soghoian, ©2018 Nyhthawk Productions">
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="../omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<a href="../services/index.html"><img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav.png"></a>
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav-active.png">
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Folder Actions</p>
+			
+			<p>Introduced in macOS 8.5 (way back before MacOS X and the new macOS series) the <b>Folder Actions</b> automation architecture has delivered the functionality of automatically processing items added to designated Finder folders. This unique macOS feature is integrated into Automator as a workflow template:</p>
+			
+			<img width="100%" alt="folder-action-wirkflow-window" src="gfx/folder-action-wirkflow-window.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Folder Action workflow window. Folder Actions are saved as workflow files, instead of applets, and are executed by the system “FolderActionsDispatcher” background process.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;Since a Folder Action is “attached” to a folder in the Finder, its input is files and/or folders added to the target folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The &ldquo;attached folder&rdquo; is selected from the popup menu, which summons a file/folder chooser dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The workflow assembly pane where the workflow is assembled by adding actions from the Automator Library in the sequence in which they are to be exectued.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Example: Auto-Photos Import via AirPort</p>
+			
+			<p>Here&rsquo;s an example of combining the use of an Automator <b>Folder Action</b> workflow with an AppleScript &ldquo;Watcher&ldquo; applet to create an autonomous AirDrop image repository whose content is added to by others through a non-attended import process triggered when users AirDrop images to the unmanned host computer.</p>
+			
+			<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+				<video id="folder-action" x-webkit-airplay="allow" webkit-playsinline width="100%" style="margin-top:4px;" controls="controls" preload="auto" poster="gfx/video-poster.jpg">
+				  <source src="folder-action-3360.mp4" type="video/mp4">
+				  Your browser does not support the video tag.
+				</video>
+			</div>
+			<div style="text-align:center;margin-bottom:18px;">
+				<button onclick="document.getElementById('folder-action').play();">PLAY</button>
+				<button onclick="document.getElementById('folder-action').pause();">PAUSE</button>
+				<button onclick="document.getElementById('folder-action').currentTime=(document.getElementById('folder-action').currentTime-5);">BACK</button>
+				<button onclick="document.getElementById('folder-action').currentTime=0;">REWIND</button>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">The Folder Action</p>
+			
+			<p>The first step is to create an Automator Folder Action workflow that will import the images placed into an &ldquo;attached folder&rdquo; in the Finder, into the Photos application.</p>
+
+			<p><a href="folder-action-workflow.zip">DOWNLOAD</a> the completed Folder Action workflow file.</p>
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Folder Action workflow window. Folder Actions are saved as workflow files, instead of applets, and are executed by the system “FolderActionsDispatcher” background process.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The &ldquo;attached folder&rdquo; is the set to be the user’s <b>Downloads folder</b> in the Home directory.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Pause</b> action is added to give the items added to the attached folder, enough time to complete the copy process before beginning their processing by the other actions in the workflow. The delay value is indicated in seconds. Set this value to a higher value if the added files are larger and copied over a network or by AirDrop. Files added locally on the computer, require little or no delay.</p>
+			</div>
+			
+			<img width="100%" alt="folder-action-workflow" src="gfx/folder-action-workflow.png">
+		
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>Filter Finder Items</b> action is used to ensure that only image files are passed to the next action for import into Photos. <b>NOTE</b>: since Photos can store multiple media types, such as videos and images, you can adjust the filtering parameters of this action to reflect the type of import data you want the workflow to support.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Since Automator’s built-in <b>Import Files into Photos</b> action remains broken in the latest version of macOS, a <b>Run AppleScript</b> action is used instead, containing a simple AppleScript script (see below) that imports the passed image files into the top-level of the Photos library.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;Since Photos stores a copy on imported data, the <b>Move Finder Items to Trash</b> action is used to remove the original image files from the <b>Downloads folder</b>, and place them into the trash.</p>
+			</div>
+			
+			<div id="photos-image-import" class="script-content">on run {input, parameters}
+	tell application id "com.apple.photos"
+		try
+			if input is not {} then
+				import input with skip check duplicates
+			end if
+		on error errorMessage
+			display alert "IMPORT ERROR" message errorMessage
+		end try
+	end tell
+	return input
+end run</div>
+
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Import Images into Photos</td></tr>
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('photos-image-import');">Copy Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">on <span class="methodEnum">run</span> {<span class="functionParamterEnum">input</span>, <span class="functionParamterEnum">parameters</span>}</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>tell <span class="classEnum">application</span> <span class="propertyEnum">id</span> <span class="stringEnum">&quot;com.apple.photos&quot;</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">try</span></td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>if <span class="functionParamterEnum">input</span> is not {} then</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:80px;">&nbsp;</span><span class="methodEnum">import</span> <span class="functionParamterEnum">input</span> <span class="parameterEnum">with</span> <span class="valueEnum">skip check duplicates</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span>end if</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">on error</span> <span class="variableEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:60px;">&nbsp;</span><span class="methodEnum">display alert</span> <span class="stringEnum">&quot;IMPORT ERROR&quot;</span> <span class="parameterEnum">message</span> <span class="variableEnum">errorMessage</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:40px;">&nbsp;</span><span class="tryEnum">end try</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span>end tell</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;"><span style="float:left; width:20px;">&nbsp;</span><span class="returnEnum">return</span> <span class="functionParamterEnum">input</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">end <span class="methodEnum">run</span></td></tr>
+			</table>
+			
+			<p>To save and install the Folder Actions workflow, type Command-S (&#8984;S) or choose &ldquo;Save&hellip;&rdquo; from the <b>File</b> menu in Automator. Enter a name for the workflow in the forthcoming naming sheet. Click the sheet’s “Save” button and the workflow will be installed in the following directory and the Folder Actions server will be activated.</p>
+			
+			<p style="text-align:center;">Home &gt; Library &gt; Workflows &gt; Applications &gt; Folder Actions</p>
+			
+			<img width="100%" alt="folder-actions-directory" src="gfx/folder-actions-directory.png">
+			
+			<p>To edit the workflow file, choose Open&hellip; from the File menu in Automator to summon a file chooser dialog:</p>
+			
+			<img width="100%" alt="open-workflow-dialog" src="gfx/open-workflow-dialog.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The file chooser dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;Press the <b>Options</b> button to toggle the display of the Type popup menu <span class="numeric-callout">&nbsp;3&nbsp;</span></p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;Select &ldquo;Folder Action&rdquo; from the workflow <b>Type</b> popup menu to reveal the contents of the system <b>Folder Actions</b> folder <span class="numeric-callout">&nbsp;4&nbsp;</span> in the dialog.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>Folder Actions</b> folder within the system Workflows folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;Select the workflow in the <b>Folder Actions</b> folder.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;Press the <b>Open</b> button to edit the workflow in Automator.</p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Automation Security</p>
+			
+			<p>Now that you’ve created and installed the Folder Action, test it by dragging an image file into the Downloads folder. Starting with macOS Mojave, workflows containing Apple Event scripts (AppleScript/JavaScript) must receive a security approval by the user the first time the hosting workflow is executed. This approval is only required once and there will be no security prompt for subsequent runs of the Folder Action workflow.</p>
+			
+			<p>In this example, the script is executed by the FolderActionsDispatcher background system application, which will be reflected in the security approval dialog that appears after you’ve triggered the execution of the workflow by adding an image file to the &ldquo;attached&rdquo; Downloads folder:</p>
+						
+			<img width="532" style="display:block;margin-left:auto;margin-right:auto;" alt="folder-actions-dispatcher-security" src="gfx/folder-actions-dispatcher-security.png">
+
+			<p>Once approved by the user, the <b>FolderActionsDispatcher</b> application will be added to the Automation access list in the Privacy &amp; Security system preference pane:</p>
+			
+			<img width="100%" alt="folder-actions-dispatcher-access-list" src="gfx/folder-actions-dispatcher-access-list.png">
+			
+			<p><b>NOTE</b>: if you later edit the Folder Action workflow, you may be prompted again for a security approval. See the section on <a href="../security.html">Automation Security</a> for more information.</p>
+			
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <!-- <p class="sub-topic"><a href="../workflow/index.html">Workflows</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../application/index.html">Applications</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../services/index.html">Quick Actions</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../print/index.html">Print Plugins</a></p> -->
+			  <p class="active-sub-topic">Folder Actions</p>
+			  <p class="sub-sub-topic"><a href="auto-approval-applet.html">Auto-Approval Applet</a></p>
+			  <p class="sub-sub-topic"><a href="folder-actions-setup.html">Folder Actions Setup</a></p>
+			  <!-- <p class="sub-topic"><a href="../calendar/index.html">Calendar Alarms</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../image-capture/index.html">Image Capture Plugins</a></p> -->
+			  <!-- <p class="sub-topic"><a href="../dictation/index.html">Dictation Commands</a></p> -->
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

@@ -1,0 +1,101 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AppleScript: Unicode Support</title>
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<link rel="stylesheet" type="text/css" href="../applescript.css" media="all">
+<!-- END META INFO -->
+</head>
+<body>
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="#" class="hi">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<h2>New for AppleScript in Mac&nbsp;OS&nbsp;X v10.5</h2>
+		
+		<p>AppleScript 2.0 in Mac&nbsp;OS&nbsp;X&nbsp;Leopard is a significant release with important updates and modifications, including: full Unicode support, new intrinsic application properties and constructs, new scriptable system preferences, and much more.</p>
+		
+	
+		<h2>Unicode Support</h2>
+		
+		<p>AppleScript is now entirely Unicode-based. Comments and text constants in scripts may contain any Unicode characters, and all text processing is done in Unicode, so all characters are preserved correctly regardless of the user&rsquo;s language preferences. For example, this script works correctly in AppleScript 2.0, where it would not have in previous versions:</p>
+		
+		<p class="code"><b>set the</b> <span class="codevariable">Japanese_phrase</span> <b>to</b> &quot;日本語&quot;<BR>
+		<b>set the</b> <span class="codevariable">Russian_phrase</span> <b>to</b> &quot;Русский&quot;<BR>
+		<b>set the</b> <span class="codevariable">new_phrase</span> <b>to the</b> <span class="codevariable">Japanese_phrase</span> &amp; &quot; and &quot; &amp; <b>the</b> <span class="codevariable">Russian_phrase</span><BR>
+		<span class="codecomment">--> returns: &quot;日本語 and Русский&quot;</span></p>
+		
+		<p>There is no longer a distinction between Unicode and non-Unicode text. There is exactly one text class, named “<span class="dictionary-term">text</span>”: that is, <span class="inlinecode">class of "How now brown cow"</span> returns <span class="dictionary-term">text</span>. It is functionally equivalent to the former <span class="dictionary-term">Unicode text</span> class, so it may contain any Unicode character, and has two new features:</p>
+		
+		<ul class="square">
+			<li>Text objects have an <span class="dictionary-term">id</span> property, which may also be used as an address.<br><br>These allow mapping between Unicode code point values and the characters at those code points: for example, <span class="inlinecode">id of "A"</span> returns <span class="inlinecode">65</span>, and <span class="inlinecode">character id 65</span> returns <span class="inlinecode">"A"</span>. The <span class="dictionary-term">id</span> of text longer than one code point is a list of integers, and vice versa: for example, <span class="inlinecode">id of "hello"</span> returns <span class="inlinecode">{104, 101, 108, 108, 111}</span>, and <span class="inlinecode">string id {104, 101, 108, 108, 111}</span> returns <span class="inlinecode">"hello"</span>. (Because of a bug, <span class="inlinecode">text id ...</span> does not work; you must use one of the synonymous class names.) These obsolete the older <span class="dictionary-term">ASCII character</span> and <span class="dictionary-term">ASCII number</span> commands, since, unlike those, they cover the full Unicode character range and will return the same results regardless of the user's language preferences.<br>&nbsp;</li>
+			
+			<li>Character elements of text count a combining character sequence as a single character.<br><br>This relates to a feature of Unicode: some “characters” may be represented as either a single entity or as a base character plus a series of combining marks. For example, “é” may be encoded as either U+00E9 (LATIN SMALL LETTER E WITH ACUTE) or as U+0065 (LATIN SMALL LETTER E), U+0301 (COMBINING ACUTE ACCENT). Nonetheless, AppleScript 2.0 will count both as one character, where older versions counted the base character and combining mark separately.</li>
+		</ul>
+		
+		<h3>Compatibility</h3>
+		
+		<p>For compatibility with pre-2.0 AppleScript, string and Unicode text are still defined, but are considered synonyms for text. For example, all three of these statements have the same effect:</p>
+		
+		<p class="code"><span class="codevariable">some_verbage</span> <b>as</b> text<BR>
+		<span class="codevariable">some_verbage</span> <b>as</b> string<BR>
+		<span class="codevariable">some_verbage</span> <b>as</b> Unicode text</p>
+		
+		<p>In addition, <span class="dictionary-term">text</span>, <span class="dictionary-term">string</span>, and <span class="dictionary-term">Unicode text</span> will all compare as equal. For example, <span class="inlinecode">class of "how now brown cow" is string</span> is <span class="inlinecode">true</span>, even though <span class="inlinecode">class of "how now brown cow"</span> returns <span class="inlinecode">text</span>. It is still possible for applications to distinguish between the three different types, even though AppleScript itself does not.</p>
+
+		<p>Now that AppleScript preserves all characters correctly worldwide, it is also stricter about the text used in scripts. AppleScript syntax uses several non-ASCII characters, such as “≠” and “¬”. These characters must be typed exactly as the AppleScript Language Guide for AppleScript 1.3.7 describes. For compatibility with Asian national encodings, “《” and “》” are allowed as synonyms for “«” and “»”, since the latter do not exist in some Asian encodings.</p>
+
+		<p>Because AppleScript 2.0 scripts store all text as Unicode, any text constants count as a use of the former <span class="dictionary-term">Unicode text</span> class, which will work with any version of AppleScript back to version 1.3. A script that contains Unicode-only characters such as Arabic or Thai will run, but will not be correctly editable in any version of Mac OS or Mac OS X older than Mac OS X 10.5: the Unicode-only characters will be lost.</p>
+
+		<p>Use of the new <span class="inlinecode">id</span> property requires AppleScript 2.0.</p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<a href="http://macosxautomation.com/lion/index.html"><img src="http://macosxautomation.com/lion/gfx/lioncallout206x79.jpg" width="206" align="top" height="79"></a>
+		</div>
+		<div class="navbox">
+			<h2>New in Mac&nbsp;OS&nbsp;X&nbsp;10.5</h2>
+			<ol>
+				<li class="hi">Full Unicode Support</li>
+				<li><a href="appobject.html">Enhanced Application Object Model</a></li>
+				<li><a href="system-prefs.html">New Scriptable System Preferences and Applications: Dock, iChat, etc.</a></li>
+				<li><a href="propertylists.html">Read/Write Property Lists</a></li>
+				<li><a href="scriptingbridge.html">Scripting Bridge for Objective-C</a></li>
+				<li><a href="features.html#1000">Updated Folder Action Support</a></li>
+				<li><a href="features.html#1001">Descriptive Error Messages</a></li>
+				<li><a href="features.html#1002">AppleScript Language Guide</a></li>
+				<li><a href="features.html#1003">64-Bit Support</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Release Notes</h2>
+			<p>Developer <a href="http://developer.apple.com/releasenotes/AppleScript/RN-AppleScript/index.html">release notes</a> for AppleScript in Mac&nbsp;OS&nbsp;X.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

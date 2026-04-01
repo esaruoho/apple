@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../index.html">Lion Release Notes</a> | <a href="../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+		<h1>Create Banner Image from Text</h1>
+		<p>Those familiar with the creation of web-content know that because of font availability and other issues, it may be necessary to display text on a webpage as an image instead of using CSS. The Create Banner Image from Text action is designed to simplify the process of creating an image from text. This action will render text passed to the action as an image, styled using either chosen type parameters or, in the case of passed RTF input text, use the existing formatting of the passed text.</p>
+		
+		<h2>The Action Interface</h2>
+		
+		<p>The following desccribes the various controls and parameters used in the action interface.</p>
+		
+		<ol>
+			<li><b>Image Filename</b> - By default, this text input field <font color="#FF0000"><b>(1)</b></font> is disabled, in favor of automatic naming using the selected text as the image name. To enter a custom name, deselect the checkbox located to the right of the field <font color="#FF0000"><b>(2)</b></font><br><div style="margin-top:9px;"><b>TIP</b>: this input field will accept text tokens, Automator workflow variables, or a combination of the two, as the name for the rendered PNG image file. Therefore, unique names can be dynamically generated for each use of the action.</div></li>
+			
+			<li><b>Automatic File Naming</b> - Select this checkbox <font color="#FF0000"><b>(2)</b></font> if you want the name of the rendered PNG image file to be based on the selected text. For example, the selected slide title &ldquo;My Slide Title&rdquo; would be used to name the generated image file: &ldquo;My Slide Title.png&rdquo;</li>
+			
+			<li><b>Destination Folder</b> - Pick the folder that is to contain the rendered image from this popup menu <font color="#FF0000"><b>(3)</b></font>.<br><div style="margin-top:9px;"><b>TIP</b>: this popup menu will also accept Automator workflow variables, so receiving folders can be determined dynamically.</div> </li>	
+			
+			<li><b>Replace Existing File</b> - Select this checkbox <font color="#FF0000"><b>(4)</b></font> if you want to replace any existing image files with the newly rendered file.</li>
+		</ol>
+
+		<img src="gfx/custom.png" width="640" height="488" class="across">
+		
+		<ol start="5">
+			<li><b>Text Style</b> - This control <font color="#FF0000"><b>(5)</b></font> determines the method used to set the style attributes of the rendered text. If the popup menu is set to <b>custom</b> <font color="#FF0000"><b>(above)</b></font>, the <b>typeface</b> <font color="#FF0000"><b>(6)</b></font> and <b>size</b> <font color="#FF0000"><b>(8)</b></font> controls will be enabled, allowing you to choose the font, color, and size for the rendered text. However, if the control is set to <b>use style of Rich Text input</b> <font color="#FF0000"><b>(below)</b></font>, the Rich Text formatting (RTF) settings of the input text will be used.</li>
+		</ol>
+		
+		<img src="gfx/formatted.png" width="640" height="488" class="across">
+		
+		<ol start="6">
+			<li><b>Typeface</b> - Select the typeface to be used in rendering the image, from this popup menu <font color="#FF0000"><b>(6)</b></font> displaying the list of fonts currently installed on your computer.<br><div style="margin-top:9px;"><b>TIP</b>:</span> to navigate the menu quickly, click once on the popup to display the menu, then type the first letter of the font you want, then use the up and down arrow keys to highlite the desired typeface. Hit the Return key to make the selection.</div></li>
+			
+			<li><b>Text Color</b> - Click this color well <font color="#FF0000"><b>(7)</b></font> to summon the system color palette, and select the color to use for the text in the rendered image.</li>
+		
+			<li><b>Type Size</b> - Enter the font size in this input field <font color="#FF0000"><b>(8)</b></font> to be used in rendering the selected text to image.</li>
+			
+			<li><b>Preview</b> - The preview view <font color="#FF0000"><b>(9)</b></font> displays the current parameters of color and typeface. The type size is not shown to scale. When the action is used in a service that is set to display when the service is run, the preview view can be resized horizontally by dragging this control to the right. The text will display in actual pixels (up to 128 pts)</li>
+		</ol>
+		
+		<h2>Service Collection</h2>
+			
+			<p>A common use of the action is in the creation of a service that renders the text selected in any application, into an alph-channel image. This simple service workflow is shown below:</p>
+			
+			<img src="gfx/workflow.png" width="640" height="516" align="top" class="across">
+			
+			<p>You can download and install this example and these other service workflow files:</p>
+			
+			<ol>
+				<li><b>Render Selected Plain Text as Image</b> - this workflow service uses the currently selected plain text (in any application) as the source for the banner image. You set the text properties, such as font, size, color, yourself. (Available Text Style: Custom)</li>
+				
+				<li><b>Render Selected Rich Text as Image</b> - this workflow service uses the currently selected rich text (in any application) as the source for the banner image. By default, the text styles of the passed text are used, but can be overridden using the custom text style option. (Available Text Style: RTF or Custom)</li>
+				
+				<li><b>Create Banner Image with Clipboard Text</b> - uses the text copied to the clipboard as the source for the banner image. By default, the text styles of the passed text are used, but can be overridden using the custom text style option. (Available Text Style: RTF or Custom)</li>
+				
+				<li><b>Render Prompted Text to Image</b> - prompts the user to enter the text for the banner image. You set the text properties, such as font, size, color, yourself. (Available Text Style: Custom)</li>
+				
+				<li><b>Render Selected Text as Image and Add to Slide</b> - (shown below) this workflow service provides an easy way to convert slide titles in Keynote to image files, enabling you to use non-standard fonts in presentation placed on mobile devices that have a limited number of installed fonts. By default, the text styles of the passed text are used, but can be overridden using the custom text style option. (Available Text Style: RTF or Custom)</li>
+			</ol>
+
+			<img src="gfx/slide-02.png" width="640" height="550" align="top" class="across">
+			
+			<p class="principle"><a href="bannerservices.zip"><img src="gfx/download.png" align="left" hspace="6" vspace="6"></a><b>TRY IT YOURSELF!</b> <a href="bannerservices.zip">Download</a> a zip archive of the service workflows list above. To install, double-click each workflow file and click the <b>Install</b> button in each of the forthcoming dialogs. Once installed, the services will be available from the <b>Application &gt; Services</b> menu.</p>
+
+		
+		<p class="more"><a href="#" target="_self">TOP</a></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2>NEW ACTIONS IN LION</h2>
+			<ol>
+				<li><a href="../epub/index.html">Text to EPUB File</a></li>
+				<li><a href="../websitepopup/index.html">Website PopUp</a></li>
+				<li class="hi">Create Banner Image from Text</li>
+				<li><a href="../encodeaudio/index.html">Encode to MPEG Audio</a></li>
+				<li><a href="../encodemedia/index.html">Encode Media</a></li>
+				<li><a href="../annotatedversion/index.html">Create Annotated Media File</a></li>
+				<li><a href="../webcontent/index.html">Get Web Content/Save Images from Web Content</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2>Disclaimer</h2>
+			<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

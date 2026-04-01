@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #ee2200}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="arrayByReplacingNullsIn_withItem_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="sumMaxMinOf_error_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>List manipulation methods</p>
+<h3>Method</h3>
+<code>arrayWithPattern:startNumber:endNumber:minDigits:</code>
+<h3>Summary</h3>
+<p>Pattern should be a string where every instance of %@ will be replaced by a number. So a pattern of "label%@", a startNumber of 3, an endNumber of 1  and minDigits 3 will return {"label003", "label002", "label001"}</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>arrayWithPattern:<span class="sigParens">(NSString *)</span><span class="param">patternString</span> startNumber:<span class="sigParens">(NSNumber *)</span><span class="param">startNum</span> endNumber:<span class="sigParens">(NSNumber *)</span><span class="param">endNum</span> minDigits:<span class="sigParens">(NSNumber *)</span><span class="param">minDigits</span></code>
+<h3>Parameters</h3>
+<p><span class="param">patternString</span> = a string containing %@ as placeholder</p><p><span class="param">startNum</span> = starting integer</p><p><span class="param">endNum</span> = last integer</p><p><span class="param">minDigits</span> = the number is padded out to this many digits</p>
+<h3>Result</h3>
+<p>Array of strings</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">patternString</span> <b>to</b> "File number %@"</p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>arrayWithPattern<span class="s1">:</span><span class="s3">patternString</span><span class="s1"> </span>startNumber<span class="s1">:10 </span>endNumber<span class="s1">:20 </span>minDigits<span class="s1">:4</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"File number 0010", "File number 0011", "File number 0012", "File number 0013", "File number 0014", "File number 0015", "File number 0016", "File number 0017", "File number 0018", "File number 0019", "File number 0020"}</p>
+<p class="p6">theResult<span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span></p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"File number 0010", "File number 0011", "File number 0012", "File number 0013", "File number 0014", "File number 0015", "File number 0016", "File number 0017", "File number 0018", "File number 0019", "File number 0020"}</p>
+<p class="p4"><br></p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20patternString%20to%20%22File%20number%20%25@%22%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20arrayWithPattern:patternString%20startNumber:10%20endNumber:20%20minDigits:4%0DASify%20from%20theResult%0D--%3E%09%7B%22File%20number%200010%22,%20%22File%20number%200011%22,%20%22File%20number%200012%22,%20%22File%20number%200013%22,%20%22File%20number%200014%22,%20%22File%20number%200015%22,%20%22File%20number%200016%22,%20%22File%20number%200017%22,%20%22File%20number%200018%22,%20%22File%20number%200019%22,%20%22File%20number%200020%22%7D%0DtheResult%20as%20list%0D--%3E%09%7B%22File%20number%200010%22,%20%22File%20number%200011%22,%20%22File%20number%200012%22,%20%22File%20number%200013%22,%20%22File%20number%200014%22,%20%22File%20number%200015%22,%20%22File%20number%200016%22,%20%22File%20number%200017%22,%20%22File%20number%200018%22,%20%22File%20number%200019%22,%20%22File%20number%200020%22%7D%0D%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

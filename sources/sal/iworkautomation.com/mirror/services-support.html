@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Automator Services and iWork</title>
+<link rel="stylesheet" type="text/css" href="iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Scripting, tables">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the Numbers application of iWork.">
+	<LINK REL="home" HREF="http://iworkautomation.com/">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/applescript-iwork-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="index.html">iWork</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">iWork &amp; Services</div>
+											
+			<p><b>Numbers</b> 3.1 adds support for system text services. With this version, the services component of the application contextual menu becomes active, when text is selected in a table or in a text container on a sheet.</p>
+			
+			<p>You can use <b>Automator</b> to easily create text-based services that can extract, process, and even replace the selected data. The illustration and callouts below describe a simple example <b>Automator</b> service workflow, that moves the selected data from <b>Numbers</b> to a new document in the <b>TextEdit</b> application.</p>
+			
+			<p class="segment-note">For more information on Services, and how they are created and used, watch this <a href="http://macosxautomation.com/services/video/services-001HD.html" target="_blank">short video</a>.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Creating an Automator Service for Numbers</p>
+			
+			<img alt="numbers-service" src="gfx/numbers-service.png" width="624" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Begin by creating a new <b>Automator</b> workflow document, choosing <b>Service</b> as the template type for the workflow.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Input Banner</b>&nbsp;The input bar at the top of an <b>Automator</b> service workflow determines the type of data supported as input to the workflow. Since <b>Automator</b> service workflows are contextual, the input choice also determines when the service will appear on the application’s contextual menu.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Input Data Type Popup Menu</b>&nbsp;The selection of this menu determines the data type used for the input of the workflow. For use with <b>Numbers</b>, set the popup to <i>text</i>.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Target Application Popup Menu</b>&nbsp;Choose the application in which this service should be available. Select the <b>Numbers</b> application from the popup menu.</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>Return Workflow Output</b>&nbsp;Select this checkbox if you want the results of the workflow to replace the current selection in the target application. <b>NOTE</b>: Numbers currently does not support writing workflow data back into the selection.</p>
+
+			<p class="caption-callout"><span class="numeric-callout">(5)</span>&nbsp;<b>Automator Action</b>&nbsp;From the Automator Action Library, add the New TextEdit Document action to the workflow. Note the connection between the input data bar and the top of the action, to indicate that the input data will be passed to the action as input.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Save the workflow and it will be automatically installed into the user <b>Services</b> folder located in the user <b>Library</b> folder.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Running the Service</p>
+			
+			<p>Once the <b>Automator</b> service workflow file has been saved it will become available within <b>Numbers</b>.</p>
+
+			<p class="do-this" style="margin-bottom:24px;"><span class="do-this">DO THIS &#9658;</span>To run the service with table data, select the cells in the table whose data you wish to transfer into a new TextEdit document. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+		
+			<img alt="contextual-menu" src="gfx/contextual-menu.jpg" width="624" class="centered">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>To run the service, access the <b>Numbers</b> contextual menu by clicking in the selection while holding down the <b>Control</b> key (&#8963;), and choose the new service from the <b>Services</b> list at the bottom of the menu.</p>
+		
+			<p>The service will execute and switch to TextEdit where a new document will be created with selected table cell content as tabbed data. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+		
+			<img alt="textedit-doc" src="gfx/textedit-doc.png" width="624" class="centered">
+		
+			<p class="segment-note"><b>NOTE</b>: For an overview of Automator, watch this <a href="http://macosxautomation.com/automator/video/automator-001A.html" target="_blank">short video</a>.</p>
+
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: APPLESCRIPT SERVICES -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">AppleScript, Numbers, and Services</div>
+			<p>You can incorporate the power of <b>Numbers</b> <b>AppleScript</b> support with integrated functionality of <b>Services</b>, to deliver keystroke-activated automation tools, based on your favorite scripts.</p>
+			
+			<img alt="applescript-numbers-service" src="gfx/applescript-numbers-service.png" width="624" class="centered">
+		
+			<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>No Input Required</b>&nbsp;&bull;&nbsp;Create a new service workflow, and set the service input type to be <i>no input</i>. Of course, set the target application to be <b>Numbers</b>.</p>
+						
+			<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>The Run AppleScript Action</b>&nbsp;&bull;&nbsp;From the <b>Automator</b> Action Library, add the <b>Run AppleScript</b> action to the workflow. This action, and the Run Shell Script action, are designed to allow workflow creators to allow scripts to interact with the workflow during its execution.</p>
+
+			<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Add the Script</b>&nbsp;&bull;&nbsp;Add your AppleScript script into the edit pane of the <b>Run AppleScript</b> action. Since the workflow does not require input, you can test the script by clicking the <b>Run</b> button in the action view.</p>
+		
+			<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>Assign Shortcut</b>&nbsp;&bull;&nbsp;<span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text" style="margin-below:0;">see&nbsp;below</span>&nbsp;)&nbsp;</span> In the <b>Services</b> category in the <b>Shortcuts</b> tab of the <b>Keyboard</b> system preference pane, select the created service, and assign it a keyboard shortcut.</p>
+		
+			<img alt="services-preferences" src="gfx/services-preferences.png" width="624" class="centered">
+			
+			<p>You can now invoke the power of your favorite Numbers scripts, with keyboard shortcuts. Cool!</p>
+			
+		</div>
+		
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="application-developers.html" target="_self">CONTINUE</a></p>
+	</div>
+	<!-- END SEGMENT: APPLESCRIPT SERVICES -->
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">iWORK &amp; APPLESCRIPT</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="hi"><a href="automation-utilities.html">Automation Utilities</a></li>
+				<li class="navListSectionItem"><a href="applescript-editor.html">Viewing an Application&rsquo;s Dictionary</a></li>
+				<li class="navListSectionItem"><a href="script-menu.html">The Script Menu</a></li>
+				<li class="navListSectionItemSelected">iWork &amp; Services</li>
+				<li class="navListSectionItem"><a href="application-developers.html">Running iWork Scripts from 3rd-Party Applications</a></li>
+				<li class="navListSectionItem"><a href="app-termination.html">Enable|Disable App Termination</a></li>
+				<hr>
+				<li><a href="keynote/index.html">Keynote</a></li>
+				<li><a href="numbers/index.html"">Numbers</a></li>
+				<li><a href="pages/index.html">Pages</a></li>
+			</ul>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">APPLESCRIPT TUTORIAL</h2>
+			<p>If you&rsquo;re new to AppleScript, start <a href="http://macosxautomation.com/applescript/firsttutorial/index.html">here</a>. This step-by-step tutorial, exerpted from the Apple Training Series book <a href="http://www.peachpit.com/store/product.aspx?isbn=0321149319" target="_blank">AppleScript&nbsp;1-2-3</a>, is an easy and fun way to learn the basics of AppleScript while writing simple scripts.</p>
+		</div>
+		
+		<div class="box" style="padding:0;">
+			<a href="http://macosxautomation.com/mavericks/index.html" target="_blank"><img src="gfx/mavericks-sidebar.jpg" width="100%" align="top" alt="mavericks-sidebar"></a>
+		</div>
+		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

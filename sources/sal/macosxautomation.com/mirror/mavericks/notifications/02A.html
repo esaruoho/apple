@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Automator System Notifications Support</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Movericks, GateKeeper, security">
+	<META NAME="Description" CONTENT="Automator notifications support in OS X">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img alt="mavericks-sm-banner" src="gfx/mavericks-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="../index.html">Mavericks</a></td>
+			<td><a href="http://macosxautomation.com/workshops/index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Automator System Notifications Support (advanced)</div>
+				
+				<p>Using the <b>Display Notification</b> action in Automator workflows can be as simple as adding the action to the end of a workflow, and entering the relevant title, subtitle, and description.</p>
+				
+				<p>However, you may wish to edit your notification workflows to be able to dynamically display custom information such as the applet name, or the names of the files processed by the workflow. In addition, you may wish to prevent the workflow from running without input when the user clicks on the notification banner or alert.</p>
+				
+				<p>The following example workflow details how to implement custom controls for dealing with notifications.</p>
+				
+				<p class="segment-note"><a href="notificationworkflow.zip" style="font-weight:bold;">DOWNLOAD</a> the example workflow application (1.6 MB). To open the workflow in Automator, drag the workflow applet onto the Automator application icon.</p>
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+				
+		<!-- BEGIN SEGMENT: CUSTOMIZED WORKFLOW -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Customized Workflow Example</div>
+				<p>The components of the workflow are described below:</p>
+				
+				<p class="caption-callout"><span class="numeric-callout">(1)</span>&nbsp;<b>Workflow Input Banner</b> - The banner of this workflow indicates that it has been saved as an application that derives its input from files dragged onto its icon.</p>
+				<p class="caption-callout"><span class="numeric-callout">(2)</span>&nbsp;<b>Stop Workflow Script</b> - If your workflow requires files|folders as input, then you&rsquo;ll want to begin the workflow with a <b>Run AppleScript</b> action containing a script to stop the workflow if the applet is launched by a notification alert or by a user double-clicking its icon.</p>
+				<p class="caption-callout"><span class="numeric-callout">(3)</span>&nbsp;<b>Processing Action(s) Placeholder</b> - This action is a placeholder for the actions you&rsquo;ll add, that process the items dragged onto the applet&rsquo;s icon.</p>
+				
+				<img class="centered" alt="notification-workflow" src="gfx/notification-workflow.png" width="624" height="1075">
+		
+				<p class="caption-callout"><span class="numeric-callout">(4)</span>&nbsp;<b>Extract File Names Script</b> - This <b>Run AppleScript</b> action contains a script that extracts the file/folder names of the items passed to the action, and passes those file/folder names as a comma-delimited text string, to the following action.</p>
+				<p class="caption-callout"><span class="numeric-callout">(5)</span>&nbsp;<b>Store File Names in Variable</b> - This action stores the text string of file/folder names, passed from the previous action, into an Automator data variable titled: <b>filenames(s)</b></p>
+				<p class="caption-callout"><span class="numeric-callout">(6)</span>&nbsp;<b>Notifications Action</b> - The <b>Display Notification</b> action will trigger the display of a system notification banner or alert. The text input fields of this action accept Automator variables. The Automator variable titled <b>filenames(s)</b>, is placed in the <b>Subtitle</b> field, and an AppleScript workflow variable is added to the <b>Title</b> field of the action.</p>
+				<p class="caption-callout"><span class="numeric-callout">(7)</span>&nbsp;<b>AppleScript Variable</b> - The editing window of the AppleScript variable, accessed via the disclosure triangle on the right side of the variable bubble, contains two input fields, one for entering a name for the variable, and the other to contain the AppleScript script the variable will execute when the workflow is run.</p>
+				<p class="caption-callout"><span class="numeric-callout">(8)</span>&nbsp;<b>AppleScript Variable Title</b> - The title for the AppleScript workflow variable.</p>
+				<p class="caption-callout"><span class="numeric-callout">(9)</span>&nbsp;<b>AppleScript Variable Script Code</b> - The script code for the variable. This short script will extract the name of the workflow applet, and place it into the action&rsquo;s <b>Title</b> field, when the workflow is run.</p>
+		
+		</div>
+		<!-- END SEGMENT: CUSTOMIZED WORKFLOW -->
+		
+		<!-- BEGIN SEGMENT: RESULTS -->
+		<div class="content-segment" style="-webkit-user-select:text;user-select:text;">
+		<div class="segment-header">Workflow Notifications (Test Drive)</div>
+				<p>To see the workflow trigger a system notification, switch to the Finder, and drag some files onto the example applet. Don&rsquo;t worry, since the workflow only contains a placeholder processing action, no actual processing of the dragged-on files will occur.</p>
+				
+				<p>Depending on how you have the notification preferences set for this applet (see <a href="03.html">Preferences section</a> of this topic), the workflow notification will appear as a banner or alert:</p>
+		
+		<img class="centered" alt="resultbanner" src="gfx/resultbanner.png" width="378" height="120">
+		
+		<img class="centered" alt="resultalert" src="gfx/resultalert.png" width="378" height="122">
+		
+		<p class="segment-note"><b>NOTE</b>: since the example workflow begins with an action that stops the workflow if it has no input, clicking on the notification window will not cause the workflow to execute again.</p>
+		
+		</div>
+		<!-- END SEGMENT: RESULTS -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="01.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">OS&nbsp;X FEATURES</h2>
+			<ol>
+				<li><a href="../index.html">Overview</a></li>
+				<li><a href="../icloud/index.html">iCloud Document Support</a></li>
+				<li><a href="../codesign/index.html">Applet Code Signing</a></li>
+				<li><a href="../libraries/index.html">AppleScript Libraries</a></li>
+				<li><a href="../usestatement/index.html">The &ldquo;use&rdquo; Statement</a></li>
+				<li class="hi">System Notifications Support</li>
+				<ol style="list-style-position:outside;list-style-type:none;margin-left:-40px;">
+					<li><a href="index.html">Overview</a></li>
+					<li><a href="01.html">AppleScript</a></li>
+					<li><a href="01A.html">AppleScript (advanced)</a></li>
+					<li><a href="02.html">Automator</a></li>
+					<li class="hi">Automator (advanced)</li>
+					<li><a href="03.html">Preferences</a></li>
+					<li><a href="reset.html">Reset Notification Center</a></li>
+				</ol>
+				<li><a href="../speakableworkflows/index.html">Speakable-Workflows</a></li>
+				<li><a href="../guiscripting/index.html">GUI Scripting</a></li>
+
+			</ol>
+		</div>		
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

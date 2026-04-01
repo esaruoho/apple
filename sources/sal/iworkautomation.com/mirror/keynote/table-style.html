@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Styling Tables</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Keynote, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for tables in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: SCRIPT -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Styling Tables</div>
+						
+			<p>The <span class="codelibraryclass">range</span> class is the heart of table scripting support in <b>Keynote</b>. This class contains the essential style and format properties inherited and shared by <span class="codelibraryclass">cells</span>, <span class="codelibraryclass">rows</span>, and <span class="codelibraryclass">columns</span>. What that means is that a script can use any of the <span class="codelibraryclass">range</span> properties listed below when it targets a <span class="codelibraryclass">cell</span> or a <span class="codelibraryclass">row</span> or a <span class="codelibraryclass">column</span>.</p>
+						
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">range</span> <span style="font-size: 12px;"><i>n&nbsp;</i>: A range of cells in a table</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">cells</span>, <span class="dictionary-class">columns</span>, <span class="dictionary-class">rows</span>; contained by <span class="dictionary-class">tables</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">alignment</span> (&nbsp;<span class="dictionary-enumeration">auto align</span>/‌<span class="dictionary-enumeration">center</span>/‌<span class="dictionary-enumeration">justify</span>/‌<span class="dictionary-enumeration">left</span>/‌<span class="dictionary-enumeration">right</span>&nbsp;) : The horizontal alignment of content in the range&rsquo;s cells.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">background color</span> (&nbsp;<span class="dictionary-class">color</span>&nbsp;) : The background color of the range&rsquo;s cells. Expressed as a list of RGB (Red, Green, Blue) values, from 0 to 65535. For example, the color red is: {65535, 0, 0}</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">font name</span> (&nbsp;<span class="dictionary-class">text</span>&nbsp;) : The font of the range&rsquo;s cells. Can be the PostScript name (TimesNewRomanPS-ItalicMT), or the full name (Times New Roman Italic). TIP: Use the <b>Font Book</b> application to get the information about a typeface.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">font size</span> (&nbsp;<span class="dictionary-class">real</span>&nbsp;) : The font size (in points) of the range&rsquo;s cells. ex: 12.5</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">format</span> (&nbsp;<span class="dictionary-enumeration">automatic</span>/‌<span class="dictionary-enumeration">checkbox</span>/‌<span class="dictionary-enumeration">currency</span>/‌<span class="dictionary-enumeration">date&nbsp;and&nbsp;time</span>/‌<span class="dictionary-enumeration">fraction</span>/‌<span class="dictionary-enumeration">number</span>/‌<span class="dictionary-enumeration">percent</span>/‌<span class="dictionary-enumeration">pop up menu</span>/‌<span class="dictionary-enumeration">scientific</span>/‌<span class="dictionary-enumeration">slider</span>/‌<span class="dictionary-enumeration">stepper</span>/‌<span class="dictionary-enumeration">text</span>/‌<span class="dictionary-enumeration">duration</span>/‌<span class="dictionary-enumeration">rating</span>/‌<span class="dictionary-enumeration">numeral system</span>&nbsp;) : The cell format of the range&rsquo;s cells. Default format is <span class="dictionary-enumeration">automatic</span>.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (&nbsp;<span class="dictionary-class">text</span>, r/o&nbsp;) : The range&rsquo;s coordinates. A text string expressed as colon-delimited cell IDs. ex: &quot;A2:F6&quot;</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">text color</span> (&nbsp;<span class="dictionary-class">color</span>&nbsp;) : The text color of the range&rsquo;s cells. Expressed as a list of RGB (Red, Green, Blue) values, from 0 to 65535. For example, the color yellow is: {65535, 65535, 0}</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">text wrap</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Whether text should wrap in the range&rsquo;s cells.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">vertical alignment</span> (&nbsp;<span class="dictionary-enumeration">bottom</span>/‌<span class="dictionary-enumeration">center</span>/‌<span class="dictionary-enumeration">top</span>&nbsp;) : The vertical alignment of content in the range&rsquo;s cells.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">clear</span>, <span class="dictionary-verb">add column after</span>, <span class="dictionary-verb">add column before</span>, <span class="dictionary-verb">add row above</span>, <span class="dictionary-verb">add row below</span>, <span class="dictionary-verb">merge</span>, <span class="dictionary-verb">unmerge</span>.</p>
+			</div>
+			
+			<p>In <b>Keynote</b>, and in <b>Keynote</b> scripting, <span class="codelibraryclass">ranges</span> are a collection of contiguous <span class="codelibraryclass">cells</span>. Cells are referenced in scripts by their <i>index</i> or by <i>name</i>.</p>
+			
+			<p class="segment-note"><b>TIP</b>: For a detailed overview of ranges, see the <a href="../numbers/range.html">Numbers ranges documentation</a> on this website.</p>
+			
+			<p class="segment-note" style="background-color:#99CCCC;"><b>IMPORTANT TIP</b>: Learn how to save and run your favorite scripts using the system-wide <a href="../script-menu.html" target="_blank" style="font-weight:bold;">Script Menu</a>.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create a Styled Table</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09tell%20document%201%0D%09%09set%20documentWidth%20to%20its%20width%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09%0D%09%09tell%20current%20slide%0D%09%09%09--%20make%20a%20new%20table%0D%09%09%09set%20thisTable%20to%20%C2%AC%0D%09%09%09%09make%20new%20table%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bheader%20column%20count%3A1%20%C2%AC%0D%09%09%09%09%09%09%2C%20header%20row%20count%3A1%20%C2%AC%0D%09%09%09%09%09%09%2C%20row%20count%3A4%20%C2%AC%0D%09%09%09%09%09%09%2C%20column%20count%3A4%20%C2%AC%0D%09%09%09%09%09%09%2C%20name%3A%22ACME%20Widget%20Prices%22%7D%0D%09%09%09%0D%09%09%09tell%20thisTable%0D%09%09%09%09--%20set%20the%20vertical%20alignment%20of%20all%20table%20cells%0D%09%09%09%09set%20vertical%20alignment%20of%20cell%20range%20to%20center%0D%09%09%09%09%0D%09%09%09%09--%20set%20the%20properties%20of%20the%20headers%0D%09%09%09%09tell%20first%20row%0D%09%09%09%09%09--%20cell%20properties%0D%09%09%09%09%09set%20the%20background%20color%20to%20%7B26214%2C%2026214%2C%2039321%7D%0D%09%09%09%09%09set%20height%20to%2048%0D%09%09%09%09%09--%20text%20properties%0D%09%09%09%09%09set%20the%20font%20name%20to%20%22Impact%22%0D%09%09%09%09%09set%20the%20font%20size%20to%2032%0D%09%09%09%09%09set%20text%20color%20to%20%7B65535%2C%2065535%2C%2065535%7D%0D%09%09%09%09%09set%20the%20alignment%20to%20center%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09tell%20first%20column%0D%09%09%09%09%09--%20cell%20properties%0D%09%09%09%09%09set%20the%20background%20color%20to%20%7B26214%2C%2026214%2C%2039321%7D%0D%09%09%09%09%09set%20width%20to%20150%0D%09%09%09%09%09--%20text%20properties%0D%09%09%09%09%09set%20the%20font%20name%20to%20%22Impact%22%0D%09%09%09%09%09set%20the%20font%20size%20to%2032%0D%09%09%09%09%09set%20text%20color%20to%20%7B65535%2C%2065535%2C%2065535%7D%0D%09%09%09%09%09set%20the%20alignment%20to%20right%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09--%20set%20header%20content%0D%09%09%09%09set%20headerColumnTitles%20to%20%7B%22%22%2C%20%22JAPAN%22%2C%20%22USA%22%2C%20%22EUROPE%22%7D%0D%09%09%09%09set%20headerRowTitles%20to%20%7B%22%22%2C%20%22WIDGET%20A%22%2C%20%22WIDGET%20B%22%2C%20%22WIDGET%20C%22%7D%0D%09%09%09%09tell%20the%20first%20row%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20cells%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20i%20to%20item%20i%20of%20headerColumnTitles%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20tell%0D%09%09%09%09tell%20the%20first%20column%0D%09%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20cells%0D%09%09%09%09%09%09set%20the%20value%20of%20cell%20i%20to%20item%20i%20of%20headerRowTitles%0D%09%09%09%09%09end%20repeat%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09--%20set%20content%20range%20properties%0D%09%09%09%09set%20nameOfLastCell%20to%20the%20name%20of%20the%20last%20cell%0D%09%09%09%09set%20contentRange%20to%20(%22B2%3A%22%20%26%20nameOfLastCell)%0D%09%09%09%09tell%20range%20contentRange%0D%09%09%09%09%09set%20rangeCellIDs%20to%20the%20name%20of%20every%20cell%0D%09%09%09%09%09--%20cell%20properties%0D%09%09%09%09%09set%20the%20background%20color%20to%20%7B65535%2C%2065535%2C%2065535%7D%0D%09%09%09%09%09--%20text%20properties%0D%09%09%09%09%09set%20the%20font%20name%20to%20%22Helvetica%22%0D%09%09%09%09%09set%20the%20font%20size%20to%2032%0D%09%09%09%09%09set%20text%20color%20to%20%7B0%2C%200%2C%200%7D%0D%09%09%09%09%09set%20the%20alignment%20to%20center%0D%09%09%09%09%09set%20format%20to%20text%0D%09%09%09%09end%20tell%0D%09%09%09%09%0D%09%09%09%09--%20set%20content%20range%20content%0D%09%09%09%09set%20the%20pricingData%20to%20%C2%AC%0D%09%09%09%09%09%7B%22%C2%A5121280%22%2C%20%22%241495%22%2C%20%22%E2%82%AC1170%22%2C%20%22%C2%A5190238%22%2C%20%22%242345%22%2C%20%22%E2%82%AC1835%22%2C%20%22%C2%A5263656%22%2C%20%22%243250%22%2C%20%22%E2%82%AC2542%22%7D%0D%09%09%09%09repeat%20with%20i%20from%201%20to%20the%20count%20of%20rangeCellIDs%0D%09%09%09%09%09tell%20cell%20(item%20i%20of%20rangeCellIDs)%0D%09%09%09%09%09%09set%20the%20value%20to%20(item%20i%20of%20pricingData)%0D%09%09%09%09%09%09set%20format%20to%20currency%0D%09%09%09%09%09end%20tell%0D%09%09%09%09end%20repeat%0D%09%09%09%09%0D%09%09%09%09--%20set%20table%20properties%0D%09%09%09%09set%20tableWidth%20to%20its%20width%0D%09%09%09%09set%20tableHeight%20to%20its%20height%0D%09%09%09%09set%20position%20to%20%C2%AC%0D%09%09%09%09%09%7B(documentWidth%20-%20tableWidth)%20div%202%20%C2%AC%0D%09%09%09%09%09%09%2C%20(documentHeight%20-%20tableHeight)%20div%202%7D%0D%09%09%09end%20tell%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell%0D"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">document</span> 1</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codeproperty">current slide</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- make a new table</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTable</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">table</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">header column count</span>:1 &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">header row count</span>:1 &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">row count</span>:4 &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">column count</span>:4 &not;</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">name</span>:&quot;ACME Widget Prices&quot;}</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisTable</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set the vertical alignment of all table cells</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codeproperty">vertical alignment</span> <b>of</b> <span class="codeproperty">cell range</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set the properties of the headers</span></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell first</b> <span class="codelibraryclass">row</span></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- cell properties</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">background color</span> <b>to</b> {26214, 26214, 39321}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">height</span> <b>to</b> 48</td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- text properties</span></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font name</span> <b>to</b> &quot;Impact&quot;</td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font size</span> <b>to</b> 32</td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">30</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">31</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">32</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">33</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell first</b> <span class="codelibraryclass">column</span></td></tr>
+				<tr><td class="line-count">34</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- cell properties</span></td></tr>
+				<tr><td class="line-count">35</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">background color</span> <b>to</b> {26214, 26214, 39321}</td></tr>
+				<tr><td class="line-count">36</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">width</span> <b>to</b> 150</td></tr>
+				<tr><td class="line-count">37</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- text properties</span></td></tr>
+				<tr><td class="line-count">38</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font name</span> <b>to</b> &quot;Impact&quot;</td></tr>
+				<tr><td class="line-count">39</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font size</span> <b>to</b> 32</td></tr>
+				<tr><td class="line-count">40</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">41</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">right</span></td></tr>
+				<tr><td class="line-count">42</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">43</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">44</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set header content</span></td></tr>
+				<tr><td class="line-count">45</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">headerColumnTitles</span> <b>to</b> {&quot;&quot;, &quot;JAPAN&quot;, &quot;USA&quot;, &quot;EUROPE&quot;}</td></tr>
+				<tr><td class="line-count">46</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">headerRowTitles</span> <b>to</b> {&quot;&quot;, &quot;WIDGET A&quot;, &quot;WIDGET B&quot;, &quot;WIDGET C&quot;}</td></tr>
+				<tr><td class="line-count">47</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">row</span></td></tr>
+				<tr><td class="line-count">48</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codelibraryclass">cells</span></td></tr>
+				<tr><td class="line-count">49</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> <span class="codevariable">i</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">headerColumnTitles</span></td></tr>
+				<tr><td class="line-count">50</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">51</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">52</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">column</span></td></tr>
+				<tr><td class="line-count">53</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> cells</td></tr>
+				<tr><td class="line-count">54</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>of</b> <span class="codelibraryclass">cell</span> <span class="codevariable">i</span> <b>to</b> <span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">headerRowTitles</span></td></tr>
+				<tr><td class="line-count">55</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">56</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">57</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">58</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set content range properties</span></td></tr>
+				<tr><td class="line-count">59</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">nameOfLastCell</span> <b>to the</b> <span class="codeproperty">name</span> <b>of the last</b> <span class="codelibraryclass">cell</span></td></tr>
+				<tr><td class="line-count">60</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> contentRange <b>to</b> (&quot;B2:&quot; &amp; <span class="codevariable">nameOfLastCell</span>)</td></tr>
+				<tr><td class="line-count">61</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>tell</b> range contentRange</td></tr>
+				<tr><td class="line-count">62</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codevariable">rangeCellIDs</span> <b>to the</b> <span class="codeproperty">name</span> <b>of every</b> <span class="codelibraryclass">cell</span></td></tr>
+				<tr><td class="line-count">63</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- cell properties</span></td></tr>
+				<tr><td class="line-count">64</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">background color</span> <b>to</b> {65535, 65535, 65535}</td></tr>
+				<tr><td class="line-count">65</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><span class="codecomment">-- text properties</span></td></tr>
+				<tr><td class="line-count">66</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font name</span> <b>to</b> &quot;Helvetica&quot;</td></tr>
+				<tr><td class="line-count">67</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">font size</span> <b>to</b> 32</td></tr>
+				<tr><td class="line-count">68</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">text color</span> <b>to</b> {0, 0, 0}</td></tr>
+				<tr><td class="line-count">69</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set the</b> <span class="codeproperty">alignment</span> <b>to</b> <span class="codeenumeration">center</span></td></tr>
+				<tr><td class="line-count">70</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>set</b> <span class="codeproperty">format</span> <b>to</b> <span class="codelibraryclass">text</span></td></tr>
+				<tr><td class="line-count">71</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">72</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">73</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set content range content</span></td></tr>
+				<tr><td class="line-count">74</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set the</b> <span class="codevariable">pricingData</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">75</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{&quot;¥121280&quot;, &quot;$1495&quot;, &quot;€1170&quot;, &quot;¥190238&quot;, &quot;$2345&quot;, &quot;€1835&quot;, &quot;¥263656&quot;, &quot;$3250&quot;, &quot;€2542&quot;}</td></tr>
+				<tr><td class="line-count">76</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>repeat with</b> <span class="codevariable">i</span> <b>from</b> 1 <b>to the</b> <span class="codelibrarycommand">count</span> <b>of</b> <span class="codevariable">rangeCellIDs</span></td></tr>
+				<tr><td class="line-count">77</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>tell</b> <span class="codelibraryclass">cell</span> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">rangeCellIDs</span>)</td></tr>
+				<tr><td class="line-count">78</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set the</b> <span class="codeproperty">value</span> <b>to</b> (<span class="codelibraryclass">item</span> <span class="codevariable">i</span> <b>of</b> <span class="codevariable">pricingData</span>)</td></tr>
+				<tr><td class="line-count">79</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span><b>set</b> <span class="codeproperty">format</span> <b>to</b> <span class="codeenumeration">currency</span></td></tr>
+				<tr><td class="line-count">80</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">81</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>end repeat</b></td></tr>
+				<tr><td class="line-count">82</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">83</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codecomment">-- set table properties</span></td></tr>
+				<tr><td class="line-count">84</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">tableWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">85</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> <span class="codevariable">tableHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">86</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><b>set</b> position <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">87</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{(<span class="codevariable">documentWidth</span> - <span class="codevariable">tableWidth</span>) <b>div</b> 2 &not;</td></tr>
+				<tr><td class="line-count">88</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, (<span class="codevariable">documentHeight</span> - <span class="codevariable">tableHeight</span>) <b>div</b> 2}</td></tr>
+				<tr><td class="line-count">89</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">90</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">91</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">92</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="imagecaption" style="margin-bottom:0;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>A styled table created with the example script:</p>
+			<img class="centered" width="624" alt="styled-table" src="gfx/styled-table.jpg">
+		
+		</div>
+		
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="table-chart-from-row-column.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="hi"><a href="table.html">Table</a></li>
+				<li class="navListSectionItem"><a href="table-make.html">Making Basic Tables</a></li>
+				<li class="navListSectionItem"><a href="table-selected.html">Selected Table</a></li>
+				<li class="navListSectionItem"><a href="table-style.html">Populating Tables</a></li>
+				<li class="navListSectionItemSelected">Styling Tables</li>
+				<li class="navListSectionItem"><a href="table-chart-from-row-column.html">Pie Chart from Selected Row | Column</a></li>
+				<li class="navListSectionItem"><a href="table-highlight-cell.html">Highlight Cell with Transition</a></li>
+				<li class="navListSectionItem"><a href="table-conditional-highlighting.html">Conditional Highlighting</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

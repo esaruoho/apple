@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Script Geek</title>
+	<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Shane Stanley">
+	<META NAME="Keywords" CONTENT="Everyday AppleScriptObjC, ASObjC Explorer, AppleScript, Mac OS X, AppleScriptObjC">
+	<META NAME="Description" CONTENT="Script Geek is a free timer for AppleScript.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+	<link rel="stylesheet" type="text/css" href="applescript.css" media="all">
+	<!-- END META INFO -->
+	<!-- IMAGE LIGHTBOX -->
+  	<link rel="stylesheet" href="lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="lightbox.js" type="text/javascript" charset="utf-8"></script>
+	<!-- IMAGE LOADING -->
+  	<link rel="stylesheet" href="imageload.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  	<script src="imageload.js" type="text/javascript" charset="utf-8"></script>
+  	<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<!-- END MOVIE WINDOW SCRIPT -->
+</head>
+<body>
+<!--<body onload="loadImages();"> -->
+<!-- page cover and spinner are added for the loading routines -->
+<!-- <div id="page-cover"></div> -->
+<!-- <img src="spinner.png" alt="" style="display: none" width="67" height="67"> -->
+
+<table  align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="../../index.html">Automation</a> | <a href="../index.html">AppleScript</a> | <a href="index.html">Apps</a> | Geek<br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../gfx/applescript-sm-banner.png" width="900" height="144" align="top">
+	<table cellspacing="0" id="localnav" class="hide" summary="site navigation">
+		<tr>
+			<td class="first" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&#149;</a></td>
+			<td><a href="../index.html">Home</a></td>
+			<td><a href="index.html">Features</a></td>
+			<td width="16"><a href="javascript:self.resizeTo(1024,screen.availHeight);self.moveTo(screen.availWidth/2-512,0);" title="Size window to single page in middle">&#149;</a></td>
+			<td><a href="../learn.html">Learn</a></td>
+			<td><a href="../resources.html">Explore</a></td>
+			<td class="last" width="16"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&#149;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+	<img src="gfx/Script_Geek.png" alt="" width="596" align="center">
+<br/>
+		<h1>Script Geek 2.0</h1>
+		<br/>
+
+<p style="font-size:14px;margin-top:6px;"><span class="inlinecode">Script Geek.app</span> is designed to do one thing: time how long a script takes to run.</p>
+
+<p style="font-size:14px;margin-top:6px;">When you press a run button (<b>Run Scripts</b>, <b>Run First Script</b> or <b>Run Second Script</b>), the scripts will be compiled, run once (with the time taken noted), and then run for however many iterations you have designated. The latter runs are full runs: the script is not run in an AppleScript repeat loop. The average is the total time taken for these latter runs, divided by the number of iterations. The result appears in the results view below the scripts.</p>
+
+<p style="font-size:14px;margin-top:6px;">The <b>Swap With Clipboard</b> buttons can be used to swap scripts in and out. At the bottom of the window you can set whether the app beeps when a run is complete, a separate color to be applied to handler calls, and a background color for the script panes. The <b>Obsessive</b> checkbox increases the number of decimals displayed, and shows more detailed statistics. Clicking on the logo at the bottom of the window, or choosing <b>View</b> -> <b>Change Orientation</b>, will toggle the arrangement of the two script panes between vertical and horizontal.</p>
+
+<p style="font-size:14px;margin-top:6px;">Compiles and errors are signified in the results area in red, and compiled code is saved between launches. The <b>Save Report</b> button at the top saves a report in rich text format, including all runs back to the last compile, plus the source code of both scripts. For long running scripts, a <b>Stop</b> button will appear in place of the icon at the bottom, and running will be stopped at the end of the current iteration.</p>
+
+<p style="font-size:14px;margin-top:6px;">The code is run on a background thread, so running AppleScriptObjC code that requires the main thread is likely to result in a crash.</p>
+
+<p style="font-size:14px;margin-top:6px;">The code is minimal, to avoid adding overhead, and the only claim of accuracy is that it will probably be more accurate than whatever you're using now &mdash; and hopefully more convenient. When iterating, the scripts are run in alternating order to minimize any artefacts.</p>
+
+<p style="font-size:14px;margin-top:6px;"><span class="inlinecode">Script Geek.app</span> 2.0 requires macOS 10.10 or later.</p>
+
+<p style="font-size:14px;margin-top:6px;"><span class="inlinecode">Script Geek.app</span> is &copy; 2014-19 Shane Stanley, and free. There is no guarantee: you use it strictly at your own risk.</p>
+
+<p style="font-size:14px;margin-top:6px;"><a href="Script_Geek.zip">Click here to download version 2.0.1</a>.</p>
+
+<p style="font-size:14px;margin-top:6px;"><a href="Script_Geek_old.zip">Click here to download version 1.2.7</a>, which runs under macOS 10.7 and later.</p>
+
+
+	  <p><img src="gfx/geekIcon.png"></p>
+
+	</div>
+	<div id="sidebar" class="column">
+		<div class="box">
+			<h2 style="background-color: #555;">EVERYDAY APPLESCRIPTObjC</h2>
+			
+			<img src="gfx/Everyday3_300.jpg" alt="" width="100" align="right" caption="'Everyday AppleScriptObjC' 2ed by Shane Stanley">
+
+			<p><b>Everyday AppleScriptObjC, Third Edition</b> by Shane Stanley is the perfect introduction to AppleScriptObjC scripting in Mavericks and later. This new edition covers the changes introduced in El Capitan, and contains several new chapters.</p>
+			
+			<ol>
+				<li>Learn how to use AppleScriptObjC directly in your scripts in El Capitan and Yosemite</li>
+				<li>Learn how to write and deploy AppleScriptObjC-based script libraries in Mavericks and later</li>
+				<li>Full of useful snippets of code</li>
+				<li>Explains how to make sense of the Cocoa documentation</li>
+				<li>Covers the main classes useful to scripters</li>
+			</ol>
+			<p style="text-align:center;"><a href="everyday_book.html" target="_self"><input type="button" value=" LEARN MORE " style="background-color:#009933;color:white;font-size:large;-webkit-border-radius:14px;"></a></p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">BRIDGEPLUS LIBRARY</h2>
+			<p>BridgePlus is a free script library for use under OS X 10.9 and later, designed to improve and simplify the use of AppleScriptObjC. Read more and download it here: <a href="BridgePlus.html">BridgePlus Script Library</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">MYRIAD HELPERS</h2>
+			<p>These helper files can greatly simplify using some Cocoa classes. Read more and download them here: <a href="helpers.html">Myriad Helpers</a>.</p>
+		</div>
+		<div class="box">
+			<h2 style="background-color: #555;">ABOUT THE AUTHOR</h2>
+			<img src="gfx/shane-TH.jpg" highresurl="gfx/shane.jpg" width="200" caption="Shane Stanely (center) discusses techniques for the creation of AppleScript Objective-C applications with Sal Soghoian (right), Product Manager Automation Technologies at Apple. (photo by Björn Zitting)" onclick="void(0);lightboxThisImage(this);" class="across" height="150">
+			<p>Shane Stanley (center, in white) is a long-time AppleScript user and trainer from Melbourne, Australia. He co-presented the <a href="http://scriptingmatters.com/aspro.php" target="_blank">AppleScript Pro Sessions</a> training events in the US for 10 years, and specializes in automating workflows in the publishing industry. (photo by Björn Zitting)</p>
+		</div>
+	</div>
+</div>
+</td></tr></table>
+</body>
+</html>

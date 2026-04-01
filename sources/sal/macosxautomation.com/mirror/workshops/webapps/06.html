@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Simple Template Publishing in HTML</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="A guided hands-on workshop for learning how to use the automation tools of OS&nbsp;X to quickly transform existing text, text files, and digital media such as images, and audio/video clips, into digital books, saved in standard EPUB format, viewable on computers and mobile devices.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- END META INFO -->
+<!-- START MOVIE WINDOW SCRIPT -->
+	<script>
+		function PopupCenter(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<script>
+		function PopupCenterWithScrolls(pageURL,title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!-- END MOVIE WINDOW SCRIPT -->
+<!-- BEGIN AUTO-SELECT SCRIPT -->
+	<script type="text/javascript">
+		function SelectAll(id)
+			{
+				document.getElementById(id).focus();
+				document.getElementById(id).select();
+			}
+	</script>
+<!-- END AUTO-SELECT SCRIPT -->
+<!-- BEGIN LIGHTBOX -->
+	<link rel="stylesheet" href="../lightbox/lightbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script src="../lightbox/lightbox.js" type="text/javascript" charset="utf-8"></script>
+<!-- END LIGHTBOX -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">Mac&nbsp;OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: TUTORIAL -->
+		<div class="content-segment">
+			<div class="segment-header" >The Single-Page Web-App Tutorial</div>
+			
+			<p>Once the Automator action and service workflow files have been installed, they can be used to create a web-app. In this tutorial, you will create a single-page web-app by following he outlined steps.</p>
+			
+			<p>This tutorial features content related to Martin Luther King&rsquo;s famous &ldquo;I Have a Dream&rdquo; speech, given at the Lincoln Memorial during the March on Washington in 1963. You will construct a single-page web-app that displays the transcript of the speech along with a photo of the historic moment.</p>
+		</div>
+			
+			<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" >The Single-Page Web-App Demo Kit</div>
+					
+			<p>To begin the tutorial, download the provided demo kit.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="Single-Page-Demo.zip">Download</a> the ZIP archive containing the Single-Page demo materials. If needed, double-click the ZIP archive to unpack it into a new folder containing the tutorial items.</p>
+			
+			<p>The created demo folder contains the following files:</p>
+			
+			<img class="centered" alt="spwa-demo-01" src="gfx/spwa-demo-01.png" width="624" height="356">
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Movie File</b>&nbsp;&bull;&nbsp;Documentary footage of Martin Luther King&rsquo;s speech at the Lincoln Memorial in Washington, D.C. The movie file is saved in MPEG format, optimized for display on computers, iPads, iPhones, and other portable devices.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Text File</b>&nbsp;&bull;&nbsp;The full transcript of the speech saved as a plain text file.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Image File</b>&nbsp;&bull;&nbsp;A black &amp; white photograph taken facing the Lincoln Memorial. This JPEG image contains an IPTC-standard embedded caption.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Audio File</b>&nbsp;&bull;&nbsp;An audio recording of the complete speech, saved in MPEG format.</p>
+			
+			<p>These media items can be used to create variations of the single-page web application, using the previously installed Automator action and system services.</p>
+		</div>
+		<div class="content-segment">
+			<div class="segment-header" >Activating the System Service</div>
+						
+			<p>The demo begins by opening the source text document and selecting its content.</p>
+								
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Open the speech transcript file (see above) <span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;in TextEdit by double-clicking the text file icon.</p>
+			
+			<p>The transcript will open in a new TextEdit document window: (see below)</p>
+			
+			<img class="centered" alt="spwa-demo-02" src="gfx/spwa-demo-02.png" width="624" height="632">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Select all of the transcript text by choosing <b>Select All</b> from the TextEdit application&rsquo;s <b>Edit</b> menu, or by typing <b>Command-A</b> (&#8984;-A). The selection will display with a light blue background. (see above)</p>
+			
+			<p>With the source text selected, you are ready to access the <a href="04.html">previously installed</a> system service for creating a single-page web-application.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;While holding down the Control key, click and hold anywhere in the selected text  to summon the contextual menu <span class="numeric-callout">&nbsp;1&nbsp;</span> (see below). From the Services sub-menu at the bottom of the contextual menu, select the system service menu option titled: <b>Create Single-Page Web-App with Selected Text</b> <span class="numeric-callout">&nbsp;2&nbsp;</span></p>
+			
+			<img class="centered" alt="spwa-demo-03" src="gfx/spwa-demo-03.png" width="624" height="632">
+			
+			<p>The interface for the Automator action, <b>Create Single-Page iPad Web-App</b>, used by the system service, will appear: (see below)</p>
+			
+			<a href="#"><img class="centered" alt="blank-sp-action-interface" src="gfx/blank-sp-action-interface.png" width="624" height="634" highresurl="gfx/blank-sp-action-interface-lg.png" caption="" displaywidth="850" displayheight="863" onclick="lightboxThisImage(this);return false;"></a>
+		</div>	
+			
+		<div class="content-segment">
+			<div class="segment-header" >Naming the Web-App</div>
+			<p>The Automator action interface is divided into four sections: <b>Application</b>, <b>Content</b>, <b>Metadata</b>, and <b>Style</b>. You will fill-in information in the first three sections, and make selections for text and document styling in the last section.</p>
+			<p>First, the <b>Application</b> section:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the Web-App section of the action interface, enter a name for the web-application in the provided text input field. The entered name will be used to name the folder created on the desktop, containing the web-app contents.</p>
+		</div>
+			
+		<div class="content-segment">
+			<div class="segment-header" >Title &amp; Attributions</div>
+									
+			<p>Next, the <b>Content</b> section of the action interface:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the <b>Content</b> section of the action interface, fill-in the text fields for Title, Sub-Head, Author, and Copyright with the data provided below:</p>
+			
+			<table style="width:624px;margin-top:24px;">
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">TITLE</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select:text;"><span id="titleField">I Have a Dream</span></td>
+				</tr>
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">SUB-HEAD</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select: text;">Historic Speech During the March on Washington</td>
+				</tr>
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">AUTHOR</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select: text;">Martin Luther King, Jr.</td>
+				</tr>
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">COPYRIGHT</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select: text;">&copy;1963, Martin Luther King, Jr.</td>
+				</tr>
+			</table>
+		</div>	
+			
+		<div class="content-segment">
+			<div class="segment-header" >Including a Usage License</div>
+
+			<p>Next, choose a <b>Creative Commons License</b> to assign to the created web-app content.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;From the <b>CC License</b> popup menu, in the <b>Contents</b> section, choose the last option for non-commercial use, with no changes (see below)</p>
+			
+			<img style="margin-top:12px;" alt="creativecommonspopup" class="centered" src="gfx/creativecommonspopup.png" width="369" height="154">
+		</div>	
+			
+		<div class="content-segment">
+			<div class="segment-header" >Adding a Media Item</div>
+			
+			<p>Next, add a piece of media to the page:</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the <b>Content</b> section of the action interface, select <b>Other&hellip;</b> from the <b>1st Media</b> popup menu: (see below)</p>
+			
+			<img  style="margin-top:12px;" class="centered" alt="spwa-demo-05" src="gfx/spwa-demo-05.png" width="244" height="86">
+			
+			<p>A file-picker sheet will drop down over the action interface: (see below)</p>
+			
+			<img class="centered" alt="pickmedia-01" src="gfx/pickmedia-01.png" width="624" height="362" style="margin-bottom:36px;">
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbspIn the file-picker dialog, navigate to and select the image file from the demo kit (see above). Click the <b>Choose</b> button in the sheet to confirm the selection of the image, which will be then listed on the selection popup menu  when the sheet closes <span class="numeric-callout">&nbsp;1&nbsp;</span> (see below).</p>
+			
+			<img class="centered" style="margin-top:24px;" alt="media-selection" src="gfx/media-selection.png" width="624" height="76">
+			
+			<p>There are two other media parameters available for selection (see above):</p>
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Location Control</b>&nbsp;&bull;&nbsp;You can place the media item (image, audio file, or video file) at either the top of document (after the title), or at the bottom of document.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Caption/Description</b>&nbsp;&bull;&nbsp;All included media items can be displayed with a caption that is entered in the text input field. Image files that contain an embedded IPTC description tag, may have the contents of that tag used as the caption, by selecting the checkbox labeled: <b>Use embedded metadata for caption</b>.<br><br><b>TIP</b>: you can view an image&rsquo;s embedded caption by selecting the image file in the Finder and opening the Information window for the item by typing Command-I (&#8984;-I).</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Set the parameters for the placed image, by choosing <b>Top of Page</b> from the Location popup menu <span class="numeric-callout">&nbsp;2&nbsp;</span> (see above); and choosing to use the embedded caption metadata by selecting the checkbox labeled: <b>Use embedded metadata for caption</b> <span class="numeric-callout">&nbsp;3&nbsp;</span> (see above)</p>
+		
+			<p class="segment-note"><b>NOTE</b>: The example video file provided with the demo kit is already encoded properly and does not require further processing.</p>
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" >Application Metadata</div>
+						
+			<p>A web application is really an HTML-based website within a single folder. As such, it can used internet-standard tags to identify its author, copyrights, and content. In the action view dialog, there&rsquo;s an option to add metadata tags to the head section of the app&rsquo;s main HTML file, so that the web application content can be identified by search engines.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;In the <b>Metadata</b> section of the action interface, fill-in the text fields for Description, and Keywords with the data provided below: (keywords are comma-delimited)</p>
+			
+			<table style="width:624px;margin-top:24px;">
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">DESCRIPTION</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select:text;"><span id="titleField">Martin Luther King’s speech at the Lincoln Memorial during the March on Washington</span></td>
+				</tr>
+				<tr>
+					<td style="width:90px;background-color:gray;text-align:right;padding:4px;">KEYWORDS</td>
+					<td style="width:534px;background-color:white;color:black;padding:4px;-webkit-user-select: text;">oratory, speech, civil rights, March on Washington</td>
+				</tr>
+			</table>
+		</div>
+			
+		<div class="content-segment">
+			<div class="segment-header" >Text and Page Styles</div>
+						
+			<p>The Automator action includes controls for setting the typeface, font-color, font-size, and letter spacing of the various text page elements. Typeface choices include a subset of &ldquo;Internet-Standard&rdquo; serif and san-serif type faces.</p>
+			
+			<p>In addition, you can choose the background color of the webpage from a selection of standard colors and custom settings that mimic standard paper colors, like manila.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;For the purposes of this demo, set the text styles popup menus to the values shown in the image below, and change the page color to: <b>oyster shell</b></p>
+			
+			<a href="#"><img class="centered" alt="single-page-action-624" src="gfx/action-filled-interface.png" width="624" height="634" highresurl="gfx/action-filled-interface.png" caption="" displaywidth="850" displayheight="863" onclick="lightboxThisImage(this);return false;"></a>
+		</div>	
+			
+			
+		<div class="content-segment">
+			<div class="segment-header" >Build the Web-App</div>
+			
+			<p>With the media chosen, metadata entered, and styling set, you are ready to build the web-application.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>&nbsp;Click the <b>Continue</b> button (above) to have the service build the web-application on the desktop, and open it in Safari for review.</p>
+			
+			<a href="javascript:void(0);" style="color:gray;" onclick="PopupCenterWithScrolls('sp-image/index.html', 'viewer-window-single-page-app',768,1024);"><img class="centered" alt="finishedapp" src="gfx/finishedapp.png" width="624" height="767"></a>
+			
+		</div>
+		<!-- END SEGMENT: TUTORIAL -->
+		
+		<!-- BEGIN SEGMENT: WHAT'S NEXT -->
+		<div class="content-segment">
+			<div class="segment-header" >What&rsquo;s Next?</div>
+			<p>In the next segment, we&rsquo;ll examine the how to convert the created web-apps into desktop applications.</p>
+		</div>
+		<!-- END SEGMENT: WHAT'S NEXT -->
+			
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="07.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction</a></li>
+				<li><a href="01.html">Multi-Column Article</a></li>
+				<li><a href="02.html">Multi-Column Article: Interface</a></li>
+				<li><a href="03.html">Multi-Column Article: Demo</a></li>
+				<li><a href="04.html">Single-Page Web-App</a></li>
+				<li><a href="05.html">Single-Page Web-App: Interface</a></li>
+				<li class="hi">Single-Page Web-App: Demo</li>
+				<li><a href="07.html">Desktop Web-Apps</a></li>
+				<li><a href="08.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this segment, you will guide the attendees through the process of:</p>
+			
+			<ol>
+				<li>Downloading and installing the demo kit containing the materials used in the tutorial</li>
+				<li>Using the previously installed service to create an example publication that incorporates a single-page layout design.</li>
+			</ol>
+			
+			<p>NOTE: the topic of sharing and viewing the created web-applications is covered at the beginning of the <a href="07.html"><b>Desktop Web-Apps</b></a> segment of this workshop.</p>
+						
+			<p class="sidebar-subhead">Talking Points</p>
+						
+			<ol type="1">
+				<li>Ask attendees if they have used Automator or System Services before.</li>
+				<li>Like a chef following a recipe, use of workflows sometimes require preparation of materials, such as processing audio, video, or image files for use by the workflow. You may want to point out that are built-in System Services for <a href="http://macosxautomation.com/lion/encodeaudio/index.html" target="_blank">processing audio</a>, and for <a href="http://macosxautomation.com/lion/encodemedia/index.html" target="_blank">processing video</a> files.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

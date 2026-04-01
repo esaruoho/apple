@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Mac&nbsp;OS&nbsp;X 10.7 Lion Automation Release Notes</title>
+<!-- START META INFO -->
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+<!-- 
+	<link rel="stylesheet" type="text/css" href="http://macosxautomation.com/automation.css" media="all">
+ -->
+	<link rel="stylesheet" type="text/css" href="../../automation.css" media="all">
+<!-- END META INFO -->
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+	<style type="text/css">
+		#release-banner
+		{
+			background-color: #000;
+			letter-spacing: .25em;
+			line-height: 200%;
+			font-size: 12px;
+			margin: 0 0 0 0;
+			color: #fff;
+			text-transform: uppercase;
+			-webkit-user-select: none;
+		}
+	</style>
+</head>
+<body>
+<table bgcolor="#444444" align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://macosxautomation.com">Mac&nbsp;OS&nbsp;X Automation</a> | <a href="../../index.html">Lion Release Notes</a> | <a href="../../automatorservices.html">Automator/Services</a><br>&nbsp;</div>
+	</caption>
+	<tr align="center" valign="top"><td align="center" valign="top">
+<div id="header">
+	<img src="../../gfx/automation-top-sm-banner-lion.jpg" width="900" height="144" align="top">
+	<div id="release-banner">Mac OS X Lion Automation Release Notes</div>
+</div>  
+<div id="main">
+	<div id="content" class="column">
+	
+			<h1 style="margin-top: 0;">Create a Simple Formatted Digital Book</h1>
+			
+			<p>Mac&nbsp;OS&nbsp;X Lion includes built-in system-wide support for easily turning selected text or text files into fully-functional digital books, ready for viewing on your iPhone and iPad. No apps necessary! And, your books can optionally retain text formatting, and include images, audio clips, and even video clips as well.</p>
+			
+			<p>This websie contains two tutorials demonstrating how to create digital books using the built-in automation tools of Mac&nbsp;OS&nbsp;X:</p>
+			<ol>
+				<li>how to create a simple single-chapter book, from text selected in an open document, that retains the formatting of the text used as its source</li>
+				<li>how to create a multi-chapter book, using selected text files as input, and that contains images, audio tracks, and a video file.</li>
+			</ol>
+			
+			<h3>TUTORIAL: Creating a Single-Chapter Digital Book with Formatting</h3>
+			
+			<p>This tutorial will demonstrate how to create a digital book using the formatted text selected in an open document.</p>
+			
+			<p style="color: #F00;font-weight: bold;font-size: 1.25em;">Before you begin, if you haven&rsquo;t already&hellip;</p>
+			
+			<ol>
+				<li><a href="../agreement.html">install the services</a> used in this tutorial.</li>
+						
+				<li><a href="EPUB-RTF-Demo-Kit.zip">download the files</a> used in this tutorial.</li>
+			</ol>
+
+			
+			<h3>The Example Document</h3>
+			
+			<p>Begin by opening the document <b>A Mad Tea Party.rtf</b>, included with the demo files you downloaded. By default, the document will open in the <b>TextEdit</b> application.</p>
+			
+			<p>The document is a formatted version of the seventh chapter of Lewis Carroll&rsquo;s famous book, <b>Alice in Wonderland</b>. Note that the dialog text has been formatted to be italic and red in color. In addition, some of the dialog (the part where the Mad Hatter sings his version of <i>Twinkle, Twinkle, Litte Star</i>) has been center aligned. This formatting will be preserved when the text is used to create a digital book.</p>
+			
+			<p>Select the entire contents of the document, and then right-click (Control-click) in the selected area to summon the contextual menu. Notice that the installed services appear at the bottom of the contextual menu. Select the menu item <b>Create Formatted EPUB Book with Selected Text</b> to launch the corresponding service.</p>
+		
+			<img src="gfx/contextualmenu.jpg" width="640" height="540" align="top">
+			<p class="imagecaption" style="margin-top:0;">Right-click (Control-click) on the selected text to summon the contextual menu containing the installed services.</p>
+			
+			<h3>The Automator EPUB Action Interface</h3>
+			
+			<p>Once the menu item has been selected, a window displaying the parameters and options for the <b>Text to EPUB File</b> Automator action used in the service workflow will appear. The left side of this dialog deals with the title and file parameters, and the right side of the dialog is for selecting the book cover image and any optional media to be included in the book.</p>
+			
+			<img src="gfx/actioninterface.jpg" width="640" height="369" align="top">
+			<p class="imagecaption" style="margin-top:0;">The interface for the <b>Text to EPUB File</b> Automator action appears after selecting the service from the contextual menu.</p>
+			
+			<p>Begin by first selecting the image file to be used as the cover for the digital book. Select <b>Other...</b>, from the <b>Cover Image</b> popup menu at the top right of the action interface, and then navigate to and select the image file <b>Tea Party Cover.jpg</b>, included with the demo files you downloaded.</p>
+			
+			<img src="gfx/addcover.jpg" width="640" height="393" align="top">
+			<p class="imagecaption" style="margin-top:0;">The cover image for the book is chosen by selecting <b>Other...</b>, from the <b>Cover Image</b> popup menu at the top right of the action interface, and then navigating to and selecting the cover image.</p>
+			
+			<p>Next, enter &ldquo;A Mad Tea Party&rdquo; as the title of the book, and &ldquo;Lewis Carroll&rdquo; as the author. Finally, enter  &ldquo;MadTeaParty&rdquo; in the <b>Save As</b> field, and select a destination folder for the file, from the folder picker popup menu.</p>
+		
+			<img src="gfx/actioninterfacecomplete.jpg" width="640" height="369" align="top">
+			<p class="imagecaption" style="margin-top:0;">Fill in the book title and file information on the left of the action interface dialog. Any additional image, audio, and video content for the book is indicated on the right of the action view.</p>
+			
+			<p>Clcik the <b>Continue</b> button at the bottom right of the dialog, and a new digital book file will be created in the location you chose.</p>
+			
+			<p>Transfer the &ldquo;MadTeaParty.epub&rdquo; file to your iOS device by either emailing the file to yourself, and then selecting the file in the email message on the iOS device; or by adding the file to your iTunes library, and then syncing the device with that library.</p>
+			
+			<h3>Viewing in iBooks</h3>
+			
+			<p>Once the file has been added to iBooks on your iOS device, it will appear in the bookshelf in iBooks. Open the book by tapping its cover image displayed on the bookshelf:</p>
+		
+			<img src="gfx/bookshelf.jpg" width="640" height="236" align="top">
+			<p class="imagecaption" style="margin-top:0;">The newly created book appears on the iBooks bookshelf.</p>
+			
+			<p>The book will open to its table of contents, which in the case of a single-chapter book, is empty. Tap the Resume button at the top left of the window to begin reading the book:</p>
+						
+			<img src="gfx/bookindex.jpg" width="640" height="480" align="top">
+			<p class="imagecaption" style="margin-top:0;">Since the created book only has one chapter, there is no table of contents. Tap the Resume button at the top left (outlined here in red) to begin or continue reading the book.</p>
+			
+			<p>Note that although you can assign a different typeface and size to the text, the color, style, spacing, and alignment are the same as the original text in the TextEdit document:</p>
+
+			<img src="gfx/bookbody.jpg" width="640" height="480" align="top">
+			<p class="imagecaption" style="margin-top:0;">Since the source text for the digital book was in Rich Text format, the text color, style, and alignment properties are retained. In iBooks, the font and type size can be set by the user.</p>
+			
+			<h3>Summary</h3>
+			
+			<p>Using the services included in the <b>Text to EPUB Services</b> collection, you can quickly and easily create simple digital publications that you can view or share with others.</p>
+			
+			<p>If you want to create a simple book from selected text but do not want to retain the formatting, use the <b>Create EPUB Book with Selected Text</b> service, which will convert the styled text to plain text before processing.</p>
+			
+			<p>Also, you can add media, such as images, audio files, and video files, to the book using the media controls in the action view. This technique is demonstrated in the next tutorial in which you create a multi-chapter multi-media digital publication.</p>
+		</div>
+	<div id="sidebar" class="column">
+			<div class="box">
+				<h2>EPUB SERVICES</h2>
+				<p>The <b>Text to EPUB Services</b> collection contains four Automator services for converting text into digital books:</p>
+				<ol>
+					<li>Create EPUB Book with Selected Files</li>
+					<li>Create EPUB Book with Selected Text</li>
+					<li>Create Formatted EPUB Book with Selected Text</li>
+					<li>Create EPUB Book with Contents of Clipboard</li>
+				</ol>
+				<p><a href="../workflows.html">View</a> the workflows</p>
+				<p>(<a href="../agreement.html">Download</a>)</p>
+			</div>
+			<div class="box">
+				<h2>SIMPLE RTF EPUB DEMO KIT</h2>
+				<p>The RTF text file and cover image for creating an abreviated version of Lewis Carroll's Alice in Wonderland. Also includes the finshed EPUB file.</p>  			
+				<p>(<a href="EPUB-RTF-Demo-Kit.zip">Download</a>) 415K</p>
+			</div>
+			<div class="box">
+				<h2>VIEW EXAMPLE IN iBOOKS</h2>
+				<p><a href="MadTeaParty.epub"><img src="gfx/ibooks36x36.png" width="36" height="36" align="left" style="margin-right:6px;margin-bottom:24px;"></a>If you are viewing this page on an iPad, tap <a href="MadTeaParty.epub"><b>HERE</b></a> to download and open the completed example digital book in iBooks. (209KB)</p>
+			</div>
+			<div class="box">
+				<h2>WHAT IS EPUB?</h2>
+				<img src="../gfx/epub_logo_color.jpg" width="72" hspace="4" align="left" height="99">
+				<p>The <a href="http://www.idpf.org" target="_blank">International Digital Publishing Forum</a> (IDPF) is the trade and standards association for the digital publishing industry. &quot;.epub&quot; is the file extension of an XML format for reflowable digital books and publications. &quot;.epub&quot; is composed of three open standards, the Open Publication Structure (OPS), Open Packaging Format (OPF) and Open Container Format (OCF), produced by the IDPF. &quot;EPUB&quot; allows publishers to produce and send a single digital publication file through distribution and offers consumers interoperability between software/hardware for unencrypted reflowable digital books and other publications.</p>
+			</div>
+			<div class="box">
+				<h2>EDITING EPUB DOCUMENTS</h2>
+				<p>Essentially, EPUB documents are saved as archived folders containing editable files and media.</p>  
+				
+				<p>To make changes to an EPUB document, first drag it onto the <b>Unpack EPUB</b> dropet and an unpacked copy of the digital book will be placed on the desktop.</p> 
+				
+				<p>To re-pack the edited EPUB folder, launch the <b>Re-Package EPUB</b> script and choose the edited folder to be reconstituted and a repackaged EPUB document will be created.</p> 
+			
+				<p>(<a href="EPUBscripts.zip">Download Scripts</a>)</p>
+			</div>
+			<div class="box">
+				<h2>DISCLAIMER</h2>
+				<p>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Pages: Documents</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Pages, iWork, Pages, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for templates in the iWork Pages application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Pages: Word-Process a Go-Go!" src="gfx/applescript-pages-sm-banner.jpg" width="900" height="144">
+	<table style="border-spacing:0;" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://macosxautomation.com">macOS Automation</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Document</div>
+			<p>The <span class="codelibraryclass">document</span> class is the top-level element of the <b>Pages</b> application.  It contains <span class="codelibraryclass">sections</span>, which contain <span class="codelibraryclass">pages</span>.</p>
+			
+			<p>The pages of this topic section detail how to <span class="codelibrarycommand">open</span>, <span class="codelibrarycommand">save</span>, <span class="codelibrarycommand">make</span>, <span class="codelibrarycommand">close</span>, and <span class="codelibrarycommand">export</span> <b>Pages</b> <span class="codelibraryclass">documents</span>. This topic section begins with an examination of the <span class="codelibraryclass">document</span> class contained in both the <span style="color:blue;">Standard Suite</span> and <span style="color:blue;">Pages</span> of the <b>Pages</b> scripting dictionary.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Standard Suite Document Class</p>
+			
+			<p>The <span style="color:blue;">Standard Suite</span> is an element of most application scripting dictionaries. It contains a <span class="codelibraryclass">document</span> class that defines three essential read-only properties: <span class="codeproperty">name</span>, <span class="codeproperty">modified</span>, and <span class="codeproperty">file</span>. These properties are used in the example scripts of this topic section, to determine the status of the document being targeted in the scripts.</p>
+			
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">document</span> <span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;: A document</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="dictionary-class">application.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">name</span> (<span class="dictionary-class">text</span>, r/o) : Its name.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">modified</span> (<span class="dictionary-enumeration">boolean</span>, r/o) : Has it been modified since the last save?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">file</span> (<span class="dictionary-class">file</span>, r/o) : Its location on disk, if it has one. Returns <span class="dictionary-class">missing value</span> if no file exists.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">close</span>, <span class="dictionary-verb">exists</span>, <span class="dictionary-verb">print</span>, <span class="dictionary-verb">save</span></p>
+			</div>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Pages Document Class</p>
+			
+			<p>The <span style="color:blue;">Pages Suite</span> contains an extension of the <span class="codelibraryclass">document</span> class of the <span style="color:blue;">Standard Suite</span>. This suite also includes any elements and properties unique to the <b>Pages</b> application. In this suite, the <span class="codelibraryclass">document</span> class has two elements, the  <span class="codelibraryclass">page</span> and <span class="codelibraryclass">section</span> classes. This relationship indicates that the <span class="codelibraryclass">document</span> must be referenced when creating, manipulating, or deleting <span class="codelibraryclass">sections</span> or <span class="codelibraryclass">pages</span>.</p>
+									
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">document</span> <span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[see also <span class="dictionary-suite">Standard Suite</span>] : A Pages document</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contains <span class="dictionary-class">sections</span>, <span class="dictionary-class">pages</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">body text</span> (<span class="dictionary-class">rich text</span> ) : The document body text.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">current page</span> (<span class="dictionary-class">page</span> ) : The currently selected page.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">document body</span> (<span class="dictionary-class">boolean</span>, r/o) : Whether the document is set to word-processing mode containing a main text flow.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">document template</span> (<span class="dictionary-class">template</span>, r/o) : The template assigned to the document. This property’s value can be set during document creation.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">make</span></p>
+			</div>
+			
+			<p>In addition, this suite introduces a new property of the <span class="codelibraryclass">document</span> class, <span class="codeproperty">current page</span>, whose value is a reference to the currently selected <span class="codelibraryclass">page</span> in the <span class="codelibraryclass">document</span>. Use of this important property enables scripts to work regardless of which <span class="codelibraryclass">page</span> is the current one.</p>
+			
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-open.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">PAGES SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li class="list-break"><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<li><a href="template.html">Template</a></li>
+				<li class="hi">Document</li>
+				<li class="navListSectionItem"><a href="document-open.html">Opening Documents</a></li>
+				<li class="navListSectionItem"><a href="document-make.html">Making Documents</a></li>
+				<li class="navListSectionItem"><a href="document-save.html">Saving Documents</a></li>
+				<li class="navListSectionItem"><a href="document-close.html">Closing Documents</a></li>
+				<li class="navListSectionItem"><a href="document-export.html">Exporting Documents</a></li>
+				<li><a href="body-text.html">Body Text</a></li>
+				<!-- <li><a href="page.html">Page</a></li> -->
+				<li><a href="section.html">Section</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<!-- <li><a href="shape-line.html">Shape | Line</a></li> -->
+				<li><a href="media-items.html">Media Item</a></li>
+				<li class="list-break"><a href="line.html">Lines</a></li>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

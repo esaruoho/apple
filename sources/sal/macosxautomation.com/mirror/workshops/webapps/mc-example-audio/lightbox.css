@@ -1,0 +1,51 @@
+/* style for the basic overlay element outlines default opacity and transistion parameters */
+#overlay 
+{
+	opacity: 0;
+	-webkit-transition-property: opacity;
+	-webkit-transition-duration: .5s;
+	-webkit-transition-timing-function: linear;
+}
+/* style for the visible element defines the appearance parameters */
+#overlay.visible
+{
+	opacity: 1;
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	background-color: rgba(0, 0, 0, 0.7);
+	text-align: center; /* to center content */
+	-webkit-user-select: none;
+}
+/* same style values as the visible with only the opacity value changing to trigger another transistion */
+#overlay.invisible {
+	opacity: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	background-color: rgba(0, 0, 0, 0.7);
+	text-align: center; /* to center content */
+	-webkit-user-select: none;
+}
+#content-box {
+	position: relative;
+	margin-top: 5%;
+	background-color: white;
+	border: 1px solid white;  
+	display: inline-block;
+	padding: 11px;
+	max-width: 75%;
+	max-height: 75%;
+	-webkit-border-radius: 12px;
+}
+#caption-box
+{
+	padding: 6px 0 0 0;
+	font-family: 'Helvetica',san-serif;
+	font-size: 14px;
+	text-align: left;
+}

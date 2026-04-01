@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #ee2200}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+p.p8 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana; color: #5e6161}
+p.p9 {margin: 0.0px 0.0px 0.0px 56.0px; text-indent: -56.0px; font: 12.0px Verdana}
+p.p10 {margin: 0.0px 0.0px 0.0px 84.0px; text-indent: -84.0px; font: 12.0px Verdana}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="arrayByAddingInteger_inArray_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="indexSetWithArray_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>List manipulation methods</p>
+<h3>Method</h3>
+<code>sortedArrayFrom:stableSort:usingSelector:target:</code>
+<h3>Summary</h3>
+<p>Sorts a list using the sort algorithm you provide. The selector will be used as the sorting comparator.</p><p>'stableSort' should be true for a stable sort.</p><p>The selector needs to take two parameters, which are the two values being compared. It should return 1 if the first value is the greater, -1 if it's the lesser, and 0 if they are the same. So you might pass something like: "compareThis:withThis:", and your script would then include a handler "on compareThis:x withThis:y".</p><p>For target, pass the constant me.</p><p>The calling of methods back-and-forth means this can be a pretty slow way to sort, especially if the objects are bridged.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>sortedArrayFrom:<span class="sigParens">(NSArray *)</span><span class="param">listOrArray</span> stableSort:<span class="sigParens">(BOOL)</span><span class="param">stableSortFlag</span> usingSelector:<span class="sigParens">(SEL)</span><span class="param">selectorString</span> target:<span class="sigParens">(NSObject *)</span><span class="param">target</span></code>
+<h3>Parameters</h3>
+<p><span class="param">listOrArray</span> = list or array to sort</p><p><span class="param">stableSortFlag</span> = boolean value</p><p><span class="param">selectorString</span> = string of the form &#8220;compareThis:withThat:&#8221;</p><p><span class="param">target</span> = usually me</p>
+<h3>Result</h3>
+<p>The sorted array</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">listOrArray</span> <b>to</b> {"one", "two", "three", "four", "five"}</p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>sortedArrayFrom<span class="s1">:</span><span class="s3">listOrArray</span><span class="s1"> </span>stableSort<span class="s1">:</span><span class="s4"><i>true</i></span><span class="s1"> </span>usingSelector<span class="s1">:"compareThis:withThis:" </span>target<span class="s1">:<b>me</b></span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"one", "three", "five", "two", "four"}</p>
+<p class="p6">theResult<span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span></p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"one", "three", "five", "two", "four"}</p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>on</b> </span>compareThis<span class="s1">:</span><span class="s3">x</span><span class="s1"> </span>withThis<span class="s1">:</span><span class="s3">y</span></p>
+<p class="p8"><span class="s1"><span class="Apple-tab-span">	</span></span>-- sort by last character of string</p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>set</b> <span class="s3">x</span> <b>to</b> <span class="s3">x</span> <b>as</b> <span class="s2"><i>text</i></span></p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>set</b> <span class="s3">y</span> <b>to</b> <span class="s3">y</span> <b>as</b> <span class="s2"><i>text</i></span></p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>if</b> <b>last</b> <span class="s2"><i>character</i></span> <b>of</b> <span class="s3">x</span> &gt; <b>last</b> <span class="s2"><i>character</i></span> <b>of</b> <span class="s3">y</span> <b>then</b></p>
+<p class="p10"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>return</b> 1</p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>else</b> <b>if</b> <b>last</b> <span class="s2"><i>character</i></span> <b>of</b> <span class="s3">x</span> &lt; <b>last</b> <span class="s2"><i>character</i></span> <b>of</b> <span class="s3">y</span> <b>then</b></p>
+<p class="p10"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>return</b> -1</p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>else</b></p>
+<p class="p10"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><b>return</b> 0</p>
+<p class="p9"><span class="Apple-tab-span">	</span><b>end</b> <b>if</b></p>
+<p class="p5"><span class="s1"><b>end</b> </span>compareThis:withThis:</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20listOrArray%20to%20%7B%22one%22,%20%22two%22,%20%22three%22,%20%22four%22,%20%22five%22%7D%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20sortedArrayFrom:listOrArray%20stableSort:true%20usingSelector:%22compareThis:withThis:%22%20target:me%0DASify%20from%20theResult%0D--%3E%09%7B%22one%22,%20%22three%22,%20%22five%22,%20%22two%22,%20%22four%22%7D%0DtheResult%20as%20list%0D--%3E%09%7B%22one%22,%20%22three%22,%20%22five%22,%20%22two%22,%20%22four%22%7D%0D%0Don%20compareThis:x%20withThis:y%0D%09--%20sort%20by%20last%20character%20of%20string%0D%09set%20x%20to%20x%20as%20text%0D%09set%20y%20to%20y%20as%20text%0D%09if%20last%20character%20of%20x%20%3E%20last%20character%20of%20y%20then%0D%09%09return%201%0D%09else%20if%20last%20character%20of%20x%20%3C%20last%20character%20of%20y%20then%0D%09%09return%20-1%0D%09else%0D%09%09return%200%0D%09end%20if%0Dend%20compareThis:withThis:">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

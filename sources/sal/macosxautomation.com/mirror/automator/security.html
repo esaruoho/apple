@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator: Automation Security</title>
+	<link rel="apple-touch-icon" href="automator-nav.png">
+	<meta name="description" content="Automation security in macOS requires user-approval to access user data stores and to control applications.">
+	<link rel="stylesheet" type="text/css" href="automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="index.html"><img class="nav-icon" alt="Automator" src="gfx/automator-nav.png"></a>
+			<a href="workflow/index.html"><img class="nav-icon" alt="Workflows" src="gfx/workflow-nav.png"></a>
+			<a href="application/index.html"><img class="nav-icon" alt="Applications" src="gfx/application-nav.png"></a>
+			<a href="services/index.html"><img class="nav-icon" alt="Quick Actions" src="gfx/services-nav.png"></a>
+			<a href="print/index.html"><img class="nav-icon" alt="Print Plugins" src="gfx/print-plugin-nav.png"></a>
+			<a href="folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="gfx/folder-action-nav.png"></a>
+			<a href="calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="gfx/calendar-alarm-nav.png"></a>
+			<a href="image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="gfx/image-capture-plugin-nav.png"></a>
+			<a href="dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="gfx/dictation-command-nav.png"></a>
+			<a href="utilities/index.html"><img class="nav-icon" alt="Utilities" src="gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automation Security</p>
+			
+			<img width="90" height="90" style="float:left;margin-right:18px;" alt="kTCCServiceSystemPolicySysAdminFiles" src="gfx/kTCCServiceSystemPolicySysAdminFiles.png">
+			
+			<p>The protection of user data is an important focus of macOS. With each successive release, procedures and features are implemented in order to better secure your information and files on the computer. macOS Mojave (v10.14) introduces new controls for Automation Security that enable the use of automation tools, apps, workflows, and scripts, but with explicit user approval.</p>
+			
+			<p>In many respects, this is a departure from existing norms where automations are generally allowed to run without recognition. The new procedures do necessitate more effort in the setup of automation tools, but once implemented, should not require further user-interaction.</p>
+
+			<p class="subhead" role="heading" aria-level="2">1st-Launch Alerts</p>
+			
+			<p>A standard system alert appears whenever applications are launched for the first time. This practice may effect Automator applets created using the Application, Image Capture, Dictation Commands, or Calendar templates.</p>
+			
+			<img style="display:block;margin-left:auto;margin-right:auto;" width="599" alt="Security dialog for an app that is opening for the first time" src="gfx/security-dialog-open-app-first-time.png">
+			
+			<p>Once approved, the applications will launch without notification in the future.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Apps Controlling Apps or Accessing Data</p>
+			
+			<p>As part of the enhanced security features of macOS, automation applications and scripts attempting to either control applications (via Apple Events), or access user data such as contacts or photos, will require an initial user approval upon their first attempt.</p>
+			
+			<img style="display:block;margin-left:auto;margin-right:auto;" width="488" alt="Security dialog for Notes app" src="gfx/security-dialog-notes.png">
+		
+			<p>Access-approval by users is required for automation access to most user data including, the photo library, address book, calendar, reminders, and use of the computer’s microphone and camera. As stated previously, once access has been granted for an automation tool, no further prompting should occur when the automation tool is used for the same purpose.</p>
+			
+			<p>The icon displayed in the system approval dialogs will indicate which data repository or hardware element requires your consent to be accessed.</p>
+			
+			<img width="100%" alt="kTCCServices" src="gfx/kTCCServices.png">
+			
+			
+			<!-- <img width="532" style="display:block;margin-left:auto;margin-right:auto;" alt="servicesui-apple-event-approval" src="gfx/servicesui-apple-event-approval.png"> -->
+			
+			<p><b>NOTE</b>: the same script or applet may trigger more than one security confirmation dialog, like this script application that is attempting to create a new calendar named &ldquo;Bob&rdquo;:</p>
+			
+			<img width="532" style="display:block;margin-left:auto;margin-right:auto;" alt="calendar-access-01" src="gfx/calendar-access-01.png">
+			<img width="532" style="display:block;margin-left:auto;margin-right:auto;" alt="calendar-access-02" src="gfx/calendar-access-02.png">
+			
+			<p style="padding:24px;background-color:#FFFF99;-webkit-user-select:text;"><b>IMPORTANT</b>: If an approval dialog in not approved (&ldquo;Don’t Allow&rdquo; is pressed), the requesting application will be added <b>unchecked</b> to the access list. YOU WILL NOT RECEIVE ANOTHER APPROVAL DIALOG REGARDING THE REQUESTING APPLICATION.<br><br>To enable scripting access for the application, unlock the preferences pane with your administrative password, and check the unchecked application in the access list.</p>
+			
+			<p class="subhead" role="heading" aria-level="2">Automation Security Preference Pane</p>
+			
+			<p>Current access controls are listed in the <b>Privacy</b> tab of the <b>Security &amp; Privacy</b> system preference pane in the <b>System Preferences</b> application.</p>
+			
+			<img width="100%" alt="The Automation Security Preference Pane" src="gfx/security-preference-pane.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The <b>Security &amp; Privacy</b> preference pane in the <b>System Preferences</b> application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The <b>Privacy</b> tab of the <b>Security &amp; Privacy</b> preference pane.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Automation</b> (Apple Events) category of the privacy database.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The editing of the privacy database access list requires the use of an administrative user of the computer.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;A list of the current tools and applications that require or have been granted access to the privacy database. Items cannot be removed from this list but you may enable or diable their access to individual privacy components by selecting or deselecting their checkboxes.</p>
+			</div>
+			
+			<p><b>NOTE</b>: To reveal an item’s location on the desktop, control-click the item to summon the &ldquo;Show in Finder&rdquo; menu:</p>
+			
+			<img width="100%" alt="show-in-finder-security" src="gfx/show-in-finder-security.png">
+			
+			<p class="subhead" role="heading" aria-level="2">Resetting the Privacy Database</p>
+			
+			<p><b>ADVANCED USER TIP</b>: should you wish to clear the current settings of the privacy database for a category, such as for the Automation (Apple Events) category, you can enter and run any of the following commands in the Terminal application. NOTE: these commands cannot be undone.</p>
+			
+			<p>The <b>tccutil</b> command manages the macOS privacy database, which stores decisions the user has made about which applications may access personal data.</p>
+			
+			<table class="javascript-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Reset the Privacy Database</td></tr>
+<!-- 
+				<tr><td colspan="3" class="encoded-script" style="padding-left:12px;"><button style="padding:4px;" onClick="showPopup('XXXXX');">Copy Script</button>&nbsp;<button style="padding:4px;" onClick="openScriptLink('XXXXXX');">Run Script</button></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+ -->
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset AddressBook</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Calendar</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Reminders</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Photos</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Camera</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset AppleEvents</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Microphone</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap" style="text-indent:-64px;padding-left:64px;">tccutil reset Accessibility</td></tr>
+			</table>
+
+		
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="index.html">Automator</a></p>
+			  <p class="sub-topic"><a href="workflow/index.html">Workflow</a></p>
+			  <p class="sub-topic"><a href="application/index.html">Application</a></p>
+			  <p class="sub-topic"><a href="services/index.html">Quick Actions</a></p>
+			  <p class="sub-topic"><a href="print/index.html">Print Plugins</a></p>
+			  <p class="sub-topic"><a href="folder-action/index.html">Folder Actions</a></p>
+			  <p class="sub-topic"><a href="calendar/index.html">Calendar Alarms</a></p>
+			  <p class="sub-topic"><a href="image-capture/index.html">Image Capture Plugins</a></p>
+			  <p class="sub-topic"><a href="dictation/index.html">Dictation Commands</a></p>
+			  <p class="sub-topic"><a href="utilities/index.html">Utilities</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="active-topic">Automation Security</p>
+			  <p class="topic"><a href="accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="3rd-party-actions.html">3rd-Party Actions</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="examples.html">Examples</a></p>
+			</nav>
+
+			<div class="under-construction">
+				<div class="head">UNDER CONSTRUCTION</div>
+				<p>This webpage is in the process of being developed. Any content may change and may not be accurate or complete at this time.</p>
+			</div>
+
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

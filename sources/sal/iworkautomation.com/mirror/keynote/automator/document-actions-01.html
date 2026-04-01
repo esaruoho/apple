@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Keynote &amp; Automator: The &ldquo;New Presentation&rdquo; Action</title>
+<link rel="stylesheet" type="text/css" href="iworkautomator.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="AppleScript, Automation, Automator, Services, OS X, Numbers, Keynote, Pages, iWork, Scripting, presentation, charts, tables, slides">
+	<meta name="Description" content="The &ldquo;New Presentation&rdquo; Automator action is used to create a new Keynote document.">
+	<link rel="home" href="http://iworkautomation.com/">
+	<meta http-equiv="last-modified" content="Thu, 16 Oct 2014 14:00:00 GMT" />
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/automator">Automator</a> | <a href="#">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="applescript-iwork-sm-banner" src="gfx/automator-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="http://iworkautomation.com/keynote/">Keynote &amp; AppleScript</a></td>
+			<td><a href="http://macosxautomation.com/automator/">Automator</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+		<div class="segment-header" role="heading" aria-level="1">Keynote &amp; Automator: Document Actions</div>
+			<p class="content-intro">The Document Actions are the heart of the Keynote action collection. They provide the tools necessary for creating, saving, opening, exporting, closing, and presenting Keynote documents. The following pages described in detail their various parameter options and usage for each Automator action in the Keynote actions collection.</p>
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">The &ldquo;New Presentation&rdquo; Action</div>
+			<p>You&rsquo;ll probably begin many of your workflows with this action. It is often the first step in building and constructing powerful presentation documents. The following information explains the action&rsquo;s controls, behavior, and usage.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">The Action Information</p>
+			<table class="action-info-table">
+				<tr><td class="data-key">Input:</td><td class="data-value">This action accepts no input</td></tr>
+				<tr><td class="data-key">Output:</td><td class="data-value">An AppleScript reference to the created document</td></tr>
+				<tr><td class="data-key">Parameters:</td><td class="data-value"><p>User-settable parameters include:</p>
+					<ul style="margin-bottom:0;">
+						<li><p>Document theme (optional)</p></li>
+						<li><p>Document dimensions (optional)</p></li>
+						<li><p>Show/hide slide numbers</p></li>
+						<li><p>Playback properties: auto loop, auto play, auto restart</p></li>
+						<li><p>Bring Keynote to the front</p></li>
+					</ul>
+				</td></tr>
+			</table>
+		
+			<p class="content-subhead" role="heading" aria-level="2">The Action Interface</p>
+			<img class="action-interface" alt="new-presentation" src="gfx/new-presentation.jpg">
+			
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Theme Checkbox and Menu</b>&nbsp;&bull;&nbsp;To specify the theme to use in creating the new document, select this checkbox and choose a theme title from the popup menu. To use the default theme, leave the checkbox unselected. <b>TIP</b>: If a theme used by the current version of Keynote is not in the list, click the &ldquo;Update&rdquo; button to display the full list of currently installed themes.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Document Size Menu</b>&nbsp;&bull;&nbsp;To create a document using the default size, select the &ldquo;Not Specified&rdquo; option from this menu <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> Otherwise, select one of the common sizes or choose &ldquo;Custom&hellip;&rdquo; and enter the values for the document width and height in the dimensions input fields <span class="numeric-callout">&nbsp;3&nbsp;</span></p>
+			<img class="centered" width="191" height="106" alt="document-size-menu" src="gfx/document-size-menu.png">
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Custom Dimensions Inputs</b>&nbsp;&bull;&nbsp;Enter custom values for the width and height of the new document.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Slide Numbers</b>&nbsp;&bull;&nbsp;&nbsp;&bull;&nbsp;Select whether the slide numbers should appear on the individual slides.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Playback Properties</b>&nbsp;&bull;&nbsp;Activate any of the document playback properties. <b>NOTE</b>: These properties are especially useful when creating presentations that will be used in kiosks.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Maximum Idle Duration</b>&nbsp;&bull;&nbsp;Another kiosk playback property, this value (in minutes) determines how long the presentation should wait before restarting from the beginning. <b>NOTE</b>: This parameter is only available when the &ldquo;Auto Restart&rdquo; option has been selected.</p>
+			<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Activate Keynote</b>&nbsp;&bull;&nbsp;Select this option to make Keynote the frontmost application when the action is run.</p>
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+		
+		<!-- BEGIN SEGMENT: SEGMENT TITLE -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">TIP: Following This Action in a Workflow</div>
+			<p>When this action is run, a new Keynote document is created. By default, the new document has one slide which is selected. If you want to set important parameters for the first slide, such as slide master or transition, simply follow the &ldquo;New Presentation&rdquo; action with one of the actions for manipulating slide properties, and the chosen adjustments will automatically be applied to just the first slide of the newly created presentation.</p>
+			
+			<p>For example, in the workflow shown below, there&rsquo;s no need to use the &ldquo;Get Specified Slide&rdquo; action to identify the first slide of the newly created document, as the actions will assume that you want to manipulate the current slide of the created document. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+			
+			<img class="centered" width="640" alt="example-workflow-01" src="gfx/example-workflow-01.png">
+		</div>
+		<!-- END SEGMENT: SEGMENT TITLE -->
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="document-actions-02.html" target="_self">CONTINUE</a></p>	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE &amp; AUTOMATOR</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="automator-Quick-Start.html">Automator Quick-Start</a></li>
+				<hr>
+				<li class="hi">Document Actions</a></li>
+				<li class="navListSectionItemSelected">New Presentation</li>
+				<li class="navListSectionItem"><a href="document-actions-02.html">Open Keynote Files</a></li>
+				<li class="navListSectionItem"><a href="document-actions-03.html">Get Specified Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-04.html">Export Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-05.html">Save Document</a></li>
+				<li class="navListSectionItem"><a href="document-actions-06.html">Close Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-07.html">Begin Presentation</a></li>
+				<li class="navListSectionItem"><a href="document-actions-08.html">Present Slideshow with Narration</a></li>
+				<li class="navListSectionItem"><a href="document-actions-09.html">Get Fonts of Keynote Documents</a></li>
+				<li><a href="slide-actions-01.html">Slide Actions</a></li>
+				<li><a href="image-actions-01.html">Image Actions</a></li>
+				<li><a href="chart-actions-01.html">Chart Actions</a></li>
+				<li><a href="workflows-01.html">Workflow Recipes</a></li>
+				<hr>
+				<li><a href="../index.html">Keynote &amp; AppleScript</a></li>			</ul>
+		</div>
+						
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

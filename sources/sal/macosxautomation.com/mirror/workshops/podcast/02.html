@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OS&nbsp;X Automation Workshop: Add Rendered Narration Tracks to Podcasts</title>
+<link rel="stylesheet" type="text/css" href="../workshop.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, Mac OS X, Snow Leopard, Lion">
+	<META NAME="Description" CONTENT="Visit www.macosxautomation.com for in-depth information and materials regarding automation in Mac OS X.">
+	<LINK REL="home" HREF="http://www.macosxautomation.com/">
+	<meta name="verify-v1" content="N0n0cpp8th215Y3jnCK8rgpyvhYPW7NEcF9H/YITslw=" >
+<!-- END META INFO -->
+<!-- 
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = (screen.width/2)-(w/2);
+		var top = (screen.height/2)-(h/2);
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+ -->
+<!~~ START MOVIE PLAYER SCRIPT ~~>
+	<script>
+		function PopupCenter(pageURL, title,w,h) {
+		var left = 0;
+		var top = 0;
+		var w = screen.width;
+		var h = screen.height;
+		var targetWin = window.open (pageURL, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+		} 
+	</script>
+<!~~ END MOVIE PLAYER SCRIPT ~~>
+<!~~ START IMAGE SWAP SCRIPT ~~>
+	<script type="text/javascript">
+		function swapImageWithMovie() {
+			var podcastFrame = document.getElementById("podcastFrame");
+			podcastFrame.innerHTML = "<embed src=\"alaskanpodcast.m4a\" width=\"320\" height=\"338\" scale=\"2\" autoplay=\"true\" controller=\"true\" type=\"video/x-m4v\" pluginspage=\"http://www.apple.com/quicktime/download/\"></embed>";
+			// alert('Hello');
+		}
+	</script>
+<!~~ END IMAGE SWAP SCRIPT ~~>
+</head>
+<body>
+<table align="center" border="0" cellpadding="0">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="../index.html">Workshops</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div>
+	<table cellspacing="0" id="localnav">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="http://macosxautomation.com">OS&nbsp;X Automation</a></td>
+			<td><a href="http://iworkautomation.com">iWork Automation</a></td>
+			<td><a href="../index.html">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: CREATE RENDERING SERVICES -->
+		<div class="content-segment">
+			<div class="segment-header">Create Automator Voice Rendering Services</div>
+			
+			 <p>Once you have listened to and approved a text selection spoken using one of the installed voices, you&rsquo;ll want to render the selected text to an audio file and add the file to the GarageBand project. To enable this process, we&rsquo;ll create two Automator services for rendering text to an audio file; one for the male voice, and one for the female voice.</p>
+			 
+			 <p class="do-this"><span class="do-this">DO THIS &#9658;</span>Close any open Automator documents and create a new document by choosing &ldquo;New&rdquo; from Automator&rsquo;s &ldquo;File&rdquo; menu. As with the previous workflows, choose the Service template option as the template for the new workflow document.</p>
+			 
+			 <p>In the new document, leave the service input controls set to  the default values, thereby enabling the service to recieve selected text <span class="numeric-callout">&nbsp;1&nbsp;</span> in any application <span class="numeric-callout">&nbsp;2&nbsp;</span> as the service input data.</p>
+			 
+			 <p>Next, we&rsquo;ll add Automator actions, from the actions library to the workflow, that will perform these steps in our &ldquo;Automation recipe&rdquo;:<p>
+			 
+			<ol type="1">
+				<li>Render the selected text, that gets passed as input to the service, into an audio file on disk.</li>
+				<li>Encode the newly created high-quality file to MPEG format, and then&hellip;</li>
+				<li>Open the new encoded file in the QuickTime Player application for review and placement into the GarageBand project.</li>
+			</ol>
+			 
+			 <p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the main library in the library list on the left side of the window <span class="numeric-callout">&nbsp;3&nbsp;</span> and then search the action library for an action for converting text to audio by entering &ldquo;text to audio&rdquo; in the search field <span class="numeric-callout">&nbsp;4&nbsp;</span>. The &ldquo;Text to Audio File&rdquo; action will appear below the search field in the actions list. Drag the action from the list into the workflow area to add its action view to the workflow <span class="numeric-callout">&nbsp;5&nbsp;</span>.</p>
+			 
+			 <p>Now that the action for rendering the text, passed to the service as input, has been placed in the workflow, we can set the action&rsquo;s parameters by changing the values of the controls displayed in its action view <span class="numeric-callout">&nbsp;5&nbsp;</span>.</p>
+			 
+			 <p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the action view <span class="numeric-callout">&nbsp;5&nbsp;</span>, set the voice for the &ldquo;System Voice&rdquo; popup menu to be the male voice you installed. Set the name of the created audio file to default by leaving the &ldquo;Save As&rdquo; text field empty. And set the destination for the created file to be the &ldquo;Music&rdquo; folder by selecting it from the &ldquo;Where&rdquo; popup menu in the action view.</p>
+			
+			<img src="gfx/renderworkflow.png" width="640" height="488" class="across">
+			
+			<p>The audio file created by the &ldquo;Text to Audio&rdquo; action will be in AIFF format, which has no compression and typically generates larger file sizes. To reduce the file size of the created audio clips while still providing a quality sound, the created clips need to be encoded from AIFF format to MPEG format. This conversion will be accomplished with a second Automator action.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Enter the term &ldquo;encode&rdquo; in the Automator search field <span class="numeric-callout">&nbsp;4&nbsp;</span>. The &ldquo;Encode to MPEG Audio&rdquo; will appear in the actions list below the search field. Drag the action from the list into the workflow area after the previously added action. Release the mouse, and the action view will be displayed <span class="numeric-callout">&nbsp;6&nbsp;</span>.</p>
+			
+			<p>Now that the action for encoding the audio file, passed from the previous action, has been placed in the workflow, we can set the action&rsquo;s parameters by changing the values of the controls displayed in its action view <span class="numeric-callout">&nbsp;6&nbsp;</span>.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the action view <span class="numeric-callout">&nbsp;6&nbsp;</span>, set the value of the &ldquo;Encoder&rdquo; popup menu to &ldquo;Spoken Podcast&rdquo;. Next, select the checkbox labeled &ldquo;Same as source file&rdquo; to have the newly encoded file placed in the same folder as the original file. And finally, select the checkbox labeled &ldquo;Delete source files after processing&rdquo; to have the action delete the original larger audio file once it has been encoded to a new smaller MPEG file.</p>
+			
+			<p>The last step in the &ldquo;Automation recipe&rdquo; is to open the encoded file in the QuickTime Player application so that it can be reviewed for accuracy, and then placed into the GarageBand project. This can be accomplished by adding one more action to the workflow.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Enter the term &ldquo;open item&rdquo; in the Automator search field <span class="numeric-callout">&nbsp;4&nbsp;</span>. The &ldquo;Open Finder Items&rdquo; will appear in the actions list below the search field. Drag the action from the list into the workflow area after the previously added action. Release the mouse, and the action view will be displayed <span class="numeric-callout">&nbsp;7&nbsp;</span>. In the popup menu in the action view, choose the &ldquo;QuickTime Player&rdquo; as the application that will open the encoded audio file passed to this action from the previous action.</p>
+
+			<p>Now the service workflow is complete and is ready to save and install into the system.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Choose &ldquo;Save&rdquo; from the Automator &ldquo;File&rdquo; menu, and in the forthcoming naming sheet (see below) name the new service: <b>Render as Audio File (male)</b>. Click the &ldquo;Save&rdquo; button to complete the creation and installation process.</p>
+			
+			<img src="gfx/saverenderasmale.jpg" width="624" height="234" class="centered">
+			
+			<p class="content-subhead">Create a Version using the Female Voice</p>
+
+			<p>Now that the service for rendering selected text to audio file using a male voice is created, let&rsquo;s create one using the female voice. This can easily be accomplished by duplicating the existing service workflow and changing the selected voice in the &ldquo;Speak Text&rdquo; action to the female voice you installed.</p>
+			
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>From the Automator &ldquo;File&rdquo; menu, select the menu option titled: <b>Duplicate</b></p>
+			
+			<p>A copy of the existing service workflow will be created and displayed, ready for editing.</p>
+			
+			<img src="gfx/saverenderasfemale.jpg" width="624" class="centered" height="234">
+						
+			<p class="do-this"><span class="do-this">DO THIS &#9658;</span>In the duplicate workflow, change the voice on the popup menu in the &ldquo;Text to Audio File&rdquo; action to be the high-quality female voice you installed. Choose &ldquo;Save&rdquo; from the &ldquo;File&rdquo; menu and in the forthcoming naming sheet, change the workflow service name to <b>Render as Audio File (female)</b>. Finally, click the &ldquo;Save&rdquo; button in the naming sheet to complete the creation and installation of the new service.</p>
+			
+			<p class="content-subhead">Cool New Tools</p>
+			
+			<p>Congratualtions! You have now created and installed two services for rendering  text selected in any application to encoded audio files. Next, we&rsquo;ll assign keyboard shortcuts to the newly created services to make them easy to execute.</p>
+		
+		</div>
+		<!-- END SEGMENT: CREATE RENDERING SERVICES -->
+		
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="03.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">WORKSHOP SEGMENTS</h2>
+			<ol>
+				<li><a href="index.html">Introduction &amp; Setup</a></li>
+				<li><a href="01.html">Create Reading Services</a></li>
+				<li class="hi">Create Rendering Services</li>
+				<li><a href="03.html">Assign Keyboard Shortcuts</a></li>
+				<li><a href="04.html">Render First Narration</a></li>
+				<li><a href="05.html">Add Narration to GB Project</a></li>
+				<li><a href="06.html">Create &amp; Add Remaining Clips</a></li>
+				<li><a href="07.html">Summary</a></li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">WORKSHOP LEADER NOTES</h2>
+			
+			<p class="sidebar-subhead">Segment Overview</p>
+			
+			<p>In this workshop segment, attendees will create slightly more complex services that render text selected in any application to encoded audio files using the installed high-quality male or female voices. Point out the similarities and the differences between the speaking service workflows and the rendering service workflows.</p>
+			
+			<p class="sidebar-subhead">Talking Points</p>
+			
+			<ol type="1">
+				<li>Many Automator workflows often follow a common series of steps: acquire the data, process the data, and distribute the data.</li>
+				<li>In Automator workflows, the result of one action is passed to the next action in the list of actions.</li>
+				<li>Point out the similarities and the differences between the speaking and the rendering services.</li>
+			</ol>
+		</div>
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

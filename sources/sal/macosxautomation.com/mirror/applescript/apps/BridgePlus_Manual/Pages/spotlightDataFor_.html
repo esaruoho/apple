@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #812fdc}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #ee2200}
+span.s5 {color: #012fbe}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="runSpotlightQuery_queryValues_inFolders_error_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="bezierForAI_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>URL and File related methods</p>
+<h3>Method</h3>
+<code>spotlightDataFor:</code>
+<h3>Summary</h3>
+<p>Returns the Spotlight metadata for a file, or missing value if there is a problem.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSDictionary *)</span>spotlightDataFor:<span class="sigParens">(id)</span><span class="param">filePathOrURL</span></code>
+<h3>Parameters</h3>
+<p><span class="param">filePathOrURL</span> = alias, file, HFS path, POSIX path or NSURL</p>
+<h3>Result</h3>
+<p>Dcitionary/record of file&#8217;s Spotlight metadata</p>
+<h3>Availability</h3>
+<p>Version 1.3.0</p>
+<h3>Notes</h3>
+<p>&nbsp;</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><i>current application's</i><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span><span class="s4">spotlightDataFor</span><span class="s1">:(</span><span class="s5"><b>choose file</b></span><span class="s1">)</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{kMDItemFSCreatorCode:0, kMDItemFSFinderFlags:0, kMDItemFSContentChangeDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemFSName:"Crash.txt", kMDItemDisplayName:"Crash.txt", kMDItemFSInvisible:false, kMDItemFSSize:66230, kMDItemFSTypeCode:0, kMDItemDateAdded:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemPhysicalSize:69632, kMDItemKind:"BBEdit text document", _kMDItemOwnerUserID:501, kMDItemContentTypeTree:{"public.plain-text", "public.text", "public.data", "public.item", "public.content"}, kMDItemFSOwnerUserID:501, kMDItemFSIsExtensionHidden:false, kMDItemLogicalSize:66230, kMDItemFSLabel:0, kMDItemContentModificationDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemContentType:"public.plain-text", kMDItemFSOwnerGroupID:20, kMDItemContentCreationDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemFSCreationDate:date "Monday, 16 November 2015 at 2:55:09 PM"}</p>
+<p class="p7"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span><span class="s1"> </span>-- 10.11 only</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{kMDItemFSCreatorCode:0, kMDItemFSFinderFlags:0, kMDItemFSContentChangeDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemFSName:"Crash.txt", kMDItemDisplayName:"Crash.txt", kMDItemFSInvisible:false, kMDItemFSSize:66230, kMDItemFSTypeCode:0, kMDItemDateAdded:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemPhysicalSize:69632, kMDItemKind:"BBEdit text document", _kMDItemOwnerUserID:501, kMDItemContentTypeTree:{"public.plain-text", "public.text", "public.data", "public.item", "public.content"}, kMDItemFSOwnerUserID:501, kMDItemFSIsExtensionHidden:false, kMDItemLogicalSize:66230, kMDItemFSLabel:0, kMDItemContentModificationDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemContentType:"public.plain-text", kMDItemFSOwnerGroupID:20, kMDItemContentCreationDate:date "Monday, 16 November 2015 at 2:55:09 PM", kMDItemFSCreationDate:date "Monday, 16 November 2015 at 2:55:09 PM"}</p>
+<p class="p7"><span class="s3">theResult</span><span class="s1"> <b>as</b> </span><span class="s2"><i>record</i></span><span class="s1"> </span>-- 10.9 and 10.10</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>&lt; as above, but dates will be NSDates instead of AS dates &gt;</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20spotlightDataFor:(choose%20file)%0DASify%20from%20theResult%0D--%3E%09%7BkMDItemFSCreatorCode:0,%20kMDItemFSFinderFlags:0,%20kMDItemFSContentChangeDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemFSName:%22Crash.txt%22,%20kMDItemDisplayName:%22Crash.txt%22,%20kMDItemFSInvisible:false,%20kMDItemFSSize:66230,%20kMDItemFSTypeCode:0,%20kMDItemDateAdded:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemPhysicalSize:69632,%20kMDItemKind:%22BBEdit%20text%20document%22,%20_kMDItemOwnerUserID:501,%20kMDItemContentTypeTree:%7B%22public.plain-text%22,%20%22public.text%22,%20%22public.data%22,%20%22public.item%22,%20%22public.content%22%7D,%20kMDItemFSOwnerUserID:501,%20kMDItemFSIsExtensionHidden:false,%20kMDItemLogicalSize:66230,%20kMDItemFSLabel:0,%20kMDItemContentModificationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemContentType:%22public.plain-text%22,%20kMDItemFSOwnerGroupID:20,%20kMDItemContentCreationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemFSCreationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22%7D%0DtheResult%20as%20record%20--%2010.11%20only%0D--%3E%09%7BkMDItemFSCreatorCode:0,%20kMDItemFSFinderFlags:0,%20kMDItemFSContentChangeDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemFSName:%22Crash.txt%22,%20kMDItemDisplayName:%22Crash.txt%22,%20kMDItemFSInvisible:false,%20kMDItemFSSize:66230,%20kMDItemFSTypeCode:0,%20kMDItemDateAdded:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemPhysicalSize:69632,%20kMDItemKind:%22BBEdit%20text%20document%22,%20_kMDItemOwnerUserID:501,%20kMDItemContentTypeTree:%7B%22public.plain-text%22,%20%22public.text%22,%20%22public.data%22,%20%22public.item%22,%20%22public.content%22%7D,%20kMDItemFSOwnerUserID:501,%20kMDItemFSIsExtensionHidden:false,%20kMDItemLogicalSize:66230,%20kMDItemFSLabel:0,%20kMDItemContentModificationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemContentType:%22public.plain-text%22,%20kMDItemFSOwnerGroupID:20,%20kMDItemContentCreationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22,%20kMDItemFSCreationDate:date%20%22Monday,%2016%20November%202015%20at%202:55:09%20PM%22%7D%0DtheResult%20as%20record%20--%2010.9%20and%2010.10%0D--%3E%09%3C%20as%20above,%20but%20dates%20will%20be%20NSDates%20instead%20of%20AS%20dates%20%3E%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>

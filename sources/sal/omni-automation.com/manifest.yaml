@@ -1,0 +1,29 @@
+site:
+  slug: omni-automation
+  domain: omni-automation.com
+  owner: "Sal Soghoian"
+  role: "Post-Apple JavaScript automation work"
+  status: planned
+capture:
+  first_planned_at: "2026-04-01"
+  captured_at: null
+  method: null
+  mirrored_by: "merlib-mirror"
+  mirror_root: "sources/sal/omni-automation.com/mirror"
+  asset_root: "sources/sal/omni-automation.com/assets"
+origin:
+  home: "http://omni-automation.com/"
+content:
+  priorities:
+    - "JavaScript automation examples"
+    - "Cross-platform automation concepts"
+    - "Omni app plugin material"
+  expected_formats: ["html", "js", "omnijs", "images", "zip"]
+extraction:
+  scripts_target: "scripts/sal/omni-automation"
+  notes_target: "analysis/sal/page-notes"
+  concept_target: "analysis/sal/concept-notes"
+  status: pending
+licensing:
+  status: unknown
+  notes: "Treat this as Sal-adjacent but technically distinct from AppleScript-only material."

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Text Item Container</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for text items in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<!-- BEGIN SEGMENT: INTRODUCTION -->
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Keynote Text Item Containers</div>
+			
+			<p>All <b>iWork</b> applications share a common set of elements: <span class="codelibraryclass">audio clips</span>, <span class="codelibraryclass">movies</span>, <span class="codelibraryclass">images</span>, <span class="codelibraryclass">lines</span>, <span class="codelibraryclass">shapes</span>, <span class="codelibraryclass">tables</span>, <span class="codelibraryclass">charts</span>, and <span class="codelibraryclass">text items</span>. And in each application, the controls and behaviors for each of the common elements are exactly the same, most of the time.</p>
+			
+			<p>A <span class="codelibraryclass">text item</span> is designed with a slightly different behavior than <span class="codelibraryclass">text boxes</span> which also contain text but display eight adjustment handles. Given that it is a presentation program, the use of text in <b>Keynote</b> is nearly always for display (titles, subtitles, banners, headlines) or for minimal description (bullets, labels). It&rsquo;s difficult to imagine a reason for laying out a long text document in <b>Keynote</b> (although it is possible).</p>
+			
+			<p>The behavior of <span class="codelibraryclass">text items</span> added with the <b>Text</b> button or <b>Insert &gt; Text Box</b> menu, or via a script, are different than the <span class="codelibraryclass">text items</span> (boxes) designated as the <span class="codeproperty">default title item</span> or the <span class="codeproperty">default body item</span> that display eight adjustment handles. These added <span class="codelibraryclass">text items</span> offer no controls for adjusting vertical sizing, and by default, will horizontally scale to fit the text they contain.</p>
+						
+			<p class="segment-note"><b>NOTE</b>: In <b>Keynote</b> and the other iWork applications, &ldquo;simplified&rdquo; <span class="codelibraryclass">text items</span> can be converted to <span class="codelibraryclass">text boxes</span> (showing eight handles) by adjusting their <b>column count</b> (in the Format &gt; Text &gt; Layout sidebar) from 1 to 2 and then back to 1, or by selecting the text item, choosing <b>Format</b> &gt; <b>Shapes and Lines</b> &gt; <b>Make Editable</b>, and then de-selecting the text item. Also note that the current <b>Keynote</b> scripting dictionary does not provide a means to remove the simplified behavior.</p>
+						
+			<img class="across" width="640" height="389" alt="text-item-types" src="gfx/text-item-types.png">
+			
+			<p class="imagecaption"><span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)&nbsp;</span>A slide showing the two types of text items in Keynote: <span class="numeric-callout">&nbsp;1&nbsp;</span> the slide&rsquo;s <b>default title item</b> and <span class="numeric-callout">&nbsp;2&nbsp;</span> <b>default body item</b>, and <span class="numeric-callout">&nbsp;3&nbsp;</span> and an added <b>text item</b> with simplified controls.</p>
+		</div>
+		
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Default Text Items</div>
+			
+			<p>Whether they are visible or not, every <b>Keynote</b> slide incorporates two built-in default <span class="codelibraryclass">text items</span>: one for the slide title <span class="numeric-callout">&nbsp;1&nbsp;</span> <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span> and one for the slide body <span class="numeric-callout">&nbsp;2&nbsp;</span>. For some slides, the default body item are formatted as bullets <span class="numeric-callout">&nbsp;3&nbsp;</span>. The visibility of these text items is determined by the state of the <b>Appearance</b> checkboxes in the <b>Slide Layout</b> pane of the <b>Format</b> tab.</p>
+		
+			<img class="centered" width="624" alt="text-items-default" src="gfx/text-items-default.png">
+			
+			<p>Here&rsquo;s a script demonstrating how to set the text for the contents of a slide&rsquo;s default text items:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Default Text Items</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%7Bdocument%20theme%3Atheme%20%22Black%22%7D%0D%09tell%20thisDocument%0D%09%09set%20the%20base%20slide%20of%20the%20first%20slide%20to%20master%20slide%20%22Title%20%26%20Subtitle%22%0D%09%09tell%20first%20slide%0D%09%09%09--%20set%20the%20title%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22TITLE%22%0D%09%09%09--%20set%20the%20subtitle%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%22BODY%20SUBTITLE%22%0D%09%09end%20tell%0D%09%09set%20thisSlide%20to%20%C2%AC%0D%09%09%09make%20new%20slide%20with%20properties%20%7Bbase%20slide%3Amaster%20slide%20%22Title%20%26%20Bullets%22%7D%0D%09%09tell%20thisSlide%0D%09%09%09--%20set%20the%20title%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20title%20item%20to%20%22TITLE%22%0D%09%09%09--%20set%20a%20bullet%20list%0D%09%09%09set%20the%20object%20text%20of%20the%20default%20body%20item%20to%20%C2%AC%0D%09%09%09%09%22Bullet%20Point%201%22%20%26%20return%20%26%20%22Bullet%20Point%202%22%20%26%20return%20%26%20%22Bullet%20Point%203%22%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;}</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codeproperty">base slide</span> <b>of the first</b> <span class="codelibraryclass">slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Title &amp; Subtitle&quot;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set the title</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;TITLE&quot;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set the subtitle</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &quot;BODY SUBTITLE&quot;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">thisSlide</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">slide</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">base slide</span>:<span class="codelibraryclass">master slide</span> &quot;Title &amp; Bullets&quot;}</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisSlide</span></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set the title</span></td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default title item</span> <b>to</b> &quot;TITLE&quot;</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- set a bullet list</span></td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">object text</span> <b>of the</b> <span class="codeproperty">default body item</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span>&quot;Bullet Point 1&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 2&quot; &amp; <span class="codeenumeration">return</span> &amp; &quot;Bullet Point 3&quot;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="segment-note">For information about how default text items are incorporated into slide designs, see the <a href="slide-default-text.html">section in the Slide topic</a> about default text items.</p>
+		</div>		
+			
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Custom Text Items (with simplified controls)</div>
+						
+			<p>The example script below demonstrates the behaviors associated with scripting a <span class="codelibraryclass">text item</span> with simplified controls.</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Simplified Text Item Behaviors</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09set%20thisDocument%20to%20%C2%AC%0D%09%09make%20new%20document%20with%20properties%20%C2%AC%0D%09%09%09%7Bdocument%20theme%3Atheme%20%22Black%22%2C%20width%3A1024%2C%20height%3A768%7D%0D%09tell%20thisDocument%0D%09%09set%20base%20slide%20of%20the%20first%20slide%20to%20master%20slide%20%22Blank%22%0D%09%09set%20the%20documentWidth%20to%20its%20width%0D%09%09tell%20the%20first%20slide%0D%09%09%09--%20Make%20simple%20text%20item%0D%09%09%09set%20thisTextItem%20to%20%C2%AC%0D%09%09%09%09make%20new%20text%20item%20with%20properties%20%7Bobject%20text%3A%22HELLO%22%7D%0D%09%09%09delay%205%0D%09%09%09--%20Change%20the%20object%20text%2C%20text%20item%20expands%2C%20stays%20centered%0D%09%09%09set%20object%20text%20of%20thisTextItem%20to%20%22HOW%20NOW%20BROWN%20COW%22%0D%09%09%09delay%205%0D%09%09%09--%20Change%20object%20text%20to%20trigger%20default%20wrapping%20and%20sizing%20behavior%0D%09%09%09set%20object%20text%20of%20thisTextItem%20to%20%22Integer%20posuere%20erat%20a%20ante%20venenatis%20dapibus%20posuere%20velit%20aliquet.%20Praesent%20commodo%20cursus%20magna%2C%20vel%20scelerisque%20nisl%20consectetur%20et.%20Cras%20justo%20odio%2C%20dapibus%20ac%20facilisis%20in%2C%20egestas%20eget%20quam.%20Integer%20posuere%20erat%20a%20ante%20venenatis%20dapibus%20posuere%20velit%20aliquet.%20Sed%20posuere%20consectetur%20est%20at%20lobortis.%20Cras%20mattis%20consectetur%20purus%20sit%20amet%20fermentum.%22%0D%09%09%09delay%205%0D%09%09%09--%20Change%20the%20width%20of%20the%20text%20item.%20Note%20item%20does%20not%20auto-center.%0D%09%09%09set%20the%20width%20of%20thisTextItem%20to%20(documentWidth%20*%200.75)%0D%09%09%09delay%205%0D%09%09%09--%20Get%20the%20current%20position%20of%20the%20text%20item%0D%09%09%09copy%20the%20position%20of%20thisTextItem%20to%20%7BthisHorizontalValue%2C%20thisVerticalValue%7D%0D%09%09%09--%20Adjust%20postion%20to%20be%20centered%2C%20keeping%20the%20current%20vertical%20offset.%0D%09%09%09set%20position%20of%20thisTextItem%20to%20%7B(documentWidth%20*%200.25)%20div%202%2C%20thisVerticalValue%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>set</b> <span class="codevariable">thisDocument</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">document</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span>{<span class="codeproperty">document theme</span>:<span class="codelibraryclass">theme</span> &quot;Black&quot;, <span class="codeproperty">width</span>:1024, <span class="codeproperty">height</span>:768}</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell</b> <span class="codevariable">thisDocument</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codeproperty">base slide</span> <b>of the first</b> <span class="codelibraryclass">slide</span> <b>to</b> <span class="codelibraryclass">master slide</span> &quot;Blank&quot;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set the</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the first</b> <span class="codelibraryclass">slide</span></td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Make simple text item</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisTextItem</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">text item</span> <span class="codelibraryparameter">with properties</span> {<span class="codeproperty">object text</span>:&quot;HELLO&quot;}</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 5</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Change the object text, text item expands, stays centered</span></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">object text</span> <b>of</b> <span class="codevariable">thisTextItem</span> <b>to</b> &quot;HOW NOW BROWN COW&quot;</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 5</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Change object text to trigger default wrapping and sizing behavior</span></td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">object text</span> <b>of</b> <span class="codevariable">thisTextItem</span> <b>to</b> &quot;Integer posuere erat <span class="codevariable">a</span> ante venenatis dapibus posuere velit aliquet. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis <b>in</b>, egestas eget quam. Integer posuere erat <span class="codevariable">a</span> ante venenatis dapibus posuere velit aliquet. Sed posuere consectetur est at lobortis. Cras mattis consectetur purus sit amet fermentum.&quot;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 5</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Change the width of the text item. Note item does not auto-center.</span></td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set the</b> <span class="codeproperty">width</span> <b>of</b> <span class="codevariable">thisTextItem</span> <b>to</b> (<span class="codevariable">documentWidth</span> * 0.75)</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codelibrarycommand">delay</span> 5</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Get the current position of the text item</span></td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b><span class="codelibrarycommand">copy</span> the</b> <span class="codeproperty">position</span> <b>of</b> <span class="codevariable">thisTextItem</span> <b>to</b> {thisHorizontalValue, thisVerticalValue}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><span class="codecomment">-- Adjust postion to be centered, keeping the current vertical offset.</span></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codeproperty">position</span> <b>of</b> <span class="codevariable">thisTextItem</span> <b>to</b> {(<span class="codevariable">documentWidth</span> * 0.25) <b>div</b> 2, thisVerticalValue}</td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">28</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">29</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p class="imagecaption" style="margin-top:24px;margin-bottom:0;"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The example creates a new item. The text item is created using the theme&rsquo;s default paragraph style (caption in this example) which determines font, color, text size, and text alignment (centered) for the simplified text item. In addition, the text item is automatically centered horizontally and vertically in the slide:</p>
+			<img class="across" width="640" alt="custom-text-item-00" src="gfx/custom-text-item-00.png">
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The script changes the contents of the text item and the text item shrinks to fit the new width of the text:</p>
+			<img class="across" width="640" alt="custom-text-item-01" src="gfx/custom-text-item-01.png">
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The script replaces the shorter text contents with a paragraph that is longer than the width of the slide. The text item automatically expands to fit the width of the slide, then wraps the paragraph to be multiple lines. In addition, the simplified text item remains vertically centered on the slide:</p>
+			<img class="across" width="640" alt="custom-text-item-02" src="gfx/custom-text-item-02.png">
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The script then adjusts the width of the text item to be 3/4 the width of the slide. Note that the slide does not auto-center horizontally:</p>
+			<img class="across" width="640" alt="custom-text-item-03" src="gfx/custom-text-item-03.png">
+			
+			<p class="imagecaption"><span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span>The script then horizontally centers the text item on the slide , using the text item&rsquo;s current vertical positon:</p>
+			<img class="across" width="640" alt="custom-text-item-04" src="gfx/custom-text-item-04.png">
+		
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+			
+								
+		<p class="more"><a href="#" target="_self">TOP</a> | <a href="text-item-styling.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li class="hi"><a href="text-item.html">Text Item</a></li>
+				<li class="navListSectionItemSelected">The Text Item Container</li>
+				<li class="navListSectionItem"><a href="text-item-styling.html">Styling Object Text</a></li>
+				<li class="navListSectionItem"><a href="text-item-overlay.html">Text Item Overlays</a></li>
+				<li class="navListSectionItem"><a href="examples-text-wall.html">Creating a Text Wall</a></li>
+				<li><a href="shape-line.html">Shape | Line</a></li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

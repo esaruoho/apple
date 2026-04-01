@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Automator Quick Actions</title>
+	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+	<meta name="description" content="In macOS Mojave (v10.14) Automator Services workflows have been given new abilities and a new name: Quick Actions">
+	<meta property="og:image" content="http://omni-automation.com/apple-touch-icon.png" />
+	<link rel="stylesheet" type="text/css" href="../automator-adjustable.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../script-table.css" media="all">
+	<link rel="stylesheet" type="text/css" href="../omnijs.css" />
+	<link rel="privacy" href="privacy.html">
+	<script type="text/javascript" src="omnijs.js"></script>
+	<script>
+		function hideSidebar(){
+			var sidebar = document.getElementById("content-right");
+			if (sidebar.style.display == "none"){
+				document.getElementById("content-left").style.width = "74%";
+				sidebar.style.display = "block";
+				document.getElementById("content-left").style.zoom = "1.0";
+				document.getElementById("tap-instructions").innerText = "TAP TO HIDE SIDEBAR";
+			} else {
+				sidebar.style.display = "none";
+				document.getElementById("content-left").style.width = "100%";
+				document.getElementById("content-left").style.zoom = "1.35";
+				document.getElementById("tap-instructions").innerText = "TAP TO SHOW SIDEBAR";
+			}
+		}
+	</script>
+</head>
+<body>
+	<div id="page-wrap">
+	
+		<div onclick="hideSidebar();" style="background-color:black;height:28px;width:100%;"><p id="tap-instructions" style="line-height:28px;font-size:small;color:#555;text-align:center;letter-spacing:2vw;">TAP TO HIDE SIDEBAR</p></div>
+	
+		<div class="banner">
+			<a href="../index.html"><img class="nav-icon" alt="Automator" src="../gfx/automator-nav.png"></a>
+			<a href="../workflow/index.html"><img class="nav-icon" alt="Workflows" src="../gfx/workflow-nav.png"></a>
+			<a href="../application/index.html"><img class="nav-icon" alt="Applications" src="../gfx/application-nav.png"></a>
+			<img class="nav-icon" alt="Quick Actions" src="../gfx/services-nav-active.png">
+			<a href="../print/index.html"><img class="nav-icon" alt="Print Plugins" src="../gfx/print-plugin-nav.png"></a>
+			<a href="../folder-action/index.html"><img class="nav-icon" alt="Folder Actions" src="../gfx/folder-action-nav.png"></a>
+			<a href="../calendar/index.html"><img class="nav-icon" alt="Calendar Alarms" src="../gfx/calendar-alarm-nav.png"></a>
+			<a href="../image-capture/index.html"><img class="nav-icon" alt="Image Capture Plugins" src="../gfx/image-capture-plugin-nav.png"></a>
+			<a href="../dictation/index.html"><img class="nav-icon" alt="Dictation Commands" src="../gfx/dictation-command-nav.png"></a>
+			<a href="../utilities/index.html"><img class="nav-icon" alt="Utilities" src="../gfx/utilities-nav.png"></a>
+		</div>
+	
+		<section class="content-left" id="content-left">
+		
+			<p class="head">Automator: Quick Actions</p>
+			
+			<p>Beginning with macOS Mojave (v10.14), Automator Services workflows have been given new abilities and a new name: &ldquo;Quick Actions&rdquo;</p>
+			
+			<p>While retaining all of the current features of its deep integration with the macOS contextual System Services architecture, Automator &ldquo;Quick Actions&rdquo; can now also be saved and accessed as <a href="https://support.apple.com/kb/PH25180?locale=en_US" target="_blank">system extensions</a>, from within a Finder window’s Preview pane, or on the <a href="https://support.apple.com/en-us/HT207055" target="_blank">Macbook Pro Touch Bar</a>.</p>
+			
+			<p>The following documentation shows how to create a Quick Action (Services) workflow and how to control its integration in macOS as either an <a href="extensions.html">Extension</a> or as a <a href="services.html">Service</a>.</p>
+
+<!-- 
+			<img width="100%" alt="workflow-template-sheet" src="gfx/workflow-template-sheet.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;X&nbsp;</span>&nbsp;XXXXX</p>
+			</div>
+ -->
+			
+			<p class="subhead" role="heading" aria-level="2">Services (Quick Action) Workflow Window</p>
+			
+			<p>When the &ldquo;Quick Action&rdquo; workflow is chosen from the Automator template sheet, a new workflow window like this is created, displaying the workflow input controls common to all contextual system service workflows.</p>
+			
+			<img width="100%" alt="services-workflow-window" src="gfx/services-workflow-window.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator workflow document window.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The workflow input settings banner contains controls for identifying the data type of the workflow input, the application context in which the workflow is available, and the icon and color used to represent the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The workflow assembly pane where Automator actions are placed in the order in which they are executed.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The workflow input type menu determines the both the data and context required by the workflow. For example, if the chosen data type is &ldquo;PDF files&rdquo; then the workflow will only be enabled when one or more PDF files are selected. For those workflows that are not dependent upon having input, choose the &ldquo;no input&rdquo; option at the end of the menu.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;The chosen item on the application context menu determines in which application the workflow will be used. Choose the &ldquo;any application&rdquo; setting to have the workflow always available regardless of which application in frontmost.</p>
+			</div>
+			
+			<p>Beginning in macOS Mojave (v10.14) Automator Quick Actions (service workflows) have the option to be displayed and accessed from a Finder window’s Preview pane, and/or the Macbook Touch Bar. Consequentially, the workflow settings banner contains controls for assigning an icon and color to the workflow that is used in its display in the those locations.</p>
+			
+			<img width="100%" alt="services-workflow-02" src="gfx/services-workflow-02.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;You can select an icon for the Quick Action from the list of provided elements, or choose an image file. The chosen icon is displayed on eiher the Finder window Preview pane or the Macbook Touch Bar, and in the <a href="extensions.html" style="color:LightBlue;">Extensions</a> system prference pane. <b>NOTE</b>: a good template size for custom icon images is 36 by 36 pixels at 144 DPI resolution. Save the images in PNG format with an alpha channel. For more information, see the Custom Quick Action Icons section at the bottom of this page.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The selected color is used when displaying the Quick Action in the Macbook Touch Bar.</p>
+			</div>
+			
+			<p>When the workflow’s input data type is set to either <i>text</i>, <i>rich text</i>, or <b>Automatic (text)</b>, the option to replace the current application text selection with the results of the workflow, is enabled.</p>
+			
+			<img width="100%" alt="services-workflow-03" src="gfx/services-workflow-03.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;8&nbsp;</span>&nbsp;When the service input type is set to either text, rich text, or Automatic (text) the checkbox <span class="numeric-callout">&nbsp;9&nbsp;</span> for indicating replacement of the current text selection with the workflow result is enabled.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;9&nbsp;</span>&nbsp;When this checkbox is enabled and selected, the contents of the current text selection will be replaced with the output of the workflow. If the checkbox is not selected, the current text selection will remain as is.</p>
+			</div>
+			
+			<p>Option filtering of the current text selection is available when the input data type is set for text elements, such as: <i>URLs</i>, <i>addresses</i>, <i>phone numbers</i>, <i>dates</i>, or <i>email addresses</i>. When one of these input types is chosen, option to pass only a list of the text elements found in the current text selection, or the entire selection, to the workflow, is enabled.</p>
+			
+			<img width="100%" alt="services-workflow-03" src="gfx/services-workflow-04.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;When the service input type is set to specific textual elements, like URLs, phone numbers, or addresses, you have the option to either pass only a list of the textual elements found in the current text selection, or to pass the entire current text selection, as input to the workflow.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;10&nbsp;</span>&nbsp;The popup menu options to either pass only a list of the textual elements found in the current text selection, or to pass the entire current text selection, as input to the workflow.</p>
+			</div>
+			
+			
+			
+			<p class="subhead" role="heading" aria-level="2">Services Folder</p>
+			
+			<p>By default, service workflows are activated when they are saved or placed into the Services folder in your Home Library folder. If a service workflow is removed from this folder, it will no longer be available as a Quick Action.</p>
+			
+			<img width="691" alt="services-folder" src="gfx/services-folder.png">
+			
+			<p>To edit installed Automator &ldquo;Quick Actions&rdquo; (and other workflow types), choose &ldquo;Open…&rdquo; (&#8984;O) from the Automator File menu. In the forthcoming file chooser dialog <span class="numeric-callout">&nbsp;1&nbsp;</span> click the &ldquo;Options&rdquo; button <span class="numeric-callout">&nbsp;2&nbsp;</span> to reveal the workflow type popup menu <span class="numeric-callout">&nbsp;3&nbsp;</span> and select the type of installed workflow you wish to edit from the popup menu. The contents of the designated folder containing the specified type of workflow <span class="numeric-callout">&nbsp;4&nbsp;</span> will be displayed in the dialog.</p>
+			
+			<img width="100%" alt="open-workflow-dialog" src="gfx/open-workflow-dialog.png">
+			
+			<p><b>TIP</b>: to reveal a workflow file selected in this dialog in the Finder, type Command-R (&#8984;R) and the Finder application will come forward showing the containing folder with the item selected.</p>
+			
+			
+			
+			<p class="subhead" role="heading" aria-level="2">Custom Quick Action Icons</p>
+			
+			<p>Quick Action workflows may be assigned a custom icon image that you or other create. A good template size for custom icon images is 36 by 36 pixels at 144 DPI resolution, saved in PNG format with an alpha channel.</p>
+
+			<p>An excellent resource for workflow icons is the <a href="https://material.io/tools/icons/?style=baseline" target="_blank" style="text-decoration:none;">Google Material Design Icons</a> collection, which contain dozens of useful icons for all aspects of computer usage. The icons displayed below are examples from that collection.</p>
+			
+			<div class="script-explanation" style="margin-bottom:1em;text-align:center;">
+				<p><img width="36" height="36" alt="watermark-36x36@144" src="gfx/watermark-36x36@144.png">
+				<img width="36" height="36" alt="book-36x36@144" src="gfx/book-36x36@144.png">
+				<img width="36" height="36" alt="checkbox-36x36@144" src="gfx/checkbox-36x36@144.png">
+				<img width="36" height="36" alt="explore-36x36@144" src="gfx/explore-36x36@144.png">
+				<img width="36" height="36" alt="export-photos-36x36@144" src="gfx/export-photos-36x36@144.png">
+				<img width="36" height="36" alt="paragraphs-to-outline-36x36@144" src="gfx/paragraphs-to-outline-36x36@144.png">
+				<img width="32" height="32" alt="photo-36x36@144" src="gfx/photo-36x36@144.png">
+				<img width="36" height="36" alt="pie-chart-36x36@144" src="gfx/pie-chart-36x36@144.png">
+				<img width="36" height="36" alt="send-36x36@144" src="gfx/send-36x36@144.png">
+				<img width="36" height="36" alt="switch-disk-36x36@144" src="gfx/switch-disk-36x36@144.png">
+				<img width="36" height="36" alt="text-image-36x36@144" src="gfx/text-image-36x36@144.png"></p>
+			</div>
+			
+			<p class="subhead" role="heading" aria-level="2">Example Quick Action</p>
+		
+			<p>Here is an example of a Quick Action workflow. This Quick Action can be displayed on either the Finder Preview pane and/or the Touch Bar when the Finder is the frontmost application. It will watermark the selected PDF files using a specified image and transparency.</p>
+			
+			<p><b>TIP</b>: <a href="PDF-Watermark-Images.zip">download</a> a set of watermark images in red and blue: DRAFT, CONFIDENTIAL, EYES ONLY, and FINAL</p>
+			
+			<img height="60" alt="DRAFT-RED" src="gfx/DRAFT-RED.png">
+			<img height="60" alt="CONFIDENTIAL-BLUE" src="gfx/CONFIDENTIAL-BLUE.png">
+			<img height="60" alt="FINAL-RED" src="gfx/FINAL-RED.png">
+			
+			<img width="100%" alt="example-workflow" src="gfx/example-workflow.png">
+			
+			<div class="script-explanation" style="margin-bottom:1em;">
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;The Automator workflow document.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;The workflow input banner with controls set to accept PDF files selected in the Finder application.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;The <b>Watermark PDF Documents</b> Automator action will render the specified watermark image into the PDF file passed as input to the action. The resulting watermarked document will be passed to the next action.</p>
+				<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;The <b>Open Finder Items</b> action will open the watermarked file into whatever application is assigned as the default application for editing PDF files, which by default, is the Preview application.</p>
+			</div>
+		
+		</section>
+				
+		<section class="content-right" id="content-right">
+		
+			<nav>
+			  <div class="head">TOPICS</div>
+			  <p class="topic"><a href="../index.html">Automator</a></p>
+			  <p class="active-sub-topic">Quick Actions</p>
+			  <p class="sub-sub-topic"><a href="extensions.html">Extensions</a></p>
+			  <p class="sub-sub-topic"><a href="services.html">Services</a></p>
+			  <p class="sub-sub-topic"><a href="keyboard.html">Keyboard Settings</a></p>
+			  <p class="sub-sub-topic"><a href="https://support.apple.com/en-us/HT207055" target="_blank">&#63743; Using Touch Bar</a></p>
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../security.html">Automation Security</a></p>
+			  <p class="topic"><a href="../accessibility.html">Assistive Access</a></p>
+			  <p class="topic"><a href="../3rd-party-actions.html">3rd-Party Actions</a></p>
+<!-- 
+			  <hr style="margin-left:18px;margin-bottom:12px;">
+			  <p class="topic"><a href="../examples.html">Examples</a></p>
+ -->
+			</nav>
+
+			
+			<h3>Videos from MacBreak Dev</h3>
+			<div style="font-size:75%;margin-bottom:72px;">
+			<p>Here are links to podcast videos with <a href="https://twitter.com/alexlindsay" target="_blank">Alex Lindsey</a> about Services.</p>
+			<ul>
+				<li><p><a href="https://pixelcorps.cachefly.net/mbkv_235_540p_h264.mov">Services in Snow Leopard</a></p></li>
+				<li><p><a href="https://pixelcorps.cachefly.net/mbkd_012_540p_h264.mov">Services and Apple Remote Desktop</a></p></li>
+				<li><p><a href="https://pixelcorps.cachefly.net/mbkd_013_540p_h264.mov">Creating Automator Actions</a></p></li>
+			</ul>
+			</div>
+
+			<h3>DISCLAIMER</h3>
+			
+			<aside>
+				<p class="disclaimer">Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSAUTOMATION.COM provides this only as a convenience to our users. MACOSAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSAUTOMATION.COM and that MACOSAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+			</aside>
+
+		</section>
+		
+		<section class="content-middle">
+			<p>&nbsp;</p>
+		</section>
+
+	</div>
+</body>
+</html>

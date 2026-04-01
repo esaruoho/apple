@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>AppleScript and Keynote: Shapes</title>
+<link rel="stylesheet" type="text/css" href="../iworkscripting.css" media="all">
+
+<!-- START META INFO -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<META NAME="Author" CONTENT="Nyhthawk Productions">
+	<META NAME="Keywords" CONTENT="AppleScript, Automation, Automator, Services, OS X, Numbers, iWork, Pages, Keynote, Scripting">
+	<META NAME="Description" CONTENT="An overview of the AppleScript support for shapes and lines in the iWork Keynote application.">
+	<LINK REL="home" HREF="https://iworkautomation.com">
+<!-- END META INFO -->
+</head>
+<body>
+<table align="center" border="0" cellpadding="0" role="presentation">
+	<caption>
+		<div id="navpath"><a href="http://www.apple.com" aria-label="Apple">&#63743;</a> | <a href="http://www.apple.com/macosx">OS&nbsp;X</a> | <a href="http://macosxautomation.com">Automation</a> | <a href="http://macosxautomation.com/applescript">AppleScript</a> | <a href="../index.html">iWork</a><br>&nbsp;</div>
+	</caption>
+	<tr style="vertical-align:top;text-align:center;"><td style="vertical-align:top;text-align:center;">
+<div id="header">
+	<!-- <div class="page-title"><span style="font-size:110%;vertical-align:-5%;">&#63743;</span> Workshops <span style="font-size:50%;vertical-align:33%;">&#9670;</span> Automator</div> -->
+	<img alt="AppleScript and Keynote: (begin melody) Scripty Blue Persuasion (end melody)" src="gfx/applescript-keynote-sm-banner.jpg" width="900" height="144">
+	<table cellspacing="0" id="localnav" role="presentation">
+		<tr>
+			<td class="first"><a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page">&bull;</a></td>
+			<td><a href="https://iworkautomation.com/index.html">iWork Automation</a></td>
+			<td><a href="https://iworkautomation.com/keynote/automator/index.html">Keynote &amp; Automator</a></td>
+			<td><a href="http://automationworkshops.com">Workshops</a></td>
+			<td class="last"><a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);" title="Size window to full screen">&bull;</a></td>
+		</tr>
+	</table>
+</div>
+<div id="main">
+	<div id="content" class="column">
+		<div class="content-segment">
+			<div class="segment-header" role="heading" aria-level="1">Shapes</div>
+			
+			<p>Shapes are a fundamental <b>iWork</b> object and exist in all three <b>iWork</b> applications. In addition to inheriting the properties of <span class="codelibraryclass">iWork items</span>, such as <span class="codeproperty">locked</span> and <span class="codeproperty">opacity</span>, <span class="codelibraryclass">shapes</span> have the following shape-related properties:</p>
+									
+			<p class="content-subhead" role="heading" aria-level="2">The iWork Suite <span style="font-family:'Times New Roman';font-style:italic;font-size:125%;color:blue;">shape</span> Class</p>
+			<div class="dictionary">
+				<p class="dictionary-term"><span class="dictionary-term">shape</span>&nbsp;<span style="font-size: 12px;"><i>n&nbsp;</i>&nbsp;[inh. <span class="codelibraryclass">iWork item</span> ] : A shape container.</span></p>
+				<p class="dictionary-elements-header">elements</p>
+				<p class="dictionary-single-indent">contained by <span class="codelibraryclass">iWork containers</span> such as: <span class="dictionary-class">slides</span>.</p>
+				<p class="dictionary-elements-header">properties</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">background fill type</span> (&nbsp;<span class="codeenumeration">no fill</span> /‌ <span class="codeenumeration">color fill</span> /‌ <span class="codeenumeration">gradient fill</span> / ‌<span class="codeenumeration">advanced gradient fill</span> /‌ <span class="codeenumeration">image fill</span> / ‌<span class="codeenumeration">advanced image fill</span>, r/o&nbsp;) : The background, if any, for the shape.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">object text</span> (&nbsp;<span class="dictionary-class">rich text</span>&nbsp;) : The text contained within the shape.</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">opacity</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The percentage of opacity of the shape, from 0 (none) to 100 (full).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection showing</span> (&nbsp;<span class="dictionary-class">boolean</span>&nbsp;) : Is the shape displaying a reflection?</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">reflection value</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The percentage of reflection of the shape, from 0 (none) to 100 (full).</p>
+				<p class="dictionary-single-indent"><span class="dictionary-property">rotation</span> (&nbsp;<span class="dictionary-class">integer</span>&nbsp;) : The rotation of the shape, in degrees from 0 to 359.</p>
+				<p class="dictionary-responds-header">responds to</p>
+				<p class="dictionary-single-indent"><span class="dictionary-verb">delete</span>, <span class="dictionary-verb">exists</span>.</p>
+			</div>
+			
+			<p class="segment-note"><b>IMPORTANT</b>: The current scripting implementation of <b>Keynote</b> does not support the setting of the <span class="codeproperty">background fill type</span> by a script. The value of this property can be accessed by a script, but not changed.</p>
+			
+			<p class="content-subhead" role="heading" aria-level="2">Script Examples</p>
+			
+			<p>Here&rsquo;s a simple script that creates a full-slide shape, on the current slide, using default fill, color, and borders:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Full-Slide Shape</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=tell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09set%20documentWidth%20to%20its%20width%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09tell%20the%20current%20slide%0D%09%09%09set%20thisShape%20to%20%C2%AC%0D%09%09%09%09make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bposition%3A%7B0%2C%200%7D%20%C2%AC%0D%09%09%09%09%09%09%2C%20width%3AdocumentWidth%20%C2%AC%0D%09%09%09%09%09%09%2C%20height%3AdocumentHeight%20%C2%AC%0D%09%09%09%09%09%09%2C%20opacity%3A100%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">current slide</span></td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisShape</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">position</span>:{0, 0} &not;</td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">width</span>:<span class="codevariable">documentWidth</span> &not;</td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">height</span>:<span class="codevariable">documentHeight</span> &not;</td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">opacity</span>:100}</td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<p><span class="codelibraryclass">Shapes</span> can contain text. Here&rsquo;s a script that creates a text-filled <span class="codelibraryclass">shape</span> on the current slide:</p>
+			
+			<table class="script-table" role="presentation">
+				<tr><td colspan="3" class="script-title">Create Text Filled Shape</td></tr>
+				<tr><td colspan="3" class="encoded-script"><a href="applescript://com.apple.scripteditor?action=new&script=property%20placeholderText%20%3A%20%22Cras%20justo%20odio%2C%20dapibus%20ac%20facilisis%20in%2C%20egestas%20eget%20quam.%20Praesent%20commodo%20cursus%20magna%2C%20vel%20scelerisque%20nisl%20consectetur%20et.%20Nulla%20vitae%20elit%20libero%2C%20a%20pharetra%20augue.%20Vestibulum%20id%20ligula%20porta%20felis%20euismod%20semper.%20Lorem%20ipsum%20dolor%20sit%20amet%2C%20consectetur%20adipiscing%20elit.%20Duis%20mollis%2C%20est%20non%20commodo%20luctus%2C%20nisi%20erat%20porttitor%20ligula%2C%20eget%20lacinia%20odio%20sem%20nec%20elit.%0D%09%20%0DCras%20mattis%20consectetur%20purus%20sit%20amet%20fermentum.%20Morbi%20leo%20risus%2C%20porta%20ac%20consectetur%20ac%2C%20vestibulum%20at%20eros.%20Maecenas%20sed%20diam%20eget%20risus%20varius%20blandit%20sit%20amet%20non%20magna.%20Fusce%20dapibus%2C%20tellus%20ac%20cursus%20commodo%2C%20tortor%20mauris%20condimentum%20nibh%2C%20ut%20fermentum%20massa%20justo%20sit%20amet%20risus.%20Duis%20mollis%2C%20est%20non%20commodo%20luctus%2C%20nisi%20erat%20porttitor%20ligula%2C%20eget%20lacinia%20odio%20sem%20nec%20elit.%0D%09%20%0DSed%20posuere%20consectetur%20est%20at%20lobortis.%20Maecenas%20faucibus%20mollis%20interdum.%20Etiam%20porta%20sem%20malesuada%20magna%20mollis%20euismod.%20Nullam%20id%20dolor%20id%20nibh%20ultricies%20vehicula%20ut%20id%20elit.%22%0D%0Dtell%20application%20%22Keynote%22%0D%09activate%0D%09if%20not%20(exists%20document%201)%20then%20error%20number%20-128%0D%09tell%20the%20front%20document%0D%09%09set%20documentWidth%20to%20its%20width%0D%09%09set%20documentHeight%20to%20its%20height%0D%09%09tell%20the%20current%20slide%0D%09%09%09set%20shapeWidth%20to%20(documentWidth%20*%200.75)%0D%09%09%09set%20shapeHeight%20to%20(documentHeight%20*%200.75)%0D%09%09%09set%20shapeHorizontal%20to%20(documentWidth%20-%20shapeWidth)%20div%202%0D%09%09%09set%20shapeVertical%20to%20(documentHeight%20-%20shapeHeight)%20div%202%0D%09%09%09set%20thisShape%20to%20%C2%AC%0D%09%09%09%09make%20new%20shape%20with%20properties%20%C2%AC%0D%09%09%09%09%09%7Bposition%3A%7BshapeHorizontal%2C%20shapeVertical%7D%20%C2%AC%0D%09%09%09%09%09%09%2C%20width%3AshapeWidth%20%C2%AC%0D%09%09%09%09%09%09%2C%20height%3AshapeHeight%20%C2%AC%0D%09%09%09%09%09%09%2C%20opacity%3A100%20%C2%AC%0D%09%09%09%09%09%09%2C%20object%20text%3AplaceholderText%7D%0D%09%09end%20tell%0D%09end%20tell%0Dend%20tell"><button type="button">Open in AppleScript Editor</button></a></td></tr>
+				<tr><td class="line-blank">&nbsp;</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">01</td><td class="line-buffer"></td><td class="line-wrap"><b>property</b> <span class="codevariable">placeholderText</span> : &quot;Cras justo odio, dapibus ac facilisis <b>in</b>, egestas eget quam. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Nulla vitae elit libero, a pharetra augue. Vestibulum id ligula porta felis euismod semper. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit.</td></tr>
+				<tr><td class="line-count">02</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">03</td><td class="line-buffer"></td><td class="line-wrap">Cras mattis consectetur purus sit amet fermentum. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit.</td></tr>
+				<tr><td class="line-count">04</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">05</td><td class="line-buffer"></td><td class="line-wrap">Sed posuere consectetur est at lobortis. Maecenas faucibus mollis interdum. Etiam porta sem malesuada magna mollis euismod. Nullam id dolor id nibh ultricies vehicula ut id elit.&quot;</td></tr>
+				<tr><td class="line-count">06</td><td class="line-buffer"></td><td>&nbsp;</td></tr>
+				<tr><td class="line-count">07</td><td class="line-buffer"></td><td class="line-wrap"><b>tell</b> <span class="codelibraryclass">application</span> &quot;Keynote&quot;</td></tr>
+				<tr><td class="line-count">08</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><span class="codelibrarycommand">activate</span></td></tr>
+				<tr><td class="line-count">09</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>if not</b> (<span class="codelibrarycommand">exists</span> <span class="codelibraryclass">document</span> 1) <b>then error</b> <span class="codelibraryparameter">number</span> -128</td></tr>
+				<tr><td class="line-count">10</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>tell the front</b> <span class="codelibraryclass">document</span></td></tr>
+				<tr><td class="line-count">11</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentWidth</span> <b>to its</b> <span class="codeproperty">width</span></td></tr>
+				<tr><td class="line-count">12</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>set</b> <span class="codevariable">documentHeight</span> <b>to its</b> <span class="codeproperty">height</span></td></tr>
+				<tr><td class="line-count">13</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>tell the</b> <span class="codeproperty">current slide</span></td></tr>
+				<tr><td class="line-count">14</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">shapeWidth</span> <b>to</b> (<span class="codevariable">documentWidth</span> * 0.75)</td></tr>
+				<tr><td class="line-count">15</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">shapeHeight</span> <b>to</b> (<span class="codevariable">documentHeight</span> * 0.75)</td></tr>
+				<tr><td class="line-count">16</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">shapeHorizontal</span> <b>to</b> (<span class="codevariable">documentWidth</span> - <span class="codevariable">shapeWidth</span>) <b>div</b> 2</td></tr>
+				<tr><td class="line-count">17</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">shapeVertical</span> <b>to</b> (<span class="codevariable">documentHeight</span> - <span class="codevariable">shapeHeight</span>) <b>div</b> 2</td></tr>
+				<tr><td class="line-count">18</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:30px;">&nbsp;</span><b>set</b> <span class="codevariable">thisShape</span> <b>to</b> &not;</td></tr>
+				<tr><td class="line-count">19</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:40px;">&nbsp;</span><span class="codelibrarycommand">make</span> <span class="codelibraryparameter">new</span> <span class="codelibraryclass">shape</span> <span class="codelibraryparameter">with properties</span> &not;</td></tr>
+				<tr><td class="line-count">20</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:50px;">&nbsp;</span>{<span class="codeproperty">position</span>:{<span class="codevariable">shapeHorizontal</span>, <span class="codevariable">shapeVertical</span>} &not;</td></tr>
+				<tr><td class="line-count">21</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">width</span>:<span class="codevariable">shapeWidth</span> &not;</td></tr>
+				<tr><td class="line-count">22</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">height</span>:<span class="codevariable">shapeHeight</span> &not;</td></tr>
+				<tr><td class="line-count">23</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">opacity</span>:100 &not;</td></tr>
+				<tr><td class="line-count">24</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:60px;">&nbsp;</span>, <span class="codeproperty">object text</span>:<span class="codevariable">placeholderText</span>}</td></tr>
+				<tr><td class="line-count">25</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:20px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">26</td><td class="line-buffer"></td><td class="line-wrap"><span style="float:left; width:10px;">&nbsp;</span><b>end tell</b></td></tr>
+				<tr><td class="line-count">27</td><td class="line-buffer"></td><td class="line-wrap"><b>end tell</b></td></tr>
+			</table>
+			
+			<img class="across" width="640" alt="text-filled-shape" src="gfx/text-filled-shape.png">
+			
+		</div>
+		<!-- END SEGMENT: INTRODUCTION -->
+								
+		<p class="more"><a href="shape-line.html" target="_self">TOP</a> | <a href="media-items.html" target="_self">CONTINUE</a></p>
+	</div>
+	
+	
+	
+	<div id="sidebar" class="column">
+		<div class="navbox">
+			<h2 style="text-align:center;">KEYNOTE SCRIPTING</h2>
+			<ul>
+				<li><a href="index.html">Overview</a></li>
+				<li><a href="https://iworkautomation.com/automation-utilities.html">Automation Utilities</a></li>
+				<hr>
+				<li><a href="application.html">Application</a></li>
+				<li><a href="theme.html">Theme</a></li>
+				<li><a href="document.html">Document</a></li>
+				<li><a href="slide.html">Slide</a></li>
+				<li><a href="image.html">Image</a></li>
+				<li><a href="text-item.html">Text Item</a></li>
+				<li class="hi"><a href="shape-line.html">Shape | Line</a></li>
+				<li class="navListSectionItem"><a href="shape-line-line.html">Lines</a></li>
+				<li class="navListSectionItemSelected">Shapes</li>
+				<li><a href="media-items.html">Media Item</a></li>
+				<li><a href="table.html">Table</a></li>
+				<li><a href="chart.html">Chart</a></li>
+				<hr>
+				<li><a href="examples.html">Examples</a></li>
+			</ul>
+		</div>
+
+		<div class="box">
+			<h2 style="text-align:center;">DISCLAIMER</h2>
+			<p class="disclaimer">THIS WEBSITE IS NOT HOSTED BY APPLE INC.<br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. MACOSXAUTOMATION.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. MACOSXAUTOMATION.COM provides this only as a convenience to our users. MACOSXAUTOMATION.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and MACOSXAUTOMATION.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from MACOSXAUTOMATION.COM and that MACOSXAUTOMATION.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+		</div>
+	</div>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

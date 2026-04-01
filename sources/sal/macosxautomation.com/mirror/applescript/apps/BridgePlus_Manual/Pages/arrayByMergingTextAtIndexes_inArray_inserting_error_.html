@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>BridgePlus Manual</title>
+	<meta NAME="Author" CONTENT="Shane Stanley">
+	<meta NAME="Keywords" CONTENT="BridgePlus, AppleScriptObjC, AppleScript, Mac OS X">
+	<meta NAME="Description" CONTENT="Resources for AppleScriptObjC.">
+	<link REL="home" HREF="http://www.macosxautomation.com/applescript/apps/">
+<style type="text/css">
+	body {
+	font-family:Verdana,Arial,Helvetica,sans-serif;
+	font-size: 12px;
+}
+	code {
+	font-family: monospace;
+	font-size: 125%;
+}
+span.sigParens {color: #8f8f8f}
+span.param {
+	color: #4f8f00
+}
+
+</style>
+<style type="text/css">
+p.p1 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #0433ff}
+p.p2 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana}
+p.p3 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #012fbe}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Verdana; min-height: 15.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #ee2200}
+p.p6 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #4f8f00}
+p.p7 {margin: 0.0px 0.0px 0.0px 28.0px; text-indent: -28.0px; font: 12.0px Verdana; color: #5e6161}
+span.s1 {color: #000000}
+span.s2 {color: #0433ff}
+span.s3 {color: #4f8f00}
+span.s4 {color: #812fdc}
+span.s5 {color: #012fbe}
+span.s6 {color: #ee2200}
+span.Apple-tab-span {white-space:pre}
+</style>
+</head>
+<body>
+<table>
+	<tr> <td><a href="subarraysIn_sortedByIndexes_ascending_sortTypes_sortKeys_error_.html">Previous</a></td>	<td><a href="../Index.html">Index</a></td>	<td><a href="indexesOfItem_inArray_inverting_.html">Next</a></td> </tr>
+</table>
+<h1>BridgePlus.framework, SMSForder Class Methods</h1>
+<h3>Category</h3>
+<p>List manipulation methods</p>
+<h3>Method</h3>
+<code>arrayByMergingTextAtIndexes:inArray:inserting:error:</code>
+<h3>Summary</h3>
+<p>Concatenate two text items into one. Provide a list of two consecutive (zero-based) indexes of the items to merge; they will be joined using the separator in the order provided, and appear at the first of the indexes. Empty strings will be ignored.</p>
+<h3>Signature</h3>
+<code>+ <span class="sigParens">(NSArray *)</span>arrayByMergingTextAtIndexes:<span class="sigParens">(NSArray *)</span><span class="param">mergingIndexes</span> inArray:<span class="sigParens">(NSArray *)</span><span class="param">listOrArray</span> inserting:<span class="sigParens">(NSString *)</span><span class="param">separatorString</span> error:<span class="sigParens">(NSError *__autoreleasing *)</span><span class="param">outError</span></code>
+<h3>Parameters</h3>
+<p><span class="param">mergingIndexes</span> = a list of two consecutive (zero-based) indexes of the items to merge</p><p><span class="param">listOrArray</span> = an array or list (items to merge must be strings)</p><p><span class="param">separatorString</span> = the string to insert between the merged items</p><p><span class="param">outError</span> = missing value or reference</p>
+<h3>Result</h3>
+<p>The resulting array</p>
+<h3>Availability</h3>
+<p>Version 1.0.0</p>
+<h3>Notes</h3>
+<p>If you set outError to reference, the result will be a list of two items. If there is no error, the first item will be the result of the method and the second will be missing value. If there is an error, the first item will be missing value and the second item with be an NSError.</p>
+<h3>Sample</h3>
+
+<p class="p1"><span class="s1"><b>use</b> </span><i>scripting additions</i></p>
+<p class="p2"><b>use</b> <span class="s2"><i>framework</i></span> "Foundation"</p>
+<p class="p2"><b>use</b> <span class="s2"><i>script</i></span> "BridgePlus"</p>
+<p class="p3"><b>load framework</b></p>
+<p class="p4"><br></p>
+<p class="p2"><b>set</b> <span class="s3">listOrArray</span> <b>to</b> {"apples", "oranges", "lemons", "peaches"}</p>
+<p class="p2"><b>set</b> <span class="s3">theIndexes</span> <b>to</b> {1, 2}</p>
+<p class="p2"><b>set</b> <span class="s3">toInsert</span> <b>to</b> " and "</p>
+<p class="p5"><span class="s1"><b>set</b> </span><span class="s3">theResult</span><span class="s1"> <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span><span class="s3">SMSForder's</span><span class="s1"> </span>arrayByMergingTextAtIndexes<span class="s1">:</span><span class="s3">theIndexes</span><span class="s1"> </span>inArray<span class="s1">:</span><span class="s3">listOrArray</span><span class="s1"> </span>inserting<span class="s1">:</span><span class="s3">toInsert</span><span class="s1"> </span>|error|<span class="s1">:(</span><span class="s2"><i>missing value</i></span><span class="s1">)</span></p>
+<p class="p6"><span class="s5"><b>ASify</b></span><span class="s1"> </span><span class="s5">from</span><span class="s1"> </span>theResult</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"apples", "oranges and lemons", "peaches"}</p>
+<p class="p6">theResult<span class="s1"> <b>as</b> </span><span class="s2"><i>list</i></span></p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>{"apples", "oranges and lemons", "peaches"}</p>
+<p class="p2"><b>set</b> <span class="s3">theIndexes</span> <b>to</b> {3, 4}</p>
+<p class="p6"><span class="s1"><b>set</b> {</span>theResult<span class="s1">, </span>theError<span class="s1">} <b>to</b> </span><span class="s4"><i>current application's</i></span><span class="s1"> </span>SMSForder's<span class="s1"> </span><span class="s6">arrayByMergingTextAtIndexes</span><span class="s1">:</span>theIndexes<span class="s1"> </span><span class="s6">inArray</span><span class="s1">:</span>listOrArray<span class="s1"> </span><span class="s6">inserting</span><span class="s1">:</span>toInsert<span class="s1"> </span><span class="s6">|error|</span><span class="s1">:(</span><span class="s2"><i>reference</i></span><span class="s1">)</span></p>
+<p class="p2"><b>if</b> <span class="s3">theResult</span> = <span class="s2"><i>missing value</i></span> <b>then</b> <b>error</b> (<span class="s3">theError's</span> <span class="s6">localizedDescription</span>() <b>as</b> <span class="s2"><i>text</i></span>)</p>
+<p class="p7">--&gt;<span class="Apple-tab-span">	</span>error number -2700<span class="Apple-converted-space">  </span>At least one of the merge indexes is out of range or otherwise invalid.</p>
+<br><a href="applescript://com.apple.scripteditor?action=new&script=use%20scripting%20additions%0Duse%20framework%20%22Foundation%22%0Duse%20script%20%22BridgePlus%22%0Dload%20framework%0D%0Dset%20listOrArray%20to%20%7B%22apples%22,%20%22oranges%22,%20%22lemons%22,%20%22peaches%22%7D%0Dset%20theIndexes%20to%20%7B1,%202%7D%0Dset%20toInsert%20to%20%22%20and%20%22%0Dset%20theResult%20to%20current%20application's%20SMSForder's%20arrayByMergingTextAtIndexes:theIndexes%20inArray:listOrArray%20inserting:toInsert%20%7Cerror%7C:(missing%20value)%0DASify%20from%20theResult%0D--%3E%09%7B%22apples%22,%20%22oranges%20and%20lemons%22,%20%22peaches%22%7D%0DtheResult%20as%20list%0D--%3E%09%7B%22apples%22,%20%22oranges%20and%20lemons%22,%20%22peaches%22%7D%0Dset%20theIndexes%20to%20%7B3,%204%7D%0Dset%20%7BtheResult,%20theError%7D%20to%20current%20application's%20SMSForder's%20arrayByMergingTextAtIndexes:theIndexes%20inArray:listOrArray%20inserting:toInsert%20%7Cerror%7C:(reference)%0Dif%20theResult%20=%20missing%20value%20then%20error%20(theError's%20localizedDescription()%20as%20text)%0D--%3E%09error%20number%20-2700%20%20At%20least%20one%20of%20the%20merge%20indexes%20is%20out%20of%20range%20or%20otherwise%20invalid.%0D">Click here to open script in a script editor</a>
+<br>
+</body>
+</html>
