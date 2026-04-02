@@ -1,7 +1,7 @@
 # AppleScript Catalog
 
 > All scripts in this repo, organized by type.
-> Last updated: 2026-03-08
+> Last updated: 2026-04-02
 
 ## Launchers
 
@@ -465,6 +465,14 @@ One button = one action = one result (Sal's rule).
 | `workflows/system-events/system-events-empty-clipboard.applescript` | Clear the clipboard | `osascript scripts/workflows/system-events/system-events-empty-clipboard.applescript` |
 | `workflows/system-events/system-events-trash-size.applescript` | Show the size of the Trash | `osascript scripts/workflows/system-events/system-events-trash-size.applescript` |
 | `workflows/system-events/system-events-notification-count.applescript` | Show pending notification count | `osascript scripts/workflows/system-events/system-events-notification-count.applescript` |
+| `workflows/system-events/System-Events-HideAllOthers.applescript` | Hide All Others (native, no keystroke simulation) | `osascript scripts/workflows/system-events/System-Events-HideAllOthers.applescript` |
+| `workflows/system-events/System-Events-MosaicKnob.applescript` | Mosaic Knob: single script with two subroutines for Loupedeck knob. | `osascript scripts/workflows/system-events/System-Events-MosaicKnob.applescript` |
+| `workflows/system-events/System-Events-MosaicWindows.applescript` | Mosaic Windows: tile all windows of the frontmost app into a grid | `osascript scripts/workflows/system-events/System-Events-MosaicWindows.applescript` |
+| `workflows/system-events/System-Events-WhiteboardBrowse.applescript` | WhiteboardBrowse: Button press — pick project → topic, show first board. | `osascript scripts/workflows/system-events/System-Events-WhiteboardBrowse.applescript` |
+| `workflows/system-events/System-Events-WhiteboardKnob.applescript` | WhiteboardKnob: Browse ALL whiteboards across ~/work/ and ~/.claude/skills/ with a Loupedeck knob. | `osascript scripts/workflows/system-events/System-Events-WhiteboardKnob.applescript` |
+| `workflows/system-events/System-Events-WhiteboardNext.applescript` | WhiteboardNext: Knob turn RIGHT — next board in Quick Look. | `osascript scripts/workflows/system-events/System-Events-WhiteboardNext.applescript` |
+| `workflows/system-events/System-Events-WhiteboardOpen.applescript` | WhiteboardOpen: Knob press — open current board in Preview. | `osascript scripts/workflows/system-events/System-Events-WhiteboardOpen.applescript` |
+| `workflows/system-events/System-Events-WhiteboardPrev.applescript` | WhiteboardPrev: Knob turn LEFT — previous board in Quick Look. | `osascript scripts/workflows/system-events/System-Events-WhiteboardPrev.applescript` |
 
 ### System Information
 
@@ -535,4 +543,4 @@ One button = one action = one result (Sal's rule).
 
 ---
 
-**Total: 64 launchers + 288 workflows = 352 scripts**
+**Total: 64 launchers + 296 workflows = 360 scripts**
