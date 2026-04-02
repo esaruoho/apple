@@ -44,9 +44,23 @@ Use this split to preserve original material while building reusable knowledge o
   - `macosxautomation.com/applescript/apps/Script_Geek_old.zip`
   - `iworkautomation.com/numbers/PresidentsSQLiteDB.zip`
   - `photosautomation.com/installer.zip`
-- [ ] Recover the remaining archived videos, especially the `iworkautomation.com` lesson/demo movies and `macosxautomation.com/yosemite/mov/JXA-Overview-720P.m4v`
+- [ ] Recover the last missing archived video:
+  - `photosautomation.com/Photos-to-Keynote.mp4`
 - [ ] Map every recovered artifact to a lesson in [`analysis/sal/lessons/`](analysis/sal/lessons/)
 - [ ] Add transcript-aware metadata to the indexes so source page, ZIP, script, video, and lesson all cross-reference cleanly
+
+### Sal Archive Call To Action
+
+If you have any of these six missing artifacts from Sal's sites, please get in touch or open a PR:
+
+- `macosxautomation.com/405/us/media/apple/applescript/2008/aperturepdfworkflows.zip`
+- `macosxautomation.com/applescript/apps/Script_Geek.zip`
+- `macosxautomation.com/applescript/apps/Script_Geek_old.zip`
+- `iworkautomation.com/numbers/PresidentsSQLiteDB.zip`
+- `photosautomation.com/installer.zip`
+- `photosautomation.com/Photos-to-Keynote.mp4`
+
+These are the remaining known gaps in the preserved Sal corpus. Local copies, old backups, mirrored conference kits, or archived installer folders could complete the record.
 
 ---
 
