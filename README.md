@@ -1,6 +1,6 @@
 # apple
 
-### Apple Automation Architecture & Workflows — studying macOS automation libraries and continuing [Sal Soghoian's](sal-soghoian.md) vision.
+### Apple Automation Architecture & Workflows — preserving the automation work Apple did not preserve institutionally, and continuing [Sal Soghoian's](sal-soghoian.md) vision.
 
 [![macOS](https://img.shields.io/badge/macOS-Sequoia-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![AppleScript](https://img.shields.io/badge/AppleScript-Automation-blue?style=flat-square)](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/introduction/ASLR_intro.html)
@@ -14,6 +14,8 @@
 In November 2016, Apple eliminated the position of **Product Manager of Automation Technologies** — the role [Sal Soghoian](sal-soghoian.md) held for nearly 20 years. The person who built Automator, championed AppleScript, and believed *"the power of the computer should reside in the hands of the one using it"* was told his job no longer existed.
 
 This repo picks up where that role left off.
+
+Apple did not preserve this material institutionally. This repo does: the scripts, the site corpus, the lesson structure, the downloads, the demo media, and the philosophy behind them.
 
 **288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
