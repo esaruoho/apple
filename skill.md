@@ -160,6 +160,29 @@ The `shortcuts run` CLI is the bridge: Layer 1 scripts can invoke Layer 4-6 acti
 
 **160+ private frameworks** power the automation stack internally, including 80+ Siri frameworks, WorkflowKit (Shortcuts engine), ActionKit, and bridge frameworks like `_Photos_AppIntents`.
 
+## Sal Hand-Crafted Conformance — Siri Phrase Rules
+
+**Every Siri phrase MUST be hand-crafted.** No auto-deriving from filenames. The phrase is the user interface — it must sound like something a human would say out loud. This is WWSD Principle 11.
+
+Derived from Sal Soghoian's 251 dictation commands (dictationcommands.com). Full analysis: `analysis/siri-phrase-humanization.md`.
+
+**8 mandatory patterns:**
+
+| # | Pattern | Example |
+|---|---------|---------|
+| 1 | **Articles** — "the", "a", "my" | "empty **the** trash", "make **a** new folder" |
+| 2 | **Question forms for queries** | "**how many** tabs are open", "**what's** playing" |
+| 3 | **Conversational verbs** — "make" not "create", "show me" not "list", "turn on" not "toggle" | "**show me** my playlists" |
+| 4 | **Deictic context** — "this", "these" for current selection | "archive **this** email", "export **these** photos" |
+| 5 | **No app name residue** — the phrase stands alone | "compile this script" not "Editor Compile" |
+| 6 | **Prepositions** — "to", "from", "as", "in" | "export this **as** a PDF", "add this **to** favorites" |
+| 7 | **Full natural sentences** — not abbreviated labels | "make a new document from the clipboard" not "New From Clipboard" |
+| 8 | **Describe outcomes** — what happens, not which menu item | "when was the last backup" not "Machine Latest Backup" |
+
+**Implementation:** `PHRASE_OVERRIDES` dict in `bin/shortcut-gen.py` — 296 entries, one per script. When adding a new workflow script, you MUST add a hand-crafted phrase to this dict. The test: say it out loud. If it sounds like a menu label, rewrite it.
+
+**The generic fallback in `siri_phrase_from_name()` exists only as safety net. It should never be reached for shipped scripts.**
+
 ## CLI Tool Intelligence
 
 **16,176 man pages** on macOS. Key automation CLI tools:
@@ -215,7 +238,7 @@ Full profile with all quotes: `sal-soghoian.md`
 **Sal's Web Empire** (7+ self-hosted domains, no institutional backing):
 macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archive state now lives in `sources/sal/`, `indexes/sal-*.yaml`, and `analysis/sal/current-status.md`, refreshed via `bin/sal-archive-status.py`.
 
-**10 Principles** (WWSD):
+**11 Principles** (WWSD):
 1. User comes first — empower, don't create dependency
 2. Solve a real problem — every script needs a "why"
 3. Keep it local — on-device, protect data, avoid the food chain
@@ -226,6 +249,7 @@ macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **las
 8. Tell apps what, not how — use scripting dictionaries
 9. Educate and share — community grows through generosity
 10. Never give up on automation
+11. **Name commands like speech, not labels** — the phrase IS the interface. "What would someone say out loud to make this happen?" (derived from dictationcommands.com, 251 hand-crafted commands)
 
 **Primary sources captured in sal-soghoian.md:**
 - Full FAQ from macosxautomation.com/about.html (November 2016)
