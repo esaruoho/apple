@@ -2,8 +2,8 @@
 name: apple
 description: Product Manager of Automation Technologies — the role Apple eliminated, continued as open-source
 domain: global
-version: 3.4.0
-generated: 2026-03-08T00:00:00Z
+version: 3.5.0
+generated: 2026-04-02T00:00:00Z
 tags: [applescript, macos, automation, hardware-controllers, finder, system-events, workflow, sdef, scripting-dictionary, sal-soghoian, data-type-chaining, app-intents, shortcuts, url-schemes, painpoints, thought-multiplier, bbs, ray-browser]
 triggers:
   keywords:
@@ -21,6 +21,21 @@ triggers:
 - **OS**: macOS Sequoia (Darwin)
 - **Hardware controllers**: Loupedeck Live, Contour Shuttle Pro, Stream Deck, and any programmable controller that can trigger shell commands
 - **Use case**: Hardware buttons, keyboard shortcuts, Siri, and CLI all trigger AppleScripts via osascript to launch/activate apps, automate workflows, and optimize the workday
+
+## Boot Protocol
+
+On the first Apple-related turn in a session:
+
+1. Run `python3 bin/sal-archive-status.py --write analysis/sal/current-status.md`
+2. Read the generated status from `analysis/sal/current-status.md`
+3. Report the current archive state in plain language:
+   - recovered download/media totals
+   - missing package targets
+   - remaining video queue
+   - next recommended preservation or curriculum step
+4. Treat that generated file as the live Sal archive dashboard for the rest of the session
+
+If the user asks "what's left", "what did we get", "continue", or "boot up Apple skill", refresh the status first unless they clearly only want unrelated scripting help.
 
 ## Hardware Controller Integration
 
@@ -198,7 +213,7 @@ Full profile with all quotes: `sal-soghoian.md`
 - "When you stop wanting to learn, then you're just marking time. You join God's waiting room." (CCATP #559)
 
 **Sal's Web Empire** (7+ self-hosted domains, no institutional backing):
-macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archival via wayback-mirror is planned.
+macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archive state now lives in `sources/sal/`, `indexes/sal-*.yaml`, and `analysis/sal/current-status.md`, refreshed via `bin/sal-archive-status.py`.
 
 **10 Principles** (WWSD):
 1. User comes first — empower, don't create dependency
@@ -237,6 +252,24 @@ Key pattern: `osascript script.scpt &` — fire-and-forget AppleScript from bash
 
 **Private** (gitignored, local only):
 - bash-aliases.md, whiteboards/, icons/
+- retained Sal media under `sources/sal/**/*.mp4`, `*.m4v`, `*.mov`, `*.mp3`, `*.m4a`
+
+## Sal Archive Operations
+
+Use the repo's archive tooling instead of ad hoc summaries:
+
+- `python3 bin/sal-archive-status.py --write analysis/sal/current-status.md`
+  Refreshes the live archive dashboard and remaining-work list.
+- `python3 bin/sal-index-download-targets.py`
+  Rebuilds the machine-readable download/media target index from the mirrored pages.
+- `python3 bin/sal-recover-downloads.py --site macosxautomation.com --asset-type zip --strategy live-direct --mark-failures`
+  Recovers missing bundles with live fetch first and Wayback fallback.
+
+Rules:
+
+- Do not claim a site is "done" unless the generated status says the missing queue is zero or the remaining gaps are explicitly documented.
+- Keep `.failed` markers for dead URLs so the archive remains honest.
+- Keep large recovered media local-only for later transcription rather than pushing them into git history.
 
 ## Whiteboards Generated
 

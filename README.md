@@ -24,9 +24,29 @@ Sal source preservation now has a dedicated structure:
 - [`sources/sal/`](sources/sal/) for verbatim site mirrors and manifests
 - [`scripts/sal/`](scripts/sal/) for normalized runnable code extracted from Sal sites
 - [`analysis/sal/`](analysis/sal/) for page notes, site maps, and concept notes
+- [`analysis/sal/current-status.md`](analysis/sal/current-status.md) for the live archive dashboard and remaining-work list
 - [`indexes/sal-sites.yaml`](indexes/sal-sites.yaml), [`indexes/sal-scripts.yaml`](indexes/sal-scripts.yaml), and [`indexes/sal-concepts.yaml`](indexes/sal-concepts.yaml) for machine-readable lookup data
 
 Use this split to preserve original material while building reusable knowledge on top of it.
+
+### Sal Archive TODO
+
+- [x] Mirror the main Sal sites into [`sources/sal/`](sources/sal/)
+- [x] Extract inline AppleScript examples into [`scripts/sal/`](scripts/sal/)
+- [x] Build machine-readable archive indexes in [`indexes/`](indexes/)
+- [x] Recover linked ZIP bundles where the live site or Wayback still serves them
+- [x] Keep recovered media local-only via `.gitignore` so large `.mp4`, `.m4v`, and `.mov` files can be processed later without bloating git history
+- [ ] Transcribe retained video and audio files, then link transcripts back into lesson modules and indexes
+- [ ] Extract runnable scripts and assets from recovered ZIP bundles into curated lesson/example sets
+- [ ] Finish the remaining missing package targets:
+  - `macosxautomation.com/405/us/media/apple/applescript/2008/aperturepdfworkflows.zip`
+  - `macosxautomation.com/applescript/apps/Script_Geek.zip`
+  - `macosxautomation.com/applescript/apps/Script_Geek_old.zip`
+  - `iworkautomation.com/numbers/PresidentsSQLiteDB.zip`
+  - `photosautomation.com/installer.zip`
+- [ ] Recover the remaining archived videos, especially the `iworkautomation.com` lesson/demo movies and `macosxautomation.com/yosemite/mov/JXA-Overview-720P.m4v`
+- [ ] Map every recovered artifact to a lesson in [`analysis/sal/lessons/`](analysis/sal/lessons/)
+- [ ] Add transcript-aware metadata to the indexes so source page, ZIP, script, video, and lesson all cross-reference cleanly
 
 ---
 
