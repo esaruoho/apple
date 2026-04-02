@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Iterable
 from socket import timeout as SocketTimeout
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 import yaml
@@ -62,7 +62,7 @@ def load_records() -> list[dict]:
 def unique_records(records: Iterable[dict]) -> list[dict]:
     ordered: OrderedDict[str, dict] = OrderedDict()
     for record in records:
-        ordered.setdefault(record["normalized_url"], record)
+        ordered[record["normalized_url"]] = record
     return list(ordered.values())
 
 
@@ -107,7 +107,7 @@ def cdx_lookup(url: str) -> list[str]:
 
 
 def fetch_bytes(url: str) -> bytes | None:
-    request = Request(url, headers={"User-Agent": USER_AGENT})
+    request = Request(prepare_url(url), headers={"User-Agent": USER_AGENT})
     try:
         with urlopen(request, timeout=45, context=SSL_CONTEXT) as response:
             return response.read()
@@ -117,7 +117,7 @@ def fetch_bytes(url: str) -> bytes | None:
 
 def fetch_to_path(url: str, dest: Path) -> tuple[bool, str]:
     tmp = dest.with_suffix(dest.suffix + ".part")
-    request = Request(url, headers={"User-Agent": USER_AGENT})
+    request = Request(prepare_url(url), headers={"User-Agent": USER_AGENT})
     try:
         with urlopen(request, timeout=90, context=SSL_CONTEXT) as response:
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -168,6 +168,16 @@ def candidate_urls(record: dict) -> list[str]:
             seen.add(candidate)
             deduped.append(candidate)
     return deduped
+
+
+def prepare_url(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return url
+    path = quote(parsed.path, safe="/:@%+-._~")
+    query = quote(parsed.query, safe="=&%+-._~")
+    fragment = quote(parsed.fragment, safe="%+-._~")
+    return urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, query, fragment))
 
 
 def main() -> int:
