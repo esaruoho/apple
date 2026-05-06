@@ -1,0 +1,67 @@
+<!--
+
+Copyright _ 2005, Apple Computer, Inc.  All rights reserved.
+NOTE:  Use of this source code is subject to the terms of the Software
+License Agreement for Mac OS X, which accompanies the code.  Your use
+of this source code signifies your agreement to such license terms and
+conditions.  Except as expressly granted in the Software License Agreement
+for Mac OS X, no other copyright, patent, or other intellectual property
+license or right is granted, either expressly or by implication, by Apple.
+
+-->
+
+
+<html>
+
+<head>
+
+<!-- The style sheet should be kept in a separate file; it contains the design for the widget.
+  -- Note that each language project directory in this widget has its own HelloWelt.css file.
+  -- This is because each localization of this widget has a different design, based on the language.
+  -- Dashboard will automatically provide the widget the correct CSS file based on the user's
+  -- language preference.
+  -->
+<style type="text/css">
+	@import "QwikFolder.css";
+</style>
+
+<!-- The JavaScript file contains the logic needed for this widget, including the localization
+  -- retrieval and logic
+  -->
+<script type='text/javascript' src='QwikFolder.js' charset='utf-8'/>
+
+</head>
+
+<body onload="setup();">			<!-- setup() attempts to localize the body text -->
+
+	<img src="Images/Background.png">						<!-- the widget's background -->
+	<img class="popupMenuImage" src="Images/Menu.png">			<!-- the widget's menu background -->
+	<span id="popupMenuText">Open folder...</span>
+	<select id='popupMenu' onchange='menuChanged(this);'>
+			<option value="Open folder...">Open folder...</option>
+			<option value="Applications-Computer">Applications-Computer</option>
+			<option value="Applications-User">Applications-User</option>
+			<option value="Documents">Documents</option>
+			<option value="Home">Home</option>
+			<option value="Library-Computer">Library-Computer</option>
+			<option value="Library-User">Library-User</option>
+			<option value="Movies">Movies</option>
+			<option value="Music">Music</option>
+			<option value="Pictures">Pictures</option>
+			<option value="Public">Public</option>
+			<option value="Preferences-Computer">Preferences-Computer</option>
+			<option value="Preferences-User">Preferences-User</option>
+			<option value="Scripts-Computer">Scripts-Computer</option>
+			<option value="Scripts-User">Scripts-User</option>
+			<option value="Shared">Shared</option>
+			<option value="Sites">Sites</option>
+			<option value="Startup Disk">Startup Disk</option>
+			<option value="Utilities">Utilities</option>
+			<option value="Workflows-Computer">Workflows-Computer</option>
+			<option value="Workflows-User">Workflows-User</option>
+	</select>
+	<input type='checkbox' id='closeWindowsCheckbox'></input><span id='checkboxText'>Close open windows</span>
+
+</body>
+
+</html>

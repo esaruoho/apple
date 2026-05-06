@@ -1,6 +1,6 @@
 # Sal Archive Status
 
-Updated: 2026-04-02T07:10:24Z
+Updated: 2026-05-06T09:25:55Z
 
 ## Current State
 
@@ -8,38 +8,35 @@ Updated: 2026-04-02T07:10:24Z
 - Curriculum lesson modules indexed: `38` across `6` tracks
 - Download/media targets indexed: `359`
 - Unique target status counts:
-  - `recovered`: `232`
+  - `recovered`: `235`
   - `captured-in-mirror`: `12`
   - `external-reference`: `18`
-  - `missing`: `6`
+  - `missing`: `3`
 
 ## By Site
 
 - `configautomation.com` -> `recovered`: `5`, `captured-in-mirror`: `1`, `external-reference`: `2`
 - `dictationcommands.com` -> `captured-in-mirror`: `2`, `external-reference`: `3`
-- `iworkautomation.com` -> `recovered`: `78`, `missing`: `1`
+- `iworkautomation.com` -> `recovered`: `79`
 - `macosxautomation.com` -> `recovered`: `148`, `captured-in-mirror`: `9`, `external-reference`: `8`, `missing`: `3`
-- `photosautomation.com` -> `recovered`: `1`, `external-reference`: `5`, `missing`: `2`
+- `photosautomation.com` -> `recovered`: `3`, `external-reference`: `5`
 
 ## Remaining Work
 
-- Missing packages: `5`
-- Missing videos: `1`
-- `macosxautomation.com` missing packages are down to `3` dead URLs.
-- `iworkautomation.com` is down to `0` missing videos plus `PresidentsSQLiteDB.zip`.
-- `photosautomation.com` is down to `1` missing video plus `installer.zip`.
+- Missing packages: `3`
+- Missing videos: `0`
+- `macosxautomation.com` missing packages: `3` dead URLs.
+- `iworkautomation.com` missing videos: `0`. `PresidentsSQLiteDB.zip` recovered 2026-05-06 via DB Events Examples bundle from Sal Soghoian.
+- `photosautomation.com` missing videos: `0`. `installer.zip` and `Photos-to-Keynote.mp4` recovered 2026-05-06 directly from Sal Soghoian.
 
 ### Missing Packages
 
-- `https://iworkautomation.com/numbers/PresidentsSQLiteDB.zip`
 - `https://macosxautomation.com/405/us/media/apple/applescript/2008/aperturepdfworkflows.zip`
 - `https://macosxautomation.com/applescript/apps/Script_Geek.zip`
 - `https://macosxautomation.com/applescript/apps/Script_Geek_old.zip`
-- `http://photosautomation.com/installer.zip`
 
 ### Priority Video Queue
 
-- `photosautomation.com`: `1` remaining video
 
 ## Next Recommended Actions
 

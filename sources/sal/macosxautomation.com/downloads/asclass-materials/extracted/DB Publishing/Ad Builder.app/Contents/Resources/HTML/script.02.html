@@ -1,0 +1,70 @@
+<html>
+	<head>
+		<title>Database Publishing</title>
+	</head>
+	<body>
+		<table width="667" border="0" cellpadding="0" cellspacing="0" align="center">
+			<tr align="left" valign="top">
+				<td align="left" valign="top">
+					<FONT FACE="Lucida Grande,Geneva,Verdana,Arial,Helvetica,sans-serif" SIZE="2" CLASS="L12">
+					<b>Import Images Script</b></font><BR><BR>
+
+<font face="verdana,geneva" size="1">
+<b>tell</b> application &quot;InDesign CS&quot;<br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>tell the</b> active document<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>set the</b> <font color="#0000FF">rectangle_list</font> <b>to</b> &not;<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>every</b> rectangle <b>of every</b> spread <b>whose</b> label <b>is not</b> &quot;&quot; and &not;<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top">content type <b>is</b> graphic type<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>if the</b> <font color="#0000FF">rectangle_list</font> <b>is {} then</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>error</b> &quot;There are no tagged image rectangles.&quot;<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end if</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>if the</b> class <b>of the</b> <font color="#0000FF">rectangle_list</font> <b>is not</b> list <b>then</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set the</b> <font color="#0000FF">rectangle_list</font> <b>to the</b> <font color="#0000FF">rectangle_list</font> <b>as</b> list<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end if</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>repeat with</b> <font color="#0000FF">i</font> <b>from</b> 1 <b>to the</b> count <b>of the</b> <font color="#0000FF">rectangle_list</font><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>try</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">error_indicator</font> <b>to</b> 1<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_rectangle</font> <b>to</b> item <font color="#0000FF">i</font> <b>of the</b> <font color="#0000FF">rectangle_list</font><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_tag</font> <b>to the</b> label <b>of</b> <font color="#0000FF">this_rectangle</font><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>tell</b> application &quot;iView MediaPro&quot;<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_image</font> <b>to</b> &not;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top">(<b>the</b> path <b>of first</b> media item <b>of the front</b> window <b>whose</b> &not;<br>
+<img src="spacer.gif" width="60" height="5" border="0" align="top">name <b>begins with</b> <font color="#0000FF">this_tag</font>)<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top">select (<b>first</b> media item <b>of the front</b> window <b>whose</b> name <b>begins with</b> <font color="#0000FF">this_tag</font>)<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">error_indicator</font> <b>to</b> 2<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>tell</b> <font color="#0000FF">this_rectangle</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_image</font> <b>to</b> place <font color="#0000FF">this_image</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top">fit given content <b>to</b> frame<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">image_h</font> <b>to the</b> horizontal scale <b>of</b> <font color="#0000FF">this_image</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set the</b> <font color="#0000FF">image_v</font> <b>to the</b> vertical scale <b>of</b> <font color="#0000FF">this_image</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>if the</b> <font color="#0000FF">image_v</font> <b>is greater than</b> or <b>equal to</b> <font color="#0000FF">image_h</font> <b>then</b><br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> horizontal scale <b>of</b> <font color="#0000FF">this_image</font> <b>to</b> <font color="#0000FF">image_v</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>else</b><br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set the</b> vertical scale <b>of</b> <font color="#0000FF">this_image</font> <b>to</b> <font color="#0000FF">image_h</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>end if</b><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top">fit given center content<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set</b> color value <b>of the</b> fill color <b>to</b> {255, 255, 255}<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>on error</b> <font color="#0000FF">error_message</font><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>if the</b> <font color="#0000FF">error_indicator</font> <b>is</b> 1 <b>then</b><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set the</b> <font color="#0000FF">error_message</font> <b>to</b> &quot;Image &ldquo;&quot; &amp; <font color="#0000FF">this_tag</font> &amp; &not;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top">&quot;&rdquo; could <b>not</b> be found <b>in the</b> database.&quot;<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>end if</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top">activate<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top">beep<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top">display dialog <font color="#0000FF">error_message</font> buttons {&quot;Cancel&quot;, &quot;Continue&quot;} default button 2<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end try</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>end repeat</b><br>
+<b>end tell</b></font><br>
+<BR>
+
+
+
+<br><br><br><br>
+				</td>
+			</tr>
+		</TABLE>
+	</body>
+</html>

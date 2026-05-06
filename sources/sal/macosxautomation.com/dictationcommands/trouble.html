@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="dictationcommands.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="Dictation, AppleScript, JavaScript, JXA, Automation, Automator, macOS, OS X">
+	<meta name="Description" content="Build the Help Book for the custom Dictation Commands collection.">
+	<link rel="home" href="http://dictationcommands.com">
+	<title>Dictation Commands: Troubleshooting</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="dictation-commands-banner" src="gfx/dictation-commands-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="https://macosxautomation.com" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">MacOS AUTOMATION</div></a>
+				<a href="https://photosautomation.com" title="Go to PHOTOSAUTOMATION website"><div class="nav-tab">PHOTOS AUTOMATION</div></a>
+				<a href="https://iworkautomation.com" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Troubleshooting</p>
+
+					<p>The current version of Keynote does not offer the ability to get or set the selection of objects via scripting, and so Dictation Commands rely on accessibility support built into Keynote. On occasion, Keynote may become “confused” and not respond correctly to requests to get the items selected on the current slide. In such a situation, you will see a dialog similar to this one:</p>
+
+					<img class="centered" width="532" alt="trouble-01" src="gfx/trouble-01.png">
+				
+					<p>This problem can be easily resolved by you. Follow these steps:</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Open the Accessibility system preference pane in the System Preferences application, and select VoiceOver from the list on the left of the window <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+				
+					<img class="across" width="640" alt="trouble-02" src="gfx/trouble-02.png">
+				
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Select the &ldquo;Enable VoiceOver&rdquo; checkbox in the pane <span class="see-above">(&#11014;&nbsp;<span class="see-above-text">see&nbsp;above</span>&nbsp;)</span> and then click the &ldquo;Use VoiceOver&rdquo; button in the forthcoming dialog <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+				
+					<img class="across" width="640" alt="trouble-03" src="gfx/trouble-03.png">
+					
+					<p>Switch to Keynote, and select the slide layout area of a slide in a presentation. The VoiceOver feedback window will confirm that you have correctly selected it <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<img class="across" width="640" alt="slide-layout-voice-over" src="gfx/slide-layout-voice-over.png">
+				
+				<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Turn off VoiceOver by typing Command-F5 (⌘-F5)</p>
+				
+				<p>Keynote should now respond to Dictation Commands that work with selected slide items, and you probably won’t need to “refresh” Keynote again.</p>
+				
+		</div>
+
+				
+<!-- 
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="enable-assistive-access.html">4) Enable Assistive Access for Dictation</a></p>
+				</div>
+ -->
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="index.html">Overview</a></li>
+						<li class="hi">Installation &amp; Setup</li>
+						<li class="navListSectionItem"><a href="preparation.html">Before You Begin</a></li>
+						<li class="navListSectionItem"><a href="setup.html">Custom Commands Archive</a></li>
+						<li class="navListSectionItem"><a href="install-tools.html">Install Automation Tools</a></li>
+						<li class="navListSectionItem"><a href="build-prefs-file.html">Build Preference File</a></li>
+						<li class="navListSectionItem"><a href="build-help-book.html">Build Help Book</a></li>
+						<li class="navListSectionItem"><a href="enable-assistive-access.html">Enable Assistive Access for Dictation</a></li>
+						<li class="navListSectionItemSelected">Troubleshooting</li>
+						<li class="navListSectionItem"><a href="toggle.html">Audio Input Toggle</a></li>
+						<li><a href="how-it-works.html">How It Works</a></li>
+						<li><a href="videos.html">Example Videos</a></li>
+						<li><a help-viewer.html" target="_blank">DC Help Book</a></li>
+						<li><a href="commandslist.html">Commands List</a></li>
+					</ul>
+				</div>
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer"><b>THIS WEBSITE IS NOT HOSTED BY APPLE INC.</b><br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. DICTATIONCOMMANDS.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. DICTATIONCOMMANDS.COM provides this only as a convenience to our users. DICTATIONCOMMANDS.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and DICTATIONCOMMANDS.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from DICTATIONCOMMANDS.COM and that DICTATIONCOMMANDS.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

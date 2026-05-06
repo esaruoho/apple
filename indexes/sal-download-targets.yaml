@@ -1231,9 +1231,11 @@ records:
   discovered_url: PresidentsSQLiteDB.zip
   normalized_url: https://iworkautomation.com/numbers/PresidentsSQLiteDB.zip
   target_host: iworkautomation.com
-  retrieval_strategy: live-direct
-  status: missing
+  retrieval_strategy: direct-from-author
+  status: recovered
   original_page_url: https://iworkautomation.com/numbers/sqlite-read.html
+  local_path: sources/sal/macosxautomation.com/downloads/asclass-materials/extracted/DB Events Examples/
+  recovery_note: 'Sal Soghoian sent ASClass Materials/DB Events Examples.zip on 2026-05-06. Bundle contains Presidential Data.app with Presidents.dbev plus Create SQLite DB.scpt, Index Query.scpt, and SQLite DB Queries.scpt — equivalent teaching corpus to the original PresidentsSQLiteDB.zip. See analysis/sal/correspondence/2026-05-06-reply-from-sal-soghoian.md.'
 - id: sal-download-iworkautomation-com-table-read-file-selection-import-example-zip
   site: iworkautomation.com
   filename: Selection-Import-Example.zip
@@ -5305,10 +5307,12 @@ records:
   discovered_url: Photos-to-Keynote.mp4
   normalized_url: http://photosautomation.com/Photos-to-Keynote.mp4
   target_host: photosautomation.com
-  retrieval_strategy: wayback-direct
-  status: missing
+  retrieval_strategy: direct-from-author
+  status: recovered
   original_page_url: http://photosautomation.com/dictation-commands.html
   archive_url: https://web.archive.org/web/20240721142125/http://photosautomation.com/Photos-to-Keynote.mp4
+  local_path: sources/sal/photosautomation.com/downloads/Photos-to-Keynote.mp4
+  recovery_note: 'Sal Soghoian sent the file directly on 2026-05-06. See analysis/sal/correspondence/2026-05-06-reply-from-sal-soghoian.md.'
 - id: sal-download-photosautomation-com-dictation-commands-export-to-numbers-mp4
   site: photosautomation.com
   filename: Export-to-Numbers.mp4
@@ -5334,10 +5338,12 @@ records:
   discovered_url: installer.zip
   normalized_url: http://photosautomation.com/installer.zip
   target_host: photosautomation.com
-  retrieval_strategy: wayback-direct
-  status: missing
+  retrieval_strategy: direct-from-author
+  status: recovered
   original_page_url: http://photosautomation.com/index.html
   archive_url: https://web.archive.org/web/20240721142125/http://photosautomation.com/installer.zip
+  local_path: sources/sal/photosautomation.com/downloads/installer.zip
+  recovery_note: 'Sal Soghoian sent the file directly on 2026-05-06 — labelled "Photos Automation Installer." Archive contains Photos Actions Installer.pkg dated 2015-05-03. See analysis/sal/correspondence/2026-05-06-reply-from-sal-soghoian.md.'
 - id: sal-download-photosautomation-com-index-installer-zip-02
   site: photosautomation.com
   filename: installer.zip
@@ -5349,9 +5355,11 @@ records:
   discovered_url: installer.zip
   normalized_url: http://photosautomation.com/installer.zip
   target_host: photosautomation.com
-  retrieval_strategy: wayback-direct
-  status: missing
+  retrieval_strategy: direct-from-author
+  status: recovered
   original_page_url: http://photosautomation.com/index.html
+  local_path: sources/sal/photosautomation.com/downloads/installer.zip
+  recovery_note: 'Sal Soghoian sent the file directly on 2026-05-06. Same payload as -01. See analysis/sal/correspondence/2026-05-06-reply-from-sal-soghoian.md.'
   archive_url: https://web.archive.org/web/20240721142125/http://photosautomation.com/installer.zip
 - id: sal-download-photosautomation-com-dictation-commands-new-photos-dictation-command-mp4
   site: photosautomation.com

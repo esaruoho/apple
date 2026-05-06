@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="dictationcommands.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="Dictation, AppleScript, JavaScript, JXA, Automation, Automator, macOS, OS X">
+	<meta name="Description" content="Install the Automation Tools for the custom Dictation Commands collection.">
+	<link rel="home" href="http://dictationcommands.com">
+	<title>Dictation Commands: Build the Preference File</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="dictation-commands-banner" src="gfx/dictation-commands-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="https://macosxautomation.com" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">MacOS AUTOMATION</div></a>
+				<a href="https://photosautomation.com" title="Go to PHOTOSAUTOMATION website"><div class="nav-tab">PHOTOS AUTOMATION</div></a>
+				<a href="https://iworkautomation.com" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Build the Preference File</p>
+					
+					<p>The speech recognition service used by Dictation Commands stores a detailed list of user-created custom dictation commands in a preference file located in the Preferences folder within your Library folder:</p>
+					
+					<p style="text-align:center">Home ▶ Library ▶ Preferences</p>
+
+					<p>The preference file, which is not really intended to be viewed or edited by the user, is aptly named:</p>
+					
+					<p style="text-align:center;font-size:75%;">com.apple.speech.recognition.AppleSpeechRecognition.CustomCommands.plist</p>
+					
+					<p>When you turn on enhanced dictation in the System Preferences application, the speech recognition architecture reads this preference file to create and activate the dictation commands listed within the file.</p>
+
+					<p>As part of the installation process for this custom Dictation Commands set, a new preference file is created for you, containing hundreds of specialized dictation commands, and is placed on the Desktop. After creation of the new file, you install it by dragging the new file into the Preferences folder.</p>
+					
+					<p>Having completed the installation of the script libraries, you can now build the custom commands preference file.</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Launch the script applet titled &ldquo;2) Build Preference File&rdquo; which will display an opening dialog. To begin the installation, click the &ldquo;Continue&rdquo; button. <span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+
+					<img class="centered" width="532" alt="build-prefs-open-dialog" src="gfx/build-prefs-open-dialog.png">
+					
+					<p>The script will begin creating the preference file property list and generating and installing the numerous script files used to link the dictation commands with the functions in the previously installed Script Libraries.</p>
+					
+					<p>During this process, a progress window will be displayed, detailing the current procedure:<span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="centered" width="516" alt="progress-window-01" src="gfx/progress-window-01.png">
+					
+					<p>Once the creation of the preference file and triggering scripts has completed, a second dialog will be displayed:<span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="centered" width="532" alt="preference-completion-dialog" src="gfx/preference-completion-dialog.png">
+					
+					<p>The script will have opened two Finder windows on the Desktop:</p>
+					
+					<ul>
+						<li>The Preferences folder containing the existing custom dictation commands preference file</li>
+						<li>The Desktop folder containing the created custom dictation commands preference file</li>
+					</ul>
+					
+					<p>The preference files will be selected within each of the two windows.</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>To install the new dictation commands preference file, move it from the Desktop folder window into Preferences folder window, replacing the existing file.</p>
+									
+					<p class="segment-note" style="margin-bottom:36px;"><b>IMPORTANT</b>: It is really, really, (yes, really!) recommended that you make a copy of the existing custom dictation commands preference file before replacing it.</p>
+					
+					<p class="do-this"style="margin-bottom:36px;"><span class="do-this">DO THIS &#9658;</span>Turn Dictation on in the Dictation system preference pane. The custom dictation commands are now active.</p>
+					
+				<!-- BEGIN SEGMENT: SCRIPT MENU -->
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Script Menu</p>
+					<p>During the installation process, individual scripts were created for each of the custom dictation commands. These scripts are used by the speech recognition services to execute the various functions within the Script Libraries. The installed scripts can also be used for testing purposes, to execute any command without needing to have Dictation turned on.</p>
+					
+					<p>To access the scripts, click on the Script Menu in the top menu bar:<span class="see-below">&nbsp;(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)&nbsp;</span></p>
+					
+					<img class="across" width="640" alt="script-menu" src="gfx/script-menu.png">
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Script Menu</b>&nbsp;&bull;&nbsp;The system-wide Script Menu is located at the top right of the main menu bar. Controls for turning it off or on are located in the Preferences window of the Script Editor application.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Dictation Commands folder</b>&nbsp;&bull;&nbsp;The Dictation Commands folder is located with the Scripts folder in the user Library folder. It contains all of the triggering scripts used by the OS speech recognition service.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Generate Commands Template</b>&nbsp;&bull;&nbsp;This script can be used by developers to create their own custom dictation commands collections.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Category Folders</b>&nbsp;&bull;&nbsp;These folders (contained within the Dictation Commands folder <span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;) hold the scripts for each category or application targeted by the custom dictation commands.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Category Scripts</b>&nbsp;&bull;&nbsp;The individual scripts for a specific application or category.</p>
+					
+					<p>Any of these scripts are executed by simply selecting them from the Script Menu. To open a script for editing, hold down the Option key (⌥) when selecting the script, and it will be opened in the Script Editor application. To view the script file, hold down the Shift key (⇧) when selecting the script, and it will be revealed in the Finder desktop.</p>
+
+				</div>
+				<!-- END SEGMENT: SCRIPT MENU -->
+				
+				
+				</div>
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="build-help-book.html">3) Build Help Book</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="index.html">Overview</a></li>
+						<li class="hi">Installation &amp; Setup</li>
+						<li class="navListSectionItem"><a href="preparation.html">Before You Begin</a></li>
+						<li class="navListSectionItem"><a href="setup.html">Custom Commands Archive</a></li>
+						<li class="navListSectionItem"><a href="install-tools.html">Install Automation Tools</a></li>
+						<li class="navListSectionItemSelected">Build Preference File</li>
+						<li class="navListSectionItem"><a href="build-help-book.html">Build Help Book</a></li>
+						<li class="navListSectionItem"><a href="enable-assistive-access.html">Enable Assistive Access for Dictation</a></li>
+						<li class="navListSectionItem"><a href="trouble.html">Troubleshooting</a></li>
+						<li class="navListSectionItem"><a href="toggle.html">Audio Input Toggle</a></li>
+						<li><a href="how-it-works.html">How It Works</a></li>
+						<li><a href="videos.html">Example Videos</a></li>
+						<li><a href="help-viewer.html" target="_blank">DC Help Book</a></li>
+						<li><a href="commandslist.html">Commands List</a></li>
+					</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer"><b>THIS WEBSITE IS NOT HOSTED BY APPLE INC.</b><br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. DICTATIONCOMMANDS.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. DICTATIONCOMMANDS.COM provides this only as a convenience to our users. DICTATIONCOMMANDS.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and DICTATIONCOMMANDS.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from DICTATIONCOMMANDS.COM and that DICTATIONCOMMANDS.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="dictationcommands.css" media="all">
+	<meta name="Author" content="Nyhthawk Productions">
+	<meta name="Keywords" content="Dictation, AppleScript, JavaScript, JXA, Automation, Automator, macOS, OS X">
+	<meta name="Description" content="A free collection of dictation commands for macOS.">
+	<link rel="home" href="http://dictationcommands.com">
+	<title>Dictation Commands: Custom Commands Archive</title>
+</head>
+<body>
+	<table id="main-table" role="presentation">
+		<tr id="head-row">
+			<td id="head-column" colspan="2">
+				<img id="banner-image" alt="dictation-commands-banner" src="gfx/dictation-commands-sm-banner.jpg">
+			</td>
+		</tr>
+		<tr id="navigation-row">
+			<td id="navigation-column" colspan="2">
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(1024,screen.availHeight);" title="Size window to single page"><div class="nav-tab-left">&bull;</div></a>
+				<a href="https://macosxautomation.com" title="Go to MACOSXAUTOMATION website"><div class="nav-tab">MacOS AUTOMATION</div></a>
+				<a href="https://photosautomation.com" title="Go to PHOTOSAUTOMATION website"><div class="nav-tab">PHOTOS AUTOMATION</div></a>
+				<a href="https://iworkautomation.com" title="Go to IWORKAUTOMATION website"><div class="nav-tab">IWORK AUTOMATION</div></a>
+				<a href="javascript:self.moveTo(0,0);self.resizeTo(screen.availWidth,screen.availHeight);"><div class="nav-tab-right" title="Size window to full screen">&bull;</div></a>
+			</td>
+		</tr>
+		<tr id="content-row">
+			<td id="content-left">
+				<div class="content-segment">
+					<p class="header" role="heading" aria-level="1">Custom Commands Archive</p>
+					
+					<p>The video below (7:02) shows how to install the Custom Dictations Commands set (OS X El Capitan).</p>
+					
+					<div style="border:4px solid #ddd;text-align:center;background-color:#777;margin-bottom:6px;">
+						<video id="moov7" x-webkit-airplay="allow" webkit-playsinline width="624" height="390" style="margin-top:4px;" controls="controls" preload="auto">
+						  <source src="dc-setup.mp4" type="video/mp4">
+						  Your browser does not support the video tag.
+						</video>
+					</div>
+					<div style="text-align:center;">
+						<button onclick="document.getElementById('moov7').play();">PLAY</button>
+						<button onclick="document.getElementById('moov7').pause();">PAUSE</button>
+						<button onclick="document.getElementById('moov7').currentTime=(document.getElementById('moov7').currentTime-5);">BACK</button>
+						<button onclick="document.getElementById('moov7').currentTime=0;">REWIND</button>
+					</div>
+					
+					
+					<p>The installation of the Custom Dictation Commands collection is unique for each computer — it is not just a matter of copying specific files to certain locations in your Home directory. It&rsquo;s more a process akin to mixing fresh ingredients together to create a spectacular culinary treat!</p>
+					
+					<p>And to make it easy for you to take advantage of these great tools, the installation procedure is a four-step process of launching four individual applets in sequence. Just follow the instructions on these pages.</p>
+					
+					
+					<p class="content-subhead" role="heading" aria-level="2">Download the Installer Archive (v255)</p>
+
+					<p class="segment-note"><b>TIP</b>: If you’ve already installed the set before, you can find out the latest available version with the command “what is your latest version” and you can get it with the command “download your latest version” which will download the archive to your Downloads folder.</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span><a href="CitrusPeel255.zip">DOWNLOAD</a> and unzip the archive containing the following items: <span class="see-below">(&#11015;&nbsp;<span class="see-below-text">see&nbsp;below</span>&nbsp;)</span></p>
+					
+					<img class="across" width="640" alt="installer-folder" src="gfx/installer-folder.png">
+
+					<p class="caption-callout" style="margin-top:-24px;"><span class="numeric-callout">&nbsp;1&nbsp;</span>&nbsp;<b>Automation Tools Installer</b>&nbsp;&bull;&nbsp;This applet will activate the system Script Menu and install the script libraries and support scripts contained in folders <span class="numeric-callout">&nbsp;6&nbsp;</span> and <span class="numeric-callout">&nbsp;7&nbsp;</span>.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;2&nbsp;</span>&nbsp;<b>Preference File Builder</b>&nbsp;&bull;&nbsp;This applet will create the Dictation Commands preference file and link scripts.</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;3&nbsp;</span>&nbsp;<b>Help Book Builder</b>&nbsp;&bull;&nbsp;This applet extracts the documentation data from the Custom Commands property list file <span class="numeric-callout">&nbsp;5&nbsp;</span> and use it to build a comprehensive Apple Help Book containing a listing and description for each available command. TIP: you can summon the help by speaking the command: &ldquo;Show your help&rdquo;</p>
+					
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;4&nbsp;</span>&nbsp;<b>Enable Assistive Access</b>&nbsp;&bull;&nbsp;For those commands that cannot be accomplished through the scripting or OS frameworks, Dictation Commands uses the Accessibility APIs. This applet will guide you to enable access to these APIs for the custom dictation commands.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;5&nbsp;</span>&nbsp;<b>Custom Commands Property List</b>&nbsp;&bull;&nbsp;This property list file contains information for generating all of the custom dictation commands. It must remain in the same folder as the installer applets when they are run.</p>
+
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;6&nbsp;</span>&nbsp;<b>Installation Items</b>&nbsp;&bull;&nbsp;A collection of script libraries and support scripts that contain the scripting routines for performing the actions of the custom dictation commmands. All of the libraries are editable and can be opened in the Script Editor application, or 3rd-party editors like <a href="https://macosxautomation.com/applescript/apps">ASObjC Explorer</a>.</p>
+
+<!-- 
+					<p class="caption-callout"><span class="numeric-callout">&nbsp;7&nbsp;</span>&nbsp;<b>Support Scripts</b>&nbsp;&bull;&nbsp;This folder contains a special script for generating a template file for making your own custom commands property list.</p>
+ -->
+					
+					<p class="content-subhead" role="heading" aria-level="2">Begin the Installation</p>
+					
+					<p class="do-this"><span class="do-this">DO THIS &#9658;</span>Start with the first applet (Automation Tools Installer) and run each of the four applets in order, following the instructions that appear in their dialogs. When you&rsquo;ve completed running all four, Dictation Commands will be ready to use.</p>
+					
+
+				</div>
+				<div class="next-segment">
+					<p>NEXT TOPIC: <a href="install-tools.html">1) Automation Tools Installer</a></p>
+				</div>
+			</td>
+			<td id="content-sidebar">
+				<div class="sidebar-navigation">
+					<p class="sidebar-box-navigation-head">TOPICS</p>
+					<ul>
+						<li><a href="index.html">Overview</a></li>
+						<li class="hi">Installation &amp; Setup</li>
+						<li class="navListSectionItem"><a href="preparation.html">Before You Begin</a></li>
+						<li class="navListSectionItemSelected">Custom Commands Archive</li>
+						<li class="navListSectionItem"><a href="install-tools.html">Install Automation Tools</a></li>
+						<li class="navListSectionItem"><a href="build-prefs-file.html">Build Preference File</a></li>
+						<li class="navListSectionItem"><a href="build-help-book.html">Build Help Book</a></li>
+						<li class="navListSectionItem"><a href="enable-assistive-access.html">Enable Assistive Access for Dictation</a></li>
+						<li class="navListSectionItem"><a href="trouble.html">Troubleshooting</a></li>
+						<li class="navListSectionItem"><a href="toggle.html">Audio Input Toggle</a></li>
+						<li><a href="how-it-works.html">How It Works</a></li>
+						<li><a href="videos.html">Example Videos</a></li>
+						<li><a href="help-viewer.html" target="_blank">DC Help Book</a></li>
+						<li><a href="commandslist.html">Commands List</a></li>
+					</ul>
+				</div>
+						
+				<div class="sidebar-box">
+					<p class="sidebar-box-head">DISCLAIMER</p>
+					<p class="sidebar-box-body-disclaimer"><b>THIS WEBSITE IS NOT HOSTED BY APPLE INC.</b><br><br>Mention of third-party websites and products is for informational purposes only and constitutes neither an endorsement nor a recommendation. DICTATIONCOMMANDS.COM assumes no responsibility with regard to the selection, performance or use of information or products found at third-party websites. DICTATIONCOMMANDS.COM provides this only as a convenience to our users. DICTATIONCOMMANDS.COM has not tested the information found on these sites and makes no representations regarding its accuracy or reliability. There are risks inherent in the use of any information or products found on the Internet, and DICTATIONCOMMANDS.COM assumes no responsibility in this regard. Please understand that a third-party site is independent from DICTATIONCOMMANDS.COM and that DICTATIONCOMMANDS.COM has no control over the content on that website. Please contact the vendor for additional information.</p>
+				</div>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

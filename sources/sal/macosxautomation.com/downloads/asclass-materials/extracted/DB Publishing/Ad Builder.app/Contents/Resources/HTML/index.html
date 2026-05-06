@@ -1,0 +1,59 @@
+<html>
+	<head>
+		<title>Database Publishing</title>
+	</head>
+	<body>
+		<table width="667" border="0" cellpadding="0" cellspacing="0" align="center">
+			<tr align="left" valign="top">
+				<td align="left" valign="top">
+					<FONT FACE="Lucida Grande,Geneva,Verdana,Arial,Helvetica,sans-serif" SIZE="2" CLASS="L12">
+					<font size="5"><b>Automated Database Publishing with AppleScript</b></font><BR><BR>
+					<img src="indesign.01.jpg" width="480" height="307" border="0" align="top"><BR><BR>
+					The Ad Builder application, created in AppleScript Studio, demonstrates how the construction of a Real Estate catalog can be automated by controlling off-the-shelf applications via AppleScript.<BR><BR>
+					
+					This publishing example links tagged text and graphic frames in an Adobe InDesign catalog template to corresponding images and text in iView MediaPro and FileMaker Pro database files. This technique is a standard method used in professional automated database publishing workflows.<BR><BR>
+
+					<b>How It Works</b><BR><BR>
+
+					The technique of tagged container publishing relies on a unique identifier existing in both the data sources and the target layout template. The unique identifer can be a product SKU number, a customer number, an address, or even a name, as long as it is unique to the each entry record in the source database files. It the Ad Builder example, the MLS (Multiple Listing Service) number  assigned to each of the real estate properties is used as the unique identifer.<BR><BR>
+
+					In the FileMaker Pro database, the MLS number is the contents of the MLS Number field in the Listings Database:<BR><BR>
+					
+					<img src="filemaker.jpg" width="320" height="229" border="0" align="top"><BR><BR>
+
+					In iView MediaPro, the MLS number begins the name of the related images in the database file:<BR><BR>
+
+					<img src="iview.jpg" width="285" height="150" border="0" align="top"><BR><BR>
+
+					To enable the automation of extracting and placing image and text data into a layout, text and graphic frames in an Abode InDesign CS template are tagged with MLS numbers using the Script Label pallette:<BR><BR>
+
+					<img src="indesign.02.jpg" width="318" height="215" border="0" align="top"><BR><BR>
+
+					Once a template has been tagged, an AppleScript script can be run that performs the following steps:
+
+					<ol>
+						<LI>The script asks InDesign for a list of references to the text and graphic frames in the open template that have a tag assigned to them.<br>&nbsp;</li>
+						<LI>The script then iterates the returned list and extracts the tag for each page item in the list of found page items.<br>&nbsp;</li>
+						<LI>If a page item is a text frame, <a href="script.01.html">the script</a> uses the extracted tag to locate a record in the FileMaker Pro database whose MLS Number cell contains the extracted tag.<br>&nbsp;</li>
+						<LI>The script then extracts the contents of the other cells of the matched FileMaker Pro record and inserts the data into the targeted text frame in the InDesign template. The inserted text is then formatted using stylesheets.<br>&nbsp;</li>
+						<LI>If a page item is a praphic frame, <a href="script.02.html">the script</a> uses the extracted tag to locate an image in the iView MediaPro database whose name begins with the extracted tag.<br>&nbsp;</li>
+						<LI>The script then imports the image into the target graphic frame and sizes the image to fit the frame appropriately.</li>
+					</ol>
+					
+					This process is repeated until all the tagged page items have been filled.<BR><BR>
+					
+					<b>Learn More</b><BR><BR>
+					
+					AppleScript is a powerful tool for gaining speed, accuracy, and consistency through automation. For more information about AppleScript and AppleScript Studio visit the AppleScript website at:<BR><BR>
+
+					<a href="http://www.apple.com/applescript/">www.apple.com/applescript/</a>
+
+<BR><BR><BR><BR><BR><BR><BR><BR>
+
+					
+					</FONT>
+				</td>
+			</tr>
+		</TABLE>
+	</body>
+</html>

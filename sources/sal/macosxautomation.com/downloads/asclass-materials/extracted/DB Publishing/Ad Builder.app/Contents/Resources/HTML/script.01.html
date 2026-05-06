@@ -1,0 +1,76 @@
+<html>
+	<head>
+		<title>Database Publishing</title>
+	</head>
+	<body>
+		<table width="667" border="0" cellpadding="0" cellspacing="0" align="center">
+			<tr align="left" valign="top">
+				<td align="left" valign="top">
+					<FONT FACE="Lucida Grande,Geneva,Verdana,Arial,Helvetica,sans-serif" SIZE="2" CLASS="L12">
+					<b>Import Text Script</b></font><BR><BR>
+
+<font face="verdana,geneva" size="1">
+<b>tell</b> application &quot;InDesign CS&quot;<br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top">activate<br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>tell the</b> active document<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>try</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">the_list</font> <b>to</b> &not;<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>every</b> text frame <b>of every</b> spread <b>whose</b> label <b>is not</b> &quot;&quot;<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>on error</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>error</b> &quot;There are no tagged text frames.&quot;<br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end try</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>repeat with</b> <font color="#0000FF">i</font> <b>from</b> 1 <b>to the</b> number <b>of</b> items <b>in</b> <font color="#0000FF">the_list</font><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_frame</font> <b>to</b> item <font color="#0000FF">i</font> <b>of</b> <font color="#0000FF">the_list</font><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>tell the</b> active document<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">this_identifier</font> <b>to the</b> label <b>of</b> <font color="#0000FF">this_frame</font><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>tell</b> application &quot;FileMaker Pro&quot;<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top">activate<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>tell</b> database 1<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top">show (<b>the first</b> record <b>whose</b> cell &quot;MLS Number&quot; <b>contains</b> <font color="#0000FF">this_identifier</font>)<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>set</b> <font color="#0000FF">the_data</font> <b>to</b> cell &quot;Ad Text&quot; <b>of the</b> current record<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>tell the</b> active document<br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>set the</b> contents <b>of</b> <font color="#0000FF">this_frame</font> <b>to</b> <font color="#0000FF">the_data</font><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>tell</b> <font color="#0000FF">this_frame</font><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>tell</b> paragraph 1<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> font style <b>to</b> &quot;Bold&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> point size <b>to</b> 12.0<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> leading <b>to</b> 12.0<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>tell</b> paragraph 2<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> space before <b>to</b> 0.167<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> font style <b>to</b> &quot;Light&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> point size <b>to</b> 10.0<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> leading <b>to</b> 11.0<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>tell</b> paragraph 3<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> space before <b>to</b> 0.167<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> font style <b>to</b> &quot;Regular&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> point size <b>to</b> 10.0<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> leading <b>to</b> 12.0<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>tell</b> paragraph 4<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> applied font <b>to</b> &quot;Gill Sans&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> font style <b>to</b> &quot;Regular&quot;<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> point size <b>to</b> 10.0<br>
+<img src="spacer.gif" width="50" height="5" border="0" align="top"><b>set</b> leading <b>to</b> 12.0<br>
+<img src="spacer.gif" width="40" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="30" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="20" height="5" border="0" align="top"><b>end tell</b><br>
+<img src="spacer.gif" width="10" height="5" border="0" align="top"><b>end repeat</b><br>
+<b>end tell</b></font><br>
+
+
+
+<br><br><br><br>
+				</td>
+			</tr>
+		</TABLE>
+	</body>
+</html>

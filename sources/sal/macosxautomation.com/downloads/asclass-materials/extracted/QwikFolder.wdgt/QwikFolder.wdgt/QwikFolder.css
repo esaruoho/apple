@@ -1,0 +1,58 @@
+/*
+
+Copyright _ 2005, Apple Computer, Inc.  All rights reserved.
+NOTE:  Use of this source code is subject to the terms of the Software
+License Agreement for Mac OS X, which accompanies the code.  Your use
+of this source code signifies your agreement to such license terms and
+conditions.  Except as expressly granted in the Software License Agreement
+for Mac OS X, no other copyright, patent, or other intellectual property
+license or right is granted, either expressly or by implication, by Apple.
+            
+*/
+
+body {
+	margin: 0px;
+}
+
+.popupMenuImage {
+	position: absolute;
+	left: 28px;
+	top: 18px;
+}
+
+#popupMenuText {
+    font: 13px "Helvetica Neue";
+    font-weight: Bold;
+    color: white;
+   	text-shadow: black 0px 1px 0px;
+    position: absolute;
+    left: 44px;
+    top: 26px;
+}
+
+#popupMenu {
+	position:absolute;
+	top: 24px;
+    left: 28px;
+	width: 165px;
+	height: 30px;
+	opacity: 0.0;
+	z-index: 20;
+}
+
+#closeWindowsCheckbox {
+	top: 53px;
+	left: 32px;
+    position: absolute;
+}
+
+#checkboxText {
+    font: 13px "Helvetica Neue";
+    font-weight: Bold;
+    color: white;
+   	text-shadow: black 0px 1px 0px;
+    position: absolute;
+    left: 52px;
+    top: 54px;
+}
+
