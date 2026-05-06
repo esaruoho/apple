@@ -1,6 +1,7 @@
 # Reply from Sal Soghoian
 
-Date received: 2026-05-06
+Date received: 2026-04-03 (Sal replied within ~24 hours of Esa's email)
+Date processed into archive: 2026-05-06
 In reply to: 2026-04-02-email-to-sal-soghoian.md
 
 ## Sal's message (verbatim)
