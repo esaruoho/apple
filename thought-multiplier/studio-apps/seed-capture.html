@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thought Multiplier — Seed Capture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e0e0e8;
+    --text-dim: #6b6b80;
+    --accent: #7c6aef;
+    --accent-glow: rgba(124, 106, 239, 0.15);
+    --success: #4ade80;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.25rem;
+  }
+
+  .title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .seed-count {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .textarea-wrap {
+    position: relative;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .textarea-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 1.25rem;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+  }
+
+  textarea::placeholder {
+    color: var(--text-dim);
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-send {
+    flex: 1;
+    padding: 0.875rem 1.5rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-send:hover { opacity: 0.9; }
+  .btn-send:active { transform: scale(0.98); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-settings {
+    width: 44px;
+    height: 44px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: border-color 0.2s;
+  }
+
+  .btn-settings:hover { border-color: var(--text-dim); }
+
+  .flash {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    color: var(--success);
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+  }
+
+  .flash.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Settings panel */
+  .settings-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .settings-panel.open { display: block; }
+
+  .settings-panel h3 {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row:last-child { border-bottom: none; }
+
+  .setting-label {
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .setting-desc {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.15rem;
+  }
+
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+  }
+
+  .toggle.on { background: var(--accent); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* Recent seeds */
+  .recent {
+    margin-top: 0.5rem;
+  }
+
+  .recent-header {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .recent-item {
+    padding: 0.625rem 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.375rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .recent-item:hover { border-color: var(--text-dim); }
+
+  .recent-text {
+    font-size: 0.85rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recent-time {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="title">Seed Capture</span>
+    <span class="seed-count" id="seedCount">0 seeds</span>
+  </div>
+
+  <div class="textarea-wrap">
+    <textarea id="seedInput" placeholder="Type your seed thought..." autofocus></textarea>
+  </div>
+
+  <div class="actions">
+    <button class="btn-send" id="sendBtn" disabled>Send</button>
+    <button class="btn-settings" id="settingsBtn" title="Settings">&#9881;</button>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel">
+    <h3>Destinations</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Archive</div>
+        <div class="setting-desc">Save raw seed to local JSONL</div>
+      </div>
+      <button class="toggle on" data-branch="archive"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">LLM Process</div>
+        <div class="setting-desc">Refine via Phi-4 (local)</div>
+      </div>
+      <button class="toggle" data-branch="llm"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Browser / CMS</div>
+        <div class="setting-desc">Paste into active CMS tab</div>
+      </div>
+      <button class="toggle" data-branch="browser"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Email</div>
+        <div class="setting-desc">Compose in email tab</div>
+      </div>
+      <button class="toggle" data-branch="email"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Graph</div>
+        <div class="setting-desc">Update thought pattern graph</div>
+      </div>
+      <button class="toggle" data-branch="graph"></button>
+    </div>
+  </div>
+
+  <div class="recent" id="recentSection" style="display:none">
+    <div class="recent-header">Recent Seeds</div>
+    <div id="recentList"></div>
+  </div>
+</div>
+
+<div class="flash" id="flash">Seed captured</div>
+
+<script>
+const input = document.getElementById('seedInput');
+const sendBtn = document.getElementById('sendBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+const flash = document.getElementById('flash');
+const seedCount = document.getElementById('seedCount');
+const recentSection = document.getElementById('recentSection');
+const recentList = document.getElementById('recentList');
+
+// --- State ---
+
+function getSeeds() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('ray-seed-')) keys.push(k);
+  }
+  return keys
+    .map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } })
+    .filter(Boolean)
+    .sort((a, b) => b.ts.localeCompare(a.ts));
+}
+
+function getActiveBranches() {
+  const branches = {};
+  document.querySelectorAll('.toggle').forEach(t => {
+    branches[t.dataset.branch] = t.classList.contains('on');
+  });
+  return branches;
+}
+
+// --- UI Updates ---
+
+function updateCount() {
+  const seeds = getSeeds();
+  const n = seeds.length;
+  seedCount.textContent = `${n} seed${n !== 1 ? 's' : ''}`;
+  renderRecent(seeds.slice(0, 5));
+}
+
+function renderRecent(seeds) {
+  if (seeds.length === 0) {
+    recentSection.style.display = 'none';
+    return;
+  }
+  recentSection.style.display = 'block';
+  recentList.innerHTML = seeds.map(s => `
+    <div class="recent-item" data-ts="${s.ts}">
+      <div class="recent-text">${escapeHtml(s.seed.slice(0, 120))}</div>
+      <div class="recent-time">${formatTime(s.ts)}${s.branches ? ' — ' + Object.keys(s.branches).filter(b => s.branches[b]).join(', ') : ''}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function showFlash(msg) {
+  flash.textContent = msg;
+  flash.classList.add('visible');
+  setTimeout(() => flash.classList.remove('visible'), 2000);
+}
+
+// --- Actions ---
+
+function sendSeed() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  const ts = new Date().toISOString();
+  const branches = getActiveBranches();
+  const seedData = {
+    ts,
+    seed: text,
+    branches,
+    context_tabs: [] // populated by Chat with Tabs integration
+  };
+
+  // Store in localStorage
+  localStorage.setItem(`ray-seed-${ts}`, JSON.stringify(seedData));
+
+  // Dispatch custom event for Agent Scripter to pick up
+  window.dispatchEvent(new CustomEvent('seed-ready', { detail: seedData }));
+
+  // Clear and update
+  input.value = '';
+  sendBtn.disabled = true;
+  updateCount();
+  showFlash(`Seed captured — ${Object.keys(branches).filter(b => branches[b]).length} destination${Object.keys(branches).filter(b => branches[b]).length !== 1 ? 's' : ''}`);
+}
+
+// --- Event Listeners ---
+
+input.addEventListener('input', () => {
+  sendBtn.disabled = !input.value.trim();
+});
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    sendSeed();
+  }
+});
+
+sendBtn.addEventListener('click', sendSeed);
+
+settingsBtn.addEventListener('click', () => {
+  settingsPanel.classList.toggle('open');
+});
+
+document.querySelectorAll('.toggle').forEach(t => {
+  t.addEventListener('click', () => {
+    t.classList.toggle('on');
+    // Persist toggle state
+    const branches = getActiveBranches();
+    localStorage.setItem('thought-multiplier-branches', JSON.stringify(branches));
+  });
+});
+
+// Click recent seed to reload it
+recentList.addEventListener('click', (e) => {
+  const item = e.target.closest('.recent-item');
+  if (!item) return;
+  const seed = getSeeds().find(s => s.ts === item.dataset.ts);
+  if (seed) {
+    input.value = seed.seed;
+    sendBtn.disabled = false;
+    input.focus();
+  }
+});
+
+// --- Init ---
+
+// Restore toggle states
+const savedBranches = localStorage.getItem('thought-multiplier-branches');
+if (savedBranches) {
+  const branches = JSON.parse(savedBranches);
+  document.querySelectorAll('.toggle').forEach(t => {
+    if (branches[t.dataset.branch] !== undefined) {
+      t.classList.toggle('on', branches[t.dataset.branch]);
+    }
+  });
+}
+
+updateCount();
+input.focus();
+</script>
+</body>
+</html>

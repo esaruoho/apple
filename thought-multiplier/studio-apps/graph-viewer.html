@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thought Multiplier — Graph</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e0e0e8;
+    --text-dim: #6b6b80;
+    --accent: #7c6aef;
+    --node: #a78bfa;
+    --edge: #2d2d44;
+    --cluster1: #4ade80;
+    --cluster2: #f472b6;
+    --cluster3: #60a5fa;
+    --cluster4: #fbbf24;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .toolbar h1 {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .view-modes {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .view-mode {
+    padding: 0.375rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .view-mode.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .stats {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Canvas for graph */
+  .graph-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Timeline view */
+  .timeline {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: none;
+  }
+
+  .timeline.active { display: block; }
+
+  .timeline-item {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .timeline-time {
+    flex-shrink: 0;
+    width: 80px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    padding-top: 0.1rem;
+  }
+
+  .timeline-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 0.3rem;
+  }
+
+  .timeline-text {
+    flex: 1;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* Word cloud view */
+  .wordcloud {
+    flex: 1;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-content: center;
+  }
+
+  .wordcloud.active { display: flex; }
+
+  .word {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+
+  .word:hover { transform: scale(1.1); }
+
+  /* Empty state */
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    gap: 0.5rem;
+  }
+
+  .empty-state .icon { font-size: 2rem; opacity: 0.4; }
+  .empty-state p { font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Thought Graph</h1>
+  <div class="view-modes">
+    <button class="view-mode active" data-view="cluster">Clusters</button>
+    <button class="view-mode" data-view="timeline">Timeline</button>
+    <button class="view-mode" data-view="words">Words</button>
+  </div>
+  <span class="stats" id="stats"></span>
+</div>
+
+<div class="graph-container" id="graphContainer">
+  <canvas id="graphCanvas"></canvas>
+</div>
+
+<div class="timeline" id="timelineView"></div>
+<div class="wordcloud" id="wordcloudView"></div>
+
+<script>
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+const graphContainer = document.getElementById('graphContainer');
+const timelineView = document.getElementById('timelineView');
+const wordcloudView = document.getElementById('wordcloudView');
+const stats = document.getElementById('stats');
+
+const CLUSTER_COLORS = ['#4ade80', '#f472b6', '#60a5fa', '#fbbf24', '#a78bfa', '#f97316'];
+
+// --- Data ---
+
+function getSeeds() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('ray-seed-')) keys.push(k);
+  }
+  return keys
+    .map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } })
+    .filter(Boolean)
+    .sort((a, b) => a.ts.localeCompare(b.ts));
+}
+
+function extractWords(text) {
+  const stop = new Set(['the','a','an','is','it','in','on','to','of','and','or','for','with','this','that','be','as','at','by','from','not','but','are','was','were','been','have','has','had','do','does','did','will','would','could','should','may','might','can','shall','i','you','he','she','we','they','me','my','your','his','her','our','their','its','what','which','who','whom','how','when','where','why','if','so','no','yes','all','some','any','each','every','much','many','more','most','very','just','only','also','then','than','too','about','up','out','into','over','after','before','between','through','during','without','within','along','across','around','above','below','been']);
+  return text.toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stop.has(w));
+}
+
+function clusterSeeds(seeds) {
+  // Simple word-overlap clustering (placeholder for BGE embeddings)
+  if (seeds.length === 0) return [];
+
+  const seedWords = seeds.map(s => new Set(extractWords(s.seed)));
+  const clusters = [];
+  const assigned = new Set();
+
+  for (let i = 0; i < seeds.length; i++) {
+    if (assigned.has(i)) continue;
+    const cluster = { seeds: [i], color: CLUSTER_COLORS[clusters.length % CLUSTER_COLORS.length] };
+
+    for (let j = i + 1; j < seeds.length; j++) {
+      if (assigned.has(j)) continue;
+      // Jaccard similarity
+      const intersection = [...seedWords[i]].filter(w => seedWords[j].has(w)).length;
+      const union = new Set([...seedWords[i], ...seedWords[j]]).size;
+      if (union > 0 && intersection / union > 0.15) {
+        cluster.seeds.push(j);
+        assigned.add(j);
+      }
+    }
+    assigned.add(i);
+    clusters.push(cluster);
+  }
+
+  return clusters;
+}
+
+// --- Graph Rendering ---
+
+function resizeCanvas() {
+  const rect = graphContainer.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
+function renderGraph(seeds) {
+  resizeCanvas();
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (seeds.length === 0) {
+    ctx.fillStyle = '#6b6b80';
+    ctx.font = '14px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Capture seeds to see patterns emerge', w / 2, h / 2);
+    return;
+  }
+
+  const clusters = clusterSeeds(seeds);
+  const nodes = [];
+
+  // Position nodes in cluster groups
+  const clusterCount = clusters.length;
+  clusters.forEach((cluster, ci) => {
+    const angle = (ci / clusterCount) * Math.PI * 2 - Math.PI / 2;
+    const radius = Math.min(w, h) * 0.3;
+    const cx = w / 2 + Math.cos(angle) * radius;
+    const cy = h / 2 + Math.sin(angle) * radius;
+
+    cluster.seeds.forEach((si, j) => {
+      const spread = Math.min(60, 20 + cluster.seeds.length * 8);
+      const a2 = (j / cluster.seeds.length) * Math.PI * 2;
+      const r2 = spread * (0.3 + Math.random() * 0.7);
+      nodes.push({
+        x: cx + Math.cos(a2) * r2,
+        y: cy + Math.sin(a2) * r2,
+        seed: seeds[si],
+        color: cluster.color,
+        radius: 4 + Math.min(seeds[si].seed.length / 50, 8)
+      });
+    });
+  });
+
+  // Draw edges between same-cluster nodes
+  ctx.lineWidth = 0.5;
+  clusters.forEach(cluster => {
+    ctx.strokeStyle = cluster.color + '30';
+    for (let i = 0; i < cluster.seeds.length; i++) {
+      for (let j = i + 1; j < cluster.seeds.length; j++) {
+        const ni = nodes.find((_, idx) => {
+          let count = 0;
+          for (const c of clusters) {
+            for (const s of c.seeds) {
+              if (count === idx) return s === cluster.seeds[i];
+              count++;
+            }
+          }
+          return false;
+        });
+      }
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(node => {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    ctx.fillStyle = node.color + '80';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius * 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = node.color;
+    ctx.fill();
+  });
+
+  // Stats
+  stats.textContent = `${seeds.length} seeds, ${clusters.length} clusters`;
+}
+
+// --- Timeline Rendering ---
+
+function renderTimeline(seeds) {
+  if (seeds.length === 0) {
+    timelineView.innerHTML = '<div class="empty-state"><div class="icon">&#128337;</div><p>No seeds yet</p></div>';
+    return;
+  }
+
+  const clusters = clusterSeeds(seeds);
+  const seedClusterMap = {};
+  clusters.forEach(c => c.seeds.forEach(si => { seedClusterMap[si] = c.color; }));
+
+  timelineView.innerHTML = seeds.map((s, i) => `
+    <div class="timeline-item">
+      <div class="timeline-time">${new Date(s.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}<br>${new Date(s.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
+      <div class="timeline-dot" style="background:${seedClusterMap[i] || '#6b6b80'}"></div>
+      <div class="timeline-text">${escapeHtml(s.seed)}</div>
+    </div>
+  `).join('');
+}
+
+// --- Word Cloud Rendering ---
+
+function renderWordCloud(seeds) {
+  if (seeds.length === 0) {
+    wordcloudView.innerHTML = '<div class="empty-state"><div class="icon">&#9729;</div><p>No seeds yet</p></div>';
+    return;
+  }
+
+  const freq = {};
+  seeds.forEach(s => {
+    extractWords(s.seed).forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  });
+
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  const max = sorted[0]?.[1] || 1;
+
+  wordcloudView.innerHTML = sorted.map(([word, count]) => {
+    const size = 0.7 + (count / max) * 1.5;
+    const opacity = 0.4 + (count / max) * 0.6;
+    const colorIdx = Math.floor(Math.random() * CLUSTER_COLORS.length);
+    return `<span class="word" style="font-size:${size}rem; background:${CLUSTER_COLORS[colorIdx]}20; color:${CLUSTER_COLORS[colorIdx]}; opacity:${opacity}">${escapeHtml(word)} <sup style="font-size:0.6em; opacity:0.6">${count}</sup></span>`;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// --- View Switching ---
+
+document.querySelectorAll('.view-mode').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-mode').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const view = btn.dataset.view;
+    const seeds = getSeeds();
+
+    graphContainer.style.display = view === 'cluster' ? 'block' : 'none';
+    timelineView.classList.toggle('active', view === 'timeline');
+    wordcloudView.classList.toggle('active', view === 'words');
+
+    if (view === 'cluster') renderGraph(seeds);
+    else if (view === 'timeline') renderTimeline(seeds);
+    else if (view === 'words') renderWordCloud(seeds);
+  });
+});
+
+// --- Init ---
+
+window.addEventListener('resize', () => {
+  if (graphContainer.style.display !== 'none') renderGraph(getSeeds());
+});
+
+window.addEventListener('seed-ready', () => renderGraph(getSeeds()));
+setInterval(() => {
+  if (graphContainer.style.display !== 'none') renderGraph(getSeeds());
+}, 5000);
+
+renderGraph(getSeeds());
+</script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thought Multiplier — Rebound Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e0e0e8;
+    --text-dim: #6b6b80;
+    --accent: #7c6aef;
+    --archive: #4ade80;
+    --llm: #f472b6;
+    --browser: #60a5fa;
+    --email: #fbbf24;
+    --graph: #a78bfa;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .dashboard {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .header h1 {
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .cycle-indicator {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Seed card */
+  .seed-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .seed-card .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .seed-card .seed-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .seed-card .seed-time {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Branch grid */
+  .branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .branch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .branch::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .branch.archive::before { background: var(--archive); }
+  .branch.llm::before { background: var(--llm); }
+  .branch.browser::before { background: var(--browser); }
+  .branch.email::before { background: var(--email); }
+  .branch.graph::before { background: var(--graph); }
+
+  .branch .branch-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .branch.archive .branch-name { color: var(--archive); }
+  .branch.llm .branch-name { color: var(--llm); }
+  .branch.browser .branch-name { color: var(--browser); }
+  .branch.email .branch-name { color: var(--email); }
+  .branch.graph .branch-name { color: var(--graph); }
+
+  .branch .branch-status {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .branch .branch-output {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .branch .branch-output a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Diff view for LLM */
+  .diff-add {
+    background: rgba(74, 222, 128, 0.1);
+    border-left: 2px solid var(--archive);
+    padding: 0.125rem 0.5rem;
+    margin: 0.25rem 0;
+  }
+
+  .diff-context {
+    color: var(--text-dim);
+    padding: 0.125rem 0.5rem;
+  }
+
+  /* Next seed suggestion */
+  .next-seed {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+
+  .next-seed:hover {
+    box-shadow: 0 0 0 3px rgba(124, 106, 239, 0.15);
+  }
+
+  .next-seed .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .next-seed .suggestion {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-dim);
+  }
+
+  .empty-state .icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .empty-state p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+  <div class="header">
+    <h1>Rebound Dashboard</h1>
+    <span class="cycle-indicator" id="cycleInfo"></span>
+  </div>
+
+  <div id="content">
+    <div class="empty-state">
+      <div class="icon">&#8635;</div>
+      <p>No seeds yet. Open the Seed Capture tab and type your first thought.</p>
+      <p style="margin-top:0.5rem; font-size:0.8rem;">The dashboard updates automatically when seeds are captured.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const content = document.getElementById('content');
+const cycleInfo = document.getElementById('cycleInfo');
+
+function getSeeds() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('ray-seed-')) keys.push(k);
+  }
+  return keys
+    .map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } })
+    .filter(Boolean)
+    .sort((a, b) => b.ts.localeCompare(a.ts));
+}
+
+function getRebound(ts) {
+  try {
+    return JSON.parse(localStorage.getItem(`ray-rebound-${ts}`));
+  } catch { return null; }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function renderDashboard() {
+  const seeds = getSeeds();
+
+  if (seeds.length === 0) return;
+
+  cycleInfo.textContent = `${seeds.length} seed${seeds.length !== 1 ? 's' : ''} — cycle ${seeds.length}`;
+
+  const latest = seeds[0];
+  const rebound = getRebound(latest.ts);
+
+  let html = '';
+
+  // Original seed
+  html += `
+    <div class="seed-card">
+      <div class="label">Original Seed</div>
+      <div class="seed-text">${escapeHtml(latest.seed)}</div>
+      <div class="seed-time">${formatTime(latest.ts)}</div>
+    </div>
+  `;
+
+  // Branch outputs
+  html += '<div class="branches">';
+
+  // Archive branch
+  html += `
+    <div class="branch archive">
+      <div class="branch-name">Archive</div>
+      <div class="branch-status">${rebound?.archive ? 'Saved' : 'Pending'}</div>
+      <div class="branch-output">${rebound?.archive
+        ? `Stored as ray-seed-${latest.ts.slice(0, 10)}`
+        : 'Waiting for Agent Scripter pipeline...'}</div>
+    </div>
+  `;
+
+  // LLM branch
+  html += `
+    <div class="branch llm">
+      <div class="branch-name">LLM Refinement</div>
+      <div class="branch-status">${rebound?.llm ? 'Complete' : 'Pending'}</div>
+      <div class="branch-output">${rebound?.llm
+        ? `<div class="diff-add">${escapeHtml(rebound.llm.refined)}</div>`
+        : 'Waiting for Phi-4 processing...'}</div>
+    </div>
+  `;
+
+  // Browser branch
+  html += `
+    <div class="branch browser">
+      <div class="branch-name">Browser / CMS</div>
+      <div class="branch-status">${rebound?.browser ? 'Published' : 'Pending'}</div>
+      <div class="branch-output">${rebound?.browser
+        ? `<a href="${escapeHtml(rebound.browser.url)}">${escapeHtml(rebound.browser.url)}</a>`
+        : 'Waiting for CMS tab navigation...'}</div>
+    </div>
+  `;
+
+  // Email branch
+  html += `
+    <div class="branch email">
+      <div class="branch-name">Email</div>
+      <div class="branch-status">${rebound?.email ? 'Sent' : 'Pending'}</div>
+      <div class="branch-output">${rebound?.email
+        ? `To: ${escapeHtml(rebound.email.to)}`
+        : 'Waiting for email compose...'}</div>
+    </div>
+  `;
+
+  // Graph branch
+  html += `
+    <div class="branch graph">
+      <div class="branch-name">Graph</div>
+      <div class="branch-status">${rebound?.graph ? 'Updated' : 'Pending'}</div>
+      <div class="branch-output">${rebound?.graph
+        ? `${rebound.graph.clusters} clusters, ${rebound.graph.connections} connections`
+        : 'Waiting for graph update...'}</div>
+    </div>
+  `;
+
+  html += '</div>';
+
+  // Next seed suggestion
+  html += `
+    <div class="next-seed" id="nextSeed">
+      <div class="label">Next Seed</div>
+      <div class="suggestion">${rebound?.next_seed
+        ? escapeHtml(rebound.next_seed)
+        : 'Complete the current cycle to receive a suggestion...'}</div>
+    </div>
+  `;
+
+  content.innerHTML = html;
+
+  // Click next seed to open Seed Capture with pre-filled text
+  const nextSeedEl = document.getElementById('nextSeed');
+  if (nextSeedEl && rebound?.next_seed) {
+    nextSeedEl.addEventListener('click', () => {
+      localStorage.setItem('thought-multiplier-prefill', rebound.next_seed);
+      // In Ray, this would activate the Seed Capture tab
+      window.dispatchEvent(new CustomEvent('navigate-to-seed'));
+    });
+  }
+}
+
+// Listen for seed-ready events from Seed Capture
+window.addEventListener('seed-ready', renderDashboard);
+
+// Listen for rebound data from Agent Scripter
+window.addEventListener('rebound-complete', renderDashboard);
+
+// Poll for updates (cross-tab communication fallback)
+setInterval(renderDashboard, 3000);
+
+// Initial render
+renderDashboard();
+</script>
+</body>
+</html>
