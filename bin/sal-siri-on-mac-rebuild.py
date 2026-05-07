@@ -103,7 +103,7 @@ Rules:
   4. Respond ONLY with strict JSON: {{"slug": "<slug-or-empty>", "params": {{<key-value pairs>}}, "confidence": <0.0-1.0>, "reason": "<short>"}}
   5. Do not include any text outside the JSON object.
 
-STATEFUL DEIXIS RESOLUTION (v2):
+STATEFUL DEIXIS RESOLUTION (v2 — single previous turn):
   If a "PREVIOUS TURN" block is included before USER UTTERANCE, use it to resolve
   deictic references in the user's words:
     - "now scale them down"     → "them" = previous turn's selection
@@ -114,10 +114,28 @@ STATEFUL DEIXIS RESOLUTION (v2):
   Resolve before matching to a catalog entry. If the user uses a deictic reference
   but no PREVIOUS TURN is present, return slug "" with reason "deictic-no-state".
 
+MULTI-TURN HISTORY (v3):
+  A "RECENT TURNS" block lists up to 5 prior turns with format:
+    -N: <slug> params=<json> @ <frontmost_app>:<selection_count> (<status>) <Δt ago>
+  Use it to resolve references that span more than one previous turn:
+    - "go back two steps"          → re-run turn -2 (its slug + params)
+    - "do those last three again"  → run turns -3, -2, -1 in sequence
+    - "what did I just do"         → respond with a description of turns -1..-3
+                                      (return slug "describe-recent" — handled
+                                      specially by the dispatcher)
+    - "undo that"                  → if turn -1 has a known undo slug, return it;
+                                      otherwise return slug "" reason "no-undo"
+    - "the photo I edited a minute ago"
+                                   → scan RECENT TURNS for the most recent
+                                      Photos-scope edit slug and use its context
+  Multi-turn references take precedence over single previous-turn deixis when both
+  could apply.
+
 CATALOG:
 {catalog}
 
 PREVIOUS TURN: <none-or-json-from-last-state.json>
+RECENT TURNS: <none-or-list-from-turn-log.jsonl>
 USER UTTERANCE: """
     PROMPT_OUT.write_text(prompt)
     print(f"Wrote {PROMPT_OUT} ({len(prompt)} chars)")
@@ -278,17 +296,19 @@ actions:
   - id: get_text
     type: get_text_from_input
     description: "Capture the user's spoken or typed utterance."
-  - id: read_state
-    type: get_contents_of_file
-    file: "~/Library/Application Support/Sal-Siri/last-state.json"
+  - id: read_recent
+    type: run_shell_script
+    shell: "/bin/zsh"
+    pass_input: as_arguments
+    script: 'python3 "$HOME/Library/Application Support/Sal-Siri/read-recent-turns.py" 5 30'
     on_error: "Continue with empty state"
-    description: "Load previous-turn context for deictic resolution. v2: stateful conversation."
+    description: "v3: emit PREVIOUS TURN + RECENT TURNS blocks (last 5 turns within 30 min) for multi-turn deictic resolution."
   - id: combine_input
     type: text
     template: |
-      PREVIOUS TURN: {{read_state}}
+      {{read_recent}}
       USER UTTERANCE: {{get_text}}
-    description: "Compose the model input with both previous-turn state and current utterance."
+    description: "Compose the model input — recent-turns context block + current utterance."
   - id: route
     type: use_model
     model: "Apple Intelligence Foundation Model (on-device)"
@@ -312,15 +332,23 @@ notes: |
     4. Vocal Shortcut entry "Hey Sal" → run this Shortcut
        (manual, via System Settings → Accessibility → Speech → Vocal Shortcuts)
 
-  v2 stateful conversation:
+  v2 stateful conversation (single previous turn):
     The dispatcher writes ~/Library/Application Support/Sal-Siri/last-state.json
     after every successful turn (slug, params, frontmost app, selection count).
-    The Get Contents action above reads it before each new turn so the model
-    can resolve "now scale them down" / "do that again" / "make it 25 percent"
-    against the previous turn's state.
+    The model can resolve "now scale them down" / "do that again" / "make it
+    25 percent" against the previous turn's state.
 
-    Turn history is also appended to ~/Library/Application Support/Sal-Siri/turn-log.jsonl
-    for auditing and future cross-session learning.
+  v3 multi-turn history (this Shortcut version):
+    The Run Shell Script action calls bin/sal-siri-read-recent-turns.py which
+    reads turn-log.jsonl and emits both:
+      - PREVIOUS TURN: <last successful turn JSON> (same as v2)
+      - RECENT TURNS:
+          -1: <slug> params=<json> @ <app>:<sel> (<status>) <Δt ago>
+          -2: ...
+          -3: ...
+    The model uses RECENT TURNS for queries that span more than one previous turn:
+      "go back two steps", "do those last three again", "the photo I edited a
+      minute ago", "undo that". Default window: 5 turns within 30 minutes.
 '''
     SHORTCUT_SPEC.write_text(spec)
     print(f"Wrote {SHORTCUT_SPEC}")
@@ -329,9 +357,9 @@ notes: |
     install = '''#!/usr/bin/env bash
 # Phase 6 — Install Sal's Siri-on-Mac router files into the user library.
 #
-# Copies the intent catalog, system prompt, and dispatcher AppleScript to
-# ~/Library/Application Support/Sal-Siri/ so the "Sal's Siri" Shortcut can find
-# them at runtime.
+# Copies the intent catalog, system prompt, dispatcher AppleScript, and the
+# recent-turns reader to ~/Library/Application Support/Sal-Siri/ so the
+# "Sal's Siri" Shortcut can find them at runtime.
 #
 # Pre-requisite: bin/dictation-commands-install.sh has been run (the 18 .scptd
 # libraries must be in ~/Library/Script Libraries/).
@@ -342,6 +370,9 @@ mkdir -p "$DST"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-intents.json"          "$DST/intents.json"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-system-prompt.txt"     "$DST/system-prompt.txt"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-dispatch.applescript"  "$DST/dispatch.applescript"
+cp "$ROOT/bin/sal-siri-read-recent-turns.py"                             "$DST/read-recent-turns.py"
+chmod +x "$DST/read-recent-turns.py"
+touch "$DST/turn-log.jsonl"
 echo "Installed Sal's Siri runtime at: $DST"
 echo ""
 echo "Next steps:"

@@ -9,7 +9,7 @@ Rules:
   4. Respond ONLY with strict JSON: {"slug": "<slug-or-empty>", "params": {<key-value pairs>}, "confidence": <0.0-1.0>, "reason": "<short>"}
   5. Do not include any text outside the JSON object.
 
-STATEFUL DEIXIS RESOLUTION (v2):
+STATEFUL DEIXIS RESOLUTION (v2 — single previous turn):
   If a "PREVIOUS TURN" block is included before USER UTTERANCE, use it to resolve
   deictic references in the user's words:
     - "now scale them down"     → "them" = previous turn's selection
@@ -19,6 +19,23 @@ STATEFUL DEIXIS RESOLUTION (v2):
     - "the same theme"           → re-use previous turn's params.theme value
   Resolve before matching to a catalog entry. If the user uses a deictic reference
   but no PREVIOUS TURN is present, return slug "" with reason "deictic-no-state".
+
+MULTI-TURN HISTORY (v3):
+  A "RECENT TURNS" block lists up to 5 prior turns with format:
+    -N: <slug> params=<json> @ <frontmost_app>:<selection_count> (<status>) <Δt ago>
+  Use it to resolve references that span more than one previous turn:
+    - "go back two steps"          → re-run turn -2 (its slug + params)
+    - "do those last three again"  → run turns -3, -2, -1 in sequence
+    - "what did I just do"         → respond with a description of turns -1..-3
+                                      (return slug "describe-recent" — handled
+                                      specially by the dispatcher)
+    - "undo that"                  → if turn -1 has a known undo slug, return it;
+                                      otherwise return slug "" reason "no-undo"
+    - "the photo I edited a minute ago"
+                                   → scan RECENT TURNS for the most recent
+                                      Photos-scope edit slug and use its context
+  Multi-turn references take precedence over single previous-turn deixis when both
+  could apply.
 
 CATALOG:
   export-exportmaptonewkeynoteslide: "export [this] [map] to keynote" (scope=com.apple.Maps)
@@ -611,4 +628,5 @@ CATALOG:
   navigation-gotoslide007: "go to slide seven" (scope=com.apple.iWork.Keynote)
 
 PREVIOUS TURN: <none-or-json-from-last-state.json>
+RECENT TURNS: <none-or-list-from-turn-log.jsonl>
 USER UTTERANCE: 

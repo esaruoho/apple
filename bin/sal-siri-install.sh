@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Phase 6 — Install Sal's Siri-on-Mac router files into the user library.
 #
-# Copies the intent catalog, system prompt, and dispatcher AppleScript to
-# ~/Library/Application Support/Sal-Siri/ so the "Sal's Siri" Shortcut can find
-# them at runtime.
+# Copies the intent catalog, system prompt, dispatcher AppleScript, and the
+# recent-turns reader to ~/Library/Application Support/Sal-Siri/ so the
+# "Sal's Siri" Shortcut can find them at runtime.
 #
 # Pre-requisite: bin/dictation-commands-install.sh has been run (the 18 .scptd
 # libraries must be in ~/Library/Script Libraries/).
@@ -14,6 +14,9 @@ mkdir -p "$DST"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-intents.json"          "$DST/intents.json"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-system-prompt.txt"     "$DST/system-prompt.txt"
 cp "$ROOT/scripts/sal/dictation-commands/sal-siri-dispatch.applescript"  "$DST/dispatch.applescript"
+cp "$ROOT/bin/sal-siri-read-recent-turns.py"                             "$DST/read-recent-turns.py"
+chmod +x "$DST/read-recent-turns.py"
+touch "$DST/turn-log.jsonl"
 echo "Installed Sal's Siri runtime at: $DST"
 echo ""
 echo "Next steps:"

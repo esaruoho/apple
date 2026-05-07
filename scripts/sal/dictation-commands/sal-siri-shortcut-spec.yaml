@@ -9,17 +9,19 @@ actions:
   - id: get_text
     type: get_text_from_input
     description: "Capture the user's spoken or typed utterance."
-  - id: read_state
-    type: get_contents_of_file
-    file: "~/Library/Application Support/Sal-Siri/last-state.json"
+  - id: read_recent
+    type: run_shell_script
+    shell: "/bin/zsh"
+    pass_input: as_arguments
+    script: 'python3 "$HOME/Library/Application Support/Sal-Siri/read-recent-turns.py" 5 30'
     on_error: "Continue with empty state"
-    description: "Load previous-turn context for deictic resolution. v2: stateful conversation."
+    description: "v3: emit PREVIOUS TURN + RECENT TURNS blocks (last 5 turns within 30 min) for multi-turn deictic resolution."
   - id: combine_input
     type: text
     template: |
-      PREVIOUS TURN: {read_state}
+      {read_recent}
       USER UTTERANCE: {get_text}
-    description: "Compose the model input with both previous-turn state and current utterance."
+    description: "Compose the model input — recent-turns context block + current utterance."
   - id: route
     type: use_model
     model: "Apple Intelligence Foundation Model (on-device)"
@@ -43,12 +45,20 @@ notes: |
     4. Vocal Shortcut entry "Hey Sal" → run this Shortcut
        (manual, via System Settings → Accessibility → Speech → Vocal Shortcuts)
 
-  v2 stateful conversation:
+  v2 stateful conversation (single previous turn):
     The dispatcher writes ~/Library/Application Support/Sal-Siri/last-state.json
     after every successful turn (slug, params, frontmost app, selection count).
-    The Get Contents action above reads it before each new turn so the model
-    can resolve "now scale them down" / "do that again" / "make it 25 percent"
-    against the previous turn's state.
+    The model can resolve "now scale them down" / "do that again" / "make it
+    25 percent" against the previous turn's state.
 
-    Turn history is also appended to ~/Library/Application Support/Sal-Siri/turn-log.jsonl
-    for auditing and future cross-session learning.
+  v3 multi-turn history (this Shortcut version):
+    The Run Shell Script action calls bin/sal-siri-read-recent-turns.py which
+    reads turn-log.jsonl and emits both:
+      - PREVIOUS TURN: <last successful turn JSON> (same as v2)
+      - RECENT TURNS:
+          -1: <slug> params=<json> @ <app>:<sel> (<status>) <Δt ago>
+          -2: ...
+          -3: ...
+    The model uses RECENT TURNS for queries that span more than one previous turn:
+      "go back two steps", "do those last three again", "the photo I edited a
+      minute ago", "undo that". Default window: 5 turns within 30 minutes.

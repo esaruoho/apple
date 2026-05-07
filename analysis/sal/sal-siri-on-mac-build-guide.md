@@ -170,19 +170,62 @@ If the user uses a deictic reference but no previous turn is on disk, the model 
 
 The dispatcher also now does **template-substitution** of params named `$foo` or `{foo}` into the AppleScript body before running it, so commands like `go to slide $slideNumber` and `scale down $percent percent` actually receive the slot-filled values.
 
-**v2 capability matrix:**
+**v3 capability matrix (this update):**
 
-| Capability | v1 (initial Phase 6) | v2 (this update) |
-|---|---|---|
-| Deterministic phrase matching | ✅ | ✅ |
-| Cross-app composition | ✅ | ✅ |
-| Slot-filling — model extraction | ✅ | ✅ |
-| Slot-filling — applescript substitution | ❌ | ✅ |
-| Stateful conversation — last-turn deixis | ❌ | ✅ |
-| Stateful conversation — multi-turn history | ❌ | ⚠ logged but unused |
-| Cross-session memory | ❌ | ⚠ turn-log.jsonl exists; not yet read |
+| Capability | v1 | v2 | v3 |
+|---|---|---|---|
+| Deterministic phrase matching | ✅ | ✅ | ✅ |
+| Cross-app composition | ✅ | ✅ | ✅ |
+| Slot-filling — model extraction | ✅ | ✅ | ✅ |
+| Slot-filling — applescript substitution | ❌ | ✅ | ✅ |
+| Stateful conversation — last-turn deixis | ❌ | ✅ | ✅ |
+| Stateful conversation — multi-turn history | ❌ | ⚠ logged | ✅ read into prompt |
+| Cross-session memory | ❌ | ⚠ logged | ✅ filtered by staleness window |
 
-The remaining ⚠ items are both about *using* the multi-turn log for context beyond a single previous turn (e.g. "go back two steps", "what did I just do today"). These are v3 work and require larger context windows than the on-device Foundation Model currently exposes.
+## v3 — multi-turn history is now read into the prompt
+
+The Shortcut's previous "Get Contents of File" action (which only read `last-state.json`) is replaced with a **Run Shell Script** action that calls:
+
+```
+python3 ~/Library/Application Support/Sal-Siri/read-recent-turns.py 5 30
+```
+
+Arguments: `<num-turns> <stale-minutes>`. Default 5 turns, 30-minute staleness window.
+
+The reader emits a single text block:
+
+```
+PREVIOUS TURN: {"slug": "scale-down-percent", "params": {"percent": 10}, "frontmost_app": "Keynote", "selection_count": "5"}
+RECENT TURNS:
+  -1: scale-down-percent params={"percent":10} @ Keynote:5 (ok) 2s ago
+  -2: apply-magic-move params={} @ Keynote:5 (ok) 4s ago
+  -3: make-wide-presentation params={"theme":"gradient"} @ Keynote:5 (ok) 8s ago
+```
+
+Both blocks are then spliced into the model input alongside the user utterance. The system prompt has a new **MULTI-TURN HISTORY (v3)** section instructing the model to use `RECENT TURNS` for queries that span more than one previous turn:
+
+| User says | Model resolves via |
+|---|---|
+| "go back two steps" | re-runs turn -2's slug + params |
+| "do those last three again" | runs turns -3, -2, -1 in sequence |
+| "the photo I edited a minute ago" | scans RECENT TURNS for the most recent Photos-scope edit |
+| "undo that" | turn -1's known undo slug, or `slug=""` reason `no-undo` |
+| "what did I just do" | special slug `describe-recent` (handled by dispatcher — v4 work) |
+
+Multi-turn references take precedence over single-previous-turn deixis when both could apply.
+
+**Staleness filter:** turns older than 30 minutes are excluded by default. Voice users typically resume context within minutes, not hours — including a 4-hour-old turn would more often confuse than help. The filter is parameterized in the Shell Script call so future tuning is one edit.
+
+**Cross-session memory:** because `turn-log.jsonl` is append-only and survives reboots, the next-day "what did I do yesterday" query is technically possible — the staleness filter just needs to be widened (or removed) for that intent. Currently outside the default behavior on grounds of prompt economy.
+
+## What's left (v4 sketch)
+
+- **`describe-recent` special slug** — the dispatcher would route this to a TTS narration of the last 3 turns instead of running an AppleScript. Useful for "what did I just do".
+- **Cross-session "today" / "yesterday" queries** — widen the staleness window dynamically based on detected time references in the utterance.
+- **Two-stage routing** for the prompt-size limit — first call picks scope, second call picks within-scope slug. Would also tighten `RECENT TURNS` filtering to "same-scope only" for sharper deixis.
+- **Confidence threshold** — if Foundation Models returns confidence < 0.5, the dispatcher should ask "did you mean X?" via TTS rather than blindly running.
+
+These are nice-to-haves. The v3 build closes the four-capability gap from Sal's killed prototype.
 
 # What this preserves of Sal's prototype
 
