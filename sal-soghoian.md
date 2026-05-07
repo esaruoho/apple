@@ -26,6 +26,12 @@ He is the uncle of noted privacy researcher and activist **Christopher Soghoian*
 
 Before joining Apple in 1997, Sal was a **publishing automation consultant** in the 1990s. He created automation solutions for the publishing industry using AppleScript — the exact workflow that Cal Simone later used to convince Steve Jobs to keep AppleScript alive.
 
+**How he learned it (WIRED 2018):** In 1993 — the same year Apple released AppleScript — Sal copped a used Macintosh from a friend and started fiddling with scripts. Once he got the hang of it, he used it alongside his favorite design applications to whip up menus for bars and restaurants. He wrote a script for ***Better Homes and Gardens*** to format all of its recipes for easy printing. From there he started sharing his scripting chops with businesses looking to knock inefficiency out of their workplaces. The B2B automation consulting practice — bars, restaurants, magazines, publishers — is what eventually caught Apple's attention.
+
+> *"It's very empowering to give somebody that ability to suddenly change the way they work and enable them to do great, complex things to grow their business."* — Sal, 1990s consulting practice
+
+The clients matter: bar menus, restaurant menus, recipe formatting. **He wasn't building tools for programmers. He was building tools for cooks, magazine editors, and bartenders.** That's the seed of WWSD — automation as something you do *for* domain experts who have real work to ship, not something you do *to* code.
+
 He authored:
 - **Sal's AppleScript Snippets** — a popular script collection
 - **The ShadowCaster Quark XTension** — a QuarkXPress plugin
@@ -37,9 +43,61 @@ He was a featured presenter for **Quark, Thunder Lizard Productions, Apple, Seyb
 
 This is the publishing world that made AppleScript indispensable — QuarkXPress workflows, automated typesetting, batch processing for magazines and newspapers. When Bill Cheeseman later said "the publishing industry was utterly dependent on AppleScript," he was describing Sal's own client base.
 
+### Two Jobs Confrontations (WIRED, 2018)
+
+Two formative moments where Sal had to physically fight to keep his work alive. They're the load-bearing stories of his Apple career — not "Sal stood up to Steve" as folklore but as the actual mechanism by which AppleScript and Automator survived.
+
+**1997 — "I'm gonna bite your leg."**
+
+July 1997. Gil Amelio had just been ousted; Apple's stock was plummeting. Steve Jobs was back as interim CEO, hacking and slashing under-performing departments. In one such room he told the team:
+
+> *"It used to be easy when we were 100 times better than Windows. But now that we're not, you don't know what to do."* — Steve Jobs
+
+Sal was Apple's product manager of automation. He was the **first person in the room to challenge Jobs**:
+
+> *"No, you're wrong."*
+>
+> Jobs: *"And you are?"*
+>
+> *"I'm Sal Soghoian, and you're wrong. My technology is better than Windows."*
+
+Sal's own retelling of why he did it:
+
+> *"I sort of saw it as 'I might be this dog on my square yard of dirt, but I know every bit of that square yard and you're stepping on my yard. I'm gonna bite your leg.'"*
+
+Jobs was gauging the room to see who was passionate enough to fight for their work. Those were the people he wanted to keep. **Sal passed the test.** Read in reverse: the technologies that survived the 1997 cull at Apple are the ones whose champions defended them publicly to Jobs's face. The ones whose champions stayed quiet got cut.
+
+**2004 — The hallway stakeout.**
+
+Seven years later, Sal had built the original Automator and was pitching it to anyone at Apple who would listen. **Nobody was biting.** WWDC 2004 was coming up. He tried working his way into the office where Jobs's crew was prepping; he couldn't get in.
+
+So **Sal camped out in the hallway from 10 am to 5 pm**, vowing to stay put until he had a minute with Jobs.
+
+When Jobs finally left the office, he saw Sal lingering and asked what he wanted to talk about.
+
+Sal's pitch line — game face on, one breath:
+
+> ***"Automation, but for the rest of us."***
+
+(A deliberate echo of "the computer for the rest of us." The single most important line Sal ever said inside Apple.)
+
+They scurried into the conference room for a private demo. Sal loaded a Safari page of family-photo thumbnails, dragged a few Automator actions into the script builder, and produced a workflow that found the full-sized images, loaded them into iPhoto, and burned them to a DVD — in seconds.
+
+> *"Stop! I want robots for icons."* — Steve Jobs
+
+That's where the Automator robot icon came from. Jobs wanted it on every computer.
+
+**The two stories together** mean something. Sal's Apple career didn't survive on institutional momentum — it survived twice, separately, on Sal's willingness to physically corner the CEO and refuse to be ignored. The hallway stakeout is the one most worth internalizing for WWSD: when the institution won't give you a meeting, you don't write a memo. You sit in the hallway from 10 am to 5 pm.
+
 ### His Credo
 
 > **"The power of the computer should reside in the hands of the one using it."**
+
+A second, complementary formulation from WIRED 2018 — the destiny framing:
+
+> *"I'd like to be an old guy, looking back at things, and say I did something that made people's lives better, that they were able to control their destiny to some degree because of the work that I and people that I worked with produced."*
+
+The two formulations differ in emphasis. The first is about *power* — capability in the user's hands. The second is about *destiny* — agency over one's own life. Both point at the same thing: automation as a means of self-determination, not a productivity hack.
 
 ### What He Built at Apple
 
@@ -47,7 +105,7 @@ From his own description: *"At Apple, he advanced a wide range of user automatio
 
 - **AppleScript revival** — was an advocate for AppleScript years before joining Apple. During his tenure, AppleScript was revived and upgraded to be PowerPC-native in Mac OS 8.5, then successfully transitioned to Apple's UNIX-based Mac OS X, integrated with Project Builder and Interface Builder (precursors to Xcode)
 - **AppleScript evolution (Lion → Mavericks)** — added library support and direct access to Cocoa frameworks through AppleScriptObj-C, a fusion of AppleScript and Objective-C
-- **Automator** — his signature creation. In late 2002, joined an ad hoc team of engineers developing an application for creating and running automation workflows. After a year and a half of development, showed it to Steve Jobs **one week before WWDC 2004**. Jobs was impressed and asked Soghoian to appear at the keynote to demo Automator for the first time. Introduced as part of Mac OS X 10.4 Tiger. (Jobs called him "Saul" on stage.)
+- **Automator** — his signature creation. In late 2002, joined an ad hoc team of engineers developing an application for creating and running automation workflows. After a year and a half of development, he couldn't get an internal meeting — so he **camped in the hallway from 10 am to 5 pm** and ambushed Jobs as he left the office (see "Two Jobs Confrontations" above). Pitch line: ***"Automation, but for the rest of us."*** Jobs's reaction to the demo: ***"Stop! I want robots for icons."*** That's why Automator's icon is a robot. Introduced at the **WWDC 2004 keynote**; Jobs onstage: *"I'd like to invite Saul up on the stage, whom you all know."* The next day, Sal found a new name tag on his office door: *"Saul, whom you all know."* **Automator 1.0 shipped April 29, 2005**, robot icon and all, as part of Mac OS X 10.4 Tiger.
 - **JavaScript for Automation (JXA)** — introduced in OS X Yosemite as a peer to AppleScript, providing access to Apple Events and Cocoa through an enhanced version of JavaScriptCore
 - **Scripting dictionaries** — wrote the scripting dictionaries for **iWork** (Keynote, Numbers, Pages), **iPhoto**, **Aperture**, and **Photos**
 - **Apple Configurator automation** — designed and wrote the automation tools. Architecture: a central AppleScriptObj-C library + a set of Automator actions. Enables iOS devices to be prepared, managed, and refreshed automatically upon connection to a hosting Mac
@@ -73,6 +131,12 @@ From his own description: *"At Apple, he advanced a wide range of user automatio
 ### His Departure (November 2016)
 
 Apple **eliminated his position entirely** — didn't replace him, dissolved the role.
+
+**The mechanics, per WIRED 2018:** *"In October of 2016, he was let go from Apple after a nearly twenty-year stint at the company. **No warning, no early signs.** Apple just said his position didn't exist anymore."* It had been thirteen years since Automator debuted on the Mac, and Soghoian's biggest champion at Apple, Steve Jobs, was gone.
+
+Sal's own first reaction:
+
+> *"If anything, it's a change in something you've known for a long time. But I still have more work to do."*
 
 The complete FAQ from [macosxautomation.com/about.html](http://macosxautomation.com/about.html), November 2016:
 
@@ -194,6 +258,36 @@ On Mac vs iOS — *"It's an AND situation, not an OR situation."* He was already
 
 On Swift vs AppleScript: *"With Swift, they put all of the pain up front so you can't actually write the line of code unless you have it right. It won't compile. In AppleScript, you can write stuff that doesn't work correctly, but it'll do something."*
 
+### The Parallel iOS Track (2011–2017) — What Sal Enabled From Outside iOS
+
+While Sal was inside Apple championing Mac automation, a parallel automation movement grew up on iOS — built by independent developers explicitly inspired by Automator and AppleScript. Sal wasn't the author of any of these tools, but every one of them was downstream of his work. Source: WIRED 2018.
+
+**2011 — Greg Pierce / Agile Tortoise / Terminology.** Pierce was building a dictionary app called Terminology. iOS apps had no way to share information with each other — even copy-paste was a hassle. He built a barebones URL-scheme protocol that let apps share strings of text and tell each other what to do with that text. He called it **`x-callback-url`**. (Today: Pierce also makes Drafts, the iOS text capture app many automation users live in.)
+
+**2011 — Marco Arment / Instapaper.** Arment's read-it-later app was the first big-name partner to adopt x-callback-url. After integration, you could highlight a word in Instapaper, tap a menu item, and bounce into Terminology with the correct definition front and center. Arment on why it mattered:
+
+> *"Without [opening x-callback-url to any developer], it would've just been a clever integration between Instapaper and Terminology. Instead, it became the de facto standard for getting apps — even big ones like Google Maps and Evernote — to share information with each other and process stuff in tandem."*
+
+**December 2011 — David Barnard + Justin Youens / Contrast / Launch Center.** Barnard saw x-callback-url and wanted to make an app that took full advantage. He and Youens released **Launch Center**, an app that lived in iOS Notification Center and used x-callback-url as a central control panel for frequent actions. Apple disapproved (unauthorized use of Notification Center). They came back with **Launch Center Pro**, moving the shortcuts into the app — a productivity-focused home screen.
+
+**2014 — Barnard's Strategic Blunder.** After Apple announced new app-collaboration tools in iOS 8, Barnard and Youens started brainstorming. **Their plan: run x-callback-urls in succession to create script-like actions. They had effectively dreamed up Automator for iOS.** But they were scared by Apple's "convoluted and murky app approval process" — they'd been burned with the original Launch Center — and held back from following through. Barnard's own retrospective:
+
+> *"That was a strategic blunder."*
+
+**Winter 2014 — Workflow.** The team behind Workflow didn't share Barnard's fears. They shipped: select actions, drag-drop them together, send an ETA based on current location, download all pictures on a webpage, post photos to Instagram with hashtags pre-included. **It looked exactly like what Automator-for-iOS would have been.**
+
+**March 2017 — Apple acquires Workflow.** Just over two years after debut, Apple bought Workflow and its team. (Sal had been fired five months earlier.) Greg Pierce on the acquisition:
+
+> *"Maybe we'll see something [in 2018] that gives people a platform to do more professional work."*
+
+David Barnard's hope:
+
+> *"As iPads and iPhones get used more and more for more and more things, it's inevitable that people will look for shortcuts."*
+
+**The lesson.** The chain that became iOS Shortcuts — Pierce → Arment → Barnard/Youens → Workflow team → Apple acquisition — was Mac-Automator-shaped from start to finish. The independent iOS developers who built it were explicitly trying to bring Sal's Mac model to mobile. Sal didn't write a line of x-callback-url, didn't ship Launch Center, didn't found Workflow. But Shortcuts on iOS would not exist without the conceptual scaffolding Automator + AppleScript laid down a decade earlier.
+
+**Barnard's blunder is the WWSD inverse-lesson.** Don't let App Store / institutional fear stop you from shipping the right thing. The Workflow team didn't, and they got bought. Barnard and Youens hesitated and lost the category.
+
 ### Post-Apple Work
 
 - **MacStories guest series** (Jan 2017) — ["App Extensions Are Not a Replacement for User Automation"](https://www.macstories.net/stories/app-extensions-are-not-a-replacement-for-user-automation/)
@@ -297,6 +391,31 @@ Sal on Ray: *"Ray is absolutely one of the finest instructors I've ever seen or 
 - Categorize by topic: AppleScript, Shortcuts, Omni Automation, philosophy, community
 - Store as `sal-tweets.md` or structured YAML for the knowledge base
 
+### What Others Say About Sal (provenance for the canon)
+
+These are the quotes that get repeated about Sal — collected here with sources so we know who actually said them and when.
+
+**"The Dean of Automation."**
+Source: **Paul Kent**, founder of pKreative event consulting and former show manager for MacWorld, in WIRED 2018. The phrase has since been picked up by everyone, but Kent is the one who put it on the record. His full line:
+
+> *"He ate his own dog food, he lived amongst the community and championed them."* — Paul Kent
+
+**Steve Wozniak on AppleScript and Sal** (WIRED 2018):
+
+> *"[AppleScript] put incredible power in the hands of regular users without putting a lifetime of effort into this language."*
+
+> *"[Sal is] a combination of geek with mature sophistication."*
+
+> *"Sal has a true open source mentality of opening the computer up for normal people."*
+
+(The third quote is the pull-quote WIRED chose to feature in the article. It's the cleanest one-liner anyone has produced about why Sal mattered.)
+
+**Ken Case (Omni Group CEO)** on automation in general, after hiring Sal in late 2016:
+
+> *"Automation becomes more useful when it gets faster and can respond to more types of events. It's the difference between building a project in your house with either a screwdriver or hammer and using both a screwdriver and a hammer."*
+
+**Bill Cheeseman, Jon Gotow, Jason Snell, Gabe Weatherhead** — see the post-departure community reaction quotes already captured in "His Departure" above.
+
 ### Patent
 
 **US 7,428,535 B1** — "Automatic Relevance Filtering" (Sep 23, 2008)
@@ -305,13 +424,13 @@ See `patents/US7428535-automatic-relevance-filtering.pdf` and `patents/US7428535
 
 ---
 
-## "What Would Sal Do" — The 10 Principles
+## "What Would Sal Do" — The 12 Principles
 
 When writing AppleScript, channel Sal's mindset:
 
 1. **The user comes first.** Every script exists to put power in the user's hands. Does this script empower or create dependency?
 
-2. **Solve a real problem.** Never write a script that doesn't address an actual workflow pain point. Sal discovered AppleScript solving publishing automation — every script needs a clear "why."
+2. **Solve a real problem.** Never write a script that doesn't address an actual workflow pain point. Sal discovered AppleScript solving publishing automation — every script needs a clear "why." His pre-Apple clients were bartenders, restaurant owners, and *Better Homes and Gardens* recipe editors — not programmers.
 
 3. **Keep it local.** Prefer on-device processing over cloud services. Protect user data. "Avoid joining the food chain."
 
@@ -328,3 +447,7 @@ When writing AppleScript, channel Sal's mindset:
 9. **Educate and share.** The automation community grows through generosity. Write scripts others can learn from.
 
 10. **Never give up on automation.** Sal's response to losing his position wasn't despair — it was action: write more, teach more, build more.
+
+11. **Name commands like speech, not labels.** A good Siri/Shortcuts/Automator command name reads like something you would actually say out loud. "Find duplicates in this folder" beats "Folder duplicate detection." Hand-craft the phrase; don't derive it from the script's filename. (See *Sal Hand-Crafted Conformance* for the 8 patterns.)
+
+12. **Champion your own work — sit in the hallway if you have to.** Institutions don't naturally give your work an audience. Sal couldn't get an internal meeting for Automator, so he camped out in the hallway from 10 am to 5 pm and ambushed Jobs as he left the office. The pitch line was already loaded: *"Automation, but for the rest of us."* The corollary lesson is Barnard and Youens's 2014 strategic blunder — they had Automator-for-iOS designed but didn't ship it out of fear of App Store rejection. Workflow's team did ship, and they got bought. **If the institution won't give you a meeting, don't write a memo. Sit in the hallway.**
