@@ -1,0 +1,12 @@
+name: "Overlay \u201cThe Rule of Thirds\u201d grid"
+scope: "com.apple.iWork.Keynote"
+description: "Overlay a grid of lines for the Rule of Thirds on the selected or solo image on the current slide."
+source_library: "Keynote"
+source_file: "Slide-OverlayRuleOfThirdsGrid.scpt"
+siri_phrases:
+  - "show [the] rule of thirds [grid]"
+  - "overlay [the] rule of thirds [grid]"
+  - "display [the] rule of thirds [grid]"
+applescript: |
+  use script "DC-Keynote-Objects"
+  tell script "DC-Keynote-Objects" to overlayRuleOfThirdsOnSelectedImage()

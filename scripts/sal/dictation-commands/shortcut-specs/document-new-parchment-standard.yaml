@@ -1,0 +1,17 @@
+name: "New Presentation: Parchment-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Parchment theme"
+source_library: "Keynote"
+source_file: "Document-New-Parchment-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] parchment template"
+  - "make [a] [new] standard presentation with [the] parchment template"
+  - "make [a] [new] standard presentation using [the] parchment theme"
+  - "make [a] [new] standard presentation with [the] parchment theme"
+  - "make [a] [new] presentation using [the] standard parchment template"
+  - "make [a] [new] presentation with [the] standard parchment template"
+  - "make [a] [new] presentation using [the] standard parchment theme"
+  - "make [a] [new] presentation with [the] standard parchment theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Parchment")

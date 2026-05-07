@@ -1,0 +1,12 @@
+name: "Download Latest Version of DC Commands"
+scope: "com.apple.speech.SystemWideScope"
+description: "Download am archive of the latest version of Dictation Commands."
+source_library: "Speech"
+source_file: "DC-DownloadCurrentArchive.scpt"
+siri_phrases:
+  - "download your latest version"
+  - "download your available version"
+  - "download your latest archive"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to downloadCurrentDCArchive()

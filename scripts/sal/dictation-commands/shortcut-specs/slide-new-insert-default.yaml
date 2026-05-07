@@ -1,0 +1,12 @@
+name: "Insert Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Inserts a default slide after the current slide."
+source_library: "Keynote"
+source_file: "Slide-New-Insert-Default.scpt"
+siri_phrases:
+  - "add [a] [new] slide"
+  - "make [a] [new] slide"
+  - "insert [a] [new] slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to insertDefaultSlide()

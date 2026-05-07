@@ -1,0 +1,10 @@
+name: "Match Size to Largest Item"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will match the size of every selected slide item to the smallest selected slide item."
+source_library: "Keynote"
+source_file: "Slide-Item-MatchSizeOfSelectedToSmallestSelected.scpt"
+siri_phrases:
+  - "match size to [the] smallest [item]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to matchSizeOfSelectedSlideItemsToSmallestSelectedItem()

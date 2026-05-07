@@ -1,0 +1,12 @@
+name: "Stop Slideshow"
+scope: "com.apple.Photos"
+description: "Stop the currently playing slideshow"
+source_library: "Photos"
+source_file: "Slideshow-Stop.scpt"
+siri_phrases:
+  - "stop [the] slideshow"
+  - "exit [the] slideshow"
+  - "halt [the] slideshow"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to stopRunningSlideshow()

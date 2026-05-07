@@ -1,0 +1,11 @@
+name: "Change Theme to Cream Paper"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Cream Paper"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Cream-Paper.scpt"
+siri_phrases:
+  - "change [the] theme to cream paper"
+  - "change [the] template to cream paper"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Cream_Paper")

@@ -1,0 +1,13 @@
+name: "Remove all Lines"
+scope: "com.apple.iWork.Pages"
+description: "Remove all lines from the current page"
+source_library: "Pages"
+source_file: "Pages-Document-RemoveAllLines.scpt"
+siri_phrases:
+  - "remove all lines"
+  - "remove every line"
+  - "get rid of all lines"
+  - "get rid of every line"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to deleteAllLines(true)

@@ -1,0 +1,13 @@
+name: "Show Dictation Commands Help Book"
+scope: "com.apple.speech.SystemWideScope"
+description: "Open the Help Book for Dictation Commands"
+source_library: "Speech"
+source_file: "ShowDictationCommandsHelpBook.scpt"
+siri_phrases:
+  - "show [the] dictation commands help [book]"
+  - "show your help"
+  - "open [the] dictation commands help [book]"
+  - "show help [book] for [the] dictation commands"
+applescript: |
+  use script "DC-Help"
+  tell script "DC-Help" to openDictationCommandsHelpBook()

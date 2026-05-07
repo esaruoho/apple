@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cBullets\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cBullets\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-Bullets.scpt"
+siri_phrases:
+  - "change [the] master slide to bullets"
+  - "set [the] master slide to bullets"
+  - "change [the] slide master to bullets"
+  - "set [the] slide master to bullets"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_BULLETS")

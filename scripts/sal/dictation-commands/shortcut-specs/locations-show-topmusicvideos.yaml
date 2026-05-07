@@ -1,0 +1,11 @@
+name: "Show Top Music Videos"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the iTunes page for Top Music Videos in the iTunes application."
+source_library: "iTunes"
+source_file: "Locations-Show-TopMusicVideos.scpt"
+siri_phrases:
+  - "show [me] top music videos [in iTunes]"
+  - "show [the] top music videos page [in iTunes]"
+applescript: |
+  use script "DC-iTunes"
+  tell script "DC-iTunes" to showLocationTopMusicVideos()

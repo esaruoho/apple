@@ -1,0 +1,10 @@
+name: "Show Selected Image in Photos"
+scope: "com.apple.iWork.Keynote"
+description: "Show the selected image (full-window) in the Photos application. NOTE: the selected image must be in the current Photos library, and have been imported into the presentation using Dictation Commands."
+source_library: "Keynote"
+source_file: "Image-ShowInPhotos.scpt"
+siri_phrases:
+  - "show [me] this [image] in Photos"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to showSelectedKeynoteImageInPhotos()

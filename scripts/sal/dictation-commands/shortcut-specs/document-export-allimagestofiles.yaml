@@ -1,0 +1,11 @@
+name: "Export All Images"
+scope: "com.apple.iWork.Keynote"
+description: "Create and open a folder in the Pictures folder containing all of the images from the frontmost document. NOTE: the document must be in single-file (archive) format."
+source_library: "Keynote"
+source_file: "Document-Export-AllImagesToFiles.scpt"
+siri_phrases:
+  - "export all images"
+  - "export all photos"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to exportAllImagesFromDocumentArchive()

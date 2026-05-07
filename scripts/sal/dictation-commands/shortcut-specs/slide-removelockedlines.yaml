@@ -1,0 +1,13 @@
+name: "Remove all Locked Lines"
+scope: "com.apple.iWork.Keynote"
+description: "Remove all locked lines from the current slide"
+source_library: "Pages"
+source_file: "Slide-RemoveLockedLines.scpt"
+siri_phrases:
+  - "remove [all] locked lines"
+  - "remove every locked line"
+  - "get rid of [all] locked lines"
+  - "get rid of every locked line"
+applescript: |
+  use script "DC-Keynote-Objects"
+  tell script "DC-Keynote-Objects" to deleteLockedLines(true)

@@ -1,0 +1,11 @@
+name: "Change Theme to Harmony"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Harmony"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Harmony.scpt"
+siri_phrases:
+  - "change [the] theme to harmony"
+  - "change [the] template to harmony"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Harmony")

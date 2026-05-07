@@ -1,0 +1,11 @@
+name: "Display Date Information"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the current date information as a screen overlay"
+source_library: "Workspace"
+source_file: "DisplayOverlay-DateInfo.scpt"
+siri_phrases:
+  - "display [the] [current] date information"
+  - "display date info"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to showDateInfoOverlay()

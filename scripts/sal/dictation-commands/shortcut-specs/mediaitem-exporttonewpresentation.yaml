@@ -1,0 +1,11 @@
+name: "Export to New Presentation"
+scope: "com.apple.Photos"
+description: "Export the selected media items to a new Keynote presentation."
+source_library: "Photos"
+source_file: "MediaItem-ExportToNewPresentation.scpt"
+siri_phrases:
+  - "export [these] to keynote"
+  - "make [a] [new] presentation with these"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to exportPhotosSelectionToNewPresentation()

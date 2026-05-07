@@ -1,0 +1,11 @@
+name: "Change Theme to Linen Book"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Linen Book"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Linen-Book.scpt"
+siri_phrases:
+  - "change [the] theme to linen book"
+  - "change [the] template to linen book"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Linen_Book")

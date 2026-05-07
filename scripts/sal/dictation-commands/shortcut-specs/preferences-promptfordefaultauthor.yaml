@@ -1,0 +1,10 @@
+name: "Set the Default Author"
+scope: "com.apple.iWork.Keynote"
+description: "Prompt the user to enter the name of the default author"
+source_library: "Keynote"
+source_file: "Preferences-PromptForDefaultAuthor.scpt"
+siri_phrases:
+  - "set [the] default author"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to promptToSetDefaultAuthor()

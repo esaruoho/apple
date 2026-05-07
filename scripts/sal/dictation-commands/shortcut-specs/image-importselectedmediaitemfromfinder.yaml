@@ -1,0 +1,15 @@
+name: "Import Selected Finder Item"
+scope: "com.apple.iWork.Keynote"
+description: "Import the currently selected image file in the Finder into the selected image frame in Keynote.<p style=\"margin-left:36px;margin-right:36px;\">If no image is selected in Keynote, and the slide contains a single image, it will be the recipeient of the import.</p><p style=\"margin-left:36px;margin-right:36px;\">If the current slide contains multiple images, the selected image will be the recipient of the import.</p><p style=\"margin-left:36px;margin-right:36px;\">If the slide has no images, the Finder item will be imported into the slide and automatically sized.</p><p style=\"margin-left:36px;margin-right:36px;\"><b>NOTE</b>: Imported image files will include any embedded description metadata. Also, movie files are compatible for import and will be replace the contents of a target Keynote image frame.</p>"
+source_library: "Keynote"
+source_file: "Image-ImportSelectedMediaItemFromFinder.scpt"
+siri_phrases:
+  - "import [selection] from [the] finder"
+  - "import [the] finder selection"
+  - "import [selected] item from [the] finder"
+  - "import [selected] image from [the] finder"
+  - "import [selected] photo from [the] finder"
+  - "import [selected] movie from [the] finder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to importSelectedFinderItemIntoKeynote()

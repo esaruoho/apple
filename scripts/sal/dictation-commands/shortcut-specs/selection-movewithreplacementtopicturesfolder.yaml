@@ -1,0 +1,13 @@
+name: "Move Selected Finder Items with Replacement into Pictures folder"
+scope: "com.apple.finder"
+description: "Move the items selected in the Finder into the Pictures folder, replacing existing items with the same name. The moved items will highlighted after moving."
+source_library: "Workspace"
+source_file: "Selection-MoveWithReplacementToPicturesFolder.scpt"
+siri_phrases:
+  - "move this with replacement to [the] pictures [folder]"
+  - "move this with replacement into [the] pictures [folder]"
+  - "move these with replacement to [the] pictures [folder]"
+  - "move these with replacement into [the] pictures [folder]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to moveFinderSelectionIntoPicturesFolder(true,true)

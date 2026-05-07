@@ -1,0 +1,13 @@
+name: "Remove all Locked Lines"
+scope: "com.apple.iWork.Pages"
+description: "Remove all locked lines from the current page"
+source_library: "Pages"
+source_file: "Pages-Document-RemoveLockedLines.scpt"
+siri_phrases:
+  - "remove [all] locked lines"
+  - "remove every locked line"
+  - "get rid of [all] locked lines"
+  - "get rid of every locked line"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to deleteLockedLines(true)

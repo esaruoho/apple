@@ -1,0 +1,13 @@
+name: "Remove all Unlocked Lines"
+scope: "com.apple.iWork.Pages"
+description: "Remove all unlocked lines from the current page"
+source_library: "Pages"
+source_file: "Pages-Document-RemoveUnlockedLines.scpt"
+siri_phrases:
+  - "remove [all] unlocked lines"
+  - "remove every unlocked line"
+  - "get rid of [all] unlocked lines"
+  - "get rid of every unlocked line"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to deleteUnlockedLines(true)

@@ -1,0 +1,11 @@
+name: "Change Export Copyright String"
+scope: "com.apple.Photos"
+description: "This command will display a text input dialog in which you enter the copyright string to use to overlay exported images. Once a string has been stored, it will be used without prompting until this command is given t change it."
+source_library: "Photos"
+source_file: "MediaItem-ChangeExportCopyrightString.scpt"
+siri_phrases:
+  - "change [the] export copyright"
+  - "set [the] export copyright"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to promptForExportCopyrightString()

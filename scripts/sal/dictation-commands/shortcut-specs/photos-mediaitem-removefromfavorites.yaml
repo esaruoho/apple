@@ -1,0 +1,11 @@
+name: "Remove from Favorites"
+scope: "com.apple.Photos"
+description: "Remove the selected media items from the Favorites album"
+source_library: "Photos"
+source_file: "Photos-MediaItem-RemoveFromFavorites.scpt"
+siri_phrases:
+  - "remove [this] from favorites"
+  - "remove these from favorites"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to removeSelectedMediaItemsFromFavorites()

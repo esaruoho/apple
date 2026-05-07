@@ -1,0 +1,11 @@
+name: "Layout View: Scale to Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Scale the layout view to fit the current slide"
+source_library: "Keynote"
+source_file: "Layout-ScaleViewToWrapSlide.scpt"
+siri_phrases:
+  - "fit [this] slide in [the] window"
+  - "scale view to [fit] slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to scaleLayoutViewToWrapSlide()

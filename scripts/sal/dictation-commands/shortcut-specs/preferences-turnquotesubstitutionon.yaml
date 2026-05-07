@@ -1,0 +1,11 @@
+name: "Turn off Quote Substitution"
+scope: "com.apple.iWork.Keynote"
+description: "Turn off automatic quote character substitution in entered text"
+source_library: "Keynote"
+source_file: "Preferences-TurnQuoteSubstitutionOn.scpt"
+siri_phrases:
+  - "turn quote substitution off"
+  - "turn off quote substitution"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to setQuoteSubstitutionPreference(false)

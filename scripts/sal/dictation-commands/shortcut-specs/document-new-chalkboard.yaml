@@ -1,0 +1,13 @@
+name: "New Presentation: Chalkboard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Chalkboard theme"
+source_library: "Keynote"
+source_file: "Document-New-Chalkboard.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] chalkboard template"
+  - "make [a] [new] presentation with [the] chalkboard template"
+  - "make [a] [new] presentation using [the] chalkboard theme"
+  - "make [a] [new] presentation with [the] chalkboard theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Chalkboard")

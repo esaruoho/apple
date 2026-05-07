@@ -1,0 +1,17 @@
+name: "New Presentation: Showroom-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Showroom theme"
+source_library: "Keynote"
+source_file: "Document-New-Showroom-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] showroom template"
+  - "make [a] [new] wide presentation with [the] showroom template"
+  - "make [a] [new] wide presentation using [the] showroom theme"
+  - "make [a] [new] wide presentation with [the] showroom theme"
+  - "make [a] [new] presentation using [the] wide showroom template"
+  - "make [a] [new] presentation with [the] wide showroom template"
+  - "make [a] [new] presentation using [the] wide showroom theme"
+  - "make [a] [new] presentation with [the] wide showroom theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Showroom")

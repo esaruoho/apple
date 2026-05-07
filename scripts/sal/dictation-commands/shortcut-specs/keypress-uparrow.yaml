@@ -1,0 +1,10 @@
+name: "Press Up Arrow Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a press of the up arrow key"
+source_library: "Speech"
+source_file: "Keypress-UpArrow.scpt"
+siri_phrases:
+  - "keypress up arrow"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressUpArrow()

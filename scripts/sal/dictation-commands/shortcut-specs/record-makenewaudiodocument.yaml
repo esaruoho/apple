@@ -1,0 +1,12 @@
+name: "Create New Audio Recording"
+scope: "com.apple.speech.SystemWideScope"
+description: "Create a new audio recording using the current audio input."
+source_library: "QuickTime Player"
+source_file: "Record-MakeNewAudioDocument.scpt"
+siri_phrases:
+  - "make [a] [new] audio recording"
+  - "open [a] [new] audio recording"
+  - "create [a] [new] audio recording"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to newAudioRecordingDocument(false)

@@ -1,0 +1,11 @@
+name: "Display Computer Name"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the computer name as a screen overlay"
+source_library: "Workspace"
+source_file: "ShowOverlay-ComputerName.scpt"
+siri_phrases:
+  - "display [the] computer name"
+  - "display [the] name of [this] computer"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to showComputerNameOverlay()

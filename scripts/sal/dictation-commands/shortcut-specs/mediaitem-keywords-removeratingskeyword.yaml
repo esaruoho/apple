@@ -1,0 +1,10 @@
+name: "Remove Rating Keyword"
+scope: "com.apple.Photos"
+description: "This Dictation Command will remove all rating keywords from the selected media items."
+source_library: "Photos"
+source_file: "MediaItem-Keywords-RemoveRatingsKeyword.scpt"
+siri_phrases:
+  - "remove rating [keyword]"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to setRatingOfSelectedItemsTo(0)

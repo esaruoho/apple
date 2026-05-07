@@ -1,0 +1,12 @@
+name: "Stop Edit"
+scope: "com.apple.iWork.Keynote"
+description: "Stop the current text edit. Equivalent to pressing the Escape key."
+source_library: "Keynote"
+source_file: "Dictate-Exit.scpt"
+siri_phrases:
+  - "stop edit"
+  - "exit dictation"
+  - "exit selection"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to pressEscapeKey()

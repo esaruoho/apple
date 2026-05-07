@@ -1,0 +1,11 @@
+name: "Lock Text Items"
+scope: "com.apple.iWork.Keynote"
+description: "Lock all text items on the current slide."
+source_library: "Keynote"
+source_file: "Accessibility-LockAllTextItemsOnCurrentSlide.scpt"
+siri_phrases:
+  - "lock every text item"
+  - "lock [all] text items"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to lockAllTextItemsOnCurrentSlide()

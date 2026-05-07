@@ -1,0 +1,13 @@
+name: "AirDrop Finder Selection"
+scope: "com.apple.finder"
+description: "Begin an AirDrop session with the selected Finder items."
+source_library: "Workspace"
+source_file: "Selection-BeginAirDropSession.scpt"
+siri_phrases:
+  - "air drop this item"
+  - "air drop this file"
+  - "air drop this folder"
+  - "air drop these [items]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to beginAirDropOfFinderSelection()

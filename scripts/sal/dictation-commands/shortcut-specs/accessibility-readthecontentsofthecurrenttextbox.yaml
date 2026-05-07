@@ -1,0 +1,10 @@
+name: "Read Text of Current Text Box"
+scope: "com.apple.iWork.Keynote"
+description: "Have the computer speak the text in the current text box"
+source_library: "Keynote"
+source_file: "Accessibility-ReadTheContentsOfTheCurrentTextBox.scpt"
+siri_phrases:
+  - "read [the] surrounding text"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to readTextInCurrentTextContainer()

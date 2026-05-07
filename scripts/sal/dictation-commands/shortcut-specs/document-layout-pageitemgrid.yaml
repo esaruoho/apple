@@ -1,0 +1,14 @@
+name: "Create a Grid of Page Items"
+scope: "com.apple.iWork.Pages"
+description: "This command will create a grid of page items based upon interactive user input."
+source_library: "Pages"
+source_file: "Document-Layout-PageItemGrid.scpt"
+siri_phrases:
+  - "help [me] [to] create [a] grid of page items"
+  - "help [me] [to] make [a] grid of page items"
+  - "help [me] [to] build [a] grid of page items"
+  - "help [me] [to] construct [a] grid of page items"
+  - "assist [me] with creating [a] grid of page items"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to createPagesPageItemGrid()

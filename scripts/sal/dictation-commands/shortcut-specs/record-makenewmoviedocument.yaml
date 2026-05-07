@@ -1,0 +1,13 @@
+name: "Create New Movie Recording"
+scope: "com.apple.speech.SystemWideScope"
+description: "Create a new movie recording using the current video input."
+source_library: "QuickTime Player"
+source_file: "Record-MakeNewMovieDocument.scpt"
+siri_phrases:
+  - "make [a] [new] movie [recording]"
+  - "open [a] [new] movie [recording]"
+  - "create [a] [new] movie [recording]"
+  - "create [a] [new] movie [recording]"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to newMovieRecordingDocument(false)

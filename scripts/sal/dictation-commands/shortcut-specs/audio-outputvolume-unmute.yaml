@@ -1,0 +1,11 @@
+name: "Unmute Computer Audio Output"
+scope: "com.apple.speech.SystemWideScope"
+description: "Unmute the output volume of the computer"
+source_library: "Workspace"
+source_file: "Audio-OutputVolume-Unmute.scpt"
+siri_phrases:
+  - "unmute [the] computer audio [output]"
+  - "resume [the] computer audio [output]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to setOutputVolumeMute(false)

@@ -1,0 +1,12 @@
+name: "Export to File as Sequence"
+scope: "com.apple.Photos"
+description: "Export the selected media items to files named sequentially using the user-provided base name. The media items are exported in high-quality JPEG format."
+source_library: "Photos"
+source_file: "MediaItem-ExportToFileWithSequentialNames.scpt"
+siri_phrases:
+  - "export these as [a] sequence"
+  - "export these named in sequence"
+  - "export these named sequentially"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to quickExportSelectedPhotosAsSequence()

@@ -1,0 +1,11 @@
+name: "Take My Picture"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the system picture taker window for the computer\u2019s camera. Once the user has taken a snapshot, the file will be imported into the current Photos library."
+source_library: "Workspace"
+source_file: "Camera-TakeMyPicture.scpt"
+siri_phrases:
+  - "take [a] [my] picture"
+  - "take [a] [my] snapshot"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to takeVSnapshotAndAddToPhotos(true, missing value)

@@ -1,0 +1,10 @@
+name: "Match Size to Largest Item"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will match the size of every selected slide item to the largest selected slide item."
+source_library: "Keynote"
+source_file: "Slide-Item-MatchSizeOfSelectedToLargestSelected.scpt"
+siri_phrases:
+  - "match size to [the] largest [item]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to matchSizeOfSelectedSlideItemsToLargestSelectedItem()

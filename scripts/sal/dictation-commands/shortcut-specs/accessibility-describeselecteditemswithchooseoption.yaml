@@ -1,0 +1,14 @@
+name: "Describe with Choice"
+scope: "com.apple.Photos"
+description: "In turn, a description of each selected item will be spoken. After each description, a dialog (shown for 5 seconds) will provide the option to Stop, Select, or Continue. If Select is chosen, the process will halt and the described item will be displayed full-screen in Photos."
+source_library: "Photos"
+source_file: "Accessibility-DescribeSelectedItemsWithChooseOption.scpt"
+siri_phrases:
+  - "help [me] [to] choose [one]"
+  - "help [me] [to] pick [one]"
+  - "assist [me] with choosing"
+  - "describe with choice"
+  - "describe and choose"
+applescript: |
+  use script "DC-Assistive-Photos"
+  tell script "DC-Assistive-Photos" to describeAndChooseFromSelectedMediaItems()

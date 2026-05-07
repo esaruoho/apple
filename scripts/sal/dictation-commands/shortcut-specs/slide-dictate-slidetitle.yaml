@@ -1,0 +1,11 @@
+name: "DIctate Slide Title"
+scope: "com.apple.iWork.Keynote"
+description: "Replaces the content of the current slide\u2019s default title item with the text cursor, ready to accept dictation."
+source_library: "Keynote"
+source_file: "Slide-Dictate-SlideTitle.scpt"
+siri_phrases:
+  - "edit [the] [slide] title"
+  - "dictate [the] [slide] title"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to enterDefautTitleItem()

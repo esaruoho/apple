@@ -1,0 +1,10 @@
+name: "Press Escape Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a press of the Escape key"
+source_library: "Speech"
+source_file: "Keypress-Escape.scpt"
+siri_phrases:
+  - "keypress escape"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressEscape()

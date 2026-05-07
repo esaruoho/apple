@@ -1,0 +1,15 @@
+name: "Read That Back"
+scope: "com.apple.speech.SystemWideScope"
+description: "Speak the text contents of the shared clipboard."
+source_library: "Speech"
+source_file: "Dictation-ReadThatBack.scpt"
+siri_phrases:
+  - "read that back"
+  - "reed that back"
+  - "read [the] clipboard"
+  - "reed [the] clipboard"
+  - "speak [the] clipboard"
+  - "say [the] clipboard"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to speakTheClipboardString()

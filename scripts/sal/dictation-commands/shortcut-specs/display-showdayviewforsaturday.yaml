@@ -1,0 +1,11 @@
+name: "Show Day View for Saturday"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the day view for the upcoming Saturday"
+source_library: "Calendar"
+source_file: "Display-showDayViewForSaturday.scpt"
+siri_phrases:
+  - "show [the] calendar for saturday"
+  - "show saturday's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showDayViewForNextSaturday()

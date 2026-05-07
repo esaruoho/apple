@@ -1,0 +1,10 @@
+name: "Set Transition Start for the Current Slide to Manual"
+scope: "com.apple.iWork.Keynote"
+description: "Set the start transition property of the current slide to manual"
+source_library: "Keynote"
+source_file: "Transition-Set-StartOnClick.scpt"
+siri_phrases:
+  - "set [transition to] start on click"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setAutomaticTransition(false)

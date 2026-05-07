@@ -1,0 +1,11 @@
+name: "Show Font List"
+scope: "com.apple.iWork.Keynote"
+description: "This command will display a list of the typefaces used in the frontmost presentation."
+source_library: "Keynote"
+source_file: "Document-Metadata-ShowFontList.scpt"
+siri_phrases:
+  - "show [a] font list [for this]"
+  - "show [a] list of fonts [for this]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to displayFontListForCurrentPresentation()

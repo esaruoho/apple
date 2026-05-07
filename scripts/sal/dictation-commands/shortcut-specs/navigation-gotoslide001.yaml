@@ -1,0 +1,13 @@
+name: "Go to the 1st Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the 1st slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToSlide001.scpt"
+siri_phrases:
+  - "go to slide one"
+  - "go to [the] first slide"
+  - "go to the beginning"
+  - "go to the top"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToSlideByNumber(1)

@@ -1,0 +1,11 @@
+name: "Get Current Computer Volume"
+scope: "com.apple.speech.SystemWideScope"
+description: "Speak the current output volume setting (0 to 100)"
+source_library: "Workspace"
+source_file: "Audio-OutputVolume-SpeakCurrent.scpt"
+siri_phrases:
+  - "what is the computer volume [setting]"
+  - "current computer volume"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to speakCurrentOutputVolumeLevel()

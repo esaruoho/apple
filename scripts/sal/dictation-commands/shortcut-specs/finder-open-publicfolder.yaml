@@ -1,0 +1,13 @@
+name: "Open Public Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s Public folder."
+source_library: "Workspace"
+source_file: "Finder-Open-PublicFolder.scpt"
+siri_phrases:
+  - "open [my] public folder"
+  - "open the public folder"
+  - "open [my] shared folder"
+  - "open the shared folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForUserPublicDirectory(true)

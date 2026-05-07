@@ -1,0 +1,10 @@
+name: "Open User iCloud Drive Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s iCloud Drive folder."
+source_library: "Workspace"
+source_file: "Finder-Open-iCloudDriveFolder.scpt"
+siri_phrases:
+  - "open [the] icloud [drive] folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForiCloudDriveDirectory(true)

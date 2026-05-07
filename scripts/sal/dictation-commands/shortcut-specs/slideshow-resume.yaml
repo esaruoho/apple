@@ -1,0 +1,10 @@
+name: "Resume Slideshow"
+scope: "com.apple.Photos"
+description: "Resume the paused slideshow"
+source_library: "Photos"
+source_file: "Slideshow-Resume.scpt"
+siri_phrases:
+  - "resume [the] slideshow"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to resumeRunningSlideshow()

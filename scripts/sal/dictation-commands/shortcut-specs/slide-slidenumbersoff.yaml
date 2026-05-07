@@ -1,0 +1,11 @@
+name: "Turn Slide Numbers Off"
+scope: "com.apple.iWork.Keynote"
+description: "Hides the display of slide numbers throughout the presentation."
+source_library: "Keynote"
+source_file: "Slide-SlideNumbersOff.scpt"
+siri_phrases:
+  - "turn off [the] slide numbers"
+  - "[turn] [the] slide numbers off"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setAllSlideNumbersShowing(false)

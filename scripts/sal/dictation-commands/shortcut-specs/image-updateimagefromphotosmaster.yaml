@@ -1,0 +1,11 @@
+name: "Update Selected Image with Photos Master"
+scope: "com.apple.iWork.Keynote"
+description: "Update the selected image with a new export of its related master image from the current Photos library. NOTE: the selected image must be in the current Photos library, and have been imported into the presentation using Dictation Commands."
+source_library: "Keynote"
+source_file: "Image-UpdateImageFromPhotosMaster.scpt"
+siri_phrases:
+  - "update this [image] [from Photos]"
+  - "update this [photo] [from Photos]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to updateSelectedImageInPresentation()

@@ -1,0 +1,17 @@
+name: "New Presentation: Formal-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Formal theme"
+source_library: "Keynote"
+source_file: "Document-New-Formal-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] formal template"
+  - "make [a] [new] standard presentation with [the] formal template"
+  - "make [a] [new] standard presentation using [the] formal theme"
+  - "make [a] [new] standard presentation with [the] formal theme"
+  - "make [a] [new] presentation using [the] standard formal template"
+  - "make [a] [new] presentation with [the] standard formal template"
+  - "make [a] [new] presentation using [the] standard formal theme"
+  - "make [a] [new] presentation with [the] standard formal theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Formal")

@@ -1,0 +1,11 @@
+name: "Change Theme to Renaissance"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Renaissance"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Renaissance.scpt"
+siri_phrases:
+  - "change [the] theme to renaissance"
+  - "change [the] template to renaissance"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Renaissance")

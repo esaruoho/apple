@@ -1,0 +1,13 @@
+name: "New Presentation: Modern Type"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Modern Type theme"
+source_library: "Keynote"
+source_file: "Document-New-ModernType.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] modern type template"
+  - "make [a] [new] presentation with [the] modern type template"
+  - "make [a] [new] presentation using [the] modern type theme"
+  - "make [a] [new] presentation with [the] modern type theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Modern Type")

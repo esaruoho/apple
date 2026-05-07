@@ -1,0 +1,11 @@
+name: "Start Instant Slideshow"
+scope: "com.apple.Photos"
+description: "Start an instant slideshow using the currently selected items"
+source_library: "Photos"
+source_file: "Slideshow-Instant-Start.scpt"
+siri_phrases:
+  - "begin [the] slideshow"
+  - "start [the] slideshow"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to beginSlideshowUsingSelection()

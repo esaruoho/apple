@@ -1,0 +1,17 @@
+name: "New Presentation: Classic-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Classic theme"
+source_library: "Keynote"
+source_file: "Document-New-Classic-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] classic template"
+  - "make [a] [new] standard presentation with [the] classic template"
+  - "make [a] [new] standard presentation using [the] classic theme"
+  - "make [a] [new] standard presentation with [the] classic theme"
+  - "make [a] [new] presentation using [the] standard classic template"
+  - "make [a] [new] presentation with [the] standard classic template"
+  - "make [a] [new] presentation using [the] standard classic theme"
+  - "make [a] [new] presentation with [the] standard classic theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Classic")

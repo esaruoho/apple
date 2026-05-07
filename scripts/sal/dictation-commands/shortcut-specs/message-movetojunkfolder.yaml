@@ -1,0 +1,13 @@
+name: "Move to Junk Mailbox"
+scope: "com.apple.mail"
+description: "Move the selected message to the Junk folder."
+source_library: "Mail"
+source_file: "Message-MoveToJunkFolder.scpt"
+siri_phrases:
+  - "move this [message] to [the] junk [folder]"
+  - "move these [messages] to [the] junk [folder]"
+  - "junk this [message]"
+  - "junk these [messages]"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to moveToJunkFolder()

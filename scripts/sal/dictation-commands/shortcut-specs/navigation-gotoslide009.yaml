@@ -1,0 +1,11 @@
+name: "Go to the 9th Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the 9th slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToSlide009.scpt"
+siri_phrases:
+  - "go to slide nine"
+  - "go to [the] ninth slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToSlideByNumber(9)

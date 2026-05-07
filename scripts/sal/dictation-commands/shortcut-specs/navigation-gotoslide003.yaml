@@ -1,0 +1,11 @@
+name: "Go to the 3rd Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the 3rd slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToSlide003.scpt"
+siri_phrases:
+  - "go to slide three"
+  - "go to [the] third slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToSlideByNumber(3)

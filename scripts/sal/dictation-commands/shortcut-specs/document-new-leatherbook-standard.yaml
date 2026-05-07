@@ -1,0 +1,17 @@
+name: "New Presentation: Leather Book-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Leather Book theme"
+source_library: "Keynote"
+source_file: "Document-New-LeatherBook-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] leather book template"
+  - "make [a] [new] wide presentation with [the] leather book template"
+  - "make [a] [new] wide presentation using [the] leather book theme"
+  - "make [a] [new] wide presentation with [the] leather book theme"
+  - "make [a] [new] presentation using [the] wide leather book template"
+  - "make [a] [new] presentation with [the] wide leather book template"
+  - "make [a] [new] presentation using [the] wide leather book theme"
+  - "make [a] [new] presentation with [the] wide leather book theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Leather Book")

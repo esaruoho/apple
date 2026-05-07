@@ -1,0 +1,12 @@
+name: "Show Shared Items"
+scope: "com.apple.Photos"
+description: "Show all of the shared items in the main window."
+source_library: "Photos"
+source_file: "Album-Display-ShowSharedItems.scpt"
+siri_phrases:
+  - "show shared items"
+  - "show shared photos"
+  - "show shared images"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to showSharedItems()

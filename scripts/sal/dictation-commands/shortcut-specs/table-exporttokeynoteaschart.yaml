@@ -1,0 +1,11 @@
+name: "Export Table to Keynote as Chart"
+scope: "com.apple.iWork.Numbers"
+description: "Export the data of the selected table to a new slide in the frontmost Keynote presentation, as a 2D chart. Once the chart has been rendered, you can edit it to change its display into other available format."
+source_library: "Numbers"
+source_file: "Table-ExportToKeynoteAsChart.scpt"
+siri_phrases:
+  - "export [this] [table] to keynote as [a] chart"
+  - "export [the] selected table to keynote as [a] chart"
+applescript: |
+  use script "DC-Numbers"
+  tell script "DC-Numbers" to exportNumbersTableToKeynoteAsChart()

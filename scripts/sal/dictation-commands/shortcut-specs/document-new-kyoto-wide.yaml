@@ -1,0 +1,17 @@
+name: "New Presentation: Kyoto-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Kyoto theme"
+source_library: "Keynote"
+source_file: "Document-New-Kyoto-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] kyoto template"
+  - "make [a] [new] wide presentation with [the] kyoto template"
+  - "make [a] [new] wide presentation using [the] kyoto theme"
+  - "make [a] [new] wide presentation with [the] kyoto theme"
+  - "make [a] [new] presentation using [the] wide kyoto template"
+  - "make [a] [new] presentation with [the] wide kyoto template"
+  - "make [a] [new] presentation using [the] wide kyoto theme"
+  - "make [a] [new] presentation with [the] wide kyoto theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Kyoto")

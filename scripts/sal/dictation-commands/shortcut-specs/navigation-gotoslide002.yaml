@@ -1,0 +1,12 @@
+name: "Go to the 2nd Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the 2nd slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToSlide002.scpt"
+siri_phrases:
+  - "go to slide to"
+  - "go to slide two"
+  - "go to [the] second slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToSlideByNumber(2)

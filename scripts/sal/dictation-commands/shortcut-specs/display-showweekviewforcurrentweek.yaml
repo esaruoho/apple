@@ -1,0 +1,11 @@
+name: "Show Week View for This Week"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the week view for this week"
+source_library: "Calendar"
+source_file: "Display-showWeekViewForCurrentWeek.scpt"
+siri_phrases:
+  - "show [the] calendar for next week"
+  - "show next week's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showWeekViewForNextWeek()

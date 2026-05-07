@@ -1,0 +1,11 @@
+name: "Add Clipboard Text to New Pages Document"
+scope: "com.apple.speech.SystemWideScope"
+description: "Add the text contents of the clipboard to a new Pages document."
+source_library: "Workspace"
+source_file: "Clipboard-AddToNewPagesDocument.scpt"
+siri_phrases:
+  - "put that in [a] [new] [Pages] document "
+  - "add that to [a] new [Pages] document "
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to newPagesDocumentWithClipboardString()

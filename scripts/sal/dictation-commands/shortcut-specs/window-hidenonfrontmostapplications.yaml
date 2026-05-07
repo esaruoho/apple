@@ -1,0 +1,11 @@
+name: "Hide Other Applications"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will hide open applications other than the one in the foreground. This command can be used within any application."
+source_library: "Workspace"
+source_file: "Window-HideNonFrontmostApplications.scpt"
+siri_phrases:
+  - "hide [the] other applications"
+  - "hide [the] other apps"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to hideNonFrontmostApplications()

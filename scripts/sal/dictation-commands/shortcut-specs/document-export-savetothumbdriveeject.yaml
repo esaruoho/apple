@@ -1,0 +1,11 @@
+name: "Copy Presentation: To Thumb Drive and Eject"
+scope: "com.apple.iWork.Keynote"
+description: "Copy the frontmost presentation to the mounted thumb drive and eject after the copy has completed."
+source_library: "Keynote"
+source_file: "Document-Export-SaveToThumbDriveEject.scpt"
+siri_phrases:
+  - "save [this] presentation to [my] thumb drive and eject [it]"
+  - "copy [this] presentation to [my] thumb drive and eject [it]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to copyPresentationToRemovableDeviceAndEject()

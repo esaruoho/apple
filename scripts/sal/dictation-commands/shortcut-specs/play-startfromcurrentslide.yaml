@@ -1,0 +1,15 @@
+name: "Play Presentation"
+scope: "com.apple.iWork.Keynote"
+description: "This command will start playing the frontmost presentation from the current slide"
+source_library: "Keynote"
+source_file: "Play-StartFromCurrentSlide.scpt"
+siri_phrases:
+  - "play [this] [front] presentation"
+  - "start [playing] [this] [front] presentation"
+  - "resume [this] [front] presentation"
+  - "play from [the] current slide"
+  - "start [playing] from [the] current slide"
+  - "resume from [the] current slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to startPlayingFromCurrentSlide()

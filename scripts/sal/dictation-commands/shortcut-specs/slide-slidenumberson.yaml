@@ -1,0 +1,11 @@
+name: "Turn Slide Numbers On"
+scope: "com.apple.iWork.Keynote"
+description: "Shows the display of slide numbers throughout the presentation."
+source_library: "Keynote"
+source_file: "Slide-SlideNumbersOn.scpt"
+siri_phrases:
+  - "turn on [the] slide numbers"
+  - "[turn] [the] slide numbers on"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setAllSlideNumbersShowing(true)

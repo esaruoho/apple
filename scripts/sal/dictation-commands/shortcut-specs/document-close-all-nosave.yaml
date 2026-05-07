@@ -1,0 +1,19 @@
+name: "Close Presentation: All-No Save"
+scope: "com.apple.iWork.Keynote"
+description: "Close all open presentations without saving them"
+source_library: "Keynote"
+source_file: "Document-Close-All-NoSave.scpt"
+siri_phrases:
+  - "close all without saving [them]"
+  - "close [all] presentations without saving [them]"
+  - "close every presentation without saving [them]"
+  - "close presentations without saving [them]"
+  - "close [all] presentations and don't save [them]"
+  - "close every presentation and don't save [them]"
+  - "close every one of the presentations without saving [it]"
+  - "close every one of these presentations without saving [it]"
+  - "close all [of] the presentations without saving [them]"
+  - "close all [of] these presentations without saving [them]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to closeAllDocumentsWithoutSaving()

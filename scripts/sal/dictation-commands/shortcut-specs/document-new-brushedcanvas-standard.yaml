@@ -1,0 +1,17 @@
+name: "New Presentation: Brushed Canvas-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Brushed Canvas theme"
+source_library: "Keynote"
+source_file: "Document-New-BrushedCanvas-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] brushed canvas template"
+  - "make [a] [new] standard presentation with [the] brushed canvas template"
+  - "make [a] [new] standard presentation using [the] brushed canvas theme"
+  - "make [a] [new] standard presentation with [the] brushed canvas theme"
+  - "make [a] [new] presentation using [the] standard brushed canvas template"
+  - "make [a] [new] presentation with [the] standard brushed canvas template"
+  - "make [a] [new] presentation using [the] standard brushed canvas theme"
+  - "make [a] [new] presentation with [the] standard brushed canvas theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Brushed Canvas")

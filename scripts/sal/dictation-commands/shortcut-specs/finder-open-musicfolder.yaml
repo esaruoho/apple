@@ -1,0 +1,10 @@
+name: "Open Music Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s Music folder."
+source_library: "Workspace"
+source_file: "Finder-Open-MusicFolder.scpt"
+siri_phrases:
+  - "open [the] music folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForUserMusicDirectory(true)

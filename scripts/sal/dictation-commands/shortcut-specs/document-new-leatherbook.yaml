@@ -1,0 +1,13 @@
+name: "New Presentation: Leather Book"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Leather Book theme"
+source_library: "Keynote"
+source_file: "Document-New-LeatherBook.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] leather book template"
+  - "make [a] [new] presentation with [the] leather book template"
+  - "make [a] [new] presentation using [the] leather book theme"
+  - "make [a] [new] presentation with [the] leather book theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Leather Book")

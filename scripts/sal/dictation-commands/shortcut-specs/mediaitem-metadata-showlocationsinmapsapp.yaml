@@ -1,0 +1,13 @@
+name: "Show Locations in Maps"
+scope: "com.apple.Photos"
+description: "Show the locations of the selected media items in the Maps application."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-ShowLocationsInMapsApp.scpt"
+siri_phrases:
+  - "show these in maps"
+  - "show this in maps"
+  - "show locations [of these] in maps"
+  - "show location [of this] in maps"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to generateMapShowingLocationsOfSelectedItems()

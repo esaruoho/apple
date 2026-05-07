@@ -1,0 +1,10 @@
+name: "New Presentation: Default-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the default theme"
+source_library: "Keynote"
+source_file: "Document-New-Default-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDefaultDocumentStandard()

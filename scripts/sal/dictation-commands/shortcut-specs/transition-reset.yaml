@@ -1,0 +1,12 @@
+name: "Reset Transition Settings"
+scope: "com.apple.iWork.Keynote"
+description: "Reset the transition properties of the current slide"
+source_library: "Keynote"
+source_file: "Transition-Reset.scpt"
+siri_phrases:
+  - "clear transition [of this slide]"
+  - "remove transition [of this slide]"
+  - "reset transition [of this slide]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to resetTransitionPropertiesForCurrentSlide()

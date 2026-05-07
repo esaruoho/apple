@@ -1,0 +1,13 @@
+name: "Select the Drafts Mailbox"
+scope: "com.apple.mail"
+description: "Select the Drafts mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectDraftsMailbox.scpt"
+siri_phrases:
+  - "select [the] drafts box"
+  - "select [the] drafts mailbox"
+  - "open [the] drafts box"
+  - "open [the] drafts mailbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectDraftsMailbox()

@@ -1,0 +1,17 @@
+name: "New Presentation: Vintage-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Vintage theme"
+source_library: "Keynote"
+source_file: "Document-New-Vintage-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] vintage template"
+  - "make [a] [new] wide presentation with [the] vintage template"
+  - "make [a] [new] wide presentation using [the] vintage theme"
+  - "make [a] [new] wide presentation with [the] vintage theme"
+  - "make [a] [new] presentation using [the] wide vintage template"
+  - "make [a] [new] presentation with [the] wide vintage template"
+  - "make [a] [new] presentation using [the] wide vintage theme"
+  - "make [a] [new] presentation with [the] wide vintage theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Vintage")

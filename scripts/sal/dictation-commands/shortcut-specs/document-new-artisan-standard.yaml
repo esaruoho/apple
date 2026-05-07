@@ -1,0 +1,17 @@
+name: "New Presentation: Artisan-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Artisan theme"
+source_library: "Keynote"
+source_file: "Document-New-Artisan-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] artisan template"
+  - "make [a] [new] standard presentation with [the] artisan template"
+  - "make [a] [new] standard presentation using [the] artisan theme"
+  - "make [a] [new] standard presentation with [the] artisan theme"
+  - "make [a] [new] presentation using [the] standard artisan template"
+  - "make [a] [new] presentation with [the] standard artisan template"
+  - "make [a] [new] presentation using [the] standard artisan theme"
+  - "make [a] [new] presentation with [the] standard artisan theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Artisan")

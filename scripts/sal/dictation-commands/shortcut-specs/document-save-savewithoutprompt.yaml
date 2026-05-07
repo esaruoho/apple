@@ -1,0 +1,10 @@
+name: "Save Presentation: To Document Folder with Auto-Naming"
+scope: "com.apple.iWork.Keynote"
+description: "Save the frontmost presentation to the Documents folder using the title of the first slide as the filename. If the frontmost presentation has already been saved, then save to existing file."
+source_library: "Keynote"
+source_file: "Document-Save-SaveWithoutPrompt.scpt"
+siri_phrases:
+  - "save [this] [front] [frontmost] presentation"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to presentationSaveInDocumentsFolderUsingFirstSlideTitle()

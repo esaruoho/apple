@@ -1,0 +1,11 @@
+name: "Close All Finder Windows"
+scope: "com.apple.finder"
+description: "This command will close all Finder windows."
+source_library: "Workspace"
+source_file: "Finder-Window-CloseAllFinderWindows.scpt"
+siri_phrases:
+  - "close all [finder] windows"
+  - "close every [finder] window"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to closeEveryFinderWindow()

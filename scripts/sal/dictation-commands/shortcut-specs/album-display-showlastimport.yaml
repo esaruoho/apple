@@ -1,0 +1,10 @@
+name: "Show Last Import Album"
+scope: "com.apple.Photos"
+description: "Show the contents of the Last Import album in the main window."
+source_library: "Photos"
+source_file: "Album-Display-ShowLastImport.scpt"
+siri_phrases:
+  - "show last import [album]"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to showLastImportAlbum()

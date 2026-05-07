@@ -1,0 +1,15 @@
+name: "Play Presentation from the Beginning"
+scope: "com.apple.iWork.Keynote"
+description: "This command will start playing the frontmost presentation from the first un-skipped slide"
+source_library: "Keynote"
+source_file: "Play-StartFromTop.scpt"
+siri_phrases:
+  - "play [this] [front] [presentation] from [the] top"
+  - "start [playing] [this] [front] [presentation] from [the] top"
+  - "start [playing] [this] [front] [presentation] at [the] top"
+  - "play [this] [front] [presentation] from [the] beginning"
+  - "start [playing] [this] [front] [presentation] from [the] beginning"
+  - "start [playing] [this] [front] [presentation] at [the] beginning"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to startPlayingFromBeginning()

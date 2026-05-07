@@ -1,0 +1,13 @@
+name: "Export Table to Keynote as Pie Chart"
+scope: "com.apple.iWork.Numbers"
+description: "Export the data of the selected table row or column to a new slide in the frontmost Keynote presentation, as a Pie chart."
+source_library: "Numbers"
+source_file: "Table-ExportToKeynoteAsPieChart.scpt"
+siri_phrases:
+  - "export [this] row to keynote as [a] pie chart"
+  - "export [the] selected row to keynote as [a] pie chart"
+  - "export [this] column to keynote as [a] pie chart"
+  - "export [the] selected column to keynote as [a] pie chart"
+applescript: |
+  use script "DC-Numbers"
+  tell script "DC-Numbers" to exportNumbersTableSelectionToKeynoteAsPieChart()

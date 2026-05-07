@@ -1,0 +1,12 @@
+name: "Template Assist: Photo Poster Small"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the Photo Poster Small template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-PhotoPosterSmall.scpt"
+siri_phrases:
+  - "assist [me] with [the] small photo poster template"
+  - "assist [me] with [the] template photo poster small"
+  - "assist [me] with [the] template small photo poster"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_PHOTO_POSTER_SMALL")

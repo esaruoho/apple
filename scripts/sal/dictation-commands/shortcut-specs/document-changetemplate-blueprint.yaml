@@ -1,0 +1,11 @@
+name: "Change Theme to Blueprint"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Blueprint"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Blueprint.scpt"
+siri_phrases:
+  - "change [the] theme to blueprint"
+  - "change [the] template to blueprint"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Blueprint")

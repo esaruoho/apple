@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cPhoto - Vertical\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cPhoto - Vertical\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-PhotoVertical.scpt"
+siri_phrases:
+  - "change [the] master slide to photo vertical"
+  - "set [the] master slide to photo vertical"
+  - "change [the] slide master to photo vertical"
+  - "set [the] slide master to photo vertical"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_PHOTO_VERTICAL")

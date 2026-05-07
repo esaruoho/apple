@@ -1,0 +1,13 @@
+name: "Move Selected Finder Items into the Movies folder"
+scope: "com.apple.finder"
+description: "Move the items selected in the Finder into the Movies folder. \u201ccopy\u201d will be appended to the names of the moved items if items will the same name exist in the destination folder. The moved items will highlighted after moving."
+source_library: "Workspace"
+source_file: "Selection-MoveToMoviesFolder.scpt"
+siri_phrases:
+  - "move this to [the] movies [folder]"
+  - "move this into [the] movies [folder]"
+  - "move these to [the] movies [folder]"
+  - "move these into [the] movies [folder]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to moveFinderSelectionIntoMoviesFolder(false,true)

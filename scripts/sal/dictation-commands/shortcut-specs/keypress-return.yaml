@@ -1,0 +1,10 @@
+name: "Press Return Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a press of the Return key"
+source_library: "Speech"
+source_file: "Keypress-Return.scpt"
+siri_phrases:
+  - "keypress return"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressReturn()

@@ -1,0 +1,12 @@
+name: "Info about the Current Slide\u2019s Items"
+scope: "com.apple.iWork.Keynote"
+description: "Speak information about each element on the current slide"
+source_library: "Keynote"
+source_file: "Accessibility-SpeakCurrentSlideElementsInfo.scpt"
+siri_phrases:
+  - "tell me about the items on this slide"
+  - "tell me about the elements of this slide"
+  - "tell me about this slide's items"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakInfoAboutElementsOfCurrentSlide()

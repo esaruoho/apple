@@ -1,0 +1,12 @@
+name: "Export All Notes to Mail"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new outgoing Mail message containing the presenter notes of the front presentation."
+source_library: "Keynote"
+source_file: "Slide-Notes-ExportToMail.scpt"
+siri_phrases:
+  - "add [these] [presenter] notes to [a] [new] mail message"
+  - "put [these] [presenter] notes in [a] [new] mail message"
+  - "export [these] [presenter] notes to mail"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to addPresenterNotesToOutgoingMailMessage()

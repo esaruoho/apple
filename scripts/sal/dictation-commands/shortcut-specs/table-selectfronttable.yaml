@@ -1,0 +1,13 @@
+name: "Select First Table"
+scope: "com.apple.iWork.Numbers"
+description: "Select the frontmost table on the active spreadsheet."
+source_library: "Numbers"
+source_file: "Table-SelectFrontTable.scpt"
+siri_phrases:
+  - "select [the] table"
+  - "select this table"
+  - "select [the] front table"
+  - "select [the] first table"
+applescript: |
+  use script "DC-Numbers"
+  tell script "DC-Numbers" to selectFirstTableOnActiveSheet()

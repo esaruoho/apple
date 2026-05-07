@@ -1,0 +1,11 @@
+name: "Turn Slide Body On"
+scope: "com.apple.iWork.Keynote"
+description: "Shows the current slide\u2019s default body item."
+source_library: "Keynote"
+source_file: "Slide-SlideBodyOn.scpt"
+siri_phrases:
+  - "turn on [the] slide body"
+  - "[turn] [the] slide body on"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setShowingOfCurrentSlideBody(true)

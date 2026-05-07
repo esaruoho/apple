@@ -1,0 +1,11 @@
+name: "Export to File with Default Names"
+scope: "com.apple.Photos"
+description: "Export the selected media items to files named using the existing file names. The media items are exported in high-quality JPEG format."
+source_library: "Photos"
+source_file: "MediaItem-ExportToFileWithDefaultNames.scpt"
+siri_phrases:
+  - "export these [to disk]"
+  - "export these to [the] finder"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to quickExportSelectedPhotosWithReveal()

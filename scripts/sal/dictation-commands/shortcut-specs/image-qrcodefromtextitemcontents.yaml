@@ -1,0 +1,11 @@
+name: "Add a QR code using contents of selected text item"
+scope: "com.apple.iWork.Keynote"
+description: "This command will convert the contents of the selected text item into a QR code and add it to the current slide. NOTE: select the text item, not its contents."
+source_library: "Keynote"
+source_file: "Image-QRCodeFromTextItemContents.scpt"
+siri_phrases:
+  - "turn this into a QR code"
+  - "make a QR code from this"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to turnContentsOfSelectedTextItemIntoQRImageAndAddToSlide(500)

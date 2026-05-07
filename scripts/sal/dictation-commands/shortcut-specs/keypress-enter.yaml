@@ -1,0 +1,10 @@
+name: "Press Enter Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a press of the Enter key"
+source_library: "Speech"
+source_file: "Keypress-Enter.scpt"
+siri_phrases:
+  - "keypress enter"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressEnter()

@@ -1,0 +1,13 @@
+name: "Clear All Keywords"
+scope: "com.apple.Photos"
+description: "After user approval, this command will clear all keywords from the selected media items."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-ClearAllKeywords.scpt"
+siri_phrases:
+  - "clear [all] keywords"
+  - "remove [all] keywords"
+  - "clear every keyword"
+  - "remove every keyword"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to clearAllKeywordsFromSelectedMediaItems()

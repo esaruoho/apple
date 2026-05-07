@@ -1,0 +1,12 @@
+name: "Get Version of DC Commands Download"
+scope: "com.apple.speech.SystemWideScope"
+description: "Get the version of Dictation Commands currently available for download."
+source_library: "Speech"
+source_file: "DC-CurrentDownloadableVersion.scpt"
+siri_phrases:
+  - "what is your latest version"
+  - "what version is available for you"
+  - "what is your available version"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to getDCDownloadVersion(true)

@@ -1,0 +1,11 @@
+name: "Template Assist: Classic Certificate"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the Classic Certificate template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-ClassicCertificate.scpt"
+siri_phrases:
+  - "assist [me] with [the] classic certificate template"
+  - "assist [me] with [the] template classic certificate"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_CLASSIC_CERTIFICATE")

@@ -1,0 +1,12 @@
+name: "Append Blank Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Adds a new blank slide to the end of the presentation."
+source_library: "Keynote"
+source_file: "Slide-New-Append-Blank.scpt"
+siri_phrases:
+  - "append [a] blank slide [to [the] end]"
+  - "add [a] blank slide to [the] end"
+  - "add [a] blank slide at [the] end"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to appendBlankSlide()

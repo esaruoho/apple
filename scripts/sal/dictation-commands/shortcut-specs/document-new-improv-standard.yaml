@@ -1,0 +1,17 @@
+name: "New Presentation: Improv-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Improv theme"
+source_library: "Keynote"
+source_file: "Document-New-Improv-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] improv template"
+  - "make [a] [new] standard presentation with [the] improv template"
+  - "make [a] [new] standard presentation using [the] improv theme"
+  - "make [a] [new] standard presentation with [the] improv theme"
+  - "make [a] [new] presentation using [the] standard improv template"
+  - "make [a] [new] presentation with [the] standard improv template"
+  - "make [a] [new] presentation using [the] standard improv theme"
+  - "make [a] [new] presentation with [the] standard improv theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Improv")

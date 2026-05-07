@@ -1,0 +1,11 @@
+name: "Speak Notes of Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Speak the presenter notes of the current slide."
+source_library: "Keynote"
+source_file: "Slide-Notes-SpeakNotesCurrentSlide.scpt"
+siri_phrases:
+  - "read [the] [presenter] notes"
+  - "speak [the] [presenter] notes"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to speakPresenterNotesOfCurrentSlide()

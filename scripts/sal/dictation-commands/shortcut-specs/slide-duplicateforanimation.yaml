@@ -1,0 +1,10 @@
+name: "Duplicate Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Duplicates the current slide in place, with the duplicate following the original slide."
+source_library: "Keynote"
+source_file: "Slide-DuplicateForAnimation.scpt"
+siri_phrases:
+  - "duplicate [this] slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to duplicateCurrentSlideToAfterCurrentSlide()

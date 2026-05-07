@@ -1,0 +1,17 @@
+name: "New Presentation: Graph Paper-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Graph Paper theme"
+source_library: "Keynote"
+source_file: "Document-New-GraphPaper-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] graph paper template"
+  - "make [a] [new] wide presentation with [the] graph paper template"
+  - "make [a] [new] wide presentation using [the] graph paper theme"
+  - "make [a] [new] wide presentation with [the] graph paper theme"
+  - "make [a] [new] presentation using [the] wide graph paper template"
+  - "make [a] [new] presentation with [the] wide graph paper template"
+  - "make [a] [new] presentation using [the] wide graph paper theme"
+  - "make [a] [new] presentation with [the] wide graph paper theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Graph Paper")

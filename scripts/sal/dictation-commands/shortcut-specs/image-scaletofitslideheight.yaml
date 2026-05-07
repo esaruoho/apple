@@ -1,0 +1,13 @@
+name: "Scale Image to Fit Slide Height"
+scope: "com.apple.iWork.Keynote"
+description: "Scale the selected image to fit the slide height and then center the scaled image horizontally."
+source_library: "Keynote"
+source_file: "Image-ScaleToFitSlideHeight.scpt"
+siri_phrases:
+  - "scale this [image] to fit [the] slide height"
+  - "size this [image] to fit [the] slide height"
+  - "scale this [image] to match [the] slide height"
+  - "size this [image] to match [the] slide height"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to scaleSelectedImageToFitSlideHeightAndCenterHorizontally()

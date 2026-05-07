@@ -1,0 +1,13 @@
+name: "Reply to Selected Message"
+scope: "com.apple.mail"
+description: "Reply to the currently selected Mail message."
+source_library: "Mail"
+source_file: "Message-ReplyToSelectedMessage.scpt"
+siri_phrases:
+  - "reply to this [message]"
+  - "respond to this [message]"
+  - "reply to [the] selected message"
+  - "respond to [the] selected message"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to replyToSeletedMesssage()

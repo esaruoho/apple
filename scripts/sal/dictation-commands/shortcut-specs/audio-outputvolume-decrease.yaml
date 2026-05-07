@@ -1,0 +1,14 @@
+name: "Decrease Computer Volume"
+scope: "com.apple.speech.SystemWideScope"
+description: "Decrease the output volume of the computer by the default amount (25 of 100)"
+source_library: "Workspace"
+source_file: "Audio-OutputVolume-Decrease.scpt"
+siri_phrases:
+  - "turn down [the] computer volume"
+  - "[turn] [the] computer volume down"
+  - "turn down [the] volume of [the] computer"
+  - "decrease [the] computer volume"
+  - "decrease [the] volume of [the] computer"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to decreaseOutputVolumeByDefaultIncrement()

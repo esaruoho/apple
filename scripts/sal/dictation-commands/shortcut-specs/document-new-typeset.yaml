@@ -1,0 +1,13 @@
+name: "New Presentation: Typeset"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Typeset theme"
+source_library: "Keynote"
+source_file: "Document-New-Typeset.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] typeset template"
+  - "make [a] [new] presentation with [the] typeset template"
+  - "make [a] [new] presentation using [the] typeset theme"
+  - "make [a] [new] presentation with [the] typeset theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Typeset")

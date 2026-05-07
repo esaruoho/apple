@@ -1,0 +1,10 @@
+name: "Apply a Dissolve Transition"
+scope: "com.apple.iWork.Keynote"
+description: "Apply a dissolve transition of 2-seconds to the current slide"
+source_library: "Keynote"
+source_file: "Transition-Apply-Dissolve-Medium.scpt"
+siri_phrases:
+  - "apply [a] dissolve [transition]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to applyDissolveTransitionEffectToCurrentSlide(2)

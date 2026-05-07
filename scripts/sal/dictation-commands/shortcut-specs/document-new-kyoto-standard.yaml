@@ -1,0 +1,17 @@
+name: "New Presentation: Kyoto-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Kyoto theme"
+source_library: "Keynote"
+source_file: "Document-New-Kyoto-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] kyoto template"
+  - "make [a] [new] standard presentation with [the] kyoto template"
+  - "make [a] [new] standard presentation using [the] kyoto theme"
+  - "make [a] [new] standard presentation with [the] kyoto theme"
+  - "make [a] [new] presentation using [the] standard kyoto template"
+  - "make [a] [new] presentation with [the] standard kyoto template"
+  - "make [a] [new] presentation using [the] standard kyoto theme"
+  - "make [a] [new] presentation with [the] standard kyoto theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Kyoto")

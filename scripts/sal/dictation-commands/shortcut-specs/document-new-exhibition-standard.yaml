@@ -1,0 +1,17 @@
+name: "New Presentation: Exhibition-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Exhibition theme"
+source_library: "Keynote"
+source_file: "Document-New-Exhibition-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] exhibition template"
+  - "make [a] [new] standard presentation with [the] exhibition template"
+  - "make [a] [new] standard presentation using [the] exhibition theme"
+  - "make [a] [new] standard presentation with [the] exhibition theme"
+  - "make [a] [new] presentation using [the] standard exhibition template"
+  - "make [a] [new] presentation with [the] standard exhibition template"
+  - "make [a] [new] presentation using [the] standard exhibition theme"
+  - "make [a] [new] presentation with [the] standard exhibition theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Exhibition")

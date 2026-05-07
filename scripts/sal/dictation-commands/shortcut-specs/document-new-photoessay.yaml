@@ -1,0 +1,13 @@
+name: "New Presentation: Photo Essay"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Photo Essay theme"
+source_library: "Keynote"
+source_file: "Document-New-PhotoEssay.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] photo essay template"
+  - "make [a] [new] presentation with [the] photo essay template"
+  - "make [a] [new] presentation using [the] photo essay theme"
+  - "make [a] [new] presentation with [the] photo essay theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Photo Essay")

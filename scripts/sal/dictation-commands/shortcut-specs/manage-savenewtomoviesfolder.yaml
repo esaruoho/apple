@@ -1,0 +1,17 @@
+name: "Save Frontmost Document"
+scope: "com.apple.QuickTimePlayerX"
+description: "Save the frontmost document to the Movies folder"
+source_library: "QuickTime Player"
+source_file: "Manage-SaveNewToMoviesFolder.scpt"
+siri_phrases:
+  - "save [this] movie"
+  - "save [the] front movie"
+  - "save [this] [audio] clip"
+  - "save [the] front [audio] clip"
+  - "save [this] recording"
+  - "save [the] front recording"
+  - "save [this] to [the] movies folder"
+  - "save [this] in [the] movies folder"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to saveFrontDocumentToMoviesFolder()

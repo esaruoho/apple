@@ -1,0 +1,13 @@
+name: "New Presentation: Gradient"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Gradient theme"
+source_library: "Keynote"
+source_file: "Document-New-Gradient.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] gradient template"
+  - "make [a] [new] presentation with [the] gradient template"
+  - "make [a] [new] presentation using [the] gradient theme"
+  - "make [a] [new] presentation with [the] gradient theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Gradient")

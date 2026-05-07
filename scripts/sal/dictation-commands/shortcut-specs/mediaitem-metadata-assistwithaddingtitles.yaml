@@ -1,0 +1,15 @@
+name: "Assist With Adding Titles"
+scope: "com.apple.Photos"
+description: "In turn, each of the selected photos will be shown full-width and a dialog will prompt you to enter the title for the currently dispalyed image."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-AssistWithAddingTitles.scpt"
+siri_phrases:
+  - "add titles [to these]"
+  - "help [me] [to] add titles"
+  - "help [me] [to] assign titles"
+  - "help [me] [to] name these"
+  - "assist [me] with adding titles"
+  - "assist [me] with assigning titles"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to launchTitleDescriptionApplet()

@@ -1,0 +1,11 @@
+name: "Show Month View for This Month"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the month view for this month"
+source_library: "Calendar"
+source_file: "Display-showMonthViewForThisMonth.scpt"
+siri_phrases:
+  - "show [the] calendar for this month"
+  - "show this month's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showMonthViewForCurrentMonth()

@@ -1,0 +1,14 @@
+name: "Close All Finder Windows Except Front"
+scope: "com.apple.finder"
+description: "This command will close all Finder windows except the frontmost Finder window."
+source_library: "Workspace"
+source_file: "Finder-Window-CloseAllFinderWindowsExceptFront.scpt"
+siri_phrases:
+  - "close [the] other windows"
+  - "close all [finder] windows but this [one]"
+  - "close all [finder] windows except this [one]"
+  - "close every [finder] window but this [one]"
+  - "close every [finder] window except this [one]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to closeEveryFinderWindowExceptTopWindow()

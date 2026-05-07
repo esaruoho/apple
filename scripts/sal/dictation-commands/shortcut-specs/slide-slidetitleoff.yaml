@@ -1,0 +1,11 @@
+name: "Turn Slide Title Off"
+scope: "com.apple.iWork.Keynote"
+description: "Hides the current slide\u2019s default title item."
+source_library: "Keynote"
+source_file: "Slide-SlideTitleOff.scpt"
+siri_phrases:
+  - "turn off [the] slide title"
+  - "[turn] [the] slide title off"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setShowingOfCurrentSlideTitle(false)

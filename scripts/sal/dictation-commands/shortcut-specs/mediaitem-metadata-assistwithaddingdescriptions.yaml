@@ -1,0 +1,14 @@
+name: "Assist With Adding Descriptions"
+scope: "com.apple.Photos"
+description: "In turn, each of the selected photos will be shown full-width and a dialog will prompt you to enter the description for the currently dispalyed image."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-AssistWithAddingDescriptions.scpt"
+siri_phrases:
+  - "add descriptions [to these]"
+  - "help [me] [to] add descriptions"
+  - "help [me] [to] assign descriptions"
+  - "assist [me] with adding descriptions"
+  - "assist [me] with assigning descriptions"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to launchTitleDescriptionApplet()

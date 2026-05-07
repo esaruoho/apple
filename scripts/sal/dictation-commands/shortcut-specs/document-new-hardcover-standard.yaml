@@ -1,0 +1,17 @@
+name: "New Presentation: Hard Cover-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Hard Cover theme"
+source_library: "Keynote"
+source_file: "Document-New-HardCover-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] hard cover template"
+  - "make [a] [new] standard presentation with [the] hard cover template"
+  - "make [a] [new] standard presentation using [the] hard cover theme"
+  - "make [a] [new] standard presentation with [the] hard cover theme"
+  - "make [a] [new] presentation using [the] standard hard cover template"
+  - "make [a] [new] presentation with [the] standard hard cover template"
+  - "make [a] [new] presentation using [the] standard hard cover theme"
+  - "make [a] [new] presentation with [the] standard hard cover theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Hard Cover")

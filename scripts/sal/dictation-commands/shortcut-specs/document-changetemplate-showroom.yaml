@@ -1,0 +1,11 @@
+name: "Change Theme to Showroom"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Showroom"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Showroom.scpt"
+siri_phrases:
+  - "change [the] theme to showroom"
+  - "change [the] template to showroom"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Showroom")

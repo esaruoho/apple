@@ -1,0 +1,12 @@
+name: "Overlay Image Descriptions"
+scope: "com.apple.iWork.Keynote"
+description: "Place the description of each image on top of it as a text overlay."
+source_library: "Keynote"
+source_file: "Image-OverlayDescriptions.scpt"
+siri_phrases:
+  - "overlay image descriptions"
+  - "put descriptions over each image"
+  - "put descriptions on top of every image"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to overlayImageAllDescriptions(0, 0, 0)

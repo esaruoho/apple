@@ -1,0 +1,18 @@
+name: "Decrease Size by 50%"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will decrease the size of the selected slide item by 50%."
+source_library: "Keynote"
+source_file: "Slide-Item-DecreaseSizeOfSelectedByPercentage-50.scpt"
+siri_phrases:
+  - "decrease size [by] 50%"
+  - "decrease size [by] fifty percent"
+  - "decrease size [by] 50 percent"
+  - "reduce size [by] 40%"
+  - "reduce size [by] fifty percent"
+  - "reduce size [by] 50 percent"
+  - "scale [this] down 50%"
+  - "scale [this] down fifty percent"
+  - "scale [this] down 50 percent"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to reduceSizeOfSelectedUnlockedSlideItemsByPercentage(50)

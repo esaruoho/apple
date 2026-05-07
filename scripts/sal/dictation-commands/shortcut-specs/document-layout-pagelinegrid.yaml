@@ -1,0 +1,14 @@
+name: "Create a Grid of Lines"
+scope: "com.apple.iWork.Pages"
+description: "This command will create a grid of lines based upon interactive user input."
+source_library: "Pages"
+source_file: "Document-Layout-PageLineGrid.scpt"
+siri_phrases:
+  - "help [me] [to] create [a] grid of lines"
+  - "help [me] [to] make [a] grid of lines"
+  - "help [me] [to] build [a] grid of lines"
+  - "help [me] [to] construct [a] grid of lines"
+  - "assist [me] with creating [a] grid of lines"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to createPagesLineGrid()

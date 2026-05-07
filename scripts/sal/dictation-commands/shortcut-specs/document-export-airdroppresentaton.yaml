@@ -1,0 +1,10 @@
+name: "AirDrop Frontmost Presentation"
+scope: "com.apple.iWork.Keynote"
+description: "Begin an AirDrop session for the current presentation. NOTE: The presentation must have beensaved prior to using this command."
+source_library: "Keynote"
+source_file: "Document-Export-AirDropPresentaton.scpt"
+siri_phrases:
+  - "air drop this [presentation] [document]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to beginAirDropOfFrontmostPresentationFile()

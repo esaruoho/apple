@@ -1,0 +1,10 @@
+name: "Previous Slide"
+scope: "com.apple.Photos"
+description: "Display the previous slide in the playing slideshow"
+source_library: "Photos"
+source_file: "Slideshow-PreviousSlide.scpt"
+siri_phrases:
+  - "previous slide"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to previousSlideOfRunningSlideshow()

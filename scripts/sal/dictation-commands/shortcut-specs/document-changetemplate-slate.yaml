@@ -1,0 +1,11 @@
+name: "Change Theme to Slate"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Slate"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Slate.scpt"
+siri_phrases:
+  - "change [the] theme to slate"
+  - "change [the] template to slate"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Slate")

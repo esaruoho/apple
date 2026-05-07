@@ -1,0 +1,10 @@
+name: "Identify Image Stack"
+scope: "com.apple.iWork.Keynote"
+description: "Shows the stacking order of the images of the current slide by placing a number over each in turn, and speaking the stack index. Image 1 is always the topmost slide in the stack of images."
+source_library: "Keynote"
+source_file: "Slide-Identify-ImageStack.scpt"
+siri_phrases:
+  - "identify [these] images [by number]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to showImageStackForCurrentSlide()

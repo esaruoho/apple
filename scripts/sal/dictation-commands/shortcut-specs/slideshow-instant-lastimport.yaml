@@ -1,0 +1,13 @@
+name: "Last Import Slideshow"
+scope: "com.apple.Photos"
+description: "Begin a slideshow of the contents of the Last Import album"
+source_library: "Photos"
+source_file: "Slideshow-Instant-LastImport.scpt"
+siri_phrases:
+  - "start slideshow of [the] last import"
+  - "begin slideshow of [the] last import"
+  - "start last import slideshow"
+  - "begin last import slideshow"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to beginSlideshowUsingLastImport()

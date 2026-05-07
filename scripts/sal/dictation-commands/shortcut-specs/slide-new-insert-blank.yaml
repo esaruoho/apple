@@ -1,0 +1,12 @@
+name: "Insert Blank Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Inserts a new blank slide after the current slide."
+source_library: "Keynote"
+source_file: "Slide-New-Insert-Blank.scpt"
+siri_phrases:
+  - "add [a] [new] blank slide"
+  - "make [a] [new] blank slide"
+  - "insert [a] [new] blank slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to insertBlankSlide()

@@ -1,0 +1,17 @@
+name: "New Presentation: Graph Paper-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Graph Paper theme"
+source_library: "Keynote"
+source_file: "Document-New-GraphPaper-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] graph paper template"
+  - "make [a] [new] standard presentation with [the] graph paper template"
+  - "make [a] [new] standard presentation using [the] graph paper theme"
+  - "make [a] [new] standard presentation with [the] graph paper theme"
+  - "make [a] [new] presentation using [the] standard graph paper template"
+  - "make [a] [new] presentation with [the] standard graph paper template"
+  - "make [a] [new] presentation using [the] standard graph paper theme"
+  - "make [a] [new] presentation with [the] standard graph paper theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Graph Paper")

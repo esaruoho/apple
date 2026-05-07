@@ -1,0 +1,11 @@
+name: "Show Top Songs"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the iTunes page for Top Songs in the iTunes application."
+source_library: "iTunes"
+source_file: "Locations-Show-TopSongs.scpt"
+siri_phrases:
+  - "show [me] top songs [in iTunes]"
+  - "show [the] top songs page [in iTunes]"
+applescript: |
+  use script "DC-iTunes"
+  tell script "DC-iTunes" to showLocationTopSongs()

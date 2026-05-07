@@ -1,0 +1,11 @@
+name: "Display WiFi Network Name"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the name of the current Wi-Fi network as a screen overlay"
+source_library: "Workspace"
+source_file: "DisplayOverlay-WiFiNetworkName.scpt"
+siri_phrases:
+  - "display [the] Wi-Fi network name"
+  - "display [the] name of [the] Wi-Fi network"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to showCurrentWifiNetworkName()

@@ -1,0 +1,11 @@
+name: "Set Transition Start for All Slides to Manual"
+scope: "com.apple.iWork.Keynote"
+description: "Set the start transition property of all un-skipped slides to manual"
+source_library: "Keynote"
+source_file: "Transition-Set-All-StartOnClick.scpt"
+siri_phrases:
+  - "set [transitions to] start on click for all slides"
+  - "set [transitions to] start on click for every slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setAutomaticTransitionForAllSlides(false)

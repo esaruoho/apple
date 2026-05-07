@@ -1,0 +1,11 @@
+name: "Paste 20 Paragraphs of Dummy Text"
+scope: "com.apple.iWork.Pages"
+description: "This command will place 20 paragraphs of lorem ipsum on the clipboard, and then paste into the document at the current insertion point."
+source_library: "Pages"
+source_file: "Document-Layout-InsertLoremIpsum-20Paragraphs.scpt"
+siri_phrases:
+  - "20 paragraphs of dummy text"
+  - "20 paragraphs of lorem ipsum"
+applescript: |
+  use script "Lorem Ipsum"
+  tell script "Lorem Ipsum" to pasteNParagraphsFromClipboard(20)

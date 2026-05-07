@@ -1,0 +1,22 @@
+name: "Close without Saving"
+scope: "com.apple.QuickTimePlayerX"
+description: "Close the frontmost document without saving"
+source_library: "QuickTime Player"
+source_file: "Manage-CloseFrontDocNoSave.scpt"
+siri_phrases:
+  - "close without saving"
+  - "close [this] movie without saving"
+  - "close [this] clip without saving"
+  - "close [this] recording without saving"
+  - "close [the] front movie without saving"
+  - "close [the] front clip without saving"
+  - "close [the] front recording without saving"
+  - "close [this] movie and don't save it"
+  - "close [this] clip and don't save it"
+  - "close [this] recording and don't save it"
+  - "close [the] front movie and don't save it"
+  - "close [the] front clip and don't save it"
+  - "close [the] front recording and don't save it"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to closeFrontDocWithoutSaving()

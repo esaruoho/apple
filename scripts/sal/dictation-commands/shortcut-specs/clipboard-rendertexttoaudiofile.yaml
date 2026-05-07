@@ -1,0 +1,12 @@
+name: "Render Clipboard Text to Audio File"
+scope: "com.apple.speech.SystemWideScope"
+description: "Add the text contents of the clipboard to a new Pages document."
+source_library: "Workspace"
+source_file: "Clipboard-RenderTextToAudioFile.scpt"
+siri_phrases:
+  - "save that as [an] audio file "
+  - "render [the] clipboard text to [an] audio file "
+  - "save [the] clipboard text as [an] audio file"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to renderClipboardStringToAudioFile(true)

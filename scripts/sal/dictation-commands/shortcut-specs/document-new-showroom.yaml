@@ -1,0 +1,13 @@
+name: "New Presentation: Showroom"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Showroom theme"
+source_library: "Keynote"
+source_file: "Document-New-Showroom.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] showroom template"
+  - "make [a] [new] presentation with [the] showroom template"
+  - "make [a] [new] presentation using [the] showroom theme"
+  - "make [a] [new] presentation with [the] showroom theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Showroom")

@@ -1,0 +1,11 @@
+name: "Edit Selected Image in Photos"
+scope: "com.apple.iWork.Keynote"
+description: "Edit the selected image in the Photos application. NOTE: the selected image must be in the current Photos library, and have been imported into the presentation using Dictation Commands."
+source_library: "Keynote"
+source_file: "Image-EditInPhotos.scpt"
+siri_phrases:
+  - "edit this [image] in Photos"
+  - "edit this photo in Photos"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to editSelectedKeynoteImageInPhotos()

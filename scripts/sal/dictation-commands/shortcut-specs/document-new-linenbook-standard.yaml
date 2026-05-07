@@ -1,0 +1,17 @@
+name: "New Presentation: Linen Book-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Linen Book theme"
+source_library: "Keynote"
+source_file: "Document-New-LinenBook-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] linen book template"
+  - "make [a] [new] standard presentation with [the] linen book template"
+  - "make [a] [new] standard presentation using [the] linen book theme"
+  - "make [a] [new] standard presentation with [the] linen book theme"
+  - "make [a] [new] presentation using [the] standard linen book template"
+  - "make [a] [new] presentation with [the] standard linen book template"
+  - "make [a] [new] presentation using [the] standard linen book theme"
+  - "make [a] [new] presentation with [the] standard linen book theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Linen Book")

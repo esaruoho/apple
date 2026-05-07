@@ -1,0 +1,13 @@
+name: "Show Related Items"
+scope: "com.apple.iWork.Keynote"
+description: "This command will display a Spotlight search window in the Finder showing items whose tags are related to the frontmost presentation."
+source_library: "Keynote"
+source_file: "Document-Metadata-ShowRelatedItems.scpt"
+siri_phrases:
+  - "find related items"
+  - "show related items"
+  - "find items related to this [presentation]"
+  - "show items related to this [presentation]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to searchForItemsWithSameUserTagsAsFrontmostPresentation()

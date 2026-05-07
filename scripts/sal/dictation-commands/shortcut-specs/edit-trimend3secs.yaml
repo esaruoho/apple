@@ -1,0 +1,10 @@
+name: "Trim 3-Seconds from the End"
+scope: "com.apple.QuickTimePlayerX"
+description: "Trim 3-seconds from the end of the current recording."
+source_library: "QuickTime Player"
+source_file: "Edit-TrimEnd3Secs.scpt"
+siri_phrases:
+  - "trim [from] [the] end [of] [this] [that]"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to trimFromDocumentEnd(3)

@@ -1,0 +1,10 @@
+name: "Open and Play Selected Keynote File"
+scope: "com.apple.finder"
+description: "Open and play the selected Keynote file."
+source_library: "Workspace"
+source_file: "Selection-OpenAndPlaySelectedKeynoteFile.scpt"
+siri_phrases:
+  - "[open and] play this presentation [file]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to playSelectedKeynoteFile()

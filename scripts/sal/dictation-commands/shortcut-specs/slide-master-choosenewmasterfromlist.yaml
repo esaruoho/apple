@@ -1,0 +1,11 @@
+name: "Choose New Master Slide from List"
+scope: "com.apple.iWork.Keynote"
+description: "This command will display the names of the available master slides. Select a name to change the master slide of the current slide."
+source_library: "Keynote"
+source_file: "Slide-Master-ChooseNewMasterFromList.scpt"
+siri_phrases:
+  - "choose [the] master slide"
+  - "choose [a] [new] master slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to applyMasterSlideChosenFromList()

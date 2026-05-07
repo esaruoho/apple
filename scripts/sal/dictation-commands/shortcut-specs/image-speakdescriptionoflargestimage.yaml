@@ -1,0 +1,11 @@
+name: "Describe Largest Image"
+scope: "com.apple.iWork.Keynote"
+description: "Speaks the description of the largest image (by volume) on the current slide."
+source_library: "Keynote"
+source_file: "Image-SpeakDescriptionOfLargestImage.scpt"
+siri_phrases:
+  - "tell me about this image"
+  - "read [the] description for this image"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to speakDescriptionOfLargestImageOnCurrentSlide()

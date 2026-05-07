@@ -1,0 +1,13 @@
+name: "Move Selected Finder Items into the user\u2019s Applications folder"
+scope: "com.apple.finder"
+description: "Move the items selected in the Finder into the user\u2019s Applications folder. \u201ccopy\u201d will be appended to the names of the moved items if items will the same name exist in the destination folder. The moved items will highlighted after moving."
+source_library: "Workspace"
+source_file: "Selection-MoveToUserApplicationsFolder.scpt"
+siri_phrases:
+  - "move this to my applications [folder]"
+  - "move this into my applications [folder]"
+  - "move these to my applications [folder]"
+  - "move these into my applications [folder]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to moveFinderSelectionIntoUserApplicationsFolder(false,true)

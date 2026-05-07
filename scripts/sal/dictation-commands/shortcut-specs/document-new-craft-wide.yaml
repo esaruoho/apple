@@ -1,0 +1,17 @@
+name: "New Presentation: Craft-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Craft theme"
+source_library: "Keynote"
+source_file: "Document-New-Craft-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] craft template"
+  - "make [a] [new] wide presentation with [the] craft template"
+  - "make [a] [new] wide presentation using [the] craft theme"
+  - "make [a] [new] wide presentation with [the] craft theme"
+  - "make [a] [new] presentation using [the] wide craft template"
+  - "make [a] [new] presentation with [the] wide craft template"
+  - "make [a] [new] presentation using [the] wide craft theme"
+  - "make [a] [new] presentation with [the] wide craft theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Craft")

@@ -1,0 +1,13 @@
+name: "Favorites Slideshow"
+scope: "com.apple.Photos"
+description: "Begin a slideshow of the contents of the Favorites album"
+source_library: "Photos"
+source_file: "Slideshow-Instant-Favorites.scpt"
+siri_phrases:
+  - "start slideshow of favorites"
+  - "begin slideshow of favorites"
+  - "start favorites slideshow"
+  - "begin favorites slideshow"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to beginSlideshowUsingFavorites()

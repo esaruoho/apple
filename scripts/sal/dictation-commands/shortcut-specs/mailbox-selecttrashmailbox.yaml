@@ -1,0 +1,13 @@
+name: "Select the Trash Mailbox"
+scope: "com.apple.mail"
+description: "Select the Trash mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectTrashMailbox.scpt"
+siri_phrases:
+  - "select [the] trash box"
+  - "select [the] trash mailbox"
+  - "open [the] trash box"
+  - "open [the] trash mailbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectTrashMailbox()

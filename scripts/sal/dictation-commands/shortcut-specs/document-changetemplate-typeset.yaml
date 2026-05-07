@@ -1,0 +1,11 @@
+name: "Change Theme to Typeset"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Typeset"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Typeset.scpt"
+siri_phrases:
+  - "change [the] theme to typeset"
+  - "change [the] template to typeset"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Typeset")

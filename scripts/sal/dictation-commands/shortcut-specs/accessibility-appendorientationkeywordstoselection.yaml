@@ -1,0 +1,11 @@
+name: "Append Orientation Keywords"
+scope: "com.apple.Photos"
+description: "This command will append either \u201clandscape\u201d \u201cportrait\u201d or \u201csquare\u201d to the keywords of the selected media items."
+source_library: "Photos"
+source_file: "Accessibility-AppendOrientationKeywordsToSelection.scpt"
+siri_phrases:
+  - "add orientation keywords"
+  - "append orientation keywords"
+applescript: |
+  use script "DC-Assistive-Photos"
+  tell script "DC-Assistive-Photos" to appendOrientationKeywordsToSelectedItems()

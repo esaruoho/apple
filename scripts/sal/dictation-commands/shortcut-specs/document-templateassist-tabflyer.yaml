@@ -1,0 +1,11 @@
+name: "Template Assist: Tab Flyer"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the Tab Flyer template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-TabFlyer.scpt"
+siri_phrases:
+  - "assist [me] with [the] tab flyer template"
+  - "assist [me] with [the] template tab flyer"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_TAB_FLYER")

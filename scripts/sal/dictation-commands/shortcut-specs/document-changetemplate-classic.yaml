@@ -1,0 +1,11 @@
+name: "Change Theme to Classic"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Classic"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Classic.scpt"
+siri_phrases:
+  - "change [the] theme to classic"
+  - "change [the] template to classic"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Classic")

@@ -1,0 +1,12 @@
+name: "Execute Previous Command"
+scope: "com.apple.speech.SystemWideScope"
+description: "Repeat the previous command using the same parameters as before."
+source_library: "Speech"
+source_file: "ExecuteStoredCommand.scpt"
+siri_phrases:
+  - "do that again"
+  - "repeat [the] last command"
+  - "again please"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to retrieveExecuteJXACommandString()

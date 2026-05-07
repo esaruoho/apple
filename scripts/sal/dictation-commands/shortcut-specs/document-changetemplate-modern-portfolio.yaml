@@ -1,0 +1,11 @@
+name: "Change Theme to Modern Portfolio"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Modern Portfolio"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Modern-Portfolio.scpt"
+siri_phrases:
+  - "change [the] theme to modern portfolio"
+  - "change [the] template to modern portfolio"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Modern_Portfolio")

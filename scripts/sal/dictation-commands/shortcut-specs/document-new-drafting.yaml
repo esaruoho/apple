@@ -1,0 +1,13 @@
+name: "New Presentation: Drafting"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Drafting theme"
+source_library: "Keynote"
+source_file: "Document-New-Drafting.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] drafting template"
+  - "make [a] [new] presentation with [the] drafting template"
+  - "make [a] [new] presentation using [the] drafting theme"
+  - "make [a] [new] presentation with [the] drafting theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Drafting")

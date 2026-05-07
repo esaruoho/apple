@@ -1,0 +1,17 @@
+name: "New Presentation: Gradient-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Gradient theme"
+source_library: "Keynote"
+source_file: "Document-New-Gradient-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] gradient template"
+  - "make [a] [new] wide presentation with [the] gradient template"
+  - "make [a] [new] wide presentation using [the] gradient theme"
+  - "make [a] [new] wide presentation with [the] gradient theme"
+  - "make [a] [new] presentation using [the] wide gradient template"
+  - "make [a] [new] presentation with [the] wide gradient template"
+  - "make [a] [new] presentation using [the] wide gradient theme"
+  - "make [a] [new] presentation with [the] wide gradient theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Gradient")

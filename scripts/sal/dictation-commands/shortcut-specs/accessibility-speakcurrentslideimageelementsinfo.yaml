@@ -1,0 +1,11 @@
+name: "Info about each image of current slide"
+scope: "com.apple.iWork.Keynote"
+description: "Speak information about each of the images on the current slide."
+source_library: "Keynote"
+source_file: "Accessibility-SpeakCurrentSlideImageElementsInfo.scpt"
+siri_phrases:
+  - "tell me about [the] images on this slide"
+  - "tell me about slide images"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakInfoAboutImagesOfCurrentSlide()

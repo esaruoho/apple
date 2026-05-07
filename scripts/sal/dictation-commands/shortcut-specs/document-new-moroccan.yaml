@@ -1,0 +1,13 @@
+name: "New Presentation: Moroccan"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Moroccan theme"
+source_library: "Keynote"
+source_file: "Document-New-Moroccan.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] moroccan template"
+  - "make [a] [new] presentation with [the] moroccan template"
+  - "make [a] [new] presentation using [the] moroccan theme"
+  - "make [a] [new] presentation with [the] moroccan theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Moroccan")

@@ -1,0 +1,11 @@
+name: "Show Year View for Next Year"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the year view for next year"
+source_library: "Calendar"
+source_file: "Display-showYearViewForNextYear.scpt"
+siri_phrases:
+  - "show [the] calendar for next year"
+  - "show next year's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showYearViewForNextYear()

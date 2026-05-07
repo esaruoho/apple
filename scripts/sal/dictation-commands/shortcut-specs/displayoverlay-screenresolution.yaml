@@ -1,0 +1,10 @@
+name: "Display Screen Resolution"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the resolution of the screen"
+source_library: "Workspace"
+source_file: "DisplayOverlay-ScreenResolution.scpt"
+siri_phrases:
+  - "display [the] screen resolution"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to showScreenResolution()

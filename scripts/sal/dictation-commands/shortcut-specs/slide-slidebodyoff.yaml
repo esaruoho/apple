@@ -1,0 +1,11 @@
+name: "Turn Slide Body Off"
+scope: "com.apple.iWork.Keynote"
+description: "Hides the current slide\u2019s default body item."
+source_library: "Keynote"
+source_file: "Slide-SlideBodyOff.scpt"
+siri_phrases:
+  - "turn off [the] slide body"
+  - "[turn] [the] slide body off"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setShowingOfCurrentSlideBody(false)

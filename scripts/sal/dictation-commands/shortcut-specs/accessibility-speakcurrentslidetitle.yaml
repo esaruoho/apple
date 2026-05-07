@@ -1,0 +1,13 @@
+name: "Speak the title of current slide"
+scope: "com.apple.iWork.Keynote"
+description: "Speak the title of the current slide."
+source_library: "Keynote"
+source_file: "Accessibility-SpeakCurrentSlideTitle.scpt"
+siri_phrases:
+  - "read [the] [slide] title"
+  - "speak [the] [slide] title"
+  - "read [the] title of this slide"
+  - "speak [the] title of this slide"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakContentOfVisibleDefaultTitleItem()

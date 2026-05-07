@@ -1,0 +1,13 @@
+name: "Remove all Lines"
+scope: "com.apple.iWork.Keynote"
+description: "Remove all lines from the current slide"
+source_library: "Keynote"
+source_file: "Slide-RemoveAllLines.scpt"
+siri_phrases:
+  - "remove all lines"
+  - "remove every line"
+  - "get rid of all lines"
+  - "get rid of every line"
+applescript: |
+  use script "DC-Keynote-Objects"
+  tell script "DC-Keynote-Objects" to deleteAllLines(true)

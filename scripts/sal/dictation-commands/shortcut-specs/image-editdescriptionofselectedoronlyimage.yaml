@@ -1,0 +1,11 @@
+name: "Edit Description of Selected Image"
+scope: "com.apple.iWork.Keynote"
+description: "This commands displays an editing dialog containing the description of the selected image. If there is only one image on the slide, it will be the target of the command, selected or not."
+source_library: "Keynote"
+source_file: "Image-EditDescriptionOfSelectedOrOnlyImage.scpt"
+siri_phrases:
+  - "edit [the] description of this [image]"
+  - "edit [the] description for this [image]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setDescriptionForSelectedOrOnlyImage()

@@ -1,0 +1,11 @@
+name: "Dictated Search"
+scope: "com.apple.Photos"
+description: "This command will search Photos for the terms or phrase dictated into a presented dialog."
+source_library: "Photos"
+source_file: "Accessibility-DictatedSearch.scpt"
+siri_phrases:
+  - "begin search"
+  - "start search"
+applescript: |
+  use script "DC-Assistive-Photos"
+  tell script "DC-Assistive-Photos" to beginAlternatePhotosSearch()

@@ -1,0 +1,11 @@
+name: "Exit Edit Mode"
+scope: "com.apple.Photos"
+description: "Leave edit mode for the current image and return to albums or photos view."
+source_library: "Photos"
+source_file: "MediaItem-ExitEditMode.scpt"
+siri_phrases:
+  - "stop edit"
+  - "exit edit [mode]"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to exitEditMode()

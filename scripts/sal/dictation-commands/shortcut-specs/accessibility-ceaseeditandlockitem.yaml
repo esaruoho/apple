@@ -1,0 +1,11 @@
+name: "Stop Edit and Lock Item"
+scope: "com.apple.iWork.Keynote"
+description: "Exit the current edit and lock the text item"
+source_library: "Keynote"
+source_file: "Accessibility-CeaseEditAndLockItem.scpt"
+siri_phrases:
+  - "cease edit and lock"
+  - "stop edit and lock"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to ceaseEditAndLock()

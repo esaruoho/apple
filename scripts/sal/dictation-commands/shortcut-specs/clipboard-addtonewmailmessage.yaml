@@ -1,0 +1,11 @@
+name: "Export Clipboard to New Mail Message"
+scope: "com.apple.speech.SystemWideScope"
+description: "Export the contents of the clipboard to a new outgoing Mail message."
+source_library: "Workspace"
+source_file: "Clipboard-AddToNewMailMessage.scpt"
+siri_phrases:
+  - "put that in [a] [new] mail message "
+  - "put that in [a] [an] [new] email "
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to newMailMessageWithContentsOfClipboard(true)

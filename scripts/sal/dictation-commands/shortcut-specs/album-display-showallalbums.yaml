@@ -1,0 +1,10 @@
+name: "Show All Albums"
+scope: "com.apple.Photos"
+description: "Show the icons for all albums in the main window."
+source_library: "Photos"
+source_file: "Album-Display-ShowAllAlbums.scpt"
+siri_phrases:
+  - "show all albums"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to showAllAlbums()

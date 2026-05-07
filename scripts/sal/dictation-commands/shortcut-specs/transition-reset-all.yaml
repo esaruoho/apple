@@ -1,0 +1,18 @@
+name: "Reset Transition Settings for All Slides"
+scope: "com.apple.iWork.Keynote"
+description: "Reset the transition properties of all un-skipped slides"
+source_library: "Keynote"
+source_file: "Transition-Reset-All.scpt"
+siri_phrases:
+  - "clear all transitions"
+  - "remove all transitions"
+  - "reset all transitions"
+  - "clear [the] transitions from every slide"
+  - "clear [the] transitions from all slides"
+  - "remove [the] transitions from every slide"
+  - "remove [the] transitions from all slides"
+  - "reset [the] transitions for every slide"
+  - "reset [the] transitions for all slides"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to resetTransitionPropertiesForEverySlide()

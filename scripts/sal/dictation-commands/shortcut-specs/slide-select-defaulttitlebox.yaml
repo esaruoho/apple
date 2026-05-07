@@ -1,0 +1,10 @@
+name: "Select Default Title Box"
+scope: "com.apple.iWork.Keynote"
+description: "Selects the slide\u2019s default title item. To edit a default title item, use the command: \u201cedit slide title\u201d"
+source_library: "Keynote"
+source_file: "Slide-Select-DefaultTitleBox.scpt"
+siri_phrases:
+  - "select [the] [slide] title box"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to selectDefautTitleItem()

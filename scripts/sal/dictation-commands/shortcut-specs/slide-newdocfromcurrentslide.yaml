@@ -1,0 +1,12 @@
+name: "New Presentation from Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Creates a new presentation file that contains a single slide copy of the current slide."
+source_library: "Keynote"
+source_file: "Slide-NewDocFromCurrentSlide.scpt"
+siri_phrases:
+  - "make [a] [new] presentation with this slide"
+  - "make [a] [new] presentation from this slide"
+  - "make [a] [new] presentation using this slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to createNewDocumentWithCurrentSlide()

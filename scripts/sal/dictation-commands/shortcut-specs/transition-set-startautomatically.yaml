@@ -1,0 +1,10 @@
+name: "Set Transition Start for the Current Slide to Automatic"
+scope: "com.apple.iWork.Keynote"
+description: "Set the start transition property of the current slide to automatic"
+source_library: "Keynote"
+source_file: "Transition-Set-StartAutomatically.scpt"
+siri_phrases:
+  - "set [transition to] start automatically"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setAutomaticTransition(true)

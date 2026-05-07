@@ -1,0 +1,10 @@
+name: "New Presentation: Default-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the default theme"
+source_library: "Keynote"
+source_file: "Document-New-Default-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDefaultDocumentWide()

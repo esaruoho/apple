@@ -1,0 +1,17 @@
+name: "New Presentation: Hard Cover-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Hard Cover theme"
+source_library: "Keynote"
+source_file: "Document-New-HardCover-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] hard cover template"
+  - "make [a] [new] wide presentation with [the] hard cover template"
+  - "make [a] [new] wide presentation using [the] hard cover theme"
+  - "make [a] [new] wide presentation with [the] hard cover theme"
+  - "make [a] [new] presentation using [the] wide hard cover template"
+  - "make [a] [new] presentation with [the] wide hard cover template"
+  - "make [a] [new] presentation using [the] wide hard cover theme"
+  - "make [a] [new] presentation with [the] wide hard cover theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Hard Cover")

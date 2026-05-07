@@ -1,0 +1,11 @@
+name: "Show File of Front Presentation"
+scope: "com.apple.iWork.Keynote"
+description: "Show the file of the frontmost presentation in the Finder."
+source_library: "Keynote"
+source_file: "Document-Metadata-ShowFileInFinder.scpt"
+siri_phrases:
+  - "show [this] presentation file"
+  - "show [the] file of this [presentation]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to showCurrentKeynoteFileOnDisk()

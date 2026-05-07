@@ -1,0 +1,11 @@
+name: "Export with Copyright Overlay in Black"
+scope: "com.apple.Photos"
+description: "Export the selected media items to a new JPEG files overlaid with your default copyright export string. The color of the text overlay is black."
+source_library: "Photos"
+source_file: "MediaItem-ExportWithCopyrightOverlayInBlack.scpt"
+siri_phrases:
+  - "export [these] with copyright in black "
+  - "export this with copyright in black"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to exportSelectedPhotosWithOverlaidCopyright(0)

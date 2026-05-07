@@ -1,0 +1,13 @@
+name: "Choose File for Fifth Image of Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for the fifth image of the current slide"
+source_library: "Keynote"
+source_file: "Image-ChooseFileForImage5OfCurrentSlide.scpt"
+siri_phrases:
+  - "choose [[a] file for] image 5"
+  - "choose [[a] file for] photo 5"
+  - "choose [[a] file for] [the] fifth image"
+  - "choose [[a] file for] [the] fifth photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to assistImportForImageByIndex(5, true)

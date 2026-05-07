@@ -1,0 +1,17 @@
+name: "New Presentation: Craft-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Craft theme"
+source_library: "Keynote"
+source_file: "Document-New-Craft-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] craft template"
+  - "make [a] [new] standard presentation with [the] craft template"
+  - "make [a] [new] standard presentation using [the] craft theme"
+  - "make [a] [new] standard presentation with [the] craft theme"
+  - "make [a] [new] presentation using [the] standard craft template"
+  - "make [a] [new] presentation with [the] standard craft template"
+  - "make [a] [new] presentation using [the] standard craft theme"
+  - "make [a] [new] presentation with [the] standard craft theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Craft")

@@ -1,0 +1,12 @@
+name: "Search for Items Tagged like Selected Item"
+scope: "com.apple.finder"
+description: "Perform a Finder Spotlight search for items whose tags match the selected item."
+source_library: "Workspace"
+source_file: "Selection-SearchForItemsMatchingTagsOfSelectedItem.scpt"
+siri_phrases:
+  - "find related items"
+  - "find items tagged liked this [one]"
+  - "find items related to this [one]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to searchUsingUserTagsOfSelectedItem()

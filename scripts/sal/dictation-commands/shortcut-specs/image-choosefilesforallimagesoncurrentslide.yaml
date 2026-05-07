@@ -1,0 +1,13 @@
+name: "Choose Files for All Images on Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for each of the images on the current slide"
+source_library: "Keynote"
+source_file: "Image-ChooseFilesForAllImagesOnCurrentSlide.scpt"
+siri_phrases:
+  - "choose [files for] all images"
+  - "choose [files for] every image"
+  - "choose [files for] all photos"
+  - "choose [files for] every photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to assistWithImportForAllImagesOnCurrentSlide()

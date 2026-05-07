@@ -1,0 +1,15 @@
+name: "Overlay Image Titles"
+scope: "com.apple.iWork.Keynote"
+description: "Place the title (name) of each image on top of it as a text overlay. If the image was previously imported into Keynote from Photos using Dictation Commands, this command will attempt to locate the image in the current Photos library and use the title assigned to it."
+source_library: "Keynote"
+source_file: "Image-OverlayTitles.scpt"
+siri_phrases:
+  - "overlay image titles"
+  - "overlay image names"
+  - "put titles over each image"
+  - "put names over each image"
+  - "put titles on top of every image"
+  - "put names on top of every image"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to overlayImageAllDescriptions(1, 0, 0)

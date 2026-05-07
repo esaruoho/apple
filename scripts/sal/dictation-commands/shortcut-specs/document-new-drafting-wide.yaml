@@ -1,0 +1,17 @@
+name: "New Presentation: Drafting-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Drafting theme"
+source_library: "Keynote"
+source_file: "Document-New-Drafting-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] drafting template"
+  - "make [a] [new] wide presentation with [the] drafting template"
+  - "make [a] [new] wide presentation using [the] drafting theme"
+  - "make [a] [new] wide presentation with [the] drafting theme"
+  - "make [a] [new] presentation using [the] wide drafting template"
+  - "make [a] [new] presentation with [the] wide drafting template"
+  - "make [a] [new] presentation using [the] wide drafting theme"
+  - "make [a] [new] presentation with [the] wide drafting theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Drafting")

@@ -1,0 +1,11 @@
+name: "Change Theme to Photo Essay"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Photo Essay"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Photo-Essay.scpt"
+siri_phrases:
+  - "change [the] theme to photo essay"
+  - "change [the] template to photo essay"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Photo_Essay")

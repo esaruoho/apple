@@ -1,0 +1,11 @@
+name: "Write Clipboard Contents to File"
+scope: "com.apple.speech.SystemWideScope"
+description: "Write the contents of the clipboard to a new file."
+source_library: "Workspace"
+source_file: "Clipboard-WriteToStandardFile.scpt"
+siri_phrases:
+  - "write that to file"
+  - "save that as a file"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to writeClipboardToStandardFile(true)

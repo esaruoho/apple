@@ -1,0 +1,15 @@
+name: "Add Chosen Placeholder Image"
+scope: "com.apple.iWork.Keynote"
+description: "Add a placeholder image of a chosen porportion and size to the current slide."
+source_library: "Keynote"
+source_file: "Image-AddChosenImagePlaceholder.scpt"
+siri_phrases:
+  - "add [a] placeholder [image]"
+  - "choose [a] placeholder [image]"
+  - "pick [a] placeholder [image]"
+  - "add [an] image placeholder"
+  - "choose [an] image placeholder"
+  - "pick [an] image placeholder"
+applescript: |
+  use script "DC-Image-Placeholder"
+  tell script "DC-Image-Placeholder" to addChosenPlaceholderToKeynote()

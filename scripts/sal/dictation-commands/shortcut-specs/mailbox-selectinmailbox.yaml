@@ -1,0 +1,11 @@
+name: "Select the InBox Mailbox"
+scope: "com.apple.mail"
+description: "Select the InBox mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectInMailbox.scpt"
+siri_phrases:
+  - "select [the] inbox"
+  - "open [the] inbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectInMailbox()

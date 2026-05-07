@@ -1,0 +1,11 @@
+name: "Open Home Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s home directory."
+source_library: "Workspace"
+source_file: "Finder-Open-HomeFolder.scpt"
+siri_phrases:
+  - "open [my] home folder"
+  - "open the home folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForUsersHomeDirectory(true)

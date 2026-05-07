@@ -1,0 +1,10 @@
+name: "Unlock Default Title Item"
+scope: "com.apple.iWork.Keynote"
+description: "Unlock the default title item if it is showing"
+source_library: "Keynote"
+source_file: "Accessibility-UnlockDefaultTitleItemOfCurrentSlide.scpt"
+siri_phrases:
+  - "unlock [the] [default] title [item]"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to unlockDefaultTitleItemOnCurrentSlide()

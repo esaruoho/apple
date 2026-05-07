@@ -1,0 +1,17 @@
+name: "New Presentation: Slate-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Slate theme"
+source_library: "Keynote"
+source_file: "Document-New-Slate-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] slate template"
+  - "make [a] [new] wide presentation with [the] slate template"
+  - "make [a] [new] wide presentation using [the] slate theme"
+  - "make [a] [new] wide presentation with [the] slate theme"
+  - "make [a] [new] presentation using [the] wide slate template"
+  - "make [a] [new] presentation with [the] wide slate template"
+  - "make [a] [new] presentation using [the] wide slate theme"
+  - "make [a] [new] presentation with [the] wide slate theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Slate")

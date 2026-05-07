@@ -1,0 +1,13 @@
+name: "New Presentation: Black"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Black theme"
+source_library: "Keynote"
+source_file: "Document-New-Black.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] black template"
+  - "make [a] [new] presentation with [the] black template"
+  - "make [a] [new] presentation using [the] black theme"
+  - "make [a] [new] presentation with [the] black theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Black")

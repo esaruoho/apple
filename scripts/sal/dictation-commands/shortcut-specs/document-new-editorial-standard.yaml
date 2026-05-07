@@ -1,0 +1,17 @@
+name: "New Presentation: Editorial-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Editorial theme"
+source_library: "Keynote"
+source_file: "Document-New-Editorial-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] editorial template"
+  - "make [a] [new] standard presentation with [the] editorial template"
+  - "make [a] [new] standard presentation using [the] editorial theme"
+  - "make [a] [new] standard presentation with [the] editorial theme"
+  - "make [a] [new] presentation using [the] standard editorial template"
+  - "make [a] [new] presentation with [the] standard editorial template"
+  - "make [a] [new] presentation using [the] standard editorial theme"
+  - "make [a] [new] presentation with [the] standard editorial theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Editorial")

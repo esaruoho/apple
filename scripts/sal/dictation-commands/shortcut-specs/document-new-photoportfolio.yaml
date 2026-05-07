@@ -1,0 +1,13 @@
+name: "New Presentation: Photo Portfolio"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Photo Portfolio theme"
+source_library: "Keynote"
+source_file: "Document-New-PhotoPortfolio.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] photo portfolio template"
+  - "make [a] [new] presentation with [the] photo portfolio template"
+  - "make [a] [new] presentation using [the] photo portfolio theme"
+  - "make [a] [new] presentation with [the] photo portfolio theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Photo Portfolio")

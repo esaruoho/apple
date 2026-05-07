@@ -1,0 +1,10 @@
+name: "Export Map to Keynote"
+scope: "com.apple.Maps"
+description: "Export the current Map window as a PNG file, imported into a new slide at the end of the frontmost Keynote presentation. NOTE: if no presentation is currently open, one will be created using the default template."
+source_library: "Maps"
+source_file: "Export-ExportMapToNewKeynoteSlide.scpt"
+siri_phrases:
+  - "export [this] [map] to keynote"
+applescript: |
+  use script "DC-Maps"
+  tell script "DC-Maps" to exportMapClipboardToNewKeynoteSlide()

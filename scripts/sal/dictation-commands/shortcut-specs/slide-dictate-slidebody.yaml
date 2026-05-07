@@ -1,0 +1,11 @@
+name: "DIctate Slide Body"
+scope: "com.apple.iWork.Keynote"
+description: "Replaces the content of the current slide\u2019s default body item with the text cursor, ready to accept dictation."
+source_library: "Keynote"
+source_file: "Slide-Dictate-SlideBody.scpt"
+siri_phrases:
+  - "edit [the] [slide] body"
+  - "dictate [the] [slide] body"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to enterDefautBodyItem()

@@ -1,0 +1,17 @@
+name: "New Presentation: Brushed Canvas-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Brushed Canvas theme"
+source_library: "Keynote"
+source_file: "Document-New-BrushedCanvas-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] brushed canvas template"
+  - "make [a] [new] wide presentation with [the] brushed canvas template"
+  - "make [a] [new] wide presentation using [the] brushed canvas theme"
+  - "make [a] [new] wide presentation with [the] brushed canvas theme"
+  - "make [a] [new] presentation using [the] wide brushed canvas template"
+  - "make [a] [new] presentation with [the] wide brushed canvas template"
+  - "make [a] [new] presentation using [the] wide brushed canvas theme"
+  - "make [a] [new] presentation with [the] wide brushed canvas theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Brushed Canvas")

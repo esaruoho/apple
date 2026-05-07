@@ -1,0 +1,17 @@
+name: "New Presentation: Improv-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Improv theme"
+source_library: "Keynote"
+source_file: "Document-New-Improv-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] improv template"
+  - "make [a] [new] wide presentation with [the] improv template"
+  - "make [a] [new] wide presentation using [the] improv theme"
+  - "make [a] [new] wide presentation with [the] improv theme"
+  - "make [a] [new] presentation using [the] wide improv template"
+  - "make [a] [new] presentation with [the] wide improv template"
+  - "make [a] [new] presentation using [the] wide improv theme"
+  - "make [a] [new] presentation with [the] wide improv theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Improv")

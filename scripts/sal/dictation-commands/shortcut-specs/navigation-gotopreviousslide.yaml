@@ -1,0 +1,12 @@
+name: "Go to the previous Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the previous slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToPreviousSlide.scpt"
+siri_phrases:
+  - "show [the] previous [slide]"
+  - "go to [the] previous [slide]"
+  - "go to [the] prior [slide]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToPreviousSlide()

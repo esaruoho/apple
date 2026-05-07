@@ -1,0 +1,10 @@
+name: "Apply a Long Magic Move Transition"
+scope: "com.apple.iWork.Keynote"
+description: "Apply a Magic Move transition of 4-seconds to the current slide"
+source_library: "Keynote"
+source_file: "Transition-Apply-MagicMove-Long.scpt"
+siri_phrases:
+  - "apply [a] long magic move [transition]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to applyMagicMoveTransitionEffectToCurrentSlide(4)

@@ -1,0 +1,12 @@
+name: "Stop Display Overlay"
+scope: "com.apple.speech.SystemWideScope"
+description: "Stop the display of the current screen overlay"
+source_library: "Workspace"
+source_file: "DisplayOverlay-StopOverlayDisplay.scpt"
+siri_phrases:
+  - "stop [the] display overlay"
+  - "close [the] display overlay"
+  - "hide [the] display overlay"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to stopShowingOverlay()

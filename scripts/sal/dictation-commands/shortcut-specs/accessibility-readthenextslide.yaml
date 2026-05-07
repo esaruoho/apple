@@ -1,0 +1,10 @@
+name: "Read the Next Slide"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will perform a slide advance, and if the next slide is displayed, it will then speak the new slide\u2019s title, body, and image descriptions. Missing items are ignored. (see the \u201cRead this Slide\u201d command for more deatils)"
+source_library: "Keynote"
+source_file: "Accessibility-ReadTheNextSlide.scpt"
+siri_phrases:
+  - "read [the] next slide"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to readTheNextSlide()

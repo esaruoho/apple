@@ -1,0 +1,13 @@
+name: "Stop the Presentation"
+scope: "com.apple.iWork.Keynote"
+description: "This command will stop the currently playing presentation."
+source_library: "Keynote"
+source_file: "Play-StopPresenting.scpt"
+siri_phrases:
+  - "stop [this] [front] presentation"
+  - "stop presenting"
+  - "stop playing"
+  - "take a break"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to stopPlaying()

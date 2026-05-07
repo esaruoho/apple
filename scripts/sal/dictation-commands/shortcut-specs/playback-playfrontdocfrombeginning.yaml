@@ -1,0 +1,13 @@
+name: "Play from the Beginning"
+scope: "com.apple.QuickTimePlayerX"
+description: "Play the frontmost document from the beginning"
+source_library: "QuickTime Player"
+source_file: "Playback-PlayFrontDocFromBeginning.scpt"
+siri_phrases:
+  - "play [this] [that] back"
+  - "play [this] [that] from [the] beginning"
+  - "play [this] [that] from [the] top"
+  - "play [this] [that] from [the] start"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to playFromTheBeginning()

@@ -1,0 +1,11 @@
+name: "Display Computer Serial Number"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the serial number of this computer"
+source_library: "Workspace"
+source_file: "DisplayOverlay-ComputerSerialNumber.scpt"
+siri_phrases:
+  - "display [the] serial number [of this computer]"
+  - "display [the] computer serial number"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to showComputerSerialNumber()

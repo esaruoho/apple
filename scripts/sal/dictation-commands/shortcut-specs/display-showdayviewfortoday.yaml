@@ -1,0 +1,11 @@
+name: "Show Day View for Today"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the current day in day view"
+source_library: "Calendar"
+source_file: "Display-showDayViewForToday.scpt"
+siri_phrases:
+  - "show [the] calendar for today"
+  - "show today's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showDayViewForToday()

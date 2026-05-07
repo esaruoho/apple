@@ -1,0 +1,12 @@
+name: "Select All Photos"
+scope: "com.apple.Photos"
+description: "Select all of the media items in the Photos window. Equivalent to typing Command-A."
+source_library: "Photos"
+source_file: "MediaItem-SelectAllPhotos.scpt"
+siri_phrases:
+  - "select these"
+  - "select all photos"
+  - "select all images"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to doSelectAll()

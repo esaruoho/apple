@@ -1,0 +1,10 @@
+name: "Add Rating Keyword \u2605\u2605\u2605\u2605"
+scope: "com.apple.Photos"
+description: "This Dictation Command will apply a rating keyword of \"\u2605\u2605\u2605\u2605\" to the selected media items. Any existing rating keyword will be removed."
+source_library: "Photos"
+source_file: "MediaItem-Keywords-ApplyRatingToSelectedItems-4Stars.scpt"
+siri_phrases:
+  - "rate 4 [stars]"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to setRatingOfSelectedItemsTo(4)

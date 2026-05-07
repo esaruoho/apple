@@ -1,0 +1,17 @@
+name: "New Presentation: Photo Portfolio-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Photo Portfolio theme"
+source_library: "Keynote"
+source_file: "Document-New-PhotoPortfolio-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] photo portfolio template"
+  - "make [a] [new] wide presentation with [the] photo portfolio template"
+  - "make [a] [new] wide presentation using [the] photo portfolio theme"
+  - "make [a] [new] wide presentation with [the] photo portfolio theme"
+  - "make [a] [new] presentation using [the] wide photo portfolio template"
+  - "make [a] [new] presentation with [the] wide photo portfolio template"
+  - "make [a] [new] presentation using [the] wide photo portfolio theme"
+  - "make [a] [new] presentation with [the] wide photo portfolio theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Photo Portfolio")

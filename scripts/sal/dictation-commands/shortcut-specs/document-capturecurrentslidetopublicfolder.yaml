@@ -1,0 +1,11 @@
+name: "Capture Current Slide to Public Folder"
+scope: "com.apple.iWork.Keynote"
+description: "Save a screen capture of the current slide to the current user\u2019s Public folder."
+source_library: "Keynote"
+source_file: "Document-CaptureCurrentSlideToPublicFolder.scpt"
+siri_phrases:
+  - "save [this] slide to [my] public folder"
+  - "capture [this] slide to [my] public folder"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to captureCurrentSlideToPublicFolder()

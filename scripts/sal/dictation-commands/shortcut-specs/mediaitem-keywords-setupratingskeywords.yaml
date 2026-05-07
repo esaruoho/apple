@@ -1,0 +1,12 @@
+name: "Install Ratings Keywords"
+scope: "com.apple.Photos"
+description: "This Dictation Command will install these ratings keywords: \"\u2605\", \"\u2605\u2605\", \"\u2605\u2605\u2605\", \"\u2605\u2605\u2605\u2605\", \"\u2605\u2605\u2605\u2605\u2605\""
+source_library: "Photos"
+source_file: "MediaItem-Keywords-SetupRatingsKeywords.scpt"
+siri_phrases:
+  - "install ratings keywords"
+  - "install keywords for ratings"
+  - "setup [for] keyword ratings"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to setupRatingsKeywords()

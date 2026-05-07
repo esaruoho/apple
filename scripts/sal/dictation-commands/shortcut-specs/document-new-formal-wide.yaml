@@ -1,0 +1,17 @@
+name: "New Presentation: Formal-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Formal theme"
+source_library: "Keynote"
+source_file: "Document-New-Formal-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] formal template"
+  - "make [a] [new] wide presentation with [the] formal template"
+  - "make [a] [new] wide presentation using [the] formal theme"
+  - "make [a] [new] wide presentation with [the] formal theme"
+  - "make [a] [new] presentation using [the] wide formal template"
+  - "make [a] [new] presentation with [the] wide formal template"
+  - "make [a] [new] presentation using [the] wide formal theme"
+  - "make [a] [new] presentation with [the] wide formal theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Formal")

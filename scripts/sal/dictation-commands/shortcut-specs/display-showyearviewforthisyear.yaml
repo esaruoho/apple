@@ -1,0 +1,11 @@
+name: "Show Year View for This Year"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the year view for this year"
+source_library: "Calendar"
+source_file: "Display-showYearViewForThisYear.scpt"
+siri_phrases:
+  - "show [the] calendar for this year"
+  - "show this year's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showYearViewForCurrentYear()

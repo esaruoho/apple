@@ -1,0 +1,14 @@
+name: "Import Selected Photos Item"
+scope: "com.apple.iWork.Keynote"
+description: "Import the currently selected photo in Photos into the selected image in Keynote.<p style=\"margin-left:36px;margin-right:36px;\">If no image is selected in Keynote, and the slide contains a single image, it will be the recipeient of the import.</p><p style=\"margin-left:36px;margin-right:36px;\">If the current slide contains multiple images, the selected image will be the recipient of the import.</p><p style=\"margin-left:36px;margin-right:36px;\">If the slide has no images, the exported Photos photo will be imported into the slide and automatically sized.</p><p style=\"margin-left:36px;margin-right:36px;\"><b>NOTE</b>: imported images are automatically \u201clinkable\u201d back to Photos, and will include any description from Photos.</p>"
+source_library: "Keynote"
+source_file: "Image-ImportSelectedMediaItemFromPhotos.scpt"
+siri_phrases:
+  - "import [selection] from photos"
+  - "import [selected] item from photos"
+  - "import [selected] image from photos"
+  - "import [selected] photo from photos"
+  - "import photos selection"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to exportSelectedPhotosImageIntoCurrentKeynoteImage()

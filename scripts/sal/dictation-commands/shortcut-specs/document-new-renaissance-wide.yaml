@@ -1,0 +1,17 @@
+name: "New Presentation: Renaissance-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Renaissance theme"
+source_library: "Keynote"
+source_file: "Document-New-Renaissance-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] renaissance template"
+  - "make [a] [new] wide presentation with [the] renaissance template"
+  - "make [a] [new] wide presentation using [the] renaissance theme"
+  - "make [a] [new] wide presentation with [the] renaissance theme"
+  - "make [a] [new] presentation using [the] wide renaissance template"
+  - "make [a] [new] presentation with [the] wide renaissance template"
+  - "make [a] [new] presentation using [the] wide renaissance theme"
+  - "make [a] [new] presentation with [the] wide renaissance theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Renaissance")

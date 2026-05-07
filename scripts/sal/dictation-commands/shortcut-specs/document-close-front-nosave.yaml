@@ -1,0 +1,14 @@
+name: "Close Presentation: Front-No Save"
+scope: "com.apple.iWork.Keynote"
+description: "Close the frontmost presentation without saving it"
+source_library: "Keynote"
+source_file: "Document-Close-Front-NoSave.scpt"
+siri_phrases:
+  - "close this without saving"
+  - "close [this] presentation without saving"
+  - "close [the] front presentation without saving"
+  - "close [this] presentation and don't save it"
+  - "close [the] front presentation and don't save it"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to closeFrontDocumentWithoutSaving()

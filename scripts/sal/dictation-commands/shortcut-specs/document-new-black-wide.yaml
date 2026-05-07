@@ -1,0 +1,17 @@
+name: "New Presentation: Black-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Black theme"
+source_library: "Keynote"
+source_file: "Document-New-Black-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] black template"
+  - "make [a] [new] wide presentation with [the] black template"
+  - "make [a] [new] wide presentation using [the] black theme"
+  - "make [a] [new] wide presentation with [the] black theme"
+  - "make [a] [new] presentation using [the] wide black template"
+  - "make [a] [new] presentation with [the] wide black template"
+  - "make [a] [new] presentation using [the] wide black theme"
+  - "make [a] [new] presentation with [the] wide black theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Black")

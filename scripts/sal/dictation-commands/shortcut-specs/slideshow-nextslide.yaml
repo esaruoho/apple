@@ -1,0 +1,10 @@
+name: "Next Slide"
+scope: "com.apple.Photos"
+description: "Display the next slide in the playing slideshow"
+source_library: "Photos"
+source_file: "Slideshow-NextSlide.scpt"
+siri_phrases:
+  - "next slide"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to nextSlideOfRunningSlideshow()

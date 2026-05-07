@@ -1,0 +1,11 @@
+name: "Show Finder Info window of Front Presentation File"
+scope: "com.apple.iWork.Keynote"
+description: "Show Finder Info window for the file of the frontmost presentation."
+source_library: "Keynote"
+source_file: "Document-Metadata-FinderInfoWindowForFile.scpt"
+siri_phrases:
+  - "show [the] info window for this [presentation]"
+  - "show [the] info window of this [presentation]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to showInfoWindowForCurrentKeynoteFileOnDisk()

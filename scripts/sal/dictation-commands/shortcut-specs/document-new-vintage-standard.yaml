@@ -1,0 +1,17 @@
+name: "New Presentation: Vintage-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Vintage theme"
+source_library: "Keynote"
+source_file: "Document-New-Vintage-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] vintage template"
+  - "make [a] [new] standard presentation with [the] vintage template"
+  - "make [a] [new] standard presentation using [the] vintage theme"
+  - "make [a] [new] standard presentation with [the] vintage theme"
+  - "make [a] [new] presentation using [the] standard vintage template"
+  - "make [a] [new] presentation with [the] standard vintage template"
+  - "make [a] [new] presentation using [the] standard vintage theme"
+  - "make [a] [new] presentation with [the] standard vintage theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Vintage")

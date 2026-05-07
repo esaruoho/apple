@@ -1,0 +1,11 @@
+name: "Change Theme to Formal"
+scope: "com.apple.iWork.Keynote"
+description: "Change the theme of the frontmost document to Formal"
+source_library: "Keynote"
+source_file: "Document-ChangeTemplate-Formal.scpt"
+siri_phrases:
+  - "change [the] theme to formal"
+  - "change [the] template to formal"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to changeTemplateTo("THEME_Formal")

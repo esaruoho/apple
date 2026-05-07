@@ -1,0 +1,12 @@
+name: "Search for Rating Keyword \u2605\u2605\u2605\u2605\u2605"
+scope: "com.apple.Photos"
+description: "This Dictation Command will search for media items with a rating keyword of \"\u2605\u2605\u2605\u2605\u2605\""
+source_library: "Photos"
+source_file: "MediaItem-Keywords-SearchForRating-5Stars.scpt"
+siri_phrases:
+  - "search for 5 stars"
+  - "search for 5 star [images]"
+  - "search for 5 star photos"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to searchForItemsWithRating(5)

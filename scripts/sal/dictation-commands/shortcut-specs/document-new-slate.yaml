@@ -1,0 +1,13 @@
+name: "New Presentation: Slate"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Slate theme"
+source_library: "Keynote"
+source_file: "Document-New-Slate.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] slate template"
+  - "make [a] [new] presentation with [the] slate template"
+  - "make [a] [new] presentation using [the] slate theme"
+  - "make [a] [new] presentation with [the] slate theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Slate")

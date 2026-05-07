@@ -1,0 +1,13 @@
+name: "New Presentation: Vintage"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Vintage theme"
+source_library: "Keynote"
+source_file: "Document-New-Vintage.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] vintage template"
+  - "make [a] [new] presentation with [the] vintage template"
+  - "make [a] [new] presentation using [the] vintage theme"
+  - "make [a] [new] presentation with [the] vintage theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Vintage")

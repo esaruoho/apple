@@ -1,0 +1,10 @@
+name: "New Mail Message"
+scope: "com.apple.speech.SystemWideScope"
+description: "Create a new outgoing Mail message"
+source_library: "Mail"
+source_file: "Message-MakeNewMessage.scpt"
+siri_phrases:
+  - "make [a] [new] [mail] message"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to createNewOutgoingMailMessage("", "", {}, true)

@@ -1,0 +1,12 @@
+name: "Start New Screen Recording"
+scope: "com.apple.speech.SystemWideScope"
+description: "Create and begin a new screen recording using the default settings."
+source_library: "QuickTime Player"
+source_file: "Record-StartNewScreenDocument.scpt"
+siri_phrases:
+  - "begin [a] [new] screen recording"
+  - "start [a] [new] screen recording"
+  - "record [the] screen"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to newScreenRecordingDocument(true)

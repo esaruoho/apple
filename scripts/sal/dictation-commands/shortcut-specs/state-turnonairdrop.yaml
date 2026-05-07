@@ -1,0 +1,11 @@
+name: "Turn On AirDrop"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will turn on AirDrop by switching to the Finder and opening an AirDrop window."
+source_library: "Workspace"
+source_file: "State-TurnOnAirDrop.scpt"
+siri_phrases:
+  - "turn on air drop"
+  - "[turn] air drop on"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to turnOnAirDrop(false)

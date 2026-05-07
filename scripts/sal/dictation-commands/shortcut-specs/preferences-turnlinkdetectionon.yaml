@@ -1,0 +1,11 @@
+name: "Turn on Link Detection"
+scope: "com.apple.iWork.Keynote"
+description: "Turn on automatic link detection in entered text"
+source_library: "Keynote"
+source_file: "Preferences-TurnLinkDetectionOn.scpt"
+siri_phrases:
+  - "turn link detection on"
+  - "turn on link detection"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to setLinkDetectionPreference(true)

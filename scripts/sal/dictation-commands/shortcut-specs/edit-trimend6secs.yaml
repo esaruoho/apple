@@ -1,0 +1,10 @@
+name: "Trim 6-Seconds from the End"
+scope: "com.apple.QuickTimePlayerX"
+description: "Trim 6-seconds from the end of the current recording."
+source_library: "QuickTime Player"
+source_file: "Edit-TrimEnd6Secs.scpt"
+siri_phrases:
+  - "trim more [from] [the] end [of] [this] [that]"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to trimFromDocumentEnd(6)

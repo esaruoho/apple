@@ -1,0 +1,11 @@
+name: "Read the Slide"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will speak the slide\u2019s title, body, and image descriptions. Missing items are ignored. Also, the contents of text items will be read if no title or body is showing.<br><br>NOTE: specific sounds are played before each reading indicating the type of element whose contents are about to be read. The higher sound (F/C3) indicates an image description is about to be read; the middle sound (D/C3) indicates the title is about to be read; and the lower sound (G/C2) indicates that the body is about to be read. If the contents of text items are read (see above), a secondary middle tone (C/C3) will be sounded."
+source_library: "Keynote"
+source_file: "Accessibility-ReadSlideTitleBodyImageDescriptions.scpt"
+siri_phrases:
+  - "read this slide"
+  - "read [the] slide"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to readTextItemContentImageDescriptions()

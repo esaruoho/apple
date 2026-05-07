@@ -1,0 +1,11 @@
+name: "Info about the Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Info about the Current Slide"
+source_library: "Keynote"
+source_file: "Accessibility-SpeakCurrentSlideInfo.scpt"
+siri_phrases:
+  - "tell me about this slide"
+  - "tell me about [the] current slide"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakInfoAboutCurrentSlide()

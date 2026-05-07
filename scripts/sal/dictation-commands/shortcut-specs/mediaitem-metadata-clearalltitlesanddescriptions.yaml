@@ -1,0 +1,13 @@
+name: "Clear All Titles and Descriptions"
+scope: "com.apple.Photos"
+description: "After user approval, this command will clear all titles and descriptions from the selected media items."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-ClearAllTitlesAndDescriptions.scpt"
+siri_phrases:
+  - "clear [all] titles and descriptions"
+  - "remove [all] titles and descriptions"
+  - "clear every title and description"
+  - "remove every title and description"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to clearTitlesAndDescriptionsFromSelectedItems()

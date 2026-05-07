@@ -1,0 +1,10 @@
+name: "Open Movies Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s Movies folder."
+source_library: "Workspace"
+source_file: "Finder-Open-MoviesFolder.scpt"
+siri_phrases:
+  - "open [the] movies folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForUserMoviesDirectory(true)

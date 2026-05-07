@@ -1,0 +1,11 @@
+name: "Take This Down"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display a floating text input window ready to accept dictation. The results of the dictation will be placed on the clipboard."
+source_library: "Speech"
+source_file: "Dictation-TakeThisDown.scpt"
+siri_phrases:
+  - "take this down"
+  - "write this down"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to takeDictation(true)

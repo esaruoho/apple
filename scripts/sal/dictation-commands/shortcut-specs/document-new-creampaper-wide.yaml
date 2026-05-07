@@ -1,0 +1,17 @@
+name: "New Presentation: Cream Paper-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Cream Paper theme"
+source_library: "Keynote"
+source_file: "Document-New-CreamPaper-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] cream paper template"
+  - "make [a] [new] wide presentation with [the] cream paper template"
+  - "make [a] [new] wide presentation using [the] cream paper theme"
+  - "make [a] [new] wide presentation with [the] cream paper theme"
+  - "make [a] [new] presentation using [the] wide cream paper template"
+  - "make [a] [new] presentation with [the] wide cream paper template"
+  - "make [a] [new] presentation using [the] wide cream paper theme"
+  - "make [a] [new] presentation with [the] wide cream paper theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Cream Paper")

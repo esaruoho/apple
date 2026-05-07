@@ -1,0 +1,10 @@
+name: "Mute Computer Audio Output"
+scope: "com.apple.speech.SystemWideScope"
+description: "Mute the output volume of the computer"
+source_library: "Workspace"
+source_file: "Audio-OutputVolume-Mute.scpt"
+siri_phrases:
+  - "mute [the] computer audio [output]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to setOutputVolumeMute(true)

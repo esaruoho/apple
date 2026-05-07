@@ -1,0 +1,12 @@
+name: "Template Assist: School Poster Small"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the School Poster Small template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-SchoolPosterSmall.scpt"
+siri_phrases:
+  - "assist [me] with [the] small school poster template"
+  - "assist [me] with [the] template school poster small"
+  - "assist [me] with [the] template small school poster"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_SCHOOL_POSTER_SMALL")

@@ -1,0 +1,10 @@
+name: "Export Presentation to PDF File"
+scope: "com.apple.iWork.Keynote"
+description: "Export the frontmost presentation to a PDF file in the Documents folder, and reveal the new file in the Finder."
+source_library: "Keynote"
+source_file: "Document-Export-ToPDFFileWithReveal.scpt"
+siri_phrases:
+  - "export [this] presentation to [a] PDF [file]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to exportFrontDocumentToPDFWithReveal()

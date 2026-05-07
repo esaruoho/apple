@@ -1,0 +1,15 @@
+name: "Template Assist: Event Poster Big"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the Event Poster Big template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-EventPosterBig.scpt"
+siri_phrases:
+  - "assist [me] with [the] big event poster template"
+  - "assist [me] with [the] large event poster template"
+  - "assist [me] with [the] template event poster big"
+  - "assist [me] with [the] template event poster large"
+  - "assist [me] with [the] template big event poster"
+  - "assist [me] with [the] template large event poster"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_EVENT_POSTER_BIG")

@@ -1,0 +1,17 @@
+name: "New Presentation: Exhibition-Wide"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new wide presentation using the Exhibition theme"
+source_library: "Keynote"
+source_file: "Document-New-Exhibition-Wide.scpt"
+siri_phrases:
+  - "make [a] [new] wide presentation using [the] exhibition template"
+  - "make [a] [new] wide presentation with [the] exhibition template"
+  - "make [a] [new] wide presentation using [the] exhibition theme"
+  - "make [a] [new] wide presentation with [the] exhibition theme"
+  - "make [a] [new] presentation using [the] wide exhibition template"
+  - "make [a] [new] presentation with [the] wide exhibition template"
+  - "make [a] [new] presentation using [the] wide exhibition theme"
+  - "make [a] [new] presentation with [the] wide exhibition theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("wide", "Exhibition")

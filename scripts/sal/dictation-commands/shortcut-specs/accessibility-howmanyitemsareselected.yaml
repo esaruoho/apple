@@ -1,0 +1,12 @@
+name: "Say how many items are selected"
+scope: "com.apple.Photos"
+description: "This command will say how many items are currently selected"
+source_library: "Photos"
+source_file: "Accessibility-HowManyItemsAreSelected.scpt"
+siri_phrases:
+  - "how many items are selected"
+  - "count of selection"
+  - "count of selected items"
+applescript: |
+  use script "DC-Assistive-Photos"
+  tell script "DC-Assistive-Photos" to sayHowManyItemsAreSelected()

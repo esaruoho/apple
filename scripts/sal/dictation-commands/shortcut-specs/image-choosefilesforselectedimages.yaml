@@ -1,0 +1,11 @@
+name: "Choose Files for the Selected Images"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for each of the selected images. If no images are selected, then all images on the slide will be processed."
+source_library: "Keynote"
+source_file: "Image-ChooseFilesForSelectedImages.scpt"
+siri_phrases:
+  - "choose [files for] these images"
+  - "choose [files for] these photos"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to assistWithImportForSelectedImagesOnCurrentSlide()

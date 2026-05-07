@@ -1,0 +1,11 @@
+name: "Choose File for the Selected Image"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for the selected image. If no image is selected, the image on the top of the image stack will be used."
+source_library: "Keynote"
+source_file: "Image-ChooseFileForSelectedImage.scpt"
+siri_phrases:
+  - "choose [[a] file for] this image"
+  - "choose [[a] file for] this photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to chooseFileForSelectedImage()

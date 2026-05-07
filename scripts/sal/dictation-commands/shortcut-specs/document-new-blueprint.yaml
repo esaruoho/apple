@@ -1,0 +1,13 @@
+name: "New Presentation: Blueprint"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Blueprint theme"
+source_library: "Keynote"
+source_file: "Document-New-Blueprint.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] blueprint template"
+  - "make [a] [new] presentation with [the] blueprint template"
+  - "make [a] [new] presentation using [the] blueprint theme"
+  - "make [a] [new] presentation with [the] blueprint theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Blueprint")

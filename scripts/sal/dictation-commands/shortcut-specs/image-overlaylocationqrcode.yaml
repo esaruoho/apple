@@ -1,0 +1,11 @@
+name: "Overlay Location QR Code"
+scope: "com.apple.iWork.Keynote"
+description: "Overlay a QR code containing a Google Maps link to the location of the selected image."
+source_library: "Keynote"
+source_file: "Image-OverlayLocationQRCode.scpt"
+siri_phrases:
+  - "add [a] QR code for [the] location of this image"
+  - "add [a] QR code for [the] location of this photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to overlayLocationURLQRCodeOnSelectedImage(2)

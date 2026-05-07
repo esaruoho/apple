@@ -1,0 +1,10 @@
+name: "Create Demo Events for Tomorrow"
+scope: "com.apple.iCal"
+description: "Show the day view for tomorrow and create events in a calendar named \u201cDEMO\u201d"
+source_library: "Calendar"
+source_file: "Display-createDemoEventsForTomorrow.scpt"
+siri_phrases:
+  - "create demo events for tomorrow"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to createDemoEventsForTomorrow()

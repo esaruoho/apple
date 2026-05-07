@@ -1,0 +1,13 @@
+name: "Go to the next Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Make the next slide the current slide"
+source_library: "Keynote"
+source_file: "Navigation-GoToNextBuild.scpt"
+siri_phrases:
+  - "[go to] [the] next build"
+  - "[go to] [the] next advance"
+  - "[go to] [the] next slide"
+  - "show next [advance] [build] [slide]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to goToNextAdvance()

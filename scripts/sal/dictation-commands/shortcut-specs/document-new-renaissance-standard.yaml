@@ -1,0 +1,17 @@
+name: "New Presentation: Renaissance-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Renaissance theme"
+source_library: "Keynote"
+source_file: "Document-New-Renaissance-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] renaissance template"
+  - "make [a] [new] standard presentation with [the] renaissance template"
+  - "make [a] [new] standard presentation using [the] renaissance theme"
+  - "make [a] [new] standard presentation with [the] renaissance theme"
+  - "make [a] [new] presentation using [the] standard renaissance template"
+  - "make [a] [new] presentation with [the] standard renaissance template"
+  - "make [a] [new] presentation using [the] standard renaissance theme"
+  - "make [a] [new] presentation with [the] standard renaissance theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Renaissance")

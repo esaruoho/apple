@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cTitle - Top\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cTitle - Top\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-TitleTop.scpt"
+siri_phrases:
+  - "change [the] master slide to title top"
+  - "set [the] master slide to title top"
+  - "change [the] slide master to title top"
+  - "set [the] slide master to title top"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_TITLE_TOP")

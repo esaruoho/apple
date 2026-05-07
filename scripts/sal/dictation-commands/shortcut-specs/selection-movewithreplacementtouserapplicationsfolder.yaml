@@ -1,0 +1,13 @@
+name: "Move Selected Finder Items with Replacement into user\u2019s Applications folder"
+scope: "com.apple.finder"
+description: "Move the items selected in the Finder into the user\u2019s Applications folder, replacing existing items with the same name. The moved items will highlighted after moving."
+source_library: "Workspace"
+source_file: "Selection-MoveWithReplacementToUserApplicationsFolder.scpt"
+siri_phrases:
+  - "move this with replacement to my applications [folder]"
+  - "move this with replacement into my applications [folder]"
+  - "move these with replacement to my applications [folder]"
+  - "move these with replacement into my applications [folder]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to moveFinderSelectionIntoUserApplicationsFolder(true,true)

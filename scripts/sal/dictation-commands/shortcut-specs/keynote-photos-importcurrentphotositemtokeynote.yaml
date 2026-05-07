@@ -1,0 +1,10 @@
+name: "Setup for Keynote import item from Photos demo"
+scope: "com.apple.speech.SystemWideScope"
+description: "Creates a 3-slide Keynote document ready to demonstrate the \u201cImport from Photos\u201d command"
+source_library: "Demo"
+source_file: "Keynote-Photos-ImportCurrentPhotosItemToKeynote.scpt"
+siri_phrases:
+  - "set up for keynote photos demo one"
+applescript: |
+  use script "DC-Demo"
+  tell script "DC-Demo" to setupForImportFromPhotosToKeynoteDemo()

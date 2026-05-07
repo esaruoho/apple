@@ -1,0 +1,11 @@
+name: "Show this Image in Keynote"
+scope: "com.apple.Photos"
+description: "Switch to Keynote and show the slide containing the currently selected media item."
+source_library: "Photos"
+source_file: "MediaItem-ShowInKeynote.scpt"
+siri_phrases:
+  - "show this [image] in keynote"
+  - "show this [photo] in keynote"
+applescript: |
+  use script "DC-Photos"
+  tell script "DC-Photos" to showSelectedPhotoInKeynote()

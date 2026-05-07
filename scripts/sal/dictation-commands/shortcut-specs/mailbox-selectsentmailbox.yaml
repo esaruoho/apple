@@ -1,0 +1,13 @@
+name: "Select the Sent Mailbox"
+scope: "com.apple.mail"
+description: "Select the Sent mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectSentMailbox.scpt"
+siri_phrases:
+  - "select [the] sent box"
+  - "select [the] sent mailbox"
+  - "open [the] sent box"
+  - "open [the] sent mailbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectSentMailbox()

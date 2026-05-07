@@ -1,0 +1,11 @@
+name: "Show Month View for October"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the month view for the upcoming October"
+source_library: "Calendar"
+source_file: "Display-showMonthViewForOctober.scpt"
+siri_phrases:
+  - "show [the] calendar for october"
+  - "show october's calendar"
+applescript: |
+  use script "DC-Calendar"
+  tell script "DC-Calendar" to showMonthViewForMonth(10)

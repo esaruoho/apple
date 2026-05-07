@@ -1,0 +1,17 @@
+name: "New Presentation: Cream Paper-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Cream Paper theme"
+source_library: "Keynote"
+source_file: "Document-New-CreamPaper-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] cream paper template"
+  - "make [a] [new] standard presentation with [the] cream paper template"
+  - "make [a] [new] standard presentation using [the] cream paper theme"
+  - "make [a] [new] standard presentation with [the] cream paper theme"
+  - "make [a] [new] presentation using [the] standard cream paper template"
+  - "make [a] [new] presentation with [the] standard cream paper template"
+  - "make [a] [new] presentation using [the] standard cream paper theme"
+  - "make [a] [new] presentation with [the] standard cream paper theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Cream Paper")

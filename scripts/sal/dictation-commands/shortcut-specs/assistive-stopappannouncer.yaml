@@ -1,0 +1,12 @@
+name: "Stop App Announcer"
+scope: "com.apple.speech.SystemWideScope"
+description: "Stop the App Announcer applet"
+source_library: "Workspace"
+source_file: "Assistive-StopAppAnnouncer.scpt"
+siri_phrases:
+  - "stop [the] app announcer"
+  - "quit [the] app announcer"
+  - "turn off [the] app announcer"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to stopAppAnnouncer()

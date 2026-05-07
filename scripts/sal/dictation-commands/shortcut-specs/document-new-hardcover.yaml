@@ -1,0 +1,13 @@
+name: "New Presentation: Hard Cover"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Hard Cover theme"
+source_library: "Keynote"
+source_file: "Document-New-HardCover.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] hard cover template"
+  - "make [a] [new] presentation with [the] hard cover template"
+  - "make [a] [new] presentation using [the] hard cover theme"
+  - "make [a] [new] presentation with [the] hard cover theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Hard Cover")

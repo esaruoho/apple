@@ -1,0 +1,12 @@
+name: "Open User Library Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the current user\u2019s Library folder."
+source_library: "Workspace"
+source_file: "Finder-Open-UserLibraryFolder.scpt"
+siri_phrases:
+  - "open my library folder"
+  - "open the library folder"
+  - "open user library folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForUserLibraryDirectory(true)

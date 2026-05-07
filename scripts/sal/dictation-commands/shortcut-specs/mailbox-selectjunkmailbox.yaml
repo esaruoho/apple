@@ -1,0 +1,13 @@
+name: "Select the Junk Mailbox"
+scope: "com.apple.mail"
+description: "Select the Junk mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectJunkMailbox.scpt"
+siri_phrases:
+  - "select [the] junk box"
+  - "select [the] junk mailbox"
+  - "open [the] junk box"
+  - "open [the] junk mailbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectJunkMailbox()

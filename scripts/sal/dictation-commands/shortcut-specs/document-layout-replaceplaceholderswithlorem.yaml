@@ -1,0 +1,11 @@
+name: "Replace Text Placeholders with Lorem Ipsum"
+scope: "com.apple.iWork.Pages"
+description: "This command will replace all text placeholders with lorem ipsum."
+source_library: "Pages"
+source_file: "Document-Layout-ReplacePlaceholdersWithLorem.scpt"
+siri_phrases:
+  - "replace [all] text placeholders with lorem ipsum"
+  - "replace [all] text placeholders with dummy text"
+applescript: |
+  use script "Lorem Ipsum"
+  tell script "Lorem Ipsum" to replacePagesTextPlaceholdersWithLoremIpsum(2, 5, 3, 9)

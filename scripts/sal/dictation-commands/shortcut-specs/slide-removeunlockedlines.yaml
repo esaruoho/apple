@@ -1,0 +1,13 @@
+name: "Remove all Unlocked Lines"
+scope: "com.apple.iWork.Keynote"
+description: "Remove all unlocked lines from the current slide"
+source_library: "Keynote"
+source_file: "Slide-RemoveUnlockedLines.scpt"
+siri_phrases:
+  - "remove [all] unlocked lines"
+  - "remove every unlocked line"
+  - "get rid of [all] unlocked lines"
+  - "get rid of every unlocked line"
+applescript: |
+  use script "DC-Keynote-Objects"
+  tell script "DC-Keynote-Objects" to deleteUnlockedLines(true)

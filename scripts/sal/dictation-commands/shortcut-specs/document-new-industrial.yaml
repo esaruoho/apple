@@ -1,0 +1,13 @@
+name: "New Presentation: Industrial"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Industrial theme"
+source_library: "Keynote"
+source_file: "Document-New-Industrial.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] industrial template"
+  - "make [a] [new] presentation with [the] industrial template"
+  - "make [a] [new] presentation using [the] industrial theme"
+  - "make [a] [new] presentation with [the] industrial theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Industrial")

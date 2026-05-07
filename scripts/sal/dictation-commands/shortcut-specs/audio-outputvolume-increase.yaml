@@ -1,0 +1,14 @@
+name: "Increase Computer Volume"
+scope: "com.apple.speech.SystemWideScope"
+description: "Increase the output volume of the computer by the default amount (25 of 100)"
+source_library: "Workspace"
+source_file: "Audio-OutputVolume-Increase.scpt"
+siri_phrases:
+  - "turn up [the] computer volume"
+  - "[turn] [the] computer volume up"
+  - "turn up [the] volume of [the] computer"
+  - "increase [the] computer volume"
+  - "increase [the] volume of [the] computer"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to increaseOutputVolumeByDefaultIncrement()

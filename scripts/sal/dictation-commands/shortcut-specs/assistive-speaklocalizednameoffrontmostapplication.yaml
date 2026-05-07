@@ -1,0 +1,13 @@
+name: "Name of Frontmost Application"
+scope: "com.apple.speech.SystemWideScope"
+description: "Speak the localized name of the frontmost application"
+source_library: "Workspace"
+source_file: "Assistive-SpeakLocalizedNameOfFrontmostApplication.scpt"
+siri_phrases:
+  - "[what is [the]] name of this application"
+  - "[what is [the]] name of [the] current application"
+  - "[what is [the]] name of [the] top application"
+  - "[what is [the]] name of [the] front application"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to speakLocalizedNameOfFrontmostApplication()

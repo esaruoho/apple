@@ -1,0 +1,17 @@
+name: "New Presentation: Modern Portfolio-Standard"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new standard presentation using the Modern Portfolio theme"
+source_library: "Keynote"
+source_file: "Document-New-ModernPortfolio-Standard.scpt"
+siri_phrases:
+  - "make [a] [new] standard presentation using [the] modern portfolio template"
+  - "make [a] [new] standard presentation with [the] modern portfolio template"
+  - "make [a] [new] standard presentation using [the] modern portfolio theme"
+  - "make [a] [new] standard presentation with [the] modern portfolio theme"
+  - "make [a] [new] presentation using [the] standard modern portfolio template"
+  - "make [a] [new] presentation with [the] standard modern portfolio template"
+  - "make [a] [new] presentation using [the] standard modern portfolio theme"
+  - "make [a] [new] presentation with [the] standard modern portfolio theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedParameters("standard", "Modern Portfolio")

@@ -1,0 +1,11 @@
+name: "Take My Picture Automatically"
+scope: "com.apple.speech.SystemWideScope"
+description: "Display the system picture taker window for the computer\u2019s camera and take the snapshot automatically after a coutndown. Once snapshot has been taken, the file will be imported into the current Photos library."
+source_library: "Workspace"
+source_file: "Camera-TakeMyPictureAutomatically.scpt"
+siri_phrases:
+  - "take [a] [my] picture automatically"
+  - "take [a] [my] snapshot automatically"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to takeVSnapshotAutomaticallyAndAddToPhotos(true)

@@ -1,0 +1,11 @@
+name: "Unlock Text Items"
+scope: "com.apple.iWork.Keynote"
+description: "Unlock all text items on the current slide."
+source_library: "Keynote"
+source_file: "Accessibility-UnlockAllTextItemsOnCurrentSlide.scpt"
+siri_phrases:
+  - "unlock [all] text items"
+  - "unlock every text item"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to unlockAllTextItemsOnCurrentSlide()

@@ -1,0 +1,11 @@
+name: "Show Top Movies"
+scope: "com.apple.speech.SystemWideScope"
+description: "Show the iTunes page for Top Movies in the iTunes application."
+source_library: "iTunes"
+source_file: "Locations-Show-TopMovies.scpt"
+siri_phrases:
+  - "show [me] top movies [in iTunes]"
+  - "show [the] top movies page [in iTunes]"
+applescript: |
+  use script "DC-iTunes"
+  tell script "DC-iTunes" to showLocationTopMovies()

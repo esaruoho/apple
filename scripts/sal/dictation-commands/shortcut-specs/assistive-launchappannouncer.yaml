@@ -1,0 +1,13 @@
+name: "Launch App Announcer"
+scope: "com.apple.speech.SystemWideScope"
+description: "Launch the App Announcer applet that speaks the localized name of the frontmost application whenever there is a change"
+source_library: "Workspace"
+source_file: "Assistive-LaunchAppAnnouncer.scpt"
+siri_phrases:
+  - "start [the] app announcer"
+  - "open [the] app announcer"
+  - "launch [the] app announcer"
+  - "turn on app announcer"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to launchAppAnnouncer()

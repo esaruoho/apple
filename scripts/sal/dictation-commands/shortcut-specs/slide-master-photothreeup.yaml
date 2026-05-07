@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cPhoto - 3 Up\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cPhoto - 3 Up\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-PhotoThreeUp.scpt"
+siri_phrases:
+  - "change [the] master slide to photo three up"
+  - "set [the] master slide to photo three up"
+  - "change [the] slide master to photo three up"
+  - "set [the] slide master to photo three up"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_PHOTO_THREE_UP")

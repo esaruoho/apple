@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cBlank\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cBlank\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-Blank.scpt"
+siri_phrases:
+  - "change [the] master slide to blank"
+  - "set [the] master slide to blank"
+  - "change [the] slide master to blank"
+  - "set [the] slide master to blank"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_BLANK")

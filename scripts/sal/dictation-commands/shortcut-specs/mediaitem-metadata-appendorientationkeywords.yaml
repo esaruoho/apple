@@ -1,0 +1,11 @@
+name: "Add Orientation Keywords"
+scope: "com.apple.Photos"
+description: "Append the appropriate oreintation keyword to the media item: landscape, portrait, square, and panorama."
+source_library: "Photos"
+source_file: "MediaItem-Metadata-AppendOrientationKeywords.scpt"
+siri_phrases:
+  - "add orientation keywords [to this]"
+  - "add orientation keywords to these"
+applescript: |
+  use script "DC-Assistive-Photos"
+  tell script "DC-Assistive-Photos" to appendOrientationKeywordsToSelectedItems()

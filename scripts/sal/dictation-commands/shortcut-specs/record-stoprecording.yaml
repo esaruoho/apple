@@ -1,0 +1,10 @@
+name: "Stop Recording"
+scope: "com.apple.speech.SystemWideScope"
+description: "Stop any active recording."
+source_library: "QuickTime Player"
+source_file: "Record-StopRecording.scpt"
+siri_phrases:
+  - "stop [the] recording"
+applescript: |
+  use script "DC-QuickTime Player"
+  tell script "DC-QuickTime Player" to stopAllRecording()

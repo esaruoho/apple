@@ -1,0 +1,13 @@
+name: "Move Selected Finder Items with Replacement into Shared Items folder"
+scope: "com.apple.finder"
+description: "Move the items selected in the Finder into the Shared Items folder, replacing existing items with the same name. The moved items will highlighted after moving."
+source_library: "Workspace"
+source_file: "Selection-MoveWithReplacementToSharedItemsFolder.scpt"
+siri_phrases:
+  - "move this with replacement to [the] shared items [folder]"
+  - "move this with replacement into [the] shared items [folder]"
+  - "move these with replacement to [the] shared items [folder]"
+  - "move these with replacement into [the] shared items [folder]"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to moveFinderSelectionIntoSharedItemsFolder(true,true)

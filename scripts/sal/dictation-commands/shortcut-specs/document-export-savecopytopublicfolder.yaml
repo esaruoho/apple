@@ -1,0 +1,12 @@
+name: "Save Current Presentation to Public Folder"
+scope: "com.apple.iWork.Keynote"
+description: "Save a copy of the frontmost presentation to the current user\u2019s Public folder."
+source_library: "Keynote"
+source_file: "Document-Export-SaveCopyToPublicFolder.scpt"
+siri_phrases:
+  - "save [this] presentation to [my] public folder"
+  - "copy [this] presentation to [my] public folder"
+  - "save a copy of [this] presentation to [my] public folder"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to saveCopyOfPresentationToPublicFolder()

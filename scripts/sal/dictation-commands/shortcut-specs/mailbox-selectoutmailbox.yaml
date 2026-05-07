@@ -1,0 +1,11 @@
+name: "Select the OutBox Mailbox"
+scope: "com.apple.mail"
+description: "Select the OutBox mailbox in the front message viewer window."
+source_library: "Mail"
+source_file: "Mailbox-SelectOutMailbox.scpt"
+siri_phrases:
+  - "select [the] outbox"
+  - "open [the] outbox"
+applescript: |
+  use script "DC-Mail"
+  tell script "DC-Mail" to selectOutMailbox()

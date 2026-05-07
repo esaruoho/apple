@@ -1,0 +1,12 @@
+name: "Export All Notes to Pages"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new Pages document containing the presenter notes of the front presentation."
+source_library: "Keynote"
+source_file: "Slide-Notes-ExportToPages.scpt"
+siri_phrases:
+  - "add [these] [presenter] notes to [a] [new] pages document"
+  - "put [these] [presenter] notes in [a] [new] pages document"
+  - "export [these] [presenter] notes to pages"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to addPresenterNotesToNewPagesDocument()

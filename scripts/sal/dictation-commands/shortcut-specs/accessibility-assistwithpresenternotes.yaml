@@ -1,0 +1,11 @@
+name: "Assist with Presenter Notes"
+scope: "com.apple.iWork.Keynote"
+description: "Display a floating window for entering, dictating, and editing presenter notes."
+source_library: "Keynote"
+source_file: "Accessibility-AssistWithPresenterNotes.scpt"
+siri_phrases:
+  - "assist [me] with presenter notes"
+  - "help [me] with presenter notes"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to launchPresenterNotesApplet()

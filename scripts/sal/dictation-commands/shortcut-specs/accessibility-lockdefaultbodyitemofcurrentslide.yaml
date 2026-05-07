@@ -1,0 +1,10 @@
+name: "Lock Default Body Item"
+scope: "com.apple.iWork.Keynote"
+description: "Lock the default body item if it is showing"
+source_library: "Keynote"
+source_file: "Accessibility-LockDefaultBodyItemOfCurrentSlide.scpt"
+siri_phrases:
+  - "lock [the] [default] body [item]"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to lockDefaultBodyItemOnCurrentSlide()

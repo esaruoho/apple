@@ -1,0 +1,12 @@
+name: "Layout View: Scale to Selected Items"
+scope: "com.apple.iWork.Keynote"
+description: "Scale the layout view (up to 400%) to fit the selected slide items"
+source_library: "Keynote"
+source_file: "Layout-ScaleViewToWrapSelectedSlideItems.scpt"
+siri_phrases:
+  - "scale view to fit this"
+  - "scale view to fit these"
+  - "scale view to fit selection"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to scaleLayoutViewToWrapSelectedSlideItems()

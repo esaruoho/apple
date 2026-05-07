@@ -1,0 +1,13 @@
+name: "New Presentation: White"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the White theme"
+source_library: "Keynote"
+source_file: "Document-New-White.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] white template"
+  - "make [a] [new] presentation with [the] white template"
+  - "make [a] [new] presentation using [the] white theme"
+  - "make [a] [new] presentation with [the] white theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("White")

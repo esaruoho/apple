@@ -1,0 +1,13 @@
+name: "Set Master Slide to \u201cTitle & Subtitle\u201d"
+scope: "com.apple.iWork.Keynote"
+description: "Changes the master slide of the current slide to \u201cTitle & Subtitle\u201d"
+source_library: "Keynote"
+source_file: "Slide-Master-TitleSubtitle.scpt"
+siri_phrases:
+  - "change [the] master slide to title and subtitle"
+  - "set [the] master slide to title and subtitle"
+  - "change [the] slide master to title and subtitle"
+  - "set [the] slide master to title and subtitle"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setMasterOfCurrentSlide("MASTER_TITLE_SUBTITLE")

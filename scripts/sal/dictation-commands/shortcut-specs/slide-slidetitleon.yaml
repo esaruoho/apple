@@ -1,0 +1,11 @@
+name: "Turn Slide Title On"
+scope: "com.apple.iWork.Keynote"
+description: "Shows the current slide\u2019s default title item."
+source_library: "Keynote"
+source_file: "Slide-SlideTitleOn.scpt"
+siri_phrases:
+  - "turn on [the] slide title"
+  - "[turn] [the] slide title on"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to setShowingOfCurrentSlideTitle(true)

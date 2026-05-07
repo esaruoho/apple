@@ -1,0 +1,17 @@
+name: "Create Panoramic Sequence"
+scope: "com.apple.iWork.Keynote"
+description: "Creates a 4-slide panoramic sequence using the image on the current slide. The image is panned left-to-right for 10-seconds. Note: the current slide must contain only a single panoramic image (pano)."
+source_library: "Keynote"
+source_file: "Slide-PanoSequenceWithCurrentSlide.scpt"
+siri_phrases:
+  - "make [a] long panoramic sequence"
+  - "make [a] long panoramic sequence with this slide"
+  - "make [a] long panoramic sequence using this slide"
+  - "make [a] long panoramic sequence for this slide"
+  - "make [a] long pano sequence"
+  - "make [a] long pano sequence with this slide"
+  - "make [a] long pano sequence using this slide"
+  - "make [a] long pano sequence for this slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to createPanoramicSequenceForCurrentSlide(20,false)

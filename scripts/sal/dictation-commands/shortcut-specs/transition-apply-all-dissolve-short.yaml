@@ -1,0 +1,11 @@
+name: "Apply a Short Dissolve Transition to All Slides"
+scope: "com.apple.iWork.Keynote"
+description: "Apply a dissolve transition of 1-second to all un-skipped slides"
+source_library: "Keynote"
+source_file: "Transition-Apply-All-Dissolve-Short.scpt"
+siri_phrases:
+  - "apply [a] short dissolve [transition] to every slide"
+  - "apply [a] short dissolve [transition] to all slides"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to applyDissolveTransitionEffectToEverySlide(1)

@@ -1,0 +1,10 @@
+name: "Count of the Current Slide\u2019s Items"
+scope: "com.apple.iWork.Keynote"
+description: "Speak information about how many of each class of elements are on the current slide. e.g. Shapes, Lines, Movies, Text Items, Images, etc."
+source_library: "Keynote"
+source_file: "Accessibility-SpeakCurrentSlideElementCount.scpt"
+siri_phrases:
+  - "what is on this slide"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakCountOfSlideItemClasses()

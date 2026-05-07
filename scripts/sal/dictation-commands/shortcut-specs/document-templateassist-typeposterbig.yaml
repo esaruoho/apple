@@ -1,0 +1,15 @@
+name: "Template Assist: Type Poster Big"
+scope: "com.apple.iWork.Pages"
+description: "This command will open a new copy of the Type Poster Big template and interactively prompt you to enter text and choose image files to replace the placeholders in the new document."
+source_library: "Pages"
+source_file: "Document-TemplateAssist-TypePosterBig.scpt"
+siri_phrases:
+  - "assist [me] with [the] big type poster template"
+  - "assist [me] with [the] large type poster template"
+  - "assist [me] with [the] template type poster big"
+  - "assist [me] with [the] template type poster large"
+  - "assist [me] with [the] template big type poster"
+  - "assist [me] with [the] template large type poster"
+applescript: |
+  use script "DC-Pages"
+  tell script "DC-Pages" to assistWithLocalizedTemplate("TEMPLATE_TYPE_POSTER_BIG")

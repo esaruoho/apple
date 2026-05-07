@@ -1,0 +1,11 @@
+name: "Press Shift Tab Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a simultaneous press of the Shift and Tab keys"
+source_library: "Speech"
+source_file: "Keypress-ShiftTab.scpt"
+siri_phrases:
+  - "keypress shift tab"
+  - "keypress back tab"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressShiftTab()

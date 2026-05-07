@@ -1,0 +1,10 @@
+name: "Select Default Body Box"
+scope: "com.apple.iWork.Keynote"
+description: "Selects the slide\u2019s default body item. To edit a default body item, use the command: \u201cedit slide body\u201d"
+source_library: "Keynote"
+source_file: "Slide-Select-DefaultBodyBox.scpt"
+siri_phrases:
+  - "select [the] [slide] body box"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to selectDefaultBodyItem()

@@ -1,0 +1,12 @@
+name: "Open Computer Library Folder"
+scope: "com.apple.speech.SystemWideScope"
+description: "This command will switch to the Finder and open the computer\u2019s Library folder."
+source_library: "Workspace"
+source_file: "Finder-Open-LocalLibraryFolder.scpt"
+siri_phrases:
+  - "open computer library folder"
+  - "open [the] local library folder"
+  - "open [the] computer's library folder"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to getPathForLocalLibraryDirectory(true)

@@ -1,0 +1,13 @@
+name: "Choose File for Third Image of Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for the third image of the current slide"
+source_library: "Keynote"
+source_file: "Image-ChooseFileForImage3OfCurrentSlide.scpt"
+siri_phrases:
+  - "choose [[a] file for] image 3"
+  - "choose [[a] file for] photo 3"
+  - "choose [[a] file for] [the] third image"
+  - "choose [[a] file for] [the] third photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to assistImportForImageByIndex(3, true)

@@ -1,0 +1,10 @@
+name: "Press Down Arrow Key"
+scope: "com.apple.speech.SystemWideScope"
+description: "Execute a press of the down arrow key"
+source_library: "Speech"
+source_file: "Keypress-DownArrow.scpt"
+siri_phrases:
+  - "keypress down arrow"
+applescript: |
+  use script "DC-Support"
+  tell script "DC-Support" to keypressDownArrow()

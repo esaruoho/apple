@@ -1,0 +1,13 @@
+name: "Combine PDF Files"
+scope: "com.apple.finder"
+description: "Combine the PDF files selected in the Finder into a single PDF file."
+source_library: "Workspace"
+source_file: "Selection-CombinePDFFiles.scpt"
+siri_phrases:
+  - "combine these PDF files"
+  - "combine these PDFs"
+  - "merge these PDF files"
+  - "merge these PDFs"
+applescript: |
+  use script "DC-Workspace"
+  tell script "DC-Workspace" to beginPDFMergeOfFinderSelection()

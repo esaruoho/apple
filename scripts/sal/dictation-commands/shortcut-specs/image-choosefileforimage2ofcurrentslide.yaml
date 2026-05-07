@@ -1,0 +1,13 @@
+name: "Choose File for Second Image of Current Slide"
+scope: "com.apple.iWork.Keynote"
+description: "Using the standard system chooser dialog, select and import an image file for the second image of the current slide"
+source_library: "Keynote"
+source_file: "Image-ChooseFileForImage2OfCurrentSlide.scpt"
+siri_phrases:
+  - "choose [[a] file for] image 2"
+  - "choose [[a] file for] photo 2"
+  - "choose [[a] file for] [the] second image"
+  - "choose [[a] file for] [the] second photo"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to assistImportForImageByIndex(2, true)

@@ -1,0 +1,13 @@
+name: "Speak Slide Number"
+scope: "com.apple.iWork.Keynote"
+description: "This command will speak the slide number of the current slide"
+source_library: "Keynote"
+source_file: "Play-SpeakNumberOfCurrentSlide.scpt"
+siri_phrases:
+  - "what slide is this"
+  - "what is [the] number of this slide"
+  - "speak [the] slide number"
+  - "[say] [the] slide number of this slide"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to speakSlideNumberOfCurrentSlide()

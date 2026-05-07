@@ -1,0 +1,13 @@
+name: "New Presentation: Harmony"
+scope: "com.apple.iWork.Keynote"
+description: "Create a new presentation using the Harmony theme"
+source_library: "Keynote"
+source_file: "Document-New-Harmony.scpt"
+siri_phrases:
+  - "make [a] [new] presentation using [the] harmony template"
+  - "make [a] [new] presentation with [the] harmony template"
+  - "make [a] [new] presentation using [the] harmony theme"
+  - "make [a] [new] presentation with [the] harmony theme"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to newDocumentUsingSpecifiedTemplate("Harmony")

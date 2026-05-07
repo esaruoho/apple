@@ -1,0 +1,11 @@
+name: "Info about the Frontmost Presentation"
+scope: "com.apple.iWork.Keynote"
+description: "Speak information about the frontmost document"
+source_library: "Keynote"
+source_file: "Accessibility-SpeakDocumentInfo.scpt"
+siri_phrases:
+  - "tell me about this document"
+  - "tell me about this presentation"
+applescript: |
+  use script "DC-Assistive-Keynote"
+  tell script "DC-Assistive-Keynote" to speakInfoAboutCurrentDocument()

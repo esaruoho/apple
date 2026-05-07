@@ -1,0 +1,11 @@
+name: "Move Current Slide to End"
+scope: "com.apple.iWork.Keynote"
+description: "Move the current slide to the end of all slides."
+source_library: "Keynote"
+source_file: "Slide-Move-CurrentSlideToEnd.scpt"
+siri_phrases:
+  - "move [this] slide to [the] end"
+  - "move current slide to [the] end"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to moveCurrentSlideToEndOfSlides()

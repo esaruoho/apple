@@ -1,0 +1,11 @@
+name: "Export Presentation to Movie File"
+scope: "com.apple.iWork.Keynote"
+description: "Export the frontmost presentation to a movie file in the Movies folder, and reveal the new file in the Finder."
+source_library: "Keynote"
+source_file: "Document-Export-ToMovieFileWithReveal.scpt"
+siri_phrases:
+  - "export [this] presentation to [a] movie [file]"
+  - "export [this] presentation to [a] video [file]"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to exportFrontDocumentToMovieWithReveal()

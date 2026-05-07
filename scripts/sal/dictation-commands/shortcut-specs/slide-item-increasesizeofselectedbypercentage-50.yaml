@@ -1,0 +1,15 @@
+name: "Increase Size by 50%"
+scope: "com.apple.iWork.Keynote"
+description: "This Dictation Command will increase the size of the selected slide item by 50%."
+source_library: "Keynote"
+source_file: "Slide-Item-IncreaseSizeOfSelectedByPercentage-50.scpt"
+siri_phrases:
+  - "increase size by 50%"
+  - "increase size by fifty percent"
+  - "increase size by 50 percent"
+  - "scale [this] up 50%"
+  - "scale [this] up fifty percent"
+  - "scale [this] up 50 percent"
+applescript: |
+  use script "DC-Keynote"
+  tell script "DC-Keynote" to increaseSizeOfSelectedUnlockedSlideItemsByPercentage(50)
