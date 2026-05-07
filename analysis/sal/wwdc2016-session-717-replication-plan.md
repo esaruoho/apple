@@ -241,15 +241,17 @@ All five phases were executed in a single session. Concrete artifacts shipped:
   - **191 script-only** (score 1-2)
   - **96 re-evaluate** (score 0 — mostly trivial launchers)
 
-# Phase 6 — Sal's Siri-on-Mac reconstruction (THEORIZED, future work)
-
-Sal's pass-2 quote ("we had those abilities — and much more — running with Siri using AppleScript Libraries written in AppleScriptObjective-C") describes a working internal prototype that went beyond CitrusPeel's deterministic phrase matching. Theoretical reconstruction with concrete 2026 build path documented in `analysis/sal/sal-siri-on-mac-theory.md`. The path:
-
-1. Use Apple Intelligence's Foundation Models action (macOS 15.1+) as the NLU layer
-2. Single Shortcut named "Sal's Siri" routes free-form input → JSON `{intent, args}` → matching `tell script "DC-XXX"` dispatch
-3. Vocal Shortcut entry: `Hey Sal` triggers the router
-
-This isn't built yet. The components all exist in this repo (588 deterministic Shortcuts, 18 libraries, command catalog). Phase 6 is the integration step.
+## Phase 6 — Sal's Siri-on-Mac reconstruction ✅
+- Built `bin/sal-siri-on-mac-rebuild.py` — generator for the master Sal-Siri router
+- Output:
+  - `scripts/sal/dictation-commands/sal-siri-intents.json` — 588 intents catalog
+  - `scripts/sal/dictation-commands/sal-siri-system-prompt.txt` — Foundation Models routing prompt (60 KB; may need two-stage compression for context-limit reasons)
+  - `scripts/sal/dictation-commands/sal-siri-dispatch.applescript` — runtime dispatcher (slug → AppleScript lookup → `run script`)
+  - `scripts/sal/dictation-commands/sal-siri-shortcut-spec.yaml` — spec for the master "Sal's Siri" Shortcut (3 actions: Get Text → Use Model → Run AppleScript)
+  - `bin/sal-siri-install.sh` — installer that copies runtime to `~/Library/Application Support/Sal-Siri/`
+- Build guide: `analysis/sal/sal-siri-on-mac-build-guide.md`
+- v1 known limits: prompt size may exceed on-device Foundation Models context (mitigation: two-stage routing); slot-filling extraction works but template-substitution into AppleScript body is passive (v2 work); no stateful conversation (v2 work)
+- Three of four capability differences from Sal's killed prototype reproduced: deterministic match ✅, cross-app composition ✅, slot-filling ⚠ partial; stateful conversation ❌ (v2)
 
 # What's user-side from here (cannot be automated)
 

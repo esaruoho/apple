@@ -1,0 +1,33 @@
+name: "Sal's Siri"
+description: "Route free-form voice/text to one of 588 CitrusPeel commands via Apple Intelligence Foundation Models."
+siri_phrases:
+  - "Sal's Siri"
+  - "Hey Sal"
+input_type: text
+input_prompt: "What would you like Sal to do?"
+actions:
+  - id: get_text
+    type: get_text_from_input
+    description: "Capture the user's spoken or typed utterance."
+  - id: route
+    type: use_model
+    model: "Apple Intelligence Foundation Model (on-device)"
+    system_prompt_file: "~/Library/Application Support/Sal-Siri/system-prompt.txt"
+    input: "{get_text}"
+    output_format: json
+    description: "Send utterance to Foundation Models with the Sal catalog as routing schema."
+  - id: dispatch
+    type: run_applescript
+    script_file: "~/Library/Application Support/Sal-Siri/dispatch.applescript"
+    arguments:
+      - "{route}"
+    description: "Look up the matching slug in the catalog and run the corresponding AppleScript."
+notes: |
+  This Shortcut requires:
+    1. Apple Silicon Mac running macOS 15.1+ (Apple Intelligence enabled)
+    2. Sal's 18 .scptd libraries installed at ~/Library/Script Libraries/
+       (run bin/dictation-commands-install.sh — its library-copy step is still functional)
+    3. ~/Library/Application Support/Sal-Siri/ populated with intents.json,
+       system-prompt.txt, and dispatch.applescript (run bin/sal-siri-install.sh)
+    4. Vocal Shortcut entry "Hey Sal" → run this Shortcut
+       (manual, via System Settings → Accessibility → Speech → Vocal Shortcuts)
