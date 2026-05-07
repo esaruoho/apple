@@ -1,0 +1,305 @@
+start	end	text
+7859	12840	Today's edition of Mac Voices is supported by Mac Voices Magazine, our free Flipboard
+12840	17340	Magazine that brings you some of the best Mac, iPhone, and iPad productivity tips on
+17340	17680	the web.
+18520	24180	High in Signal low in noise, just like Mac Voices, Mac Voices Magazine includes information
+24180	26700	on how you can get more out of your Apple technology.
+26700	32299	Subscribe at macvoices.com slash magazine or search for Mac Voices Magazine on Flipboard.
+34400	38780	Welcome to Mac Voices. This is the talk of the Apple community, and I'm Chuck Joyner.
+39300	46400	Folks, we've been telling you a little bit about the Command D conference that's coming up in Santa Clara, California, August 9th.
+47120	51740	August 8th is the scripting boot camp, but August 9th is the conference itself.
+52599	58540	and it's a real honor for me to have Sal Segoyan on to talk about Command D but
+58540	63500	also just to talk automation. Sal, it's great to see you. Thanks so much for
+63500	69860	being here. Thank you, Chuck. I've always looked forward to being able to sit down
+69860	74320	with you and have a conversation and this is an absolute joy for me. Thank you.
+74740	79200	Well, I appreciate that. We got to have a little bit of a chat at WWDC which
+79200	83500	seems like it was about three days ago and actually it was more like two months ago i can't
+83500	89760	believe that much time has gone by um but you know that that we got a little taste of uh of what you
+89760	94780	were doing with Omni and and their automation projects this is something that is completely
+94780	99880	different this is a full conference just dedicated to automation with you of course being the featured
+99880	108060	guy yes uh you know automation has been my passion and it's been what I've worked on for
+109699	129259	And I really am welcoming the opportunity to give voice for the automation Community to get everybody together and talk about what's possible with Automation and what's coming up with Automation in the future and how it can be used on both Mac and iOS.
+129660	137840	So this conference is a way to deliver that message and those ideas to the community at large.
+139200	145660	If you were the only one speaking, it would be worth going, and I want to find out what you're going to cover.
+146180	151260	But also, I'm so impressed with the panels of speakers that you've put together here.
+151560	156340	So many names that are personal friends, but also that are well-known names.
+156460	158100	Andy Anaco, Jason Snell.
+159220	162120	I've got to look down the list because I don't want to leave anybody out.
+162240	168760	David Sparks, John Pugh, John Welsh, Ray Robinson, even Allison Sheridan.
+169200	176020	yes great great set of speakers oh and excuse me i did it i did it shall we Brisbane sorry sorry
+176020	182020	shall we um so it's it feels like you're just going to hit every level of automation that
+182020	188280	there's something here for everyone well that's my strategy for the conference was this is the
+188280	196000	first time we're doing this conference and we need to take a global view of what is automation
+196000	202780	on the Apple platform, and what do we have currently, and what's coming up.
+203040	207940	So in order to accomplish that, we need to look at it through lots of different eyes.
+208220	214520	And, you know, we have people on the panels like John Pugh, who were members of the original
+214520	218740	AppleScript team that have a perspective like no one else could have.
+218860	225500	And then each one of the people that are part of the panels brings a certain level of expertise
+226000	229200	an area about automation that's really important.
+229500	232880	And for those that are new to scripting
+232880	236120	or who always wanted a chance to learn AppleScript,
+236360	241180	Ray Robertson is just a fantastic person to learn from.
+241420	244060	I took scripting classes with him myself,
+244660	246200	him and Shane Stanley,
+246280	250180	and I can tell you that Ray is passionate,
+250500	254340	but he's thorough and can walk you through
+256400	259820	So Ray a great person to learn scripting from.
+260120	269360	So each person on the panel brings some expertise and an aspect and a view of automation I think is really valuable for everybody.
+271160	274020	So where do you start, Sal?
+274240	281300	Is this a conference that a ranked beginner can come to and benefit from?
+281300	290900	Or should I have a little bit of familiarity with automation, AppleScript, or any of the other automation technologies?
+293460	296340	I've always been a firm believer in square one.
+297300	302520	All the classes I've ever taught, I've always started at square one.
+302520	315220	And I've found that the people that have more advanced knowledge don't mind having a thorough groundwork laid in a class.
+315480	320840	And for that reason, the classes I teach have always been for everybody.
+320840	326140	Whether you're new or whether you're Advanced you're going to get something out of these classes.
+326140	329260	You're going to learn something that you didn't know before.
+329260	335360	because we're going to go into it in depth to reveal what is available.
+336080	343080	I mean, I had the fortune of being part of the original Automator group that came up with that.
+343160	349520	And I know things about Automator and the way that it can be used that a lot of people don't normally think about.
+349620	351160	And I'd like to present those.
+351320	354780	And I've been involved in AppleScript since 1993.
+354780	361980	And I know things about that language that are important for people to understand as well.
+362180	367180	So I think that myself and the other speakers will lay a good foundation.
+367180	372800	So you should feel comfortable, even if you're new or you're Advanced or you're mid-level.
+373080	374740	It's about Automation
+374780	377940	And that's really what the message is.
+377940	386100	If you're interested in automation or you have an idea that it can be helpful to you, then this is your conference and you should come to it.
+387400	391400	Sal, what is it about automation that gets you?
+391600	398380	Is the idea that it's kind of a puzzle to put together or is it just a series of challenges that need to be solved?
+402360	407020	I get a lot of my inspiration about automation from my father.
+407940	415100	father was a master Carpenter and I learned a lot from him in the way that he could look at
+415100	421980	something and figure out what the fundamental principle behind it was. And he imparted in me
+421980	428240	the concept that if you learn the principle behind something, then you could replicate it everywhere.
+429820	438820	and that strategy and that understanding led me to a profound Truth for me
+438820	443140	that has been the thing that drives me for 20 years with this
+443140	449120	is that the power of the computer should reside in the hands of the one using it
+449120	453740	and by that I mean that you as a computer user
+453740	456660	and by computer I mean all kinds of devices
+458240	460660	as a computer user should have the ability
+460660	465780	to control that machine and not have to be a developer,
+465960	467960	not have to be an advanced programmer,
+467980	470140	but the power of that machine
+470140	472360	should be readily available to you
+472360	475320	to customize the way that you need,
+475440	477460	that serves your needs.
+477660	479340	It's about the user.
+479520	485080	And I've always firmly been very focused on that concept.
+485260	487360	I've been very passionate about that concept,
+488700	495960	Driven my desire to spread that message. And I think there's a lot of people that share that
+495960	502500	idea and share that belief with me. And those are the people that are interested in automation.
+502760	508340	Those are the people that create the kind of solutions that solve problems. Time and time
+508340	516260	again, I've had the privilege to visit companies and organizations where they would show me the
+518240	523559	and talk about with the outside world and time and time again I would find that it was just
+523559	529060	normal people working at that company who had come up with these profound Solutions
+529600	535860	because they had to because they were working in situations where they needed an answer to
+535860	543680	some repetitive or complex task where they needed speed accuracy consistent output and they needed
+543680	549300	the ability to scale what they were doing. And so they took it on themselves to learn how to
+549300	555760	automate some kind of process. And they were successful at it. And I've seen that over and
+555760	563180	over and over and over again in organizations big and small that use Apple products. So I'm still
+563180	569780	excited by that truth. And I'm still excited by automation after all this time. And I still think
+569780	575960	that there's a lot more we can do with it. And I'm especially excited by the work that I'm doing
+575960	581660	with Omni and the directions they're taking and the efforts they're doing to make automation
+581660	590420	dual platform on both Mac and iOS. And to me, that's the wave. And I want to surf that wave.
+592439	599100	I find it fascinating that your interest in automation was triggered by something as
+599780	607660	as physical um as having such a physical basis as a master Carpenter i mean the the two after
+607660	611540	you explain it it makes perfect sense but i would not have really anticipated that
+612580	620120	that's that's that's because you know in life there's basic Truths Behind things
+620120	626640	that's why I'm a musician to me there's an inherent truth to music if there's an inherent
+626640	638120	logic to it. And that doesn't negate emotional, the ties it has to emotions. It just says that
+638120	644240	there's a logic behind things. There's principles in the universe. And when you align yourself with
+644240	651200	those, great things happen. And with automation, it's just a natural thing that you should be able
+651200	658500	to automate what you do. I know there's a big push right now on AI and everybody's talking about Ai
+658500	665420	and how machine learning and how it can really help you. But no matter how good AI gets,
+666339	673700	there's always going to be situations where you want to design what your workflow is to suit you
+673700	678980	the way that you want. It might not be what the machine can offer or what the machine thinks you
+678980	685100	want. But you should have that ability to put together simply in an easy to approach
+685100	692540	way some kind of automation that solves your problem. And to me that seems so natural and
+692540	698560	so basic that it should just be part of every kind of machine that we make. And that to
+698560	700900	me is automation, user automation.
+701820	707080	You mentioned the way that you want to surf with what Omni is doing with both Mac and
+709320	714660	meaning cross-platform. Do you think that's the way that this is going, or do you think that we're
+714660	721160	all going to move a little bit more toward iOS and the iOS devices? Or is as Steve's job said,
+721220	725340	are we always going to need those trucks, you know, that sit on our desktops and do the heavy lifting?
+730420	737560	you know i think that uh neither platform Macos os or ios has really achieved
+738540	745860	where it needs to be to solve the needs of the user you need a certain level of freedom
+745860	752380	and you need a certain level of security you need a certain level of ease but whatever kind
+752380	758960	of platform evolves it needs to be responsive to the needs of the user in order to be successful
+760920	768800	and you know I'm so used to on Mac os everything is very open and fluid and gets out of your way
+769420	777600	and ios has a different interface where you're driven by touch and fingers and in many ways
+777600	789520	Right now, it's still in its infancy because it does require a tremendous amount of work to get something done that you can do with keyboard shortcuts or automation on the Mac.
+789680	803000	And that's why I find the work that Omni is doing so exciting is that for the first time, I've been able to pick up my iPad and watch it just Zing like it does on the Mac.
+803000	819900	I can take an Automation and just, wow, I can make it do 10 or 15 processes that I would normally have to do with lots of different tapping and sliding, and it just gets out of my way, and it doesn't interfere with my mental train of thought.
+819900	836260	And so I find that that approach exciting. And what's particularly exciting is that Omni is basing their structures on something that is part of every Apple device, which is WebKit. And within WebKit is core JavaScript.
+836260	855140	So you take one of the most fundamental automation languages that there is, it's part of the internet and part of everything that we do, and it ships on every Apple device, and you base your object model scripting on top of that for both Mac and iOS.
+855140	859720	So you write that JavaScript for the Mac and it works the same on iOS.
+860060	862500	And to me, that's where it should be.
+862620	868460	And it should be able to integrate with web pages and other types of interfaces so that
+868460	875380	if I tap a table on a Webb page, that table gets transferred over into my document and
+875380	877820	it should just literally be that easy.
+878200	884480	And I shouldn't have to go find a plugin that does this and then tap this to do that
+885220	893860	approve this. We need to evolve to even farther than where we are right now. So I don't think
+893860	899200	it's going to be a matter of trucks and cars. It's going to be transportation. And right now,
+899740	905200	transportation's not at the point that we want it to be at. When it gets to be teleporting,
+905500	911700	then we're there. Never heard it expressed that way before, but that's really good.
+911700	919160	a lot to think about there. So let's dig into some nuts and bolts here. What kind of things
+919160	926320	are you going to be presenting at Command D? Well, Command D, I'm going to be presenting
+926320	934980	the initial overview of the Mac scripting triumvirate, which is AppleScript, AppleScript
+934980	940920	Objective-C, and JavaScript for automation, JXA. Then I'm going to also be presenting
+940920	949480	an overview of Automator and look at some of the things that Automator has that aren't widely
+949480	957520	known or used, like workflow variables and how it gets used for configuring iOS devices.
+957520	979040	Now, that's an area that people don't realize the importance of Automation and managing iOS devices, but it's done with Automator and AppleScript as a way to just do plug and go formatting of devices and refreshing and all that.
+980040	989320	some of that and then in the afternoon I'll be doing a extended session on the new omni automation
+989320	996500	for both Mac os and ios and i have lots to show and lots to say about that as well so
+996500	1005040	i got three big sessions I'll be covering in the mix of the day and again with the with the roster
+1005040	1009340	of speakers you have you're going to you're going to take every automation from every angle and
+1011060	1018760	Do you know if any of the speakers are going to focus on third-party tools, or is this primarily an Apple Automation Technologies conference?
+1019740	1026560	No, there will definitely be third-party tools that will be looked at and examined because they are automation.
+1027120	1033780	It's all about Automation and so we're going to try to cover all the different aspects of that.
+1033780	1040020	I'm going to be covering the fundamental Apple things because, you know, that's my experience.
+1040020	1051860	I worked on the inside for so long, and I relish this opportunity to get out and show what we did and what's all the things that are there that people don't know about.
+1052160	1059940	But each speaker, again, has their own expertise and going to bring the different perspective and knowledge to the conference as well.
+1060280	1061840	So there's a lot to see.
+1063800	1069560	Robertson about the scripting bootcamp, which takes place the day before Command D, same
+1069560	1074980	location, same everything. So you don't have to go to one to go to the other. Obviously,
+1074980	1081440	you can go to both. But Ray had some great things to say about AppleScript and Automator
+1081440	1086620	as well. So it sounds like just a great couple of days if you want to immerse yourself in
+1086620	1092180	this and take away probably an awful lot of information. It sounds like a great place
+1093780	1105380	and learn yes exactly. There's no way you can learn a language like AppleScript in one day. I
+1105380	1111840	used to have seven-hour sessions at Macworld, and they would be two days long, and boy, were those
+1111840	1118380	ordeals, but you came away from that 14 hours with a basic understanding of AppleScript, and you felt
+1118380	1125100	comfortable writing produ productivity tools but for conference like this it's more about
+1125100	1132780	showing you what's available so if you're new to automation you're going to get exposed to
+1132780	1137980	the things that you need to know about if you're more advanced with automation you're going to get
+1137980	1145720	exposed to details that you might not be aware of and everybody's going to get uh information about
+1145720	1152560	the new directions that Omni is leading right now. So that's going to be new for everybody as well.
+1152920	1157600	So there's a lot to cover with automation. It's not that you're going to come away
+1158280	1164260	becoming a master scripter in an afternoon. It's that you're going to know where to go
+1164260	1170960	to learn more. Joe Kissel and I just had a discussion about this. Sometimes the biggest
+1170960	1176140	challenge of automation, I think, is recognizing that something can be automated. And that, you
+1176140	1182760	know, you kind of, okay, I didn't really think about that, but I'm doing that 20 times a week
+1182760	1189400	or five times a day or whatever. And so once you kind of recognize there's a need, then you start
+1189400	1195100	to search out the tools and get it done. If you find yourself saying there's got to be a better
+1196140	1200980	way, that's a definite Point toward you need to examine automation.
+1202379	1208880	Or if you find yourself going, uh I don't want to do this, then that's a sign that you
+1208880	1210640	need to automate some process.
+1210960	1214600	And it doesn't have to be something really heavy duty or complex.
+1216199	1222460	While I was at Apple, I used to spend a lot of time in other groups and other departments
+1222460	1227340	helping people automate simple processes that they did in the office.
+1227680	1235060	And I did that just to, you know, make acquaintances and, you know, see what other groups were doing.
+1235060	1240320	But it's also as a way just to get a sense of what the challenges people face.
+1240640	1249920	And many times it was something as simple as just automating the process of creating encrypted PDFs with an address book group.
+1249920	1256200	and things like that, just something simple that really do help out.
+1256440	1260500	And I would constantly get emails from people throughout the year of going,
+1260660	1263600	I just wanted to say one more time, thank you.
+1263940	1266720	I've run this script now 4,000 times.
+1267140	1272880	Anytime I run it, I really think about you and thank you for helping me with this process.
+1273360	1275800	So it doesn't have to be something complex.
+1275800	1284620	And as a matter of fact, if you want to get into automation, start with the smaller tasks and learn how to automate something simple first.
+1284840	1291680	And then you can put the simple things together in a chain and make something complex later on.
+1293380	1297400	You inspire me, Sal, to go and dig into this more.
+1297880	1304200	Between you and Joe Kissel, I feel like there's so many things that I need to explore and look at some of these tools and learn them.
+1305800	1307820	but there's a running curve for anything that's worthwhile.
+1308420	1309140	That's true.
+1309400	1310120	That's true.
+1311340	1315540	So anything else about the conference that we need to touch on?
+1318320	1319980	Obviously, there's a cost to attend.
+1319980	1324740	I believe it's $399, I think, for the day, or $395.
+1326040	1327380	I think that's correct.
+1327580	1328560	But in that range.
+1328620	1332700	There's some specials on for signing up soon, I believe, too, as well.
+1332700	1341720	Check the website, cmddconf.com, and see if there's the early bird special still on or not.
+1342060	1343720	Great. Definitely check that out.
+1345800	1351580	But where I was going with that, I noticed that basically all your presenters are presenters.
+1351760	1353980	There are no sponsors presenting.
+1354260	1355960	Are there sponsors for the conference?
+1356540	1357580	Yes, there are.
+1357580	1366020	There's Jamf, who is involved in, again, the setup of iOS and the management of setup of iOS devices.
+1366480	1373100	And we even have a set of Jamf Automator Actions that can assist you with that.
+1373240	1377800	And we also have Omni as a sponsor for the conference as well.
+1378120	1384920	So we have some great sponsors, and we're looking forward to having them on site to answer questions
+1384920	1387560	and to inspire us with what they're working on.
+1389220	1392940	I didn't even think about Jamf as an automation tool.
+1393120	1394280	I mean, of course it is.
+1394440	1398120	But this is part of the problem is, for me anyway,
+1398340	1401500	that I'm using automation, automation is all around me,
+1401560	1403540	and I don't think of it as such.
+1404700	1405020	Right.
+1405920	1409260	People have a tendency, it's a natural tendency,
+1409540	1412840	to kind of Define something of automation.
+1412840	1413940	Oh, that's AppleScript.
+1415160	1423900	yes AppleScript is a language that can automate Apple events things on the Mac, but JavaScript for automation, or JXA.
+1424680	1428300	And everything that you can do with AppleScript, you can do with that as well.
+1428560	1433980	And as a matter of fact, you can do things that are related to JavaScript that you can't do with the AppleScript.
+1433980	1440200	So there's a wider meaning to the word Automation
+1440200	1448560	And as far as toolset goes, then you have a tendency to just Define as being something, you know, OK, Automator.
+1448720	1452040	Oh, that's this. But it's actually more.
+1452200	1455740	There's so much you can do with the automation tools like Automator.
+1455900	1461860	Here it is, a Mac Tool that's used to set up iOS devices in hospitals.
+1461860	1466440	I mean, that's incredible when you think about it.
+1466560	1471500	And it's just because you think creatively out of the box.
+1471760	1480820	You have a situation that you want to provide a solution for, and then you look at the tools that you have and you go, well, this is already laid out here.
+1480960	1489680	We have this incremental component structure with Automator, and it's on the Mac, and we can plug the devices into a cart and have this run on those.
+1489680	1496460	and oh it happens on Plug and Play so you just have to look at all the tools you have and figure
+1496460	1502960	out how to put them together in creative ways to solve the problem and kind of try to lose those
+1503560	1509480	preformed ideas about things of well that can only do this or that can only do that
+1510240	1515520	that's not usually true there when you're dealing with automation there's pretty much anything you
+1515520	1518920	can do with the computer you can automate and you have to keep that in
+1518920	1523340	mind when you're looking for Solutions Well I think you made the point early on
+1523340	1529120	in the conversation that something as simple as as a keyboard shortcut is a
+1529120	1533440	form of automation so everybody out there is probably using some form of
+1533440	1536960	automation already they just don't think of it in that way and if you start to
+1536960	1540880	think of it that way maybe you'll be a little less intimidated. That's why the
+1540880	1547180	conference is called Command-D. It's Command-D for duplicate. It's one of your
+1547180	1552580	most fundamental forms of automation, right? You select a file, Command-D, it's
+1552580	1560520	duplicated. I'm just sorry I won't get there, but if you do it again, I'll come.
+1560740	1566360	Unfortunately, I have a conflict. We'll put up a picture of you
+1566360	1571880	on the wall so that everybody will be thinking about you the whole time I'll make sure that
+1571880	1577500	that we have a printout photo of you that'll be behind the speakers so that everybody will
+1577500	1581960	be looking at the speaker then looking over at you and looking at the speaker then looking over at
+1581960	1591480	you i see no reason to scare all your attendees sal well hey I've really enjoyed this thank you
+1591480	1595900	so much for coming on and telling us about it and um needless to say i hope needless to say
+1596360	1601820	welcome here anytime. I'll try not to pester you too much, but I'd love to have you come back and
+1601820	1607180	talk in a little more depth, maybe some specific examples, report back on Command D and how it
+1607180	1614020	went, and let us know what's next for you. Oh, well, I would love to come back. You know,
+1614100	1620280	if you want to have me back and we can have more conversations, that's great. And maybe sometime
+1620280	1625520	we can, you know, grab a coffee and I can tell you some old war stories from long ago as well.
+1626360	1632480	sounds terrific. That sounds terrific. Knowing that you've recently changed things a little bit
+1632480	1637500	in your work life, do you have any social media presences or websites or anything you want to
+1637500	1644280	point people to other than Command-D? Well, right now I'm working heavily on
+1644280	1651780	Omni Automation, and it's Omni-automation.com, and that's my website for documenting all the
+1651780	1656880	work that we're doing with Omni so if you want to get a head start on this or you're just interested
+1656880	1662620	to say okay well what is this stuff about you know dual platform scripting that he's talking about
+1662620	1671800	that's the website to go to i have a Twitter presence that is Mac Automation and what i my
+1671800	1678600	role there is i i just put up videos and and uh show examples of different types of Automation
+1678600	1680480	and talk about ideas.
+1680480	1682640	It's not really a personal presence.
+1682800	1685580	You'll see that it's really Auto the automator.
+1686000	1690600	And I just want to put things out there for people to look at
+1690600	1693420	and to try to help out the community at large.
+1693760	1697200	And then, of course, I have iWorkAutomation.com,
+1697420	1700520	which is great for the iWork suite of tools.
+1700720	1705140	And I have ConfigAutomation.com for if you're interested
+1705140	1711900	in managing iOS devices, I highly recommend you go there and learn about how you can use
+1711900	1719120	Automator to make it so much easier to set up and manage devices. So there's a couple websites
+1719120	1724880	right there. And of course, Mac OS X Automation is the master site that leads you off into all of
+1724880	1737400	those last question sal do you ever sleep uh well you know I'm a musician I've been a musician
+1737400	1748040	since i was 16 years old and somehow musicians go without it or i just find my enjoyment instead of
+1749360	1756300	what a lot of people would find enjoyment for me, sitting around and solving a problem with a script
+1756300	1763160	is an enjoyment. You get to, like you said, unwind this puzzle and figure it out. And so
+1763160	1769600	quite often I'll be sitting there in the TV room and with Naomi and we'll be, you know,
+1769700	1774120	eating dinner or something, and I'll be putting together a little script. And it's kind of like
+1774120	1780360	knitting. It's just, it's great to finally solve something and have a nice tool that you can use
+1780360	1788540	and share with others when you're done. I like that. Automation as knitting. Yeah. It's a Zen thing,
+1788540	1796620	man. Yeah. All right. I got to work on my Zen. No question. Hey, Sal, it's great to see you. Thank
+1796620	1800300	you so much again. I look forward to our next conversation. I look forward to hearing more
+1800300	1807880	about how command D went I'll get back to you let's talk again sounds good folks
+1807880	1811220	I'm Chuck Joyner I can't encourage you enough if you're into this stuff and
+1811220	1816080	you're anywhere near California get to the commandee conference it's going to
+1816080	1820380	be amazing amazing set of speakers and of course headlined by Mr Sal Segoyan
+1820380	1828060	until the next time and as always thanks for watching visit macvoices.com for
+1828060	1833660	show notes, links to subscribe, and to connect with Chuck on Twitter, Google+, Facebook, YouTube,
+1834020	1840640	Vimeo, SoundCloud, the Mac Voices blog, Mac Voices Dispatch, our Weekly Newsletter and on Mac Voices
+1840640	1846420	Magazine, free on Flipboard that helps you do more with your Apple tech. Advertising handled by
+1846420	1851760	BackBeat Media at BackBeatMedia.com. Bandwidth provided by CashFly at CashFly.com.
+1858060	1858420	You

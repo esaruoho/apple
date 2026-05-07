@@ -1,0 +1,501 @@
+How does the other side of you, if at all, does it show up when either you're deep in a script
+and you feel like that creative slice show up? Or when you're in the middle of, you know,
+a jazz performance and you feel like the structural, you know, kind of comes in? How
+do those two interplay for you? I think that when you use the analogy of left side, right side brain,
+that's not really what's going on. What's really going on is there's two different roles that you
+assume, Observer and participant. If we think of it that way, then it's pertinent to everything.
+On today's episode of The Pro Guide, Wired Magazine calls him the Dean of Automation.
+He served as Product Manager for Automation Technologies for Apple for over 20 years,
+Sal Seguyan. Today's episode of The Pro Guide is brought to you by Small Pond Productions,
+the producers of this podcast. If you're looking to boost your Brand's voice with professional
+and podcast production. Whether it's an interview show or telling stories with audio,
+we walk you through every step of the process to make you sound great. Head to our website
+and download the free Podcasting Made Simple Guide. Eight critical things you need to know
+before launching your Brand's podcast. It's all available at smallpond.productions.
+Well, welcome everybody to this episode of The Pro Guide. My name's Andrew J. Mason,
+Andrew today we're talking to Sal Segoian. He's the automation technology product manager for
+20 years. Wired Magazine calls him the Dean of Automation. He's a musician with a love for piano
+and guitar. He has two albums available for purchase on Apple Music under the band name
+Blue Indigo, Catwalk, and To Be With You. And he also happens to be a self-taught programmer. We
+get into some really cool questions and answers about right brain, left brain, logic, creativity,
+interplay, and a lot of Sal's history that maybe you haven't heard yet so far. So I hope you enjoy
+this interview with South Segoin. Talk to me about this journey of self-teaching AppleScript
+and you kind of hit on it a little bit before we hit record, but I want to kind of dip back
+into that too. And how did you end up on this path of AppleScript? My gosh.
+AppleScript and I met each other totally by mistake on a whim.
+um i used to live in a music Community an Arts community in Pennsylvania called Delaware Water
+Gap that's the actual name of the town because you're right on the Delaware River where the Gap
+is coming in between the mountains and it's in the Poconos and and it's a very famous Arts and
+Music community and it has been for decades and decades and i was living over a bar
+in there and i bought a a used Mac and uh i taught myself i mean i was basically you know
+they're pressing it trying to figure it out i had no instruction or anything about it
+and I i got a program called Ready Set Go which was a page layout program right the early stages
+of page line there was either page maker or Ready set go and i i got ready set go and i taught myself
+how to use it and i started making the menus for the bar right first thing I'm going to do is like
+oh man take these old menus and i redid them you know and i learned about kerning and fonts and
+and printed them out on a laser writer.
+I had a laser writer and everything.
+And the next thing I know, the other businesses around town
+beside the bar I was living at started to ask me,
+can you do my thing over again?
+You know, the little video shop and the diner,
+the Greek diner down the street.
+And so I started doing this.
+I went, wait a minute.
+There's something going on here.
+Yeah.
+And it appealed to me because it was, you know, dealing with logic and and creativity and all those kind of things.
+And I got pretty good at it. I moved to Charlottesville, Virginia, where I had lived before I had gone to the University of Virginia at one time.
+And I got a job in a Print Service Bureau with this lady, Joe Gibson.
+she had been in the print industry for 29 30 years and she taught me all the the real stuff
+you know about line letting and all those kind of things but this was at the time of uh desktop
+publishing was just starting to become a concept and we were getting in all these print jobs
+because we had a line at tronic and i was constantly looking for new ways to do things
+and automate things because when you got all these jobs coming in flight checking them all
+is a pain and so i was working with developers of Quark extensions and I'm coming up with these
+ideas and testing them for them and i happen to have this thing from Apple developer magazine
+and it said apple script this english-like language that can control the actions of the
+computer and the applications and I'm like huh so i i got the dvd you know or the cd or whatever it
+was on and I'm sitting there it's late at night it's like after 11 o'clock at night or something
+I'm sitting there and I'm trying to figure this out it says okay applications have dictionaries
+and you should be able to write this sentence in this application called Script editor and run this
+sentence and it should be able to control while i was using Quark Express was one of the apps we
+were using in publishing and it was scriptable because Dave Dave and Ralph Rich had worked
+with Tim Gill and put the dictionary in there and i also used FileMaker Pro which had some scripting
+support and you could get a scriptable finder i paid the fourteen dollars to get a 400k
+uh disk with the scriptable finder on it from Apple and so the first script i ever wrote was
+for Quark Express and it was this set the color of the current box to Blue and so i wrote that
+script and i read it and the box turned blue and i went oh okay all of a sudden everything in my
+whole life just changed i like fired all my design clients i just worked constantly i lived in that
+room for like months figuring this out like what is this because all of a sudden i had the power
+to control the machine i didn't have to go to the developer i was working with and said you know
+it'd be nice if it did this yes or can you make it do blah i mean there were great people to work
+you know like uh you know some of the companies i was working with uh were really great and
+interesting people to work with but this is mine that's right i could control this and so i started
+working on it and with a bent towards you know design and publication because i was working in
+a Print Service Bureau first thing i started doing was trying to figure out how to automate
+real estate Publications because you know in the in the grocery stores they had these magazines with
+house description house description house description you know that kind of stuff
+and I'm looking at it going well that could just be a record in a FileMaker Pro database
+and then this is a box so all I have to do is figure out some way to relate that box to this
+well I could use the mls number and I'll put the mls number in a field over here and then I'll tag
+the box with it because you could tag boxes and so i figured out how to write an apple script to
+get the information from the database into the box and format it and started coming up with it and
+then you know i explored that and i was able to do an entire page layout in 20 seconds and it was
+accurate it wasn't any mistakes and i was like whoa okay so i started working on that
+and then i got into well why can't we take images why do i have to like do all these half tones and
+stuff it says i can scan it let me try this and sure enough it started working the local Real
+Estate Group in in the county came to me and we started doing their real estate publication and
+automated their cover. I did the first three colors. I mean,
+full color cover that was split electronically, you know, all that.
+And, uh, I started, uh, you know,
+gaining a reputation and I was writing scripts for companies.
+I got contacted by AT&T. AT&T says, can you write us a script?
+We got 40 page documents and we have to find every occurrence of AT&T.
+it has to be this blue it has to be this font turn this way with this and i said no problem
+that'll be three thousand bucks and you know I'll write it in 10 minutes and then sit on it for a
+week before i send it to him to make them think i worked on it now i said right yeah and i started
+getting a reputation and i wrote i wrote the script for Better Homes and Gardens that did
+the fractions for their recipes all this kind of stuff and i started developing this whole thing
+and then i got queries from magazines can you write an article about this can you tell people
+what you're doing I started writing magazine articles on automation with you know Apple
+script and then i started getting asked to to speak at shows so i i you know i had a collection
+of scripts i was selling to extension this this company that sold Quark extensions and i was
+selling these Scripts and i would speak at shows and then Apple i noticed that my audience was
+Apple Apple they would stand there and they'd like and they came to me and they said we want
+you to join and i go well why would i want to do that you know you're asking me to take a 50
+percent pay cut to join you you know and they basically threatened to kill the baby right they
+said well Apple script's gonna die unless you come here and it was a basically a scheme by
+shafas i had Chris Espinoza bom and Dara and you know a bunch of people to get me on board
+And I joined Apple in January of 97 as the AppleScript product manager.
+And at that time, it was like the Poseidon Adventure you know, where the columns were falling down and Shelley Winters was doing the breaststroke through the hallway, you know.
+It was Insanity
+it was really crazy but that was the best possible thing for me because it meant that all the
+barriers were down and we could actually take a vision and move forward with it that's how i got
+started with the whole thing yeah this uh this isn't on my list i first of all i love that little
+detail about the them coming to you with a knife up to Apple script saying i swear I'll do it
+basically yeah don't make me do this um but i i do appreciate uh when you talk about the vision
+for what it could be what what did that look like to you for Apple script you know you have in your
+mind uh they say you know everything's on the table it's all available and it's up to you know
+you have this vision for where you think it could go what were you picturing when when that was
+happening well one of the things that I've I've just had as part of my life i think you know was
+taught to me by my father was to look for the underlying principle behind something
+you see something working and you would look at it and go why is that doing what it does
+why is it having that effect let's look behind here and figure this out you know why does the
+clock do this why does the drawer come out like that and the underlying principle behind Apple
+script was this empowerment that you could have access to the apis of the operating system
+or the applications in a way that wasn't so complex that you had to write code and compile
+and do all those kind of things so if you got that concept then you want to have it apply to
+everything but what happened is is when i joined Apple it was really more of a rather than a
+technological challenge it was more of a political challenge because at that time apple script was
+not part of the operating system. We're talking like System 7, right? Before System 8. I got there
+just before System 8. System 8 was the first one that I was involved in. And it was not part of
+the operating system. It was an extra that you got that you had to buy. And so I soon discovered that
+the way that Apple work is, you know, if you have a technology, you have something and it doesn't
+it, then it can die quickly. You know, you need somebody like a member of Congress to represent
+that technology and to protect it and to make the deals necessary to advance it forward.
+So the first challenge I had with AppleScript when I got there was just keeping it alive.
+You know, AppleScript and the concept of automation had many near-death experiences,
+of my time in the early days was just involved in the practicality of making relationships and
+and making deals and having knife fights in the hallway to get this thing to keep going
+it wasn't that you know i didn't have the vision for okay everything should be scriptable and that
+this is what you could do with it i saw what you could do with it because that's what i was doing
+for a living but the Practical situation at the time was that it needed representation it needed
+somebody to keep it alive and so my challenge was constantly trying to get the resources and so
+you know at one time Apple script was put under color sync they didn't know what to do with it so
+they assign i reported to the color sync product manager it was like what it took forever and all
+kinds of stuff and then you know it was massive shake-ups and one day i lost uh my boss's boss
+my boss my uh uh companion my my peers lost them all in one day it was just like total clear house
+and I was left and it was like and people were coming to me with their projects saying can you
+keep this alive you know and give me the source code for their projects and like data detectors
+you know they gave me their stuff trying to keep it alive it was very challenging in those days
+but at the same time in that challenge in that period of of turmoil all these opportunities
+there was no there was no layers of blocking if i needed to if i had a concept that something
+needed to be scriptable I'd find out who in the os is working on that and i'd go over to his office
+or her office right and i show them what i was doing and say look if we do this and connect this
+to this then all of this is possible and it was like okay open up the code change that right there
+yeah, that makes a difference. Let's put it in, submit it. You know,
+then it became a challenge of trying to figure out how to get stuff past Kim
+COVID, you know, who was like the guardian of the code.
+And, uh, when I would walk in the room, they'd be like, okay,
+what are you doing here?
+Because I had been caught many times with my hand in the cookie jar,
+trying to get stuff in the door. Right. And, uh,
+so fortunately for me i got to work with a brilliant one of the most brilliant people
+i ever met at apple and a wonderful human being as Chris says Chris Espinoza Apple employee number
+eight was my engineering counterpart and uh he Chris was just fantastic to work with
+you know he had done he had been there since it was in the garage wow and yeah Chris's is
+he's like one of the original guys and and uh the challenge you know he bait he he and uh uh
+the QuickTime product manager at the time uh kidnapped the code base and basically he took
+it off the server and had it and they brought me on board to protect it and he made a deal with
+Steve glass to get apple script to become part of the operating system so we can be protected but at
+had to give up our autonomy so we couldn't just rev when we wanted to we couldn't do what we wanted
+to we had to go through the system processes but Steve protected us you know Steve glass protected
+us so that's the first challenge is we had to get into into the operating system and then at the
+same time Apple had let go a lot of the guys like uh John Pew and don Olson that were part now of
+the AppleScript team had been absorbed by them and they let them all go. And I remember that day
+when they all went out the door and, you know, I'm watching my heroes and these people that I've
+admired for years just leave and get picked up by Adobe and everybody else. So it was a challenging
+time, but it enabled me to make the relationships and the political structures so that it could get
+in place and then Steve came and uh my relationship with Steve was definitely
+one of the reasons i think that it survived uh the first time Steve and i met was in town hall
+in front of about i don't know 80 people all product marketing Steve called us in there and
+he was ranting about how we sucked and how we couldn't Market our way out of a paper bag and
+how it was uh easy when we were a hundred times better than Windows but now that we're not you
+don't know what to do and the first words i said to Steve i stopped him i said no you're wrong
+and he turns around he looks at me and he goes and you are i said I'm also going on the Apple
+script product manager you're wrong my technology is 100 times better than Windows and we just went
+at it you know we just locked horns and went you know Steve says well that's not what I'm hearing
+and I'm said your guys are lying to you you know they're not telling you the truth he goes well
+they say that nobody's using i said everybody's using this what are you talking about
+half our procedures are built on this stuff you know and uh it that was like the beginning of
+my relationship with Steve he understood that i would tell him the truth and that what i
+taught would tell him i had backed up i knew this was reality and so there was numerous times uh
+that i went to him and it made a difference that we got the resources we needed like uh when we
+wanted one of the challenges we had was we wanted to become part of the development environment
+but we weren't we were just like the scripting language off to the side and everything else was
+this objective c and c plus plus and i had known i had a friend that was vice president over in
+marketing or something and he had uh ridden in the plane with Steve from New York from a Mac world
+and he and he told me about the conversation some of the conversations they had he told me
+Steve's favorite movie he said Steve's favorite movie is Patton he won't believe it but it's
+patent and i went well it kind of makes sense right and so uh i i you know i came from a
+military family so I know how to speak military so i wrote Steve an email i said Steve look I'm just
+a sergeant I'll do what you tell me I'll go where you go want me to go I'll fight the fight you know
+i said but you got me out here in the middle of nowhere with no supply line how am i supposed to
+take it to Microsoft if i don't have the stuff that i need to you know get ahead that's right
+and i sent it off to him it was like the middle of the night you know like midnight complete
+military metaphor total it's like I'm a dutiful Soldier I'll do what you tell me to do but you
+know you got me out here in the middle of nowhere next day i get a call from Espinoza going what
+did you do i said what do you mean he goes what did you do we got a meeting today with Avi and
+Phil and so i said well i sent this letter to Steve so the next day we go in to see Abby and
+and phil and he said what do you need you know what do you want to do do you really want to take
+this i said no man we got this great technology we need to take it to them and what do you need
+and they said well what do you need to take it to them do you want to buy like a third party that's
+already got some kind of interface thing or what do you want to do and Espinosa says no we want to
+be part of project Builder and interface Builder and avi had been sitting there kind of like i got
+to do this and went oh you know i can understand that he goes yeah we want to be a peer development
+language and they went hmm okay how you know what do you need and and Espinoza goes one engineer
+he goes what he goes we need Tim bumgarner and it was this brilliant man who could architect the
+thing and figure it out and so he goes you got him and that changed everything because then we
+became a development language we could actually make an app out of apple script using aqua and
+everything else and that all happened because of my relationship with Steve i love you know and
+time there was you know times it's that sj would referee like fights between me and other guys
+trying to get them scriptable like i lost the fight with Final Cut i was getting calls from
+cnn and everybody else all the time about they needed automation i had worked on an automation
+for Viacom my friend Dirk van dole was a bb over there and i had spent like a couple weeks on site
+their media using media 100 was an application that was scriptable the mac and we automated the
+creation of all those their promos you know those little things that go tomorrow on you know fx
+channel we have Bob discovers America you know and it would have like a certain video background
+with over overlay text and things and and uh it turned out that the guy that was recording those
+and they would do them all in one take and he would sit there and just read one after another
+with 10 second intervals in between so i wrote a script it would hack all that up take those put
+them on a thing figure out what based upon the name what of the 13 channels that they had pull
+of the appropriate video background put it in create open up Photoshop and illustrator and
+create all the text overlay put it in there with an alpha Channel build the entire thing lay them
+all out on one line and then somebody would sit there and scrub through to make sure they're all
+correct then another script would cut them all into sections send them high res up to the media
+surfer and a low res over to where the execs could review it from a web page all built with apple
+script right wow so i was trying to get the final cut guys to do this and uh
+i couldn't convince the engineers that they needed to spend the time and do it
+oh my gosh was the kind of thing you want to do when you're writing the code re-architecting it
+later is a pain right it's really hard and i was trying to convince them and i couldn't make
+progress so i i pulled a move on them and Steve it turned out too i used to speak at the executive
+briefing Center and i knew that uh hbo and a bunch of the guys from New York were showing up
+so i asked Viacom i said hey can i show your solution to your competitors and they're like
+okay yeah you know they're they're doing like all of a sudden they're doing 1800 of these things
+that used to take like weeks with four guys back to back they're doing in like 30 minutes with a
+bunch of scripts oh my gosh yes so i i got into the the queue of people that were going to show
+those things i was the last one and i showed him i said look at Viacom said i could show you this
+and then all of a sudden everybody's like what and i showed them and they're just their faces went
+like pong sure and then after me i left after me was sj and Steve came in and the first thing
+this guy said to him were we want automation we want what we just and he didn't know anything
+so i basically set him up to get bombarded right thinking okay I'll get them asking for it
+maybe that'll give me some leverage that's a brilliant move I love it it turned out didn't
+work you know and in the NSJ said look at I got to go with the engineering manager they say they
+don't have the time and the resources we're way behind on this I'm sorry we can't do this I was
+like okay I tried you know that was my attitude some things you know like automator Steve got
+and he made it part of the operating system but sometimes I lost as well but it was basically
+because that relationship with him allowed us to get the resources to keep moving automation
+forward and we did you know Apple script we got over to the power pc it you know we kept making
+advances with it all along the way you know then it became apple script Objective c Chris Neville
+that and it just blew everything away because then you could call into all the Coco Frameworks
+directly but when Steve died you know we lost a really valuable Ally and the company changed and
+it became a lot of stove piping and my previous thing of having horizontal relationships between
+groups to keep automation as a primary mover hit walls yeah and you know it was more difficult to
+effective in those days around that situation so that's a long answer to your question about
+Apple script but that's basically what it was about yeah i love every minute that that's awesome
+and the uh the of the Via story that's fantastic uh i i would love to jump into
+this intersection that you had uh of music and in particular Jazz and technology and and for you
+sounds like music was kind of the groundwork the framework that came first and out of that or
+alongside of that later was developed this uh you know the this the scripting and the aha moment
+with the uh the blue box you know and quark and everything yeah talk to me about how you might
+think that one of those disciplines or areas might inform the others and if there's any
+any or what that relationship might look like for you there's a
+a lot of similarities there's basic principles that I've found throughout my life that are
+relevant that are constant across uh knowledge bases that are that are constant across Technologies
+you know there are certain things that are just basic truths that pertain to all of them
+for example you know you looking for the underlying principle when it comes to if
+you're dealing with music you know what's the underlying principle behind what you're doing
+uh why does why does a set of chords sound it's feel a certain way why does this type of resolve
+happen here you know you look for the underlying principle behind something in the same way
+as you know why a clock mechanism Works a certain way and once you understand the underlying
+principle behind something then you can replicate that and you can build upon it and take it forward
+But if you're just working with what's on the outside, then you don't have the depth and the understanding to move it forward.
+Whether that's music or whether it's automation technology, the principle is the same.
+What's the underlying principle?
+And it's basically empowerment.
+You know, the fact that the you know, automation is basically some type of messaging system where you're telling applications what they should be doing and the user is directing the movement and the control.
+And once you understand that, then you just figure out the technology that's necessary for that particular application becomes more apparent.
+There's also things about in order to succeed, it was a lot of the time, like I mentioned, it was political initially until it became something that was more ingrained and accepted as being part of that whole environment.
+And that depended a lot upon personal insight and personal belief in yourself, you know, being okay with what you know and being okay with the concept of challenging the status quo, you know, moving what it takes to get the goal, you know, within reason.
+but you have to try to figure out that everything that God done
+was really personal relationships.
+And I became notorious for certain kind of things.
+Like I was famous for putting bounties on code.
+I would put a bounty up in the elevator, $1,200,
+for somebody that can write me code that does blah.
+like uh the uh QuickTime QuickTime Player to get that scriptable was a bounty in the elevator and
+building too pardon me or somebody could write me code and with about 30 minutes i got a couple
+calls from guys are this serious i said yeah I'll give you 1200 in cash if you write me code to do
+a player and here's what it has to do and they would write me that somebody wrote me the code
+and uh then i said you know okay strip it take out you take out your identifiers your job numbers
+everything i said just give me the code and then once i had that was figuring out how to get it in
+you know making a deal with somebody else to put this in here or install it into there uh there was
+a lot of things in the operating system like the number one used apple script command is called do
+shell script well i purchased that there was a guy i i bought the code for that from and it took me a
+while to figure out how to get it into the operating system but it got slid into a build you know and
+once it was in there it became used by everybody and it's still like one of the most number one
+use things but it was basically a bounty i paid some engineer and then there were certain guys
+that wouldn't accept money so i used uh Legos the famous Star Wars Millennium Falcon i used to buy
+the Millennium Falcon kits and i would come into an engineer and I'd put it on his desk and they'd
+look at it like oh my this is something that they can't justify their wife spending 500
+Millennium Falcon kit but you know it's like you just give me the code I'll take care of the rest
+of it and there was a lot of things that needed to be done but that's just all process of
+establishing uh the sensibility of it once people started seeing the practicality and the necessity
+of automation then it took on a life of its own and got accepted but i had to be confident in who
+in was and in order to risk that you know they could have fired me yeah but the way i looked at
+it is you know they asked me to be there i i was trying to do the right thing and Advance the
+Technologies and keep it going and moving it forward and you know if i had to kind of fudge
+things here and there and make deals and that's just the way it was because then in the end the
+right thing got done and the original work that was by all of these fantastic engineers and people
+involved in that has been carried on and now it's ingrained and you you have the the automation
+Frameworks that are so essential and they're part of all of Apple's stuff now they're not going to
+go away there's no question about whether they're going to be there anymore and that's wonderful
+because the people that are using it are just have that opportunity but it's all from basically
+being confident in the rightness of what you were doing and trying to move it forward i i love um
+two things I'll call out on that before we before we move forward and one is is this sense where
+uh humility and confidence they aren't necessarily diametrically opposed to each other you believe so
+much you're so confident and it's coming from a place of authenticity but it's also this open
+hand where you're talking about uh you know Viacom like hey i tried i did my best i did what i thought
+was work and i wasn't you know tight-fisted enough to where it's like i have to have my way
+yeah the other slice i love about this is um is how not myopic it is too you know so many of us
+if we're into code or programming and that's our thing we think about our one job our one role
+and this is like really zooming out saying okay let's begin with the end in mind here what are
+we really all here trying to accomplish and these alternate approaches like the millennial
+fountain or about you know code bounty um i love it yeah it's
+there's a truth about automation you know the truth the power of the computer should reside
+in the hands of the one using it that's been a core fundamental Creed for me and that's a truth
+that you know i just followed that's my belief and that's what i was pushing for at Apple the
+whole time i was there almost 20 years and when you know that to be true and it's so empowering
+and you see that it changes people's lives literally changes people's lives for the better
+you know it's it becomes easier to become a champion for it and to push it because it's
+the right thing that's right it's then it just becomes a matter of you know trying to solve
+problems like we had to work with the security guys Yvonne christic's team and yeah basically
+two diametrically opposed philosophies automation wants everything wide open and the security team
+wants everything you know tight and those guys are so brilliant and their attitude
+was constantly how do we make this work and working with them was just fantastic and we
+figured out this whole concept that's still in use today that if the user installs this at a
+certain place that the operating system will run your scripts and the act of the user installing
+it means that the user wants us to have power of the user that the application can't install it
+but the application can ask the user to install it so you know you have this engine the script
+engine the i don't know how they're doing it now in the latest builds was basically like there was
+a script engine that would run apple script and shell scripts for you the system would do it and
+certain locations to have them approved right and that resolution between the two teams was
+brilliant and it's still working today but it didn't happen on iOS iOS you know that's
+unfortunately there was this political situation where there was like different teams in different
+buildings that weren't allowed to communicate with each other and you couldn't you know make
+the relationships there was you know idea barrier doors glass doors that would separate you and they
+didn't take it on we we approached the ios team numerous times with basically the concept behind
+what shortcuts is today back then but they didn't want it so they hard-coded everything and uh it
+got in a mess. And now you have this wonderful architecture on Mac
+but it's not duplicated on iOS. I mean,
+one of the things that I wish could have happened would be that
+there would have been a universal scripting language for all of Apple's
+products. So that it would be,
+you write the script once and it goes everywhere.
+Like what I've been working with the Omni group Yes.
+Omni group uses JavaScript based on webkit core JavaScript so that you write a script for an omni
+application whether it's running on your phone or your ipad or your Mac it's going to run the same
+and it's everywhere it's it's device independent that was always my goal for apple and unfortunately
+that didn't happen uh there was also another goal that we were trying to get to i work with
+many years I worked with the speech team and then the Siri team came on and i worked with them
+and we actually had the prototyping engine for Siri they had this engine based on JavaScript
+we had it tied into apple script and to Apple events and there was like we had as a prototype
+hundreds of Commands to control all the eye work apps photos the finder everything it was all voice
+and it was natural language you didn't have to memorize a phrase it was just you tell it what
+you wanted to do and it understood and we presented this all the way up to the top levels and people
+were stunned literally I I gave presentations on this with my partner from the Siri team
+the leap and uh the room was silent and then it Applause it was just like knocked the breath out
+of them because we were doing this with Siri but the problem was that it was on the Mac it wasn't
+it on ios and i think that caused problems because they didn't want ios to look bad not bad but not
+as capable right yeah and one of the things i learned in working with Steve was i used to think
+of it this way it's not my job to make you look good it's my job to push the envelope
+and i come up with a solution that just keeps pushing it you know early on when i when he came
+back on board there was a meeting in the boardroom some reason i was called into it Steve called a
+bunch of the product managers and people into the the boardroom over in building one and I'm you know
+and he he basically laid it out that we had to out innovate out maneuver out deliver
+everybody else all of our competition that that's how we win is we just have to keep pushing the
+envelope and uh he had a direction to go that he he had in mind and so the the trick was aligning
+to do with that direction too but it was the whole thing keep pushing the envelope and i wasn't really
+concerned that you know would make the the work that we had with Automation and Siri
+would make uh another group look bad we just wanted to keep pushing the envelope so i actually
+gave a a talk at wwdc about i used the standard dictation software as an example i didn't show
+but i showed this whole thing and it it upset a lot of people they actually pulled the session
+it was session 717 2016 and i gave the session and then they took down the videos like a week
+later wow wow but you just have to keep pushing you know sometimes you win sometimes you don't
+Yeah, I love for you to talk to me about this, this kind of back and forth that's maybe it is just integrated, you know, however you'd like to approach it. But this right brain, left brain, you know, the musical side and and the side that that is, you know, logical and code functioning.
+how does the other side of you if at all does it show up when either you're deep in a script and
+you feel like that that kind of creative slice show up or when you're in the middle of you know
+a jazz performance and you feel like the the structural you know kind of comes in how do
+those two interplay for you it's uh i think that when you use the analogy of left side right side
+brain that's not really what's going on what's really going on is there's two different roles
+that you assume Observer and participant if we think of it that way then it's pertinent to
+everything they for example if you take a musician like Phil Woods you know when i lived in the
+Poconos Phil was a local guy and uh amazing musician just phenomenal you know constantly
+voted like best Alto player in the world but if you take Phil and he's playing in a group
+and you could stop go if you could say Phil stop and then ask him okay what's going on right now
+Phil could tell you everything that he was doing, the Ark of where he was going, what's happening,
+who's playing what over here, what the bass note is, what's the harmony back here. He could tell
+you exactly everything that was going on at that moment, but that's the Observer side.
+At the same time, he was the participant. The creative flow of ideas and his response to
+of all of the things that are going on with the rest of the group and his natural inspiration
+is allowed to come out at the same time. You assume a role of both participant and observer.
+And this pertains to anything that you do. It can be with a conversation with another person.
+By being both participant and observer, you can correct and adjust for mistakes that you make because you can see you're observing the result of the impact of what you're saying on this person, but at the same time, you're going, oh, that was a mistake.
+I'm sorry.
+You know, that was not right.
+I should have said this.
+I didn't mean that.
+Whatever.
+It gives you the chance to correct.
+Participant and observer, it works with everything.
+It's the creative and it's the observant and the rational, all that stuff, but if you really
+think of it in roles, it works with everything that you do in life.
+And that's important because I think the Saving Grace that we have as human beings is the
+in Forward Motion i call it Forward Motion we're constantly moving forward we can't go backwards
+right you can't go back in time and correct that bad note ah i played the wrong you can't go back
+but you can recognize that and you can develop a tool like okay let's think of it this way
+I'm in the river I'm in a river that's moving and the current's moving i can't go back Upstream
+strong right but i have a paddle and i can recognize that there's a rock coming up and i
+can turn the paddle to get me to move to the little just to the left of it or a Craig in the
+coming out of the water some Branch or something i can make adjustments having Forward Motion gives
+us the ability to adjust to correct mistakes to correct deficiencies to correct defects of
+whatever, right? And that also applies to everything else you're doing. And in order
+to make that work, you have to be the guy steering, but at the same time, you got to
+be the guy looking. So you have to be Observer and participant in everything that you do.
+And that's what musicians do. That's what great artists do, that they observe and they
+participate at the same time. When you're writing code, it happens the same kind of way too. You're
+both Observer and participant of what's going on. And so I like to think of it in terms of that
+rather than I'm using this side of my brain or that side of the brain. You know, you try to
+maintain that balance between Observer and participant so that you don't go too far into
+one and not the other that's what i look at oh my gosh does that make sense it does uh you just said
+that phrase uh Forward Motion you know I'm thinking about that now as you're talking and uh
+and you mentioned too it can happen in conversations too so i guess the Observer
+is starting to think about that so um in in your life you know you've had some really great
+wonderful Forward Motion that's happened and as that Arc continues to move forward uh what else
+would you love to see show up for you and this is super open-ended it can be career it can be
+life you know it could be anything but uh what else in the in the realm of Forward Motion would
+you like to see happen for south segoi well i think that we're all at an incredible moment
+in the history of mankind right now.
+You know, it's obvious to anybody that's paying attention
+that we are at an inflection moment in history
+like none other that we've ever faced.
+The whole thing going on with climate, you know,
+it's been my experience that if you're a person
+that requires pain to learn something,
+will be provided to you in the amount required that you know if i really if that's the way i
+learned by doing that then you'll get what you need yeah and I'm seeing that principle applied
+to the World At Large that all of society is now becoming aware we're getting levels of pain
+that are making us aware and having to respond and that means we're going to do fundamental
+changes in the way that we that we perceive that we represent that we have government that we do
+economy everything's going to be happening i i see that as incredible disturbance kind of thing
+but at the same time it's been my experience like i was describing when i was at Apple and
+this whole turmoil that was the time that the the solutions were born and and begun to be integrated
+and i think that's going to happen now i think that the the world's going to be facing things
+where the solutions are going to be coming up the creative the creativity the technology the
+people the determination the character all of those things are going to be called to the fore
+we have to think about well what's my place where do i fit in this and how's this going to affect me
+but also at the same time how am i going to be involved in it you know
+it's all about the timing and this is our time in the world and so i i see as scary as it is
+it do get hope in what i see some of the things that are happening with people some people are
+very passionate about it and some of the solutions we're coming up with are really incredible and
+amazing and i have hope that Humanity can respond at the same time i understand it's going to be
+very painful process that we're going to go through because the world that we know is never
+going to be the same you know I'm never going to have a need for a sled when i was a kid there used
+to be snow on the ground and you would buy every kid had like a beat up sled that we used to take
+and stuff and then it stopped snowing and there's no more of that so things are going to change
+but I think out of it it gives us the opportunity to become tighter and more understanding and more
+empathetic and to figure out Solutions together it's going to be challenging but i i think that's
+what's happening and trying to figure out your own place in that is is interesting too every
+one of us you as a father yeah have to be thinking about okay this is affecting my family hum what's
+what's going to happen you know everybody's going to be involved in this somehow and it's together
+that we're going to solve and come to some kind of of of solution it's not going to be changing it
+back to what it was because that's gone now and it will take thousands of years to change it back
+to come to a solution having an answer and we're going to do it together because that's just
+the necessity of it and the pain of it will force us into that
+so is that too heavy yes that's like just feel like with a Nerf valve like no i i would not
+change a minute of this conversation i love every bit of it um and i i appreciate uh even with the
+full realization uh from what i consider to be a very brilliant person of the magnitude of the
+challenge that's ahead of us uh also the optimism that's tied in with you know what when you're you
+change when you're forced to and uh it looks like we might be getting there sooner than later so
+you're you're a uh glass person if you can learn from the mistakes of others
+and there's been many times I've been able to learn from the mistakes of others and i i'm so
+grateful for that you know i am a blessed human being the fact I'm still here and that i get to
+contribute and make contributions in a variety of ways and that i have a wonderful partner to
+share my life with I'm a blessed person and you know we will all do this together we'll figure
+out how to Clump together in that River and keep going we'll make this happen that's right we will
+succeed that's right so always an honor to talk to you thank you so much for this time and our
+thanks to all of you for listening if you're looking for a quick way to make our Day a review
+in itunes or subscribing to this podcast would mean the world to us our thanks to small pond
+productions for sponsoring and this was the pro guide learn from leaders change your life see
+You

@@ -319,6 +319,8 @@ Plus the **Steve Jobs stories** already extracted from the WIRED 2018 article (`
 
 **Total distinct Sal-told stories now archived: 24.** Hunting for more transcripts (especially the 24 Apple Podcasts episodes and remaining 14 YouTube interviews, per `analysis/sal/interviews-discovered.md`) will likely add another 50-100 Sal-stories to this inventory.
 
+> **Pass 2 (2026-05-07):** Four additional transcripts ingested and analyzed in [`transcripts-analysis-pass2.md`](transcripts-analysis-pass2.md). Story count now 50. New WWSD principles #20-#27 derived (Observer+Participant, Forward Motion, Carpenter Move, outcome-billing, language-of-receiver, Lego payments, authorization-as-bridge, trigger-phrases). Highest-value new finding: Sal had a **working Siri-on-Mac prototype with hundreds of natural-language voice commands** that was killed for iOS-comparison reasons — and **WWDC 2016 session 717 was pulled a week after he gave it, four months before he was fired.**
+
 ---
 
 ## Open Threads For Next Pass

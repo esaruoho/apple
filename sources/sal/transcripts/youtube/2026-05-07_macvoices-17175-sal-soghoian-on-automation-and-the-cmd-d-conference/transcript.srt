@@ -1,0 +1,1216 @@
+1
+00:00:07,859 --> 00:00:12,839
+Today's edition of Mac Voices is supported by Mac Voices Magazine, our free Flipboard
+
+2
+00:00:12,839 --> 00:00:17,339
+Magazine that brings you some of the best Mac, iPhone, and iPad productivity tips on
+
+3
+00:00:17,339 --> 00:00:17,679
+the web.
+
+4
+00:00:18,519 --> 00:00:24,179
+High in Signal low in noise, just like Mac Voices, Mac Voices Magazine includes information
+
+5
+00:00:24,179 --> 00:00:26,699
+on how you can get more out of your Apple technology.
+
+6
+00:00:26,699 --> 00:00:32,299
+Subscribe at macvoices.com slash magazine or search for Mac Voices Magazine on Flipboard.
+
+7
+00:00:34,400 --> 00:00:38,780
+Welcome to Mac Voices. This is the talk of the Apple community, and I'm Chuck Joyner.
+
+8
+00:00:39,299 --> 00:00:46,399
+Folks, we've been telling you a little bit about the Command D conference that's coming up in Santa Clara, California, August 9th.
+
+9
+00:00:47,120 --> 00:00:51,740
+August 8th is the scripting boot camp, but August 9th is the conference itself.
+
+10
+00:00:52,599 --> 00:00:58,539
+and it's a real honor for me to have Sal Segoyan on to talk about Command D but
+
+11
+00:00:58,539 --> 00:01:03,500
+also just to talk automation. Sal, it's great to see you. Thanks so much for
+
+12
+00:01:03,500 --> 00:01:09,859
+being here. Thank you, Chuck. I've always looked forward to being able to sit down
+
+13
+00:01:09,859 --> 00:01:14,319
+with you and have a conversation and this is an absolute joy for me. Thank you.
+
+14
+00:01:14,739 --> 00:01:19,200
+Well, I appreciate that. We got to have a little bit of a chat at WWDC which
+
+15
+00:01:19,200 --> 00:01:23,500
+seems like it was about three days ago and actually it was more like two months ago i can't
+
+16
+00:01:23,500 --> 00:01:29,760
+believe that much time has gone by um but you know that that we got a little taste of uh of what you
+
+17
+00:01:29,760 --> 00:01:34,780
+were doing with Omni and and their automation projects this is something that is completely
+
+18
+00:01:34,780 --> 00:01:39,879
+different this is a full conference just dedicated to automation with you of course being the featured
+
+19
+00:01:39,879 --> 00:01:48,060
+guy yes uh you know automation has been my passion and it's been what I've worked on for
+
+20
+00:01:49,699 --> 00:02:09,259
+And I really am welcoming the opportunity to give voice for the automation Community to get everybody together and talk about what's possible with Automation and what's coming up with Automation in the future and how it can be used on both Mac and iOS.
+
+21
+00:02:09,659 --> 00:02:17,840
+So this conference is a way to deliver that message and those ideas to the community at large.
+
+22
+00:02:19,199 --> 00:02:25,659
+If you were the only one speaking, it would be worth going, and I want to find out what you're going to cover.
+
+23
+00:02:26,180 --> 00:02:31,259
+But also, I'm so impressed with the panels of speakers that you've put together here.
+
+24
+00:02:31,560 --> 00:02:36,340
+So many names that are personal friends, but also that are well-known names.
+
+25
+00:02:36,460 --> 00:02:38,099
+Andy Anaco, Jason Snell.
+
+26
+00:02:39,219 --> 00:02:42,120
+I've got to look down the list because I don't want to leave anybody out.
+
+27
+00:02:42,240 --> 00:02:48,759
+David Sparks, John Pugh, John Welsh, Ray Robinson, even Allison Sheridan.
+
+28
+00:02:49,199 --> 00:02:56,020
+yes great great set of speakers oh and excuse me i did it i did it shall we Brisbane sorry sorry
+
+29
+00:02:56,020 --> 00:03:02,020
+shall we um so it's it feels like you're just going to hit every level of automation that
+
+30
+00:03:02,020 --> 00:03:08,280
+there's something here for everyone well that's my strategy for the conference was this is the
+
+31
+00:03:08,280 --> 00:03:16,000
+first time we're doing this conference and we need to take a global view of what is automation
+
+32
+00:03:16,000 --> 00:03:22,780
+on the Apple platform, and what do we have currently, and what's coming up.
+
+33
+00:03:23,039 --> 00:03:27,939
+So in order to accomplish that, we need to look at it through lots of different eyes.
+
+34
+00:03:28,219 --> 00:03:34,520
+And, you know, we have people on the panels like John Pugh, who were members of the original
+
+35
+00:03:34,520 --> 00:03:38,740
+AppleScript team that have a perspective like no one else could have.
+
+36
+00:03:38,860 --> 00:03:45,500
+And then each one of the people that are part of the panels brings a certain level of expertise
+
+37
+00:03:46,000 --> 00:03:49,199
+an area about automation that's really important.
+
+38
+00:03:49,500 --> 00:03:52,879
+And for those that are new to scripting
+
+39
+00:03:52,879 --> 00:03:56,120
+or who always wanted a chance to learn AppleScript,
+
+40
+00:03:56,360 --> 00:04:01,180
+Ray Robertson is just a fantastic person to learn from.
+
+41
+00:04:01,419 --> 00:04:04,060
+I took scripting classes with him myself,
+
+42
+00:04:04,659 --> 00:04:06,199
+him and Shane Stanley,
+
+43
+00:04:06,280 --> 00:04:10,180
+and I can tell you that Ray is passionate,
+
+44
+00:04:10,500 --> 00:04:14,340
+but he's thorough and can walk you through
+
+45
+00:04:16,400 --> 00:04:19,819
+So Ray a great person to learn scripting from.
+
+46
+00:04:20,120 --> 00:04:29,360
+So each person on the panel brings some expertise and an aspect and a view of automation I think is really valuable for everybody.
+
+47
+00:04:31,160 --> 00:04:34,019
+So where do you start, Sal?
+
+48
+00:04:34,240 --> 00:04:41,300
+Is this a conference that a ranked beginner can come to and benefit from?
+
+49
+00:04:41,300 --> 00:04:50,899
+Or should I have a little bit of familiarity with automation, AppleScript, or any of the other automation technologies?
+
+50
+00:04:53,459 --> 00:04:56,339
+I've always been a firm believer in square one.
+
+51
+00:04:57,300 --> 00:05:02,519
+All the classes I've ever taught, I've always started at square one.
+
+52
+00:05:02,519 --> 00:05:15,220
+And I've found that the people that have more advanced knowledge don't mind having a thorough groundwork laid in a class.
+
+53
+00:05:15,480 --> 00:05:20,839
+And for that reason, the classes I teach have always been for everybody.
+
+54
+00:05:20,839 --> 00:05:26,139
+Whether you're new or whether you're Advanced you're going to get something out of these classes.
+
+55
+00:05:26,139 --> 00:05:29,259
+You're going to learn something that you didn't know before.
+
+56
+00:05:29,259 --> 00:05:35,360
+because we're going to go into it in depth to reveal what is available.
+
+57
+00:05:36,079 --> 00:05:43,079
+I mean, I had the fortune of being part of the original Automator group that came up with that.
+
+58
+00:05:43,160 --> 00:05:49,519
+And I know things about Automator and the way that it can be used that a lot of people don't normally think about.
+
+59
+00:05:49,620 --> 00:05:51,160
+And I'd like to present those.
+
+60
+00:05:51,319 --> 00:05:54,779
+And I've been involved in AppleScript since 1993.
+
+61
+00:05:54,779 --> 00:06:01,980
+And I know things about that language that are important for people to understand as well.
+
+62
+00:06:02,180 --> 00:06:07,180
+So I think that myself and the other speakers will lay a good foundation.
+
+63
+00:06:07,180 --> 00:06:12,800
+So you should feel comfortable, even if you're new or you're Advanced or you're mid-level.
+
+64
+00:06:13,079 --> 00:06:14,740
+It's about Automation
+
+65
+00:06:14,779 --> 00:06:17,939
+And that's really what the message is.
+
+66
+00:06:17,939 --> 00:06:26,100
+If you're interested in automation or you have an idea that it can be helpful to you, then this is your conference and you should come to it.
+
+67
+00:06:27,400 --> 00:06:31,399
+Sal, what is it about automation that gets you?
+
+68
+00:06:31,600 --> 00:06:38,379
+Is the idea that it's kind of a puzzle to put together or is it just a series of challenges that need to be solved?
+
+69
+00:06:42,360 --> 00:06:47,019
+I get a lot of my inspiration about automation from my father.
+
+70
+00:06:47,939 --> 00:06:55,100
+father was a master Carpenter and I learned a lot from him in the way that he could look at
+
+71
+00:06:55,100 --> 00:07:01,980
+something and figure out what the fundamental principle behind it was. And he imparted in me
+
+72
+00:07:01,980 --> 00:07:08,240
+the concept that if you learn the principle behind something, then you could replicate it everywhere.
+
+73
+00:07:09,820 --> 00:07:18,819
+and that strategy and that understanding led me to a profound Truth for me
+
+74
+00:07:18,819 --> 00:07:23,139
+that has been the thing that drives me for 20 years with this
+
+75
+00:07:23,139 --> 00:07:29,120
+is that the power of the computer should reside in the hands of the one using it
+
+76
+00:07:29,120 --> 00:07:33,740
+and by that I mean that you as a computer user
+
+77
+00:07:33,740 --> 00:07:36,660
+and by computer I mean all kinds of devices
+
+78
+00:07:38,240 --> 00:07:40,660
+as a computer user should have the ability
+
+79
+00:07:40,660 --> 00:07:45,779
+to control that machine and not have to be a developer,
+
+80
+00:07:45,959 --> 00:07:47,959
+not have to be an advanced programmer,
+
+81
+00:07:47,980 --> 00:07:50,139
+but the power of that machine
+
+82
+00:07:50,139 --> 00:07:52,360
+should be readily available to you
+
+83
+00:07:52,360 --> 00:07:55,319
+to customize the way that you need,
+
+84
+00:07:55,439 --> 00:07:57,459
+that serves your needs.
+
+85
+00:07:57,660 --> 00:07:59,339
+It's about the user.
+
+86
+00:07:59,519 --> 00:08:05,079
+And I've always firmly been very focused on that concept.
+
+87
+00:08:05,259 --> 00:08:07,360
+I've been very passionate about that concept,
+
+88
+00:08:08,700 --> 00:08:15,959
+Driven my desire to spread that message. And I think there's a lot of people that share that
+
+89
+00:08:15,959 --> 00:08:22,500
+idea and share that belief with me. And those are the people that are interested in automation.
+
+90
+00:08:22,759 --> 00:08:28,339
+Those are the people that create the kind of solutions that solve problems. Time and time
+
+91
+00:08:28,339 --> 00:08:36,259
+again, I've had the privilege to visit companies and organizations where they would show me the
+
+92
+00:08:38,240 --> 00:08:43,559
+and talk about with the outside world and time and time again I would find that it was just
+
+93
+00:08:43,559 --> 00:08:49,059
+normal people working at that company who had come up with these profound Solutions
+
+94
+00:08:49,600 --> 00:08:55,860
+because they had to because they were working in situations where they needed an answer to
+
+95
+00:08:55,860 --> 00:09:03,679
+some repetitive or complex task where they needed speed accuracy consistent output and they needed
+
+96
+00:09:03,679 --> 00:09:09,299
+the ability to scale what they were doing. And so they took it on themselves to learn how to
+
+97
+00:09:09,299 --> 00:09:15,759
+automate some kind of process. And they were successful at it. And I've seen that over and
+
+98
+00:09:15,759 --> 00:09:23,179
+over and over and over again in organizations big and small that use Apple products. So I'm still
+
+99
+00:09:23,179 --> 00:09:29,779
+excited by that truth. And I'm still excited by automation after all this time. And I still think
+
+100
+00:09:29,779 --> 00:09:35,960
+that there's a lot more we can do with it. And I'm especially excited by the work that I'm doing
+
+101
+00:09:35,960 --> 00:09:41,659
+with Omni and the directions they're taking and the efforts they're doing to make automation
+
+102
+00:09:41,659 --> 00:09:50,419
+dual platform on both Mac and iOS. And to me, that's the wave. And I want to surf that wave.
+
+103
+00:09:52,439 --> 00:09:59,100
+I find it fascinating that your interest in automation was triggered by something as
+
+104
+00:09:59,779 --> 00:10:07,659
+as physical um as having such a physical basis as a master Carpenter i mean the the two after
+
+105
+00:10:07,659 --> 00:10:11,539
+you explain it it makes perfect sense but i would not have really anticipated that
+
+106
+00:10:12,580 --> 00:10:20,120
+that's that's that's because you know in life there's basic Truths Behind things
+
+107
+00:10:20,120 --> 00:10:26,639
+that's why I'm a musician to me there's an inherent truth to music if there's an inherent
+
+108
+00:10:26,639 --> 00:10:38,120
+logic to it. And that doesn't negate emotional, the ties it has to emotions. It just says that
+
+109
+00:10:38,120 --> 00:10:44,240
+there's a logic behind things. There's principles in the universe. And when you align yourself with
+
+110
+00:10:44,240 --> 00:10:51,200
+those, great things happen. And with automation, it's just a natural thing that you should be able
+
+111
+00:10:51,200 --> 00:10:58,500
+to automate what you do. I know there's a big push right now on AI and everybody's talking about Ai
+
+112
+00:10:58,500 --> 00:11:05,419
+and how machine learning and how it can really help you. But no matter how good AI gets,
+
+113
+00:11:06,339 --> 00:11:13,700
+there's always going to be situations where you want to design what your workflow is to suit you
+
+114
+00:11:13,700 --> 00:11:18,980
+the way that you want. It might not be what the machine can offer or what the machine thinks you
+
+115
+00:11:18,980 --> 00:11:25,100
+want. But you should have that ability to put together simply in an easy to approach
+
+116
+00:11:25,100 --> 00:11:32,539
+way some kind of automation that solves your problem. And to me that seems so natural and
+
+117
+00:11:32,539 --> 00:11:38,559
+so basic that it should just be part of every kind of machine that we make. And that to
+
+118
+00:11:38,559 --> 00:11:40,899
+me is automation, user automation.
+
+119
+00:11:41,820 --> 00:11:47,080
+You mentioned the way that you want to surf with what Omni is doing with both Mac and
+
+120
+00:11:49,320 --> 00:11:54,659
+meaning cross-platform. Do you think that's the way that this is going, or do you think that we're
+
+121
+00:11:54,659 --> 00:12:01,159
+all going to move a little bit more toward iOS and the iOS devices? Or is as Steve's job said,
+
+122
+00:12:01,220 --> 00:12:05,340
+are we always going to need those trucks, you know, that sit on our desktops and do the heavy lifting?
+
+123
+00:12:10,420 --> 00:12:17,559
+you know i think that uh neither platform Macos os or ios has really achieved
+
+124
+00:12:18,540 --> 00:12:25,860
+where it needs to be to solve the needs of the user you need a certain level of freedom
+
+125
+00:12:25,860 --> 00:12:32,379
+and you need a certain level of security you need a certain level of ease but whatever kind
+
+126
+00:12:32,379 --> 00:12:38,960
+of platform evolves it needs to be responsive to the needs of the user in order to be successful
+
+127
+00:12:40,920 --> 00:12:48,799
+and you know I'm so used to on Mac os everything is very open and fluid and gets out of your way
+
+128
+00:12:49,419 --> 00:12:57,600
+and ios has a different interface where you're driven by touch and fingers and in many ways
+
+129
+00:12:57,600 --> 00:13:09,519
+Right now, it's still in its infancy because it does require a tremendous amount of work to get something done that you can do with keyboard shortcuts or automation on the Mac.
+
+130
+00:13:09,679 --> 00:13:23,000
+And that's why I find the work that Omni is doing so exciting is that for the first time, I've been able to pick up my iPad and watch it just Zing like it does on the Mac.
+
+131
+00:13:23,000 --> 00:13:39,899
+I can take an Automation and just, wow, I can make it do 10 or 15 processes that I would normally have to do with lots of different tapping and sliding, and it just gets out of my way, and it doesn't interfere with my mental train of thought.
+
+132
+00:13:39,899 --> 00:13:56,259
+And so I find that that approach exciting. And what's particularly exciting is that Omni is basing their structures on something that is part of every Apple device, which is WebKit. And within WebKit is core JavaScript.
+
+133
+00:13:56,259 --> 00:14:15,139
+So you take one of the most fundamental automation languages that there is, it's part of the internet and part of everything that we do, and it ships on every Apple device, and you base your object model scripting on top of that for both Mac and iOS.
+
+134
+00:14:15,139 --> 00:14:19,720
+So you write that JavaScript for the Mac and it works the same on iOS.
+
+135
+00:14:20,059 --> 00:14:22,500
+And to me, that's where it should be.
+
+136
+00:14:22,620 --> 00:14:28,460
+And it should be able to integrate with web pages and other types of interfaces so that
+
+137
+00:14:28,460 --> 00:14:35,379
+if I tap a table on a Webb page, that table gets transferred over into my document and
+
+138
+00:14:35,379 --> 00:14:37,820
+it should just literally be that easy.
+
+139
+00:14:38,200 --> 00:14:44,480
+And I shouldn't have to go find a plugin that does this and then tap this to do that
+
+140
+00:14:45,220 --> 00:14:53,860
+approve this. We need to evolve to even farther than where we are right now. So I don't think
+
+141
+00:14:53,860 --> 00:14:59,200
+it's going to be a matter of trucks and cars. It's going to be transportation. And right now,
+
+142
+00:14:59,740 --> 00:15:05,200
+transportation's not at the point that we want it to be at. When it gets to be teleporting,
+
+143
+00:15:05,500 --> 00:15:11,700
+then we're there. Never heard it expressed that way before, but that's really good.
+
+144
+00:15:11,700 --> 00:15:19,159
+a lot to think about there. So let's dig into some nuts and bolts here. What kind of things
+
+145
+00:15:19,159 --> 00:15:26,320
+are you going to be presenting at Command D? Well, Command D, I'm going to be presenting
+
+146
+00:15:26,320 --> 00:15:34,980
+the initial overview of the Mac scripting triumvirate, which is AppleScript, AppleScript
+
+147
+00:15:34,980 --> 00:15:40,919
+Objective-C, and JavaScript for automation, JXA. Then I'm going to also be presenting
+
+148
+00:15:40,919 --> 00:15:49,480
+an overview of Automator and look at some of the things that Automator has that aren't widely
+
+149
+00:15:49,480 --> 00:15:57,519
+known or used, like workflow variables and how it gets used for configuring iOS devices.
+
+150
+00:15:57,519 --> 00:16:19,039
+Now, that's an area that people don't realize the importance of Automation and managing iOS devices, but it's done with Automator and AppleScript as a way to just do plug and go formatting of devices and refreshing and all that.
+
+151
+00:16:20,039 --> 00:16:29,320
+some of that and then in the afternoon I'll be doing a extended session on the new omni automation
+
+152
+00:16:29,320 --> 00:16:36,500
+for both Mac os and ios and i have lots to show and lots to say about that as well so
+
+153
+00:16:36,500 --> 00:16:45,039
+i got three big sessions I'll be covering in the mix of the day and again with the with the roster
+
+154
+00:16:45,039 --> 00:16:49,340
+of speakers you have you're going to you're going to take every automation from every angle and
+
+155
+00:16:51,060 --> 00:16:58,759
+Do you know if any of the speakers are going to focus on third-party tools, or is this primarily an Apple Automation Technologies conference?
+
+156
+00:16:59,740 --> 00:17:06,559
+No, there will definitely be third-party tools that will be looked at and examined because they are automation.
+
+157
+00:17:07,120 --> 00:17:13,779
+It's all about Automation and so we're going to try to cover all the different aspects of that.
+
+158
+00:17:13,779 --> 00:17:20,019
+I'm going to be covering the fundamental Apple things because, you know, that's my experience.
+
+159
+00:17:20,019 --> 00:17:31,859
+I worked on the inside for so long, and I relish this opportunity to get out and show what we did and what's all the things that are there that people don't know about.
+
+160
+00:17:32,160 --> 00:17:39,940
+But each speaker, again, has their own expertise and going to bring the different perspective and knowledge to the conference as well.
+
+161
+00:17:40,279 --> 00:17:41,839
+So there's a lot to see.
+
+162
+00:17:43,799 --> 00:17:49,559
+Robertson about the scripting bootcamp, which takes place the day before Command D, same
+
+163
+00:17:49,559 --> 00:17:54,980
+location, same everything. So you don't have to go to one to go to the other. Obviously,
+
+164
+00:17:54,980 --> 00:18:01,440
+you can go to both. But Ray had some great things to say about AppleScript and Automator
+
+165
+00:18:01,440 --> 00:18:06,619
+as well. So it sounds like just a great couple of days if you want to immerse yourself in
+
+166
+00:18:06,619 --> 00:18:12,180
+this and take away probably an awful lot of information. It sounds like a great place
+
+167
+00:18:13,779 --> 00:18:25,380
+and learn yes exactly. There's no way you can learn a language like AppleScript in one day. I
+
+168
+00:18:25,380 --> 00:18:31,839
+used to have seven-hour sessions at Macworld, and they would be two days long, and boy, were those
+
+169
+00:18:31,839 --> 00:18:38,380
+ordeals, but you came away from that 14 hours with a basic understanding of AppleScript, and you felt
+
+170
+00:18:38,380 --> 00:18:45,099
+comfortable writing produ productivity tools but for conference like this it's more about
+
+171
+00:18:45,099 --> 00:18:52,779
+showing you what's available so if you're new to automation you're going to get exposed to
+
+172
+00:18:52,779 --> 00:18:57,980
+the things that you need to know about if you're more advanced with automation you're going to get
+
+173
+00:18:57,980 --> 00:19:05,720
+exposed to details that you might not be aware of and everybody's going to get uh information about
+
+174
+00:19:05,720 --> 00:19:12,559
+the new directions that Omni is leading right now. So that's going to be new for everybody as well.
+
+175
+00:19:12,920 --> 00:19:17,599
+So there's a lot to cover with automation. It's not that you're going to come away
+
+176
+00:19:18,279 --> 00:19:24,259
+becoming a master scripter in an afternoon. It's that you're going to know where to go
+
+177
+00:19:24,259 --> 00:19:30,960
+to learn more. Joe Kissel and I just had a discussion about this. Sometimes the biggest
+
+178
+00:19:30,960 --> 00:19:36,140
+challenge of automation, I think, is recognizing that something can be automated. And that, you
+
+179
+00:19:36,140 --> 00:19:42,759
+know, you kind of, okay, I didn't really think about that, but I'm doing that 20 times a week
+
+180
+00:19:42,759 --> 00:19:49,400
+or five times a day or whatever. And so once you kind of recognize there's a need, then you start
+
+181
+00:19:49,400 --> 00:19:55,099
+to search out the tools and get it done. If you find yourself saying there's got to be a better
+
+182
+00:19:56,140 --> 00:20:00,980
+way, that's a definite Point toward you need to examine automation.
+
+183
+00:20:02,379 --> 00:20:08,880
+Or if you find yourself going, uh I don't want to do this, then that's a sign that you
+
+184
+00:20:08,880 --> 00:20:10,640
+need to automate some process.
+
+185
+00:20:10,960 --> 00:20:14,599
+And it doesn't have to be something really heavy duty or complex.
+
+186
+00:20:16,199 --> 00:20:22,460
+While I was at Apple, I used to spend a lot of time in other groups and other departments
+
+187
+00:20:22,460 --> 00:20:27,339
+helping people automate simple processes that they did in the office.
+
+188
+00:20:27,680 --> 00:20:35,059
+And I did that just to, you know, make acquaintances and, you know, see what other groups were doing.
+
+189
+00:20:35,059 --> 00:20:40,319
+But it's also as a way just to get a sense of what the challenges people face.
+
+190
+00:20:40,640 --> 00:20:49,920
+And many times it was something as simple as just automating the process of creating encrypted PDFs with an address book group.
+
+191
+00:20:49,920 --> 00:20:56,200
+and things like that, just something simple that really do help out.
+
+192
+00:20:56,440 --> 00:21:00,500
+And I would constantly get emails from people throughout the year of going,
+
+193
+00:21:00,660 --> 00:21:03,599
+I just wanted to say one more time, thank you.
+
+194
+00:21:03,940 --> 00:21:06,720
+I've run this script now 4,000 times.
+
+195
+00:21:07,140 --> 00:21:12,880
+Anytime I run it, I really think about you and thank you for helping me with this process.
+
+196
+00:21:13,359 --> 00:21:15,799
+So it doesn't have to be something complex.
+
+197
+00:21:15,799 --> 00:21:24,619
+And as a matter of fact, if you want to get into automation, start with the smaller tasks and learn how to automate something simple first.
+
+198
+00:21:24,839 --> 00:21:31,680
+And then you can put the simple things together in a chain and make something complex later on.
+
+199
+00:21:33,380 --> 00:21:37,400
+You inspire me, Sal, to go and dig into this more.
+
+200
+00:21:37,880 --> 00:21:44,200
+Between you and Joe Kissel, I feel like there's so many things that I need to explore and look at some of these tools and learn them.
+
+201
+00:21:45,799 --> 00:21:47,819
+but there's a running curve for anything that's worthwhile.
+
+202
+00:21:48,420 --> 00:21:49,140
+That's true.
+
+203
+00:21:49,400 --> 00:21:50,119
+That's true.
+
+204
+00:21:51,339 --> 00:21:55,539
+So anything else about the conference that we need to touch on?
+
+205
+00:21:58,319 --> 00:21:59,980
+Obviously, there's a cost to attend.
+
+206
+00:21:59,980 --> 00:22:04,740
+I believe it's $399, I think, for the day, or $395.
+
+207
+00:22:06,039 --> 00:22:07,380
+I think that's correct.
+
+208
+00:22:07,579 --> 00:22:08,559
+But in that range.
+
+209
+00:22:08,619 --> 00:22:12,700
+There's some specials on for signing up soon, I believe, too, as well.
+
+210
+00:22:12,700 --> 00:22:21,720
+Check the website, cmddconf.com, and see if there's the early bird special still on or not.
+
+211
+00:22:22,059 --> 00:22:23,720
+Great. Definitely check that out.
+
+212
+00:22:25,799 --> 00:22:31,579
+But where I was going with that, I noticed that basically all your presenters are presenters.
+
+213
+00:22:31,759 --> 00:22:33,980
+There are no sponsors presenting.
+
+214
+00:22:34,259 --> 00:22:35,960
+Are there sponsors for the conference?
+
+215
+00:22:36,539 --> 00:22:37,579
+Yes, there are.
+
+216
+00:22:37,579 --> 00:22:46,019
+There's Jamf, who is involved in, again, the setup of iOS and the management of setup of iOS devices.
+
+217
+00:22:46,480 --> 00:22:53,099
+And we even have a set of Jamf Automator Actions that can assist you with that.
+
+218
+00:22:53,240 --> 00:22:57,799
+And we also have Omni as a sponsor for the conference as well.
+
+219
+00:22:58,119 --> 00:23:04,920
+So we have some great sponsors, and we're looking forward to having them on site to answer questions
+
+220
+00:23:04,920 --> 00:23:07,559
+and to inspire us with what they're working on.
+
+221
+00:23:09,220 --> 00:23:12,940
+I didn't even think about Jamf as an automation tool.
+
+222
+00:23:13,119 --> 00:23:14,279
+I mean, of course it is.
+
+223
+00:23:14,440 --> 00:23:18,119
+But this is part of the problem is, for me anyway,
+
+224
+00:23:18,339 --> 00:23:21,500
+that I'm using automation, automation is all around me,
+
+225
+00:23:21,559 --> 00:23:23,539
+and I don't think of it as such.
+
+226
+00:23:24,700 --> 00:23:25,019
+Right.
+
+227
+00:23:25,920 --> 00:23:29,259
+People have a tendency, it's a natural tendency,
+
+228
+00:23:29,539 --> 00:23:32,839
+to kind of Define something of automation.
+
+229
+00:23:32,839 --> 00:23:33,940
+Oh, that's AppleScript.
+
+230
+00:23:35,160 --> 00:23:43,900
+yes AppleScript is a language that can automate Apple events things on the Mac, but JavaScript for automation, or JXA.
+
+231
+00:23:44,680 --> 00:23:48,299
+And everything that you can do with AppleScript, you can do with that as well.
+
+232
+00:23:48,559 --> 00:23:53,980
+And as a matter of fact, you can do things that are related to JavaScript that you can't do with the AppleScript.
+
+233
+00:23:53,980 --> 00:24:00,200
+So there's a wider meaning to the word Automation
+
+234
+00:24:00,200 --> 00:24:08,559
+And as far as toolset goes, then you have a tendency to just Define as being something, you know, OK, Automator.
+
+235
+00:24:08,720 --> 00:24:12,039
+Oh, that's this. But it's actually more.
+
+236
+00:24:12,200 --> 00:24:15,740
+There's so much you can do with the automation tools like Automator.
+
+237
+00:24:15,900 --> 00:24:21,859
+Here it is, a Mac Tool that's used to set up iOS devices in hospitals.
+
+238
+00:24:21,859 --> 00:24:26,440
+I mean, that's incredible when you think about it.
+
+239
+00:24:26,559 --> 00:24:31,500
+And it's just because you think creatively out of the box.
+
+240
+00:24:31,759 --> 00:24:40,819
+You have a situation that you want to provide a solution for, and then you look at the tools that you have and you go, well, this is already laid out here.
+
+241
+00:24:40,960 --> 00:24:49,680
+We have this incremental component structure with Automator, and it's on the Mac, and we can plug the devices into a cart and have this run on those.
+
+242
+00:24:49,680 --> 00:24:56,460
+and oh it happens on Plug and Play so you just have to look at all the tools you have and figure
+
+243
+00:24:56,460 --> 00:25:02,960
+out how to put them together in creative ways to solve the problem and kind of try to lose those
+
+244
+00:25:03,560 --> 00:25:09,480
+preformed ideas about things of well that can only do this or that can only do that
+
+245
+00:25:10,240 --> 00:25:15,519
+that's not usually true there when you're dealing with automation there's pretty much anything you
+
+246
+00:25:15,519 --> 00:25:18,920
+can do with the computer you can automate and you have to keep that in
+
+247
+00:25:18,920 --> 00:25:23,339
+mind when you're looking for Solutions Well I think you made the point early on
+
+248
+00:25:23,339 --> 00:25:29,119
+in the conversation that something as simple as as a keyboard shortcut is a
+
+249
+00:25:29,119 --> 00:25:33,440
+form of automation so everybody out there is probably using some form of
+
+250
+00:25:33,440 --> 00:25:36,960
+automation already they just don't think of it in that way and if you start to
+
+251
+00:25:36,960 --> 00:25:40,880
+think of it that way maybe you'll be a little less intimidated. That's why the
+
+252
+00:25:40,880 --> 00:25:47,180
+conference is called Command-D. It's Command-D for duplicate. It's one of your
+
+253
+00:25:47,180 --> 00:25:52,579
+most fundamental forms of automation, right? You select a file, Command-D, it's
+
+254
+00:25:52,579 --> 00:26:00,519
+duplicated. I'm just sorry I won't get there, but if you do it again, I'll come.
+
+255
+00:26:00,740 --> 00:26:06,359
+Unfortunately, I have a conflict. We'll put up a picture of you
+
+256
+00:26:06,359 --> 00:26:11,880
+on the wall so that everybody will be thinking about you the whole time I'll make sure that
+
+257
+00:26:11,880 --> 00:26:17,500
+that we have a printout photo of you that'll be behind the speakers so that everybody will
+
+258
+00:26:17,500 --> 00:26:21,960
+be looking at the speaker then looking over at you and looking at the speaker then looking over at
+
+259
+00:26:21,960 --> 00:26:31,480
+you i see no reason to scare all your attendees sal well hey I've really enjoyed this thank you
+
+260
+00:26:31,480 --> 00:26:35,900
+so much for coming on and telling us about it and um needless to say i hope needless to say
+
+261
+00:26:36,359 --> 00:26:41,819
+welcome here anytime. I'll try not to pester you too much, but I'd love to have you come back and
+
+262
+00:26:41,819 --> 00:26:47,180
+talk in a little more depth, maybe some specific examples, report back on Command D and how it
+
+263
+00:26:47,180 --> 00:26:54,019
+went, and let us know what's next for you. Oh, well, I would love to come back. You know,
+
+264
+00:26:54,099 --> 00:27:00,279
+if you want to have me back and we can have more conversations, that's great. And maybe sometime
+
+265
+00:27:00,279 --> 00:27:05,519
+we can, you know, grab a coffee and I can tell you some old war stories from long ago as well.
+
+266
+00:27:06,359 --> 00:27:12,480
+sounds terrific. That sounds terrific. Knowing that you've recently changed things a little bit
+
+267
+00:27:12,480 --> 00:27:17,500
+in your work life, do you have any social media presences or websites or anything you want to
+
+268
+00:27:17,500 --> 00:27:24,279
+point people to other than Command-D? Well, right now I'm working heavily on
+
+269
+00:27:24,279 --> 00:27:31,779
+Omni Automation, and it's Omni-automation.com, and that's my website for documenting all the
+
+270
+00:27:31,779 --> 00:27:36,880
+work that we're doing with Omni so if you want to get a head start on this or you're just interested
+
+271
+00:27:36,880 --> 00:27:42,619
+to say okay well what is this stuff about you know dual platform scripting that he's talking about
+
+272
+00:27:42,619 --> 00:27:51,799
+that's the website to go to i have a Twitter presence that is Mac Automation and what i my
+
+273
+00:27:51,799 --> 00:27:58,599
+role there is i i just put up videos and and uh show examples of different types of Automation
+
+274
+00:27:58,599 --> 00:28:00,480
+and talk about ideas.
+
+275
+00:28:00,480 --> 00:28:02,640
+It's not really a personal presence.
+
+276
+00:28:02,799 --> 00:28:05,579
+You'll see that it's really Auto the automator.
+
+277
+00:28:06,000 --> 00:28:10,599
+And I just want to put things out there for people to look at
+
+278
+00:28:10,599 --> 00:28:13,420
+and to try to help out the community at large.
+
+279
+00:28:13,759 --> 00:28:17,200
+And then, of course, I have iWorkAutomation.com,
+
+280
+00:28:17,420 --> 00:28:20,519
+which is great for the iWork suite of tools.
+
+281
+00:28:20,720 --> 00:28:25,140
+And I have ConfigAutomation.com for if you're interested
+
+282
+00:28:25,140 --> 00:28:31,900
+in managing iOS devices, I highly recommend you go there and learn about how you can use
+
+283
+00:28:31,900 --> 00:28:39,119
+Automator to make it so much easier to set up and manage devices. So there's a couple websites
+
+284
+00:28:39,119 --> 00:28:44,880
+right there. And of course, Mac OS X Automation is the master site that leads you off into all of
+
+285
+00:28:44,880 --> 00:28:57,400
+those last question sal do you ever sleep uh well you know I'm a musician I've been a musician
+
+286
+00:28:57,400 --> 00:29:08,039
+since i was 16 years old and somehow musicians go without it or i just find my enjoyment instead of
+
+287
+00:29:09,360 --> 00:29:16,299
+what a lot of people would find enjoyment for me, sitting around and solving a problem with a script
+
+288
+00:29:16,299 --> 00:29:23,160
+is an enjoyment. You get to, like you said, unwind this puzzle and figure it out. And so
+
+289
+00:29:23,160 --> 00:29:29,599
+quite often I'll be sitting there in the TV room and with Naomi and we'll be, you know,
+
+290
+00:29:29,700 --> 00:29:34,119
+eating dinner or something, and I'll be putting together a little script. And it's kind of like
+
+291
+00:29:34,119 --> 00:29:40,359
+knitting. It's just, it's great to finally solve something and have a nice tool that you can use
+
+292
+00:29:40,359 --> 00:29:48,539
+and share with others when you're done. I like that. Automation as knitting. Yeah. It's a Zen thing,
+
+293
+00:29:48,539 --> 00:29:56,619
+man. Yeah. All right. I got to work on my Zen. No question. Hey, Sal, it's great to see you. Thank
+
+294
+00:29:56,619 --> 00:30:00,299
+you so much again. I look forward to our next conversation. I look forward to hearing more
+
+295
+00:30:00,299 --> 00:30:07,880
+about how command D went I'll get back to you let's talk again sounds good folks
+
+296
+00:30:07,880 --> 00:30:11,220
+I'm Chuck Joyner I can't encourage you enough if you're into this stuff and
+
+297
+00:30:11,220 --> 00:30:16,079
+you're anywhere near California get to the commandee conference it's going to
+
+298
+00:30:16,079 --> 00:30:20,380
+be amazing amazing set of speakers and of course headlined by Mr Sal Segoyan
+
+299
+00:30:20,380 --> 00:30:28,059
+until the next time and as always thanks for watching visit macvoices.com for
+
+300
+00:30:28,059 --> 00:30:33,660
+show notes, links to subscribe, and to connect with Chuck on Twitter, Google+, Facebook, YouTube,
+
+301
+00:30:34,019 --> 00:30:40,640
+Vimeo, SoundCloud, the Mac Voices blog, Mac Voices Dispatch, our Weekly Newsletter and on Mac Voices
+
+302
+00:30:40,640 --> 00:30:46,420
+Magazine, free on Flipboard that helps you do more with your Apple tech. Advertising handled by
+
+303
+00:30:46,420 --> 00:30:51,759
+BackBeat Media at BackBeatMedia.com. Bandwidth provided by CashFly at CashFly.com.
+
+304
+00:30:58,059 --> 00:30:58,420
+You
+
