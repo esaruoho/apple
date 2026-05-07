@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# notes-export — CLI wrapper for Apple Notes → Markdown vault pipeline
+#
+# Usage:
+#   ./notes-export export --folders Notes,Work
+#   ./notes-export export --all
+#   ./notes-export status
+#   ./notes-export folders
+#   ./notes-export transcribe
+#   ./notes-export watch --interval 300
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+
+case "${1:-help}" in
+    export|status|folders)
+        cmd="$1"
+        shift
+        exec "$PYTHON" "$SCRIPT_DIR/notes_export.py" "$cmd" "$@"
+        ;;
+    transcribe)
+        shift
+        exec "$PYTHON" "$SCRIPT_DIR/transcribe.py" "$@"
+        ;;
+    watch)
+        shift
+        exec "$PYTHON" "$SCRIPT_DIR/watch.py" "$@"
+        ;;
+    help|--help|-h)
+        cat <<'EOF'
+notes-export — Apple Notes → Markdown vault pipeline
+
+Commands:
+  export     Export notes to vault
+               --folders Notes,Work  Export specific folders
+               --all                 Export all folders configured in config.json
+               --force               Re-export even unchanged notes
+
+  status     Show export status (what's been exported, when)
+  folders    List all Apple Notes folders and note counts
+
+  transcribe Transcribe audio files using Whisper
+               --folder Notes        Only process one folder
+               --model medium        Use a specific Whisper model
+               --dry-run             Show what would be transcribed
+               --force               Re-transcribe everything
+
+  watch      Start continuous sync daemon
+               --interval 300        Sync interval in seconds
+               --once                Run one cycle and exit
+               --no-transcribe       Skip audio transcription
+
+Configuration:
+  ../.env           Personal paths and identity (gitignored)
+  ../config.json    Folder list (gitignored)
+  ../.env.example, config.example.json — committed templates
+
+Prerequisites:
+  - Python 3.10+
+  - markdownify, openai-whisper (see requirements.txt)
+  - Notes app must allow AppleScript access (will prompt on first run)
+EOF
+        ;;
+    *)
+        echo "Unknown command: $1"
+        echo "Run: notes-export help"
+        exit 1
+        ;;
+esac

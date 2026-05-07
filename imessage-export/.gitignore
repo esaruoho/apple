@@ -1,0 +1,11 @@
+# Personal config — never commit
+.env
+config.json
+
+# Runtime state
+scripts/.export-state.json
+scripts/.url-metadata-cache.json
+scripts/__pycache__/
+
+# Default output dir if user runs without configuring OUTPUT_PATH
+output/

@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# imessage-export — CLI wrapper for iMessage link extraction pipeline
+#
+# Usage:
+#   ./imessage-export export
+#   ./imessage-export export --contact "Name"
+#   ./imessage-export export --full --since 3m --enrich
+#   ./imessage-export discover
+#   ./imessage-export contacts
+#   ./imessage-export status
+#   ./imessage-export search "query"
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+
+case "${1:-help}" in
+    export|links|contacts|status|search)
+        cmd="$1"
+        shift
+        exec "$PYTHON" "$SCRIPT_DIR/imessage_export.py" "$cmd" "$@"
+        ;;
+    discover)
+        shift || true
+        exec "$PYTHON" "$SCRIPT_DIR/imessage_export.py" discover "$@"
+        ;;
+    help|--help|-h)
+        cat <<'EOF'
+imessage-export — iMessage link & conversation extraction (macOS)
+
+Commands:
+  export     Export links from configured contacts
+               --contact "Name"   Export one contact only
+               --force            Re-export everything
+               --full             Export full conversation + links
+               --since "3m"       Only export after date (YYYY-MM-DD or Nm)
+               --enrich           Fetch og:title/description for each URL
+
+  links      Show extracted links summary
+  contacts   List configured contacts with message/link stats
+  status     Show export state (last run, counts)
+  discover   List all handles in iMessage database
+               --min-messages 5   Only show handles with N+ messages
+  search     Full-text search across extracted link contexts
+               "query"            Search term
+
+Configuration:
+  ../.env            Personal paths and identity (gitignored)
+  ../config.json     Contact list and extraction settings (gitignored)
+  ../.env.example, config.example.json — committed templates
+
+Prerequisites:
+  Terminal needs Full Disk Access:
+    System Settings > Privacy & Security > Full Disk Access
+EOF
+        ;;
+    *)
+        echo "Unknown command: $1"
+        echo "Run: imessage-export help"
+        exit 1
+        ;;
+esac

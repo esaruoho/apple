@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy to config.json and fill in your contacts. config.json is gitignored. Use 'imessage-export discover' to find identifiers in your iMessage database.",
+  "contacts": [
+    {
+      "name": "Example Contact",
+      "identifiers": ["example@email.com", "+15551234567"],
+      "tags": ["example"]
+    }
+  ],
+  "context_messages_before": 2,
+  "context_messages_after": 2,
+  "exclude_domains": ["maps.apple.com"]
+}

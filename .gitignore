@@ -24,6 +24,20 @@ github-watcher/repos.json
 # Python cache
 __pycache__/
 bin/__pycache__/
+**/__pycache__/
+
+# imessage-export — personal config and runtime state
+imessage-export/.env
+imessage-export/config.json
+imessage-export/scripts/.export-state.json
+imessage-export/scripts/.url-metadata-cache.json
+
+# notes-export — personal config and runtime state
+notes-export/.env
+notes-export/config.json
+notes-export/scripts/.export-state.json
+notes-export/scripts/.transcribe-state.json
+notes-export/scripts/.sync.log
 
 # Archived media retained locally for later viewing/transcription
 sources/sal/**/*.mp4
