@@ -351,7 +351,7 @@ Full profile with all quotes: `sal-soghoian.md`
 **Sal's Web Empire** (7+ self-hosted domains, no institutional backing):
 macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archive state now lives in `sources/sal/`, `indexes/sal-*.yaml`, and `analysis/sal/current-status.md`, refreshed via `bin/sal-archive-status.py`.
 
-**27 Principles** (WWSD) — full list with sourced quotes in `sal-soghoian.md`. Tier 1 (#13-#27) is sourced to primary spoken-Sal across six transcribed interviews (~155 min) under `sources/sal/transcripts/youtube/` with deep analysis in `analysis/sal/transcripts-analysis.md` + `analysis/sal/transcripts-analysis-pass2.md`.
+**30 Principles** (WWSD) — full list with sourced quotes in `sal-soghoian.md`. Tier 1 (#13-#27) is sourced to primary spoken-Sal across six transcribed interviews (~155 min) under `sources/sal/transcripts/youtube/`. Tier 2 (#28-#30) is sourced to the **recovered WWDC 2016 session 717 transcript** (`sources/sal/wwdc2016-session-717/717-transcript.txt`, 524 lines). Deep analysis in `analysis/sal/transcripts-analysis.md`, `analysis/sal/transcripts-analysis-pass2.md`, and `analysis/sal/wwdc2016-session-717-transcript-analysis.md`.
 
 **Tier 0 — Retrofit from Sal's site corpus + WIRED 2018:**
 1. User comes first — empower, don't create dependency
@@ -384,7 +384,12 @@ macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **las
 26. **Pay in what cash can't buy** — Lego Millennium Falcon kits to engineers who refused cash (ProGuide 2023)
 27. **Authorization is the bridge between conflicting principles** — user-installed scripts resolved automation-vs-security (ProGuide 2023)
 
-**Recognition rule (companion to all 27):** Listen for the trigger phrases — *"there's got to be a better way"* and *"I don't want to do this."* Each utterance is a script that hasn't been written yet (MacVoices 2017).
+**Tier 2 — Sourced to recovered WWDC 2016 session 717 (Beyond Dictation: Enhanced Voice Control for macOS Apps), 2026-05-07:**
+28. **Procedural vs task-oriented commands** — *"It's like describing how to make a peanut butter sandwich. You hold the jar with this hand, you turn the top this way."* (line 132). User commands name the **task**, not the steps. A task-oriented command is a self-multiplying primitive; a procedural one has to be re-expanded every invocation. (session 717, lines 132–138, 250–253)
+29. **Voice is a peer modality to touch, keys, and cursor** — *"speech is no longer just an assistive technology. And now voice is a peer to touch keys and cursor."* (line 515). Voice is a fourth fundamental input on equal footing with the others — not text entry, not assistive — and **only on the Mac** can users program it themselves via AppleScript / Automator / JavaScript. This positioning sentence is the most likely trigger for the session pull. (session 717, lines 512–519)
+30. **The seven-purpose framework — when to build a voice command** — Sal's closing decision tool: build a voice command when a workflow scores 3+ on these criteria: (1) need to remain in context, (2) multi-step (≥3 manual steps), (3) requires dexterity, (4) moves data between apps, (5) transforms data type, (6) does something not in the app's UI, (7) does something the user wants but doesn't know how. (session 717, lines 480–504)
+
+**Recognition rule (companion to all 30):** Listen for the trigger phrases — *"there's got to be a better way"* and *"I don't want to do this."* Each utterance is a script that hasn't been written yet (MacVoices 2017).
 
 **Primary sources captured in sal-soghoian.md:**
 - Full FAQ from macosxautomation.com/about.html (November 2016)

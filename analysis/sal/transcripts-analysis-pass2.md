@@ -195,7 +195,7 @@ Modern context: this is exactly the technology Apple has been struggling to buil
 
 WWSD implication: **the best demos die for political reasons.** A prototype that earns silent-then-applauding rooms can still be killed if it disrupts a parallel team's narrative. The political question (does this make iOS look weaker?) trumped the technical one (does this work?).
 
-### Story 20 — WWDC session 717, 2016 (the pulled video)
+### Story 20 — WWDC session 717, 2016 (the pulled video) — **RECOVERED 2026-05-07**
 
 > "I actually gave a talk at WWDC about — I used the standard dictation software as an example. And I showed this whole thing and it upset a lot of people. They actually pulled the session. **It was session 717, 2016, and I gave the session and then they took down the videos like a week later.**"
 
@@ -203,7 +203,16 @@ October 2016 was when Sal's position was eliminated. WWDC 2016 was June 2016. **
 
 This places the firing in a more specific causal context than is publicly documented: Sal pushed too hard on the dictation/automation theme at WWDC 2016, the session was retracted, and a few months later his role was eliminated. It's not "Apple eliminated automation" in a vacuum — there was a specific provocation.
 
-**Action item for the archive:** find session 717 from WWDC 2016 (now scrubbed) — this is a high-value missing artifact. Check Wayback for `developer.apple.com/wwdc/2016/717` and any community mirrors.
+**RECOVERED:** Session 717 video was located on archive.org at `archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4` and transcribed on 2026-05-07. Local archive: `sources/sal/wwdc2016-session-717/717-transcript.txt` (524 lines, 33-minute talk titled *"Beyond Dictation: Enhanced Voice Control for macOS Apps"*).
+
+Full deep analysis lives in:
+- `analysis/sal/wwdc2016-session-717-transcript-analysis.md` — line-by-line analysis of the recovered transcript
+- `analysis/sal/wwdc2016-session-717-deep-analysis.md` — the public-surrogate / CitrusPeel engine analysis (written before the recording itself was found)
+- `analysis/sal/wwdc2016-session-717-replication-plan.md` — concrete steps to replicate the entire stack on current macOS
+
+Three new WWSD principles derived from the recovered transcript: **#28 procedural-vs-task commands** (line 132–138, 250–253), **#29 voice as peer modality** to touch/keys/cursor (line 515 — likely the position statement that triggered the pull), **#30 the seven-purpose framework** for when to build a voice command (line 480–504).
+
+Most likely cause of the pull, from the recovered content: Sal's closing thesis "**voice is a peer to touch keys and cursor… it's only something that can happen on a Mac**" (lines 515–519) directly contradicted Apple's upcoming Siri-on-Mac launch positioning for fall 2016. The "we leave the world of accessibility behind" line (line 191) was a parallel turf claim relocating speech from Accessibility to Automation.
 
 ### Story 21 — The Viacom / Media 100 setup
 

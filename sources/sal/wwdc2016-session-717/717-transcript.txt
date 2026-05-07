@@ -1,0 +1,524 @@
+I guess I'm on.
+Thank you.
+We're going to be moving the attendee bash to my house over in Berkeley.
+It's a lot more fun over there.
+So welcome to session 717, Beyond Dictation, Enhance Voice Control for Mac OS and Applications.
+I'm Sal Seguyen.
+I'm the Product Manager for Automation Technologies at Apple.
+Today we're going to be talking about the Mac, Mac OS, and what happens when you combine
+the speech recognition architecture in the Mac OS with the native automation frameworks
+that are available to you to produce some really incredible results.
+Now when you're talking about speech recognition and dictation, it's grouped into four different
+categories. The first dictation is basically about transcription, about you speaking something,
+that getting transcribed and put into the current text field. Enhanced dictation advances
+that ability by adding the ability to edit the text and to navigate within a text field.
+Dictations commands include the ability to control an application's interface as well
+as perform dictation tasks as well.
+You can click buttons, tabs, menus, those kinds of things.
+And finally, user commands are custom dictation commands you create yourself to perform the
+kind of things that aren't a part of the standard library of commands that come with the computer.
+So in Mac OS, in the latest version, a lot of things got moved around.
+So what I'm going to do is take a very short couple minutes and review where all these
+different technologies live, how to turn them on, and then we're going to have some real
+fun.
+So begin with, we'll take a look at basic dictation.
+Now if you open up the system preferences app, the controls for speech and dictation
+used to be in this window.
+But instead of where they were, there is now the Siri preference.
+And if we open the Siri preference, you'll see that there are no controls in there for
+dictation and speech.
+It's important to understand that Siri and dictation and speech are two different technologies.
+They have different functions, different uses, and different purposes.
+So if we close this, and we go back out to the main preference window, and we search
+for the word dictation in the search field at the top right, you'll see that interestingly
+the keyboard preference is now selected.
+And if we open that, you'll see a new button added to the tab bar of that window at the
+end, and it's for dictation.
+We select that, there are the dictation controls now in macOS or now within the keyboard system
+preference pane.
+There's a couple of radio buttons there initially for turning it off and on.
+And when you turn on dictation, basic dictation, you'll see this sheet drop down.
+And it has two bits of information that are important to understand.
+The first is that what you say gets recorded by the computer and sent to Apple's servers
+so that it's transcribed, and that text is then sent back to your computer.
+In addition, for accuracy, they send up the names and addresses from your contacts list
+so that they can better match some of the phrases that you're saying.
+If those terms are okay with you, then you just click the enable dictation button and
+now dictation is on.
+And you can dictate into any text field, like a text edit document, into a messages window,
+into a mail message, and even into a URL input field for Safari.
+You can use dictation anywhere on the computer where you have a text field.
+And it's good for doing short things, names, addresses, some short phrases.
+It's really good for that.
+But it does have some limitations in that you do need an active internet connection
+to connect to the servers.
+And it's also not intended for use with long dictations.
+Like if you're doing a business letter, it's not really designed for that kind of thing.
+You'll have to keep activating the dictation command all the time.
+And there really are no editing controls for dealing with mistakes or changes you want
+to make to the dictated text.
+Which brings us to the next category, which is enhanced dictation.
+Not only can you dictate into text fields, but you can navigate between the different
+text fields of a window and edit the text that you have there as well.
+That was a pretty nice little animation there, did you like that?
+So if we go back to our preferences window here, below the on-off button that we just
+turned off and on is a checkbox called use enhanced dictation.
+And when you select this, three things happen.
+The first is it allows your computer to be used offline.
+You no longer have to require an internet connection to Apple servers.
+All the transcription is done locally on your computer.
+In addition, you can dictate continuously.
+So you can sit there over a 20-minute period to dictate a letter and work continuously
+with the computer so that it will accurately grab what you say and type it in for you.
+And the third thing is that the computer can now give you live feedback.
+It can give you an audio sound or a visual cue that it has heard you, that it has recognized
+what you have to say.
+So we're going to turn that on and then go back out to the main preferences window.
+Now to see what kind of commands are available to us, we're going to go to the accessibility
+system preference pane and scroll down that list on the left and select the thing that
+says dictation.
+Your preferences for using dictation on the computer in enhanced mode are now displayed
+here on the right.
+You have an option to mute the audio when you're dictating, so if you have iTunes playing
+and you start a dictation, it automatically mutes it.
+You can have it play a confirmation sound, which is usually like a little , just
+to let you know that it heard you.
+You'll hear this being used when I do some demos here for you.
+And you can also assign a keyword so that the computer will not react to what you say
+until it hears that keyword first, like, computer, what time is it?
+So to see the commands that you've now enabled, we're going to click the Dictation Commands
+button, and we get this sheet that comes down and it lists all the commands.
+Commands are grouped into suites, and suites contain one or more commands.
+You can search through all the available commands using the search field at the top.
+And when you have a command selected, you can turn it off or on by selecting that checkbox
+to the left of it.
+And you can also see the syntactical options available to you on the right-hand side.
+A lot of commands can be spoken a variety of different ways, and all of those different
+ways will trigger the command to execute.
+So let's look at the first suite of commands, the selection suite.
+This suite is designed to select text.
+So you can select a word, a paragraph, a sentence.
+And you'll notice that there's even a command for selecting a phrase.
+The navigation suite is for navigating within your editing area.
+So you can go to the end, go to the beginning, go to the end of the sentence, that kind of
+thing.
+You can scroll up, scroll down, move left, move right.
+So it's really designed to help you move around a window between different fields and scrolling
+the view plane.
+There is a short editing suite that contains the ability to cut, copy, paste as well as
+perform some transformations like capitalize, lowercase, uppercase, those kinds of things.
+And you'll notice that there is one special command there called replace.
+So you can say replace this phrase with this phrase.
+That's quite handy.
+There's a small formatting suite for doing things like bold, italicize, and underline.
+And there's a small system suite for stopping dictation and for also displaying a floating
+HUD that lists all of the commands.
+So if you're in the middle of a dictation and you're not sure what command is available,
+you can say show commands and this little HUD will appear.
+So together, these make a pretty comprehensive set for doing some basic, good editing of
+what you're dictating.
+And to show you, I recorded a little video of me doing it in Pages.
+So I just said something, it gets transcribed.
+Replace Brazil with America.
+Power. Capitalize that. Go to end. New line. New line. The future of wind power is amazing.
+Period. So I did dictate it to the computer. It transcribed what I said. I said, wait till
+me live.
+So then I used the replace command, I selected Brazil, changed it to America, I capitalized
+something, I navigated it around.
+So you get the idea that, you know, this is very powerful.
+Enhanced dictation gives you many things.
+It allows you to work continuously offline on your computer with no interaction necessary.
+It's giving you live feedback.
+But it does have some limitations.
+And I call it, it's procedural.
+It means that it's like describing how to make a peanut butter sandwich.
+You hold the jar with this hand, you turn the top this way.
+So you have to guide the computer through the process of what you're doing.
+You have to tell it to move to the end, new line, new line.
+And that can take some getting used to in order to be able to do that smoothly.
+The next category of recognition is advanced commands, and that's where you augment the
+dictation abilities with the ability to control the application interface.
+So not only are you being able to dictate, but you can push buttons.
+So if we go back to this accessibility sheet that we were looking at, down at the bottom
+is a checkbox called Enable Advanced Commands.
+And if you select that, it turns on new suites and expands some of the suites of commands
+that are available.
+So the navigation suite now expands to include things for controlling the application interface.
+You can say show numbers and a number will be placed over every control in the application
+and then you can just speak the number and that button or menu will be pressed and activated.
+The system suite is now expanded to include the ability to search Spotlight.
+And that is really useful.
+You can also show commands and hide commands just the same way as before.
+There is now an application suite for switching between applications, for quitting an application,
+and hiding an application.
+And there's a small document suite that lets you open, create, save, close documents within
+an application.
+So in addition to this existing set of commands that we have, the new set augments that and
+expands some of the key things there.
+So let me show you how that looks when you use it.
+And in this case, I'm going to use it to create a document in Keynote.
+So switch to Keynote, and Keynote will come forward, show commands, and you'll get that
+floating HUD that has a list of all the commands that are available.
+And if we look at the document section there, there's a command for new item.
+And this is the same thing as going command N on the keyboard, or selecting new from the
+file menu.
+So I'll say new item, it recognizes.
+And since we're in Keynote, it brings up the template picker, so I can pick what kind
+of presentation I want to make.
+I'm looking to make a wide presentation, and at the top is a button that I would click
+if I was doing this by hand, to see the wide presentation templates.
+So I'll click wide, and that will press the button for me and reveal all the wide presentations.
+Now I'm looking for parchment, so it doesn't appear in this view.
+I'll have it scroll the window by saying scroll down.
+And then there's parchment at the very end.
+And I can select that by saying click parchment.
+And once I do, it will open up a new keynote document
+with the parchment theme.
+So you can see that advanced commands augment dictation
+by giving you control of the application interface.
+All the buttons and tabs are available.
+But again, like the other categories of speech recognition,
+there are some limitations in that it, too, is procedural.
+You notice I had to walk through each step of doing the things
+required to create a keynote document.
+I'm basically using my voice as a mouse or a keyboard.
+And not all applications have complete accessibility support.
+Generally, they do have good support,
+but that could also be an issue.
+You might not be able to give a command for the thing
+that you want to do.
+But here's the good news, user commands.
+This is where we leave the world of accessibility behind.
+This is where the power of automation
+and the power of speech recognition
+fuse together to produce incredible tools.
+So let me show you how you access these on the computer.
+So in this window is a secret button for turning on this
+power ability.
+And it is right here, this plus button.
+It doesn't look like much.
+It looks like any other plus button.
+But when you press that plus button, a new suite is added
+called user commands.
+And by default, a new blank command is set up for you.
+So now we can create our own command.
+And to do that, I'm going to describe some parameters
+on the left-hand side, beginning with what is the phrase
+that I want to use as a command.
+So let's say I want to create a command to tell the computer
+to take my picture, right?
+So I enter take my picture in there.
+So when I say the words take my picture,
+the computer will do the actions I want it to do.
+Now, you can determine if this command is always available or
+only within a specific application by selecting it
+from this pop-up.
+I'm going to leave it set for any application.
+And to perform the action, you have a menu of possible things
+that the computer will do for you upon dictating that command.
+You can have the computer open up certain finder items like
+certain documents that you want opened.
+You can have the computer open a specific URL.
+You can have it paste text that you like, like your favorite
+legalese statement.
+You can have it paste data, like your favorite corporate
+logo.
+You can have it press a keyboard shortcut.
+You can have it select any menu in any application.
+And you can even have it run an Automator workflow or Apple
+Script or JavaScript script.
+And as a matter of fact, the OS ships with nine pre-done
+Automator workflows for you.
+The first three here are for starting a recording in the
+QuickTime player.
+You can say new audio recording, new screen recording, new
+video recording.
+There's one for going to the Apple website, of course.
+And there are five for navigating within iTunes.
+So you can say, show me the top family movies, and it will go
+right to that page within the iTunes application.
+And at the bottom is a choice for Other that will let you pick your own Automator workflow
+or own JavaScript or AppleScript script and make that the action that gets run.
+But you'll notice there is one for Take My Picture.
+So I'm going to select that and click the Done button to create this command.
+And it automatically gets added to the list of commands.
+So my user suite now has one command called Take My Picture.
+And this is what it looks like when you run it.
+So I start dictation, I go, take my picture.
+It recognizes, brings up the camera picker, I smile, and it takes my picture and puts
+it in photos for me automatically.
+So user commands are different than the other types of commands because they're task oriented.
+You're not so much procedural where you're telling it to do this, then this, then this.
+You're basically giving a command to execute this particular task no matter how many steps
+it takes, no matter what it needs to do.
+And it really does expose all the power of automation that is available to you on the
+operating system.
+And you still get all the other dictation abilities that you currently have with the
+other ones.
+It's hands-free, always-on, visual feedback.
+You don't need a net connect.
+It is incredibly powerful.
+But as you saw how many steps it took me to make a user dictation command, if I wanted
+to make 100 of those to really do something with a particular app, it might be a little
+bit cumbersome to create that until today.
+Today there's a set of custom dictation commands that I'm going to give you today that will
+let you control the Finder, iWork and Photos and some of the other apps.
+And they take advantage of this automation and speech recognition technology together.
+So let me switch over here and we'll watch these in action.
+Okay, so I'm getting over a cold.
+My voice is about a little bit lower, so we'll see if she even pays attention to me today.
+And I have a mic set up here because we're in this huge, boomy room.
+But let me tell you, when I'm in the office at Apple, I just use your computer.
+It's open there, connected to my monitor, and I can talk to this thing from across the
+room and it works perfectly.
+So I'm going to be using this today.
+And I expect one or two errors, but let's see what happens.
+So let's try that thing about creating a new presentation in Keynote.
+Switch to Keynote.
+Make a new presentation.
+Okay.
+How about let's make a different one.
+Make a wide presentation.
+Oh, okay.
+How about one with a particular template?
+Make a new wide presentation using the gradient template.
+That's pretty good.
+Let's try a different theme.
+Make a new standard presentation with the brush canvas theme.
+Pretty good, huh?
+Close all without saving.
+So the whole idea of having to be procedural to create a document, you saw many
+me go through all those steps, it's now like, no.
+I'm thinking about what I need to do.
+Give me a new document with this template this width.
+I'm done.
+I'm there.
+So that's good for creating a new document.
+Let's see how you can work with an existing document.
+So let me pull up a document that I have on the computer,
+and let's work with it a little bit.
+Search Spotlight for Presentation,
+in the states of the United States.
+Open result.
+She's chugging today.
+Start at the top.
+Oh, I'm good with slides. I'm good with slides.
+Next slide.
+Go to slide nine.
+Read the presenter notes.
+Read the presenter notes.
+California's diverse geography ranges from the Sierra Nevada in the east to the Pacific coast in the west and from the redwood forests of the northwest to the Mojave Desert areas in the southeast.
+Hmm. Tell me about this image.
+Although Death Valley is a below sea level basin, a great diversity of life flourishes in this land of extremes.
+Take a break.
+Take a break.
+Export the presenter notes to mail.
+Export presenter notes to mail.
+Hmm, that's pretty handy.
+I could use that a couple times.
+Switch to keynote.
+Show related items.
+Ah, so we have a spotlight window down here with all the items that are related to this.
+Ah, there's a GarageBand file with the Shaker song in it, okay.
+There's even the email that I just sent.
+There's a bunch of images that I used.
+There's a picture of the U.S. flag.
+There's also an audio recording that I put in, right?
+That was the audio recording and some links.
+So it was really easy for me to find things that are related to the document that I'm
+working on just by asking for them.
+Close this without saving.
+So you can see this concept of having task-oriented things is really useful because it doesn't
+really interfere with the mental flow that you have going, especially when you're creating
+something.
+So let me use user commands and dictation commands to create some content.
+So we've seen it open a document, create a new document, and we've seen it work with
+a document.
+Let me actually create some content using these commands.
+Switch to photos.
+These are some photos I took on my trip down the Rhone River, I took one of those Viking
+type cruises, lots of fun, I highly recommend that.
+Select all photos, help me to add titles.
+Enter the title for image one of five.
+You know, normally doing this kind of thing is a real pain because you've got to get down
+there in the interface and look at these little things and, you know, being able to have this
+This guides you through something, sometimes it's just the easiest way to do something.
+On the Rhone River, you need that special character there, Rhone River.
+This was incredible Roman temple, right in the middle of town.
+So using that command, I was able to add titles to a bunch of images really quickly.
+Collect all photos.
+Make a new presentation with these.
+Okay, so, it just did, yeah, I mean, that's a pain, right?
+Who wants to do the 40 steps that it takes to do that?
+I can think of it.
+Why can't I just ask the computer to do it?
+Obviously, it can, right?
+Go to slide one.
+Change master slide to title center.
+Scratch that.
+Change master slide to title center.
+And let's see.
+Vacation Photos, Select Photos, Capitalize That, Stop Edit.
+OK.
+Let's see what I got here.
+Move this slide to the end.
+Done.
+And I want this to go down around there.
+I think, no, the lock came first, and then that, OK.
+This needs some tweaking.
+This is bad.
+Edit this in photos.
+So the computer knows where that photo came from, doesn't it?
+Why should I have to go spend my time doing that kind of thing?
+Let's set it to crop, and I'll straighten this out a little bit.
+And then as long as I'm at it, I'm going to crop it to get
+rid of the guy standing there and make this a little bit
+more interesting, more focused on the lock rather than the
+rest of the stuff around it.
+And Photos has some nice little tools for doing that.
+So that looks good.
+Show this in Keynote.
+Show this in Keynote.
+So it knows where it is in Keynote, right?
+Let me select it.
+Update this image.
+Update this image.
+So I don't have to go through that whole process
+about doing stuff.
+I'm just thinking.
+I'm creating here on the fly, right?
+Let's make this a little bit bigger so that it looks a little
+bit more interesting.
+And then, oh, this is great, the Pope's Palace.
+It's really interesting.
+Show this in Maps.
+So here it is in Maps.
+And let's use the nice 3D feature of Apple Maps.
+Let's see if we can get a nice background for that photo
+to show people the context.
+And the fact that the thing's right
+in the middle of this old Roman part of town.
+You can see the circular area that
+was like the original village there, right?
+OK.
+Export this map to Keynote.
+All right, very good.
+Let's kind of crop this in here a little bit.
+There we go.
+I haven't done the command yet for cropping the slide.
+It's a good idea, though.
+Let's go paste it and put it to the back here.
+I'm going to copy this and put this on top of this.
+It's like a little trick, right?
+So that I can do like a magic move and then reveal.
+So I need to apply a magic move.
+Apply a magic move.
+Apply a dissolve.
+Do that again.
+Do that again.
+Okay, so I got the transitions and then, oh, ah, Pont de Garde, okay, this one we need
+to fix a little bit.
+Scale this to fit slide width, all right, that's good, and make a long panoramic sequence.
+done. Okay. And while we're at it, put descriptions
+on top of every image. Well, that could take a while to do.
+And so after this trip, I was so impressed with these locations that I went on the Internet,
+I did some research as to how many people visit these sites every year. And I have a
+a spreadsheet that has that information.
+Search Spotlight for spreadsheet tourism in France.
+Open result.
+Select the table.
+Select the table.
+Export this table to Keynote as a chart.
+Export this table to Keynote as a chart.
+Ah, good.
+That could be handy, huh?
+And let's scale this down a little bit so that it fits there nice.
+Okay.
+Start from the top.
+All right.
+So this was a Roman temple right in the middle of town.
+It's been around forever.
+They actually turned it into a movie theater for a while.
+And this was us going through a lock on the Rhone River, there's about four or five locks
+during the course of that.
+This is a power station that they use to provide power for Arleigh.
+And this is Pont du Gard, which is this incredible Roman aqueduct that was built like 3,000 years
+ago.
+And the fact that this huge thing that's three stories tall is still here today and still
+in the condition it's in is absolutely amazing.
+It spans this entire long valley.
+And I'll bet if we tried to do that today, it would run in the billions of dollars.
+But it's quite impressive.
+And that's Pont du Gard.
+And of course, there is the Pope's Palace.
+And it's located right in the center of the old Roman town, like you can see here.
+And people find these sites really interesting.
+There's millions and millions of people that visit these every year.
+Save this presentation.
+And as a matter of fact, why don't I, while I'm at it, oh, I don't have a free port here,
+but let's see if I can copy this to my thumb drive.
+So I'm going to stick a thumb drive in here.
+Save this presentation to my thumb drive and eject it.
+Scratch that.
+Scratch that.
+Save this presentation to my thumb drive and eject it.
+Saving document vacation photos to drive digital briefcase.
+Dismounting digital briefcase.
+So this is the kind of thing that you can do where, you know, you're still in the application.
+You don't have to leave what you're doing to dismount something, to eject something,
+to copy something, to deal something with the finder.
+I mean, you just tell the computer to do it.
+It knows how to do this stuff, right?
+Why shouldn't we just be able to tell it to do that?
+So where do you get this stuff?
+a blank slide. Turn this into a QR code.
+scale down 10%, scale down 10%, scale down 10%, there we go.
+So all of this material is available for you today, and I'm going to show you where to
+get it.
+So let's go back to the slides here.
+And my slide of answer.
+So what are these type of commands useful for?
+Well we saw that they're really good for when you want to remain in context and you want
+actions and tasks performed for you.
+They are really good for performing multi-step tasks and like when I had to go through and
+name all of those images so I could use their descriptions later.
+They're also good for tasks that require dexterity.
+Can you imagine copying the description from an image file on a slide and then creating
+a text box, placing it just so on that, and doing that for an entire presentation?
+Boy, you have to be a wizard to be able to do that quickly.
+But with voice command, with a dictation command, that's just asking that be done.
+You can also move data.
+So like I had the map in Maps, I wanted it over in Keynote.
+So voice commands and dictation commands are perfect for that and excellent for data transformation.
+So I had a table with data that I wanted as a chart in Keynote, and I was able to give
+it a command and have that executed.
+You can perform tasks that aren't available in the application UI that you're in.
+For example, turn this into a QR code.
+That's a perfect example of something you'd want to do in a presentation, but it's just
+not there.
+And things that the user wants to do but doesn't know how.
+Man, all the people in my family do not know how to use the clipboard, do not know how
+to do a screen capture, do not know how to use AirDrop.
+So being able to do that with a spoken dictation command is perfect.
+So what are they good for?
+commands are good for solving all of these problems and for being a solution.
+So how does it work?
+Well, I only have a couple minutes, so I'm going to kind of boot out of that for a second
+and jump past that section.
+It's basically magic.
+And I'm going to kick back in and tell you where to go to get these resources.
+Everything you need to know about how they work and the collection I just showed you
+is available for you on dictationcommands.com.
+So to summarize, the power of speech recognition and automation working together makes it so
+So that dictation is no longer just another way to enter text into a text field.
+And speech is no longer just an assistive technology.
+And now voice is a peer to touch keys and cursor.
+You can use your voice the same way that you use the other inputs into the computer.
+And this is what's possible when you have Mac OS and all of these technologies working
+together.
+It's only something that can happen on a Mac.
+So thank you so much for being part of my day.
+Thank you for being here.
+Thank you for being part of this session.
+I appreciate it.
+You
