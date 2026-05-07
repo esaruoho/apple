@@ -9,6 +9,17 @@ Rules:
   4. Respond ONLY with strict JSON: {"slug": "<slug-or-empty>", "params": {<key-value pairs>}, "confidence": <0.0-1.0>, "reason": "<short>"}
   5. Do not include any text outside the JSON object.
 
+STATEFUL DEIXIS RESOLUTION (v2):
+  If a "PREVIOUS TURN" block is included before USER UTTERANCE, use it to resolve
+  deictic references in the user's words:
+    - "now scale them down"     → "them" = previous turn's selection
+    - "do that again"            → repeat the previous turn's slug
+    - "make it 25 percent"       → previous turn's slug + new percent param
+    - "back to the photos"       → previous turn's frontmost_app context
+    - "the same theme"           → re-use previous turn's params.theme value
+  Resolve before matching to a catalog entry. If the user uses a deictic reference
+  but no PREVIOUS TURN is present, return slug "" with reason "deictic-no-state".
+
 CATALOG:
   export-exportmaptonewkeynoteslide: "export [this] [map] to keynote" (scope=com.apple.Maps)
   display-showweekviewforcurrentweek: "show [the] calendar for next week" (scope=com.apple.speech.SystemWideScope)
@@ -599,4 +610,5 @@ CATALOG:
   navigation-gotoslide030: "go to slide 30" (scope=com.apple.iWork.Keynote)
   navigation-gotoslide007: "go to slide seven" (scope=com.apple.iWork.Keynote)
 
+PREVIOUS TURN: <none-or-json-from-last-state.json>
 USER UTTERANCE: 

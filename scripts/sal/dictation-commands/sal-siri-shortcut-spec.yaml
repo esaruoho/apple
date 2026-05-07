@@ -1,5 +1,5 @@
 name: "Sal's Siri"
-description: "Route free-form voice/text to one of 588 CitrusPeel commands via Apple Intelligence Foundation Models."
+description: "Route free-form voice/text to one of 588 CitrusPeel commands via Apple Intelligence Foundation Models. v2: stateful — previous-turn context loaded for deictic resolution."
 siri_phrases:
   - "Sal's Siri"
   - "Hey Sal"
@@ -9,19 +9,30 @@ actions:
   - id: get_text
     type: get_text_from_input
     description: "Capture the user's spoken or typed utterance."
+  - id: read_state
+    type: get_contents_of_file
+    file: "~/Library/Application Support/Sal-Siri/last-state.json"
+    on_error: "Continue with empty state"
+    description: "Load previous-turn context for deictic resolution. v2: stateful conversation."
+  - id: combine_input
+    type: text
+    template: |
+      PREVIOUS TURN: {read_state}
+      USER UTTERANCE: {get_text}
+    description: "Compose the model input with both previous-turn state and current utterance."
   - id: route
     type: use_model
     model: "Apple Intelligence Foundation Model (on-device)"
     system_prompt_file: "~/Library/Application Support/Sal-Siri/system-prompt.txt"
-    input: "{get_text}"
+    input: "{combine_input}"
     output_format: json
-    description: "Send utterance to Foundation Models with the Sal catalog as routing schema."
+    description: "Send to Foundation Models with the catalog + previous turn for stateful routing."
   - id: dispatch
     type: run_applescript
     script_file: "~/Library/Application Support/Sal-Siri/dispatch.applescript"
     arguments:
       - "{route}"
-    description: "Look up the matching slug in the catalog and run the corresponding AppleScript."
+    description: "Look up the matching slug, template-substitute params, run the AppleScript, capture new state."
 notes: |
   This Shortcut requires:
     1. Apple Silicon Mac running macOS 15.1+ (Apple Intelligence enabled)
@@ -31,3 +42,13 @@ notes: |
        system-prompt.txt, and dispatch.applescript (run bin/sal-siri-install.sh)
     4. Vocal Shortcut entry "Hey Sal" → run this Shortcut
        (manual, via System Settings → Accessibility → Speech → Vocal Shortcuts)
+
+  v2 stateful conversation:
+    The dispatcher writes ~/Library/Application Support/Sal-Siri/last-state.json
+    after every successful turn (slug, params, frontmost app, selection count).
+    The Get Contents action above reads it before each new turn so the model
+    can resolve "now scale them down" / "do that again" / "make it 25 percent"
+    against the previous turn's state.
+
+    Turn history is also appended to ~/Library/Application Support/Sal-Siri/turn-log.jsonl
+    for auditing and future cross-session learning.

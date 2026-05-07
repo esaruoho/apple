@@ -103,40 +103,66 @@ Rules:
   4. Respond ONLY with strict JSON: {{"slug": "<slug-or-empty>", "params": {{<key-value pairs>}}, "confidence": <0.0-1.0>, "reason": "<short>"}}
   5. Do not include any text outside the JSON object.
 
+STATEFUL DEIXIS RESOLUTION (v2):
+  If a "PREVIOUS TURN" block is included before USER UTTERANCE, use it to resolve
+  deictic references in the user's words:
+    - "now scale them down"     → "them" = previous turn's selection
+    - "do that again"            → repeat the previous turn's slug
+    - "make it 25 percent"       → previous turn's slug + new percent param
+    - "back to the photos"       → previous turn's frontmost_app context
+    - "the same theme"           → re-use previous turn's params.theme value
+  Resolve before matching to a catalog entry. If the user uses a deictic reference
+  but no PREVIOUS TURN is present, return slug "" with reason "deictic-no-state".
+
 CATALOG:
 {catalog}
 
+PREVIOUS TURN: <none-or-json-from-last-state.json>
 USER UTTERANCE: """
     PROMPT_OUT.write_text(prompt)
     print(f"Wrote {PROMPT_OUT} ({len(prompt)} chars)")
 
     # Dispatcher AppleScript — invoked by the Shortcut's Run AppleScript action.
-    # Receives JSON from Foundation Models output, looks up slug, runs the matching
-    # AppleScript via run script.
-    dispatch = '''-- Sal's Siri dispatcher
+    # v2: stateful. Receives JSON {slug, params, confidence, reason} from Foundation
+    # Models. Looks up slug, optionally template-substitutes params into AppleScript,
+    # runs it, captures app context (frontmost app + selection count where available),
+    # and writes ~/Library/Application Support/Sal-Siri/last-state.json so the next
+    # turn's Read State action can include it as deictic-resolution context.
+    dispatch = r'''-- Sal's Siri dispatcher (v2 — stateful)
 -- Invoked by the "Sal's Siri" Shortcut after Apple Intelligence Foundation Models
 -- returns a JSON {slug, params, confidence, reason}.
 --
--- Reads ~/Library/Application Support/Sal-Siri/intents.json (installed by
--- bin/sal-siri-install.sh) to find the AppleScript body for the matching slug,
--- substitutes any params, and runs it.
+-- v2 changes vs v1:
+--   - Template-substitutes params named like $foo or {foo} into the AppleScript body
+--     before running it.
+--   - After successful run, captures (frontmost app, frontmost-app selection count
+--     where the app exposes one) and writes last-state.json so the NEXT turn's prompt
+--     can include "PREVIOUS TURN" context for deictic resolution ("now scale them
+--     down" → reads "them" = previous turn's selection from state).
+--
+-- File paths:
+--   ~/Library/Application Support/Sal-Siri/intents.json
+--   ~/Library/Application Support/Sal-Siri/last-state.json   (rolling, latest only)
+--   ~/Library/Application Support/Sal-Siri/turn-log.jsonl    (append-only history)
 
 on run argv
     set jsonInput to item 1 of argv
+    set salDir to (POSIX path of (path to home folder)) & "Library/Application Support/Sal-Siri/"
 
-    -- Parse the JSON via shell + python3 (AppleScript has no native JSON)
-    set slugCmd to "echo " & quoted form of jsonInput & " | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get(\\"slug\\",\\"\\"))'"
+    set slugCmd to "echo " & quoted form of jsonInput & " | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get(\"slug\",\"\"))'"
     set theSlug to do shell script slugCmd
 
     if theSlug is "" then
-        set reasonCmd to "echo " & quoted form of jsonInput & " | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get(\\"reason\\",\\"no match\\"))'"
+        set reasonCmd to "echo " & quoted form of jsonInput & " | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get(\"reason\",\"no match\"))'"
         set theReason to do shell script reasonCmd
         say "I did not understand. " & theReason
         return "no-match: " & theReason
     end if
 
-    -- Look up the AppleScript body for this slug
-    set lookupCmd to "python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); s=sys.argv[2]; print([c[\\"applescript\\"] for c in d if c[\\"slug\\"]==s][0])' ~/Library/Application\\\\ Support/Sal-Siri/intents.json " & quoted form of theSlug
+    set paramsCmd to "echo " & quoted form of jsonInput & " | python3 -c 'import sys,json; d=json.load(sys.stdin); p=d.get(\"params\",{}); print(json.dumps(p))'"
+    set paramsJson to do shell script paramsCmd
+
+    set lookupCmd to "python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); s=sys.argv[2]; print([c[\"applescript\"] for c in d if c[\"slug\"]==s][0])' " & quoted form of (salDir & "intents.json") & " " & quoted form of theSlug
 
     try
         set theScript to do shell script lookupCmd
@@ -145,16 +171,95 @@ on run argv
         return "missing-slug: " & theSlug
     end try
 
-    -- Optionally substitute params. v1 ignores params and runs the deterministic
-    -- AppleScript verbatim. v2 will template-substitute $param names.
+    -- v2: template-substitute params into AppleScript body.
+    -- Patterns recognized: $name and {name}. Values are inserted as quoted strings
+    -- if they contain non-numeric characters, otherwise as bare numbers.
+    set substCmd to "python3 - <<'PYEOF'\n" & ¬
+        "import json,sys,re\n" & ¬
+        "params = json.loads(" & quoted form of paramsJson & ")\n" & ¬
+        "src = " & quoted form of theScript & "\n" & ¬
+        "def render(v):\n" & ¬
+        "    if isinstance(v,(int,float)): return str(v)\n" & ¬
+        "    s=str(v)\n" & ¬
+        "    if re.fullmatch(r'-?\\d+(\\.\\d+)?', s): return s\n" & ¬
+        "    return '\"' + s.replace('\"','\\\\\"') + '\"'\n" & ¬
+        "for k,v in params.items():\n" & ¬
+        "    src = src.replace('$' + k, render(v))\n" & ¬
+        "    src = src.replace('{' + k + '}', render(v))\n" & ¬
+        "print(src)\n" & ¬
+        "PYEOF"
     try
-        run script theScript
+        set theScript to do shell script substCmd
+    end try
+
+    try
+        set runResult to (run script theScript)
     on error errMsg
         say "Dispatch failed: " & errMsg
+        -- Still log the failed turn so the next turn knows the state did not change.
+        my appendTurnLog(salDir, theSlug, paramsJson, "error", errMsg)
         return "error: " & errMsg
     end try
+
+    -- Capture app context for stateful next-turn deixis
+    set frontApp to ""
+    try
+        tell application "System Events"
+            set frontApp to name of first application process whose frontmost is true
+        end tell
+    end try
+
+    set selCount to "null"
+    if frontApp is "Keynote" then
+        try
+            tell application "Keynote" to set selCount to (count of (slides of front document whose selected is true)) as text
+        end try
+    else if frontApp is "Photos" then
+        try
+            tell application "Photos" to set selCount to (count of selection) as text
+        end try
+    else if frontApp is "Numbers" then
+        try
+            tell application "Numbers" to set selCount to (count of (rows of selection range of active sheet of front document)) as text
+        end try
+    end if
+
+    -- Write last-state.json (rolling) and append to turn-log.jsonl
+    my writeLastState(salDir, theSlug, paramsJson, frontApp, selCount)
+    my appendTurnLog(salDir, theSlug, paramsJson, "ok", frontApp & ":" & selCount)
+
     return "ok: " & theSlug
 end run
+
+on writeLastState(salDir, theSlug, paramsJson, frontApp, selCount)
+    set sc to "python3 - <<'PYEOF'\n" & ¬
+        "import json,time\n" & ¬
+        "state = {\n" & ¬
+        "  'slug': " & quoted form of theSlug & ",\n" & ¬
+        "  'params': json.loads(" & quoted form of paramsJson & "),\n" & ¬
+        "  'frontmost_app': " & quoted form of frontApp & ",\n" & ¬
+        "  'selection_count': " & quoted form of selCount & ",\n" & ¬
+        "  'timestamp': time.time(),\n" & ¬
+        "}\n" & ¬
+        "open(" & quoted form of (salDir & "last-state.json") & ", 'w').write(json.dumps(state, indent=2))\n" & ¬
+        "PYEOF"
+    do shell script sc
+end writeLastState
+
+on appendTurnLog(salDir, theSlug, paramsJson, status, ctx)
+    set sc to "python3 - <<'PYEOF'\n" & ¬
+        "import json,time\n" & ¬
+        "row = {\n" & ¬
+        "  'ts': time.time(),\n" & ¬
+        "  'slug': " & quoted form of theSlug & ",\n" & ¬
+        "  'params': json.loads(" & quoted form of paramsJson & "),\n" & ¬
+        "  'status': " & quoted form of status & ",\n" & ¬
+        "  'context': " & quoted form of ctx & ",\n" & ¬
+        "}\n" & ¬
+        "open(" & quoted form of (salDir & "turn-log.jsonl") & ", 'a').write(json.dumps(row) + '\\n')\n" & ¬
+        "PYEOF"
+    do shell script sc
+end appendTurnLog
 '''
     DISPATCH_OUT.write_text(dispatch)
     print(f"Wrote {DISPATCH_OUT}")
@@ -163,7 +268,7 @@ end run
     # Note: as of macOS 15.1, the "Use Model" action identifier is
     # is.workflow.actions.useaimodel — adjust if Apple renames it.
     spec = f'''name: "Sal's Siri"
-description: "Route free-form voice/text to one of {len(intents)} CitrusPeel commands via Apple Intelligence Foundation Models."
+description: "Route free-form voice/text to one of {len(intents)} CitrusPeel commands via Apple Intelligence Foundation Models. v2: stateful — previous-turn context loaded for deictic resolution."
 siri_phrases:
   - "Sal's Siri"
   - "Hey Sal"
@@ -173,19 +278,30 @@ actions:
   - id: get_text
     type: get_text_from_input
     description: "Capture the user's spoken or typed utterance."
+  - id: read_state
+    type: get_contents_of_file
+    file: "~/Library/Application Support/Sal-Siri/last-state.json"
+    on_error: "Continue with empty state"
+    description: "Load previous-turn context for deictic resolution. v2: stateful conversation."
+  - id: combine_input
+    type: text
+    template: |
+      PREVIOUS TURN: {{read_state}}
+      USER UTTERANCE: {{get_text}}
+    description: "Compose the model input with both previous-turn state and current utterance."
   - id: route
     type: use_model
     model: "Apple Intelligence Foundation Model (on-device)"
     system_prompt_file: "~/Library/Application Support/Sal-Siri/system-prompt.txt"
-    input: "{{get_text}}"
+    input: "{{combine_input}}"
     output_format: json
-    description: "Send utterance to Foundation Models with the Sal catalog as routing schema."
+    description: "Send to Foundation Models with the catalog + previous turn for stateful routing."
   - id: dispatch
     type: run_applescript
     script_file: "~/Library/Application Support/Sal-Siri/dispatch.applescript"
     arguments:
       - "{{route}}"
-    description: "Look up the matching slug in the catalog and run the corresponding AppleScript."
+    description: "Look up the matching slug, template-substitute params, run the AppleScript, capture new state."
 notes: |
   This Shortcut requires:
     1. Apple Silicon Mac running macOS 15.1+ (Apple Intelligence enabled)
@@ -195,6 +311,16 @@ notes: |
        system-prompt.txt, and dispatch.applescript (run bin/sal-siri-install.sh)
     4. Vocal Shortcut entry "Hey Sal" → run this Shortcut
        (manual, via System Settings → Accessibility → Speech → Vocal Shortcuts)
+
+  v2 stateful conversation:
+    The dispatcher writes ~/Library/Application Support/Sal-Siri/last-state.json
+    after every successful turn (slug, params, frontmost app, selection count).
+    The Get Contents action above reads it before each new turn so the model
+    can resolve "now scale them down" / "do that again" / "make it 25 percent"
+    against the previous turn's state.
+
+    Turn history is also appended to ~/Library/Application Support/Sal-Siri/turn-log.jsonl
+    for auditing and future cross-session learning.
 '''
     SHORTCUT_SPEC.write_text(spec)
     print(f"Wrote {SHORTCUT_SPEC}")

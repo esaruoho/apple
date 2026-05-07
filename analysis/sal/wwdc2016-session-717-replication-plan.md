@@ -250,8 +250,9 @@ All five phases were executed in a single session. Concrete artifacts shipped:
   - `scripts/sal/dictation-commands/sal-siri-shortcut-spec.yaml` — spec for the master "Sal's Siri" Shortcut (3 actions: Get Text → Use Model → Run AppleScript)
   - `bin/sal-siri-install.sh` — installer that copies runtime to `~/Library/Application Support/Sal-Siri/`
 - Build guide: `analysis/sal/sal-siri-on-mac-build-guide.md`
-- v1 known limits: prompt size may exceed on-device Foundation Models context (mitigation: two-stage routing); slot-filling extraction works but template-substitution into AppleScript body is passive (v2 work); no stateful conversation (v2 work)
-- Three of four capability differences from Sal's killed prototype reproduced: deterministic match ✅, cross-app composition ✅, slot-filling ⚠ partial; stateful conversation ❌ (v2)
+- v1 known limits: prompt size may exceed on-device Foundation Models context (mitigation: two-stage routing)
+- **v2 (2026-05-07): stateful conversation IMPLEMENTED.** Dispatcher writes `~/Library/Application Support/Sal-Siri/last-state.json` after every turn (slug, params, frontmost app, selection count). Shortcut spec adds Get Contents of File + Text actions before Use Model so previous-turn context is supplied for deictic resolution ("now scale them down" / "do that again" / "make it 25 percent"). System prompt has a new STATEFUL DEIXIS RESOLUTION section. Dispatcher also template-substitutes `$param`/`{param}` into AppleScript body before running. Turn history appended to `turn-log.jsonl`.
+- All four capability differences from Sal's killed prototype now reproduced: deterministic match ✅, cross-app composition ✅, slot-filling ✅ (v2 added applescript substitution), stateful conversation ✅ (v2 added last-state.json + deictic prompt section).
 
 # What's user-side from here (cannot be automated)
 

@@ -130,9 +130,59 @@ The dispatcher v1 ignores `params` from the model output and runs the determinis
 
 As of macOS 15.1 the action identifier is reportedly `is.workflow.actions.useaimodel` but Apple has churned this between betas. The Shortcut build is currently manual; once the identifier stabilizes, `bin/shortcut-gen.py` can be extended to emit a signed `.shortcut` file directly.
 
-## 4. Stateful conversation is not yet supported
+## 4. Stateful conversation — IMPLEMENTED in v2 (2026-05-07)
 
-Sal's pass-2 quote suggests the killed prototype handled "now scale them down" referencing previous selections. The current dispatcher is single-utterance. To add state, the dispatcher would need to write the last invocation's params/result to a state file (`~/Library/Application Support/Sal-Siri/last-state.json`) and the system prompt would need a "previous turn" section. Future work.
+Sal's pass-2 quote suggests the killed prototype handled "now scale them down" referencing previous selections. **The v2 dispatcher (regenerated 2026-05-07) implements stateful conversation:**
+
+After every successful turn the dispatcher writes:
+
+```
+~/Library/Application Support/Sal-Siri/last-state.json
+{
+  "slug": "<the slug just executed>",
+  "params": {<the params just used>},
+  "frontmost_app": "Keynote" | "Photos" | "Numbers" | ...,
+  "selection_count": "5" | "null",
+  "timestamp": <epoch>
+}
+```
+
+It also appends to a rolling history at `~/Library/Application Support/Sal-Siri/turn-log.jsonl` for cross-session auditing.
+
+The Shortcut spec adds two new actions before `Use Model`:
+
+1. **Get Contents of File** — reads `last-state.json` (continues with empty state on first run)
+2. **Text** — composes:
+   ```
+   PREVIOUS TURN: {{read_state}}
+   USER UTTERANCE: {{get_text}}
+   ```
+
+This combined string is what gets sent to Foundation Models. The system prompt has a new section ("STATEFUL DEIXIS RESOLUTION") instructing the model to:
+
+- "now scale them down" → `them` = previous turn's selection
+- "do that again" → repeat previous turn's slug
+- "make it 25 percent" → previous turn's slug + new percent param
+- "back to the photos" → previous turn's frontmost_app context
+- "the same theme" → re-use previous turn's params.theme value
+
+If the user uses a deictic reference but no previous turn is on disk, the model returns slug `""` with reason `deictic-no-state` — and the dispatcher speaks "I did not understand. deictic-no-state".
+
+The dispatcher also now does **template-substitution** of params named `$foo` or `{foo}` into the AppleScript body before running it, so commands like `go to slide $slideNumber` and `scale down $percent percent` actually receive the slot-filled values.
+
+**v2 capability matrix:**
+
+| Capability | v1 (initial Phase 6) | v2 (this update) |
+|---|---|---|
+| Deterministic phrase matching | ✅ | ✅ |
+| Cross-app composition | ✅ | ✅ |
+| Slot-filling — model extraction | ✅ | ✅ |
+| Slot-filling — applescript substitution | ❌ | ✅ |
+| Stateful conversation — last-turn deixis | ❌ | ✅ |
+| Stateful conversation — multi-turn history | ❌ | ⚠ logged but unused |
+| Cross-session memory | ❌ | ⚠ turn-log.jsonl exists; not yet read |
+
+The remaining ⚠ items are both about *using* the multi-turn log for context beyond a single previous turn (e.g. "go back two steps", "what did I just do today"). These are v3 work and require larger context windows than the on-device Foundation Model currently exposes.
 
 # What this preserves of Sal's prototype
 
