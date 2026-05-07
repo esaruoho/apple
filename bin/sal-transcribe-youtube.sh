@@ -27,6 +27,7 @@ APPLE_REPO="${APPLE_REPO:-/Users/esaruoho/work/apple}"
 WHISP_TRANSCRIPTS="${WHISP_TRANSCRIPTS:-${HOME}/work/whisp-transcripts}"
 POLL_TIMEOUT_SEC="${POLL_TIMEOUT_SEC:-0}"
 SKIP_COMMIT="${SKIP_COMMIT:-0}"
+PAKETTIBOT_INBOX="${PAKETTIBOT_INBOX:-${HOME}/work/comms/queue/pakettibot-inbox}"
 
 URL_FILE="${APPLE_REPO}/analysis/sal/youtube-interviews-to-transcribe.txt"
 OUT_DIR="${APPLE_REPO}/sources/sal/transcripts/youtube"
@@ -74,22 +75,23 @@ while IFS= read -r url; do
     vid=$(echo "${url}" | sed -nE 's|.*[?&]v=([a-zA-Z0-9_-]{11}).*|\1|p; s|.*youtu\.be/([a-zA-Z0-9_-]{11}).*|\1|p; s|.*shorts/([a-zA-Z0-9_-]{11}).*|\1|p' | head -1)
     [[ -z "${vid}" ]] && continue
 
-    # Find matching transcript dir (whisp names them <date>_<slug>; metadata.json contains video_id)
+    # Find matching transcript dir (whisp names them <date>_<slug>; metadata.yaml carries url:)
     match_dir=""
     while IFS= read -r meta; do
-        if grep -q "\"${vid}\"" "${meta}" 2>/dev/null; then
+        if grep -q "${vid}" "${meta}" 2>/dev/null; then
             match_dir="$(dirname "${meta}")"
             break
         fi
-    done < <(find "${WHISP_TRANSCRIPTS}/transcripts" -maxdepth 2 -name 'metadata.json' 2>/dev/null)
+    done < <(find "${WHISP_TRANSCRIPTS}/transcripts" -maxdepth 2 -name 'metadata.yaml' 2>/dev/null)
 
     if [[ -z "${match_dir}" ]]; then
         echo "  [pending] ${vid}: no transcript yet"
         continue
     fi
 
-    txt_file=$(ls "${match_dir}"/*.txt 2>/dev/null | grep -v '\-segments\.txt$' | head -1 || true)
-    [[ -z "${txt_file}" ]] && { echo "  [skip] ${vid}: dir found but no .txt"; continue; }
+    txt_file="${match_dir}/transcript.txt"
+    [[ -f "${txt_file}" ]] || txt_file=$(ls "${match_dir}"/*.txt 2>/dev/null | grep -v '\-segments\.txt$' | head -1 || true)
+    [[ -z "${txt_file}" || ! -f "${txt_file}" ]] && { echo "  [skip] ${vid}: dir found but no transcript .txt"; continue; }
 
     base=$(basename "${match_dir}")
     out_file="${OUT_DIR}/${base}.txt"
@@ -127,5 +129,18 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
         git push origin main
     fi
 fi
+
+# 5. Mandatory Discord summary via pakettibot inbox file-drop bridge.
+#    Per-episode completion pings already fire via whisp-worker's events
+#    bridge; this is the roll-up posted at the end of the run.
+mkdir -p "${PAKETTIBOT_INBOX}"
+queue_pending=$(ls "${WHISP_TRANSCRIPTS}/queue/pending"/*.url 2>/dev/null | wc -l | tr -d ' ')
+queue_processing=$(ls "${WHISP_TRANSCRIPTS}/queue/processing"/*.url 2>/dev/null | wc -l | tr -d ' ')
+queue_failed=$(ls "${WHISP_TRANSCRIPTS}/queue/failed"/*.url 2>/dev/null | wc -l | tr -d ' ')
+summary_file="${PAKETTIBOT_INBOX}/sal-youtube-summary-$(date +%s).cmd"
+cat > "${summary_file}" <<EOF
+ask "Sal Soghoian YouTube transcription run finished. Newly synced into apple repo: ${copied}. Queue right now — pending: ${queue_pending}, processing: ${queue_processing}, failed: ${queue_failed}. Latest transcripts under apple/sources/sal/transcripts/youtube/. Per-episode pings should already be appearing via the whisp events bridge; this is the orchestrator roll-up."
+EOF
+echo "[sal-youtube] Discord summary dropped at: ${summary_file}"
 
 exit 0
