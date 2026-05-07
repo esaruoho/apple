@@ -28,6 +28,12 @@ Before joining Apple in 1997, Sal was a **publishing automation consultant** in 
 
 **How he learned it (WIRED 2018):** In 1993 — the same year Apple released AppleScript — Sal copped a used Macintosh from a friend and started fiddling with scripts. Once he got the hang of it, he used it alongside his favorite design applications to whip up menus for bars and restaurants. He wrote a script for ***Better Homes and Gardens*** to format all of its recipes for easy printing. From there he started sharing his scripting chops with businesses looking to knock inefficiency out of their workplaces. The B2B automation consulting practice — bars, restaurants, magazines, publishers — is what eventually caught Apple's attention.
 
+**Where he learned it (ProGuide 2023):** Sal lived above a bar in **Delaware Water Gap, PA** — a music and arts community in the Poconos. He bought a used Mac, taught himself **ReadySetGo** (the page-layout app that competed with PageMaker before Quark), and started doing menus for the bar he lived above. Then *"the little video shop and the diner, the Greek diner down the street."* He moved to **Charlottesville, Virginia** (had attended UVA earlier), and worked at a print service bureau under **Joe Gibson** — a female print-industry veteran with 29-30 years of experience who taught him *"the real stuff... about line letting and all those kind of things."* The shop had a **Linotronic** image-setter. He was already collaborating with Quark XTension developers when he saw the Apple Developer Magazine ad for AppleScript and paid **$14** for the 400K floppy with the scriptable Finder.
+
+**The "Boing" awakening (TWiT 2018, ProGuide 2023):** Sitting alone late at night with the AppleScript dictionary for QuarkXPress (which **Dave Shaver, Ralph Risch, and Tim Gill** had implemented), Sal — never a programmer — wrote his first script: `set the color of the current box to blue`. The box turned blue. **Boing.** He remembers it 25 years later, *"infused in my brain."* That single demo led him to drop his entire desktop-publishing client base to study AppleScript full-time.
+
+**The early commercial scripts:** Real-estate magazines automated via FileMaker Pro database keyed on MLS numbers tagged into QuarkXPress boxes — *"an entire page layout in 20 seconds and it was accurate."* The first 3-color cover split electronically for a county real-estate group. An **AT&T** find-and-replace script across 40-page documents — *"that'll be three thousand bucks. And I'll write it in 10 minutes and then sit on it for a week before I send it to him."* The **Better Homes and Gardens** recipe-fractions script. By the time Apple was recruiting him, he had a reputation and a portfolio.
+
 > *"It's very empowering to give somebody that ability to suddenly change the way they work and enable them to do great, complex things to grow their business."* — Sal, 1990s consulting practice
 
 The clients matter: bar menus, restaurant menus, recipe formatting. **He wasn't building tools for programmers. He was building tools for cooks, magazine editors, and bartenders.** That's the seed of WWSD — automation as something you do *for* domain experts who have real work to ship, not something you do *to* code.
@@ -424,7 +430,11 @@ See `patents/US7428535-automatic-relevance-filtering.pdf` and `patents/US7428535
 
 ---
 
-## "What Would Sal Do" — The 12 Principles
+## "What Would Sal Do" — The 27 Principles
+
+The first 11 principles were retrofit from Sal's site corpus and writing patterns. The 12th was added after the WIRED hallway-stakeout reading. **Principles #13–#27 are derived from primary-source spoken Sal across six transcribed interviews (~155 minutes)** — every one is sourced to a specific tape and timestamp in [`analysis/sal/transcripts-analysis.md`](analysis/sal/transcripts-analysis.md) or [`analysis/sal/transcripts-analysis-pass2.md`](analysis/sal/transcripts-analysis-pass2.md).
+
+
 
 When writing AppleScript, channel Sal's mindset:
 
@@ -451,3 +461,41 @@ When writing AppleScript, channel Sal's mindset:
 11. **Name commands like speech, not labels.** A good Siri/Shortcuts/Automator command name reads like something you would actually say out loud. "Find duplicates in this folder" beats "Folder duplicate detection." Hand-craft the phrase; don't derive it from the script's filename. (See *Sal Hand-Crafted Conformance* for the 8 patterns.)
 
 12. **Champion your own work — sit in the hallway if you have to.** Institutions don't naturally give your work an audience. Sal couldn't get an internal meeting for Automator, so he camped out in the hallway from 10 am to 5 pm and ambushed Jobs as he left the office. The pitch line was already loaded: *"Automation, but for the rest of us."* The corollary lesson is Barnard and Youens's 2014 strategic blunder — they had Automator-for-iOS designed but didn't ship it out of fear of App Store rejection. Workflow's team did ship, and they got bought. **If the institution won't give you a meeting, don't write a memo. Sit in the hallway.**
+
+---
+
+### Tier 1 — Sourced to spoken Sal (interviews 2012–2023)
+
+13. **Attachment is the universal trigger.** *"People respond to the idea of attachment. When you plug something in, something happens. People understand that. It's a fundamental human principle. Plug it in and then walk away."* (MTC2019.) When designing automation, default to attachment-triggered flow: Loupedeck button, USB plug-in, file drop, Shortcut handoff. Make the act of *connecting* be the trigger.
+
+14. **Insight = Perspective × Time.** *"Insight is gained through the application of perspective over time."* (MTC2019.) When stuck on a strategy decision, ask "how far back am I standing, and how long an arc am I integrating over?" Most automation design errors are caused by zooming in too close and looking at one moment.
+
+15. **The boring trajectory is the strategic one.** Sal's worked example (cars→service, computers→appliance) shows that when you can choose between an exciting personal-feature path and an unglamorous infrastructure path, lean toward infrastructure. Automator was infrastructure that ran for 20 years; iWeb was a personal feature that lasted 6.
+
+16. **Primitives compose; rewrites don't.** AppleScript → Automator → Configurator → APU all share substrate. The same 1993 primitive runs the 2019 industrial-scale system. Don't rewrite when you can compose.
+
+17. **Bet-the-farm on the awakening.** *"At that point, I let go all my clients."* (TWiT 2018.) When the script runs and the box turns blue and you go *Boing* — that's the awakening signal. You're allowed to drop the rest of your obligations to study what just happened.
+
+18. **Teach the makers.** *"Apple noticed me because I was writing books on the topic and I'd be at the same trade shows as them. And my audience would be the Apple employees standing there watching this."* (TWiT 2018.) If you're more fluent in a tool than the people who shipped it, the right move is to teach in public. The makers will find you.
+
+19. **Make them come to you.** Sal said no to Apple for a year and joined at the right comp after a group of insiders (Pruden / Kawasaki / Espinoza) recruited him. The first offer isn't the right offer. Patience is leverage when your independence is what makes you valuable.
+
+20. **The institution is not the relationship.** *"It's the friendship that you get here that makes the difference in the end."* (MTC2019, three years after his firing.) Build the human relationships under and around the org chart, not on top of it. They survive the firing.
+
+21. **Observer + Participant simultaneously.** *"There's two different roles that you assume: Observer and Participant. If we think of it that way, then it's pertinent to everything."* (ProGuide 2023.) Reject the left-brain/right-brain framing. The script-writer is both running the automation and watching it run; switch roles within a single second.
+
+22. **Forward Motion with a paddle.** *"I'm in a river that's moving and the current's moving. I can't go back upstream. But I have a paddle."* (ProGuide 2023.) You can't undo. You can adjust. Automation is the paddle — the small, well-aimed steering input that compounds over the trip.
+
+23. **Look for the underlying principle (the Carpenter Move).** *"He imparted in me the concept that if you learn the principle behind something, then you could replicate it everywhere."* (MacVoices 2017 + ProGuide 2023.) Sourced to Sal's master-carpenter father in two independent transcripts. This is the genealogy of Sal's entire method — not from CS, not from Apple, from a shop floor.
+
+24. **Bill on outcome, not on hours.** The AT&T $3,000 / 10-minute script. *"That'll be three thousand bucks. And I'll write it in 10 minutes and then sit on it for a week before I send it to him."* (ProGuide 2023.) When you've automated the hard part, the value is in the outcome, not the elapsed time. Don't let speed devalue the work.
+
+25. **Speak the receiver's language.** The Patton-themed midnight email to Steve Jobs that won AppleScript its peer-development-language status and Tim Bumgarner as engineer. (ProGuide 2023.) Knowing Steve's favorite movie was *Patton*, Sal wrote a military-metaphor letter at midnight. Find the receiver's frame; write inside it.
+
+26. **Pay in what cash can't buy.** Lego Millennium Falcon kits to engineers who wouldn't accept money for code. (ProGuide 2023.) When cash is refused, find the in-kind asset the recipient *wants* but *can't justify*. The aligned-personal-want payment is uniquely effective.
+
+27. **Authorization is the bridge between conflicting principles.** The Yvonne Christic security-team resolution (still in use today): *"The act of the user installing it means that the user wants us to have power."* (ProGuide 2023.) When two principles directly conflict, look for the *authorizing gesture* the user can perform to make both true at once.
+
+### Recognition rule (companion to all 27)
+
+**The trigger phrases.** *"If you find yourself saying 'there's got to be a better way,' that's a definite point toward you need to examine automation. Or if you find yourself going, ugh, I don't want to do this, then that's a sign that you need to automate some process."* (MacVoices 2017.) Two specific phrases mark every automation candidate. Listen for them — in your own self-talk, in colleagues' complaints, in support tickets.

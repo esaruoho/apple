@@ -351,7 +351,9 @@ Full profile with all quotes: `sal-soghoian.md`
 **Sal's Web Empire** (7+ self-hosted domains, no institutional backing):
 macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **last updated Oct 2014, critical risk**), photosautomation.com (Photos), configautomation.com (Apple Configurator), dictationcommands.com (voice commands), omni-automation.com (JavaScript, active), cmddconf.com (conference). Full analysis in `sal-soghoian.md` → "Sal's Web Empire" section. Archive state now lives in `sources/sal/`, `indexes/sal-*.yaml`, and `analysis/sal/current-status.md`, refreshed via `bin/sal-archive-status.py`.
 
-**11 Principles** (WWSD):
+**27 Principles** (WWSD) — full list with sourced quotes in `sal-soghoian.md`. Tier 1 (#13-#27) is sourced to primary spoken-Sal across six transcribed interviews (~155 min) under `sources/sal/transcripts/youtube/` with deep analysis in `analysis/sal/transcripts-analysis.md` + `analysis/sal/transcripts-analysis-pass2.md`.
+
+**Tier 0 — Retrofit from Sal's site corpus + WIRED 2018:**
 1. User comes first — empower, don't create dependency
 2. Solve a real problem — every script needs a "why"
 3. Keep it local — on-device, protect data, avoid the food chain
@@ -362,7 +364,27 @@ macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **las
 8. Tell apps what, not how — use scripting dictionaries
 9. Educate and share — community grows through generosity
 10. Never give up on automation
-11. **Name commands like speech, not labels** — the phrase IS the interface. "What would someone say out loud to make this happen?" (derived from dictationcommands.com, 251 hand-crafted commands)
+11. **Name commands like speech, not labels** — the phrase IS the interface (251 hand-crafted dictationcommands.com phrases)
+12. **Sit in the hallway** — institutions don't give your work an audience; Sal camped 10am–5pm to ambush Jobs
+
+**Tier 1 — Sourced to spoken Sal (interviews 2012–2023):**
+13. **Attachment is the universal trigger** — *"plug it in, something happens"* (MTC2019)
+14. **Insight = Perspective × Time** — Sal's explicit method (MTC2019)
+15. **The boring trajectory is the strategic one** — appliance > personal-device cool factor (MTC2019)
+16. **Primitives compose; rewrites don't** — AppleScript→Automator→Configurator→APU share substrate
+17. **Bet-the-farm on the awakening** — drop everything when the box turns blue (TWiT 2018)
+18. **Teach the makers** — Apple recruited Sal because he was teaching at trade shows the Apple staff attended (TWiT 2018)
+19. **Make them come to you** — said no for a year, joined on his terms (TWiT 2018)
+20. **The institution is not the relationship** — friendship survives the org chart (MTC2019)
+21. **Observer + Participant simultaneously** — replaces left-brain/right-brain framing (ProGuide 2023)
+22. **Forward Motion with a paddle** — can't undo, can adjust (ProGuide 2023)
+23. **The Carpenter Move — look for the underlying principle** — sourced to Sal's master-carpenter father (MacVoices 2017 + ProGuide 2023, two independent transcripts)
+24. **Bill on outcome, not on hours** — AT&T $3,000 / 10-minute script (ProGuide 2023)
+25. **Speak the receiver's language** — Patton-themed midnight email to Steve Jobs won AppleScript its peer-development-language status (ProGuide 2023)
+26. **Pay in what cash can't buy** — Lego Millennium Falcon kits to engineers who refused cash (ProGuide 2023)
+27. **Authorization is the bridge between conflicting principles** — user-installed scripts resolved automation-vs-security (ProGuide 2023)
+
+**Recognition rule (companion to all 27):** Listen for the trigger phrases — *"there's got to be a better way"* and *"I don't want to do this."* Each utterance is a script that hasn't been written yet (MacVoices 2017).
 
 **Primary sources captured in sal-soghoian.md:**
 - Full FAQ from macosxautomation.com/about.html (November 2016)

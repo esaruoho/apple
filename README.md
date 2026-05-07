@@ -33,6 +33,25 @@ Sal source preservation now has a dedicated structure:
 
 Use this split to preserve original material while building reusable knowledge on top of it.
 
+### Sal Interview Corpus — Six Talks, ~155 Minutes, 50 Stories
+
+Six primary-source talks have been transcribed and analyzed. The full corpus is **~155 minutes of Sal in his own voice**, yielding **50 distinct stories** and a complete read of his method. Transcripts under [`sources/sal/transcripts/youtube/`](sources/sal/transcripts/youtube/); deep analyses at [`analysis/sal/transcripts-analysis.md`](analysis/sal/transcripts-analysis.md) and [`analysis/sal/transcripts-analysis-pass2.md`](analysis/sal/transcripts-analysis-pass2.md).
+
+| Talk | Year | Length | Key new material |
+|------|------|--------|------------------|
+| TWiT MacWorld interview (Leo Laporte) | 2012 | 2.6 min | Berklee 1974-79, MIDI guitar, wife Naomi, Kevin Eubanks / Ralph Moore peers |
+| MacVoices #17175 (Chuck Joyner) | 2017 | 31 min | Carpenter-father origin of "underlying principle" method, Command-D conference, Omni JavaScript thesis |
+| TWiT — *The Accidental Apple Career* | 2018 | 5.5 min | The 1993 *"set color of current box to blue → Boing"* awakening, dropping all clients, hire #2 before Federighi |
+| TWiT — *Standing Up to Steve Jobs* | 2018 | 7.7 min | Town Hall confrontation in full, the 1997 product manager bench (Weinstock, Ford, Zelinka), "people falling off the roof — splop!" |
+| MTC2019 — *Insider's Look at APU* | 2019 | 50 min | *Insight = Perspective × Time*, the enterprise-strategy decode (GE/Salesforce/IBM/SAP), the attachment principle |
+| ProGuide Episode 067 (Andrew J. Mason) | 2023 | 57 min | The Patton midnight email, code bounties, Lego Millennium Falcon payments, the killed Siri-on-Mac prototype, WWDC 2016 session 717 pulled |
+
+**The most consequential single revelation** comes from the ProGuide interview: **Sal had a working Siri-on-Mac prototype with hundreds of natural-language voice commands** controlling all iWork apps + Photos + Finder. It was demoed to top execs to silent-then-applauding rooms and **killed because shipping it would have made iOS Siri look weaker.** Apple has been trying to ship exactly this product as "Apple Intelligence" for the last two years.
+
+The **WWDC 2016 session 717** (Sal's dictation/automation talk) was **pulled a week after he gave it. Four months later his position was eliminated.** Recovering session 717 is now a top archive priority.
+
+The analyses derive **27 sourced "What Would Sal Do" (WWSD) principles** from primary-source spoken Sal — including the Carpenter Move (look for the underlying principle, sourced to his master-carpenter father), Observer + Participant simultaneously, Forward Motion with a paddle, Speak the Receiver's Language, Pay in What Cash Can't Buy, Authorization as Bridge, and Identify the Trigger Phrases. Full list in [`sal-soghoian.md`](sal-soghoian.md).
+
 ### Sal Archive TODO
 
 - [x] Mirror the main Sal sites into [`sources/sal/`](sources/sal/)
@@ -40,7 +59,10 @@ Use this split to preserve original material while building reusable knowledge o
 - [x] Build machine-readable archive indexes in [`indexes/`](indexes/)
 - [x] Recover linked ZIP bundles where the live site or Wayback still serves them
 - [x] Keep recovered media local-only via `.gitignore` so large `.mp4`, `.m4v`, and `.mov` files can be processed later without bloating git history
-- [ ] Transcribe retained video and audio files, then link transcripts back into lesson modules and indexes
+- [x] Transcribe core Sal interviews — 6 talks (~155 min) committed under [`sources/sal/transcripts/youtube/`](sources/sal/transcripts/youtube/); deep analysis in [`analysis/sal/transcripts-analysis.md`](analysis/sal/transcripts-analysis.md) and [`analysis/sal/transcripts-analysis-pass2.md`](analysis/sal/transcripts-analysis-pass2.md)
+- [ ] Continue transcription on the remaining Apple Podcasts episodes and YouTube interviews discovered by [`bin/sal-discover-interviews.py`](bin/sal-discover-interviews.py)
+- [ ] Recover **WWDC 2016 session 717** (pulled a week after Sal delivered it; check Wayback at `developer.apple.com/wwdc/2016/717` and community mirrors)
+- [ ] Hunt for any external trace of the **Siri-on-Mac prototype** Sal demoed pre-2016 (most important missing artifact in his career)
 - [ ] Extract runnable scripts and assets from recovered ZIP bundles into curated lesson/example sets
 - [ ] Finish the remaining missing package targets:
   - `macosxautomation.com/405/us/media/apple/applescript/2008/aperturepdfworkflows.zip`
