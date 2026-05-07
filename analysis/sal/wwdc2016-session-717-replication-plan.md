@@ -211,13 +211,21 @@ All five phases were executed in a single session. Concrete artifacts shipped:
 - Result: 10 apps targeted, heuristic flagged unknown verbs in DC-Keynote/Photos/Numbers for manual review. Audit is heuristic — actual port confirmation requires running on live macOS post-install.
 
 ## Phase 3 — User-command UI generators ✅
-**Path A (Voice Control plist installer):**
-- Built `bin/dictation-commands-install.sh` — idempotent installer that copies the 18 `.scptd` libraries to `~/Library/Script Libraries/`, the 5 helpers to `~/Library/Application Support/Dictation Commands/`, and installs `Custom Commands.plist` into the macOS speech-recognition prefs. DRY_RUN=1 supported.
+**Path A (Custom Commands plist installer) — DEPRECATED-IN-PART on macOS 15 (Sequoia):**
+- Built `bin/dictation-commands-install.sh` — idempotent installer that copies the 18 `.scptd` libraries to `~/Library/Script Libraries/`, the 5 helpers to `~/Library/Application Support/Dictation Commands/`, and (on macOS 14 and earlier) installs `Custom Commands.plist` into the macOS speech-recognition prefs. DRY_RUN=1 supported.
+- **DEPRECATED-IN-PART (2026-05-07):** macOS 15 (Sequoia) removed the Enhanced Dictation Commands runtime that read `Custom Commands.plist`. The library- and helper-copy steps remain useful as the substrate for the Vocal Shortcuts trigger surface (Phase 3.5); Step 3 (plist install) auto-skips on macOS ≥ 15 with a runtime warning. See `analysis/sal/macos-sequoia-dictation-runtime-removal.md` for details.
 - Includes TCC consent reminders for Accessibility, Automation, Photos, Camera, Voice Control.
 
-**Path B (Shortcuts specs):**
-- Built `bin/dictation-commands-to-shortcuts.py` — emits **588 Shortcut spec YAMLs** at `shortcuts/sal-dictation/specs/` (one per command, with all Siri phrases, scope, source library, AppleScript body)
+**Path B (Shortcuts specs) — CANONICAL TRIGGER SURFACE on macOS 15+:**
+- Built `bin/dictation-commands-to-shortcuts.py` — emits **588 Shortcut spec YAMLs** at `scripts/sal/dictation-commands/shortcut-specs/` (one per command, with all Siri phrases, scope, source library, AppleScript body)
 - These feed into the existing `bin/shortcut-gen.py` pipeline for batch import via `bin/batch-import.sh`
+
+## Phase 3.5 — Vocal Shortcuts importer (NEW, macOS 15+ Apple Silicon) ✅
+- Built `bin/dictation-commands-vocal-shortcuts-import.py` — emits a System Events UI-scripting helper (`bin/vocal-shortcuts-ui-import.applescript`, 596 bindings) and a manual-import runbook (`analysis/sal/vocal-shortcuts-import-runbook.md`)
+- Each binding maps a spoken phrase → a Shortcut from Phase 3 Path B
+- Apple has not exposed a programmatic API to add Vocal Shortcut entries (as of macOS 15.6.1); the importer is therefore a UI-scripting bridge with manual fallback
+- Vocal Shortcuts requires the user to physically train each phrase by speaking it three times — the helper pauses for that
+- Documented Apple-Silicon-only limitation; for Intel Macs, the Voice Control fallback is documented in the runbook
 
 ## Phase 4 — Loupedeck integration ✅
 - Built `bin/loupedeck-import-dictation-commands.py` — for each command, writes `<slug>.applescript` source + (post-install) compiled `.scpt`, and emits a single `loupedeck-profile.json` catalog with all 588 entries grouped by Sal's 10 scopes (Keynote, Photos, Numbers, Pages, Calendar, Mail, Maps, Finder, QuickTime, Global)
@@ -232,6 +240,16 @@ All five phases were executed in a single session. Concrete artifacts shipped:
   - **73 triple-channel candidates** (score 3+ — earn voice + Spotlight + Loupedeck)
   - **191 script-only** (score 1-2)
   - **96 re-evaluate** (score 0 — mostly trivial launchers)
+
+# Phase 6 — Sal's Siri-on-Mac reconstruction (THEORIZED, future work)
+
+Sal's pass-2 quote ("we had those abilities — and much more — running with Siri using AppleScript Libraries written in AppleScriptObjective-C") describes a working internal prototype that went beyond CitrusPeel's deterministic phrase matching. Theoretical reconstruction with concrete 2026 build path documented in `analysis/sal/sal-siri-on-mac-theory.md`. The path:
+
+1. Use Apple Intelligence's Foundation Models action (macOS 15.1+) as the NLU layer
+2. Single Shortcut named "Sal's Siri" routes free-form input → JSON `{intent, args}` → matching `tell script "DC-XXX"` dispatch
+3. Vocal Shortcut entry: `Hey Sal` triggers the router
+
+This isn't built yet. The components all exist in this repo (588 deterministic Shortcuts, 18 libraries, command catalog). Phase 6 is the integration step.
 
 # What's user-side from here (cannot be automated)
 

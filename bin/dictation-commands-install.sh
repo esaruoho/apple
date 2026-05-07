@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-# Phase 3 Path A — Install Sal's CitrusPeel dictation commands on current macOS.
+# Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS.
+#
+# DEPRECATED-IN-PART (2026-05-07): macOS 15 (Sequoia) removed the Enhanced
+# Dictation Commands runtime that read Custom Commands.plist. The library and
+# helper installation steps remain useful as the substrate for Phase 3.5 (the
+# Vocal Shortcuts importer) — but Step 3 (install Custom Commands.plist) is a
+# no-op on Sequoia because no daemon reads that path anymore.
+#
+# Use this script to install the engine. Use bin/dictation-commands-to-shortcuts.py
+# + bin/dictation-commands-vocal-shortcuts-import.py to wire the trigger surface.
+# See analysis/sal/macos-sequoia-dictation-runtime-removal.md for details.
 #
 # Replaces the manual UI flow Sal shipped (1) Install Automation Tools.app with a
 # scriptable installer. Idempotent. Logs everything.
@@ -63,12 +73,20 @@ for helper in "$CITRUSPEEL/Installation Items/Helper Apps/"*.app; do
 done
 
 echo ""
-echo "Step 3: install Custom Commands.plist"
-if [[ -f "$PREF_DST" ]]; then
-  ts=$(date +%Y%m%d-%H%M%S)
-  run cp "$PREF_DST" "$PREF_DST.backup-$ts"
+echo "Step 3: install Custom Commands.plist (DEPRECATED on macOS 15+)"
+macos_major=$(sw_vers -productVersion | cut -d. -f1)
+if [[ "$macos_major" -ge 15 ]]; then
+  echo "  ⚠  macOS $macos_major detected. The Enhanced Dictation Commands runtime"
+  echo "     that read this plist was removed in Sequoia. Skipping Step 3."
+  echo "     Use bin/dictation-commands-vocal-shortcuts-import.py for the trigger surface."
+  echo "     See analysis/sal/macos-sequoia-dictation-runtime-removal.md."
+else
+  if [[ -f "$PREF_DST" ]]; then
+    ts=$(date +%Y%m%d-%H%M%S)
+    run cp "$PREF_DST" "$PREF_DST.backup-$ts"
+  fi
+  run cp "$CITRUSPEEL/Custom Commands.plist" "$PREF_DST"
 fi
-run cp "$CITRUSPEEL/Custom Commands.plist" "$PREF_DST"
 
 echo ""
 echo "Step 4: TCC consent reminders"
