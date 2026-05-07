@@ -276,6 +276,186 @@ def probe_wayback_cdx(target_url: str, label: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Hacker News (Algolia)
+# ---------------------------------------------------------------------------
+
+
+def probe_hn_algolia(query: str) -> list[dict]:
+    """HN search via Algolia API — no auth, returns JSON."""
+    url = (
+        "https://hn.algolia.com/api/v1/search?"
+        f"query={urllib.parse.quote_plus(query)}&tags=story&hitsPerPage=100"
+    )
+    status, body = fetch(url)
+    if status != 200:
+        return [{"title": f"[HN failed: HTTP {status}]", "url": url}]
+    try:
+        data = json.loads(body)
+    except Exception:  # noqa: BLE001
+        return []
+    hits = []
+    for h in data.get("hits", []):
+        title = h.get("title") or h.get("story_title") or ""
+        href = h.get("url") or f"https://news.ycombinator.com/item?id={h.get('objectID', '')}"
+        hn_link = f"https://news.ycombinator.com/item?id={h.get('objectID', '')}"
+        haystack = f"{title} {href}".lower()
+        if not is_likely_sal(haystack):
+            continue
+        hits.append({"title": f"{title} (HN: {hn_link})", "url": href})
+    return hits
+
+
+# ---------------------------------------------------------------------------
+# Apple Podcasts (iTunes Search API)
+# ---------------------------------------------------------------------------
+
+
+def probe_apple_podcasts(query: str) -> list[dict]:
+    """Apple Podcasts via iTunes Search API — no auth, JSON."""
+    hits = []
+    for entity in ("podcast", "podcastEpisode"):
+        url = (
+            "https://itunes.apple.com/search?"
+            f"term={urllib.parse.quote_plus(query)}&entity={entity}&limit=50"
+        )
+        status, body = fetch(url)
+        if status != 200:
+            continue
+        try:
+            data = json.loads(body)
+        except Exception:  # noqa: BLE001
+            continue
+        for r in data.get("results", []):
+            title = (
+                r.get("trackName")
+                or r.get("collectionName")
+                or r.get("artistName")
+                or ""
+            )
+            artist = r.get("artistName") or r.get("collectionName") or ""
+            href = (
+                r.get("trackViewUrl")
+                or r.get("collectionViewUrl")
+                or r.get("artistViewUrl")
+                or ""
+            )
+            haystack = f"{title} {artist} {r.get('description', '')}".lower()
+            if not is_likely_sal(haystack):
+                continue
+            label = f"{title} — {artist}" if artist and artist != title else title
+            hits.append({"title": f"[{entity}] {label}", "url": href})
+        time.sleep(0.5)
+    return hits
+
+
+# ---------------------------------------------------------------------------
+# Reddit (public JSON)
+# ---------------------------------------------------------------------------
+
+
+def probe_reddit(query: str) -> list[dict]:
+    """Reddit search via public .json endpoint — rate-limited but no auth."""
+    url = (
+        "https://www.reddit.com/search.json?"
+        f"q={urllib.parse.quote_plus(query)}&limit=100&sort=relevance"
+    )
+    status, body = fetch(url)
+    if status != 200:
+        return [{"title": f"[Reddit failed: HTTP {status}]", "url": url}]
+    try:
+        data = json.loads(body)
+    except Exception:  # noqa: BLE001
+        return []
+    hits = []
+    for child in data.get("data", {}).get("children", []):
+        d = child.get("data", {})
+        title = d.get("title", "")
+        permalink = d.get("permalink", "")
+        subreddit = d.get("subreddit", "")
+        selftext = d.get("selftext", "") or ""
+        haystack = f"{title} {selftext} r/{subreddit}".lower()
+        if not is_likely_sal(haystack):
+            continue
+        full_url = f"https://www.reddit.com{permalink}" if permalink else ""
+        hits.append({"title": f"r/{subreddit}: {title}", "url": full_url})
+    return hits
+
+
+# ---------------------------------------------------------------------------
+# DuckDuckGo HTML search (covers JS-rendered Mac journalism sites)
+# ---------------------------------------------------------------------------
+
+
+JS_RENDERED_SITES = [
+    "tidbits.com",
+    "macstories.net",
+    "sixcolors.com",
+    "daringfireball.net",
+    "macrumors.com",
+    "macworld.com",
+    "imore.com",
+    "arstechnica.com",
+    "theverge.com",
+    "relay.fm",
+    "macsparky.com",
+    "cultofmac.com",
+    "9to5mac.com",
+    "appleinsider.com",
+    "macobserver.com",
+    "podfeet.com",
+    "automators.fm",
+    "atp.fm",
+    "macvoices.com",
+    "mactech.com",
+    "applescriptpro.com",
+]
+
+
+def probe_ddg_for_site(query: str, site: str) -> list[dict]:
+    q = f'"{query}" site:{site}'
+    url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote_plus(q)}"
+    status, html = fetch(url)
+    if status != 200 or not html:
+        return [{"title": f"[DDG failed for {site}: HTTP {status}]", "url": url}]
+    # DDG result links wrap the real URL in /l/?uddg=<encoded>
+    pattern = re.compile(
+        r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="(?P<href>[^"]+)"[^>]*>(?P<title>.*?)</a>',
+        re.I | re.S,
+    )
+    hits = []
+    for m in pattern.finditer(html):
+        href = m.group("href")
+        # Unwrap DDG redirect
+        if "uddg=" in href:
+            try:
+                qs = urllib.parse.urlparse(href).query
+                u = urllib.parse.parse_qs(qs).get("uddg", [""])[0]
+                href = urllib.parse.unquote(u)
+            except Exception:  # noqa: BLE001
+                pass
+        title = unescape(re.sub(r"<[^>]+>", "", m.group("title"))).strip()
+        title = re.sub(r"\s+", " ", title)
+        if not href.startswith("http"):
+            continue
+        if site not in href:
+            continue
+        if query.lower() not in (title.lower() + " " + href.lower()):
+            continue
+        if not is_likely_sal(title + " " + href):
+            continue
+        hits.append({"title": title, "url": href})
+    # Dedupe
+    seen = set()
+    deduped = []
+    for h in hits:
+        if h["url"] in seen:
+            continue
+        seen.add(h["url"])
+        deduped.append(h)
+    return deduped
+
+
+# ---------------------------------------------------------------------------
 # YouTube via yt-dlp
 # ---------------------------------------------------------------------------
 
@@ -420,6 +600,39 @@ def main() -> int:
         wb_cmdd = probe_wayback_cdx("cmddconf.com/*", "cmddconf.com")
         results["Wayback cmddconf.com"] = wb_cmdd[:200]
         time.sleep(0.6)
+
+    if "ddg" not in skip:
+        for site in JS_RENDERED_SITES:
+            print(f"[ddg] site:{site}", file=sys.stderr)
+            label = f"DDG site:{site}"
+            hits = probe_ddg_for_site(query, site)
+            real_hits = [h for h in hits if not h["title"].startswith("[DDG failed")]
+            if real_hits:
+                results[label] = real_hits
+            time.sleep(1.0)  # DDG throttles
+
+    if "hn" not in skip:
+        print(f"[hn] HN Algolia search", file=sys.stderr)
+        hn_hits = probe_hn_algolia(query)
+        real = [h for h in hn_hits if not h["title"].startswith("[HN failed")]
+        if real:
+            results["Hacker News"] = real
+        time.sleep(0.5)
+
+    if "podcasts" not in skip:
+        print(f"[podcasts] Apple Podcasts (iTunes Search API)", file=sys.stderr)
+        ap = probe_apple_podcasts(query)
+        if ap:
+            results["Apple Podcasts"] = ap
+        time.sleep(0.5)
+
+    if "reddit" not in skip:
+        print(f"[reddit] Reddit public JSON", file=sys.stderr)
+        rd = probe_reddit(query)
+        real = [h for h in rd if not h["title"].startswith("[Reddit failed")]
+        if real:
+            results["Reddit"] = real
+        time.sleep(0.5)
 
     if "youtube" not in skip:
         print(f"[youtube] yt-dlp search: {query}", file=sys.stderr)
