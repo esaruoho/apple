@@ -400,6 +400,28 @@ macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **las
 - Community reactions: Gruber, Snell, Cheeseman, Gotow, Weatherhead
 - **Future work**: Scrape @macautomation Twitter/X feed for years of automation tips and commentary, archive iWorkAutomation.com (Sal's own reference site)
 
+## Vocal Shortcuts (macOS 15 Sequoia, Apple Silicon)
+
+`bin/list-vocal-shortcuts.py` reads the user's Vocal Shortcuts entries.
+
+**Storage location** (reverse-engineered 2026-05-07 from a live entry):
+`~/Library/Preferences/com.apple.Accessibility.plist` → key `AVSPreferenceKey` → bytes containing UTF-8 JSON array.
+
+**Each entry shape:**
+```json
+{"name": "where is olga",
+ "associatedShortcut": {"name": "Find Olga",
+   "type": {"siriShortcut": {"id": "<Shortcut UUID from Shortcuts.app>"}},
+   "id": "<internal id>"},
+ "identifier": "<entry UUID>"}
+```
+
+**Trigger surface position:** Vocal Shortcuts is the Sequoia replacement for Sal's pre-2017 Custom Commands plist runtime (which Apple removed). It is now the canonical voice-trigger layer for the 588 CitrusPeel commands and the 73 triple-channel-eligible workflows from the Sal seven-purpose audit (WWSD #30). Vocal Shortcuts can ONLY trigger Shortcuts (or Siri Requests / Accessibility primitives), not arbitrary AppleScript — so the wiring is always: spoken phrase → Vocal Shortcut → Shortcut → Run AppleScript action → DC-XXX library handler.
+
+**Read** is verified working. **Write** programmatically is theoretical — the daemon reads the plist but each phrase requires manual user training (saying it 3x). UI scripting via `bin/vocal-shortcuts-ui-import.applescript` is the practical write path.
+
+Full schema documentation: `analysis/sal/vocal-shortcuts-storage-format.md`. Apple Silicon only — Vocal Shortcuts is unavailable on Intel Macs.
+
 ## HomePod Climate Sensor
 
 `homepod/` — reads HomePod temperature/humidity via `shortcuts run "HomePod Sensors"`, logs to JSONL, serves live dashboard on port 3007. Calibrated +0.45C temp, +4.5% humidity. LaunchAgent runs every 10 min. Pattern: HomeKit sensor → Shortcuts → CLI → bash → structured data.
