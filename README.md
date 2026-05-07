@@ -15,6 +15,8 @@ In November 2016, Apple eliminated the position of **Product Manager of Automati
 
 This repo picks up where that role left off.
 
+> "It's very empowering to give somebody that ability to suddenly change the way they work and enable them to do great, complex things to grow their business." — Sal Soghoian ([WIRED, 2018](sources/sal/articles/wired-soghoian-automation-2018.md))
+
 Apple did not preserve this material institutionally. This repo does: the scripts, the site corpus, the lesson structure, the downloads, the demo media, and the philosophy behind them.
 
 **288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
