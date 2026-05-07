@@ -67,7 +67,7 @@ The Phase 3 Path A installer (`bin/dictation-commands-install.sh`) writes the le
 Probe date:     2026-05-07
 Host:           Esa Ruoho's MacBook Pro
 macOS:          15.6.1 (24G90)
-Architecture:   Intel x86_64 (this Mac — Vocal Shortcuts ineligible)
+Architecture:   arm64 / Apple M3 Pro (Vocal Shortcuts available + working — see "where is olga" entry)
 ```
 
 Apple's Vocal Shortcuts user-guide screenshot (provided by Esa) confirms:
