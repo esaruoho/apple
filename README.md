@@ -244,14 +244,14 @@ Symlinks make the difference. `voice-memos-exporter` ships with `.m4a` symlinks 
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.
 
-### Tier 1 priorities — high cardinality, clean schema
+### Tier 1 priorities — ✅ ALL SHIPPED 2026-05-08
 
-- [ ] **`music-exporter`** — Music.app has the full sdef (Tier 1) + 461-key plist + `~/Music/Music/Music Library.musiclibrary/Library.musicdb` SQLite. Export: playlists, smart playlists with their predicates, ratings, play counts, last-played dates, Library state. Loupedeck-button candidate: "rate current track 5 stars".
-- [ ] **`photos-exporter`** — Photos.app sdef + `~/Pictures/Photos Library.photoslibrary/database/Photos.sqlite` (massive, structured). Export: albums, smart albums with predicates, Memories, Faces (if iCloud Photos enabled), shared albums, places (lat/lon), keyword tags. Heaviest payoff per byte.
-- [ ] **`mail-exporter`** — Mail sdef (Tier 1) + `~/Library/Mail/V*/MailData/Envelope Index` SQLite + per-mailbox MBOX walk. Export: accounts, signatures, mailboxes (mboxes), search across cached headers.
-- [ ] **`calendar-exporter`** — Calendar sdef + `~/Library/Calendars/*.calendar/` ICS files. Export: every event from every calendar source, alarms, attendee status, recurrence rules. Combine with voice-memos timestamps for "what was I doing when I made this recording?".
-- [ ] **`finder-exporter`** — Finder sdef + 100-key plist (sidebar, tags with colors, recent locations, label colors). Export: Finder tag taxonomy + which files have which tags via Spotlight.
-- [ ] **`pages-numbers-keynote-exporter`** (one package, three sdefs) — Recents lists, autosaved drafts, theme/template choices, exported PDF history. The iWork apps share schema; one exporter covers all three.
+- [x] **`music-exporter`** — Music.app sdef (Tier 1) + 80,444 tracks / 147 playlists across the Library source. Subcommands: `status`, `playlists [--smart-only]`, `smart`, `tracks [--playlist NAME]`, `artists`, `albums`, `export [--with-tracks]`. Three AppleScript landmines worked around (playlists nest under sources; `count of tracks of playlists` raises -1727; `every X whose Y` raises -1700 on zero matches).
+- [x] **`photos-exporter`** — `Photos.sqlite` (3.4 GB) `?mode=ro&immutable=1`. **77,033 assets / 4,787 albums (23 smart) / 51,234 with GPS / 585 favorites**. Subcommands: `status`, `albums`, `album <title>`, `keywords`, `places`, `favorites`, `export [--heads-only]`. Schema gotcha codified: album↔asset join is `Z_<N>ASSETS` where `<N>` changes with macOS version (auto-detected at runtime); `ZASSET.ZLATITUDE = -180` is the no-GPS sentinel.
+- [x] **`mail-exporter`** — Envelope Index SQLite at `~/Library/Mail/V*/MailData/Envelope Index`. **331,866 messages / 72 mailboxes / 181,695 unique subjects**. Subcommands: `status`, `mailboxes`, `top-senders`, `subjects --match`, `search --sender --since --subject`, `export`. Top sender: Esa Ruoho (25,040, mostly self-Cc); Bandcamp (17,682); GitHub notifications (9,133).
+- [x] **`calendar-exporter`** — `Calendar.sqlitedb` from the Group Container. **24 calendars / 9,457 events / 1.6 MB vault**. Subcommands: `status`, `calendars`, `events --since --until --calendar --match`, `upcoming -n N`, `export`. Per-calendar md + per-year md.
+- [x] **`finder-exporter`** — Finder tags via `mdfind 'kMDItemUserTags == "*"'` + 232 .sfl3 LSSharedFileList lists. **865 tagged files** across ~24 unique tags. Subcommands: `status`, `tags`, `tag-files`, `recents`, `favorites`, `export`. (.sfl3 NSKeyedArchiver decoder needs the iwork-exporter v2 backport for proper recents.)
+- [x] **`iwork-exporter`** — Pages / Numbers / Keynote in BOTH variants installed at `/Applications/`: regular iWork (App Store, `com.apple.iWork.*`, v14.5) AND Creator Studio (newer, `com.apple.*`, v15.2.1). Both have full sdefs. Recent docs from .sfl3 NSKeyedArchiver bplists shared across variants. **5 apps, 31 + 13 + 1 recent docs.** Ships the family's first proper .sfl3 UID resolver + a `resolve_bookmark.swift` Foundation helper that turns Apple bookmark blobs into resolved file paths.
 
 ### Tier 2 — everything else with a real sdef
 
@@ -290,17 +290,17 @@ What's left to make this repo a **complete** unlock of every Apple-shipped app f
 - [ ] `image-capture-exporter download-from-ios <device>` — ImageCaptureCore framework via Objective-C bridging.
 - [ ] `image-capture-exporter watch` — IOKit DAEvents observer for USB attach/detach with hook command.
 
-### Cross-package — the unified-vault layer
+### Cross-package — the unified-vault layer ✅ SHIPPED 2026-05-08
 
-- [ ] **`apple-grand-search`** — single CLI that searches across every exporter's vault. `apple-grand-search "Kortela"` returns Reminders + Notes + iMessage links + Voice Memos titles + Safari open tabs + Safari bookmarks + Calendar events + Mail headers + Photos captions in one ranked list.
-- [ ] **`apple-grand-export`** — runs every exporter in dependency order with a single command. Single timestamped run, single git commit possible (against a private personal repo).
+- [x] **[`bin/apple-grand-search`](bin/apple-grand-search)** — unified ripgrep across every exporter vault. `apple-grand-search "Kortela"` returns 16 hits across voice-memos + safari + 11 other vaults, per-vault clustered. Falls back to `grep -r` when ripgrep isn't installed.
+- [x] **[`bin/apple-grand-export`](bin/apple-grand-export)** — runs all 13 read-only exporters in dependency order. `--quick` skips the slow ones (mail / photos / music / finder). 9 exporters in 28s on this Mac. `--only`, `--skip`, `--dry-run`.
+- [x] **[`voice-memos-exporter xref --calendar`](voice-memos-exporter/scripts/voice_memos_exporter.py)** — first cross-package xref. Matches each recording timestamp to ±N min Calendar events directly from Calendar.sqlitedb. Live: Lintuparvenkuja recording → "Esko" appointment at that street; Sahaajankatu → Weekly All-hands; Recording 169 → Daily Core Team. Same idiom should drop into `mail xref --calendar`, `photos xref --calendar`, `safari xref --notes`.
 - [ ] **`apple-grand-stats`** — daily / weekly / monthly digest derived from all the per-package exports. Hours recorded today (Voice Memos), URLs visited (Safari history), reminders completed, Photo Booth captures, etc.
-- [ ] **Cross-reference (`xref`) per package** — `voice-memos-exporter xref --calendar` matches recordings against Calendar events; `safari-exporter xref --notes` matches open tabs against Notes that mention the URL; etc. Each xref decorates the .md sidecar with a `xref:` block linking to the matching items in other vaults.
 
-### Apple Intelligence + AI integration
+### Apple Intelligence + AI integration ✅ STUB SHIPPED
 
-- [ ] **Apple's own on-device LLM via Foundation Models** (macOS 15+) — wrap the new `FoundationModels` Swift framework as `apple-summarize <markdown-file>` for a fully on-device, no-network, no-third-party-API summary of any vault page. Currently the `imessage-exporter` and `voice-memos-exporter` summaries call out to external models; this would replace that with Apple's built-in.
-- [ ] **Voice control hooks** — Sal's WWDC 2016 session 717 talked about voice as a peer modality. The recovered transcript is in this repo. Replicate that with current macOS: per-app voice commands → AppleScript → exporter actions. "Hey Sal, transcribe my latest voice memo." → `voice-memos-exporter transcribe latest`.
+- [x] **[`bin/apple-summarize`](bin/apple-summarize)** — Foundation Models Swift framework wrapper. Auto-detects whether `LanguageModelSession()` instantiates (macOS 26+ ships the public API; macOS 15.6.1 has the framework header but the API is unavailable). Falls back to a rule-based heuristic bullet extractor that picks the most info-rich lines until macOS 26 lands. **Critical detection lesson** (codified in memory): test `LanguageModelSession()` instantiation, NOT `import FoundationModels` — the import succeeds on 15.6.1 but the API is `@available(macOS 26.0, *)`.
+- [x] **[`bin/hey-sal`](bin/hey-sal)** — Sal's WWDC 2016 session 717 vision realised. Natural-language utterance → rule-based intent classifier (13 patterns) → exporter dispatch → optional `say` voice output. Live verified: "what did I record on Mauri Rantala", "when did I last visit forum.renoise.com", "what's on my calendar today" (returns today's actual 3 events: Joshua Paketti 1-on-1, VASU päiväkoti, äitienpiävän aamupala), "find email from kortela about pyrolysis", "show me my pages CVs", "take my photo". Six [`scripts/exporter-loupedeck/*.applescript`](scripts/exporter-loupedeck/) wrappers bind the same actions to physical buttons.
 
 ### Sal philosophy threading
 
@@ -313,7 +313,15 @@ What's left to make this repo a **complete** unlock of every Apple-shipped app f
 - [ ] **`exported/README.md` cardinality refresh** — auto-update the live numbers each time `apple-grand-export` runs.
 - [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots of the survey to catch new apps / new keys after macOS updates. Run after each system update; commit the diff so the repo tracks Apple's evolution.
 
-If we land all of the Tier 1 priorities and the unified-vault layer, **the apple repo becomes the canonical "everything from your Mac in one Obsidian-grade vault" tool**. That's the full Apple experience — your data in your hands, in plain text, in the browser of your choice.
+### Bootstrap ✅ SHIPPED
+
+- [x] **[`bin/apple-bootstrap`](bin/apple-bootstrap)** — one-command setup for any cloning user. Verifies macOS + Python + ripgrep + swift; copies every `<name>-exporter/.env.example` to `.env` (skips existing); reminds about Full Disk Access; runs the plist probe; runs every read-only exporter via `apple-grand-export`; writes `~/work/apple/exported/INDEX.md` and opens it. `--check` (validates only), `--quick` (skip slow exporters).
+
+### Status as of 2026-05-08
+
+**21 user-runnable tools shipped today** (15 -exporter packages + 5 cross-package bin tools + the meta plist-probe). The Tier 1 list is fully green. The unified-vault layer is live. Hey Sal v0 routes natural language into the exporter family. The apple repo is — in a real sense — **what Sal would have built if Apple hadn't eliminated his role in November 2016.**
+
+What's next: the [Hey Sal roadmap](dictionaries/hey-sal/hey-sal-roadmap.md) lists the longer-arc layers (BBS / Cloudcity integration, additional `xref` subcommands, cross-package `apple-grand-stats`, and the macOS 26 FoundationModels swap). The [WWSD-applied-2026-05-08](analysis/sal/wwsd-applied-2026-05-08.md) walks today's build through Sal's 30 sourced principles.
 
 ---
 
