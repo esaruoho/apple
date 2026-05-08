@@ -44,8 +44,8 @@ Two files, both gitignored:
 ### `.env` — paths and identity
 
 ```env
-VAULT_PATH=~/notes-vault
-EXPORT_PATH=~/notes-export
+VAULT_PATH=~/work/apple/exported/notes
+EXPORT_PATH=~/work/apple/exported/notes-manifest
 NOTES_DB=~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite
 NOTES_ACCOUNT_ID=51781730-D2BA-45AB-8E20-CEFE28B642A1
 WHISPER_MODEL=base

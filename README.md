@@ -176,6 +176,16 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ## Bulk Exporters — Reminders, Voice Memos, Safari
 
+> **Convention**: every bulk exporter writes its vault into
+> [`exported/<package>/`](exported/) under the repo. The `exported/`
+> directory is gitignored (only its README is tracked) so cloning this
+> repo never carries anyone's private data — but each contributor gets
+> their own tooling-and-data side by side. Override the path per
+> package via `<package>-export/.env` if you'd rather put your vault
+> somewhere else.
+
+
+
 Two read-only catalog/export packages that turn Apple data into clean
 markdown vaults without copying audio or modifying Apple's stores. Same
 pattern as the older [`notes-export/`](notes-export/) and

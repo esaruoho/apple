@@ -42,7 +42,7 @@ Two files, both gitignored:
 ### `.env` — paths and identity
 
 ```env
-OUTPUT_PATH=~/imessage-export-output
+OUTPUT_PATH=~/work/apple/exported/imessage
 MY_NAME=Your Name
 CHAT_DB=~/Library/Messages/chat.db
 ```

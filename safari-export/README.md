@@ -15,7 +15,7 @@ Background analysis in
 
 ```bash
 cd ~/work/apple/safari-export
-cp .env.example .env          # set VAULT_PATH if you don't want ~/safari-vault
+cp .env.example .env          # set VAULT_PATH if you don't want ~/work/apple/exported/safari
 chmod +x scripts/safari-export
 ```
 
@@ -194,12 +194,12 @@ safari-export export                                # everything except history
 safari-export export --with-history --history-days 90
 ```
 
-Writes to `$VAULT_PATH` (default `~/safari-vault`).
+Writes to `$VAULT_PATH` (default `~/work/apple/exported/safari`).
 
 ## Vault layout
 
 ```
-~/safari-vault/
+~/work/apple/exported/safari/
 ├── INDEX.md                       navigation
 ├── windows/
 │   ├── window-3.md                Window 3: 1453 tabs, grouped by tab-group

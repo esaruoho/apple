@@ -33,7 +33,7 @@ First run prompts for Automation permission (Terminal → control Reminders).
 ## Output shape
 
 ```
-~/reminders-vault/
+~/work/apple/exported/reminders/
   work/
     2026-04-12__call-dentist__3F2B81A0.md
     2026-05-01__file-tax-return__7C4E1922.md
