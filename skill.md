@@ -329,7 +329,7 @@ Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Wr
 
 **Workaround:** `~/Library/Messages/chat.db` (SQLite) is readable with Full Disk Access but SIP-protected.
 
-## Bulk Exporters: Reminders + Voice Memos
+## Bulk Exporters: Reminders + Voice Memos + Safari
 
 Two read-only catalog/export packages live at the repo root, mirroring
 the `notes-export/` and `imessage-export/` shape. Both write only into a
@@ -366,6 +366,45 @@ diarization, summarize, watch daemon, BBS pipeline) in
 `voice-memos-capability-map.md`. Disk-lean operations philosophy
 (symlink-only, ~14 MB total vault even after Phase 2 transcribe + index)
 in `voice-memos-disk-lean-ops.md`.
+
+### `safari-export/` — Safari has a real sdef AND three SQLite stores
+
+Unlike Voice Memos, Safari has a complete AppleScript dictionary AND
+exposes its data in three on-disk SQLite databases. The export package
+reads them all (`?mode=ro&immutable=1`) without ever touching Safari's
+state.
+
+Data sources:
+- `~/Library/Containers/com.apple.Safari/Data/Library/Safari/SafariTabs.db` — windows, tab groups, open tabs, bookmarks (all unified in one `bookmarks` table where `type=0` is leaf URL and `type=1` is folder/tab-group)
+- `~/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db` — tabs synced from other devices via iCloud
+- `~/Library/Safari/History.db` — full browsing history
+
+Subcommands: `status`, `windows`, `tabgroups`, `tabs --window/--tabgroup/--match/--domain`, `bookmarks --tree`, `icloud-tabs --device`, `history --last/--since/--match`, `search` (cross-search tabs+bookmarks+history), `export` (full markdown vault).
+
+Vault layout:
+```
+windows/window-N.md        per window, tabs grouped by tab-group
+tabgroups/<slug>.md         per tab group, full tab list with nesting
+bookmarks/<topic>.md        per top-level folder, full nested tree
+cloud-tabs/<device>.md      per remote device
+history/YYYY-MM.md          per month
+INDEX.md                    navigation
+```
+
+Schema gotchas (codified so future probes don't waste time):
+
+1. `bookmarks` table holds bookmarks AND tab-groups AND open tabs — same table, distinguished only by `type` and `parent`.
+2. `windows_tab_groups.tab_group_id = 0` is the synthetic bookmarks root, NOT a real tab group. Including it would pollute window tab counts with 1300+ phantom "tabs". Always `WHERE wtg.tab_group_id != 0`.
+3. `cloud_tabs.last_viewed_time` (not `last_modified`).
+4. `history_visits.visit_time` (not `last_visit`); compute per-item `last_visit` via `MAX(visit_time)` aggregate.
+5. Top-level bookmark folders need filtering: `special_id = 0`, `num_children > 0`, exclude reserved titles (`Private`, `privatePinned`, `recentlyClosed`, `Recovered`, `Local`) — otherwise the index is full of empty system slots.
+6. The `bookmark_title_words` table is a free FTS-style word index for title search — already populated by Safari, so search across all 2,800+ bookmarks is fast without building an index.
+
+Live numbers on this Mac (2026-05-08): 6 windows / 2,477 open tabs / 20 tab groups / 2,886 bookmarks / 1,899 iCloud tabs from RayMac+iPhone+CloudcityMacMini / 52,442 history URLs across 147,033 visits. Vault size after `export --with-history --history-days 30`: 2.5 MB; without history: 1.3 MB.
+
+Phase 2 (deliberately omitted, awaiting Esa's reorganization decisions): close-tab, move-tab, dedupe, archive-window-to-bookmarks. The `cloud_tab_close_requests` table in `CloudTabs.db` would propagate close requests to other devices via iCloud — explicitly never written from this tool.
+
+Detail in `dictionaries/safari/safari-extraction-research.md`.
 
 ## Sal Soghoian — The Automation Oracle
 

@@ -174,7 +174,7 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ---
 
-## Bulk Exporters — Reminders, Voice Memos
+## Bulk Exporters — Reminders, Voice Memos, Safari
 
 Two read-only catalog/export packages that turn Apple data into clean
 markdown vaults without copying audio or modifying Apple's stores. Same
@@ -230,6 +230,48 @@ Detail in
 [`voice-memos-cli-feasibility.md`](dictionaries/voice-memos/voice-memos-cli-feasibility.md),
 [`voice-memos-capability-map.md`](dictionaries/voice-memos/voice-memos-capability-map.md),
 [`voice-memos-disk-lean-ops.md`](dictionaries/voice-memos/voice-memos-disk-lean-ops.md).
+
+### [`safari-export/`](safari-export/) — windows / tab groups / open tabs / bookmarks / iCloud tabs / history
+
+```bash
+safari-export status                              # 6 windows, 2,477 tabs, 1,899 iCloud tabs, 52k history
+safari-export windows                             # per-window tab-group breakdown
+safari-export tabgroups                           # 20 named tab groups, by tab count
+safari-export tabs --tabgroup "Free Energy"       # tabs in one named group
+safari-export tabs --match 'kortela|grotz|tesla'  # regex over title + URL
+safari-export tabs --domain youtube.com
+safari-export bookmarks --tree --depth 3
+safari-export icloud-tabs --device iPhone         # tabs from another device
+safari-export history --last 7d --match russell
+safari-export search "kortela"                    # tabs + bookmarks + history
+safari-export export --with-history --history-days 90
+```
+
+Reads three SQLite stores in `?mode=ro&immutable=1`:
+`SafariTabs.db`, `CloudTabs.db`, `History.db`. Never modifies Safari.
+
+**Vault layout** (~`$VAULT_PATH`, default `~/safari-vault`):
+
+```
+INDEX.md                       navigation
+windows/window-N.md            per window, tabs grouped by tab-group
+tabgroups/<slug>.md            per tab group, full tab list (nesting preserved)
+bookmarks/<topic>.md           per top-level folder, full nested tree
+cloud-tabs/<device>.md         per remote device (RayMac, iPhone, …)
+history/YYYY-MM.md             per month
+```
+
+**Schema gotchas** (encoded so future archaeology doesn't repeat
+yesterday's): `bookmarks.type 0`=leaf, `1`=folder/tab-group, all in
+one table. `windows_tab_groups.tab_group_id = 0` is the synthetic
+bookmarks root — exclude or your window tab counts inflate by 1,300+
+phantoms. `cloud_tabs.last_viewed_time` (not `last_modified`).
+`history_visits.visit_time` (not `last_visit`). Top-level bookmark
+folder filter needs `special_id = 0 AND num_children > 0` plus an
+exclusion list of reserved system titles.
+
+Detail in
+[`dictionaries/safari/safari-extraction-research.md`](dictionaries/safari/safari-extraction-research.md).
 
 ---
 
