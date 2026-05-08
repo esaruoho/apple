@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# md-to-clipboard — render Markdown as rich text and put it on the
+# macOS clipboard. Apple-native: python3 + textutil + osascript.
+# No Homebrew, no pip, no PyObjC.
+#
+# Usage:
+#   md-to-clipboard source.md
+#   cat source.md | md-to-clipboard
+#   md-to-clipboard --html source.html        # already HTML, skip MD render
+#
+# Reference: ~/.claude/skills/rich-text-clipboard/SKILL.md
+
+set -uo pipefail
+
+TMP="${TMPDIR:-/tmp}/md-clipboard-$$"
+trap 'rm -f "$TMP".html "$TMP".rtf' EXIT
+
+SOURCE_IS_HTML=0
+INPUT="-"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --html) SOURCE_IS_HTML=1; shift;;
+        -h|--help)
+            head -12 "$0" | grep '^#' | sed 's|^# \?||'; exit 0;;
+        *) INPUT="$1"; shift;;
+    esac
+done
+
+if [ "$INPUT" = "-" ]; then
+    SRC=$(cat)
+else
+    SRC=$(cat "$INPUT")
+fi
+
+if [ $SOURCE_IS_HTML -eq 1 ]; then
+    echo "$SRC" > "$TMP.html"
+else
+    echo "$SRC" | python3 - <<'PY' > "$TMP.html"
+import re, sys
+src = sys.stdin.read()
+out_lines = []
+buf = []
+in_list = False
+
+def flush_buf():
+    global buf
+    if buf:
+        para = ' '.join(buf).strip()
+        if para:
+            out_lines.append(f'<p>{para}</p>')
+        buf = []
+
+for raw in src.splitlines():
+    line = raw.rstrip()
+    if not line.strip():
+        flush_buf()
+        if in_list:
+            out_lines.append('</ul>'); in_list = False
+        continue
+    if line.startswith('### '):
+        flush_buf()
+        if in_list: out_lines.append('</ul>'); in_list = False
+        out_lines.append(f'<h3>{line[4:]}</h3>'); continue
+    if line.startswith('## '):
+        flush_buf()
+        if in_list: out_lines.append('</ul>'); in_list = False
+        out_lines.append(f'<h2>{line[3:]}</h2>'); continue
+    if line.startswith('# '):
+        flush_buf()
+        if in_list: out_lines.append('</ul>'); in_list = False
+        out_lines.append(f'<h1>{line[2:]}</h1>'); continue
+    if line.startswith('- '):
+        flush_buf()
+        if not in_list:
+            out_lines.append('<ul>'); in_list = True
+        out_lines.append(f'<li>{line[2:]}</li>'); continue
+    if in_list:
+        out_lines.append('</ul>'); in_list = False
+    buf.append(line)
+flush_buf()
+if in_list:
+    out_lines.append('</ul>')
+
+html = '\n'.join(out_lines)
+html = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', html)
+html = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', html)
+html = re.sub(r'(?<!\w)\*([^*\n]+?)\*(?!\w)', r'<em>\1</em>', html)
+html = re.sub(r'`([^`]+?)`', r'<code>\1</code>', html)
+
+print('<!DOCTYPE html><html><head><meta charset="utf-8">'
+      '<style>body{font-family:-apple-system,sans-serif;font-size:14px;line-height:1.45}'
+      'code{font-family:Menlo,monospace;font-size:12.5px;background:#f3f3f3;padding:1px 4px;border-radius:3px}'
+      'h2{margin:1.4em 0 0.4em;font-size:15px}'
+      'h3{margin:1em 0 0.3em;font-size:14px}'
+      'p,li{margin:0.5em 0}'
+      'ul{margin:0.4em 0 0.6em}</style></head><body>')
+print(html)
+print('</body></html>')
+PY
+fi
+
+if ! textutil -convert rtf -stdout "$TMP.html" > "$TMP.rtf" 2>/dev/null; then
+    echo "textutil failed to convert HTML to RTF" >&2
+    exit 1
+fi
+
+if ! osascript <<EOF >/dev/null 2>&1
+set theData to read (POSIX file "$TMP.rtf") as «class RTF »
+set the clipboard to theData
+EOF
+then
+    echo "osascript failed to set clipboard" >&2
+    exit 1
+fi
+
+bytes=$(stat -f%z "$TMP.rtf")
+echo "✓ rich text on clipboard (${bytes} bytes RTF)"
+osascript -e 'clipboard info' | sed 's/^/  /'
