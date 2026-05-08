@@ -55,7 +55,61 @@ A `voicememos --whisper` flag would just need to:
 3. write the .txt next to the m4a in the export vault
 4. record the transcript path back into `.state.json` so re-runs skip done
 
-## Q3. Apple's auto-generated English transcripts — **NO usable archive exists**
+## Q3. Apple's auto-generated English transcripts — **YES, embedded in the m4a trailer**
+
+> **Updated 2026-05-08.** Initial probe missed the storage location and
+> reported "no transcript archive exists". Second probe of the m4a tail
+> bytes turned up the actual format. Below is the corrected answer; the
+> historical (negative) findings follow at the end for the record.
+
+### Where they live
+
+Each m4a that has a transcript carries a `tsrp` 4-byte ASCII marker
+followed by a JSON object, appended after the audio data. Structure:
+
+```json
+{
+  "locale": {"identifier": "en_US@rg=fizzzz", "current": 1},
+  "attributedString": {
+    "attributeTable": [{"timeRange": [9.9, 19.14]}, ...],
+    "runs": ["text fragment", 0, " more text", 1, ...]
+  }
+}
+```
+
+`runs` alternates `text_str, attribute_index, text_str, attribute_index, ...`.
+Each `attribute_index` looks up a `timeRange` in `attributeTable`. The
+even-indexed entries concatenate to the full transcript text.
+
+### How to find which recordings have one
+
+```sql
+SELECT ZUNIQUEID, ZFLAGS, ZPATH, ZCUSTOMLABEL
+FROM ZCLOUDRECORDING
+WHERE (ZFLAGS & 0x08) != 0;
+```
+
+ZFLAGS bit 3 (mask 0x08) is the "has transcript" bit. Live verified
+against 13 recordings on this Mac (7 from 2026 made on iPad, 6 older
+interviews). Cross-checked against the on-disk `tsrp` byte marker —
+matches exactly.
+
+### Implementation
+
+`voice-memos-export transcripts --extract --print "<selector>"` parses
+the trailer in <50ms even for the 25-hour file. Output is line-broken
+on >2 s gaps with `[MM:SS]` timestamps.
+
+### Quality caveat
+
+Apple's transcript engine on macOS 15.6.1 is **English-only** and
+performs poorly on Finnish-mixed speech. The 13-minute "FinnLines"
+recording (Finnish) yields 541 chars of fragmented half-recognised text.
+For Esa's archive, Whisper with `--fi` is the practical path. Apple's
+embedded transcripts are useful primarily for inventory comparison and
+(eventually) for diff-quality benchmarking when Apple's engine improves.
+
+### Original (incorrect) answer for the record
 
 Voice Memos.app on macOS 15.6.1 **has transcription wired in** — confirmed
 by symbols in the binary:

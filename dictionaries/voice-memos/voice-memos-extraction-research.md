@@ -13,6 +13,23 @@ markdown sidecar → optional Whisper transcription.
 This is *simpler* than Reminders (no osascript dance, no permission dialog
 beyond Full Disk Access for the Group Container).
 
+### Update 2026-05-08 — `tsrp` atom found
+
+Apple's auto-generated transcripts ARE persisted to disk after all — but
+they're appended to the **m4a file itself** as a `tsrp` JSON atom in the
+trailer, not stored in the SQLite database. Two-line summary:
+
+- Detection: `ZFLAGS & 0x08` is the "has transcript" bit on
+  `ZCLOUDRECORDING`. Verified across 13 recordings on this Mac.
+- Extraction: scan the m4a file (last ~256 KB is enough) for the ASCII
+  marker `tsrp`, then parse the JSON object that follows. The transcript
+  is an NSAttributedString with `attributeTable` (timeRanges) and `runs`
+  (alternating `[text, attribute_index, ...]`).
+
+Implementation: `voice-memos-export transcripts --extract`. See
+`voice-memos-cli-feasibility.md` for the longer history of this finding
+(initial probe missed it; second probe of the m4a tail uncovered it).
+
 ## Storage layout
 
 ```

@@ -329,6 +329,44 @@ Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Wr
 
 **Workaround:** `~/Library/Messages/chat.db` (SQLite) is readable with Full Disk Access but SIP-protected.
 
+## Bulk Exporters: Reminders + Voice Memos
+
+Two read-only catalog/export packages live at the repo root, mirroring
+the `notes-export/` and `imessage-export/` shape. Both write only into a
+user-configurable vault path; never modify Apple's data.
+
+### `reminders-export/`
+- AppleScript-driven (Reminders.app has a real sdef).
+- Parallel-array fetch (`id of every reminder of theList`) — orders of magnitude faster than `repeat with R in theReminders` and avoids two AppleScript landmines:
+  1. `«class isot»` ISO-date coercion **hangs osascript indefinitely** on Reminders objects on macOS 15.6.1 — replaced with manual `((year of d) as text) & "-" & ...` assembly.
+  2. `id of <saved-reminder-list-variable>` returns reference list, not strings — must apply `id of` to the freshly-derived `every reminder` expression directly.
+- Live numbers on Esa's Mac: 23 lists / 2,547 reminders / 520 active when completed-skipped.
+
+### `voice-memos-export/` — Voice Memos has NO scripting dictionary
+- `sdef /System/Applications/VoiceMemos.app` returns error -192. Direct SQLite + filesystem reads only.
+- DB: `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/CloudRecordings.db`. Audio: plain `.m4a` next to it.
+- Title gotcha: `ZCUSTOMLABEL` often holds the system default ("New Recording N" / ISO timestamp). User-edited title lives in `ZENCRYPTEDTITLE` (column is misnamed — plaintext) and `ZCUSTOMLABELFORSORTING`.
+- Date column `ZDATE` is Cocoa epoch (seconds since 2001-01-01 UTC) — add 978307200 to get Unix epoch.
+- Encoder string in m4a metadata identifies the recording device (`com.apple.VoiceMemos (iPad Version 15.6.1 …)` → "iPad", "iPhone", "Mac", or `iOS X.Y`). ffprobe extracts it.
+
+### `tsrp` atom — Apple's auto-generated transcripts ARE on disk
+
+Apple's on-device transcripts (Voice Memos.app → tap Transcribe) are
+appended to the m4a file itself in a custom trailer atom:
+
+- **Detection bit**: `ZCLOUDRECORDING.ZFLAGS & 0x08` is set when a transcript exists. Verified across 13 recordings on this Mac (7 from 2026 made on iPad, 6 older). Other ZFLAGS bits observed: `0x04` always set on synced recordings, `0x200`/`0x400` set on iPad recordings (semantics unconfirmed).
+- **Storage**: ASCII marker `tsrp` near the end of the .m4a, immediately followed by a JSON object: `{"locale": ..., "attributedString": {"attributeTable": [...], "runs": [...]}}`.
+- **Format**: `runs` is a flat array alternating `[text_str, attribute_index, text_str, attribute_index, ...]`. Each `attribute_index` indexes into `attributeTable`, where every entry has `{"timeRange": [start_sec, end_sec]}`. Concatenating even-indexed strings reconstructs full transcript text with per-fragment time alignment.
+- **Quality**: Apple's transcript engine on macOS 15.6.1 is **English-only** and performs poorly on Finnish-mixed speech. Use Whisper (`whisp --fi`) for real transcripts — Apple's are kept primarily for inventory and benchmarking.
+
+Implementation: `voice-memos-export transcripts --extract`. Detail in
+`dictionaries/voice-memos/voice-memos-extraction-research.md` and
+`voice-memos-cli-feasibility.md`. Capability roadmap (search,
+diarization, summarize, watch daemon, BBS pipeline) in
+`voice-memos-capability-map.md`. Disk-lean operations philosophy
+(symlink-only, ~14 MB total vault even after Phase 2 transcribe + index)
+in `voice-memos-disk-lean-ops.md`.
+
 ## Sal Soghoian — The Automation Oracle
 
 When triggered by "sal", "what would sal do", or "wwsd", channel Sal Soghoian's philosophy.

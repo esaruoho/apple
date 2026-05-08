@@ -174,6 +174,65 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ---
 
+## Bulk Exporters — Reminders, Voice Memos
+
+Two read-only catalog/export packages that turn Apple data into clean
+markdown vaults without copying audio or modifying Apple's stores. Same
+pattern as the older [`notes-export/`](notes-export/) and
+[`imessage-export/`](imessage-export/).
+
+### [`reminders-export/`](reminders-export/) — 23 lists / 2,547 reminders
+
+```bash
+reminders-export lists                         # list every Reminders list + count
+reminders-export export --lists Work,Home      # export specific lists
+reminders-export export --all                  # everything in config.json
+reminders-export export --include-completed
+reminders-export status                        # last run / per-list counts
+```
+
+AppleScript-driven via parallel-array fetch. Worked around two
+landmines on macOS 15.6.1: `«class isot»` ISO date coercion hangs
+osascript indefinitely on Reminders objects (replaced with manual
+year/month/day component assembly), and `id of <saved-list-variable>`
+returns reference list rather than strings (use
+`id of (every reminder of theList whose ...)` directly).
+
+### [`voice-memos-export/`](voice-memos-export/) — 392 recordings / 98.6 hours
+
+```bash
+voice-memos-export list --audio                # codec, sample rate, channels, device
+voice-memos-export list --with-transcripts     # only recordings Apple already transcribed
+voice-memos-export stats                       # by-year + place clusters
+voice-memos-export open "Mauri Rantala"        # in Voice Memos / QuickTime / Finder
+voice-memos-export export --all --audio        # vault: 1.6 MB symlinks + sidecars
+voice-memos-export transcripts                 # which recordings have Apple transcripts
+voice-memos-export transcripts --extract --print "Jon C. Fox"
+voice-memos-export transcripts --extract --all # write .apple-transcript.txt files
+```
+
+Voice Memos has **no AppleScript dictionary** (`sdef` errors -192).
+Direct SQLite read of `CloudRecordings.db` + plain-m4a filesystem.
+
+**The `tsrp` discovery (2026-05-08)**: Apple's auto-generated transcripts
+are persisted to disk after all — appended to the .m4a file itself in a
+custom trailer atom. ZFLAGS bit 3 (mask `0x08`) on `ZCLOUDRECORDING`
+indicates presence; the m4a tail contains the ASCII marker `tsrp`
+followed by an NSAttributedString JSON with time-aligned word runs. We
+detect (13 transcripts on this Mac) and extract (with `[MM:SS]`
+timestamps) without any UI scripting or Whisper. Quality is poor on
+Finnish-mixed speech though — Apple's engine is English-only on macOS
+15.6.1 — so use Whisper (`whisp --fi`) for real transcripts and keep the
+Apple-generated ones for inventory + comparison.
+
+Detail in
+[`dictionaries/voice-memos/voice-memos-extraction-research.md`](dictionaries/voice-memos/voice-memos-extraction-research.md),
+[`voice-memos-cli-feasibility.md`](dictionaries/voice-memos/voice-memos-cli-feasibility.md),
+[`voice-memos-capability-map.md`](dictionaries/voice-memos/voice-memos-capability-map.md),
+[`voice-memos-disk-lean-ops.md`](dictionaries/voice-memos/voice-memos-disk-lean-ops.md).
+
+---
+
 ## HomePod Climate Sensor
 
 Reads temperature and humidity from a HomePod's hidden sensor via the Shortcuts CLI, logs to JSONL, and serves a live dashboard.
