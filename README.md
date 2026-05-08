@@ -174,6 +174,149 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ---
 
+## Unlocking Apple — Today's Build (2026-05-08)
+
+The thesis of this repo, said plainly: **the apple repo is the keys to the kingdom for any Apple user.** Apple shipped 66 first-party apps with rich user data; the official scripting story stops at maybe a third of them. Today we made the surface durable across the rest.
+
+Nine packages now exist, each one a `<name>-exporter` that turns a single Apple app into a markdown vault you can browse, grep, dedupe, and feed into Obsidian or any AI assistant — without copying media you already have, without any third-party dependency.
+
+| # | Package | Surface | What we cracked | Live cardinality |
+|---|---------|---------|---|---|
+| 1 | [`notes-exporter`](notes-exporter/) | Notes.app SQLite + AppleScript | Folder → markdown vault, attachments + audio symlinks, Whisper transcription hook | (run when you want) |
+| 2 | [`imessage-exporter`](imessage-exporter/) | chat.db | Per-contact link extraction, full conversation export, og: metadata enrichment | (run when you want) |
+| 3 | [`reminders-exporter`](reminders-exporter/) | Reminders sdef (parallel-array fetch) | 23 lists / 520 active reminders → markdown by list folder | 2.0 MB vault |
+| 4 | [`voice-memos-exporter`](voice-memos-exporter/) | CloudRecordings.db + m4a + **the `tsrp` atom** | 392 recordings, 13 with Apple-generated transcripts (English-only) embedded as JSON in the m4a trailer; ZFLAGS bit 3 marks them | 1.6 MB |
+| 5 | [`safari-exporter`](safari-exporter/) | SafariTabs.db + CloudTabs.db + History.db | 6 windows / 2,477 open tabs / 20 tab groups / 2,886 bookmarks / 1,899 iCloud tabs / 52,442 history URLs. **`dedupe` subcommand** writes one .md per unique URL across all sources — 4,769 instances → 3,088 unique → 1,391 duplicated in 2+ places | 14 MB |
+| 6 | [`stickies-exporter`](stickies-exporter/) | `.rtfd` + `textutil` | All 10 stickies, RTF colors parsed from `\colortbl`, .rtfd symlinks for round-trip in TextEdit | 40 KB |
+| 7 | [`console-exporter`](console-exporter/) | `log` CLI + DiagnosticReports | Predicate-filtered queries (`--last 1h --process X --error`), 30 user + 136 system diagnostic reports indexed | (per query) |
+| 8 | [`audio-midi-exporter`](audio-midi-exporter/) | `system_profiler SPAudioDataType / SPMIDIDataType` + `.mcfg` | 8 audio devices, 0 MIDI currently, 1 saved MIDI Studio config | <50 KB |
+| 9 | [`image-capture-exporter`](image-capture-exporter/) | AVFoundation via `/usr/bin/swift` + `SPUSBDataType` | 3 cameras, iOS device detection, **`snap` writes a JPG via Swift+AVFoundation** (replaces Photo Booth's main job) | <20 KB |
+
+Plus a meta-tool — [`bin/app-plist-probe.py`](bin/app-plist-probe.py) — that scanned every Apple-app plist (1,934 plists across 518 apps) and produced a 3,246-line survey at [`dictionaries/all-apps-plist-survey.md`](dictionaries/all-apps-plist-survey.md). It tells us which apps deserve a dedicated exporter without per-app probing.
+
+### Two patterns codified today
+
+**1. The Tier 5 dark back-door pattern.** Every "nearly dark" Apple app (no AppleScript dictionary, no App Intents, no URL scheme) is reachable via exactly one of three back-doors:
+
+- **A CLI tool that's strictly more powerful than the GUI** — `log` for Console, `system_profiler` for Audio MIDI Setup and USB peripherals, `defaults` for menu-bar items, `tmutil` for Time Machine, `diskutil` for Disk Utility, `screencapture` for Screenshot, `mdfind` for Spotlight.
+- **A framework call via `/usr/bin/swift` one-liner** — AVFoundation for cameras (Image Capture, Photo Booth), Core Audio + Core MIDI for device events, IOKit for hot-plug events.
+- **The plist or filesystem store the app actually persists to** — `.rtfd` + textutil for Stickies, `~/Library/Preferences/com.apple.spaces.plist` for Mission Control, `~/Library/Containers/com.apple.clock/...mobiletimer.plist` for World Clock, `~/Pictures/Photo Booth Library/Pictures/*` for Photo Booth.
+
+This means the only TRULY dark apps left in Tier 6 are **Launchpad** (no on-disk model of its grid) and **Time Machine for browsing backup content** (`tmutil` covers operations but not content). Mission Control was reclassified from Tier 6 to Tier 5 today because `com.apple.spaces.plist` exposes the full Monitor → Spaces tree.
+
+**2. The exporter shape generalises.** Every package follows the same skeleton:
+
+```
+<name>-exporter/
+├── README.md
+├── .env.example          VAULT_PATH=~/work/apple/exported/<name>
+├── .gitignore            (.env)
+└── scripts/
+    ├── <name>-exporter        bash wrapper
+    └── <name>_exporter.py     argparse with subcommands status / list / export
+```
+
+Subcommands always include `status`, listing-style commands appropriate to the data shape, and `export` that writes a markdown vault under `~/work/apple/exported/<name>/`. Selector grammar is shared across packages (UUID prefix / title substring / `#N` / `latest`). Disk-lean by default: symlinks for media, full-text only for the small stuff. The whole pattern moved from "build" to "template-plus-customisation" within an afternoon.
+
+### Disk math
+
+The full exporter family running across all of Esa's archive:
+
+```
+exported/safari         14 MB    3,088 per-URL pages + windows + bookmarks + history
+exported/voice-memos    1.6 MB   392 .md sidecars + 327 m4a symlinks (3.4 GB stays at Apple)
+exported/reminders      2.0 MB   520 reminders across 19 list folders
+exported/stickies       40 KB    10 sticky notes
+exported/audio-midi     <50 KB   8 audio devices, 1 MIDI config
+exported/image-capture  <20 KB   3 cameras + USB device list
+exported/console        per-query
+exported/notes          (run when you want)
+exported/imessage       (run when you want)
+─────────────────────────────────
+total                   ~18 MB   for an archive that mirrors gigabytes of live Apple data
+```
+
+Symlinks make the difference. `voice-memos-exporter` ships with `.m4a` symlinks back into Apple's container by default (the audio never leaves Apple's protected directory; the vault stays tiny). Same trick for stickies' `.rtfd` and Audio MIDI's `.mcfg`.
+
+---
+
+## Roadmap to the Full Apple Experience
+
+What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.
+
+### Tier 1 priorities — high cardinality, clean schema
+
+- [ ] **`music-exporter`** — Music.app has the full sdef (Tier 1) + 461-key plist + `~/Music/Music/Music Library.musiclibrary/Library.musicdb` SQLite. Export: playlists, smart playlists with their predicates, ratings, play counts, last-played dates, Library state. Loupedeck-button candidate: "rate current track 5 stars".
+- [ ] **`photos-exporter`** — Photos.app sdef + `~/Pictures/Photos Library.photoslibrary/database/Photos.sqlite` (massive, structured). Export: albums, smart albums with predicates, Memories, Faces (if iCloud Photos enabled), shared albums, places (lat/lon), keyword tags. Heaviest payoff per byte.
+- [ ] **`mail-exporter`** — Mail sdef (Tier 1) + `~/Library/Mail/V*/MailData/Envelope Index` SQLite + per-mailbox MBOX walk. Export: accounts, signatures, mailboxes (mboxes), search across cached headers.
+- [ ] **`calendar-exporter`** — Calendar sdef + `~/Library/Calendars/*.calendar/` ICS files. Export: every event from every calendar source, alarms, attendee status, recurrence rules. Combine with voice-memos timestamps for "what was I doing when I made this recording?".
+- [ ] **`finder-exporter`** — Finder sdef + 100-key plist (sidebar, tags with colors, recent locations, label colors). Export: Finder tag taxonomy + which files have which tags via Spotlight.
+- [ ] **`pages-numbers-keynote-exporter`** (one package, three sdefs) — Recents lists, autosaved drafts, theme/template choices, exported PDF history. The iWork apps share schema; one exporter covers all three.
+
+### Tier 2 — everything else with a real sdef
+
+- [ ] **`preview-exporter`** — recent docs, annotation history (109 plist keys + per-doc PDF metadata).
+- [ ] **`podcasts-exporter`** — subscriptions + listening progress + downloaded episodes (105 plist keys + Podcasts SQLite under `~/Library/Group Containers/`).
+- [ ] **`books-exporter`** — library + annotations + highlights (`~/Library/Containers/com.apple.iBooksX/Data/Documents/`).
+- [ ] **`tv-exporter`** — same idea as Books for the TV app library.
+- [ ] **`contacts-exporter`** — Contacts sdef + `~/Library/Application Support/AddressBook/AddressBook-v22.abcddb` SQLite. Already the back-door for the email/phone-number index Mail and Messages tap into.
+- [ ] **`shortcuts-exporter`** — `shortcuts list` CLI + `~/Library/Group Containers/group.com.apple.shortcuts/...` per-shortcut plist data. Export every shortcut as readable markdown so AI assistants can study the user's automation library.
+
+### Tier 5 dark — apply the back-door pattern
+
+- [ ] **`disk-utility-exporter`** — wrap `diskutil list` / `diskutil info` / `diskutil apfs list` for catalog-style views of every drive, partition, APFS container, snapshot.
+- [ ] **`activity-monitor-exporter`** — `ps`/`top`/`vmstat`/`iotop` snapshots into a vault. Combined with `ioreg` for hardware state.
+- [ ] **`screenshot-exporter`** — wrap `screencapture` with named regions, scheduled captures, OCR via macOS Vision (Swift one-liner) → searchable markdown of every screenshot.
+- [ ] **`photo-booth-exporter`** — `~/Pictures/Photo Booth Library/Pictures/*` + `Recents.plist` + AVFoundation `take`. We already have the take-photo Swift snippet from `image-capture-exporter`; this one just adds library cataloging.
+- [ ] **`clock-exporter`** — `mobiletimer.plist` for World Clock cities + `defaults` for menu-bar clock prefs + alarms/timers if Mac Clock persists them.
+- [ ] **`spaces-exporter`** (a.k.a. mission-control-exporter) — Mission Control's `com.apple.spaces.plist` per-monitor Space tree. Useful for "track how my workspace evolves over a month".
+- [ ] **`system-settings-exporter`** — meta-package over `defaults` reads of every settings domain. Diff snapshots over time to see what changed.
+
+### Tier 4 — URL schemes only
+
+- [ ] **`facetime-exporter`** — recent calls if any persist; ContactsKit cross-reference.
+- [ ] **`stocks-exporter`** — Stocks app's tracked tickers + alerts (Tier 4 URL scheme + plist).
+- [ ] **`weather-exporter`** — saved locations + alert conditions (Tier 3 App Intents + plist).
+- [ ] **`maps-exporter`** — saved locations + recent searches + favorite places + offline regions.
+
+### Phase 2 across existing packages — write actions
+
+- [ ] `voice-memos-exporter transcribe` — `whisp` wrapper for bulk Whisper transcription with `--lang fi/en` and chunked-mode for long recordings. Currently only Apple's transcripts (poor on Finnish) are extracted; Whisper is the real path.
+- [ ] `voice-memos-exporter watch` — fswatch on Recordings/, auto-transcribe new m4a, Discord ping via pakettibot.
+- [ ] `safari-exporter close-tab <selector>` — UI-script Safari to close a specific tab from a per-URL .md file.
+- [ ] `safari-exporter consolidate --to-bookmarks` — for each duplicate URL in `_duplicates.md`, keep one tab in its themed group, bookmark the rest, close the rest.
+- [ ] `stickies-exporter create / append / delete` — quit-Stickies-first-then-write, with `--write` confirmation flag.
+- [ ] `reminders-exporter create / complete` — AppleScript via Reminders' sdef.
+- [ ] `image-capture-exporter download-from-ios <device>` — ImageCaptureCore framework via Objective-C bridging.
+- [ ] `image-capture-exporter watch` — IOKit DAEvents observer for USB attach/detach with hook command.
+
+### Cross-package — the unified-vault layer
+
+- [ ] **`apple-grand-search`** — single CLI that searches across every exporter's vault. `apple-grand-search "Kortela"` returns Reminders + Notes + iMessage links + Voice Memos titles + Safari open tabs + Safari bookmarks + Calendar events + Mail headers + Photos captions in one ranked list.
+- [ ] **`apple-grand-export`** — runs every exporter in dependency order with a single command. Single timestamped run, single git commit possible (against a private personal repo).
+- [ ] **`apple-grand-stats`** — daily / weekly / monthly digest derived from all the per-package exports. Hours recorded today (Voice Memos), URLs visited (Safari history), reminders completed, Photo Booth captures, etc.
+- [ ] **Cross-reference (`xref`) per package** — `voice-memos-exporter xref --calendar` matches recordings against Calendar events; `safari-exporter xref --notes` matches open tabs against Notes that mention the URL; etc. Each xref decorates the .md sidecar with a `xref:` block linking to the matching items in other vaults.
+
+### Apple Intelligence + AI integration
+
+- [ ] **Apple's own on-device LLM via Foundation Models** (macOS 15+) — wrap the new `FoundationModels` Swift framework as `apple-summarize <markdown-file>` for a fully on-device, no-network, no-third-party-API summary of any vault page. Currently the `imessage-exporter` and `voice-memos-exporter` summaries call out to external models; this would replace that with Apple's built-in.
+- [ ] **Voice control hooks** — Sal's WWDC 2016 session 717 talked about voice as a peer modality. The recovered transcript is in this repo. Replicate that with current macOS: per-app voice commands → AppleScript → exporter actions. "Hey Sal, transcribe my latest voice memo." → `voice-memos-exporter transcribe latest`.
+
+### Sal philosophy threading
+
+- [ ] **The Cellular Trinity** — link each exporter to one of Sal's automation-architecture layers (URL schemes / AppleScript / Shortcuts / App Intents). Each package's README declares which layer(s) it operates at, so a contributor scanning the family understands the architecture as Sal designed it.
+- [ ] **The Carpenter Move** — every exporter, in its README's "Phase 2" section, names the *underlying principle* it shares with at least one other package. This builds a navigable mesh of pattern-reuse rather than nine independent silos.
+
+### Documentation
+
+- [ ] **`automation-tiers.md` refresh** — promote Mission Control from Tier 6 to Tier 5 (already done in skill.md but not in the standalone file).
+- [ ] **`exported/README.md` cardinality refresh** — auto-update the live numbers each time `apple-grand-export` runs.
+- [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots of the survey to catch new apps / new keys after macOS updates. Run after each system update; commit the diff so the repo tracks Apple's evolution.
+
+If we land all of the Tier 1 priorities and the unified-vault layer, **the apple repo becomes the canonical "everything from your Mac in one Obsidian-grade vault" tool**. That's the full Apple experience — your data in your hands, in plain text, in the browser of your choice.
+
+---
+
 ## Bulk Exporters — Reminders, Voice Memos, Safari, Stickies, Console, Audio MIDI, Image Capture
 
 > **Convention**: every bulk exporter writes its vault into
