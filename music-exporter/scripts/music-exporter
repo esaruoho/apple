@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# music-exporter — Apple Music.app via AppleScript sdef
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+exec "$PYTHON" "$SCRIPT_DIR/music_exporter.py" "$@"
