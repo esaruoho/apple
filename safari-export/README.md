@@ -99,6 +99,84 @@ safari-export history --json --limit 1000
 `--last` accepts `d` (days), `w` (weeks), `m` (months ≈ 30d), `y`
 (years ≈ 365d).
 
+### `dedupe` — one .md per UNIQUE URL across all sources
+
+Walks every URL leaf in your Safari archive (open tabs, pinned tabs,
+bookmarks, iCloud-synced tabs from other devices), canonicalises each
+URL (strips utm_* / fbclid / gclid / mc_cid / igshid / ref tracking
+params, lowercases host, drops fragment), then writes one
+`urls/<hash>__<slug>.md` per unique URL. Each file's frontmatter lists
+**every place that URL appears**: which window, which tab group,
+whether pinned, which bookmark folder path, which iCloud devices,
+plus the history visit count and last-visit date.
+
+```bash
+safari-export dedupe --summary-only        # just print stats
+safari-export dedupe                       # write urls/ + _duplicates.md
+safari-export dedupe --no-history          # skip history visit-count enrichment
+```
+
+Output:
+
+```
+$VAULT_PATH/
+├── _duplicates.md        ranked list of URLs in 2+ places
+└── urls/
+    ├── <12-char hash>__<slug>.md           one per unique URL
+    └── ...
+```
+
+Live numbers on Esa's Mac: **4,769 URL instances → 3,088 unique →
+1,391 duplicated (≥2 locations)**. Top offender: a single Renoise
+Forums URL appearing in **13 open tabs + 11 iCloud tabs = 24 places**
+(visited 6,527 times in history). The "Lackluster / Esa Ruoho /
+Paketti / Teosto" Google Sheet is in 8 open tabs + 1 pinned + 8 iCloud
+tabs = 17 places.
+
+Each per-URL file looks like:
+
+```yaml
+---
+url: "https://forum.renoise.com"
+title: "(1) Renoise Forums"
+location_count: 24
+is_duplicate: true
+open_tabs: 13
+bookmarks: 0
+pinned: 0
+icloud_tabs: 11
+icloud_devices:
+  - "RayMac"
+  - "esaiPhone16Pro"
+history_visits: 6527
+history_last_visit: "2026-05-07 18:28:30"
+hash: 5c39383eb2c1e32634d6c34d
+---
+
+# (1) Renoise Forums
+<https://forum.renoise.com>
+
+## Open in 13 tab(s)
+- Window 3 → Local `Local` (order 189)
+- Window 3 → Group `Renoise` (order 57)
+- ...
+
+## iCloud tab on 11 device(s)
+- RayMac
+- esaiPhone16Pro
+- ...
+
+## History
+- Visited 6527 time(s) (last: 2026-05-07 18:28:30)
+```
+
+Filename uses a stable blake2b-12 hash of the canonical URL, so re-running
+`dedupe` produces the same filenames — drop the `urls/` folder into
+Obsidian and Esa can grep, link, sort by `location_count`, or sort by
+`history_visits` to make reorg decisions per URL.
+
+Vault size after `dedupe`: 12 MB across 3,088 markdown files.
+
 ### `search` — cross-search tabs + bookmarks + history
 
 ```bash

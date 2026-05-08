@@ -23,15 +23,17 @@ from __future__ import annotations
 
 import argparse
 import csv as csvmod
+import hashlib
 import json
 import os
 import re
 import sqlite3
 import sys
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV = ROOT / ".env"
@@ -660,6 +662,417 @@ def cmd_search(args) -> int:
     return 0
 
 
+# =====================================================================
+# URL canonicalisation + per-URL dedupe
+# =====================================================================
+
+# Tracking / referrer params Safari/iCloud-tab dedup wants stripped.
+TRACKING_PARAMS = {
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+    "fbclid", "gclid", "msclkid", "mc_cid", "mc_eid", "yclid",
+    "_ga", "_gl", "ref", "ref_src", "ref_url", "referrer",
+    "igshid", "igsh", "feature", "spm",
+}
+
+
+def canonicalize_url(url: str) -> str:
+    """Normalize a URL for cross-source deduplication.
+
+    - Lowercase scheme+host
+    - Strip default ports
+    - Drop tracking params (utm_*, fbclid, gclid, etc.)
+    - Drop fragment
+    - Strip trailing slash on empty path
+    """
+    if not url:
+        return ""
+    try:
+        s = urlsplit(url.strip())
+    except ValueError:
+        return url.strip()
+    scheme = (s.scheme or "").lower()
+    netloc = (s.netloc or "").lower()
+    if (scheme == "http" and netloc.endswith(":80")) or \
+       (scheme == "https" and netloc.endswith(":443")):
+        netloc = netloc.rsplit(":", 1)[0]
+    path = s.path or ""
+    if path == "/":
+        path = ""
+    # filter query params
+    if s.query:
+        kept = [(k, v) for (k, v) in parse_qsl(s.query, keep_blank_values=True)
+                if k.lower() not in TRACKING_PARAMS]
+        query = urlencode(kept, doseq=True)
+    else:
+        query = ""
+    return urlunsplit((scheme, netloc, path, query, ""))
+
+
+def url_hash(canonical: str, width: int = 12) -> str:
+    return hashlib.blake2b(canonical.encode("utf-8"), digest_size=width).hexdigest()
+
+
+@dataclass
+class Location:
+    kind: str            # "open_tab" | "pinned" | "bookmark" | "icloud_tab"
+    window_id: int | None = None
+    tab_group_id: int | None = None
+    tab_group_title: str | None = None
+    tab_group_kind: str | None = None    # "Local" | "Group" | None
+    bookmark_folder_path: str | None = None
+    icloud_device: str | None = None
+    icloud_is_pinned: bool | None = None
+    order_index: int | None = None
+    last_visit: float | None = None
+    bookmark_id: int | None = None
+
+
+@dataclass
+class UrlRecord:
+    canonical: str
+    raw_urls: set[str] = field(default_factory=set)
+    titles: set[str] = field(default_factory=set)
+    locations: list[Location] = field(default_factory=list)
+    history_visit_count: int = 0
+    history_last_visit: float | None = None
+
+
+def _bookmark_folder_path(con: sqlite3.Connection, bookmark_id: int) -> str:
+    """Walk parents of a bookmark up to its top-level folder."""
+    path: list[str] = []
+    cur_id = bookmark_id
+    seen: set[int] = set()
+    for _ in range(50):
+        if cur_id in seen:
+            break
+        seen.add(cur_id)
+        row = con.execute(
+            "SELECT parent, COALESCE(title,''), special_id FROM bookmarks WHERE id = ?",
+            (cur_id,)
+        ).fetchone()
+        if not row:
+            break
+        parent, title, sid = row
+        if cur_id != bookmark_id:  # don't include the leaf itself
+            if not title or sid != 0:
+                # hit a system slot or unnamed root — stop
+                break
+            path.append(title)
+        if parent in (None, 0):
+            break
+        cur_id = parent
+    return " / ".join(reversed(path))
+
+
+def collect_url_records(args) -> tuple[dict[str, UrlRecord], dict]:
+    """Walk all sources and produce one UrlRecord per canonical URL."""
+    records: dict[str, UrlRecord] = {}
+    stats = {"open_tabs": 0, "pinned": 0, "bookmarks": 0, "icloud_tabs": 0,
+             "skipped_empty": 0}
+
+    def add(canonical: str, raw_url: str, title: str, loc: Location) -> None:
+        if not canonical:
+            stats["skipped_empty"] += 1
+            return
+        rec = records.get(canonical)
+        if not rec:
+            rec = UrlRecord(canonical=canonical)
+            records[canonical] = rec
+        rec.raw_urls.add(raw_url)
+        if title:
+            rec.titles.add(title)
+        rec.locations.append(loc)
+
+    # --- 1. open tabs (per-window) + their tab groups
+    con = open_ro(SAFARI_TABS_DB)
+    win_rows = con.execute("""
+        SELECT id, local_tab_group_id FROM windows
+    """).fetchall()
+    for win_id, _local_tg in win_rows:
+        # all tab groups visible in this window (excluding synthetic root)
+        groups = con.execute("""
+            SELECT b.id, COALESCE(b.title,''), wtg.tab_group_id = ?, b.id
+            FROM windows_tab_groups wtg
+            JOIN bookmarks b ON b.id = wtg.tab_group_id
+            WHERE wtg.window_id = ? AND b.deleted = 0 AND wtg.tab_group_id != 0
+        """, (_local_tg, win_id)).fetchall()
+        for tg_id, tg_title, _is_local_int, _ in groups:
+            is_local = bool(_is_local_int)
+            tab_rows = con.execute("""
+                WITH RECURSIVE d(id) AS (
+                  SELECT id FROM bookmarks WHERE id = ?
+                  UNION ALL
+                  SELECT b.id FROM bookmarks b JOIN d ON b.parent = d.id
+                  WHERE b.deleted = 0
+                )
+                SELECT b.id, COALESCE(b.title,''), COALESCE(b.url,''), b.order_index
+                FROM d JOIN bookmarks b ON b.id = d.id
+                WHERE b.type = 0 AND b.deleted = 0
+            """, (tg_id,)).fetchall()
+            for tid, title, url, oi in tab_rows:
+                canonical = canonicalize_url(url)
+                stats["open_tabs"] += 1
+                add(canonical, url, title, Location(
+                    kind="open_tab",
+                    window_id=win_id,
+                    tab_group_id=tg_id,
+                    tab_group_title=tg_title or "(unnamed)",
+                    tab_group_kind="Local" if is_local else "Group",
+                    order_index=oi or 0,
+                ))
+
+    # --- 2. bookmarks (every URL leaf in the bookmarks tree, excluding the
+    #        ones already counted as open tabs via tab groups)
+    open_tab_groups = {r[0] for r in con.execute(
+        "SELECT tab_group_id FROM windows_tab_groups WHERE tab_group_id != 0"
+    ).fetchall()}
+    # Walk every URL leaf, then exclude those under open tab groups.
+    bm_rows = con.execute("""
+        SELECT id, COALESCE(title,''), COALESCE(url,''), parent
+        FROM bookmarks
+        WHERE deleted = 0 AND type = 0 AND url IS NOT NULL AND url != ''
+    """).fetchall()
+    for bid, title, url, parent in bm_rows:
+        # Walk up to find which top-level branch this leaf lives under
+        cur = bid
+        top_id = None
+        for _ in range(50):
+            row = con.execute(
+                "SELECT parent FROM bookmarks WHERE id = ?", (cur,)
+            ).fetchone()
+            if not row or row[0] in (None, 0):
+                top_id = cur
+                break
+            cur = row[0]
+        if top_id in open_tab_groups:
+            continue  # already counted as open tab
+        # Pinned: top-level folder named "pinned" (per Safari schema)
+        top_row = con.execute(
+            "SELECT title, special_id FROM bookmarks WHERE id = ?", (top_id,)
+        ).fetchone()
+        is_pinned = (top_row and (top_row[0] or "").lower() == "pinned")
+        canonical = canonicalize_url(url)
+        folder_path = _bookmark_folder_path(con, bid)
+        if is_pinned:
+            stats["pinned"] += 1
+            add(canonical, url, title, Location(
+                kind="pinned",
+                bookmark_id=bid,
+                bookmark_folder_path=folder_path or "pinned",
+            ))
+        else:
+            stats["bookmarks"] += 1
+            add(canonical, url, title, Location(
+                kind="bookmark",
+                bookmark_id=bid,
+                bookmark_folder_path=folder_path,
+            ))
+    con.close()
+
+    # --- 3. iCloud tabs
+    if CLOUD_TABS_DB.exists():
+        ccon = open_ro(CLOUD_TABS_DB)
+        rows = ccon.execute("""
+            SELECT t.url, COALESCE(t.title,''),
+                   COALESCE(d.device_name, t.device_uuid),
+                   t.is_pinned, t.last_viewed_time
+            FROM cloud_tabs t
+            LEFT JOIN cloud_tab_devices d ON d.device_uuid = t.device_uuid
+        """).fetchall()
+        ccon.close()
+        for url, title, device, is_pinned, lvt in rows:
+            canonical = canonicalize_url(url)
+            stats["icloud_tabs"] += 1
+            add(canonical, url, title, Location(
+                kind="icloud_tab",
+                icloud_device=device,
+                icloud_is_pinned=bool(is_pinned),
+                last_visit=lvt,
+            ))
+
+    # --- 4. attach history visit counts/last-visit per canonical URL
+    if HISTORY_DB.exists() and not args.no_history:
+        hcon = open_ro(HISTORY_DB)
+        # Pull history items (URL + visit count + last visit time) — too many to
+        # match individually, so query in bulk and match by canonicalised URL.
+        cur = hcon.execute("""
+            SELECT i.url, i.visit_count, MAX(v.visit_time)
+            FROM history_items i
+            LEFT JOIN history_visits v ON v.history_item = i.id
+            GROUP BY i.id
+        """)
+        for h_url, vcount, lvisit in cur:
+            c = canonicalize_url(h_url)
+            rec = records.get(c)
+            if rec:
+                rec.history_visit_count += int(vcount or 0)
+                if lvisit and (rec.history_last_visit is None
+                               or lvisit > rec.history_last_visit):
+                    rec.history_last_visit = lvisit
+        hcon.close()
+
+    return records, stats
+
+
+def _yaml_str(s: str | None) -> str:
+    if s is None:
+        return '""'
+    s = str(s).replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{s}"'
+
+
+def _write_url_record(env: dict, rec: UrlRecord) -> Path:
+    h = url_hash(rec.canonical)
+    title = next(iter(rec.titles), "") if rec.titles else ""
+    slug = slugify(title or urlsplit(rec.canonical).netloc, max_len=50)
+    out_dir = Path(env["VAULT_PATH"]) / "urls"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{h}__{slug}.md"
+
+    # group locations by kind for cleaner frontmatter
+    by_kind: dict[str, list[Location]] = defaultdict(list)
+    for loc in rec.locations:
+        by_kind[loc.kind].append(loc)
+
+    fm: list[str] = ["---"]
+    fm.append(f"url: {_yaml_str(rec.canonical)}")
+    if title:
+        fm.append(f"title: {_yaml_str(title)}")
+    fm.append(f"location_count: {len(rec.locations)}")
+    fm.append(f"is_duplicate: {'true' if len(rec.locations) > 1 else 'false'}")
+    open_n = len(by_kind.get("open_tab", []))
+    bm_n = len(by_kind.get("bookmark", []))
+    pin_n = len(by_kind.get("pinned", []))
+    icl_n = len(by_kind.get("icloud_tab", []))
+    fm.append(f"open_tabs: {open_n}")
+    fm.append(f"bookmarks: {bm_n}")
+    fm.append(f"pinned: {pin_n}")
+    fm.append(f"icloud_tabs: {icl_n}")
+    devices = sorted({l.icloud_device for l in by_kind.get("icloud_tab", [])
+                      if l.icloud_device})
+    if devices:
+        fm.append("icloud_devices:")
+        for d in devices:
+            fm.append(f"  - {_yaml_str(d)}")
+    fm.append(f"history_visits: {rec.history_visit_count}")
+    if rec.history_last_visit:
+        fm.append(f"history_last_visit: {_yaml_str(cocoa_to_iso(rec.history_last_visit))}")
+    fm.append(f"hash: {h}")
+    fm.append("---")
+    fm.append("")
+    fm.append(f"# {title or rec.canonical}")
+    fm.append("")
+    fm.append(f"<{rec.canonical}>")
+    fm.append("")
+
+    # locations section
+    if by_kind.get("open_tab"):
+        fm.append(f"## Open in {len(by_kind['open_tab'])} tab(s)")
+        fm.append("")
+        for l in sorted(by_kind["open_tab"],
+                        key=lambda x: (x.window_id or 0, x.tab_group_title or "")):
+            fm.append(f"- Window {l.window_id} → "
+                      f"{l.tab_group_kind} `{l.tab_group_title}` "
+                      f"(order {l.order_index})")
+        fm.append("")
+    if by_kind.get("pinned"):
+        fm.append(f"## Pinned ({len(by_kind['pinned'])})")
+        fm.append("")
+        for l in by_kind["pinned"]:
+            fm.append(f"- {l.bookmark_folder_path or 'pinned'}")
+        fm.append("")
+    if by_kind.get("bookmark"):
+        fm.append(f"## Bookmark ({len(by_kind['bookmark'])})")
+        fm.append("")
+        for l in by_kind["bookmark"]:
+            fm.append(f"- {l.bookmark_folder_path or '(top-level)'}")
+        fm.append("")
+    if by_kind.get("icloud_tab"):
+        fm.append(f"## iCloud tab on {len(by_kind['icloud_tab'])} device(s)")
+        fm.append("")
+        for l in by_kind["icloud_tab"]:
+            extra = " (pinned)" if l.icloud_is_pinned else ""
+            fm.append(f"- {l.icloud_device}{extra}")
+        fm.append("")
+    if rec.history_visit_count:
+        fm.append(f"## History")
+        fm.append("")
+        fm.append(f"- Visited {rec.history_visit_count} time(s) "
+                  f"(last: {cocoa_to_iso(rec.history_last_visit)})")
+        fm.append("")
+    if len(rec.raw_urls) > 1:
+        fm.append("## Raw URL variants seen")
+        fm.append("")
+        for u in sorted(rec.raw_urls):
+            fm.append(f"- `{u}`")
+        fm.append("")
+
+    path.write_text("\n".join(fm))
+    return path
+
+
+def cmd_dedupe(args) -> int:
+    env = load_env()
+    print("Collecting URL records from open tabs, bookmarks, pinned, iCloud "
+          "tabs, history...")
+    records, stats = collect_url_records(args)
+    print(f"  open tabs:   {stats['open_tabs']}")
+    print(f"  pinned:      {stats['pinned']}")
+    print(f"  bookmarks:   {stats['bookmarks']}")
+    print(f"  iCloud tabs: {stats['icloud_tabs']}")
+    print(f"  skipped (empty URL): {stats['skipped_empty']}")
+    total_instances = sum(stats[k] for k in
+                          ("open_tabs", "pinned", "bookmarks", "icloud_tabs"))
+    print(f"  total URL instances: {total_instances}")
+    print(f"  unique canonical URLs: {len(records)}")
+    print(f"  duplicates (≥2 locations): "
+          f"{sum(1 for r in records.values() if len(r.locations) >= 2)}")
+
+    if args.summary_only:
+        return 0
+
+    out_dir = Path(env["VAULT_PATH"]) / "urls"
+    if not args.append:
+        # Clean prior dump for this subcommand only
+        if out_dir.exists():
+            for p in out_dir.glob("*.md"):
+                p.unlink()
+
+    written = 0
+    for rec in records.values():
+        _write_url_record(env, rec)
+        written += 1
+    print(f"\nWrote {written} per-URL pages to {out_dir}")
+
+    # _duplicates.md — sorted by location count desc
+    dups = sorted(records.values(), key=lambda r: -len(r.locations))
+    lines = [
+        "# Duplicate URLs across Safari",
+        "",
+        f"Generated {datetime.now().isoformat(timespec='seconds')}.",
+        f"{len(records)} unique URLs, "
+        f"{sum(1 for r in dups if len(r.locations) >= 2)} appear in 2+ places.",
+        "",
+        "Sorted by location count. Each link goes to the per-URL page.",
+        "",
+    ]
+    for rec in dups:
+        if len(rec.locations) < 2:
+            break
+        title = next(iter(rec.titles), "") or rec.canonical
+        h = url_hash(rec.canonical)
+        slug = slugify(title or urlsplit(rec.canonical).netloc, max_len=50)
+        kinds = defaultdict(int)
+        for l in rec.locations:
+            kinds[l.kind] += 1
+        kind_str = " / ".join(f"{v}× {k}" for k, v in sorted(kinds.items()))
+        lines.append(f"- **{len(rec.locations)}** [{title[:80]}](./urls/{h}__{slug}.md) — {kind_str}")
+    write_md(Path(env["VAULT_PATH"]) / "_duplicates.md", "\n".join(lines))
+    print(f"Duplicate index: {Path(env['VAULT_PATH']) / '_duplicates.md'}")
+
+    return 0
+
+
 def cmd_export(args) -> int:
     """Full markdown vault dump."""
     env = load_env()
@@ -928,6 +1341,15 @@ def main() -> int:
     sp = sub.add_parser("search", help="Cross-search tabs + bookmarks + history")
     sp.add_argument("query")
     sp.set_defaults(func=cmd_search)
+
+    sp = sub.add_parser("dedupe", help="One markdown file per UNIQUE URL across all sources (open tabs, pinned, bookmarks, iCloud)")
+    sp.add_argument("--summary-only", action="store_true",
+                    help="Print stats only — no .md files written")
+    sp.add_argument("--append", action="store_true",
+                    help="Don't wipe urls/ before writing")
+    sp.add_argument("--no-history", action="store_true",
+                    help="Skip the history-visit-count enrichment (faster)")
+    sp.set_defaults(func=cmd_dedupe)
 
     sp = sub.add_parser("export", help="Full markdown vault dump")
     sp.add_argument("--with-history", action="store_true",

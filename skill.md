@@ -54,6 +54,20 @@ For hardware-triggered scripts:
 - **Reliable** — handle edge cases (app not running, etc.)
 - **Single-purpose** — one button = one action
 
+## Apple-Native Only — No Third-Party Dependencies
+
+**Rule for this skill:** every solution uses Apple-shipped technologies only. No Homebrew, no `pip install`, no `npm`, no third-party CLIs (`imagesnap`, `ffmpeg`, etc.). The apple skill is about using Apple to the max.
+
+When a problem looks like it needs an external CLI, write the equivalent in:
+- **AppleScript** (with AppleScriptObjC bridge for framework access)
+- **Swift one-liner** via `/usr/bin/swift <file.swift>` (interpreter ships with macOS — zero install)
+- **`do shell script`** with macOS-native binaries (`mdfind`, `defaults`, `osascript`, `screencapture`, `say`, `diskutil`, `networksetup`, `ioreg`, `system_profiler`, `pmset`, etc.)
+- **Shortcuts** + Run AppleScript / Run Shell Script actions
+
+Concrete example (recorded 2026-05-08): `Take My Picture` originally used `imagesnap` (Homebrew) — replaced with `bin/sal-take-photo.swift` running via `/usr/bin/swift`. Native AVFoundation call, no install required.
+
+If a task genuinely cannot be done Apple-native, document why and ask before introducing a dependency.
+
 ## AppleScript Best Practices
 
 1. **Activate apps**: Use `tell application "AppName" to activate`
@@ -402,7 +416,11 @@ Schema gotchas (codified so future probes don't waste time):
 
 Live numbers on this Mac (2026-05-08): 6 windows / 2,477 open tabs / 20 tab groups / 2,886 bookmarks / 1,899 iCloud tabs from RayMac+iPhone+CloudcityMacMini / 52,442 history URLs across 147,033 visits. Vault size after `export --with-history --history-days 30`: 2.5 MB; without history: 1.3 MB.
 
-Phase 2 (deliberately omitted, awaiting Esa's reorganization decisions): close-tab, move-tab, dedupe, archive-window-to-bookmarks. The `cloud_tab_close_requests` table in `CloudTabs.db` would propagate close requests to other devices via iCloud — explicitly never written from this tool.
+**`dedupe` subcommand** (added 2026-05-08): walks every URL leaf in the Safari archive (open tabs, pinned, bookmarks, iCloud tabs), canonicalises each URL (strips utm_*/fbclid/gclid/mc_cid/igshid/ref tracking params, lowercases host, drops fragment), then writes one `urls/<blake2b12>__<slug>.md` per unique URL. Frontmatter lists every place the URL appears: window + tab group, pinned bookmark folder, iCloud device, history visit count, last-visit date. Plus a `_duplicates.md` ranked by location count.
+
+Live findings on this Mac: 4,769 URL instances → 3,088 unique → 1,391 duplicated. Worst offender: a Renoise Forums root URL in 13 open tabs + 11 iCloud tabs (24 locations, 6,527 history visits). One Google Sheets URL in 8 tabs + 1 pinned + 8 iCloud = 17 places.
+
+Phase 2 (deliberately omitted, awaiting Esa's reorganization decisions): close-tab, move-tab, archive-window-to-bookmarks. The `cloud_tab_close_requests` table in `CloudTabs.db` would propagate close requests to other devices via iCloud — explicitly never written from this tool.
 
 Detail in `dictionaries/safari/safari-extraction-research.md`.
 
