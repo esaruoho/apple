@@ -174,7 +174,7 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ---
 
-## Bulk Exporters — Reminders, Voice Memos, Safari
+## Bulk Exporters — Reminders, Voice Memos, Safari, Stickies
 
 > **Convention**: every bulk exporter writes its vault into
 > [`exported/<package>/`](exported/) under the repo. The `exported/`
@@ -282,6 +282,29 @@ exclusion list of reserved system titles.
 
 Detail in
 [`dictionaries/safari/safari-extraction-research.md`](dictionaries/safari/safari-extraction-research.md).
+
+### [`stickies-exporter/`](stickies-exporter/) — Tier 5 dark, unlocked via textutil
+
+Stickies has no AppleScript dictionary, no App Intents, no URL
+scheme. But every note is a `.rtfd` bundle in the app container, and
+`textutil` (ships with macOS) converts to text / html / rtf.
+
+```bash
+stickies-exporter status                      # 10 stickies, 18 KB on disk
+stickies-exporter list                        # UUID + title + char count + modified
+stickies-exporter list --match 'tesla|beatty|manning'
+stickies-exporter cat "Stubblefield"          # plain text
+stickies-exporter cat 1ECCD6E3 --rtf          # raw RTF
+stickies-exporter cat #0 --with-meta
+stickies-exporter export --include-rtf        # markdown vault + .rtfd symlinks
+```
+
+Sticky background color and window position are NOT persisted to
+disk; they're per-window UI choices in Stickies. Text and link
+colors ARE in the `\colortbl` and surfaced in the .md frontmatter.
+
+Detail in
+[`dictionaries/stickies/stickies-extraction-research.md`](dictionaries/stickies/stickies-extraction-research.md).
 
 ---
 

@@ -343,7 +343,7 @@ Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Wr
 
 **Workaround:** `~/Library/Messages/chat.db` (SQLite) is readable with Full Disk Access but SIP-protected.
 
-## Bulk Exporters: Reminders + Voice Memos + Safari
+## Bulk Exporters: Reminders + Voice Memos + Safari + Stickies
 
 Two read-only catalog/export packages live at the repo root, mirroring
 the `notes-exporter/` and `imessage-exporter/` shape. Both write only into a
@@ -417,6 +417,27 @@ Schema gotchas (codified so future probes don't waste time):
 Live numbers on this Mac (2026-05-08): 6 windows / 2,477 open tabs / 20 tab groups / 2,886 bookmarks / 1,899 iCloud tabs from RayMac+iPhone+CloudcityMacMini / 52,442 history URLs across 147,033 visits. Vault size after `export --with-history --history-days 30`: 2.5 MB; without history: 1.3 MB.
 
 **`dedupe` subcommand** (added 2026-05-08): walks every URL leaf in the Safari archive (open tabs, pinned, bookmarks, iCloud tabs), canonicalises each URL (strips utm_*/fbclid/gclid/mc_cid/igshid/ref tracking params, lowercases host, drops fragment), then writes one `urls/<blake2b12>__<slug>.md` per unique URL. Frontmatter lists every place the URL appears: window + tab group, pinned bookmark folder, iCloud device, history visit count, last-visit date. Plus a `_duplicates.md` ranked by location count.
+
+### `stickies-exporter/` — Tier 5 dark, but textutil unlocks it
+
+Stickies has no AppleScript dictionary (`sdef` errors -192), no App Intents, no URL scheme. But each note is a `.rtfd` bundle in the app container, and `textutil` (Apple-native CLI, no install) converts to txt / html / docx / rtf.
+
+Storage: `~/Library/Containers/com.apple.Stickies/Data/Library/Stickies/<UUID>.rtfd/TXT.rtf`
+
+Subcommands (Phase 1, all read-only): `status`, `list [--match REGEX] [--since DATE]`, `cat <selector> [--rtf|--html|--with-meta]`, `export [--include-rtf]` (writes markdown vault to `exported/stickies/<date>__<slug>__<uuid8>.md`).
+
+Selector grammar reused from voice-memos / safari: UUID prefix / title-or-body substring / `#N` / `latest`.
+
+Quirks worth remembering:
+- **Sticky background color** (yellow / pink / blue / etc.) is NOT in the rtfd — it's a per-window UI choice in Stickies, set via the Color menu, never persisted to disk.
+- **Window position** is also not persisted on disk on this Mac. Stickies derives it from defaults at launch and saves NSWindow restore state somewhere private.
+- **Text and link colors** ARE in the rtfd's `\colortbl` (parsed and surfaced in the .md frontmatter).
+
+Phase 2 (omitted): `create`, `append`, `delete`. These need a quit-Stickies-first guard because Stickies overwrites the .rtfd directory on next quit based on its in-memory state — racing the disk-write would lose new notes. Will land with explicit `--write` confirmation when needed.
+
+Live numbers on this Mac: 10 stickies, 18 KB on disk, 393 chars total. Free-energy / archive research stubs (Stubblefield, Bill Beatty, Jeane Manning, Sand Battery, Leedskalnin, Kentucky Water Fuel Museum, etc.) — heavy overlap with the Tesla/Free-Energy archive corpus, candidate for `xref --free-energy` cross-reference.
+
+Detail in `dictionaries/stickies/stickies-extraction-research.md`.
 
 Live findings on this Mac: 4,769 URL instances → 3,088 unique → 1,391 duplicated. Worst offender: a Renoise Forums root URL in 13 open tabs + 11 iCloud tabs (24 locations, 6,527 history visits). One Google Sheets URL in 8 tabs + 1 pinned + 8 iCloud = 17 places.
 

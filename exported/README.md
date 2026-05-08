@@ -11,22 +11,23 @@ anyone else's data.
 ```
 exported/
 ├── README.md                 ← tracked; everything below is local-only
-├── notes/                    notes-export → Apple Notes markdown vault
-├── imessage/                 imessage-export → iMessage links + conversations
-├── reminders/                reminders-export → Apple Reminders by list
-├── voice-memos/              voice-memos-export → m4a symlinks + sidecars + transcripts
-└── safari/                   safari-export → windows / tab groups / bookmarks /
-                              iCloud tabs / history / per-URL dedup pages
+├── notes/                    notes-exporter → Apple Notes markdown vault
+├── imessage/                 imessage-exporter → iMessage links + conversations
+├── reminders/                reminders-exporter → Apple Reminders by list
+├── voice-memos/              voice-memos-exporter → m4a symlinks + sidecars + transcripts
+├── safari/                   safari-exporter → windows / tab groups / bookmarks /
+│                             iCloud tabs / history / per-URL dedup pages
+└── stickies/                 stickies-exporter → markdown of each Stickies note + .rtfd symlinks
 ```
 
 Each subfolder is the default `VAULT_PATH` (or `OUTPUT_PATH`) of its
-matching `<name>-export/` package. The `.env.example` files in the
+matching `<name>-exporter/` package. The `.env.example` files in the
 package directories all point here, so a fresh user just runs:
 
 ```bash
-cd ~/work/apple/<package>-export
+cd ~/work/apple/<package>-exporter
 cp .env.example .env
-./scripts/<package>-export export
+./scripts/<package>-exporter export
 ```
 
 …and their vault lands at `~/work/apple/exported/<package>/`, alongside
@@ -63,6 +64,7 @@ Each package's `.env` is gitignored, so individual overrides don't leak.
 exported/safari       14 MB   3,088 per-URL pages + window/group/bookmark trees
 exported/voice-memos  1.6 MB  392 .md sidecars + 327 m4a symlinks
 exported/reminders    2.0 MB  520 active reminders across 19 list folders
+exported/stickies     40 KB   10 stickies as markdown + .rtfd symlinks
 exported/notes        (not run yet)
 exported/imessage     (not run yet)
 ```
