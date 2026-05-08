@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""voice-memos-export — Apple Voice Memos read-only catalog + audio export.
+"""voice-memos-exporter — Apple Voice Memos read-only catalog + audio export.
 
 Subcommands (all read-only as far as the Voice Memos data is concerned):
   list      Filtered listing of recordings (date/duration/title/storage filters)

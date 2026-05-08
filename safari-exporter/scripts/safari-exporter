@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# safari-exporter — read-only catalog + markdown vault for Safari data
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+exec "$PYTHON" "$SCRIPT_DIR/safari_exporter.py" "$@"

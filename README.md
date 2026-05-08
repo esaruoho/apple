@@ -188,10 +188,10 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 Two read-only catalog/export packages that turn Apple data into clean
 markdown vaults without copying audio or modifying Apple's stores. Same
-pattern as the older [`notes-export/`](notes-export/) and
-[`imessage-export/`](imessage-export/).
+pattern as the older [`notes-exporter/`](notes-exporter/) and
+[`imessage-exporter/`](imessage-exporter/).
 
-### [`reminders-export/`](reminders-export/) — 23 lists / 2,547 reminders
+### [`reminders-exporter/`](reminders-exporter/) — 23 lists / 2,547 reminders
 
 ```bash
 reminders-export lists                         # list every Reminders list + count
@@ -208,7 +208,7 @@ year/month/day component assembly), and `id of <saved-list-variable>`
 returns reference list rather than strings (use
 `id of (every reminder of theList whose ...)` directly).
 
-### [`voice-memos-export/`](voice-memos-export/) — 392 recordings / 98.6 hours
+### [`voice-memos-exporter/`](voice-memos-exporter/) — 392 recordings / 98.6 hours
 
 ```bash
 voice-memos-export list --audio                # codec, sample rate, channels, device
@@ -241,7 +241,7 @@ Detail in
 [`voice-memos-capability-map.md`](dictionaries/voice-memos/voice-memos-capability-map.md),
 [`voice-memos-disk-lean-ops.md`](dictionaries/voice-memos/voice-memos-disk-lean-ops.md).
 
-### [`safari-export/`](safari-export/) — windows / tab groups / open tabs / bookmarks / iCloud tabs / history
+### [`safari-exporter/`](safari-exporter/) — windows / tab groups / open tabs / bookmarks / iCloud tabs / history
 
 ```bash
 safari-export status                              # 6 windows, 2,477 tabs, 1,899 iCloud tabs, 52k history

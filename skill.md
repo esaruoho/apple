@@ -346,17 +346,17 @@ Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Wr
 ## Bulk Exporters: Reminders + Voice Memos + Safari
 
 Two read-only catalog/export packages live at the repo root, mirroring
-the `notes-export/` and `imessage-export/` shape. Both write only into a
+the `notes-exporter/` and `imessage-exporter/` shape. Both write only into a
 user-configurable vault path; never modify Apple's data.
 
-### `reminders-export/`
+### `reminders-exporter/`
 - AppleScript-driven (Reminders.app has a real sdef).
 - Parallel-array fetch (`id of every reminder of theList`) — orders of magnitude faster than `repeat with R in theReminders` and avoids two AppleScript landmines:
   1. `«class isot»` ISO-date coercion **hangs osascript indefinitely** on Reminders objects on macOS 15.6.1 — replaced with manual `((year of d) as text) & "-" & ...` assembly.
   2. `id of <saved-reminder-list-variable>` returns reference list, not strings — must apply `id of` to the freshly-derived `every reminder` expression directly.
 - Live numbers on Esa's Mac: 23 lists / 2,547 reminders / 520 active when completed-skipped.
 
-### `voice-memos-export/` — Voice Memos has NO scripting dictionary
+### `voice-memos-exporter/` — Voice Memos has NO scripting dictionary
 - `sdef /System/Applications/VoiceMemos.app` returns error -192. Direct SQLite + filesystem reads only.
 - DB: `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/CloudRecordings.db`. Audio: plain `.m4a` next to it.
 - Title gotcha: `ZCUSTOMLABEL` often holds the system default ("New Recording N" / ISO timestamp). User-edited title lives in `ZENCRYPTEDTITLE` (column is misnamed — plaintext) and `ZCUSTOMLABELFORSORTING`.
@@ -381,7 +381,7 @@ diarization, summarize, watch daemon, BBS pipeline) in
 (symlink-only, ~14 MB total vault even after Phase 2 transcribe + index)
 in `voice-memos-disk-lean-ops.md`.
 
-### `safari-export/` — Safari has a real sdef AND three SQLite stores
+### `safari-exporter/` — Safari has a real sdef AND three SQLite stores
 
 Unlike Voice Memos, Safari has a complete AppleScript dictionary AND
 exposes its data in three on-disk SQLite databases. The export package

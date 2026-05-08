@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# notes-export — CLI wrapper for Apple Notes → Markdown vault pipeline
+# notes-exporter — CLI wrapper for Apple Notes → Markdown vault pipeline
 #
 # Usage:
-#   ./notes-export export --folders Notes,Work
-#   ./notes-export export --all
-#   ./notes-export status
-#   ./notes-export folders
-#   ./notes-export transcribe
-#   ./notes-export watch --interval 300
+#   ./notes-exporter export --folders Notes,Work
+#   ./notes-exporter export --all
+#   ./notes-exporter status
+#   ./notes-exporter folders
+#   ./notes-exporter transcribe
+#   ./notes-exporter watch --interval 300
 
 set -euo pipefail
 
@@ -18,7 +18,7 @@ case "${1:-help}" in
     export|status|folders)
         cmd="$1"
         shift
-        exec "$PYTHON" "$SCRIPT_DIR/notes_export.py" "$cmd" "$@"
+        exec "$PYTHON" "$SCRIPT_DIR/notes_exporter.py" "$cmd" "$@"
         ;;
     transcribe)
         shift
@@ -30,7 +30,7 @@ case "${1:-help}" in
         ;;
     help|--help|-h)
         cat <<'EOF'
-notes-export — Apple Notes → Markdown vault pipeline
+notes-exporter — Apple Notes → Markdown vault pipeline
 
 Commands:
   export     Export notes to vault

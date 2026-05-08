@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# imessage-export — CLI wrapper for iMessage link extraction pipeline
+# imessage-exporter — CLI wrapper for iMessage link extraction pipeline
 #
 # Usage:
-#   ./imessage-export export
-#   ./imessage-export export --contact "Name"
-#   ./imessage-export export --full --since 3m --enrich
-#   ./imessage-export discover
-#   ./imessage-export contacts
-#   ./imessage-export status
-#   ./imessage-export search "query"
+#   ./imessage-exporter export
+#   ./imessage-exporter export --contact "Name"
+#   ./imessage-exporter export --full --since 3m --enrich
+#   ./imessage-exporter discover
+#   ./imessage-exporter contacts
+#   ./imessage-exporter status
+#   ./imessage-exporter search "query"
 
 set -euo pipefail
 
@@ -19,15 +19,15 @@ case "${1:-help}" in
     export|links|contacts|status|search)
         cmd="$1"
         shift
-        exec "$PYTHON" "$SCRIPT_DIR/imessage_export.py" "$cmd" "$@"
+        exec "$PYTHON" "$SCRIPT_DIR/imessage_exporter.py" "$cmd" "$@"
         ;;
     discover)
         shift || true
-        exec "$PYTHON" "$SCRIPT_DIR/imessage_export.py" discover "$@"
+        exec "$PYTHON" "$SCRIPT_DIR/imessage_exporter.py" discover "$@"
         ;;
     help|--help|-h)
         cat <<'EOF'
-imessage-export — iMessage link & conversation extraction (macOS)
+imessage-exporter — iMessage link & conversation extraction (macOS)
 
 Commands:
   export     Export links from configured contacts

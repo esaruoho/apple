@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""safari-export — read-only catalog + markdown vault for Safari data.
+"""safari-exporter — read-only catalog + markdown vault for Safari data.
 
 Reads SafariTabs.db, CloudTabs.db, History.db, and (optionally) live
 Safari via AppleScript. Never writes to Apple's stores. Output goes
