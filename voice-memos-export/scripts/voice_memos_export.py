@@ -85,6 +85,7 @@ class Memo:
     folder: int | None
     flagged: bool
     evicted: bool
+    flags_raw: int = 0
 
     @property
     def m4a(self) -> Path | None:
@@ -96,6 +97,13 @@ class Memo:
     def m4a_exists(self) -> bool:
         p = self.m4a
         return bool(p and p.exists())
+
+    @property
+    def has_apple_transcript(self) -> bool:
+        # Empirical: ZFLAGS bit 3 (mask 0x08) is set when Voice Memos has
+        # generated an auto-transcript. Verified against on-disk `tsrp` atom
+        # in seven 2026 iPad recordings + six older 2024-2026 recordings.
+        return bool(self.flags_raw & 0x08)
 
 
 def open_db() -> sqlite3.Connection:
@@ -130,8 +138,9 @@ def load_memos() -> list[Memo]:
             duration=float(zdur or 0.0),
             path=zpath,
             folder=zfolder,
-            flagged=bool((zflags or 0) & 0x4),  # heuristic — Apple uses bit flags
+            flagged=bool((zflags or 0) & 0x4),
             evicted=zev is not None,
+            flags_raw=int(zflags or 0),
         ))
     con.close()
     return out
@@ -237,34 +246,135 @@ def resolve_selector(memos: list[Memo], sel: str) -> Memo:
 
 def cmd_list(args) -> int:
     memos = filter_memos(load_memos(), args)
+    if args.with_transcripts:
+        memos = [m for m in memos if m.has_apple_transcript]
+    if args.without_transcripts:
+        memos = [m for m in memos if not m.has_apple_transcript]
+    cache = load_audio_cache() if args.audio else {}
+    if args.audio:
+        for m in memos:
+            get_audio_info(m, cache)
+        save_audio_cache(cache)
     if args.json:
-        out = [{
-            "uuid": m.uuid,
-            "title": m.title,
-            "date": m.date_iso,
-            "duration_seconds": round(m.duration, 1),
-            "path": m.path,
-            "evicted": m.evicted,
-            "folder": m.folder,
-        } for m in memos]
+        out = []
+        for m in memos:
+            row = {
+                "uuid": m.uuid,
+                "title": m.title,
+                "date": m.date_iso,
+                "duration_seconds": round(m.duration, 1),
+                "path": m.path,
+                "evicted": m.evicted,
+                "folder": m.folder,
+                "apple_transcript": m.has_apple_transcript,
+                "flags_raw": m.flags_raw,
+            }
+            if args.audio:
+                row["audio"] = get_audio_info(m, cache) or None
+            out.append(row)
         print(json.dumps(out, indent=2, ensure_ascii=False))
         return 0
     if args.csv:
-        print("idx,uuid,date,duration_seconds,storage,title,path")
+        cols = ["idx","uuid","date","duration_seconds","storage","apple_transcript","title","path"]
+        if args.audio:
+            cols += ["sample_rate","channels","bit_rate","codec","device"]
+        print(",".join(cols))
         for i, m in enumerate(memos):
             title = (m.title or "").replace('"', '""')
-            print(f'{i},{m.uuid},{m.date_iso},{m.duration:.1f},'
-                  f'{"cloud" if m.evicted else "local"},"{title}",{m.path or ""}')
+            row = [str(i), m.uuid, m.date_iso, f"{m.duration:.1f}",
+                   "cloud" if m.evicted else "local",
+                   "yes" if m.has_apple_transcript else "no",
+                   f'"{title}"', m.path or ""]
+            if args.audio:
+                a = get_audio_info(m, cache)
+                row += [str(a.get("sample_rate","")), str(a.get("channels","")),
+                        str(a.get("bit_rate","")), a.get("codec",""), a.get("device","")]
+            print(",".join(row))
         return 0
     n = len(memos)
     if not n:
         print("(no recordings match)")
         return 0
     for i, m in enumerate(memos):
-        flag = "CLD" if m.evicted else ("   " if m.m4a_exists else "MIS")
-        print(f"{i:>4} {m.date_iso}  {fmt_dur(m.duration):>9}  {flag}  "
-              f"{(m.title or '?'):<48}  {m.path or ''}")
-    print(f"\n{n} recording(s) match.")
+        if m.evicted:
+            stor = "CLD"
+        elif m.m4a_exists:
+            stor = "   "
+        else:
+            stor = "MIS"
+        tr = " T " if m.has_apple_transcript else "   "
+        line = (f"{i:>4} {m.date_iso}  {fmt_dur(m.duration):>9}  {stor} {tr} "
+                f"{(m.title or '?'):<46}")
+        if args.audio:
+            a = get_audio_info(m, cache)
+            if a:
+                kbps = a.get("bit_rate", 0) // 1000 if a.get("bit_rate") else 0
+                line += f"  {a.get('codec',''):<5} {a.get('sample_rate',0)//1000}k {a.get('channels',0)}ch {kbps}kbps  {a.get('device','')}"
+        else:
+            line += f"  {m.path or ''}"
+        print(line)
+    print(f"\n{n} recording(s) match.  T = Apple-generated transcript present")
+    return 0
+
+
+# ---------- transcripts subcommand ----------
+
+def cmd_transcripts(args) -> int:
+    memos = filter_memos(load_memos(), args)
+    flagged = [m for m in memos if m.has_apple_transcript]
+    if args.list_only or (not args.extract and not args.selector):
+        print(f"Voice memos with auto-generated Apple transcripts: {len(flagged)}")
+        for i, m in enumerate(flagged):
+            print(f"  {i:>3}  {m.date_iso}  {fmt_dur(m.duration):>9}  "
+                  f"{(m.title or '?'):<50}  {m.uuid[:8]}")
+        if not flagged:
+            print("(none — your archive has no recordings with Apple's auto-transcripts)")
+        return 0
+
+    targets: list[Memo]
+    if args.extract and args.all:
+        targets = flagged
+    elif args.selector:
+        targets = [resolve_selector(memos, args.selector)]
+    else:
+        print("Pass a selector, --all, or omit to list.", file=sys.stderr)
+        return 2
+
+    env = load_env()
+    n_extracted = n_skipped = 0
+    for m in targets:
+        if not m.m4a_exists:
+            print(f"  ! {m.title}: m4a missing", file=sys.stderr)
+            continue
+        j = find_tsrp_atom(m.m4a)
+        if j is None:
+            n_skipped += 1
+            print(f"  - {m.title}: no tsrp atom found")
+            continue
+        text = transcript_to_text(j, with_timestamps=not args.no_timestamps)
+        if args.print:
+            print(f"\n=== {m.date_iso}  {fmt_dur(m.duration)}  {m.title} ===")
+            print(text or "(empty)")
+            n_extracted += 1
+            continue
+        # write to vault next to the .md sidecar
+        year = m.date_dt.strftime("%Y")
+        month = m.date_dt.strftime("%m")
+        out_dir = Path(env["VAULT_PATH"]) / year / month
+        out_dir.mkdir(parents=True, exist_ok=True)
+        stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
+        out = out_dir / f"{stem}.apple-transcript.txt"
+        locale = ((j.get("locale") or {}).get("identifier") or "")
+        header = (f"# Apple auto-generated transcript\n"
+                  f"# Source: {m.path}\n"
+                  f"# UUID: {m.uuid}\n"
+                  f"# Recorded: {m.date_iso}  ({fmt_dur(m.duration)})\n"
+                  f"# Locale: {locale}\n"
+                  f"# Title: {m.title}\n\n")
+        out.write_text(header + (text or "") + "\n")
+        n_extracted += 1
+        print(f"  → {out.relative_to(Path(env['VAULT_PATH']).parent)}")
+    print(f"\nExtracted: {n_extracted}  Skipped: {n_skipped}")
     return 0
 
 
@@ -345,6 +455,206 @@ def cmd_open(args) -> int:
     return 0
 
 
+# ---------- audio metadata (ffprobe, cached) ----------
+
+AUDIO_CACHE_FILE = ROOT / ".audio-meta.cache.json"
+
+
+def load_audio_cache() -> dict:
+    if AUDIO_CACHE_FILE.exists():
+        try:
+            return json.loads(AUDIO_CACHE_FILE.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def save_audio_cache(cache: dict) -> None:
+    AUDIO_CACHE_FILE.write_text(json.dumps(cache, indent=2, ensure_ascii=False))
+
+
+def _humanize_device(encoder: str) -> str:
+    if not encoder:
+        return ""
+    # examples observed:
+    # "com.apple.VoiceMemos (iPad Version 15.6.1 (Build 24G90))"
+    # "com.apple.VoiceMemos (iPhone Version 16.2 (Build 20C5058d))"
+    # "com.apple.VoiceMemos (esaSoftability's MacBook Pro (null))"
+    # "com.apple.VoiceMemos (iOS 13.0)"
+    m = re.search(r"\(([^()]+(?:\([^()]+\))?)\)\s*$", encoder)
+    inner = m.group(1) if m else encoder
+    if "iPad" in inner:
+        return "iPad"
+    if "iPhone" in inner:
+        return "iPhone"
+    if "MacBook" in inner or "Mac" in inner:
+        return "Mac"
+    if "iOS" in inner:
+        return f"iOS ({inner.split()[1] if ' ' in inner else inner})"
+    return inner.split(" Version")[0].strip()
+
+
+def probe_audio(path: Path) -> dict:
+    """Run ffprobe; return {sr, channels, bit_rate, codec, encoder, device}."""
+    try:
+        proc = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-print_format", "json",
+             "-show_format", "-show_streams", str(path)],
+            capture_output=True, text=True, check=False, timeout=15,
+        )
+        if proc.returncode != 0:
+            return {}
+        d = json.loads(proc.stdout)
+        st = (d.get("streams") or [{}])[0]
+        fmt_tags = (d.get("format") or {}).get("tags") or {}
+        encoder = fmt_tags.get("encoder", "")
+        return {
+            "sample_rate": int(st.get("sample_rate") or 0),
+            "channels": int(st.get("channels") or 0),
+            "bit_rate": int(st.get("bit_rate") or 0),
+            "codec": st.get("codec_name") or "",
+            "encoder": encoder,
+            "device": _humanize_device(encoder),
+        }
+    except Exception:
+        return {}
+
+
+def get_audio_info(memo: Memo, cache: dict) -> dict:
+    """Cached probe. Cache key = uuid + filename + size + mtime."""
+    if memo.evicted or not memo.m4a_exists:
+        return {}
+    p = memo.m4a
+    try:
+        st = p.stat()
+        ckey = f"{memo.uuid}:{p.name}:{st.st_size}:{int(st.st_mtime)}"
+    except OSError:
+        return {}
+    if ckey in cache:
+        return cache[ckey]
+    info = probe_audio(p)
+    cache[ckey] = info
+    return info
+
+
+# ---------- Apple-generated transcript extraction ----------
+
+TSRP_MARKER = b"tsrp"
+
+
+def find_tsrp_atom(path: Path) -> dict | None:
+    """Scan the m4a tail for the `tsrp` Apple-Intelligence transcript atom.
+
+    The atom is appended after the audio data as a JSON-serialized
+    NSAttributedString containing per-word time-aligned runs.
+    Returns the parsed JSON, or None if no transcript is embedded.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return None
+    # Transcripts cluster near the end. Read the last 256 KB; for very
+    # long recordings the transcript can be larger, so fall back to a
+    # full scan if the marker isn't in the tail.
+    chunk = min(size, 262144)
+    with open(path, "rb") as f:
+        f.seek(size - chunk)
+        tail = f.read()
+        idx = tail.rfind(TSRP_MARKER)
+        if idx < 0 and chunk < size:
+            f.seek(0)
+            data = f.read()
+            idx = data.rfind(TSRP_MARKER)
+            if idx < 0:
+                return None
+            after = data[idx + 4:]
+        else:
+            if idx < 0:
+                return None
+            after = tail[idx + 4:]
+    after = after.rstrip(b"\x00")
+    try:
+        s = after.decode("utf-8", errors="ignore")
+    except Exception:
+        return None
+    depth = 0
+    end = 0
+    for i, c in enumerate(s):
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if not end:
+        return None
+    try:
+        return json.loads(s[:end])
+    except Exception:
+        return None
+
+
+def transcript_to_text(j: dict, with_timestamps: bool = True) -> str:
+    """Walk the parsed tsrp JSON and return readable text.
+
+    `runs` alternates [text, attribute_index, text, attribute_index, ...].
+    Each attribute_index points into `attributeTable`, where each entry
+    is `{"timeRange": [start_sec, end_sec]}`.
+    """
+    attr = j.get("attributedString") or {}
+    runs = attr.get("runs") or []
+    table = attr.get("attributeTable") or []
+    out_lines: list[str] = []
+    cur_text: list[str] = []
+    cur_start: float | None = None
+    cur_end: float | None = None
+    SEG_GAP = 2.0  # break to a new line after a 2 s gap
+
+    def flush() -> None:
+        if not cur_text:
+            return
+        text = "".join(cur_text).strip()
+        if not text:
+            cur_text.clear()
+            return
+        if with_timestamps and cur_start is not None:
+            mm = int(cur_start // 60)
+            ss = int(cur_start % 60)
+            out_lines.append(f"[{mm:02d}:{ss:02d}] {text}")
+        else:
+            out_lines.append(text)
+        cur_text.clear()
+
+    for i in range(0, len(runs) - 1, 2):
+        text = runs[i]
+        attr_idx = runs[i + 1]
+        if not isinstance(text, str):
+            text = str(text)
+        if not isinstance(attr_idx, int) or attr_idx >= len(table):
+            cur_text.append(text)
+            continue
+        tr = table[attr_idx].get("timeRange") or []
+        if len(tr) != 2:
+            cur_text.append(text)
+            continue
+        seg_start, seg_end = tr
+        if cur_start is None:
+            cur_start = seg_start
+            cur_end = seg_end
+            cur_text.append(text)
+        elif seg_start - (cur_end or seg_start) > SEG_GAP:
+            flush()
+            cur_start = seg_start
+            cur_end = seg_end
+            cur_text.append(text)
+        else:
+            cur_end = seg_end
+            cur_text.append(text)
+    flush()
+    return "\n".join(out_lines)
+
+
 SLUG_RE = re.compile(r"[^a-zA-Z0-9._-]+")
 
 
@@ -353,7 +663,8 @@ def slugify(s: str, max_len: int = 60) -> str:
     return (s[:max_len] or "untitled").lower()
 
 
-def write_sidecar(env: dict, m: Memo, audio_target: Path | None) -> Path:
+def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
+                   audio_info: dict | None = None) -> Path:
     year = m.date_dt.strftime("%Y")
     month = m.date_dt.strftime("%m")
     out_dir = Path(env["VAULT_PATH"]) / year / month
@@ -369,9 +680,20 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None) -> Path:
         "duration_human": fmt_dur(m.duration),
         "path": m.path or "",
         "evicted": m.evicted,
+        "apple_transcript": m.has_apple_transcript,
+        "flags_raw": m.flags_raw,
         "audio_in_vault": audio_target.name if audio_target else "",
         "source_db": str(VM_DB),
     }
+    if audio_info:
+        fm.update({
+            "sample_rate": audio_info.get("sample_rate", 0),
+            "channels": audio_info.get("channels", 0),
+            "bit_rate": audio_info.get("bit_rate", 0),
+            "codec": audio_info.get("codec", ""),
+            "encoder": audio_info.get("encoder", ""),
+            "device": audio_info.get("device", ""),
+        })
     lines = ["---"]
     for k, v in fm.items():
         if isinstance(v, str):
@@ -384,10 +706,21 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None) -> Path:
     lines.append("")
     lines.append(f"- **Recorded**: {m.date_iso}")
     lines.append(f"- **Duration**: {fmt_dur(m.duration)} ({m.duration:.1f}s)")
+    if audio_info:
+        kbps = (audio_info.get("bit_rate") or 0) // 1000
+        lines.append(f"- **Audio**: {audio_info.get('codec','?')}  "
+                     f"{audio_info.get('sample_rate',0)} Hz  "
+                     f"{audio_info.get('channels',0)} ch  "
+                     f"{kbps} kbps")
+        if audio_info.get("device"):
+            lines.append(f"- **Recorded on**: {audio_info['device']}")
+    if m.has_apple_transcript:
+        lines.append("- **Apple transcript**: ✅ embedded in m4a (extract via "
+                     "`voice-memos-export transcripts --extract`)")
     if m.evicted:
         lines.append("- **Storage**: ☁️ cloud-only on this Mac")
     elif audio_target:
-        lines.append(f"- **Audio**: `{audio_target.name}` (next to this file)")
+        lines.append(f"- **Audio file**: `{audio_target.name}` (next to this file)")
     lines.append("")
     md_path.write_text("\n".join(lines))
     return md_path
@@ -403,10 +736,10 @@ def cmd_export(args) -> int:
     targets = filter_memos(targets, args)
 
     Path(env["VAULT_PATH"]).mkdir(parents=True, exist_ok=True)
+    cache = load_audio_cache() if args.audio else {}
     n_audio = n_md = n_skipped = 0
 
     for m in targets:
-        # decide audio destination
         audio_target: Path | None = None
         if not m.evicted and m.m4a_exists:
             year = m.date_dt.strftime("%Y")
@@ -416,17 +749,21 @@ def cmd_export(args) -> int:
             stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
             audio_target = out_dir / f"{stem}.m4a"
             if audio_target.exists() and not args.force:
+                # leave existing symlink/copy in place; rewrite sidecar anyway
                 n_skipped += 1
             else:
                 if args.copy_audio:
                     shutil.copy2(m.m4a, audio_target)
                 else:
-                    if audio_target.exists():
+                    if audio_target.exists() or audio_target.is_symlink():
                         audio_target.unlink()
                     audio_target.symlink_to(m.m4a)
                 n_audio += 1
-        write_sidecar(env, m, audio_target)
+        ainfo = get_audio_info(m, cache) if args.audio else None
+        write_sidecar(env, m, audio_target, ainfo)
         n_md += 1
+    if args.audio:
+        save_audio_cache(cache)
 
     mode = "copied" if args.copy_audio else "symlinked"
     print(f"\nVault: {env['VAULT_PATH']}")
@@ -457,9 +794,32 @@ def main() -> int:
 
     sp = sub.add_parser("list", help="Filtered listing")
     add_filter_args(sp)
+    sp.add_argument("--audio", action="store_true",
+                    help="Include sample rate / channels / bit rate / codec / device (cached ffprobe)")
+    sp.add_argument("--with-transcripts", action="store_true",
+                    help="Only recordings with Apple-generated transcripts")
+    sp.add_argument("--without-transcripts", action="store_true",
+                    help="Only recordings without Apple transcripts")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--csv", action="store_true")
     sp.set_defaults(func=cmd_list)
+
+    sp = sub.add_parser("transcripts",
+                         help="List or extract Apple-generated auto-transcripts (no Whisper)")
+    add_filter_args(sp)
+    sp.add_argument("selector", nargs="?",
+                    help="Single recording (omit to list all transcripted)")
+    sp.add_argument("--list-only", action="store_true",
+                    help="Just count and list — no extraction")
+    sp.add_argument("--extract", action="store_true",
+                    help="Write .apple-transcript.txt files")
+    sp.add_argument("--all", action="store_true",
+                    help="With --extract: process every transcripted recording")
+    sp.add_argument("--print", action="store_true",
+                    help="Print transcript to stdout instead of writing")
+    sp.add_argument("--no-timestamps", action="store_true",
+                    help="Plain text without [MM:SS] markers")
+    sp.set_defaults(func=cmd_transcripts)
 
     sp = sub.add_parser("stats", help="Aggregate statistics")
     add_filter_args(sp)
@@ -481,6 +841,8 @@ def main() -> int:
                     help="Copy m4a (default: symlink, saves disk)")
     sp.add_argument("--force", action="store_true",
                     help="Overwrite existing audio in vault")
+    sp.add_argument("--audio", action="store_true",
+                    help="Probe + bake sample rate / channels / device into sidecars")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--csv", action="store_true")
     sp.set_defaults(func=cmd_export)

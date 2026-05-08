@@ -50,12 +50,37 @@ voice-memos-export list --match 'Kortela|Grotz|Russell'
 voice-memos-export list --at "Inkiväärikuja"
 voice-memos-export list --evicted                # cloud-only
 voice-memos-export list --local                  # audio on disk
+voice-memos-export list --with-transcripts       # only ones Apple already transcribed
+voice-memos-export list --without-transcripts
+voice-memos-export list --audio                  # add codec/sample-rate/channels/device
 voice-memos-export list --sort duration
 voice-memos-export list --json                   # machine-readable
 voice-memos-export list --csv
 ```
 
-Storage flag column: `   ` = local, `CLD` = cloud-only, `MIS` = local row but m4a missing.
+Columns:
+- Storage flag: `   ` = local, `CLD` = cloud-only, `MIS` = local row but m4a missing
+- Transcript flag: `T` = Apple has auto-generated a transcript embedded in the m4a
+- `--audio` adds: `codec sr_kHz ch_count bitrate device` (cached via ffprobe in `.audio-meta.cache.json`)
+
+### `transcripts` — Apple's auto-generated transcripts (no Whisper involved)
+
+Voice Memos.app generates English transcripts on supported devices and
+embeds them in the .m4a as a `tsrp` JSON atom in the file trailer. We can
+detect (via ZFLAGS bit 3) and extract them without running Whisper.
+
+```bash
+voice-memos-export transcripts                            # list all that have transcripts
+voice-memos-export transcripts --extract --print "Mauri"  # one transcript to stdout
+voice-memos-export transcripts --extract --all            # write .apple-transcript.txt for each
+voice-memos-export transcripts --extract --no-timestamps "Jon C. Fox"
+```
+
+Caveat: Apple's transcript engine on macOS 15.6.1 is **English-only and
+poor quality on Finnish-mixed speech**. Use Whisper (`whisp --fi`) for
+your Finnish recordings — Apple's transcripts are kept here mainly so
+you know which recordings already have any kind of automated transcript
+and can compare quality.
 
 ### `stats` — aggregates
 
@@ -85,12 +110,18 @@ Cloud-only recordings open Voice Memos.app to trigger an iCloud download.
 
 ```bash
 voice-memos-export export --all                          # whole archive
+voice-memos-export export --all --audio                  # bake codec/device into sidecars
 voice-memos-export export --all --in 2025                # one year
 voice-memos-export export --all --longer-than 10m
 voice-memos-export export --all --copy-audio             # copy instead of symlink
 voice-memos-export export latest                         # single recording
 voice-memos-export export "Mauri Rantala"
 ```
+
+Live numbers from Esa's Mac: 392 recordings, 327 with audio on disk,
+13 with Apple-generated transcripts. Vault total after `--all --audio`:
+**1.6 MB** (symlinks + sidecars; the 3.4 GB of m4a files stay where Voice
+Memos put them).
 
 Default mode is **symlink** the m4a — keeps the vault tiny and the audio
 stays where Voice Memos.app expects it. Pass `--copy-audio` if you want
@@ -118,19 +149,53 @@ duration_seconds: 1246.33
 duration_human: "20:46"
 path: "20260507 133626.m4a"
 evicted: false
-audio_in_vault: "2026-05-07__1336__mauri-rantala__2EC8B04E.m4a"
+apple_transcript: true
+flags_raw: 1548
+audio_in_vault: "2026-05-07__1036__mauri-rantala__2EC8B04E.m4a"
 source_db: "/Users/.../CloudRecordings.db"
+sample_rate: 48000
+channels: 1
+bit_rate: 62951
+codec: "aac"
+encoder: "com.apple.VoiceMemos (iPad Version 15.6.1 (Build 24G90))"
+device: "iPad"
 ---
 ```
 
+The bottom six fields appear when you pass `--audio` (probes via ffprobe,
+caches in `.audio-meta.cache.json`).
+
 ## What's NOT in this package
 
-- **Transcription** (`whisp` wrapper) — coming in Phase 2.
+- **Whisper transcription** — coming in Phase 2 (use `whisp <m4a>` directly for now).
 - **Watch daemon** — coming in Phase 2.
 - **Force-download evicted recordings** — needs Shortcuts integration.
 - **Cross-reference Calendar/Notes/Reminders** — Phase 2.
 - **Direct DB writes** (rename/move/delete) — deliberately omitted; UI-script
   via Voice Memos.app is safer.
+
+## Apple's transcript trailer (`tsrp` atom)
+
+Findings from this session, worth recording in case Apple changes the
+format:
+
+- ZFLAGS bit 3 (mask `0x08`) in `ZCLOUDRECORDING` indicates an
+  Apple-generated transcript exists for that recording. Verified across
+  13 recordings on this Mac.
+- The transcript itself is appended to the .m4a file after the audio
+  data, prefixed by the 4-byte ASCII marker `tsrp`, followed by a JSON
+  object with `locale` and `attributedString` fields.
+- `attributedString.runs` is a flat array alternating
+  `[text_str, attribute_index, text_str, attribute_index, ...]`.
+  Each `attribute_index` indexes into `attributeTable` whose entries
+  carry a `timeRange: [start_sec, end_sec]`.
+- Concatenating the even-indexed strings reconstructs the full transcript
+  text. The exporter does this and produces line-broken output keyed on
+  > 2 s gaps with `[MM:SS]` markers.
+
+Quality on multilingual / Finnish-heavy speech is poor (Apple's
+on-device transcript is English-only on macOS 15.6.1). For real
+transcription, route through Whisper.
 
 See `~/work/apple/dictionaries/voice-memos/voice-memos-capability-map.md`
 for the full roadmap.
