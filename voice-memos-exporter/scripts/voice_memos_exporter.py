@@ -726,6 +726,75 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
     return md_path
 
 
+def cmd_xref(args) -> int:
+    """Match each recording against ±window-minute Calendar events.
+
+    Uses the Calendar SQLite store directly (read-only) so we don't need
+    AppleScript or the calendar-exporter binary. Events with overlapping
+    time ranges score the recording.
+    """
+    cal_db = Path(os.path.expanduser(
+        "~/Library/Group Containers/group.com.apple.calendar/Calendar.sqlitedb"
+    ))
+    if not cal_db.exists():
+        print(f"Calendar DB not found at {cal_db}", file=sys.stderr)
+        return 1
+
+    memos = filter_memos(load_memos(), args)
+    if not memos:
+        print("(no recordings to xref)", file=sys.stderr)
+        return 0
+
+    cal = sqlite3.connect(f"file:{cal_db}?mode=ro&immutable=1", uri=True)
+    window_secs = args.window * 60
+
+    out_rows: list[dict] = []
+    for m in memos:
+        if not m.date_dt:
+            continue
+        # Convert recording start (UTC) to Cocoa epoch for SQL comparison
+        start_cocoa = (m.date_dt - COCOA_EPOCH).total_seconds()
+        rows = cal.execute("""
+            SELECT ci.summary, c.title, ci.start_date, ci.end_date,
+                   COALESCE(l.title,'') AS location
+            FROM CalendarItem ci
+            LEFT JOIN Calendar c ON c.ROWID = ci.calendar_id
+            LEFT JOIN Location l ON l.ROWID = ci.location_id
+            WHERE ci.start_date BETWEEN ? AND ?
+            ORDER BY ABS(ci.start_date - ?)
+            LIMIT 5
+        """, (start_cocoa - window_secs, start_cocoa + window_secs, start_cocoa)).fetchall()
+        if rows:
+            out_rows.append({
+                "memo_uuid": m.uuid,
+                "memo_title": m.title,
+                "memo_date": m.date_iso,
+                "events": [
+                    {
+                        "summary": r[0] or "(no title)",
+                        "calendar": r[1] or "?",
+                        "start": cocoa_to_dt(r[2]).strftime("%Y-%m-%d %H:%M") if r[2] else "",
+                        "location": r[4],
+                    }
+                    for r in rows
+                ],
+            })
+    cal.close()
+
+    if args.json:
+        print(json.dumps(out_rows, indent=2, ensure_ascii=False))
+        return 0
+
+    for row in out_rows:
+        print(f"\n{row['memo_date']}  {row['memo_title']}")
+        for e in row["events"]:
+            loc = f"  @ {e['location']}" if e['location'] else ""
+            print(f"   ↔  {e['start']}  [{e['calendar']}]  {e['summary']}{loc}")
+    print(f"\n{len(out_rows)}/{len(memos)} recording(s) had Calendar matches "
+          f"within ±{args.window} min")
+    return 0
+
+
 def cmd_export(args) -> int:
     env = load_env()
     memos = load_memos()
@@ -832,6 +901,14 @@ def main() -> int:
     sp.add_argument("--quicktime", action="store_true", help="Open in QuickTime Player")
     sp.add_argument("--reveal", action="store_true", help="Reveal in Finder only")
     sp.set_defaults(func=cmd_open)
+
+    sp = sub.add_parser("xref", help="Cross-reference recordings against Calendar events (±N min window)")
+    add_filter_args(sp)
+    sp.add_argument("--calendar", action="store_true", help="Match against Calendar events (default)")
+    sp.add_argument("--window", type=int, default=30,
+                    help="Time window in minutes around recording start (default 30)")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_xref)
 
     sp = sub.add_parser("export", help="Copy/symlink m4a + write .md sidecars to vault")
     add_filter_args(sp)

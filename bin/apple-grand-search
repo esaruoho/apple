@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# apple-grand-search — unified search across every exporter vault.
+#
+# Usage:
+#   apple-grand-search "Kortela"
+#   apple-grand-search "russell|tesla|schauberger" --case-sensitive
+#   apple-grand-search "ruby" --only safari,mail
+#   apple-grand-search --list-vaults
+#
+# Searches markdown files under ~/work/apple/exported/<package>/ and
+# reports per-package hits with up to N matching lines each.
+#
+# Apple-native: uses ripgrep when available, falls back to grep -r.
+
+set -euo pipefail
+
+ROOT="${APPLE_REPO:-$HOME/work/apple}"
+EXPORTED="$ROOT/exported"
+
+# All bulk-exporter vaults that exist
+ALL_VAULTS="notes imessage reminders voice-memos safari stickies console audio-midi image-capture calendar finder music mail photos iwork"
+
+print_usage() {
+    cat <<USAGE
+apple-grand-search — unified ripgrep across every exporter vault
+
+Usage:
+  apple-grand-search [OPTIONS] PATTERN
+
+Options:
+  --only A,B,C       Limit search to comma-separated vault names
+  --skip A,B,C       Skip these vaults
+  --case-sensitive   Case-sensitive (default: case-insensitive)
+  --max N            Max hits per vault (default 20)
+  --list-vaults      Print which vaults exist locally and exit
+  -h, --help         Show this message
+
+Available vaults (those that exist under $EXPORTED/):
+USAGE
+    for v in $ALL_VAULTS; do
+        if [ -d "$EXPORTED/$v" ]; then
+            n=$(find "$EXPORTED/$v" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+            echo "  $v ($n .md files)"
+        fi
+    done
+}
+
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 1
+fi
+
+ONLY=""
+SKIP=""
+CASE_FLAG="-i"
+MAX=20
+PATTERN=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --only) ONLY="$2"; shift 2;;
+        --skip) SKIP="$2"; shift 2;;
+        --case-sensitive) CASE_FLAG=""; shift;;
+        --max) MAX="$2"; shift 2;;
+        --list-vaults)
+            for v in $ALL_VAULTS; do
+                if [ -d "$EXPORTED/$v" ]; then
+                    n=$(find "$EXPORTED/$v" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+                    echo "$v  $n .md files"
+                fi
+            done
+            exit 0
+            ;;
+        -h|--help) print_usage; exit 0;;
+        --*) echo "unknown option: $1" >&2; exit 2;;
+        *) PATTERN="$1"; shift;;
+    esac
+done
+
+if [ -z "$PATTERN" ]; then
+    echo "no pattern given" >&2; exit 2
+fi
+
+if [ ! -d "$EXPORTED" ]; then
+    echo "Vault dir $EXPORTED not found. Have you run any exporter yet?" >&2
+    exit 1
+fi
+
+# Vault selection
+if [ -n "$ONLY" ]; then
+    VAULTS=$(echo "$ONLY" | tr ',' ' ')
+else
+    VAULTS="$ALL_VAULTS"
+fi
+if [ -n "$SKIP" ]; then
+    SK=" $(echo "$SKIP" | tr ',' ' ') "
+    NEW=""
+    for v in $VAULTS; do
+        case "$SK" in
+            *" $v "*) ;;
+            *) NEW="$NEW $v";;
+        esac
+    done
+    VAULTS="$NEW"
+fi
+
+# Search engine
+HAVE_RG=0
+if command -v rg >/dev/null 2>&1; then HAVE_RG=1; fi
+
+total_hits=0
+for v in $VAULTS; do
+    dir="$EXPORTED/$v"
+    [ -d "$dir" ] || continue
+
+    if [ $HAVE_RG -eq 1 ]; then
+        hits=$(rg --color=never $CASE_FLAG -n -m "$MAX" --no-heading --type md "$PATTERN" "$dir" 2>/dev/null || true)
+    else
+        # grep fallback
+        hits=$(grep -r --include='*.md' -n $CASE_FLAG -E "$PATTERN" "$dir" 2>/dev/null | head -"$MAX" || true)
+    fi
+
+    if [ -n "$hits" ]; then
+        n=$(echo "$hits" | wc -l | tr -d ' ')
+        total_hits=$((total_hits + n))
+        # nice header
+        echo
+        echo "=== $v ($n hits) ==="
+        # Strip leading vault path so output is cleaner
+        echo "$hits" | sed "s|$dir/||g" | head -"$MAX"
+    fi
+done
+
+echo
+echo "($total_hits total matching lines across $(echo $VAULTS | wc -w | tr -d ' ') vault(s))"

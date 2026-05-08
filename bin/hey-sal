@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""hey-sal — natural-language router across the bulk-exporter family.
+
+Sal Soghoian's WWDC 2016 session 717 vision, finally realised on the
+user side. You speak (or type) a sentence; we classify intent and
+dispatch to the right exporter.
+
+This is v0 — rule-based pattern matching for the most common
+intents. macOS 26's FoundationModels Swift framework is not yet
+available on macOS 15.6.1 (this Mac); when it lands we'll swap the
+classifier without changing the dispatch loop.
+
+Speak (mac native):
+  shortcuts run "Hey Sal"  # if a Vocal Shortcut is registered
+  say -v Samantha "What did I record on Mauri Rantala?"
+
+Type:
+  hey-sal "what did i record on mauri rantala"
+  hey-sal "find ruby's email about cd baby last month"
+  hey-sal "when did i last visit forum.renoise.com"
+  hey-sal "what's on my calendar today"
+  hey-sal "show me my pages cvs"
+  hey-sal "take my photo"
+  hey-sal "summarize my latest voice memo"
+  hey-sal "what's the most-cited url in my open tabs"
+  hey-sal "list my reminders"
+  hey-sal "what's in my apple library"
+
+Pass --speak to have the response read aloud via macOS `say`.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+
+ROOT = Path(__file__).resolve().parent.parent  # ~/work/apple
+
+
+def run_exporter(name: str, *args: str) -> tuple[int, str]:
+    bin_path = ROOT / name / "scripts" / name
+    if not bin_path.exists():
+        return 1, f"(missing: {bin_path})"
+    try:
+        proc = subprocess.run([str(bin_path)] + list(args),
+                              capture_output=True, text=True, timeout=120)
+        out = proc.stdout
+        if proc.stderr:
+            out += "\n" + proc.stderr
+        return proc.returncode, out
+    except subprocess.TimeoutExpired:
+        return 124, "(timeout)"
+
+
+def speak(text: str) -> None:
+    """Pipe text through macOS `say` — Apple-native TTS."""
+    # Truncate to avoid 30-second monologues
+    text = text[:600]
+    try:
+        subprocess.run(["say", "-v", "Samantha", text], timeout=60)
+    except Exception:
+        pass
+
+
+# =====================================================================
+# Intent classifiers
+#
+# Each rule is (regex, handler). Handlers receive the matched groups
+# and return a (display, brief) tuple where `brief` is what `say`
+# reads aloud and `display` is what gets printed.
+# =====================================================================
+
+def _shorten(text: str, n: int = 6) -> str:
+    """Pick the most info-rich N lines from output (skip headers)."""
+    lines = [l for l in text.splitlines() if l.strip() and not l.startswith("===")]
+    return "\n".join(lines[:n])
+
+
+def i_voice_memos_search(m, q):
+    name = m.group(1).strip()
+    rc, out = run_exporter("voice-memos-exporter", "list", "--match", name)
+    return out, _shorten(out, 4)
+
+
+def i_voice_memos_latest(m, q):
+    rc, out = run_exporter("voice-memos-exporter", "list", "--in",
+                            datetime.now().strftime("%Y-%m"))
+    return out, _shorten(out, 3)
+
+
+def i_voice_memos_summarize(m, q):
+    # Stub: list latest + Apple transcript if any
+    rc, out = run_exporter("voice-memos-exporter", "transcripts",
+                           "--list-only", "--in",
+                           datetime.now().strftime("%Y"))
+    return out, _shorten(out, 4)
+
+
+def i_mail_search(m, q):
+    sender = m.group(1).strip()
+    subject = m.group(2).strip() if m.lastindex and m.lastindex >= 2 else None
+    args = ["search", "--sender", sender, "--limit", "10"]
+    if subject:
+        args += ["--subject", subject]
+    rc, out = run_exporter("mail-exporter", *args)
+    return out, _shorten(out, 4)
+
+
+def i_safari_history(m, q):
+    target = m.group(1).strip()
+    rc, out = run_exporter("safari-exporter", "history",
+                           "--match", target, "--limit", "5")
+    return out, _shorten(out, 3)
+
+
+def i_safari_dups(m, q):
+    rc, out = run_exporter("safari-exporter", "dedupe", "--summary-only")
+    return out, _shorten(out, 5)
+
+
+def i_calendar_today(m, q):
+    today = datetime.now().strftime("%Y-%m-%d")
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    rc, out = run_exporter("calendar-exporter", "events",
+                           "--since", today, "--until", tomorrow,
+                           "--limit", "20")
+    return out, _shorten(out, 5)
+
+
+def i_iwork_match(m, q):
+    pattern = m.group(2).strip() if m.lastindex and m.lastindex >= 2 else "."
+    app = m.group(1).strip().lower()
+    rc, out = run_exporter("iwork-exporter", "recents", "--app", app)
+    if pattern and pattern != ".":
+        rx = re.compile(pattern, re.I)
+        out = "\n".join(l for l in out.splitlines() if rx.search(l))
+    return out, _shorten(out, 5)
+
+
+def i_take_photo(m, q):
+    rc, out = run_exporter("image-capture-exporter", "snap")
+    return out, _shorten(out, 2)
+
+
+def i_reminders(m, q):
+    rc, out = run_exporter("reminders-exporter", "status")
+    return out, _shorten(out, 5)
+
+
+def i_status(m, q):
+    """Default 'what is in my apple library' — total counts."""
+    parts = []
+    for name, sub in [
+        ("voice-memos-exporter", "stats"),       # voice-memos uses 'stats' not 'status'
+        ("safari-exporter", "status"),
+        ("mail-exporter", "status"),
+        ("calendar-exporter", "status"),
+        ("photos-exporter", "status"),
+        ("music-exporter", "status"),
+        ("reminders-exporter", "status"),
+        ("stickies-exporter", "status"),
+        ("audio-midi-exporter", "status"),
+        ("image-capture-exporter", "status"),
+        ("iwork-exporter", "status"),
+    ]:
+        rc, out = run_exporter(name, sub)
+        parts.append(f"=== {name} ===\n{out.strip()}")
+    full = "\n\n".join(parts)
+    return full, "Status across all exporters printed."
+
+
+# Registry: (regex, handler). Order matters — first match wins.
+INTENTS: list[tuple[re.Pattern, callable]] = [
+    # voice memos
+    (re.compile(r"(?:what|did|find|show).{0,30}(?:voice memo|recording|record(?:ed)?).{0,20}?(?:on|about|of|for|with|matching)\s+(.+?)\??$", re.I),
+     i_voice_memos_search),
+    (re.compile(r"(?:summari[sz]e|summary of)\s+(?:my\s+)?(?:latest|last|newest)\s+(?:voice memo|recording)", re.I),
+     i_voice_memos_summarize),
+    (re.compile(r"(?:my\s+)?(?:latest|recent)\s+(?:voice memo|recording)s?", re.I),
+     i_voice_memos_latest),
+
+    # mail
+    (re.compile(r"(?:find|show|where).*?(?:email|mail|message).*?from\s+([\w@.]+).*?(?:about|on|re|regarding)\s+(.+?)\??$", re.I),
+     i_mail_search),
+    (re.compile(r"(?:find|show).*?(?:email|mail).*?from\s+([\w@.]+)", re.I),
+     i_mail_search),
+
+    # safari
+    (re.compile(r"(?:when|last).*(?:visit|browse|see).*?([\w.\-]+\.[a-z]{2,})", re.I),
+     i_safari_history),
+    (re.compile(r"(?:most.{0,10}cited|most.{0,10}duplicate|duplicate).*?(?:url|tab|bookmark)", re.I),
+     i_safari_dups),
+
+    # calendar
+    (re.compile(r"(?:what.{0,15}(?:on|in).{0,15}calendar|today.{0,10}schedule|upcoming.{0,10}events?)", re.I),
+     i_calendar_today),
+
+    # iwork
+    (re.compile(r"(?:show|list|my)\s+(?:me\s+)?(?:my\s+)?(pages|numbers|keynote)\s+(.+?)\??$", re.I),
+     i_iwork_match),
+    (re.compile(r"\b(pages|numbers|keynote)\s+(.+?)$", re.I),
+     i_iwork_match),
+    (re.compile(r"(?:show|list|my)\s+(?:me\s+)?(?:my\s+)?(pages|numbers|keynote)", re.I),
+     i_iwork_match),
+
+    # camera
+    (re.compile(r"(?:take|snap|capture).*(?:my|a)\s+(?:photo|picture|selfie)", re.I),
+     i_take_photo),
+
+    # reminders
+    (re.compile(r"(?:list|show|what).{0,15}reminders?", re.I),
+     i_reminders),
+
+    # default: status across the family
+    (re.compile(r"(?:what.?s|status|tell me|show me).{0,20}(?:apple|library|everything)", re.I),
+     i_status),
+]
+
+
+def classify(query: str):
+    for rx, handler in INTENTS:
+        m = rx.search(query)
+        if m:
+            return handler(m, query)
+    return None
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="hey-sal")
+    p.add_argument("query", nargs="*", help="natural-language utterance")
+    p.add_argument("--speak", action="store_true",
+                   help="read the brief response aloud via macOS `say`")
+    p.add_argument("--list-intents", action="store_true",
+                   help="print every registered intent pattern + exit")
+    args = p.parse_args()
+
+    if args.list_intents:
+        for rx, handler in INTENTS:
+            print(f"  {handler.__name__:<28}  {rx.pattern}")
+        return 0
+
+    if not args.query:
+        # Read from stdin (e.g. pipe from `osascript "tell app to dictate"`)
+        query = sys.stdin.read().strip()
+    else:
+        query = " ".join(args.query).strip()
+
+    if not query:
+        print("Hey Sal: no utterance. Pass a sentence as args or pipe via stdin.",
+              file=sys.stderr)
+        return 2
+
+    print(f"› {query}")
+    result = classify(query)
+    if result is None:
+        msg = ("I don't know how to do that yet. "
+               "Try: hey-sal --list-intents")
+        print(msg)
+        if args.speak:
+            speak(msg)
+        return 1
+
+    display, brief = result
+    print()
+    print(display)
+    if args.speak:
+        speak(brief)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

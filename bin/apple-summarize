@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# apple-summarize — text summarizer (LLM stub).
+#
+# Today (macOS 15.6.1): rule-based bullet extraction (heuristic, fast,
+# no network). Tomorrow (macOS 26+ "Tahoe" with FoundationModels Swift
+# framework available): replace the body with a Swift one-liner that
+# calls LanguageModelSession.respond(to:).
+#
+# Usage:
+#   apple-summarize <markdown-or-text-file>
+#   apple-summarize --stdin           # read from stdin
+#   apple-summarize --backend rules   # force the rule-based fallback
+#   apple-summarize --backend foundation-models   # error today; works on 26+
+#
+# Apple-native only. No pip, no network.
+
+set -uo pipefail
+
+BACKEND="auto"
+INPUT=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --backend) BACKEND="$2"; shift 2;;
+        --stdin) INPUT="-"; shift;;
+        -h|--help)
+            head -16 "$0" | grep '^#' | sed 's|^# \?||'; exit 0;;
+        --*) echo "unknown: $1" >&2; exit 2;;
+        *) INPUT="$1"; shift;;
+    esac
+done
+
+if [ -z "$INPUT" ]; then
+    echo "Usage: apple-summarize <file>  |  apple-summarize --stdin" >&2
+    exit 2
+fi
+
+# Detect FoundationModels availability — must compile a LanguageModelSession()
+# instantiation, not just import the framework. Real availability lands in
+# macOS 26; on 15.6.1 the framework imports but the API is unavailable.
+HAS_FM=0
+if /usr/bin/swift -e 'import FoundationModels; let _ = LanguageModelSession(); print("ok")' >/dev/null 2>&1; then
+    HAS_FM=1
+fi
+
+if [ "$BACKEND" = "auto" ]; then
+    if [ $HAS_FM -eq 1 ]; then BACKEND="foundation-models"
+    else BACKEND="rules"
+    fi
+fi
+
+read_input() {
+    if [ "$INPUT" = "-" ]; then cat; else cat "$INPUT"; fi
+}
+
+case "$BACKEND" in
+    foundation-models)
+        if [ $HAS_FM -ne 1 ]; then
+            echo "FoundationModels not available on this macOS." >&2
+            echo "(macOS 15.6.1 = no public framework yet; lands in macOS 26.)" >&2
+            exit 3
+        fi
+        # Future-proof: pipe through swift one-liner
+        text=$(read_input)
+        /usr/bin/swift - <<SWIFT
+import FoundationModels
+import Foundation
+let text = """
+$text
+"""
+let session = LanguageModelSession()
+Task {
+    let r = try await session.respond(to: "Summarize this in 5 bullet points:\n\n\(text)")
+    print(r.content)
+    exit(0)
+}
+RunLoop.main.run()
+SWIFT
+        ;;
+    rules)
+        # Heuristic: pick the most info-rich lines (skip empty,
+        # frontmatter, headers, quotes). Take the first 5.
+        read_input | python3 -c '
+import sys, re
+text = sys.stdin.read()
+in_fm = False
+lines = []
+for line in text.splitlines():
+    stripped = line.strip()
+    if stripped == "---":
+        in_fm = not in_fm
+        continue
+    if in_fm: continue
+    if not stripped: continue
+    if stripped.startswith("#"): continue
+    if stripped.startswith("```"): continue
+    # de-bullet
+    while stripped[:2] in ("- ", "* "):
+        stripped = stripped[2:]
+    if len(stripped) < 20: continue
+    lines.append(stripped)
+
+# Score by length + presence of substantive words; pick top 5
+substantive = re.compile(r"\b(?:will|because|since|so|then|but|however|key|main|first|next|finally|important|because|whenever)\b", re.I)
+def score(s):
+    return len(s) + (50 if substantive.search(s) else 0)
+
+picked = sorted(lines, key=score, reverse=True)[:5]
+print("Summary (rule-based fallback — install macOS 26 for real LLM):\n")
+for p in picked:
+    print(f"- {p[:200]}")
+'
+        ;;
+    *)
+        echo "unknown backend: $BACKEND" >&2; exit 2;;
+esac

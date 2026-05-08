@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# apple-grand-export — run every bulk exporter in one pass.
+#
+# Usage:
+#   apple-grand-export                  # run them all (read-only, fast ones first)
+#   apple-grand-export --quick          # skip the slow ones (photos, music --with-tracks)
+#   apple-grand-export --only A,B,C
+#   apple-grand-export --skip A,B,C
+#   apple-grand-export --dry-run        # show what would run
+#
+# Exporters are run sequentially. Failures in one don't abort the rest.
+# Each exporter writes to ~/work/apple/exported/<name>/. A summary
+# table is printed at the end.
+
+set -uo pipefail
+
+ROOT="${APPLE_REPO:-$HOME/work/apple}"
+
+# Order matters for two reasons:
+#   1. AppleScript-based ones (reminders, voice-memos, music, calendar)
+#      run faster when their app is already in cache, so cluster them.
+#   2. The huge SQLite ones (mail, photos) come last so they don't
+#      delay the quick wins.
+EXPORTERS=(
+    "stickies-exporter:export"
+    "audio-midi-exporter:export"
+    "image-capture-exporter:export"
+    "console-exporter:status"
+    "calendar-exporter:export"
+    "reminders-exporter:status"
+    "voice-memos-exporter:export --all"
+    "safari-exporter:export"
+    "iwork-exporter:export"
+    "finder-exporter:export"
+    "mail-exporter:export"
+    "music-exporter:export"
+    "photos-exporter:export --heads-only"
+)
+
+# Slow ones that --quick skips
+SLOW="finder-exporter mail-exporter music-exporter photos-exporter"
+
+QUICK=0
+ONLY=""
+SKIP=""
+DRYRUN=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --quick) QUICK=1; shift;;
+        --only)  ONLY="$2"; shift 2;;
+        --skip)  SKIP="$2"; shift 2;;
+        --dry-run) DRYRUN=1; shift;;
+        -h|--help)
+            grep '^#' "$0" | sed 's|^# \?||'
+            exit 0;;
+        *) echo "unknown: $1" >&2; exit 2;;
+    esac
+done
+
+RAN=()
+total=0
+ok=0
+fail=0
+
+start_run=$(date +%s)
+
+for spec in "${EXPORTERS[@]}"; do
+    name="${spec%%:*}"
+    cmd="${spec#*:}"
+
+    # filtering
+    if [ -n "$ONLY" ]; then
+        case ",$ONLY," in
+            *",$name,"*) ;;
+            *) continue;;
+        esac
+    fi
+    if [ -n "$SKIP" ]; then
+        case ",$SKIP," in
+            *",$name,"*) continue;;
+        esac
+    fi
+    if [ $QUICK -eq 1 ]; then
+        case "$SLOW" in
+            *"$name"*) continue;;
+        esac
+    fi
+
+    bin="$ROOT/$name/scripts/$name"
+    if [ ! -x "$bin" ]; then
+        echo "skip $name (no executable at $bin)"
+        continue
+    fi
+
+    total=$((total + 1))
+    if [ $DRYRUN -eq 1 ]; then
+        echo "would run: $bin $cmd"
+        continue
+    fi
+
+    echo
+    echo "=== $name $cmd ==="
+    t0=$(date +%s)
+    if "$bin" $cmd 2>&1 | tail -8; then
+        rc=${PIPESTATUS[0]}
+    else
+        rc=$?
+    fi
+    t1=$(date +%s)
+    dur=$((t1 - t0))
+
+    if [ "$rc" -eq 0 ]; then
+        ok=$((ok + 1))
+        RAN+=("$name OK ${dur}s")
+    else
+        fail=$((fail + 1))
+        RAN+=("$name FAIL($rc) ${dur}s")
+    fi
+done
+
+end_run=$(date +%s)
+total_dur=$((end_run - start_run))
+
+echo
+echo "================================================"
+echo "apple-grand-export summary"
+echo "================================================"
+if [ "${#RAN[@]}" -gt 0 ]; then
+    for line in "${RAN[@]}"; do
+        echo "  $line"
+    done
+fi
+echo
+echo "Total: $total exporters, $ok ok, $fail failed, ${total_dur}s elapsed"
+echo "Vaults: $ROOT/exported/"
