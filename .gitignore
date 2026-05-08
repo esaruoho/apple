@@ -60,3 +60,7 @@ scripts/sal/dictation-commands/citruspeel-extracted/
 # Vault content stays local; only the README lands in git.
 exported/*
 !exported/README.md
+
+# Compiled Swift binaries (regenerable via swiftc on first use)
+bin/sal-take-photo
+bin/sal-qr

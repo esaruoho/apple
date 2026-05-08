@@ -52,6 +52,55 @@ The **WWDC 2016 session 717** (Sal's dictation/automation talk) was **pulled a w
 
 The analyses derive **30 sourced "What Would Sal Do" (WWSD) principles** from primary-source spoken Sal — including the Carpenter Move (look for the underlying principle, sourced to his master-carpenter father), Observer + Participant simultaneously, Forward Motion with a paddle, Speak the Receiver's Language, Pay in What Cash Can't Buy, Authorization as Bridge, Identify the Trigger Phrases, **Procedural-vs-Task commands** (#28, session 717), **Voice as Peer Modality** (#29, session 717), and **the Seven-Purpose Framework** for when to build a voice command (#30, session 717). Full list in [`sal-soghoian.md`](sal-soghoian.md).
 
+### Session 717 Replication — Hey Sal v1 (2026-05-08)
+
+**The thing Apple killed in 2016 runs on macOS Sequoia, voice-driven.** Built end-to-end this session on top of the 2026-05-07 recovery.
+
+**Architecture:**
+
+```
+Vocal Shortcut "Hey Sal" (Apple Silicon, System Settings → Accessibility → Speech)
+  → Hey Sal Shortcut: Dictate Text → Run AppleScript (input wired to Dictated Text)
+  → bin/sal-siri-match.py — fuzzy keyword matcher across 588 Sal commands + N user Shortcuts
+  → matcher prefers user Shortcuts (USER_BOOST 1.5x), filters out broken Sal handlers
+  → either runs user Shortcut via shortcuts CLI, or runs Sal handler via DC-XXX library
+```
+
+**~32 user Shortcuts in a `Sal Demo` folder** (Shortcuts.app sidebar) covering most of the WWDC 717 demo arc — all native-AppleScript bypassing broken Sal handlers:
+
+- **Stage 1-2** (Photos, Keynote build): Switch To Photos, Select All Photos, Make A New Presentation, Add A Blank Slide, Go To First/Last/Next/Previous Slide, Save Front Document
+- **Stage 5** (visual polish): Apply Magic Move, Apply Dissolve, No Transition
+- **Stage 8** (misc): Duplicate Current Slide, Delete Current Slide, **QR This** (native CIQRCodeGenerator → Keynote insert), **QR My Clipboard**
+- **Clipboard ↔ Slide**: Insert Clipboard To Slide Title, Insert Clipboard To Slide Body
+- **System**: Display Wifi Network Name, Hide Other Applications, Open Documents/Pictures/Downloads Folder, Close All Finder Windows
+- **Engine**: Hey Sal (the router), **Take My Picture** (native AVFoundation Swift binary, replaces Sal's broken IKPictureTaker)
+- **Master orchestrator**: **Sal Demo Guide** — display-dialog walkthrough that prompts the user to speak each command via Hey Sal in sequence
+
+**New Apple-native binaries** (zero third-party deps, Apple-shipped Swift compiler only):
+
+- [`bin/sal-take-photo.swift`](bin/sal-take-photo.swift) — webcam capture via AVCaptureVideoDataOutput + CIImage. Self-bootstraps via swiftc on first run. Replaces Sal's 2016 PictureTaker Helper which on Sequoia opens the legacy IKPictureTaker avatar picker (flowers/yin-yang) instead of the camera.
+- [`bin/sal-qr.swift`](bin/sal-qr.swift) — QR code generation via Core Image's CIQRCodeGenerator. Compile once, voice-trigger via "QR This" or "QR My Clipboard".
+
+**Findings codified today:**
+
+1. **Vocal Shortcuts storage** is `~/Library/Preferences/com.apple.Accessibility.plist` → key `AVSPreferenceKey` → bytes containing UTF-8 JSON array. Apple did not document this. Reverse-engineered from a live entry. Reader at [`bin/list-vocal-shortcuts.py`](bin/list-vocal-shortcuts.py); full schema at [`analysis/sal/vocal-shortcuts-storage-format.md`](analysis/sal/vocal-shortcuts-storage-format.md).
+2. **Apple changed iWork bundle IDs** post-2016: `com.apple.iWork.Keynote` / `iWork.Pages` / `iWork.Numbers` are gone, replaced by `com.apple.Keynote` / `com.apple.Pages` / `com.apple.Numbers`. Sal's hardcoded-bundle-ID DC-Keynote / DC-Pages / DC-Numbers handlers always error -1728 ("Can't get application id"). The matcher now skips them (dead-bundle filter); native user Shortcuts replace them.
+3. **macOS Sequoia removed the Custom Commands plist runtime** entirely — `com.apple.speech.recognition.AppleSpeechRecognition.CustomCommands.plist` is gone, no daemon reads it. Vocal Shortcuts (Apple Silicon only) is the canonical replacement.
+4. **Audio input device drift** is the first thing to check when dictation appears broken. We spent 2 hours debugging TCC, plist formats, Sequoia bugs — actual cause was macOS listening to a non-microphone input. Codified as the global rule: query `system_profiler SPAudioDataType` BEFORE blaming software. See [`feedback_check_audio_input_first.md`](https://github.com/esaruoho/apple/blob/main/.claude-feedback-stub) (lives in `~/.claude/projects/.../memory/`).
+
+**Build pipeline:**
+
+| Stage | Tool | What it does |
+|---|---|---|
+| Engine | [`bin/dictation-commands-install.sh`](bin/dictation-commands-install.sh) | Copies 18 `.scptd` libraries to `~/Library/Script Libraries/` and 5 helper apps to `~/Applications/Dictation Helper Apps/` |
+| Granular Shortcuts | [`bin/build-sal-demo-shortcuts.py`](bin/build-sal-demo-shortcuts.py) | Builds ~32 native-AppleScript user Shortcuts |
+| Specials | [`bin/build-take-my-picture-shortcut.py`](bin/build-take-my-picture-shortcut.py), [`bin/build-sal-demo-guide.py`](bin/build-sal-demo-guide.py) | Take My Picture (AVFoundation binary), Sal Demo Guide (display-dialog walkthrough) |
+| Folder organize | [`bin/organize-sal-shortcuts-into-folder.applescript`](bin/organize-sal-shortcuts-into-folder.applescript) | Creates `Sal Demo` folder in Shortcuts.app and moves all related Shortcuts into it |
+| Matcher | [`bin/sal-siri-match.py`](bin/sal-siri-match.py) | Fuzzy keyword matcher: 588 Sal phrasings + auto-discovered user Shortcuts (5-min cache); USER_BOOST=1.5; dead-bundle filter |
+| One-command installer | [`bin/install-sal-demo-library.sh`](bin/install-sal-demo-library.sh) | Builds → opens .shortcut files for batch import → runs folder organizer |
+
+**Demo runbook**: [`analysis/sal/sal-demo-script.md`](analysis/sal/sal-demo-script.md) — printable script of 9 phrases to speak via Hey Sal that recreate the spine of WWDC 717 on a 2026 Mac.
+
 ### Sal Archive TODO
 
 - [x] Mirror the main Sal sites into [`sources/sal/`](sources/sal/)

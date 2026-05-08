@@ -37,7 +37,7 @@ if [[ ! -d "$CITRUSPEEL" ]]; then
 fi
 
 LIB_DST="$HOME/Library/Script Libraries"
-HELPER_DST="$HOME/Library/Application Support/Dictation Commands"
+HELPER_DST="$HOME/Applications/Dictation Helper Apps"
 PREF_DST="$HOME/Library/Preferences/com.apple.speech.recognition.AppleSpeechRecognition.CustomCommands.plist"
 
 run() {

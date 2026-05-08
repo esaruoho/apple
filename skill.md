@@ -64,9 +64,35 @@ When a problem looks like it needs an external CLI, write the equivalent in:
 - **`do shell script`** with macOS-native binaries (`mdfind`, `defaults`, `osascript`, `screencapture`, `say`, `diskutil`, `networksetup`, `ioreg`, `system_profiler`, `pmset`, etc.)
 - **Shortcuts** + Run AppleScript / Run Shell Script actions
 
-Concrete example (recorded 2026-05-08): `Take My Picture` originally used `imagesnap` (Homebrew) — replaced with `bin/sal-take-photo.swift` running via `/usr/bin/swift`. Native AVFoundation call, no install required.
+Concrete examples (recorded 2026-05-08):
+- `Take My Picture` originally used `imagesnap` (Homebrew) — replaced with `bin/sal-take-photo.swift` running via `/usr/bin/swiftc -O` then the compiled binary. Native AVFoundation (`AVCaptureVideoDataOutput` + `CIImage` + `CGImageDestination`).
+- `QR This` / `QR My Clipboard` use `bin/sal-qr.swift` — Core Image `CIQRCodeGenerator`. Zero install.
+
+**Compile-once vs script-mode caveat:** `/usr/bin/swift script.swift` runs Swift script-mode and works for simple scripts, but **fails on AVFoundation classes that need KVO subclassing** (`AVCapturePhotoOutput` produces `class 'NSKVONotifying_AVCapturePhotoOutput' not linked into application`). For those, compile via `swiftc -O -o binary script.swift` ahead of time, OR use sample-buffer-based APIs (`AVCaptureVideoDataOutput`) which don't have the KVO problem. The Take My Picture Shortcut self-bootstraps via `swiftc` on first run if the binary is missing.
 
 If a task genuinely cannot be done Apple-native, document why and ask before introducing a dependency.
+
+## Apple Bundle ID Drift (post-2016)
+
+**Apple silently changed iWork bundle IDs.** Sal's 2016 `.scptd` libraries hardcode the OLD IDs, and on current macOS they error -1728 ("Can't get application id"):
+
+| Sal-era ID (2016) | Current (Sequoia 2026) | Affected libraries |
+|---|---|---|
+| `com.apple.iWork.Keynote` | `com.apple.Keynote` | DC-Keynote, DC-Keynote-Objects, DC-Assistive-Keynote, DC-Workspace |
+| `com.apple.iWork.Pages` | `com.apple.Pages` | DC-Pages |
+| `com.apple.iWork.Numbers` | `com.apple.Numbers` | DC-Numbers |
+
+**Patch attempt** (`bin/patch-sal-libraries-for-current-bundle-ids.sh`) decompiles, sed-replaces, and tries to recompile. DC-Pages, DC-Workspace, DC-Keynote-Objects, DC-Assistive-Keynote recompile cleanly. **DC-Keynote and DC-Numbers fail to recompile** because the sdef classes (`«class Ktsh»` etc.) trigger "Access not allowed" assignment errors — Apple changed property accessibility in addition to bundle IDs.
+
+**Live workaround:** `bin/sal-siri-match.py` has a **dead-bundle filter** that skips Sal handlers referencing any of these IDs. The matcher returns "no match" instead of running broken handlers. Replacement is via native user Shortcuts (USER_BOOST=1.5 in the matcher) — see `bin/build-sal-demo-shortcuts.py` for examples that bypass Sal libraries entirely with simple `tell application "Keynote" to ...` syntax (which resolves by name through LaunchServices regardless of bundle ID change).
+
+## Sal's PictureTaker Helper.app Broken on Sequoia
+
+Sal's 2016 `PictureTaker Helper.app` (one of the 5 helper apps shipped in CitrusPeel255.zip, lives at `~/Applications/Dictation Helper Apps/`) opens the legacy `IKPictureTaker` panel — on macOS Sequoia this panel surfaces the **avatar picker** (default flowers / yin-yang / gingerbread / rose) rather than the live camera tab. The camera mode exists in the panel but the user can't click into it from the avatar surface as expected.
+
+**Replacement:** `bin/sal-take-photo.swift` — native AVFoundation `AVCaptureVideoDataOutput` capture. Compiles to `bin/sal-take-photo`, called by the user "Take My Picture" Shortcut. Works on Sequoia; saves JPEG to `~/Pictures/sal-snap-<timestamp>.jpg`; reveals in Finder.
+
+The matcher routes "take my picture" preferentially to the user Shortcut (USER_BOOST=1.5) so Sal's broken `takeVSnapshotAndAddToPhotos` handler is never selected.
 
 ## AppleScript Best Practices
 
