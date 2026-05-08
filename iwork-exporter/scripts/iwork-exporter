@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# iwork-exporter — Pages / Numbers / Keynote (regular + Creator Studio)
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+exec "$PYTHON" "$SCRIPT_DIR/iwork_exporter.py" "$@"
