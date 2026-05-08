@@ -710,11 +710,78 @@ def cmd_export(args) -> int:
             lines.append("")
         write_md(win_dir / f"window-{w.id}.md", "\n".join(lines))
 
-    # 2. tab groups index
-    tg_index = ["# Tab Groups", ""]
-    for g in sorted(load_tabgroups(), key=lambda g: -g.num_children):
-        kind = " (Local)" if g.is_local else ""
-        tg_index.append(f"- **{g.title}**{kind} — {g.num_children} tabs (window {g.window_id})")
+    # 2. tab groups: one .md per group with all tabs
+    all_groups = sorted(load_tabgroups(), key=lambda g: -g.num_children)
+    # disambiguate name collisions across windows: "Local" appears N times
+    used_slugs: dict[str, int] = {}
+    tg_files: list[tuple[TabGroup, str]] = []
+    for g in all_groups:
+        base = slugify(g.title)
+        if g.is_local:
+            base = f"local-window-{g.window_id}"
+        n = used_slugs.get(base, 0)
+        used_slugs[base] = n + 1
+        slug = base if n == 0 else f"{base}-{n+1}"
+        tg_files.append((g, slug))
+
+    tg_index = ["# Tab Groups", "",
+                f"_{len(all_groups)} groups across "
+                f"{len({g.window_id for g in all_groups})} window(s)._", ""]
+    for g, slug in tg_files:
+        kind = "Local" if g.is_local else "Group"
+        tg_index.append(f"- [{g.title}](./{slug}.md) — {g.num_children} tabs "
+                        f"(window {g.window_id}, {kind})")
+        # write per-group page
+        body = [f"---",
+                f"title: \"{(g.title or '').replace(chr(34), chr(92)+chr(34))}\"",
+                f"window_id: {g.window_id}",
+                f"tab_group_id: {g.id}",
+                f"is_local: {str(g.is_local).lower()}",
+                f"tab_count: {g.num_children}",
+                f"---", "",
+                f"# {g.title}",
+                "",
+                f"- **Window**: {g.window_id}",
+                f"- **Kind**: {kind}",
+                f"- **Tabs**: {g.num_children}",
+                ""]
+        con = open_ro(SAFARI_TABS_DB)
+        tab_rows = con.execute("""
+            WITH RECURSIVE d(id, depth) AS (
+              SELECT id, 0 FROM bookmarks WHERE id = ?
+              UNION ALL
+              SELECT b.id, d.depth+1 FROM bookmarks b JOIN d ON b.parent = d.id
+              WHERE b.deleted = 0
+            )
+            SELECT b.id, b.parent, b.type, COALESCE(b.title,''),
+                   COALESCE(b.url,''), b.num_children, b.order_index, d.depth
+            FROM d JOIN bookmarks b ON b.id = d.id
+            WHERE b.deleted = 0
+            ORDER BY b.parent, b.order_index
+        """, (g.id,)).fetchall()
+        con.close()
+        # render as nested list, with sub-folders + their tabs
+        # build a parent->children map
+        kids: dict[int, list[tuple]] = defaultdict(list)
+        rec_root_id = g.id
+        for r in tab_rows:
+            if r[0] == rec_root_id:
+                continue
+            kids[r[1]].append(r)
+        def render_node(node_id: int, depth: int) -> list[str]:
+            lines = []
+            for r in kids.get(node_id, []):
+                _id, parent, type_, title, url, num_kids, oi, _d = r
+                indent = "  " * depth
+                if type_ == 0:
+                    lines.append(f"{indent}- [{title or '(untitled)'}]({url})")
+                else:
+                    lines.append(f"{indent}- **{title or '(unnamed)'}** ({num_kids})")
+                    lines.extend(render_node(_id, depth + 1))
+            return lines
+        body.extend(render_node(rec_root_id, 0))
+        body.append("")
+        write_md(tg_dir / f"{slug}.md", "\n".join(body))
     write_md(tg_dir / "_index.md", "\n".join(tg_index))
 
     # 3. bookmarks: per top-level folder
