@@ -343,7 +343,23 @@ Messages has the **thinnest sdef** — 3 commands: `send`, `login`, `logout`. Wr
 
 **Workaround:** `~/Library/Messages/chat.db` (SQLite) is readable with Full Disk Access but SIP-protected.
 
-## Bulk Exporters: Reminders + Voice Memos + Safari + Stickies
+## Bulk Exporters: Reminders + Voice Memos + Safari + Stickies + Console + Audio MIDI + Image Capture
+
+### Meta tool: `bin/app-plist-probe.py`
+
+Scans every Apple-app plist under `~/Library/Containers/com.apple.*/Data/Library/Preferences/` and `~/Library/Preferences/com.apple.*.plist`, decodes top-level keys, recursively unwraps NSKeyedArchiver blobs, and reports which apps have user-extractable data. **Tells us which apps deserve a dedicated exporter without per-app probing.**
+
+Live numbers on this Mac: **1,934 plists across 518 apps; 576 plists across 481 apps have non-trivial user data.** Top hits by interesting-key count: `com.apple.mobilelogic` 635, `com.apple.logic10` 522, `com.apple.Music` 461, `com.apple.Safari` 156, `com.apple.iMovieApp` 147, `com.apple.Preview` 109, `com.apple.podcasts` 105, `com.apple.finder` 100, `com.apple.mail` 91, `com.apple.Pages/Numbers/Keynote` 72/73/56.
+
+Full survey at `dictionaries/all-apps-plist-survey.md` (3,246 lines).
+
+Usage:
+```bash
+bin/app-plist-probe.py                            # short summary
+bin/app-plist-probe.py --md --interesting-only > survey.md
+bin/app-plist-probe.py --app voicememos           # one app
+bin/app-plist-probe.py --grep tesla               # search values across all plists
+```
 
 Two read-only catalog/export packages live at the repo root, mirroring
 the `notes-exporter/` and `imessage-exporter/` shape. Both write only into a
@@ -438,6 +454,44 @@ Phase 2 (omitted): `create`, `append`, `delete`. These need a quit-Stickies-firs
 Live numbers on this Mac: 10 stickies, 18 KB on disk, 393 chars total. Free-energy / archive research stubs (Stubblefield, Bill Beatty, Jeane Manning, Sand Battery, Leedskalnin, Kentucky Water Fuel Museum, etc.) — heavy overlap with the Tesla/Free-Energy archive corpus, candidate for `xref --free-energy` cross-reference.
 
 Detail in `dictionaries/stickies/stickies-extraction-research.md`.
+
+### `console-exporter/` — `log` CLI is the Console.app back-door
+
+Console.app: no sdef, no App Intents, no URL scheme. **The `log` CLI is strictly more powerful than the GUI** — predicate filtering, time windows, signposts, streaming.
+
+Subcommands: `status`, `show --last 1h --process X --subsystem Y --error --match REGEX`, `subsystems --last 6h --top 50` (counts distinct subsystem:category pairs), `diag-list / diag-export` (walks `~/Library/Logs/DiagnosticReports/` + `/Library/Logs/DiagnosticReports/`), `export --last 1h --error --label errors-1h` (saves a timestamped markdown query page to `exported/console/queries/`).
+
+Live numbers: 30 user diagnostic reports, 136 system reports, ~193k log lines per 5 minutes on this Mac.
+
+### `audio-midi-exporter/` — `system_profiler` + MIDI Configurations
+
+Audio MIDI Setup: no sdef, no App Intents. Back-door: `system_profiler SPAudioDataType -xml` and `SPMIDIDataType -xml` for live device state, plus `~/Library/Audio/MIDI Configurations/*.mcfg` for saved Studio layouts.
+
+Subcommands: `status`, `audio [--json]`, `midi [--json]`, `configurations`, `export` (markdown vault with audio.md + midi.md + configurations/ symlinks).
+
+Live on this Mac: 8 audio devices (CalDigit Thunderbolt 3 dock, MacBook Pro Speakers/Mic, Microsoft Teams Audio, LoomAudioDevice, Audio Hijack to Loopback, Aggregate Device), 0 MIDI devices currently connected, 1 saved MIDI config.
+
+Phase 2 (omitted): `set-default-output`, `change-sample-rate`, `watch` (Core Audio notifications observer).
+
+### `image-capture-exporter/` — AVFoundation + system_profiler + Swift
+
+Image Capture: no sdef, no App Intents. Two back-doors:
+1. **AVFoundation** via `/usr/bin/swift` for video capture devices — built-in webcam, Continuity Camera, virtual cameras (OBS, Insta360), external USB.
+2. **`system_profiler SPUSBDataType`** for connected iOS / iPadOS / Watch devices and USB scanners.
+
+Subcommands: `status`, `cameras [--json]`, `ios-devices`, `scanners`, `prefs` (reads `com.apple.imagecapture.plist`), `snap [--camera SUBSTR] [--out PATH]` (WRITE — captures one JPG via `take_photo.swift`), `export` (full markdown vault).
+
+Two Swift snippets ship in the package:
+- `scripts/list_cameras.swift` — emits AVFoundation device list as JSON
+- `scripts/take_photo.swift` — single-frame capture session, writes JPG
+
+Live on this Mac: 3 cameras (FaceTime HD Camera, Insta360 Virtual Camera, OBS Virtual Camera), 0 iOS devices, 0 scanners.
+
+Phase 2 (omitted): `download-from-ios` (ImageCaptureCore framework via Objective-C bridging), `watch` (IOKit DAEvents on USB attach/detach), `record-video`, mDNS-discovered network scanners.
+
+### Apps STILL completely dark (Tier 6 unchanged)
+
+Launchpad and Time Machine remain Tier 6 — no scriptable surface, no plist with the data, no CLI back-door comparable to what we have for everything else. (Time Machine has `tmutil` for backup operations, but no API for browsing backup *content*.) Mission Control has been **reclassified from Tier 6 to Tier 5** since `~/Library/Preferences/com.apple.spaces.plist` exposes `SpacesDisplayConfiguration` with the full Monitor → Spaces tree (1.5 KB plist, single-key but rich nested structure).
 
 Live findings on this Mac: 4,769 URL instances → 3,088 unique → 1,391 duplicated. Worst offender: a Renoise Forums root URL in 13 open tabs + 11 iCloud tabs (24 locations, 6,527 history visits). One Google Sheets URL in 8 tabs + 1 pinned + 8 iCloud = 17 places.
 

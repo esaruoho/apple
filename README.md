@@ -174,7 +174,7 @@ bin/batch-import.sh --folder "My Name" # Custom folder name
 
 ---
 
-## Bulk Exporters — Reminders, Voice Memos, Safari, Stickies
+## Bulk Exporters — Reminders, Voice Memos, Safari, Stickies, Console, Audio MIDI, Image Capture
 
 > **Convention**: every bulk exporter writes its vault into
 > [`exported/<package>/`](exported/) under the repo. The `exported/`
@@ -305,6 +305,41 @@ colors ARE in the `\colortbl` and surfaced in the .md frontmatter.
 
 Detail in
 [`dictionaries/stickies/stickies-extraction-research.md`](dictionaries/stickies/stickies-extraction-research.md).
+
+### Tier 5 dark unlocked: Console, Audio MIDI Setup, Image Capture
+
+These three apps have no AppleScript dictionary, no App Intents, no URL scheme. But each has a clean back-door — a CLI tool or framework call that's strictly more powerful than the GUI:
+
+| Package | Back-door | Output |
+|---------|-----------|--------|
+| [`console-exporter/`](console-exporter/) | `log show` + `~/Library/Logs/DiagnosticReports/` | filtered log queries as markdown vault pages, diagnostic-report symlinks |
+| [`audio-midi-exporter/`](audio-midi-exporter/) | `system_profiler SPAudioDataType` / `SPMIDIDataType` + `.mcfg` plists | audio.md / midi.md / configurations index |
+| [`image-capture-exporter/`](image-capture-exporter/) | AVFoundation via `/usr/bin/swift` + `system_profiler SPUSBDataType` | cameras.md / ios-devices.md / scanners.md / `snap` JPGs |
+
+```bash
+console-exporter status                         # 30 user + 136 system diagnostic reports
+console-exporter show --last 1h --error
+console-exporter export --last 1d --process Safari --label safari-1d
+
+audio-midi-exporter status                      # 8 audio devices + saved MIDI config
+audio-midi-exporter audio --json
+audio-midi-exporter export
+
+image-capture-exporter status                   # 3 cameras + USB iOS / scanner enumeration
+image-capture-exporter snap --camera FaceTime   # captures one JPG via Swift+AVFoundation
+image-capture-exporter export
+```
+
+### Meta tool: [`bin/app-plist-probe.py`](bin/app-plist-probe.py)
+
+Scans **every** Apple-app plist (`~/Library/Containers/com.apple.*/...` + `~/Library/Preferences/com.apple.*.plist`), decodes top-level keys, recursively unwraps `NSKeyedArchiver` blobs, and reports which apps actually persist user data worth exporting.
+
+Live on this Mac: **1,934 plists across 518 apps; 576 with non-trivial user data across 481 apps.** Top hits: `mobilelogic` 635 keys, `logic10` 522, `Music` 461, `Safari` 156, `iMovieApp` 147, `Preview` 109, `podcasts` 105, `finder` 100. Full survey at [`dictionaries/all-apps-plist-survey.md`](dictionaries/all-apps-plist-survey.md) (3,246 lines).
+
+Use it to:
+- find the next exporter target without per-app probing
+- grep across plist values: `bin/app-plist-probe.py --grep tesla`
+- inspect one app: `bin/app-plist-probe.py --md --app keynote`
 
 ---
 

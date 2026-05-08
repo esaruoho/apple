@@ -17,7 +17,10 @@ exported/
 ├── voice-memos/              voice-memos-exporter → m4a symlinks + sidecars + transcripts
 ├── safari/                   safari-exporter → windows / tab groups / bookmarks /
 │                             iCloud tabs / history / per-URL dedup pages
-└── stickies/                 stickies-exporter → markdown of each Stickies note + .rtfd symlinks
+├── stickies/                 stickies-exporter → markdown of each Stickies note + .rtfd symlinks
+├── console/                  console-exporter → diagnostic reports + saved log queries
+├── audio-midi/               audio-midi-exporter → audio + MIDI device markdown + .mcfg symlinks
+└── image-capture/            image-capture-exporter → cameras / iOS devices / scanners / `snap` photos
 ```
 
 Each subfolder is the default `VAULT_PATH` (or `OUTPUT_PATH`) of its
@@ -65,6 +68,9 @@ exported/safari       14 MB   3,088 per-URL pages + window/group/bookmark trees
 exported/voice-memos  1.6 MB  392 .md sidecars + 327 m4a symlinks
 exported/reminders    2.0 MB  520 active reminders across 19 list folders
 exported/stickies     40 KB   10 stickies as markdown + .rtfd symlinks
+exported/console      varies  diagnostic reports (symlinks) + saved log queries
+exported/audio-midi   <50 KB  8 audio devices, 1 saved MIDI config
+exported/image-capture <20 KB 3 cameras + iOS / scanner / prefs markdown
 exported/notes        (not run yet)
 exported/imessage     (not run yet)
 ```
