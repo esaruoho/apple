@@ -152,47 +152,108 @@ def i_reminders(m, q):
 
 
 # =====================================================================
-# Paketti / Renoise — voice → MCP dispatch
+# Paketti / Renoise — voice → AppleScript keystroke dispatch
 #
-# Requires PakettiMCP server running inside Renoise (Tools → Paketti →
-# !Preferences → MCP Server Start). Verb tools live in
-# ~/work/paketti/PakettiMCP/tools/paketti.lua.
+# Generated wrappers live in ~/work/apple/bin/renoise/, one per Paketti
+# binding that has a chord assigned in Renoise's KeyBindings.xml.
+# Registry is built by `build-paketti-verbs.py` and consumed here.
+# Each wrapper focuses Renoise via System Events, then sends one key
+# code with modifiers — same pattern Sal Soghoian used for vocal
+# shortcuts. No MCP, no HTTP, no roundtrip.
 # =====================================================================
 
-PMCP = Path.home() / ".claude" / "bin" / "pmcp"
+import json as _json
+
+PAKETTI_REGISTRY = ROOT / "analysis" / "sal" / "paketti-verbs.json"
 
 
-def _pmcp(tool: str, *kvs: str) -> tuple[str, str]:
-    """Call a PakettiMCP tool via the pmcp CLI; return (display, brief)."""
-    if not PMCP.exists():
-        return ("(missing pmcp CLI at %s)" % PMCP, "pmcp is not installed")
+def _load_paketti_verbs() -> list[dict]:
+    if not PAKETTI_REGISTRY.exists():
+        return []
     try:
-        proc = subprocess.run([str(PMCP), tool, *kvs],
-                              capture_output=True, text=True, timeout=8)
+        data = _json.loads(PAKETTI_REGISTRY.read_text())
+    except Exception:
+        return []
+    return data.get("verbs", [])
+
+
+_PAKETTI_VERBS = _load_paketti_verbs()
+_PAKETTI_STOPWORDS = {
+    "the", "a", "an", "to", "of", "for", "with", "in", "on", "at", "open",
+    "close", "show", "hide", "run", "do", "please", "paketti", "renoise",
+    "and", "or", "now", "this", "that", "it", "me", "my",
+}
+_PAKETTI_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+
+def _tokenise(text: str) -> list[str]:
+    return [t for t in _PAKETTI_TOKEN_RE.findall(text.lower())
+            if t not in _PAKETTI_STOPWORDS]
+
+
+def _pick_paketti_verb(query: str) -> tuple[dict, int] | None:
+    """Score every verb against the utterance; return (best_verb, score)."""
+    user_tokens = _tokenise(query)
+    if not user_tokens:
+        return None
+    best: tuple[dict, int, int] | None = None  # (verb, score, name_len)
+    for verb in _PAKETTI_VERBS:
+        name_tokens = _tokenise(verb["binding"])
+        if not name_tokens:
+            continue
+        # Score = number of user tokens that appear as whole tokens in name.
+        hit = sum(1 for t in user_tokens if t in name_tokens)
+        if hit == 0:
+            continue
+        # Bonus when ALL user tokens are matched (precise).
+        if hit == len(user_tokens):
+            hit += 5
+        # Penalty for very long binding names that win by sheer surface.
+        name_len = len(name_tokens)
+        if best is None or hit > best[1] or (hit == best[1] and name_len < best[2]):
+            best = (verb, hit, name_len)
+    if best is None:
+        return None
+    # Require either the all-tokens bonus, or at least 2 token matches when
+    # the user said multiple words. Otherwise reject as too-weak match.
+    raw_score = best[1]
+    matched_all = raw_score > len(user_tokens)  # bonus added
+    min_required = max(2, (len(user_tokens) + 1) // 2)
+    if not matched_all and raw_score < min_required:
+        return None
+    return best[0], best[1]
+
+
+def _run_wrapper(wrapper: str) -> tuple[str, str]:
+    try:
+        proc = subprocess.run([wrapper], capture_output=True, text=True, timeout=6)
     except subprocess.TimeoutExpired:
-        return ("(pmcp timeout — is the MCP server running on :19714?)",
-                "Paketti MCP server is not responding")
+        return ("(timeout running %s)" % wrapper, "wrapper timed out")
     out = (proc.stdout or "") + (proc.stderr or "")
     out = out.strip() or "(no output)"
-    if proc.returncode != 0 or "isError" in out or "not loaded" in out:
-        return (out, "Paketti command failed")
+    if proc.returncode != 0:
+        return (out, "wrapper failed")
     return (out, "Done")
 
 
-def i_paketti_pattern_preset(m, q):
-    return _pmcp("paketti_pattern_preset_dialog")
-
-
-def i_paketti_groovebox(m, q):
-    return _pmcp("paketti_groovebox")
-
-
-def i_paketti_pattern_shrink(m, q):
-    return _pmcp("paketti_pattern_shrink")
-
-
-def i_paketti_pattern_expand(m, q):
-    return _pmcp("paketti_pattern_expand")
+def i_paketti_verb(m, q):
+    pick = _pick_paketti_verb(q)
+    if pick is None:
+        return ("(no Paketti verb matched %r — registry has %d verbs)"
+                % (q, len(_PAKETTI_VERBS)),
+                "no Paketti verb matched")
+    verb, score = pick
+    display = (
+        "Paketti verb: " + verb["binding"] + "\n"
+        "Scope:        " + verb["scope"] + "\n"
+        "Chord:        " + verb["chord"] + "\n"
+        "Wrapper:      " + verb["wrapper"] + "\n"
+        "Match score:  " + str(score) + "\n"
+        "----\n"
+    )
+    out, brief = _run_wrapper(verb["wrapper"])
+    return (display + out,
+            "Sent " + verb["binding"].replace("∿", "").strip())
 
 
 def i_status(m, q):
@@ -259,15 +320,10 @@ INTENTS: list[tuple[re.Pattern, callable]] = [
     (re.compile(r"(?:list|show|what).{0,15}reminders?", re.I),
      i_reminders),
 
-    # paketti / renoise
-    (re.compile(r"\b(?:open\s+(?:the\s+)?)?pattern\s+preset(?:\s+dialog)?\b", re.I),
-     i_paketti_pattern_preset),
-    (re.compile(r"\b(?:open\s+(?:the\s+)?|show\s+(?:me\s+(?:the\s+)?)?)?groovebox\b", re.I),
-     i_paketti_groovebox),
-    (re.compile(r"\b(?:shrink|halve)\s+(?:the\s+)?pattern\b", re.I),
-     i_paketti_pattern_shrink),
-    (re.compile(r"\b(?:expand|double)\s+(?:the\s+)?pattern\b", re.I),
-     i_paketti_pattern_expand),
+    # paketti / renoise — fuzzy-match any utterance starting with
+    # "paketti", "renoise", or "hey paketti" against the verb registry.
+    (re.compile(r"^(?:hey\s+)?(?:paketti|renoise)\b", re.I),
+     i_paketti_verb),
 
     # default: status across the family
     (re.compile(r"(?:what.?s|status|tell me|show me).{0,20}(?:apple|library|everything)", re.I),

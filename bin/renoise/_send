@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# _send <key_code> <modifier_list>
+# Focuses Renoise and sends one key chord. Modifier list is comma-separated:
+# command, shift, option, control. Empty string = no modifiers.
+#
+# Examples:
+#   _send 28 option            # Option+8  (Groovebox)
+#   _send 5  control           # Ctrl+G    (Gater)
+#   _send 3  command           # Cmd+F     (IT Expand Selection)
+#   _send 5  command           # Cmd+G    (IT Shrink Selection)
+set -euo pipefail
+KEY_CODE="${1:?need key code}"
+MODS_CSV="${2:-}"
+
+build_using_clause() {
+  local out=()
+  IFS=',' read -ra parts <<< "$MODS_CSV"
+  for m in "${parts[@]}"; do
+    case "$m" in
+      command) out+=("command down") ;;
+      shift)   out+=("shift down") ;;
+      option)  out+=("option down") ;;
+      control) out+=("control down") ;;
+      "")      ;;
+      *) echo "unknown modifier: $m" >&2; exit 2 ;;
+    esac
+  done
+  if [ "${#out[@]}" -eq 0 ]; then
+    echo ""
+  else
+    local joined
+    joined=$(IFS=', '; echo "${out[*]}")
+    echo " using {$joined}"
+  fi
+}
+
+USING_CLAUSE=$(build_using_clause)
+
+osascript <<APPLESCRIPT
+tell application "System Events"
+  if not (exists application process "Renoise") then
+    return "ERROR: Renoise is not running"
+  end if
+  set frontmost of (first application process whose name is "Renoise") to true
+end tell
+delay 0.4
+tell application "System Events" to key code ${KEY_CODE}${USING_CLAUSE}
+return "sent key code ${KEY_CODE}${USING_CLAUSE}"
+APPLESCRIPT
