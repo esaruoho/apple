@@ -793,3 +793,116 @@ lessons:
       type: dictionary-plus-workflow
       target: "scripts/workflows/photos/photos-list-albums.applescript"
       note: "Pairs app reference with a current repo script for exploration."
+
+  # ─── WWDC sessions — primary-source spoken Sal ──────────────────────────────
+  # Added 2026-05-11 after archiving 6 WWDC sessions in sources/sal/wwdc/.
+  # 2003 sessions are the earliest primary-source Sal in the entire archive,
+  # predating every existing WWSD-canon interview by 9 years.
+
+  - id: foundations-wwdc-2003-306
+    title: "WWDC 2003 #306 — AppleScript Studio"
+    track: foundations
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2003-session-306-applescript-studio/transcript.md"
+    source_status: captured
+    goal: "Anchor AppleScript Studio's 'every Cocoa object gets a script property' model to Sal's 'hands and fingers into the world' framing."
+    allows:
+      - "Recognize the Studio 1.0→1.3 history and the BatchProcessor build-from-scratch demo."
+      - "Cite WWSD #32 (hands-and-fingers metaphor) to its primary 2003 source."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2003-session-306-applescript-studio/analysis.md"
+      note: "Cross-links to analysis/sal/wwsd-updates-from-2003-transcripts.md proposed principle #32."
+
+  - id: foundations-wwdc-2003-401
+    title: "WWDC 2003 #401 — AppleScript Update"
+    track: foundations
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2003-session-401-applescript-update/transcript.md"
+    source_status: captured
+    goal: "Anchor the 1992-vision quote, the GUI-Scripting-is-last-resort doctrine, and per-app Script Menu folders."
+    allows:
+      - "Cite WWSD #34 (vision-stability) and #35 (GUI scripting last resort) to their primary 2003 sources."
+      - "Locate Todd Fernandez's four-bullet rationale for treating GUI Scripting as duct-tape."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2003-session-401-applescript-update/analysis.md"
+      note: "The per-app Script Menu folder pattern (~/Library/Scripts/Applications/<App>/) still works in 2026."
+
+  - id: foundations-wwdc-2003-623
+    title: "WWDC 2003 #623 — AppleScript for SysAdmins (Sal solo masterclass)"
+    track: foundations
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2003-session-623-applescript-for-sysadmins/transcript.md"
+    source_status: captured
+    goal: "Teach the five reference types, the coercion matrix, by-index/by-property/by-whose query grammar, and entire-contents recursion — the densest single dose of pure Sal in the archive."
+    allows:
+      - "Cite WWSD #31 (peer-to-Aqua), #36 (cleaning-and-waxing), #37 (entire-contents recursion) to their primary sources."
+      - "Use the five-reference-types matrix as a teaching reference for new AppleScripters."
+      - "Recognize 'free, free, free' as a Sal-voice signature worth preserving in the canon."
+    modern_equivalent:
+      type: analysis-plus-reference
+      target: "sources/sal/wwdc/2003-session-623-applescript-for-sysadmins/analysis.md"
+      note: "Unlisted on apple.com; the nonstrict.eu Whisper transcript is the only surviving record."
+
+  - id: foundations-wwdc-2003-718
+    title: "WWDC 2003 #718 — AppleScript and QuickTime"
+    track: foundations
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2003-session-718-applescript-and-quicktime/transcript.md"
+    source_status: captured
+    goal: "Anchor the four-whys (consistency/accuracy/speed/scale), droplet-with-preferences pattern, and the call-method bridge to native frameworks from Studio."
+    allows:
+      - "Cite WWSD #33 (four whys) and #38 (droplet-with-preferences) to their primary 2003 sources."
+      - "Reuse the droplet-with-prefs pattern (config in Finder comment + duplicate-and-rename) for Renoise/Loupedeck workflows."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2003-session-718-applescript-and-quicktime/analysis.md"
+      note: "The call-method bridge anticipates JXA's $-ObjC bridge by 11 years."
+
+  - id: admin-wwdc-2012-206
+    title: "WWDC 2012 #206 — Secure Automation Techniques in OS X"
+    track: admin-deployment
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2012-session-206/transcript.md"
+    source_status: captured
+    goal: "Document how Automator, AppleScript, Terminal, and Services coexist with Mountain Lion's sandboxing and Gatekeeper — via Sal's four-scenario decomposition (personal automation, distribution, app-to-app, attached scripts)."
+    allows:
+      - "Cite candidate WWSD #39 (user-placed-file = consent via ~/Library/Application Scripts/) and #40 (some powers belong to the user, period) to their primary 2012 source."
+      - "Recognize Apple Event Access Groups as the security-era refinement of WWSD #35 (request real scriptability — and ship your sdef with access groups)."
+      - "Apply NSUserScriptTask + the three typed subclasses (NSUserAppleScriptTask, NSUserAutomatorTask, NSUserUnixTask) for sandbox-safe user-script hosting."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2012-session-206/analysis.md"
+      note: "The structural bridge between the 2003 AppleScript Studio era and the 2014/2016 modern era — defends WWSD #1 (democratization) under sandboxing and Gatekeeper."
+
+  - id: modern-wwdc-2014-306
+    title: "WWDC 2014 #306 — JavaScript for Automation"
+    track: modern-translation
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2014-session-306/306_javascript_for_automation.pdf"
+    source_status: captured
+    goal: "Anchor JXA as a peer dialect on the OSA bus — Path() coercion collapse, .whose({...}) filters, applet event handlers, and the $ ObjC bridge with registerSubclass."
+    allows:
+      - "Translate any AppleScript dictionary to JXA call sites using the WWDC 2014 rules (see bin/sdef-to-jxa.py)."
+      - "Cite the 'tell others to make their applications scriptable' call-to-action as the 2014 restatement of WWSD #1 (democratization)."
+      - "Recognize ObjC.registerSubclass as the architectural delta that raises Sal's 2003 'AppleScript should never be the ceiling' to a 2014 reality."
+    example_workflow:
+      title: "JXA dictionary renderings"
+      path: "dictionaries/*/*.jxa.md"
+    modern_equivalent:
+      type: tool-plus-analysis
+      target: "bin/sdef-to-jxa.py"
+      note: "204-page PDF + two-part analysis (pages 1–55 and 56–204). Cross-links to all 31 JXA dictionary cheat-sheets in dictionaries/*/*.jxa.md."
