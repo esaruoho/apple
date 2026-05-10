@@ -336,6 +336,14 @@ def classify(query: str):
         m = rx.search(query)
         if m:
             return handler(m, query)
+    # Fallback: try the Paketti fuzzy matcher even without an explicit
+    # "paketti" prefix. Bare verb names like "groovebox", "gater",
+    # "bpm increase" all dispatch via the registry.
+    fallback = i_paketti_verb(None, query)
+    # i_paketti_verb returns ("(no Paketti verb matched ...)", "no Paketti verb matched")
+    # only when the matcher rejects — treat that as a real no-match here too.
+    if fallback and not fallback[0].startswith("(no Paketti verb matched"):
+        return fallback
     return None
 
 
