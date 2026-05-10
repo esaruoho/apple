@@ -6,6 +6,10 @@ This is the canonical orientation file for Claude Code sessions in `/Users/esaru
 
 Open-source preservation + automation skill for the Apple ecosystem, anchored in **Sal Soghoian's** automation legacy and **Esa Ruoho's** Loupedeck / Stream Deck / hardware-controller workday. See `skill.md` for the canonical 13-layer probe, 288 workflow scripts, 31 scripting dictionaries, and Sal Hand-Crafted Conformance rules.
 
+## Session start
+
+On the first turn of any session in this repo, invoke the `apple` skill via the Skill tool before responding.
+
 ## Boot protocol
 
 On every Apple-related turn:

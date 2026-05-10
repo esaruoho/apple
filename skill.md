@@ -616,7 +616,15 @@ macosxautomation.com (hub), iworkautomation.com (Keynote/Numbers/Pages — **las
 
 **Read** is verified working. **Write** programmatically is theoretical — the daemon reads the plist but each phrase requires manual user training (saying it 3x). UI scripting via `bin/vocal-shortcuts-ui-import.applescript` is the practical write path.
 
-Full schema documentation: `analysis/sal/vocal-shortcuts-storage-format.md`. Apple Silicon only — Vocal Shortcuts is unavailable on Intel Macs.
+Full schema documentation: `analysis/sal/vocal-shortcuts-storage-format.md`. Comparative trigger-surface analysis (vs Siri / Hey Siri / Spotlight / hotkey / Loupedeck) in `analysis/sal/vocal-shortcuts-in-the-trigger-stack.md`. Apple Silicon only — Vocal Shortcuts is unavailable on Intel Macs.
+
+**Unique cell in the trigger-surface matrix:** Vocal Shortcuts is the only path that is *simultaneously* hands-free, offline, latency-free, and UUID-stable across Shortcut renames. Every other voice route either needs a wake-word, hits the cloud, or breaks on rename. This is why it (not Siri) is the canonical Sequoia voice trigger for the 588 CitrusPeel commands.
+
+**Three action kinds** the JSON schema supports: `siriShortcut` (verified in the wild), `siriRequest` (free-form Siri call, inferred from UI), `accessibility` (toggle Voice Control / VoiceOver / Zoom, inferred from UI). Need to capture an example of the latter two to lock down the schema.
+
+**Write bottleneck:** each phrase must be trained by speaking it three times via System Settings UI. There is no public API to install trained-audio models programmatically. This forces either UI scripting (slow, fragile) or the **single-phrase router pattern** ("Hey Sal" → matcher → N targets), which is what the live Hey Sal v1 entry uses to collapse N trainings into 1.
+
+**Coverage tool:** `bin/vocal-shortcuts-suggest.py` joins `AVSPreferenceKey` ↔ `~/Library/Shortcuts/Shortcuts.sqlite` (`ZSHORTCUT.ZWORKFLOWID` is the UUID match) ↔ `analysis/sal/seven-purpose-audit.md` and reports orphans (binding points at missing Shortcut), drift (cached name ≠ live name; cosmetic only since binding is UUID-stable), and suggestions (Shortcuts with no Vocal binding). `--audit-only` fuzzy-filters suggestions to triple-channel audit candidates. `--write` emits markdown to `analysis/sal/vocal-shortcuts-coverage.md`. First reading (2026-05-11): 2/277 Shortcuts bound, 0 orphans, 0 drift, 39 audit-matched candidates ready for binding.
 
 ## HomePod Climate Sensor
 
