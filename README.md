@@ -116,6 +116,19 @@ First reading on this Mac: **39 audit-matched candidates ready for binding** (`f
 
 **Full session findings:** [`analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md`](analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md) (six findings codified).
 
+### Hey Sal speaks Paketti (2026-05-11)
+
+The router pattern extended to third-party apps. [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source Quality-of-Life workflow suite for [Renoise](https://renoise.com) (the audio-tracker DAW) — 181 Lua files, ~3,022 features, GPL-3.0. Paketti exposes hundreds of named commands the user binds to key chords in Renoise's `KeyBindings.xml`. This work generates one AppleScript wrapper per bound chord and plugs them into the Hey Sal router, making any Paketti chord voice- or Spotlight-callable from outside Renoise.
+
+- Stack state + three trigger surfaces: [`analysis/sal/hey-sal-paketti-stack-state.md`](analysis/sal/hey-sal-paketti-stack-state.md)
+- Session discoveries (decision records, gotchas): [`analysis/sal/session-discoveries-2026-05-11.md`](analysis/sal/session-discoveries-2026-05-11.md)
+- One-command install: [`bin/bootstrap-hey-sal.sh`](bin/bootstrap-hey-sal.sh)
+- Verb generator: [`bin/build-paketti-verbs.py`](bin/build-paketti-verbs.py) (reads `KeyBindings.xml`, writes one wrapper per bound chord)
+- Generated wrappers: `bin/renoise/*` (one per Paketti verb, gitignored)
+- Live registry: [`analysis/sal/paketti-verbs.json`](analysis/sal/paketti-verbs.json) (343 verbs currently)
+
+This validates the router pattern on a real third-party tool, not just Sal's 588 demo intents. Any keybound app with an exported key-map (Renoise, OBS, Logic-with-export, Ableton-with-export, etc.) can be wrapped the same way.
+
 **Build pipeline:**
 
 | Stage | Tool | What it does |

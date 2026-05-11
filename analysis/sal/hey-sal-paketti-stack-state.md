@@ -6,6 +6,12 @@
 
 ---
 
+## What this is, in one paragraph
+
+[Paketti](https://github.com/esaruoho/paketti) is the open-source Quality-of-Life workflow suite Esa has been building for [Renoise](https://renoise.com) (the digital audio workstation) since 2018 — 181 Lua files, 1,180+ commits, ~3,022 features, GPL-3.0. It ships hundreds of named commands ("verbs") that the user binds to key chords inside Renoise — Pattern Shrink, Groovebox, Paketti Gater, BPM Increase, and so on. This work makes those verbs voice- and Spotlight-callable from outside Renoise, by treating Renoise's exported `KeyBindings.xml` as the source-of-truth and generating one AppleScript wrapper per bound chord. The Sal Soghoian voice-routing surface ("Hey Sal", part of the wider apple-skill) becomes the entry point. Result: any Paketti chord becomes a spoken or typed phrase.
+
+---
+
 ## In one sentence
 
 You can now say (or type) the name of any of 343 Paketti commands and the right keystroke fires inside Renoise — no Claude in the loop, no MCP server needed, no roundtrip. Apple-native top to bottom.

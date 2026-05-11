@@ -7,7 +7,9 @@ purpose: Save the five findings that were ephemeral — facts learned during the
 
 # What this file is
 
-The `hey-sal-paketti-stack-state.md` handoff captures *what was built*. This file captures *what I learned while building it* — facts about Apple's behaviour, decision records, and gotchas that would otherwise be lost when the chat that produced them ends.
+Companion to `hey-sal-paketti-stack-state.md`. That doc captures *what was built*. This one captures *what was learned while building it* — Apple-internals facts, decision records, and gotchas that would otherwise be lost when the chat that produced them ends.
+
+**Context if you're new to this:** [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source workflow tool for [Renoise](https://renoise.com), the audio-tracker DAW. It ships hundreds of named commands the user binds to key chords. This work makes those chord-bindings voice/typeable from outside Renoise by routing through the Sal-Siri "Hey Sal" surface (the wider apple-skill). See `hey-sal-paketti-stack-state.md` for the stack diagram.
 
 Five items. Short.
 

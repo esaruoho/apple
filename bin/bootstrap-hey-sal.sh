@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
-# bootstrap-hey-sal.sh — ONE-COMMAND install of the entire Hey Sal stack:
+# bootstrap-hey-sal.sh — ONE-COMMAND install of the Hey Sal × Paketti stack.
 #
-#   1. Generate the 337 Paketti voice-callable verb wrappers from Renoise's
-#      KeyBindings.xml (so any bound Paketti binding becomes voice/typeable).
+# Paketti (https://github.com/esaruoho/paketti) is the open-source Quality-of-
+# Life workflow suite for Renoise (the audio-tracker DAW). It exposes hundreds
+# of named commands the user binds to key chords in Renoise. This script reads
+# the user's KeyBindings.xml and makes every bound Paketti chord voice- or
+# typeable from the Hey Sal Vocal Shortcut, the Spotlight-launchable .app, the
+# menu-bar Shortcuts pin, or any shell.
+#
+# What it installs, in order:
+#
+#   1. Per-binding AppleScript wrappers — one per Paketti chord — generated
+#      from Renoise's KeyBindings.xml (so any bound Paketti binding becomes
+#      voice/typeable).
 #   2. Compile ~/Applications/Hey Sal.app — the Spotlight-launchable typed
 #      entry. Index it so Spotlight finds it.
 #   3. Build + import the Shortcuts.app workflows:
