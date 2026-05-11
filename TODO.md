@@ -4,6 +4,134 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 
 ---
 
+## 🎯 Action queue — what's left for the user
+
+**This is the boot-here list.** When you boot the apple-skill (`Sal` / `WWSD` /
+"what's left"), this section is the first place I check after refreshing
+`analysis/sal/current-status.md`. Everything below this heading is either
+blocked on physical action (UI clicks, voice tests, sending an email) or
+is a focused next deliverable I can pick up unattended.
+
+### Blocked on you — physical action
+
+- [ ] **Run `bin/capture-vocal-shortcut-schemas.py`** — 5-min interactive session
+  in System Settings → Accessibility → Speech → Vocal Shortcuts. Captures
+  Apple's JSON for the two unobserved action kinds (`siriRequest` + `accessibility`).
+  Locks down `analysis/sal/vocal-shortcuts-storage-format.md`.
+- [ ] **Bind 5 top router-verified candidates through Hey Sal (voice test).**
+  Pick 5 from the 39 full-match audit candidates (e.g. `system-events-screenshot-area`,
+  `mail-unread-count`, `homepod-climate-reading`, `system-events-wifi-toggle`,
+  `finder-compress-selected`). Speak each into the live Hey Sal Vocal Shortcut
+  and verify the matched Shortcut runs cleanly end-to-end. No new training.
+- [ ] **Execute the daemon-reload probe** (`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`).
+  3-terminal procedure (~15 min): `fs_usage` + `log stream` + `notifyutil` while
+  adding / editing / deleting a test Vocal Shortcut via System Settings.
+  Result: identify the signal System Settings fires that a raw `defaults write`
+  does not, so the daemon picks up plist-only installs.
+- [ ] **Execute the plist-write-firing test** (`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`).
+  `bin/avs-prefs-write.py` is built (list/dump/backup/restore/remove-id/add/
+  reload-cfprefsd/kick-daemons, auto-backup on every write). 6-step manual
+  experiment determines whether plist-only writes produce fireable triggers
+  or just orphaned metadata. The biggest single unknown in the Vocal Shortcuts
+  stack.
+- [ ] **Send the Sal email** — draft at
+  `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`. Trim to
+  ~300 words; subject line options included. Same Gmail thread as the April exchange.
+- [ ] **Fire Track A from Discord** — `!pk cloudcity bash /Users/esaruoho/work/apple/bin/sal-transcribe-youtube.sh`
+  (16 Sal YouTube interviews via whisp).
+- [ ] **Fire Track B from Discord** — `!pk cloudcity bash /Users/esaruoho/work/apple/bin/sal-transcribe-podcasts.sh`
+  (24 Apple Podcasts episodes via resolver + whisp).
+
+### Unblocked — I can pick these up next session
+
+Highest-leverage first:
+
+- [ ] **`bin/avs-prefs-write` companion: a test harness** — once you've run the
+  plist-write-firing test once, codify the outcome as a regression test so the
+  daemon's behaviour is pinned across macOS updates.
+- [ ] **`photos-exporter dates --since/--until`** — date-range subcommand. Unblocks
+  the 4th hey-sal intent pattern ("show me photos from <month>"); the pattern
+  table is ready, waiting on the subcommand.
+- [ ] **`safari-exporter xref --notes`** — match open-tab URLs against Notes body URL mentions.
+- [ ] **`reminders-exporter xref --calendar`** — match reminder `due_date` to events near it.
+- [ ] **`safari-exporter close-tab <selector>`** — UI-script Safari to close one tab
+  from a per-URL .md file. Phase 2 write action.
+- [ ] **`safari-exporter consolidate --to-bookmarks`** — keep one tab per duplicate
+  URL in its themed group, bookmark the rest, close the rest.
+- [ ] **`reminders-exporter create / complete`** — AppleScript via Reminders' sdef.
+- [ ] **`voice-memos-exporter transcribe`** — `whisp` wrapper for bulk Finnish
+  Whisper. Flags: `--lang fi/en`, `--chunked` for >30 min recordings.
+- [ ] **`voice-memos-exporter watch`** — fswatch on Recordings/, auto-transcribe new
+  .m4a, Discord ping via pakettibot inbox.
+- [ ] **`stickies-exporter create / append / delete`** — quit-Stickies-first-then-write,
+  with `--write` confirmation.
+- [ ] **`image-capture-exporter download-from-ios <device>`** — ImageCaptureCore via
+  Objective-C bridging.
+- [ ] **`image-capture-exporter watch`** — IOKit DAEvents observer for USB
+  attach/detach with hook command.
+
+### Backlog — new exporters
+
+- [ ] **`podcasts-exporter`** — subscriptions + listening progress (105 plist keys +
+  Podcasts SQLite).
+- [ ] **`tv-exporter`** — same idea as Books for the TV library.
+- [ ] **`disk-utility-exporter`** — wrap `diskutil list` / `diskutil info` /
+  `diskutil apfs list`.
+- [ ] **`activity-monitor-exporter`** — `ps` / `top` / `vmstat` / `iotop` snapshots +
+  `ioreg` hardware state.
+- [ ] **`screenshot-exporter`** — wrap `screencapture` with named regions, scheduled
+  captures, OCR via macOS Vision (Swift one-liner).
+- [ ] **`photo-booth-exporter`** — `~/Pictures/Photo Booth Library/Pictures/*` +
+  `Recents.plist` + AVFoundation `take`.
+- [ ] **`clock-exporter`** — `mobiletimer.plist` for World Clock cities + `defaults`
+  for menu-bar prefs + alarms/timers.
+- [ ] **`spaces-exporter`** (a.k.a. mission-control-exporter) — `com.apple.spaces.plist`
+  per-monitor Space tree.
+- [ ] **`system-settings-exporter`** — meta-package over `defaults` reads of every
+  settings domain.
+- [ ] **`facetime-exporter`** — recent calls if any persist; ContactsKit cross-reference.
+- [ ] **`stocks-exporter`** — tracked tickers + alerts.
+- [ ] **`weather-exporter`** — saved locations + alert conditions.
+- [ ] **`maps-exporter`** — saved locations + recent searches + favorite places +
+  offline regions.
+
+### Backlog — Hey Sal evolution
+
+- [ ] **Swap rule-based intent classifier for `LanguageModelSession`** (FoundationModels
+  Swift framework). Detection trick already in `bin/apple-summarize` — instantiate
+  `LanguageModelSession()`, not just `import FoundationModels`.
+
+### Backlog — Sal archive
+
+- [ ] **Cross-link transcripts** into `indexes/sal-lessons.yaml` where they support
+  a curriculum module (after Track A + B complete).
+- [ ] **Spot-check 3 transcripts** for proper-noun accuracy (Soghoian variants,
+  Ray Robertson, Allison Sheridan).
+- [ ] **3 dead URLs** — `aperturepdfworkflows.zip`, `Script_Geek.zip`,
+  `Script_Geek_old.zip`. Wayback only has 404 captures; nudge Sal directly.
+- [ ] **`cmddconf.com` mirror** + bootcamp materials cross-referenced in
+  `indexes/sal-download-targets.yaml`.
+
+### Backlog — discovery infrastructure
+
+- [ ] **`@macautomation` Twitter archive** — snscrape broken since API change.
+  Maybe paid TwitterAPI relay for one-time historical scrape.
+- [ ] **Six Colors / Daring Fireball / MacRumors** site search via Google
+  Custom Search proxy or per-site sitemap.xml parsing.
+- [ ] **PodcastIndex.org API** integration as another source (requires signup).
+- [ ] **YouTube channel-handle probe** for Sal's own channel.
+
+### Backlog — maintenance
+
+- [ ] **`exported/README.md` cardinality refresh** — auto-update live numbers each
+  time `apple-grand-export` runs.
+- [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots to catch new apps /
+  new keys after macOS updates.
+- [ ] **Generate whiteboards** for the new sections: Sal preservation pipeline,
+  the @cloudcity remote-run pattern, the file-drop bridge.
+
+---
+
 ## Session 2026-05-11 — Vocal Shortcuts coverage tooling + WAL helper
 
 **Shipped:**

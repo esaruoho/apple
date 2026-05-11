@@ -17,8 +17,14 @@ On every Apple-related turn:
 1. Run `python3 bin/sal-archive-status.py --write analysis/sal/current-status.md`
 2. Read `analysis/sal/current-status.md` and report archive state in plain language
 3. Treat that file as the live Sal archive dashboard for the session
+4. **Read the "🎯 Action queue" section at the top of `TODO.md`** and surface
+   the items blocked-on-physical-action separately from items I can pick up
+   unattended. This is what the user means when they say "what's left" — the
+   queue is curated for boot-time reporting.
 
-If the user says "what's left" / "continue" / "boot up Apple skill", refresh the status first.
+If the user says "what's left" / "continue" / "boot up Apple skill", refresh
+the status first, then summarise the Action queue without dumping the whole
+TODO.md.
 
 ## Active work fronts (state as of 2026-05-07)
 

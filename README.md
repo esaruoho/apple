@@ -148,6 +148,57 @@ This validates the router pattern on a real third-party tool, not just Sal's 588
 
 **Demo runbook**: [`analysis/sal/sal-demo-script.md`](analysis/sal/sal-demo-script.md) — printable script of 9 phrases to speak via Hey Sal that recreate the spine of WWDC 717 on a 2026 Mac.
 
+### Session 2026-05-11 — Vocal Shortcuts coverage, matcher fix, 3 new exporters
+
+A two-track session: closed the Vocal Shortcuts feedback loop (coverage tool, schema reverse-engineering, matcher fix, lineage analysis, plist-write harness) and shipped three first-party Apple data exporters.
+
+**Vocal Shortcuts infrastructure:**
+
+- [`bin/lib/apple_sqlite_snapshot.py`](bin/lib/apple_sqlite_snapshot.py) — WAL-safe snapshot helper. All 7 first-party exporters (Voice Memos / Safari / Mail / Notes / Messages / Photos / Calendar) now route through this for `snapshot_open_persistent` (live apps, small/medium files) or `open_immutable` (large files like 1 GB Envelope Index, 3 GB Photos.sqlite). First run after refactor caught an extra Shortcut in the WAL that `?immutable=1` had been hiding.
+- [`bin/vocal-shortcuts-suggest.py`](bin/vocal-shortcuts-suggest.py) — joins `AVSPreferenceKey` ↔ `Shortcuts.sqlite` ↔ seven-purpose audit. Reports orphans / drift / suggestions. `--audit-only` fuzzy-filters to triple-channel candidates. `--fix-drift` repairs cached `associatedShortcut.name`. Current state on this Mac: **2 of 278 Shortcuts** have a Vocal binding (0.7%), 0 orphans, 0 drift, **39 audit-matched candidates** ready for binding.
+- [`bin/vocal-shortcuts-router-verify.py`](bin/vocal-shortcuts-router-verify.py) — runs each audit candidate through the Hey Sal matcher with multiple phrasings. **39/39 full-match** after the matcher fix below.
+- [`bin/capture-vocal-shortcut-schemas.py`](bin/capture-vocal-shortcut-schemas.py) — interactive helper that polls `AVSPreferenceKey` while you add one test entry of each unobserved kind (`siriRequest` + `accessibility`) via System Settings, captures Apple's JSON, dumps it to `analysis/sal/vocal-shortcuts-captured-schemas.json`.
+- [`bin/avs-prefs-write.py`](bin/avs-prefs-write.py) — binary plist round-trip writer for `AVSPreferenceKey`. Subcommands: list / dump / backup / restore / remove-id / add / reload-cfprefsd / kick-daemons. Auto-timestamped backup on every write. Unblocks the plist-write-firing experiment.
+- [`bin/sal-siri-match.py`](bin/sal-siri-match.py) — matcher bug fix. "Show me hide dock" was routing to `system-events-show-dock` because "show" tied with "hide" in token overlap. Fix: `COMMAND_PREFIXES` table; when the utterance opens with `"show me"`, `"run"`, `"do"`, `"tell me"`, etc., only the stripped form is scored so prefix verbs cannot contaminate overlap. Added `"me"` + `"i"` to `STOPWORDS`. Router-verify went from 38/39 to **39/39 full-match**.
+
+**Analysis docs (live, not runbooks):**
+
+- [`analysis/sal/vocal-shortcuts-in-the-trigger-stack.md`](analysis/sal/vocal-shortcuts-in-the-trigger-stack.md) — 11-property comparison matrix vs Siri / Hey Siri / Spotlight / hotkey / Loupedeck. Vocal Shortcuts is the only Mac surface that is simultaneously hands-free + offline + latency-free + UUID-stable.
+- [`analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md`](analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md) — 6 findings: WAL pattern reusability, the 588× router math (588 phrases × 3 reps direct binding = 1,764 utterances; vs 1 × 3 = 3 via router), 0 orphans confirms UUID-stability empirically, fuzzy-match 4-char floor, filename↔Shortcut-name convention, the 3-rep training as project ceiling.
+- [`analysis/sal/voice-trigger-lineage-2011-to-2024.md`](analysis/sal/voice-trigger-lineage-2011-to-2024.md) — three-era story: 2011 `listen for` AppleScript primitive (WWDC #133) → 2014 Custom Commands plist runtime (removed ~10.13) → 2024 Vocal Shortcuts (Accessibility framework, Apple Silicon-gated). All three honour WWSD #2 (local-over-cloud); the 5-year removal gap coincides exactly with the post-Sal-elimination window.
+- [`analysis/sal/vocal-shortcuts-coverage.md`](analysis/sal/vocal-shortcuts-coverage.md) — live coverage report.
+- [`analysis/sal/vocal-shortcuts-router-verify.md`](analysis/sal/vocal-shortcuts-router-verify.md) — 39/39 matcher resolution proof.
+
+**Runbooks (experiments still to run):**
+
+- [`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`](analysis/sal/vocal-shortcuts-daemon-reload-probe.md) — 3-terminal procedure to identify what signal the System Settings UI fires on add/edit/delete that a raw `defaults write` does not.
+- [`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`](analysis/sal/vocal-shortcuts-plist-write-firing-test.md) — 6-step experiment to determine whether plist-only writes produce fireable triggers (the biggest single unknown in the Vocal Shortcuts stack).
+
+**WWDC archive cross-link:** the 11 sessions captured in commit `98702f4` (2003-2015 corpus completion — including the 2007 #224 session where Sal's title shifts to "Product Manager for Automation Technologies", which is what this repo's skill is named after) are now indexed in [`indexes/sal-lessons.yaml`](indexes/sal-lessons.yaml). Total lessons: 55 (17 WWDC + 38 site-based).
+
+**Hey Sal intent patterns:** three new patterns shipped in [`bin/hey-sal`](bin/hey-sal) — `remind me to X [tomorrow|today|at Y]` (Reminders.app sdef), `play [track|song] X` (Music.app), `draft/compose email to X about Y` (Mail.app outgoing message). All three shell out via `osascript` through each app's scripting dictionary, no exporter dependency.
+
+**4 new exporter packages:**
+
+| Exporter | Data source | First-run numbers |
+|---|---|---|
+| [`shortcuts-exporter/`](shortcuts-exporter/) | `~/Library/Shortcuts/Shortcuts.sqlite` (Core Data store + WAL-safe snapshot) | **278 Shortcuts** across 5 folders |
+| [`contacts-exporter/`](contacts-exporter/) | `~/Library/Application Support/AddressBook/Sources/*/AddressBook-v22.abcddb` (one DB per account) | **964 contacts** across 3 sources |
+| [`books-exporter/`](books-exporter/) | `BKLibrary-*.sqlite` (library + collections) + `AEAnnotation_*.sqlite` (highlights + notes) | **324 books**, 11 collections, **108 annotations** |
+| [`preview-exporter/`](preview-exporter/) | `com.apple.preview.sfl3` via the shared `bin/lib/sfl3_resolver.py` + `mdls` for per-file metadata | **50 recent docs**, 32 with resolved paths |
+
+`shortcuts-exporter` is the keystone: every future Claude session can read your full automation library as searchable markdown (`exported/shortcuts/by-uuid/<uuid>.md` per Shortcut, with YAML frontmatter for name / uuid / folder / actions / triggers / runs / phrase / app_bundle / source / dates).
+
+**Cross-package xref commands** (correlation queries against Calendar / Notes):
+
+- [`mail-exporter xref --calendar`](mail-exporter/) — match received messages to ±N min Calendar events.
+- [`photos-exporter xref --calendar`](photos-exporter/) — match photo capture dates to ±N min Calendar events; surfaces event location alongside summary.
+- [`voice-memos-exporter xref --notes`](voice-memos-exporter/) — token-overlap matching against Notes titles (Notes bodies are protobuf and not SQL-searchable).
+
+**.sfl3 resolver extracted** to [`bin/lib/sfl3_resolver.py`](bin/lib/sfl3_resolver.py) + `bin/lib/resolve_bookmark.swift`. `finder-exporter` now returns **50 recent docs** (was 0 — the previous decoder iterated `$objects` looking for top-level "Name" keys, missing all UID-referenced items). Markdown export enriched with resolved file paths. `preview-exporter` reuses the same resolver.
+
+**TODO.md restructured.** All open items are now under a `🎯 Action queue` section at the top of the file, split into "blocked on you — physical action" (voice tests, manual experiments, email send) and "unblocked — I can pick up next session". The apple-skill boot protocol surfaces this list on every session start.
+
 ### Sal Archive TODO
 
 - [x] Mirror the main Sal sites into [`sources/sal/`](sources/sal/)
