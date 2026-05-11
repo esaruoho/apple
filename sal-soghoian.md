@@ -568,3 +568,87 @@ Cross-references:
 5. **JXA** (2014 #306 — JavaScript as peer language on OSA bus)
 
 Load-bearing structure for probing future Apple OS versions: which pillar has been removed, neutered, or relocated?
+
+---
+
+## Tier 5 — Primary-source Sal, post-Apple era (principles #46-53)
+
+Ten Sal transcripts from his post-Apple period (2017-2025) — interviews, podcasts, conference endnotes after the October 2016 elimination from Apple. Most contain Sal contracting back to Apple or building parallel automation infrastructure with the Omni Group.
+
+Source documents:
+- `sources/sal/transcripts/youtube/2026-05-07_wwdc-2017-interview-with-sal-soghoian/`
+- `sources/sal/transcripts/youtube/2026-05-07_triangulation-359-sal-soghoian/` + `360-...part-2/`
+- `sources/sal/transcripts/youtube/2026-05-07_macvoices-17148-altconf-ken-case-and-sal-soghoian-discuss-omni-automation/`
+- `sources/sal/transcripts/youtube/2026-05-07_mtc2017-cross-platform-automation-magic-for-ios-and-macos-sal-soghoian/`
+- `sources/sal/transcripts/youtube/2026-05-07_mtc2018-endnote-a-modern-look-at-auto-managing-idevices-with-a-mac-sal-soghoian/`
+- `sources/sal/transcripts/youtube/2026-05-07_mtc2019-endnote-creating-the-ultimate-set-of-control-panels-sal-soghoian/`
+- `sources/sal/transcripts/youtube/2026-05-07_588-macos-services-with-sal-soghoian/` (MPU Sparks+Hackett)
+- `sources/sal/transcripts/youtube/2026-05-07_815-automation-update-with-sal-soghoian/` (MPU, post-AI era)
+- `sources/sal/transcripts/youtube/2026-05-07_sal-soghoian-dictation-commands_mWwQhmazLzM/`
+
+46. **A paragraph with three reference links.** *"a paragraph with three reference links always a paragraph with three reference links... It's a paragraph with three reference links."* (Triangulation #360, 2018, lines 94-96.) Sal's stated rule for how to write to executive sponsors at Apple. Executives don't read documents — they read paragraphs. Three reference links carry the optional depth; the executive drills in only if they choose to. **When pitching upward in any organization, follow this formula. One dense paragraph stating the position; three links carrying the evidence.**
+
+47. **Management's job is to understand importance and role.** *"He didn't necessarily understand all the different details about writing the code and everything, but he understood its importance and its role and why it was necessary for customers to have that option."* (Triangulation #359, 2018, lines 296-297, about Steve Jobs.) The two-axis evaluation of executive sponsors: do they grasp the importance (user/business case) and the role (architectural/strategic fit)? Technical details don't matter. **When pitching automation upward, name the importance + the role explicitly. Skip the implementation.** When sponsors fail one of those two, the technology dies (post-2016 leadership at Apple grasped neither — hence the elimination).
+
+48. **The 10-action ceiling: workflows orchestrate, scripts compute.** *"Gets to be more than 10 actions in it, then something's wrong with the design of it... the script is doing the loops, not the workflow."* (Mac Power Users #588, 2021, lines 378-380.) Workflows are for orchestration; scripts are for computation. When you find yourself chaining 11+ actions in Automator (or Shortcuts), the design is wrong — lift the inner work into a script and call it from a 3-action workflow. Complement to WWSD #43 (one verb per action): #43 says decompose composite UIs; #48 says when too many atomic actions chain, lift to script.
+
+49. **AI as intern, not director.** *"If you're doing it correctly, it's your assistant not your director... think of it as an intern that is eager to help and confidently 100% wrong sometimes."* (Mac Power Users #815, 2025, lines 464-471. David Sparks coins the intern framing; Sal blesses it: *"That's brilliant, David. Can I use that?"*) The LLM-collaboration governance principle. Humans remain accountable for work product; LLMs are eager-but-imperfect interns. The human directs; the AI executes. **Never check in LLM output unverified. Never trust LLM-cited quotes without grep verification.**
+
+50. **Apple Events should be on every platform.** *"The fact that there's a way to communicate between the various applications, which might be a database, it might be an intelligence architecture that can send an Apple event, this invisible communication, over to an app, ask it a question, get a response."* (Mac Power Users #815, 2025, line 161.) Plus Sal's regret: *"It was always my desire that Apple events be on every platform... I wanted Apple events on everything and unfortunately that didn't happen."* The structural diagnosis: the Mac's unique advantage atrophies as user attention shifts to iOS without a shared IPC bus. iOS got App Intents (2014+) — similar shape, per-app-declared, not a universal bus.
+
+51. **Surface what Apple shipped but hid.** *"I don't think Apple knows that it's possible."* (MTC 2019 endnote, line 16.) Sal's research model: dig into `/System/Library/`, `/usr/libexec/`, per-app `Contents/Resources/` for shipped-but-hidden tools. Apple's marketing surface ≠ Apple's actual ship surface. The Panel Editor in `AssistiveControl.app` was shipping in Mojave and Catalina; Apple never marketed it. Sal weaponized it as a Loupedeck-grade touch control surface using Luna Display. **When a user-facing UI seems weak, probe what Apple actually ships beneath the marketing surface.**
+
+52. **Same set, same location, every panel (muscle-memory rule).** *"Each panel has the same set in the same location so that I can sit there and I instantly have muscle memory on how to get between the different apps."* (MTC 2019 endnote, lines 241-243.) Per-context control surfaces (panels, Loupedeck pages, Stream Deck profiles, Vocal Shortcut grids) should have **invariant chrome across contexts**. Context-specific verbs fill the center; navigation + system + app-switcher always-the-same edges. Muscle memory transfers; cognitive load doesn't. **Audit any multi-page touch surface against this rule.**
+
+53. **The compound verb (Magic Duplicate pattern).** *"A magic duplicate takes a slide, duplicates it, and applies a magic move to the first one so that you can animation by just tapping magic duplicate and changing the shape of the items on the second slide."* (MTC 2019 endnote, lines 277-279.) Atomic verbs are good (#43), but for repeated multi-step workflows the right design is the **compound verb** — one user-facing button that performs N atomic actions deterministically. Sal's Magic Duplicate compresses duplicate+transition-apply into one tap. **WWSD #43 (decompose composite UIs) and #53 (compose deterministic workflows) are complementary, not contradictory.** Both rules apply: decompose where the user composes; compose where the user re-uses.
+
+### Notes on the post-Apple corpus
+
+The Tier 5 transcripts reveal that the **"fired in October 2016"** narrative is incomplete:
+- **MTC2018 endnote, line 588:** *"services group professional services team at Apple which I do contract with."* — Sal continued contracting for Apple Professional Services through at least late 2018, working on the never-publicly-shipped **Apple Provisioning Utility**.
+- **MacVoices 17148, line 111:** *"Really, this project started about two years ago"* — Omni Automation began ~mid-2015, **a year before the firing**. The post-Apple lineage pre-dates the termination.
+- **MTC2017, lines 21-31:** Sal's *"swimming with the whale"* parable explicitly frames the firing: he was hit by a fin and *"found myself on the shore... and that's okay because my feet are in the ocean. I'm still part of the ocean."*
+
+The corpus also extends two earlier principles:
+- **WWSD #2 (local-over-cloud)** confirmed for AI era. OmniFocus 4.8 ships Apple Foundation Models integration via Omni Automation — on-device, no cloud round-trip.
+- **WWSD #20 (institution is not the relationship)** operationalized by the 20-year no-voicemail story (MPU #815, lines 77-83). Sal worked at Apple 19 years without ever listening to a voicemail. Relationships, not broadcasts.
+
+---
+
+## Tier 6 — The operational corollary (principle #54)
+
+54. **The roundtrip rule: if you did a roundtrip for something that could be done locally, you have wasted everyone's time.** *"Time is of the essence."* (Esa Ruoho, 2026-05-11, articulated while reviewing the post-Apple Sal corpus.) The operational synthesis of WWSD #2 (local-over-cloud) + WWSD #41 (automation buys back time, the meta-why) + WWSD #49 (AI as intern, not director).
+
+**Why this is canonical Sal even though it's not Sal-quoted:** Sal's 23-year vision-stability arc (1992-2025) culminates in 2025's *"This is not Siri. We're not looking at Siri here. This is not natural language interpolated server stuff"* (Dictation Commands TWiT) and the AFM-in-OmniFocus-4.8 demo (MPU #815, on-device LLM, no cloud round-trip). Esa's formulation makes the operational stakes explicit: **every cloud round-trip for a task that could be done locally wastes tokens, energy, and human lifetime.**
+
+**How to apply (Claude Code working in this repo specifically):**
+- Before invoking Claude on a task, ask: could this be done locally? (shell command, grep, AppleScript, a 2-line Python script)
+- Before each tool call within Claude, ask: is this round-trip necessary, or is it grunt work Claude should batch?
+- Before spawning a subagent, ask: is the context-burn from delegating worse than the user's time spent reading my one-shot output?
+- Before re-reading a file, ask: is the information already in my context?
+- Before web-fetching, ask: is it already mirrored locally?
+
+**How to apply (architecture decisions):**
+- Apple Foundation Models on-device > cloud LLM API
+- AppleScript handler > shortcut that hits a server
+- Vocal Shortcuts > Siri Request that needs network
+- Local mirror (macosxautomation.com, dictationcommands.com) > Wayback fetch every time
+- The `~/Library/Application Scripts/<bundle-id>/` consent pattern (WWSD #39) > any cloud auth flow
+
+**How to apply (cross-machine):**
+- File-drop bridge to CloudcityMacMini > Discord round-trip API call
+- WireGuard VPN + raymo > public cloud relay
+- Local Whisper transcription > OpenAI Whisper API
+
+**The acid test:** if the task could finish in 50ms with local CPU+RAM, but you used a 2-second cloud round-trip + N tokens, you wasted everyone's time. Every time. Compound that across a working day and you've burned an hour. Compound across a year and you've burned a workweek. WWSD #41 (time is the only resource that doesn't accumulate) applies in the negative: **wasted roundtrip time is gone forever.**
+
+**Operational note for the apple repo (2026-05-11):** This session itself has done many roundtrips that could have been local: re-reading files that were already in context, spawning subagents for work I could have done in one pass, asking the user clarifying questions whose answers were in the repo. Principle #54 is a working principle going forward. Every future Claude session in this repo should be measured against it.
+
+**The HomePod Mini case study (Esa, 2026-05-11):** Ask a HomePod Mini *"what time is it?"* — it does a roundtrip across Apple servers to answer. **The HomePod has a clock. The Mac in the room has a clock. The Apple TV has a clock. The phone has a clock.** Every device in the room knows what time it is. The query requires zero network. But the structural answer goes through Apple's servers anyway. This is the failure mode #54 is named for: a roundtrip for something that should never have left the room. The same applies to:
+- *"What date is it?"* — every device knows
+- *"What's playing?"* — the device PLAYING IT knows
+- *"What's the temperature?"* (if there's a HomePod climate sensor in the room — see `homepod/` in this repo)
+- *"Set a 5-minute timer"* — the device has a clock
+- *"Add this to my list"* — Reminders.app is local-first by design
+
+**Apple's failure here is the failure mode WWSD #54 is named for.** The user pays time, latency, electricity, and Apple-server-CO2 emissions for a query the room could answer in nanoseconds. Multiplied across N users × N queries per day = staggering structural waste. The fix is in the architecture, not the model: **route local-answerable queries locally, period.** Vocal Shortcuts (Sequoia 2024) is one step toward this — phrase matches locally, dispatches to local Shortcut, no cloud. Hey Sal v1 in this repo is the user-author version of the same idea.

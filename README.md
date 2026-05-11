@@ -2,6 +2,12 @@
 
 ### Apple Automation Architecture & Workflows — preserving the automation work Apple did not preserve institutionally, and continuing [Sal Soghoian's](sal-soghoian.md) vision.
 
+> **The Roundtrip Rule (WWSD #54):** *If you did a roundtrip for something that could be done locally, you have wasted everyone's time. Time is of the essence.* — Esa Ruoho, 2026-05-11. The operational corollary of Sal's local-over-cloud (WWSD #2) + time-as-meta-why (WWSD #41) + AI-as-intern-not-director (WWSD #49).
+>
+> **The HomePod Mini case study:** Ask a HomePod Mini *"what time is it?"* and it does a roundtrip across Apple servers to answer. The HomePod has a clock. The Mac has a clock. The query is pure local-data. The roundtrip is structural waste — tokens, energy, latency, lifetime — for a task that requires zero network.
+>
+> **Apple's full automation stack** — AppleScript, Automator, Services, Terminal, JXA, AppleScript Libraries, NSUserScriptTask, Vocal Shortcuts, Apple Foundation Models — is built so that user-author work runs **locally** on the user's Mac. This repo is built to honor that. **Local first. Cloud only when truly remote.**
+
 [![macOS](https://img.shields.io/badge/macOS-Sequoia-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![AppleScript](https://img.shields.io/badge/AppleScript-Automation-blue?style=flat-square)](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/introduction/ASLR_intro.html)
 [![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-blueviolet?style=flat-square)](https://claude.ai/)
