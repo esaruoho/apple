@@ -1,4 +1,6 @@
-# WWSD updates from the 2003 WWDC transcripts
+# WWSD Tier 3 — Source provenance from 2003 WWDC transcripts
+
+> **Status:** integrated into `sal-soghoian.md` as Tier 3 (principles #31-38) on 2026-05-11. This file is the **primary-source quote reference** — verbatim transcript-sourced quotes that back each canonical principle. Not a proposal. The work is done.
 
 Four newly-archived 2003 transcripts (sessions 306, 401, 623, 718) extend the WWSD principle list with **primary-source spoken Sal from 2003** — predating every existing primary-source interview (which range 2012–2023) by 9 years.
 
@@ -8,11 +10,11 @@ The existing WWSD canon (in `sal-soghoian.md` lines 125–134 + 441–463 + Tier
 - Tier 1 (#13–27): primary-source spoken Sal 2012–2023
 - Tier 2 (#28–30): WWDC 2016 session 717 transcript
 
-This document proposes **Tier 3 (#31–38): primary-source spoken Sal 2003**, sourced exclusively to the four WWDC 2003 transcripts.
+This document is the source-quote reference for **Tier 3 (#31–38): primary-source spoken Sal 2003**, sourced exclusively to the four WWDC 2003 transcripts. Principles already canonical in `sal-soghoian.md`.
 
 ---
 
-## Proposed additions
+## The seven principles — verbatim source quotes
 
 ### 31. AppleScript is the *language UI* — peer to Aqua, peer to shell
 

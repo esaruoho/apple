@@ -116,7 +116,7 @@ Apple never posted PDFs for WWDC 2003-2010 (the era was video-only). PDFs become
 
 ### The 45 WWSD principles (extracted from the WWDC archive)
 
-The existing WWSD canon has 30 principles in `sal-soghoian.md`. The WWDC archive proposes Tier 3 + Tier 4 extensions sourced verbatim to primary-source stage quotes:
+The WWSD canon in `sal-soghoian.md` now contains 45 principles (was 27). Tier 3 + Tier 4 added 2026-05-11, sourced verbatim to primary-source WWDC stage quotes:
 
 **Tier 3 (#31-38) — sourced to 2003 sessions:**
 - #31 — Peer to Aqua (`peer to Aqua`, 623)
@@ -183,7 +183,9 @@ The 2003 transcripts are **the earliest primary-source spoken Sal in the entire 
 
 ## Cross-references
 
-- WWSD canon proposals: `analysis/sal/wwsd-updates-from-2003-transcripts.md`
-- WWSD index: `sal-soghoian.md` (Tier 0/1/2 + proposed Tier 3/4)
+- WWSD Tier 3 source quotes: `analysis/sal/wwsd-updates-from-2003-transcripts.md`
+- WWSD Tier 4 source quotes: `analysis/sal/wwsd-updates-from-2007-2015-transcripts.md`
+- WWSD canonical index: `sal-soghoian.md` (45 principles, all tiers)
+- Cross-decade lineages: `analysis/sal/sal-cross-decade-lineages.md`
 - Sal interview corpus: `sources/sal/transcripts/` (2012-2023, complements WWDC era)
 - macosxautomation.com mirror: `sources/sal/macosxautomation.com/` (post-2009 launch through Apple-era; recovery in progress)

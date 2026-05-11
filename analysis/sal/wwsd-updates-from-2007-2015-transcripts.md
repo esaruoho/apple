@@ -1,4 +1,6 @@
-# WWSD updates from the 2007-2015 WWDC transcripts (Tier 4)
+# WWSD Tier 4 — Source provenance from 2007-2015 WWDC transcripts
+
+> **Status:** integrated into `sal-soghoian.md` as Tier 4 (principles #39-45) on 2026-05-11. This file is the **primary-source quote reference** — verbatim transcript-sourced quotes that back each canonical principle. Not a proposal. The work is done.
 
 Eight newly-archived WWDC sessions (2007-2015) extend the WWSD canon with **primary-source spoken Sal from his "Product Manager, Automation Technologies" era** — Leopard through El Capitan. Companion to `wwsd-updates-from-2003-transcripts.md` (Tier 3, sessions 2003 #306/#401/#623/#718).
 
@@ -19,11 +21,11 @@ The existing WWSD canon is structured as:
 - Tier 2 (#28–30): WWDC 2016 session 717 transcript
 - Tier 3 (#31–38): primary-source spoken Sal 2003 WWDC
 
-This document proposes **Tier 4 (#39–45): primary-source spoken Sal 2007-2015 WWDC**.
+This document is the **source-quote reference for Tier 4 (#39-45)** — the seven canonical principles already integrated into `sal-soghoian.md`. Each principle below carries its verbatim transcript-sourced quote and the WWDC session ID it came from.
 
 ---
 
-## Proposed additions
+## The seven principles — verbatim source quotes
 
 ### 39. User-placed-file = consent
 
@@ -124,18 +126,18 @@ Same Services architecture sorts selected text in TextEdit *or* runs a shell com
 
 ---
 
-## Notes for integration into `sal-soghoian.md`
+## Integration status
 
-Suggested edits:
-
-1. After the existing "Tier 2" block (last principle #30), add a **Tier 3** heading and the seven principles #31-38 from `wwsd-updates-from-2003-transcripts.md`
-2. Then a **Tier 4** heading and the seven principles #39-45 from this document
-3. Update the principles-count header at the top of `sal-soghoian.md` from "27 principles" / "30 principles" to **45 principles**
-4. Cross-link Tier 3 + Tier 4 source documents
+Completed 2026-05-11:
+- Tier 3 (#31-38) integrated into `sal-soghoian.md`
+- Tier 4 (#39-45) integrated into `sal-soghoian.md`
+- Five-pillar canon section added (AppleScript + Automator + Services + Terminal + JXA)
+- Canonical file grew 501 → 570 lines
+- Total WWSD principle count: 27 → 45
 
 ## Cross-references
 
-- **Tier 3 (2003) proposal:** `analysis/sal/wwsd-updates-from-2003-transcripts.md`
+- **Tier 3 (2003) source quotes:** `analysis/sal/wwsd-updates-from-2003-transcripts.md`
 - **2012 #206 analysis:** `sources/sal/wwdc/2012-session-206/analysis.md`
 - **2009 #607 analysis:** `sources/sal/wwdc/2009-session-607-services-for-it-snow-leopard/analysis.md`
 - **2007 #224 analysis:** `sources/sal/wwdc/2007-session-224-next-generation-automation/analysis.md`
