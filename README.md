@@ -87,6 +87,20 @@ Vocal Shortcut "Hey Sal" (Apple Silicon, System Settings → Accessibility → S
 2. **Apple changed iWork bundle IDs** post-2016: `com.apple.iWork.Keynote` / `iWork.Pages` / `iWork.Numbers` are gone, replaced by `com.apple.Keynote` / `com.apple.Pages` / `com.apple.Numbers`. Sal's hardcoded-bundle-ID DC-Keynote / DC-Pages / DC-Numbers handlers always error -1728 ("Can't get application id"). The matcher now skips them (dead-bundle filter); native user Shortcuts replace them.
 3. **macOS Sequoia removed the Custom Commands plist runtime** entirely — `com.apple.speech.recognition.AppleSpeechRecognition.CustomCommands.plist` is gone, no daemon reads it. Vocal Shortcuts (Apple Silicon only) is the canonical replacement.
 4. **Audio input device drift** is the first thing to check when dictation appears broken. We spent 2 hours debugging TCC, plist formats, Sequoia bugs — actual cause was macOS listening to a non-microphone input. Codified as the global rule: query `system_profiler SPAudioDataType` BEFORE blaming software. See [`feedback_check_audio_input_first.md`](https://github.com/esaruoho/apple/blob/main/.claude-feedback-stub) (lives in `~/.claude/projects/.../memory/`).
+5. **Vocal Shortcuts occupies a unique cell in the trigger-surface matrix** — the only Mac surface that is *simultaneously* hands-free, offline (on-device Neural Engine), latency-free, and **UUID-stable** across Shortcut renames. Every other voice path fails one of those: "Hey Siri + Shortcut name" needs the wake-word and matches by name (breaks on rename); manual Siri isn't hands-free; Spotlight/hotkey/Loupedeck aren't voice. Full surface-vs-surface matrix in [`analysis/sal/vocal-shortcuts-in-the-trigger-stack.md`](analysis/sal/vocal-shortcuts-in-the-trigger-stack.md).
+6. **Shortcuts.sqlite is the other half of the binding**: `ZSHORTCUT.ZWORKFLOWID` (at `~/Library/Shortcuts/Shortcuts.sqlite`) is the UUID column that pairs with `associatedShortcut.type.siriShortcut.id` from `AVSPreferenceKey`. Confirmed empirically against both live entries. This is what makes the binding UUID-stable: renaming a Shortcut in Shortcuts.app does **not** break its Vocal binding — only its cached `associatedShortcut.name` drifts (cosmetic).
+7. **Coverage gap on this Mac: 2 / 277 = 0.7%.** Only "Hey Sal" and "wheres olga" are bound. The structural bottleneck is the 3-rep per-phrase manual training requirement (no public API to install trained-audio models). The **single-phrase router pattern** ("Hey Sal" → matcher → N targets) is the bypass — collapses N trainings into 1.
+8. **`siriRequest` and `accessibility` action kinds are still unobserved.** The schema doc lists them inferred-from-UI, but no live JSON example has been captured yet. Capturing a Voice-Control-toggle Vocal Shortcut would lock down the `accessibility` shape.
+
+**New tool, built [`2026-05-11`]:** [`bin/vocal-shortcuts-suggest.py`](bin/vocal-shortcuts-suggest.py) — joins `AVSPreferenceKey` ↔ `Shortcuts.sqlite` ↔ [`seven-purpose-audit.md`](analysis/sal/seven-purpose-audit.md) and reports:
+
+- **Orphans** — Vocal Shortcut binds a UUID no longer in `Shortcuts.sqlite` (or tombstoned). Binding will silently fail.
+- **Drift** — cached `associatedShortcut.name` ≠ live `ZNAME`. Cosmetic; the binding still works.
+- **Suggestions** — Shortcuts with no Vocal binding. `--audit-only` filters to fuzzy-matches against the 73 triple-channel audit candidates.
+
+Modes: text (default), `--json`, `--write [PATH]` (markdown to [`analysis/sal/vocal-shortcuts-coverage.md`](analysis/sal/vocal-shortcuts-coverage.md)). Snapshots `Shortcuts.sqlite` + WAL/SHM to a temp dir before opening read-only so it doesn't fight the running Shortcuts.app for the WAL.
+
+First reading on this Mac: **39 audit-matched candidates ready for binding** (`finder-compress-selected`, `system-events-wifi-toggle`, `mail-unread-count`, `homepod-climate-reading`, `system-events-screenshot-area`, et al.) — these are the highest-leverage next Vocal targets per Sal's seven-purpose framework.
 
 **Build pipeline:**
 
