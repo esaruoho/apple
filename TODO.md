@@ -40,7 +40,7 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 ### Open from this session — finish next
 
 - [ ] **Send the Sal email** — draft is ready in `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`. Trim to ~300 words before sending. Subject line options included. Same Gmail thread as the April exchange.
-- [ ] **Backport the .sfl3 NSKeyedArchiver UID resolver from `iwork-exporter` to `finder-exporter`** — finder-exporter's `recents`/`favorites` currently return zero entries because of the naive top-level walk. The proper resolver is at `iwork-exporter/scripts/iwork_exporter.py:resolve_archiver()` plus `resolve_bookmark.swift`. Same pattern works.
+- [x] **Backported the .sfl3 NSKeyedArchiver UID resolver to `finder-exporter`** (2026-05-11). Extracted the resolver to `bin/lib/sfl3_resolver.py` + `bin/lib/resolve_bookmark.swift` for future exporters. `finder-exporter` now returns **50 recent docs** + populated favorites list (was zero). Markdown export enriched to surface resolved paths. iwork-exporter still uses its local copy; consolidating is low-priority maintenance.
 - [ ] **`voice-memos-exporter transcribe`** — `whisp` wrapper for bulk Whisper. Apple's tsrp transcripts are English-only and poor on Finnish; Whisper with `--fi` is the practical path. Flags: `--lang fi/en`, `--chunked` for >30 min recordings.
 - [ ] **`voice-memos-exporter watch`** — fswatch on Recordings/, auto-transcribe new .m4a, Discord ping via pakettibot inbox.
 - [ ] **`safari-exporter close-tab <selector>`** — UI-script Safari to close one tab from a per-URL .md file. Phase 2 write action.

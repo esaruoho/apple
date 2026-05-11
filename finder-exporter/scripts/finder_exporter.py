@@ -35,6 +35,14 @@ SFL_DIR = Path(os.path.expanduser(
 ))
 FINDER_PLIST = Path(os.path.expanduser("~/Library/Preferences/com.apple.finder.plist"))
 
+# Shared NSKeyedArchiver .sfl3 resolver (bin/lib/sfl3_resolver.py + companion
+# resolve_bookmark.swift). The naive previous decoder iterated $objects and
+# pulled top-level dicts with a "Name" key — that misses everything because
+# names + bookmarks are UID-referenced. load_sfl3_items walks $top.root and
+# resolves UIDs properly.
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from sfl3_resolver import load_sfl3_items  # noqa: E402
+
 
 def load_env() -> dict[str, str]:
     env: dict[str, str] = {}
@@ -77,38 +85,12 @@ def all_tagged_files() -> list[str]:
 
 
 # =====================================================================
-# .sfl3 NSKeyedArchiver decode
+# .sfl3 NSKeyedArchiver decode — delegates to shared resolver in bin/lib/.
 # =====================================================================
 
 def decode_sfl3(path: Path) -> list[dict]:
-    """Walk an LSSharedFileList .sfl3 file and return [{name, url, ...}]."""
-    if not path.exists():
-        return []
-    try:
-        with open(path, "rb") as f:
-            data = f.read()
-        plist = plistlib.loads(data)
-    except Exception:
-        return []
-    objs = plist.get("$objects") or []
-    if not objs:
-        return []
-    out: list[dict] = []
-    for o in objs:
-        if not isinstance(o, dict):
-            continue
-        # Items typically have "Name" + "Bookmark" (URL bookmark blob)
-        name = o.get("Name") or o.get("name") or ""
-        bookmark = o.get("Bookmark") or o.get("bookmark")
-        if name and isinstance(name, str):
-            row = {"name": name}
-            if isinstance(bookmark, (bytes, bytearray)):
-                # extract a printable URL fragment if visible
-                m = re.search(rb"file://[^\x00]+", bookmark)
-                if m:
-                    row["url_hint"] = m.group(0).decode("utf-8", errors="replace")
-            out.append(row)
-    return out
+    """Walk an LSSharedFileList .sfl3 file and return [{name, path, uuid}]."""
+    return load_sfl3_items(path)
 
 
 # =====================================================================
@@ -211,7 +193,12 @@ def cmd_export(args) -> int:
         items = decode_sfl3(SFL_DIR / sfl_name)
         body = [f"# {label} ({len(items)})", ""]
         for it in items:
-            body.append(f"- {it.get('name', '?')}")
+            name = it.get("name", "?")
+            path = it.get("path", "")
+            if path:
+                body.append(f"- **{name}** — `{path}`")
+            else:
+                body.append(f"- {name}")
         write_md(vault / f"{label}.md", "\n".join(body))
 
     index = ["# Finder Vault", "",
