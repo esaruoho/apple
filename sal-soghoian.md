@@ -499,3 +499,72 @@ When writing AppleScript, channel Sal's mindset:
 ### Recognition rule (companion to all 27)
 
 **The trigger phrases.** *"If you find yourself saying 'there's got to be a better way,' that's a definite point toward you need to examine automation. Or if you find yourself going, ugh, I don't want to do this, then that's a sign that you need to automate some process."* (MacVoices 2017.) Two specific phrases mark every automation candidate. Listen for them — in your own self-talk, in colleagues' complaints, in support tickets.
+
+---
+
+## Tier 3 — Primary-source spoken Sal, WWDC 2003 (principles #31-38)
+
+The 2003 WWDC archive captured at `sources/sal/wwdc/2003-session-{306,401,623,718}-*/` is the **earliest primary-source spoken Sal in the entire WWSD canon** — predates the existing 2012-2023 interview corpus by 9 years.
+
+Full source-quote document: `analysis/sal/wwsd-updates-from-2003-transcripts.md`.
+
+31. **AppleScript is the language UI — peer to Aqua.** *"AppleScript is a peer to Aqua. Aqua is the graphic user interface to the OS, and AppleScript is the language user interface to the OS."* (WWDC 2003 #623.) Three peer UIs to macOS — Aqua (graphic), AppleScript (language high-level), shell (language low-level). AppleScript isn't a toy on top of Aqua; it's next to Aqua. Structurally defensible framing for WWSD #4 (automation as a right).
+
+32. **You are the user's hands and fingers into the world.** *"We want to be able to be your hands and fingers into the world to get the things done that make you money."* (WWDC 2003 #306.) Sal's clearest metaphor for what automation IS — prosthesis for intent, not productivity software. Pairs with WWSD #1 (democratization is the goal; hands-and-fingers is the mechanism). When evaluating an automation, ask: does it extend the user's reach, or abstract them away from the action?
+
+33. **The four whys — consistency, accuracy, speed, scale.** *"How do I get consistency? How do I get accuracy? How do I get speed? How can I scale what I do and stay competitive? The answer in any business is automation."* (WWDC 2003 #718.) Sal's operational answer to "why automate?" — nearly identical to his 2019 MTC and 2023 CCATP framings. **The four whys are stable across 20 years of Sal's public speaking.** When justifying an automation effort, name which of the four it serves. A script serving none of them is a candidate for deletion.
+
+34. **The vision has not dimmed in three decades.** *"I first fell in love with AppleScript back in 1992 when I got the developer CD, and I saw that there was the ability for a normal schmo to be able to make the computer do what I wanted it to do. And in the decade following, that vision has not dimmed at all."* (WWDC 2003 #401.) Sal's biographical anchor — by 2026 it's a 34-year vision that survived 9 OS X releases and one defenestration. WWSD is not a 2010s phenomenon. Bet long.
+
+35. **GUI Scripting is a last resort, not a substitute.** *"It's not a substitute for object model scriptability. It's not."* (Todd Fernandez in Sal's WWDC 2003 #401 session, restated by Sal at WWDC 2007 #224.) Four hard limitations of System Events processes suite: disabled by default, fragile to UI changes, can't drive non-Cocoa widgets, broken for non-English keystrokes. **The prescription:** if you're a scripter, request real scriptability from the developer; if you're a developer, ship real scriptability. *"I will camp out on your yard and I will never go away."* (2007 #224.)
+
+36. **Cleaning and waxing in one motion — find AND act in one line.** *"In one motion I find the stuff, the other one I actually do something with it. In one line of AppleScript, we are able to clean and wax together."* (WWDC 2003 #623.) The signature move of AppleScript — `every X whose Y contains Z` is both a query AND an action target. Most other languages force find-then-loop-then-act. When writing a script, ask: can this be one line that both queries and acts? If yes, do that. JXA `.whose({...})` is the 2014 reincarnation.
+
+37. **Recurse with `entire contents`, not for-loops — "we're civilized."** *"We don't do that in AppleScript. We're civilized. We're bohemian but civilized."* (WWDC 2003 #623.) Pattern: `every X of the entire contents of <container> whose <predicate>`. Finder walks the tree for you. Hand-written recursion is almost always a sign you're fighting the language. When a script needs to walk a directory or object tree, use `entire contents` first.
+
+38. **Configuration via Finder comment + duplicate-and-rename.** *"Each of these droplets are designed to be double-clicked, and you get a preference dialog… you can copy the script, rename it 'internal use', 'website', 'CD use'."* (WWDC 2003 #718.) Zero preferences-pane overhead. Zero plist files. The Finder IS the preferences UI. Discoverable and self-documenting (droplet name = preset name). Reborn in 2026 as Shortcuts (shortcut name = preset name). When designing a tool with configurable behavior, ask: can the prefs be embedded in the tool itself + shown on double-click?
+
+---
+
+## Tier 4 — Primary-source spoken Sal, WWDC 2007-2015 (principles #39-45)
+
+Eight WWDC sessions across Sal's "Product Manager, Automation Technologies" era (Leopard through El Capitan, his final years at Apple). Closes the 9-year gap between the 2003 foundation and the 2012-2023 interview corpus.
+
+Full source-quote document: `analysis/sal/wwsd-updates-from-2007-2015-transcripts.md`.
+
+39. **User-placed-file = consent.** *"The user takes the scripts and puts them in a sequestered folder called Application Scripts. The application requests the system to execute it. Because scripts written by you and executed by the system run without restrictions, the script runs without restrictions."* (WWDC 2012 #206.) When the sandbox can't decide, the user decides for the sandbox. The act of placing a file in `~/Library/Application Scripts/<bundle-id>/` IS the entitlement. App can read/enumerate but cannot write — only the user can place scripts. Same logic as WWSD #38 droplet-with-prefs, generalized as consent surface. Same logic as Yvonne Christic / WWSD #27 (authorization gesture).
+
+40. **Some powers belong to the user, period.** *"We actually made the specific decision that sending should be up to the user only. A sandboxed application really should not have permission to do this ever."* (Chris Nebel in Sal's WWDC 2012 #206 session.) The `send` Apple Event in Mail is deliberately in no access group. Certain operations aren't requestable by apps — only invokable by user-driven scripts. When designing a capability boundary, ask: is this an operation an app could safely request? Or one that should require explicit user invocation? If latter, deny it to apps entirely.
+
+41. **Automation buys back time — the meta-why.** *"We can all accumulate money. But we can't accumulate more time. And the only way you get time is automation."* (WWDC 2007 #224.) The 2003 four whys (consistency/accuracy/speed/scale) are operational. **Time** is the meta-why — what they collectively buy back. Strongest single-sentence economic argument for automation Sal ever made. When evaluating an automation, ask not "does this save N hours/week" but "does this give back time the user could not otherwise accumulate."
+
+42. **Index by data type, not by app — Point-of-Need spatial geometry.** *"Computers are the most powerful for us when the tools we need are nearby the things we have selected."* (WWDC 2009 #607.) Starting Points UX reform (2007) categorizes automations by selected data type, not by source app. Failure mode: menu-bar dumping ground requiring users to know which app provides each verb. The automation comes to the selection, not the other way around. When designing an automation surface, ask: how does the user discover verbs that apply to what they've selected? Index by data type.
+
+43. **One verb per action — decompose composite UIs.** *"If you find your action has five tabs and a tab view, maybe that means your action should actually be five separate actions."* (Emilie Kim in Sal's WWDC 2008 #547 session.) Tabs in an action UI are a code smell — each tab is a separate verb hiding inside a composite. Generalizes beyond Automator: applies to AppleScript handlers, Shortcuts actions, Hey Sal verbs, Loupedeck button assignments. If a unit has a tab view, it's actually N units. The user composes; you decompose.
+
+44. **Point-of-Need: the four C's evaluation rubric.** *"They are contextual, convenient, configurable, and customizable. You will write on this, yes you will."* (WWDC 2009 #607.) **Contextual** = filters by current selection. **Convenient** = reachable from where cursor already is. **Configurable** = user can enable/disable/shortcut-bind. **Customizable** = user can author new items without leaving host. The evaluation rubric for any automation UI — Spotlight, Shortcuts, Automator, Services, Loupedeck, Vocal Shortcuts. Score yes/no/partial across four Cs. A surface failing three of four is broken-by-design.
+
+45. **One mechanism scales from one selection to a fleet.** Same Services architecture sorts selected text in TextEdit *or* runs a shell command as root across 8 remote machines via ARD. *"You can sit in here for a Remote Desktop and just type commands all the time and they're suddenly being spread across all these different computers."* (Steve Hayman in Sal's WWDC 2009 #607 session.) Personal automation and fleet management are not separate disciplines. When designing an automation primitive, test it at both scales. If the personal-scale verb breaks at fleet-scale, architecture is wrong.
+
+### Tier 4 source provenance
+
+- **#39, #40** — WWDC 2012 #206 (Secure Automation Techniques in OS X)
+- **#41, #42 (Starting Points)** — WWDC 2007 #224 (Next Generation Automation)
+- **#42 (Point-of-Need), #44, #45** — WWDC 2009 #607 (Services for Scripting IT Tasks)
+- **#43** — WWDC 2008 #547 (Building and Leveraging Automator Actions)
+
+Cross-references:
+- **WWDC master index:** `sources/sal/wwdc/README.md`
+- **Cross-decade lineages map:** `analysis/sal/sal-cross-decade-lineages.md`
+- **Demo bulletpoints (marketing voice):** `sources/sal/wwdc/demo-bulletpoints/`
+- **QuickTime Pro automation deep-dive:** `sources/sal/wwdc/demo-bulletpoints/01-QUICKTIME-PRO-AUTOMATION.md`
+
+### The five-pillar canon (the structural model Sal taught at WWDC)
+
+1. **AppleScript** (1993)
+2. **Automator** (2004 introduction; 2007 #224 framework reveal)
+3. **Services** (2009 #607 redesign)
+4. **Terminal** (2011 #133 formal induction)
+5. **JXA** (2014 #306 — JavaScript as peer language on OSA bus)
+
+Load-bearing structure for probing future Apple OS versions: which pillar has been removed, neutered, or relocated?
