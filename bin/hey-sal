@@ -152,6 +152,98 @@ def i_reminders(m, q):
 
 
 # =====================================================================
+# Direct AppleScript handlers — write actions via app sdef
+# Used when no exporter subcommand exists yet for the write path.
+# =====================================================================
+
+def _osa(applescript: str) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(
+            ["osascript", "-e", applescript],
+            capture_output=True, text=True, timeout=15,
+        )
+        return proc.returncode, (proc.stdout + proc.stderr).strip()
+    except subprocess.TimeoutExpired:
+        return 124, "(osascript timeout)"
+
+
+def _ascii_quote(s: str) -> str:
+    """Escape a string for embedding inside an AppleScript double-quoted literal."""
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def i_remind_me(m, q):
+    """remind me to <body> [tomorrow|today|on <date>] [at <time>]"""
+    body = m.group(1).strip()
+    # Strip a trailing "tomorrow at 5" / "today at 14:00" / "at 9am" hint
+    # for now we honour only the body — Reminders.app's sdef will use the
+    # default list and no due date. Extending to parse due dates is a
+    # follow-up; the speech-to-Reminder happy path is what matters.
+    when = (m.group(2) or "").strip().lower()
+    applescript_body = (
+        'tell application "Reminders"\n'
+        '  set newR to make new reminder with properties {name:"' + _ascii_quote(body) + '"}\n'
+    )
+    if "tomorrow" in when:
+        applescript_body += (
+            '  set tomorrowAt9 to (current date) + (1 * days)\n'
+            '  set hours of tomorrowAt9 to 9\n'
+            '  set minutes of tomorrowAt9 to 0\n'
+            '  set seconds of tomorrowAt9 to 0\n'
+            '  set remind me date of newR to tomorrowAt9\n'
+        )
+    elif "today" in when:
+        applescript_body += (
+            '  set todayAt5 to (current date)\n'
+            '  set hours of todayAt5 to 17\n'
+            '  set minutes of todayAt5 to 0\n'
+            '  set seconds of todayAt5 to 0\n'
+            '  set remind me date of newR to todayAt5\n'
+        )
+    applescript_body += "end tell\n"
+    rc, out = _osa(applescript_body)
+    if rc != 0:
+        return f"(failed to create reminder: {out})", "reminder failed"
+    return f"Created reminder: {body}" + (f" ({when})" if when else ""), f"reminder set: {body}"
+
+
+def i_play_track(m, q):
+    """play [track|song|tune] <title> — Music.app native search+play"""
+    target = m.group(1).strip()
+    # Music.app accepts a name match against the user's library. Try to play
+    # the first track whose name contains the requested phrase.
+    applescript_body = (
+        'tell application "Music"\n'
+        '  set hits to (every track of library playlist 1 whose name contains "' + _ascii_quote(target) + '")\n'
+        '  if (count of hits) is 0 then\n'
+        '    return "no track matching " & "\\"' + _ascii_quote(target) + '\\""\n'
+        '  end if\n'
+        '  play (item 1 of hits)\n'
+        '  return "playing " & (name of (item 1 of hits)) & " — " & (artist of (item 1 of hits))\n'
+        'end tell\n'
+    )
+    rc, out = _osa(applescript_body)
+    return out, _shorten(out, 1)
+
+
+def i_draft_email(m, q):
+    """draft [an] email to <recipient> about <subject>"""
+    recipient = m.group(1).strip()
+    subject = m.group(2).strip()
+    applescript_body = (
+        'tell application "Mail"\n'
+        '  set newMsg to make new outgoing message with properties {subject:"' + _ascii_quote(subject) + '", visible:true}\n'
+        '  tell newMsg to make new to recipient at end of to recipients with properties {address:"' + _ascii_quote(recipient) + '"}\n'
+        '  activate\n'
+        'end tell\n'
+    )
+    rc, out = _osa(applescript_body)
+    if rc != 0:
+        return f"(failed to draft email: {out})", "draft failed"
+    return f"Drafted email to {recipient} re: {subject}", f"drafting email to {recipient}"
+
+
+# =====================================================================
 # Paketti / Renoise — voice → AppleScript keystroke dispatch
 #
 # Generated wrappers live in ~/work/apple/bin/renoise/, one per Paketti
@@ -316,9 +408,21 @@ INTENTS: list[tuple[re.Pattern, callable]] = [
     (re.compile(r"(?:take|snap|capture).*(?:my|a)\s+(?:photo|picture|selfie)", re.I),
      i_take_photo),
 
-    # reminders
+    # reminders — read
     (re.compile(r"(?:list|show|what).{0,15}reminders?", re.I),
      i_reminders),
+
+    # reminders — write (remind me to X [tomorrow|today|at Y])
+    (re.compile(r"(?:remind me to|add a? reminder to|reminder to)\s+(.+?)(?:\s+(tomorrow|today|at .+?))?\s*\??$", re.I),
+     i_remind_me),
+
+    # music — play a specific track
+    (re.compile(r"^(?:play\s+)(?:track|song|tune)?\s*(.+?)\s*\??$", re.I),
+     i_play_track),
+
+    # mail — write (draft an email to X about Y)
+    (re.compile(r"(?:draft|compose|write)(?:\s+an?\s+)?(?:email|message|mail)\s+to\s+([\w@.\-+]+)\s+(?:about|on|re|regarding)\s+(.+?)\s*\??$", re.I),
+     i_draft_email),
 
     # paketti / renoise — fuzzy-match any utterance starting with
     # "paketti", "renoise", or "hey paketti" against the verb registry.

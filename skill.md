@@ -123,10 +123,10 @@ Freeform (144 phrases), Books (125 phrases), Weather (149 phrases), Maps (17 que
 FaceTime, Passwords, Podcasts, Stocks, Find My, Font Book, Dictionary, Screen Sharing
 
 ### Tier 5: Nearly Dark
-Activity Monitor, Audio MIDI Setup, Disk Utility, Image Capture, Screenshot, System Settings, Photo Booth, Stickies, Console, Chess, Grapher, VoiceOver Utility, Clock, Migration Assistant
+Activity Monitor, Audio MIDI Setup, Disk Utility, Image Capture, Screenshot, System Settings, Photo Booth, Stickies, Console, Chess, Grapher, VoiceOver Utility, Clock, Migration Assistant, Mission Control
 
 ### Tier 6: Completely Dark
-Launchpad, Mission Control, Time Machine
+Launchpad, Time Machine
 
 ### Tier 8: Accessibility API
 System Settings panes opened directly via Accessibility API scripting. Scripts in `scripts/workflows/accessibility/`.
