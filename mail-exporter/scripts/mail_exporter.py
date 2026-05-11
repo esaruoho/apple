@@ -304,6 +304,80 @@ def cmd_export(args) -> int:
     return 0
 
 
+def cmd_xref_calendar(args) -> int:
+    """Match received messages to ±window-min Calendar events.
+
+    Pulls each message's date_received, scans the Calendar SQLite store for
+    events whose start_date is within the window, and reports the candidate
+    correlations. Useful for "what did I get emailed about during that
+    meeting" reconstructions.
+    """
+    cal_db = Path(os.path.expanduser(
+        "~/Library/Group Containers/group.com.apple.calendar/Calendar.sqlitedb"
+    ))
+    if not cal_db.exists():
+        print(f"Calendar DB not found at {cal_db}", file=sys.stderr)
+        return 1
+
+    since = None
+    if args.since:
+        try:
+            since_dt = datetime.fromisoformat(args.since).replace(tzinfo=timezone.utc)
+            since = (since_dt - COCOA_EPOCH).total_seconds()
+        except ValueError:
+            sys.exit(f"--since must be ISO date (YYYY-MM-DD): {args.since}")
+
+    mail = open_ro()
+    q = """
+        SELECT m.ROWID, s.subject, a.address, m.date_received
+        FROM messages m
+        JOIN subjects s ON s.ROWID = m.subject
+        JOIN addresses a ON a.ROWID = m.sender
+        WHERE m.date_received IS NOT NULL
+    """
+    params: list = []
+    if since is not None:
+        q += " AND m.date_received >= ?"
+        params.append(since)
+    q += " ORDER BY m.date_received DESC LIMIT ?"
+    params.append(args.limit or 200)
+    msgs = mail.execute(q, params).fetchall()
+    mail.close()
+
+    cal = open_immutable(cal_db)
+    window_secs = args.window * 60
+    hits = []
+    for rowid, subj, addr, t_recv in msgs:
+        events = cal.execute("""
+            SELECT ci.summary, c.title, ci.start_date
+            FROM CalendarItem ci
+            LEFT JOIN Calendar c ON c.ROWID = ci.calendar_id
+            WHERE ci.start_date BETWEEN ? AND ?
+            ORDER BY ABS(ci.start_date - ?)
+            LIMIT 3
+        """, (t_recv - window_secs, t_recv + window_secs, t_recv)).fetchall()
+        if events:
+            hits.append({"rowid": rowid, "subject": subj, "sender": addr,
+                         "received": cocoa_to_iso(t_recv),
+                         "events": [{
+                             "summary": e[0] or "(no title)",
+                             "calendar": e[1] or "?",
+                             "start": cocoa_to_iso(e[2]),
+                         } for e in events]})
+    cal.close()
+
+    if args.json:
+        print(json.dumps(hits, indent=2, ensure_ascii=False))
+        return 0
+    for h in hits:
+        print(f"\n{h['received']}  [{h['sender']}]  {h['subject']}")
+        for e in h["events"]:
+            print(f"   ↔  {e['start']}  [{e['calendar']}]  {e['summary']}")
+    print(f"\n{len(hits)}/{len(msgs)} message(s) had Calendar matches "
+          f"within ±{args.window} min")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="mail-exporter")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -321,6 +395,17 @@ def main() -> int:
     sp.add_argument("--per-mailbox-limit", type=int,
                     help="Max headers per mailbox in vault (default 200)")
     sp.set_defaults(func=cmd_export)
+
+    sp = sub.add_parser("xref", help="cross-reference messages against Calendar events")
+    sp.add_argument("--calendar", action="store_true",
+                    help="match messages to Calendar events (required selector)")
+    sp.add_argument("--window", type=int, default=60,
+                    help="±minutes around message date_received (default 60)")
+    sp.add_argument("--since", help="ISO date YYYY-MM-DD lower bound")
+    sp.add_argument("--limit", type=int, default=200)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_xref_calendar)
+
     args = p.parse_args()
     return args.func(args)
 

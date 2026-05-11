@@ -342,6 +342,82 @@ def cmd_export(args) -> int:
     return 0
 
 
+def cmd_xref_calendar(args) -> int:
+    """Match photo capture dates to ±window-minute Calendar events.
+
+    For each asset with a ZDATECREATED, scan the Calendar SQLite store for
+    events whose start_date is within ±window seconds. Useful for "which
+    meeting/trip was I at when I took these photos" reconstructions.
+    """
+    cal_db = Path(os.path.expanduser(
+        "~/Library/Group Containers/group.com.apple.calendar/Calendar.sqlitedb"
+    ))
+    if not cal_db.exists():
+        print(f"Calendar DB not found at {cal_db}", file=sys.stderr)
+        return 1
+
+    photos = open_ro()
+    q = """
+        SELECT ZDATECREATED, ZFILENAME, ZWIDTH, ZHEIGHT
+        FROM ZASSET
+        WHERE ZTRASHEDSTATE = 0 AND ZDATECREATED IS NOT NULL
+    """
+    if args.since:
+        try:
+            since_dt = datetime.fromisoformat(args.since).replace(tzinfo=timezone.utc)
+            since_cocoa = (since_dt - COCOA_EPOCH).total_seconds()
+            q += f" AND ZDATECREATED >= {since_cocoa}"
+        except ValueError:
+            sys.exit(f"--since must be ISO date (YYYY-MM-DD): {args.since}")
+    q += " ORDER BY ZDATECREATED DESC LIMIT ?"
+    assets = photos.execute(q, (args.limit or 200,)).fetchall()
+    photos.close()
+
+    # Reopen Calendar via the shared helper. immutable=1 is fine here —
+    # the calendar daemon's WAL turnover is fast enough that staleness
+    # is typically sub-minute.
+    sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+    from apple_sqlite_snapshot import open_immutable as _oi
+    cal = _oi(cal_db)
+    window_secs = args.window * 60
+    hits = []
+    for t_cap, fname, w, h in assets:
+        events = cal.execute("""
+            SELECT ci.summary, c.title, ci.start_date,
+                   COALESCE(l.title,'')
+            FROM CalendarItem ci
+            LEFT JOIN Calendar c ON c.ROWID = ci.calendar_id
+            LEFT JOIN Location l ON l.ROWID = ci.location_id
+            WHERE ci.start_date BETWEEN ? AND ?
+            ORDER BY ABS(ci.start_date - ?)
+            LIMIT 3
+        """, (t_cap - window_secs, t_cap + window_secs, t_cap)).fetchall()
+        if events:
+            cap = (COCOA_EPOCH + timedelta(seconds=t_cap)).isoformat()
+            hits.append({"filename": fname, "captured": cap,
+                         "size": f"{w}x{h}" if w and h else "",
+                         "events": [{
+                             "summary": e[0] or "(no title)",
+                             "calendar": e[1] or "?",
+                             "start": (COCOA_EPOCH + timedelta(seconds=e[2])).isoformat()
+                                      if e[2] else "",
+                             "location": e[3],
+                         } for e in events]})
+    cal.close()
+
+    if args.json:
+        print(json.dumps(hits, indent=2, ensure_ascii=False))
+        return 0
+    for h in hits:
+        print(f"\n{h['captured']}  {h['filename']}  {h['size']}")
+        for e in h["events"]:
+            loc = f"  @ {e['location']}" if e['location'] else ""
+            print(f"   ↔  {e['start']}  [{e['calendar']}]  {e['summary']}{loc}")
+    print(f"\n{len(hits)}/{len(assets)} asset(s) had Calendar matches "
+          f"within ±{args.window} min")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="photos-exporter")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -358,6 +434,15 @@ def main() -> int:
     sp = sub.add_parser("keywords"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_keywords)
     sp = sub.add_parser("places"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_places)
     sp = sub.add_parser("favorites"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_favorites)
+    sp = sub.add_parser("xref", help="cross-reference assets against Calendar")
+    sp.add_argument("--calendar", action="store_true",
+                    help="match capture dates to Calendar events (required selector)")
+    sp.add_argument("--window", type=int, default=10,
+                    help="±minutes around photo capture (default 10)")
+    sp.add_argument("--since", help="ISO date YYYY-MM-DD lower bound")
+    sp.add_argument("--limit", type=int, default=200)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_xref_calendar)
     sp = sub.add_parser("export")
     sp.add_argument("--heads-only", action="store_true",
                     help="Only album index — no per-asset listings")

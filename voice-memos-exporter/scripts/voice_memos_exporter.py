@@ -730,13 +730,71 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
     return md_path
 
 
-def cmd_xref(args) -> int:
-    """Match each recording against ±window-minute Calendar events.
+def _xref_notes(memos: list) -> list[dict]:
+    """Match recording titles against Notes titles via the Notes SQLite store.
 
-    Uses the Calendar SQLite store directly (read-only) so we don't need
-    AppleScript or the calendar-exporter binary. Events with overlapping
-    time ranges score the recording.
+    Notes bodies are protobuf-encoded blobs (not directly searchable in
+    SQL), so we restrict to ZTITLE1. Token overlap of ≥2 distinct words
+    (≥3 chars each, after lowercasing) is treated as a candidate match.
     """
+    notes_db = Path(os.path.expanduser(
+        "~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
+    ))
+    if not notes_db.exists():
+        print(f"Notes DB not found at {notes_db}", file=sys.stderr)
+        return []
+    # WAL-safe snapshot via the shared helper.
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "bin" / "lib"))
+    from apple_sqlite_snapshot import snapshot_open_persistent as _snap
+    con = _snap(notes_db)
+    rows = con.execute("""
+        SELECT n.ZTITLE1
+        FROM ZICCLOUDSYNCINGOBJECT n
+        WHERE n.ZTITLE1 IS NOT NULL AND n.ZTITLE1 != ''
+    """).fetchall()
+    con.close()
+    note_titles = [r[0] for r in rows if r[0]]
+
+    def toks(s: str) -> set[str]:
+        return {w for w in re.findall(r"[a-z0-9]+", s.lower()) if len(w) >= 3}
+
+    out: list[dict] = []
+    for m in memos:
+        memo_tokens = toks(m.title or "")
+        if not memo_tokens:
+            continue
+        hits = []
+        for nt in note_titles:
+            note_tokens = toks(nt)
+            overlap = memo_tokens & note_tokens
+            if len(overlap) >= 2:
+                hits.append({"note_title": nt, "shared_tokens": sorted(overlap)})
+        if hits:
+            out.append({"memo_uuid": m.uuid, "memo_title": m.title,
+                        "memo_date": m.date_iso, "notes": hits})
+    return out
+
+
+def cmd_xref(args) -> int:
+    """Cross-reference recordings against Calendar events or Notes titles."""
+    if args.notes:
+        memos = filter_memos(load_memos(), args)
+        if not memos:
+            print("(no recordings to xref)", file=sys.stderr)
+            return 0
+        hits = _xref_notes(memos)
+        if args.json:
+            print(json.dumps(hits, indent=2, ensure_ascii=False))
+            return 0
+        for row in hits:
+            print(f"\n{row['memo_date']}  {row['memo_title']}")
+            for n in row["notes"]:
+                print(f"   ↔  {n['note_title']}  (shared: {', '.join(n['shared_tokens'])})")
+        print(f"\n{len(hits)}/{len(memos)} recording(s) had Notes title matches")
+        return 0
+
+    # Default / --calendar path
     cal_db = Path(os.path.expanduser(
         "~/Library/Group Containers/group.com.apple.calendar/Calendar.sqlitedb"
     ))
@@ -906,11 +964,12 @@ def main() -> int:
     sp.add_argument("--reveal", action="store_true", help="Reveal in Finder only")
     sp.set_defaults(func=cmd_open)
 
-    sp = sub.add_parser("xref", help="Cross-reference recordings against Calendar events (±N min window)")
+    sp = sub.add_parser("xref", help="Cross-reference recordings against Calendar events or Notes titles")
     add_filter_args(sp)
     sp.add_argument("--calendar", action="store_true", help="Match against Calendar events (default)")
+    sp.add_argument("--notes", action="store_true", help="Match recording titles against Notes title text")
     sp.add_argument("--window", type=int, default=30,
-                    help="Time window in minutes around recording start (default 30)")
+                    help="Time window in minutes around recording start (default 30; Calendar only)")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_xref)
 
