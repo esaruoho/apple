@@ -36,9 +36,15 @@ All sessions captured under `sources/sal/wwdc/<year>-session-<num>[-slug]/` with
 
 **WWDC 2016: silence.** Sal did not present. He was officially eliminated in October 2016, four months after WWDC. The successor event — WWDC **2018 #717 "Introducing Siri Shortcuts and AppleScript"** — is Apple announcing the technology that replaced Sal's discipline; lives at `../wwdc2016-session-717/` (mis-numbered legacy folder, contents are from 2018).
 
-## Inferred Sal-involvement sessions — to be archived later
+## Sal-team sessions — captured + verified Sal-absent (22 sessions)
 
-These are Automator/AppleScript/Scripting sessions across the same window where Sal was almost certainly involved (his team's product, his typical presenter cohort) but he is not in the named speaker list. Not yet archived — listed here so future passes can pull them.
+These 22 sessions are Automator/AppleScript/Scripting talks across the same 2003-2009 window where Sal's team led the topic but Sal himself was not the speaker. **All 22 transcripts now captured under `sources/sal/wwdc/`.** Sal-presence verified by transcript grep for "Soghoian", "Sal Sego*", "Sal S.", "I'm Sal", "by Sal", "with Sal":
+
+- **11 sessions** — Sal not mentioned at all (Sal-team led, Sal-absent)
+- **9 sessions** — Sal mentioned once (typically "go talk to Sal Soghoian, our product manager" — Sal as institutional contact, not speaker)
+- **2 sessions** (2006 #102, 2008 #525) — Sal named twice as a resource/contact, still not on stage
+
+**Conclusion: the 17 confirmed Sal-on-stage sessions above ARE the complete Sal-WWDC corpus.** No further sessions to add. These 22 are kept for archival completeness (Sal's institutional voice as referenced by his team) but contribute no new WWSD principles.
 
 | Year | # | Title | Speakers |
 |------|---|-------|----------|
