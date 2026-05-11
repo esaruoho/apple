@@ -1,0 +1,1105 @@
+Mac Power Users, episode 588, Mac OS Services with Sal Seguyen.
+Welcome back to Mac Power Users. My name is Stephen Hackett, and I'm joined as always by my friend and yours, Mr. David Sparks.
+David, how are you?
+I am excited, Stephen. We got a great show lined up today.
+we do it's it's one of those fun episodes where it's both topical but we also have a guest so
+I've been looking forward to this one oh what are we doing today we're talking about services and
+as we were working on the outline i kept making notes to myself like i want to send an email off
+this alice going to ask a couple questions about how this happened or that happened or what we can
+do and the list kept getting longer and longer and finally i just sent him an email
+like just a few days before we recorded and the nicest thing happened he said why don't
+i just come on the show actually i invited him on the show and he said I'll come on the show
+so welcome to the show sal hey how are you thank you so much for uh asking me on it's so good to
+have you back it's been a couple years since you've been on the show um for listeners that
+don't know sal um sal was that i call him the grand poobah of automation on the Mac i don't
+know that's the official title but but he worked at a fruit company for many years and was one of
+the key movers behind the development of Auto the Auto and the automation tools they have
+and and a lot of the automation stuff that was coming out of apple and i had the pleasure when
+you were still there of taking the two-day Apple script course from you at mac world like 12 years
+ago i don't know it was a long time wow okay yeah sorry i didn't mean to make you feel bad
+but it was so fun. And I learned so much from you. And then you're no longer with Apple. Now
+you're out and you're doing a bunch of, of work. Like Sal is one of the, the key movers behind the
+Omni JavaScript automation move and, um, and doing a lot of great automation stuff. We've had a lot
+of programmers on the show over the years, but the thing I love about Sal is Sal is not a programmer,
+although he can program, he's an automator. He likes to create automations. And the thing we're
+on the Mac and kind of the reason this came up Stephen and i were kind of brainstorming ideas for
+the show and we're like you know something nobody really uses enough is services and um and so we're
+going to talk today at length about Services if you've got a Mac listen to this show because
+we're going to talk about some techniques and things you can do to to automate stuff on your
+Mac without that much work and and make things like so much better and uh and sal you were also
+very involved at Apple with the way Services evolved. Oh, yeah. That was a really fun and
+interesting period in Apple's history. A lot of change going on. It was around the time of Snow
+Leopard. And the automation team took on the challenge of cleaning up the services
+architecture that we had inherited from the days of Next. They used to have a Services menu that
+they still have today, but it was pretty much like, you know, The Odd Couple. It was a dorm room
+closet full of all kinds of stuff that was some of which was useful. And we took on the challenge
+of cleaning that up and integrating the automation tools that we had in place, Automator, AppleScript,
+into the services architecture so that it would be contextual and so that you would have the power
+that you need at the point of need, wherever you need it in the operating system. Whether it was a
+file in the Finder or selected text in mail or in a program, you could get the power of automation
+your cursor yeah and that Legacy Services menu listeners may may bump into it once in a while if
+you go to the menu bar for any app and you click on the app name like if it's Safari you click on
+Safari and you'll see about halfway down there's a menu option called services and back in the old
+days before snow leopard i remember it would barf up just a big list of things like i i remember
+conversion to Chinese was always prevalent you know I never really understood why my computer
+was trying to get me to write in Chinese all the time but that was like when it stood out to me
+but it was like a large menu and um and I thought that was real clever when Safari came out I'm
+sorry when Snow Leopard came out that you guys found a better use for that yeah and uh I I believe
+it was my guests that management was very happy that we took on that challenge because nobody
+nobody wanted to walk into that closet.
+And the automation team working hand-in-hand with Ali Ozer's team doing the low-level
+Mac OS X functions, together we worked on it and really developed a fantastic interface
+that still is functional today and still usable today and still Innovative today, as a matter
+of fact.
+It delivers functionality on your Mac, and if you have a touch bar, you can even create contextual workflows that show up on the touch bar, and you can just tap them to execute the kind of things that you need done.
+Now, one of the things you told me as we were prepping for today's show was this concept of the point of need, and I thought that was kind of fascinating.
+Could you explain that?
+Sure.
+Sure. For example, let's say we're in the Finder and I have an audio file selected and I want to
+do something with that audio file. Well, for me, the point of need is that file, that I need some
+kind of control or some kind of ability right there. And usually the computer is set up so that
+you go to the menu bar at the top and then you have to navigate a bunch of menus trying to find
+here that can help me encode this or add it to a library or do whatever it is you're
+going to do.
+And quite often, unless you're in a specific program, there is no ability.
+Even though the computer has all these APIs for dealing with audio files, there's usually
+nothing right up there for you.
+So if you look in closer around it, you can find there's an action menu in the finder
+And it displays basically like a subset of some of the other commands in the Finder.
+And you can do a common thing like compress it or move it or delete it or something like that.
+But when it comes to a contextual function on that audio file, that's the point of need.
+And the whole purpose behind Services was to deliver functionality and power at the point of need.
+You could click on the audio file, right click it,
+bring up a contextual menu, and then on that menu
+would be services that do things with audio.
+For example, one of the ones that we shipped in the operating
+system from Snow Leopard on was basically encode into MPEG.
+So you could take any audio files, right click it,
+click encode, the interface would come up,
+you'd choose the settings you want,
+right there on the desktop.
+If you had five PDF files and you
+wanted to combine them into a single document instead
+of five different documents, right,
+then you could just select the five PDF files.
+And the Services menu that was at the point of need
+would be contextual.
+And it would know, oh, you got PDF files selected.
+I'm going to show you all the services related to PDF.
+say, combine, and it would bring up an interface, ask you where you want to save the new file,
+and you would save it, and it would open up in preview and combine all those things for
+you automatically. So this concept was delivering power at the point of need.
+And gang, this is where I'm going to toot Sal's horn for him, because not only did he address
+that point of need with built-in services that we would all like, like the ability to combine a PDF
+or encode an audio file but he made a hook in there where you can create your own service and
+we're going to get to that in a while but just imagine this let's say you've got a co-worker
+and every Monday you've got to email them a spreadsheet so the point of need is this file
+on your desktop by the end of this show you're going to be able to right click on that and have
+a custom service that creates the email to the co-worker attaches the the file and sends it off
+to them you know that's the kind of stuff you can do with this and um i always feel like you know
+snow leopard was the you know the update that everybody said was not that you didn't get new
+features yeah but Apple said that yeah Sal goyan just rewrote the whole automation book at the same
+time and nobody ever mentioned it you know yeah it was the the unknown feature here we redid the
+plumbing for your house totally and added all kinds of special home automation features and
+nobody wanted to talk about it. Yeah, but you didn't just redo the Plumb you installed one
+of those fancy Japanese toilets. I mean, you really did the job here, Bud Yeah, we even had a koi
+Pon you know, we really threw the stuff in there and then they didn't want to talk about it. They
+said, no, this is a no feature OS, but it's got features and it was overruled by marketing. So
+And the quality of that architecture proves itself every day.
+And people, I've heard from people and seen people use this architecture, and it's widely
+adapted and used, and people love it.
+And not only that, I know for a fact that this was a large part of the inspiration for
+a little app on the iPhone called Workflow, which eventually became Shortcut.
+So this is a very important step in the world of automation, ultimately on the iPhone and iPad.
+Yep, it was bringing component automation to the masses.
+You know, when I first showed Automator to Steve, he got that pretty quickly.
+I gave him a demo and he looked at it and stopped me after 10 seconds of the demo and spit back to me exactly what the program did, why it was designed the way it was.
+And he told me, you know, the whole architecture of it and explained it to me just by watching it and then said, go on, you know.
+And we did the demo, and the next thing I know, I was on stage with him at WWDC showing off Automator, which became part of the operating system.
+It wasn't part of the operating system.
+It was a project by some really great people, Eric Payton, Tim Bumgarner, Todd Fernandez, Chris Nebel, myself, John Coelho.
+and a bunch of people worked on the side for a while
+on the concept of a Unix pipeline combined with scripting
+and making components and hooking them together.
+And finally, through Services why this was so important was
+it allowed us to put it under the cursor
+and bring it up to the user level
+where they didn't have to go searching for special development tools.
+It was right at the point of need.
+the advantage of automation, and finally be able to, you know, have these kind of tools
+at your disposal, which is quite unique. Automator gives you access to every API in the operating
+system, and it's very open and very powerful. But you're right, David, it did Define this whole
+thing about component automation, where you create a workflow by linking actions together,
+data passes through that and then you know Ari and the guys took that and took it over into the
+world of workflow and shortcuts and apple was smart enough to get them to come on board and
+they brought it to ios you know i i'm not familiar with any um other kind of Lego style automation
+before automator i mean even like my beloved hyper card didn't really work that way
+How did you come up with the idea?
+Well, very serendipitous.
+Eric Payton was working on a pipeline for Unix,
+and Tim Bongarner was the architect behind AppleScript Studio.
+you know, when we incorporated AppleScript as a peer development language
+into Project Builder and Xcode.
+There wasn't Xcode at the time, but Project Builder.
+And he was working on something,
+The two of them got together because they heard about each other, and that was the Nugget
+And then my role was to help guide some of the concepts and to develop all the individual nuggets, the actions.
+So the original thing was like 400 AppleScript actions that I sat down and wrote myself as a proof of concept.
+Sure.
+And we put it together and, you know, tried to get a higher level to take it on in the organization.
+And we went from group to group to group.
+And with each vice president, they changed the interface to match what they thought was the right thing.
+And one VP wanted us to have like a garage band interface.
+And another one had, no, you need to have a multi-column thing with this.
+And so for in the development of Automator, we actually had a menu that would switch the interface depending upon who we were demoing to.
+It didn't get actually into the operating system until I sat in the hallway in front of Steve's demo room over in building three.
+And I wouldn't move until they let me in to show it to him.
+It was, you know, before WWDC and he was reviewing projects.
+the ground next to the door and then finally I got in at the end of the day like five o'clock or so
+and i i showed it to sj and and he loved it and you know asked me if i wanted to be in the show
+and that weekend uh you know we started preparing and i went up and worked uh on my presentation
+with him and Katie cotton and the rest was you know history i brought it on stage and everybody
+yeah so it's Salo going in automation squatter.
+Yeah.
+You know, that's how things get done sometimes.
+It's strange, but true.
+It's you think that everything's planned, but no, it's actually a company.
+It's a living, breathing entity.
+And sometimes it's just a matter of two people meet in the hallway at the same time.
+And the next thing you know, you have magic.
+I forgot to mention guys I got so excited about today's show.
+I totally skipped the intro.
+um but for more power users listeners sal told me a very funny story about once he was giving
+about to give a presentation to Steve Jobs and Apple's it Department wiped his Mac with all his
+scripts on it and he had to rebuild his scripts while Steve was walking around the room and uh
+we're going to talk about that more Powers it's a very funny story you want me to relive the
+nightmare yes yes yeah we're gonna talk about that later it it turned out it turned the story turned
+out to have a happy ending so don't worry about that that's good uh i want to get uh back to this
+idea of the the point of need a little bit uh when when you look at uh services on the Mac
+like you said they're they're input aware they're contextual they know the type of file or your
+location whatever you're doing and find or wherever else you are but I want to talk a little
+bit about how some of these categories maybe were decided upon currently in Big Sur you have
+services for pictures messaging files and folders searching text development and then the catch-all
+General and I'm curious if there was something in that list that maybe wasn't apparent in the
+beginning or something that you had wanted to let Services be aware of,
+but it didn't pan out? Is there anything interesting there?
+Yeah. When we were developing this whole concept of, okay, we,
+we decided that we were going to have component architecture where you would
+build your automation recipe, let's call it a recipe, right?
+By adding these different components.
+And then we figured that apps would, could contribute components,
+Actions, they're called actions.
+Applications could have their own actions.
+And you could have third party actions.
+You could write your own because they would just
+be wrappers for the Objective-C Frameworks
+or whatever you were doing, or AppleScript or Shell.
+And then it came the process of, well,
+how do we expose this to the user in a way that
+is familiar to them?
+And at the same time, also have some specificity to it.
+So there is a switch in Automator that allows you to show the actions as either grouped
+by category or by application.
+And if you're using a specific application like Acorn or Photos or Pixelmator or, you
+you know, whatever application you're using, remote desktop, you could see the actions
+that pertain just to it if you want.
+Or if you're working with something in general, like photos, then you can see a combination
+of all the different actions that would be available, and you could choose between the
+ones that you wanted to use.
+So we decided to go with categories as a nominal approach that could also switch to
+specific. It's really challenging, though. You really hit a great point there is when you have
+this much power, how do you expose this to a user who doesn't have a sophistication about that?
+And how do you make it so that they can go, oh, I'm building a recipe. I'm going to cut the carrots,
+cut the celery, cut the onions. I'm going to mix them together. I'm going to heat,
+and then I'm going to serve, and that becomes their workflow.
+So how do you present that to them in a way they can understand?
+And that's how we came up with categories and applications.
+Does that answer your question?
+Yeah, I think it does.
+I mean, it seems like now with years of hindsight,
+of course it would be aware based on, okay, you're dealing with a photo,
+but I think it was so smart to build it that way because, like you said,
+first time, that's how they think about it, right? They think about what can I do with this photo,
+not the other way around. And I find it super interesting that toggle still exists in Automator
+today. It's under the, I think it's under the view menu. In fact, I, when building things in
+Automator, very often we'll switch between them trying to find what I'm looking for. So that's a
+great tip in there too. Yeah. You know, this was very Innovative at the time. You were taking a
+thing of providing access to all the APIs of applications and the operating system
+and figuring out a way to make them generalized components that could be
+used in a variety of ways, and then how to expose that to the user. And one of the
+more challenging things about this whole concept of automation that applies to
+shortcuts, that applies to Automator, that applies to any situation, is getting the
+steps. Like, okay, think of it as a recipe. How do you do a recipe? Well, okay, I usually acquire
+things, I process them, and then I deliver them. And so, okay, now what steps do you do? Well, I
+cut, like I said, I cut the carrots, I cut the onions, I cut the celery, and then each one of
+those becomes a step that you add into a recipe. And the challenge is always getting people to
+people don't think about the steps involved in what they want. They just go, okay, I want to
+send this email to Bob with this various stuff formatted and this way. They don't think about
+the steps involved in that. They just think about what they want to do. So the challenge with an
+automation application like Automator has always been of getting people to think in terms of steps
+If you open it up, then you go, I don't know what to do with this.
+Tell me what to do.
+But that's not what it's for.
+If you have something you want to do, then it becomes useful.
+But if you don't know what it is you want to do,
+then you can just poke around and look at it.
+But it's not going to automatically
+build something for you.
+So we tried a couple interfaces.
+There was actually one or two interfaces
+questions, so you want to do one of these things.
+You want to create a new email, all right?
+And then you would select that.
+Then it would ask you another question.
+And then it could guide you through that.
+But what we found with that was once you did that once or twice,
+it pretty much got in the way.
+Because once you understood the concept of creating a recipe,
+then that whole interface gets in the way.
+And it's really complex to try to do for all the different topics.
+So then we decided, Well it should be marketing that really shows that.
+And it should ship with lots of example workflows as well.
+So people could just see.
+But, you know, the way that software development is, is it quite often ends up that you ship
+the product.
+And then when you want the support material, they don't let you do that.
+I think you can you can see that sort of craftsmanship in it today because if you look
+in automator or in the services section of system preferences most of these things have names that
+are very descriptive of what they're going to do right if i look in just like the preview
+uh examples in automator today it's change type of images create thumbnail images flip images
+very simple language that someone who doesn't have a CS degree can just look at and say oh this is
+what i need to do let me drag this one in right yeah and that was one of the things i was going
+to compliment you on because it is so accessible um just a few weeks ago i had an email from a
+listener that was a dentist who had to like encrypt a bunch of PDFs probably Hippa stuff
+and um and he says could you help me with that i said i'm really busy but i would do it in automator
+And then he wrote me back a few days later and says, oh, don't bother.
+I figured it out.
+And if I had told him you could write that in AppleScript, he would have just given me
+the finger.
+It just never would have happened.
+So it really is very accessible.
+Yeah.
+And here's a little tidbit for you.
+Actually, the PDF actions that are there, I think, were originally written in Python
+by the printer. The print team contributed a set of PDF actions. And the guy that did them
+was very knowledgeable with Python, and he wrote them in Python. And because Automator is sitting
+on top of the Mac OS 10 Frameworks it's language agnostic. It works with any language that works
+in the operating system.
+So Python, you could write them in Python or Ruby or Objective-C.
+You could write them in AppleScript.
+A lot of people had the misconception
+that Automator was an interface for AppleScript.
+And that's not necessarily true.
+I mean, AppleScript's one of the languages that it supports.
+But Automator actually provides direct access
+to all the different Frameworks and languages that
+that are part of Mac OS X that make it so powerful.
+this episode of the Mac Power Users
+is brought to you by 1Password.
+Go to 1Password.com slash MPU in all caps
+to get 20% off your family plan.
+Now you're listening to Mac Power Users,
+so you understand the importance of Internet Security
+and how many bad guys there are out there.
+But how many people in your family don't get that?
+I have an assignment for you this week.
+I want you to save someone in your family from poor Internet Security
+Over the Mother's Day weekend, I got to see my mother-in-law.
+She's a wonderful lady, nearly 80 years old, and she's active on the internet every day.
+And when I started helping her debug a problem on her computer, I quickly realized she has
+a terrible password and she's using it everywhere.
+So I was faced with the question, do I try and get her on one password, somebody who's
+not necessarily technically Savvy or do I let her go on risking it? And I decided to go ahead
+and take a shot. So I installed one password and set her up and I gave her some quick lessons in
+it. And honestly, it took me about 15 minutes to teach her how to set up her own one password
+passwords on all her websites. I was shocked how easy it was for her to pick it up. And that's the
+beauty of one password. You just need to remember the one password. And once I got her through that,
+she was totally cool with it. She was able to make her open passwords at new websites at will
+with strong, secure passwords. You could just see the relief in her face because she knew she didn't
+have very good password practices, and 1Password just solved the problem for her. I did go in and
+change passwords at a lot of her old websites, so we got everything picked up there. I did that for
+her. But going forward, She is totally capable of making strong and secure passwords with the
+Simplicity of 1Password. And I think that's the beauty of the application. Us nerds like to use
+all the power features in it, but there are people in our lives that just need that basic tool,
+create strong, unique passwords at every website we go to and remember them for us.
+So why don't you use 1Password with a family member soon? Sit down with somebody that you
+know is at risk and help them sort it out. 1Password is the way to do it. And best of all,
+you can get 20% off a family plan if you just go to 1Password.com slash MPU. Once again,
+all right, so, you know, once you start putting this stuff to work and then you have the benefit of app developers also contributing to this, you know, Corpus of automation, there's so many things you can do.
+And we're going to talk through some of them in detail during the episode, but just a couple that are really easy to do that you, a listener, could set up during your lunch break today.
+You could set a photo as your desktop picture, or you could create a new email to a selected email address.
+all the stuff is done with just a built-in automator Lego is what i call them but you know
+the the tokens and automator where you can create them add a photo to day one or upload a file to
+drop share or transmit it's it's really powerful if you go in there and start clicking between the
+action groups and the applications oh yeah and you know there's applications that are very popular
+like Pixelmator Pro that ship with Automator Actions built in.
+So you can apply Color adjustments to images,
+or Auto white balance, or change types.
+Or if there's something particularly
+you do with an image that you want to be able to accomplish easily,
+for example, you could change the tonality, scale it down,
+put it into an email message, and send it to somebody.
+All of that's possible using their actions.
+You can just drag them right into a workflow,
+create a little recipe, add a send email message action
+at the end.
+And instantly, you can just have your photo open, go, OK,
+I'm going to send this to the team for review.
+And it applies the color sync filter,
+does everything else, resizes, scales it,
+puts it in an image, and sends it off.
+And that's just what, you know, the abilities that they expose in their application and all the different applications that contribute.
+It's amazing. But the really interesting thing about Automator that separates it from shortcuts or anything else is the fact that when we were developing it,
+But we figured that there would be plenty of times when a particular application didn't
+offer an action, or there was something that you wanted to do that was a little bit different.
+So we created these actions called Run Shell Script, Run Apple Script, and Run JavaScript.
+And when you add a Run Shell Script action to your workflow, you have access to all the
+the different shells that are with the operating system.
+The Z shell, the C shell, Perl, Python, Ruby, languages.
+So you can literally put in specialized code
+that you copied from a website or something
+that one of you guys gave you.
+Put that into the middle of your workflow,
+and it functions just like it was designed to be there all along.
+It allows you to expand your workflow
+beyond what the application developer has given you.
+You can change it the way that you want.
+You have total access to the Frameworks of the operating system.
+Now, on iOS, Shortcuts doesn't have that ability.
+You can't just add in an action in Shortcuts
+scripting down to the low levels of the operating system. So that's a difference between Automator
+and other component style design automation tools. It really does give you that ability.
+And that's an interesting dichotomy because sometimes I'll talk to people who will say,
+well, Shortcuts is more powerful than Automator because there are a lot more actions in Shortcuts
+and you can have loops and some other things that Automator doesn't have, which is true until you get to those actions where you can embed a script.
+And then suddenly Automator takes the lead because you can do almost anything on a Mac with a script, whether it's an Apple script or a shell script.
+And once you embed that into an Automator action, you know, all bets are off.
+That's a good point, David, is that if you have a workflow that you're creating and it
+gets to be more than 10 actions in it, then something's wrong with the design of it.
+And that's the advantage of having the ability to insert a script in there so that the script
+is doing the loops, not the workflow.
+You know, trying to add conditionals and Loops into a workflow is very cumbersome because you're doing a generalized component structure, whereas a script is really designed for that kind of stuff.
+So you could take an Apple script that's got 30 lines of Apple script, and that just becomes one component in your workflow.
+and you're not trying to create that kind of scripting functionality at a workflow level.
+You're just adding a scripting workflow component that turns to the scripting language and lets it do what it does best
+and then takes the result and puts it into the workflow, and then the workflow does what it does best.
+Yeah, and that's really not possible on iOS, as I understand it, to do that embedded scripting in that way.
+No, they haven't exposed that yet.
+It would be nice if they had the ability to have like the automator Frameworks or some kind of component framework on iOS as well as Mac
+And that would allow you to do your own control.
+Instead of having a developer be the only one that can offer an action,
+you could create your own actions with the scripting actions.
+You create them yourself.
+Yeah.
+And you create them on the fly or use them as you need.
+And a lot of times it's just a simple Apple script that calls over to another app
+and does something, gets something back, or it could be a simple shell script.
+I have a particular special service that I always love to tell people about, and I always
+have them create it themselves.
+It's for sorting paragraphs in text documents.
+A lot of times you'll have some text that you want to sort, and it's not one of the default
+options under the contextual menu.
+But you can add that in there and create your own workflow that becomes a service for sorting paragraphs.
+And it has one action in it.
+If you'd like, I could tell you how to do it right now.
+Yeah, let's do it.
+Okay.
+I'll walk you through the process.
+This is going to be magic here because I'm doing this without visual.
+but I'm so confident that your ability is to create this tool that I can walk you through it.
+okay but if you're driving, don't try and type it into your laptop at 55 hours an hour.
+If you're holding a steering wheel, this is not for you.
+So if you're at your Mac, open up Automator.
+And when you do, if there's not a document window open,
+and choose new from the file menu, and a new document will open.
+Chances are when you launch Automator, you'll get this new document.
+And in the center of the new document will be an overlay that tells you the different kind of Automator documents that you can make.
+A workflow, an application, a quick action, a print plug-in, folder action, calendar alarm, image capture Plugin-in, or dictation command.
+You're going to choose quick action, which is the third one.
+is the new name for services. They decided that, you know, it needed an update in the name, so they
+said quick action. And once you do, then you're going to get a workflow window with the left side
+being the library of actions that are available to you. And on the right side is your countertop,
+where you put everything together and you assemble your workflow. At the top of the right-hand side,
+have a quick action, it is contextual.
+It changes based upon the type of data
+that you're going to use for your input.
+And in our case, we're going to use text.
+At the very top is a menu that says Workflow Receives Current.
+And then there's a pop-up menu.
+And by default, it is text.
+And if you click on that, you'll get a bunch of options
+like text, Rich Text URLs, addresses, phone numbers, dates, email addresses, files or folders,
+folders, documents, image files, PDF, movie files, audio files, web content, or no input.
+We're going to put that on text. So we want our workflow service to accept text as its input,
+And to the right of that, we can choose which application
+we want this to be available in.
+We're going to leave it in the default, which
+is any application.
+So any application that supports text services,
+this is going to be available.
+Then right below that, on the second row there,
+there is a checkbox that says output replaces selected text.
+Select that.
+So what that means is the text that we get passed To Us
+by the application that's selected,
+we're going to process it and reorder it
+and then put it back into the selection,
+but in a different order.
+We're going to create a tool for sorting paragraphs.
+So we leave that text box selected
+and that's all we have to do there.
+We're now ready to add our first action to the workflow.
+And on the left-hand side, the library view, the two-column structure that has all of your applications or categories,
+there's a search field there that you can place the cursor in and just type the word shell, S-H-E-L-L.
+And then one action will be selected on the right-hand column
+for you called Run Shell Script.
+I want you to just click and hold on that and drag it into
+the workflow area and let go.
+And you can see that a connection is now made to the top,
+where the input is going to come into the workflow.
+It's going to go into this action.
+And inside here, we're going to write a shell script that
+sorts the text alphabetically for us.
+Are you ready?
+You're going to become very powerful,
+and it's going to be incredible magic.
+I want you to type the word sort, S-O-R-T, lowercase.
+And that's it.
+That's a command in Shell for doing
+alphabetical sorting of text.
+So now this is going to be our workflow, and we can save it by just going Command S and then save this as Sort Paragraphs.
+There you go.
+And choose to save that, and then that automatically becomes installed into the services architecture for you.
+You don't have to do anything else.
+You can quit Automator if you like, and let's go to TextEdit and create like four paragraphs of text or just four rows of text in with random things.
+I have like a paragraph that begins with D, a paragraph that begins with C, a paragraph that begins with A, and a paragraph that begins with B.
+I'm going to select all the paragraphs in the TextEdit document, and right-click or
+Control key, click into the selection, and at the bottom of that pop-up menu, you'll
+see a menu for services.
+And if you click on that, it shows all the services that are currently available for
+working on selected text, and our Sort Paragraphs service now will appear.
+And if I select that, it will sort the paragraphs and replace the selection with the sorted
+paragraphs Force us automatically.
+Yeah.
+One shell script with four letters.
+Sort.
+Sort.
+I always used to love to demo this because it would just blow people's mind like, wait
+a minute.
+Okay.
+He's writing shell.
+I don't know anything about shell.
+Sort.
+Okay.
+We're done.
+I did the same thing with AppleScript.
+I say, if you want to write an Alpscript, just write say, S-A-Y, space,
+and put anything in quotes, and it'll say it.
+It'll say it.
+In fact, you could put that in the script at the end,
+do an AppleScript embed and say, say, I'm sorted.
+And then it would say, I'm sorted.
+You could.
+There's a command.
+If you look in the library and you sort for speech, there's speak text.
+There's a speak text action that ships.
+pass it text and it will speak in any voice that you've chosen.
+So that can be part of your workflow as well.
+And then there's text to audio file.
+And every Mac ships with a workflow,
+a service that adds the selected text to the music app.
+And originally it said add to iTunes as spoken track.
+And now it says add to music as spoken track.
+And we did that for people that have a problem visually or auditory and they needed to be
+able to take text and review it later.
+You can select text in any document, right click it, choose save to music as a spoken
+track and it will create a new track with that text transcribed into voice.
+peace. This episode of Mac Power Users is brought to you by the intro Zone When you're looking for
+a new show to listen to, go check out the intro zone. It's a biweekly podcast with conversations
+and interviews on how technologies like Microsoft SharePoint, OneDrive and related products can work
+for you and your business. You'll hear from guest experts behind the scenes and out in the field.
+So you can see how something like SharePoint can fit into your everyday work life
+and manage content, knowledge, and applications.
+Each show covers a bunch of segments like news and announcements,
+a focused topic of the week, guest perspectives, FAQs, and more.
+And the topics for each episode are really interesting.
+Previous episodes cover things like migration to the cloud,
+designing your intranet, and how APIs and teamwork
+can come together to make your entire organization,
+top to bottom, more effective.
+A recent episode focused on New Belgium Brewing,
+a company that needed to move away
+from a paper-based process as they grew,
+having a second Brewing facility coming online.
+And so they needed to be able to digitize
+a lot of their workflow.
+And this episode that came out the end of April
+really gets into all of that.
+Very fascinating to hear about how a company
+manages these things as they grow.
+So go and listen to it now.
+Just search for the intro Zone
+wherever you get your shows.
+t-R-A-Z-O-N-E, or click the link in the show notes to go check it out. Our thanks to the
+IntraZone by Microsoft SharePoint for the support of the show and RelayFM.
+That really shows how simple these things can be. And I think that includes how we get to them. So
+when we started that example, it was a quick action. And I want to kind of move us into the
+a little bit because services are I guess a a subcategory of automation on the Mac where
+again going back to the idea of the point of need you're somewhere in finder you're somewhere in
+an application and you can select a service that works with the the type of input uh type of input
+you're giving it one of the things automator can do is to create services and i guess the idea
+there was to put that power in the hands of users. But there also are Mac services that are
+donated by applications completely separate of Automator. And I wonder if you could explain
+the sort of the relationship between the Automator world and the world of services a little bit.
+So that's a great observation. The original architecture that Apple inherited when they got
+a Services architecture and it's basically the same concept that they use for system extensions
+today where an application can say you know my my whole function is is that i do this amazing stuff
+to data and it's a shame that it's i can you know you can only do it in my application i can publish
+this functionality so that other apps can take advantage of it in their app and this original
+Services architecture, an application declares that it has the ability to handle this data
+type, a particular data type like text or image data or whatever it is.
+And because it advertises that, it would become available in the Services menu.
+So that, for example, in our example of sorting text alphabetically, if your app was a text
+manipulation app, then you could declare that this is the kind of thing that I can do.
+And then the other app, when you're in the selection, all of those services that are
+published by the other apps in the operating system appear there.
+And what happens is that the selection gets passed to the application that's going to
+do the work.
+The application processes it and then hands it back to the host application, which then uses that manipulated data.
+And that's pretty much what they do with the extension architecture right now.
+It's a variation of the original Services architecture.
+So it was easy for us to fit this whole concept of functionality in with the existing and
+live in their world and then organize the menu so that you, as a user, you didn't realize
+which type of service you were using, but it doesn't make a difference to you.
+You just want the result.
+So the difference is that the application does the work itself rather than an action, which has its own code doing the work.
+Okay.
+And this is like this massive list of services that are app-donated that I think a lot of users don't even realize exist.
+Oh, yeah.
+Part of the problem with that is the location.
+You've got to go to the menu bar, and then you've got to go to the preferences, then the keyboard.
+sub submenus of shortcuts and services, you got to like really drill into the preferences to get
+to this list. But once you get there, you find this big list of services and some of which you
+may want to turn off like, you know, Chinese writing, which I don't speak Chinese. So that's
+no use to me. But, but there's others you want to turn on and right in that menu, you can add
+keyboard shortcuts for them as well. So you can get those Services right under a keyboard shortcut.
+Oh, yeah.
+And if you use a lot of times third-party applications,
+publish services that you're not aware that they do.
+For example, if you have Drafts or Bayer,
+two really great applications that came over from the iOS
+world for manipulating text, well,
+both of those publish services so that you
+can send the selection over to Drafts
+or send the selection to Bayer.
+use DevonThink, they're automatically shipped with this whole series of services available
+to you.
+There's a lot of different programs automatically shipped with Services
+I know that Omni's apps include Services too as well.
+It's one of those things, David, that like you said, you're not aware of it.
+It's not advertised a lot or talked about a lot, but once you become aware that there
+world available to you, you'll start looking for it and realize, wow, there's all this
+functionality that suddenly makes the computer a blend of abilities rather than these individual
+things of this app does this, this app does that.
+All of a sudden, it becomes more of what can we do for you?
+What can all of these apps do for you rather than each one is its own world?
+And I want to call out to, uh, in particular, uh, Sal mentioned Devon think,
+but, and Devin think, by the way, is an occasional sponsor of the show.
+They didn't know we were doing this.
+This is not sponsored material, but they have an app on the app store called
+word services, and you don't have to buy Devin thing for this.
+It's a free download in the Apple Apple Store on your Mac.
+And it installs like 20 different word services.
+Like, you know, if you want to sort things, if you want, I mean, there's
+so many different Services relating to managing words.
+that you can use with Dev and Think. And another one, which I accidentally discovered
+while I was prepping for today's show, is I have an app I use on my Mac called Text Case,
+which also helps manage and format words. Well, they donated every capitalization methodology
+that you could have into Services I think there's like six or seven different kinds of
+title case. Like, do you want Blue Book? Do you want New York Times or whatever?
+and all these are Services you can activate so like if you want to apply blue book title case
+to a line you could um just you know set a keyboard shortcut to it let's say control option
+command t you set that in the services menu to the title case blue book title case and then anytime
+you're in an app that has words in it you just select them and you hit the keyboard shortcut and
+you get title case just really useful things that these these app developers are putting out there
+becoming aware that this world exists for you, you know, that the Mac OS is such a rich, rich
+environment. And it's really designed, it's not, it's designed for you to explore. It's designed
+for you to be creative and, and a little bit of do it yourself. You know, if you have that attitude
+of, I can do this.
+I can figure that out.
+Like your friend, the dentist goes, oh, I figured it out.
+you know, these are kind of things that you can take advantage of.
+You don't have to be a programmer to take advantage of the text services that you just
+described.
+You just have to be aware that they're there and then look for them.
+And then look for them when you're shopping for applications.
+Does this application support these things?
+And if it does, send a note to the developer and say, you know, I really like your application because you offer services.
+Sal, can you tell, why is this in the keyboard menu?
+Well, like every Big company, things are developed with a process.
+When you're part of an organization like Apple, like the automation team was, we get to contribute to a lot of different scenarios and components in the operating system, but they're all expressed through a very specific window, like the system preferences app.
+and you know, there's reasons why they make it difficult for you to get into the system preference because they don't want to overload it because they have to consider their users on a really Global Viewpoint
+And as cool as we think services are and believe and know that they are, they wouldn't give us our own system preference pan
+And we had one, we designed it to make it easier
+to get to these things, to sort them,
+to do all the kind of things you need to do.
+But it ended up that they didn't want to give that to us,
+so they kind of shoehorned us in there with keyboard
+under something called shortcuts.
+And then in that became another list called services,
+and then all the functionality was in there.
+We used to have, we designed a system preference pane for all the automation stuff so that it would be much easier to access your folder actions, you know, AppleScript parameters, all kinds of stuff and services.
+But we were never allowed to actually include that in the operating system.
+And Apple wasn't big on the idea of providing it as a download and because they didn't want this whole thing to be overloaded, I guess.
+think it should have been provided as a download or installed and maybe disabled by default and
+you could turn it on or I don't know. I always thought that that's a problem when it comes to
+automation is how do you explain it to people in a way that they understand. Your podcast has
+provided the opportunity for your audience to get a better understanding of what it is and where to
+And when you're a big company like Apple
+and you're trying to keep your message down to one or two,
+three catchphrases, automation is never usually there.
+It was a rare occurrence when I walked into the convention
+hall at WWDC and there was a 20 foot tall Banner
+of the automator.
+That was a rare occurrence when we got on stage
+were on the box. That was a rare occurrence. Most of the time, automation isn't one of the
+features that they push. They should. It's very sticky and people love it, but it's not one that
+they Market All right. So listeners, I'm giving you a treasure map right now. And I guarantee
+you, if you go to the X and dig, you'll find gold. So you go to preferences, keyboard, shortcuts,
+and then services and then you get all of this this gold all these services available to you
+select the ones that you want to use unselect the ones you don't the ones you want to use daily put
+a keyboard shortcut you don't have to do any scripting you don't have to do any terminal stuff
+you just turn these things on and they're waiting there for you so there's your gold
+isn't that amazing yeah all that stuff right there and you know the other thing totally unrelated if
+If someone said, Dave, I'm giving you the keys to Apple for one day, I really think
+I would use that day redesigning the preferences menu.
+I just, I don't understand it.
+I look at, I don't know how everything fits together.
+I would, I would redo it.
+I'd probably, actually I'd hire Steven to do it is what I would do.
+It does have that dorm room closet look to it.
+Doesn't it?
+It does.
+System preferences is, I think it's long overdue for an overhaul.
+And I would put Services right up front, man.
+I would give you your preference pain
+Yep.
+Yep.
+You know, that's, I believe so.
+Automation, everybody loves Automation and everybody uses it.
+And the fact that shortcuts is so popular, it really took off.
+you know, it was just so heartening to see Ari and the team bring that to iOS and then
+to see people just fall in love with the ability of, wait a minute, I can make it do what I
+want to do and I can do it on my phone and then watch people talking about it and to
+realize where all this stuff, this stuff came from and how it got to be what it is.
+But then people watching people use it, who would have never sat down and written code or anything, but all of a sudden are putting together these little components to make their own automation recipes and executing them on their phone without thinking about it.
+yeah
+That is really gratifying to see.
+And the team has done a wonderful job with it.
+And I'm looking forward to see what they have coming up.
+Yeah, when my teenage daughter asked me for access to my shortcuts Field Guide I was like, Wow shortcuts is really, it's really here now. You know what I mean?
+Yeah.
+Right?
+I think part of it is the, you know, the customization of the app icons and stuff like that. But then once you open it up, then the world's your oyster and people realize how useful it is.
+one thing about Services though i want to tell people is this does not sync across if you have
+multiple Macs so like once you set up your services on your laptop and if you've got a
+desktop you need to set them up there as well yeah um so make sure you do that but but i told
+you that i told you where the gold is buried you just got to go there and play with it wait a second
+I believe that automator can be synced to icloud can it yeah automator can but the services that
+are donated from applications and like which ones you have enabled and disabled uh right don't so
+they're like partially there so yeah i can save an automator workflow to icloud but it's like that
+Second step quite isn't there yet.
+Sal's part syncs, the automator stuff.
+Again, system preferences.
+If I get to redo it, I'm going to put the little iCloud checkbox next to automations.
+There you go.
+I have one for OmniFocus where I push a keyboard shortcut and it saves an email to OmniFocus.
+I have to set that keyboard shortcut on both Macs.
+Yeah, that's a great Point
+that'd be a wonderful feature that they could Implement so that all your shortcuts and all
+your keyboard shortcuts and all your little customizations could travel with you like a
+profile or something, right? Yeah. So if I'm in charge of Apple for a day, what's going to happen
+is I'm going to hang out in Cafe Mac and eat, and then Steven's going to redo the preferences.
+You're going to have a busy day that day, Steven. That's okay. I have plenty of ideas.
+You probably reorganized 12 divisions.
+Yeah.
+that move the world, you can hire them with Indeed. Indeed is the job site that makes hiring
+as easy as one, two, three. Post, screen, and interview, all on Indeed. Get your quality short
+list of candidates whose resumes on Indeed match your job description faster. And only pay for the
+candidates that meet must-have qualifications. And schedule and complete video interviews in
+your Indeed dashboard. Indeed makes connecting with and hiring the right Talent fast and easy.
+With tools like Indeed Instant Match, giving you quality candidates whose resume on Indeed fits your job description immediately, and Indeed Skill Tests, that on average reduces hiring Time by 27%.
+You can choose from more than 130 skill tests, then add your must-have requirements so you only pay for applicants that meet them.
+According to Talent Nest, Indeed delivers four times more hires than all other job sites combined.
+If you're hiring, you need Indeed.
+free $75 sponsored job credit to upgrade your job post at indeed.com slash mpu get a $75 credit at
+indeed.com slash mpu once again that's indeed.com slash mpu offer valid through June 30 terms and
+conditions apply our thanks to indeed for their support of the Mac power users and all of relay
+fm so we touched on this earlier but a change that came just a few years ago with Mac os
+Mojave was re kind of rebranding services that you could build an automator for finder
+renaming them quick actions and they gained a couple of abilities they now show up in the
+the preview Pane and finder so again like we can go back to your the audio file example
+if you have a quick action setup for audio you don't have to go to the action menu and finder
+you don't have to right click you don't have to go to the finder menu in the menu bar
+it just shows up right there really making it a really visible to the user and i just i found
+that so interesting that and it was like on i think it was even on stage but a big feature
+to automator and to services making it more accessible than ever and uh i kind of Wonder
+like, what's Apple getting at with quick actions? We haven't seen much past that,
+but you mentioned the touch bar. Like, what are our thoughts on that?
+Well, first of all, there's some, I have a lot of this documented so that you can,
+if you're at home and you want to see the details about what he just described at the
+Mac OS 10 automation website which is mac os x automation.com slash automator and then slash
+Services uh all the ways that it's the service the new uh quick actions are Express through the
+finder uh and various contextual points that he just described are there for you and they're
+numbered and you can see all the details uh that'll give you your background and you can look
+at that now i thought it was brilliant that they exposed it the way that they did and that they
+also added it to the system preferences app in through the extensions preference Pane and that
+then you could see oh okay now i have this quick action that can be part of the finder collection
+Or there's Touch Bar.
+Oh, OK, I can have them available there, too, as well.
+And I was really excited that they opened that up.
+And I was hoping that they would provide dozens and dozens
+of examples that people could download, or at least
+provide a way that people could get to those.
+But they didn't follow through on that.
+I think a little short-sighted on the marketing side, but the architecture is there, which is great.
+Yeah, and the services we were talking about earlier can be placed in quick actions just as easily as they can be in the services menu.
+And that's frankly where Automator pushes you now.
+When you open it up and you go to create a new one, it prompts you to create a quick action.
+Yeah. And I have a whole set of things that exist on my touch bar for actions. I even wrote some for doing switching between partitions because I do a lot of testing and I'm working on different operating systems at the same time.
+And I got tired of going through the multiple step process of opening up the system preference, going to the startup disk, clicking this, logging in, doing that.
+And I wrote, you know, basically like an Apple script service and I added it to my touch so I could just tap that and then it would do five steps for me and I enter my password and then it would be booted into the next operating system.
+There's a lot of different things that you can do on multiple levels.
+Like even the sort one that we just created, you can have that appear as a touch control as well.
+And then within applications, you look at the touch bar, there'd be a sort button.
+You could just tap it with your finger.
+Sal, for folks at home, tell them, how do you put it?
+If you have a touch bar enabled MacBook, how do you put the quick actions on your touch bar?
+Okay. Those are through the extensions system preference pane. There's a category on the left-hand side called touch Bar Quick actions. And when you click on that, you'll get all the different available ones that you can use would be on the right-hand side.
+And then you select like a checkbox there to select the ones that you actually want to have appear on the touch bar.
+You want to keep them pretty minimal because the touch bar, you have to scroll horizontally if you have a lot of them.
+And so you want to make sure that the ones that you have on there are really the good ones that you really want to use.
+Like the one I just described, I called Switch Disk.
+And I used to have that on there.
+photo library where I could call up my photo library quickly. I had one for when I was working
+on webpages. If I saw some image that I needed, like a graph about some statistics or something,
+I used Automator to extract the image from that webpage and save it down to my downloads folder
+called Extract Images, I had one that would take a number, if I was in numbers and I had
+some data on a spreadsheet selected and I wanted to make a pie chart and keynote with that data,
+I have one on the touch bar that lets me do that too as well. So the list of available ones would
+be there and then you select them. They'll appear there automatically for you. It cleaned up a
+little bit they they got part of the whole thing cleaned up somewhat no and i i love the way that
+they embraced it into the finder the quick actions and because i think that like Stephen was saying i
+mean that is so much closer than a right click and then a sub click on a Services menu it's at
+the point of need exactly getting even closer um there's one that i have that um i have Kind of a
+Funny Story I wanted to make a draft imprint on PDFs.
+Because on my lawyer job, I get PDFs all the time.
+And people want me to send them drafts.
+And my big fear is I'll send a draft that's not done yet.
+And then somebody will sign it and like, okay, we got a contract.
+I'm like, no, no, you're not supposed to sign that one, you know?
+And so, so I wanted to put a draft stamp on it and I started trying to
+write it in Apple script, and then I ended up writing it with an
+automator script, and then I was having trouble and I thought, well,
+maybe somebody did this before and I i searched on Google and sure enough at Mac osx automation.com
+you had an entire tutorial on that exact problem we haven't done it already um and we'll put a link
+in the show notes and by the way gang mac osx automation.com if this if this show is that all
+interesting to you set aside an hour next Saturday and just go to that website because sal not only
+shows you things you can do he has tons of videos and downloadable scripts so you can actually just
+install these things on your system and start running them but uh yeah you had one there and
+it's great and i initially used it as a service but now I've turned it into a quick action so it
+worked for you oh perfect you know i did i did make my own draft stamp in omni graffle because
+i i made it even because i have a favorite i like Futura so i made my own like font and you know all
+the nerd things that you do and I drew a circle around it but then I install it in the automator
+action you have the ability to set transparency so I set transparency at like 25 percent and the
+the power tip there is you lay it on top of the pdf the first time I ran it I didn't notice I had
+it putting it underneath the pdf and you know that doesn't do you any good yeah but the you know
+we all make mistakes but but then the other thing you do is once you make the stamp you save it as
+transparent P&G so that everything, the spaces between the letters and everything is still
+completely transparent. But it's a very simple, I think, two-step quick action. I probably run it
+like 10 times a week because I'm constantly sending drafts out. And there are apps out
+there to do this, but none of them do it as good as a simple quick action.
+Yeah, and you could even create another quick action for yourself
+that does encryption of the PDF.
+So if you wanted to send it, you could just right-click it,
+and the encryption dialog comes up, you add your password,
+it goes down, you're done.
+Yeah, it's really great.
+And that's a problem that I solve with it.
+I think I wrote a post on it at one point in Mac Sparky.
+I'll either link that or I'll definitely link the Mac OS X automation page on it
+the canonical method to set this up.
+you know, they have these architectures in place.
+And I know that this is a period of transition for Apple
+where there's so many things developing
+and they're kind of fusing things together
+and borrowing ideas from different platforms
+and putting them together.
+And I really hope that Apple keeps the flexibility
+of this and the ability to expose all of the power of the operating system as they move
+forward, having this type of architecture there really does empower everybody from the
+developer to the user, to the people that write these, or the people that just use them
+like you said, David.
+You just wanted to create a draft stamp, and I can do that.
+It takes a couple of minutes.
+You can do it.
+Yeah.
+And I felt like the M1 transition,
+if they really wanted to throw this stuff overboard,
+was an excellent time for them to do it.
+And they did not.
+If anything, they've kind of embraced it further
+by bringing quick actions and making it more visible.
+Yeah.
+You know, you give people this kind of tool.
+AppleScript and Automation in the operating system
+have been around over 25 years.
+And it's honed very powerful architecture.
+and people once they have the ability to automate something they're not going to
+want to go back to not having it automated that's not the way people
+work human beings once we've automated we move on and we will continue to use
+the automation until it gets broken and at that point then then we deal with it
+and then we look for a solution and that's why it's so sticky for
+developers. Developers that offer Automation in their apps are ensuring that their customers will
+have an experience with them and stay with them and be loyal to them until they break it. And if
+they don't break it and they keep expanding it, Their audience will just grow and remain loyal.
+Something else that was real promising for me is, you know, I have that separate podcast,
+the automators that i do with rosemary Orchard and the last in-person wwdc Rose and i did a
+automators Meetup one day at wwdc and it was shocking the number of people from apple that
+showed up for that and it wasn't just the shortcuts team it was people just in apple who are automation
+enthusiasts and that was really promising for me because you know like you said earlier apple is not
+a solitary block of aluminum.
+It is a bunch of humans.
+And as long as there's humans there
+that are enthusiastic about automation,
+I think we're probably in good shape.
+Well, they also listen.
+They might not want you to think that they're listening to you,
+but they pay very close attention
+to what their customers are doing
+and what their customers are excited about.
+They do listen.
+So if you ask for it, then it will be there.
+So your job as a consumer of automation
+is to keep asking for more and more.
+Yeah, that's my problem.
+Every time they give me one feature, it lights me up for three more.
+I met Ari and some of the shortcuts team.
+I said, the problem you guys have is every time you add something,
+it adds, you know, it's like exponential.
+this too this episode of Mac power users is brought to you by make do from relay fm make do
+talks about Hobbies it may be art but it may be something else and you don't want to monetize
+those Hobbies but if you do the make do podcast is ready to be your cheerleader
+host Tiff arment is a glass artist painter and photographer with a not so secret past
+in Broadway costuming. Also hosting is Julia Scott, a journalist, Potter and self-proclaimed
+textile Goblin Make Do is fun. I love the relationship between these two hosts. That
+really is what makes a podcast for me, and Julia and Tiff are great together. Some really great
+episodes include The Myth of the Tragic Artist and Don't Tell Me How to Hobby. I definitely
+recommend checking those out, or just start from the beginning and listen to the whole crafty
+artistic Journey these two have been on listen as you hobby go to relay.fm make do or search for
+make do wherever you get your podcast and of course there'll be a link in the show notes
+Stephen we were talking there are some third-party apps there that may help you out with Services
+yeah a big one that I've spent some time with that's kind of made the rounds recently is one
+called service station it's in the Mac App Store and it has a couple of neat tricks up its sleeve
+I'm going to link out to Jason Snell's blog post about it you can really read in depth but i think
+the the easiest one to sort of wrap your head around is it basically adds custom open with
+commands to the top level of the right click menu of the contextual menu instead of going into
+right click open with and then you know 42 photo editors show up you can just say no i just want
+Photoshop or i just want preview or pixel Mater or whatever but it also has rules that you can
+build to control when Services show up so again going back to that point of need idea
+service station sort of builds even on top of that so instead of saying hey these Services all
+file you can say I want these Services just to show up just when I'm looking at mp3 or just when
+I've selected a WAV file so it gives you a little more granular control over what services show up
+when and if you have a lot of these things like a lot of us do it can really help you narrow down
+that list so you can more quickly find what you're looking for excellent yeah there is one issue with
+if it's running, it hides the Finder icons used in cloud services like Dropbox or OneDrive.
+Yeah, it's a bummer.
+Some people call that a bug.
+I call that a feature.
+That's a bug.
+I want to know what Dropbox is doing.
+But it seems like the developer's aware of that.
+So hopefully that gets resolved here pretty soon.
+But it's neat to see.
+I mean, we're talking about technology that's been around since the next days
+or, you know, since Snow Leopard kind of in its current framing,
+but to still see developers working on it
+and adding features to it
+and looking at how to make it better and different,
+I just find that really encouraging.
+You know, something that like AppleScript
+that comes from really a previous time
+that you can still use it as a real first-class citizen
+in terms of automation on the Mac is exciting.
+And that's what I see when I look at Service Station
+working on this stack?
+The need for automation is universal.
+I mean, as human beings,
+we've always looked for ways to automate things
+throughout our history.
+Look at farming.
+The advances in Automation and farming have fed the world.
+It's a natural thing that humans want to do.
+We figure out how to do something,
+then we figure out how to automate it.
+And as such, it should be a standard part of the devices that we use, the Computing devices that we use, like our phones, our laptops, our iPads.
+It should be there because it's natural to have that there as well.
+And automation is never going to go away.
+It's a prime need, especially in businesses.
+And nowadays, the way that people use their phones is very sophisticated, and they need the ability to have shortcuts so that they can automate some of the processes that they do on just their phone.
+Yeah. And I love the way you can draw a line between, you know, a couple guys at Apple that came up with this Lego brick style automation for Automator, which then influences Ari and the workflow team, which now has millions of people doing automation that weren't doing it before.
+Mm-hmm. It's all because it ties into a human need. That's why it works. And it's just a matter
+of how you present it so that more and more people can understand it and get familiar with
+it and be okay with it. And that's a real contribution that Shortcuts has done. I watch
+people use shortcuts for something like changing the icon on their phone.
+And it's a simple thing.
+But the fact is, is that they feel empowered to open up this app, create a workflow, put
+it back, and then they did it themselves.
+Yeah.
+And they're in the door now.
+And they talk about it.
+Yeah.
+And now they're in the door.
+So they're going to do something else.
+Next time, a little more complex.
+Yeah.
+Of course.
+It's very much like cooking.
+You know, people, you can sit there and watch the cooking shows on TV, and if you want something, you can go down to the store and get it already shrink-wrapped for you.
+But there's a lot of fun in making your own meal, right, and preparing that yourself.
+And there's a lot of gratification that comes from being able to do something yourself for yourself.
+You create a tool that really solves a problem for yourself.
+That's gratifying.
+And people are becoming more accepting of that.
+And I think the challenge for Apple is to keep presenting automation tools and keep
+those robust and present them to their user base in a way that they can absorb them and
+embrace them.
+Now, Sal, you spent a lot of time over the years teaching about this subject.
+I mean, I always felt like you did two things.
+Number one is you helped Advocate inside Apple to get the tools built, but you also on the outside taught a lot of us, myself included, how to use them.
+What are some of the more interesting and fun ways you've heard of people using automation as you've taught this stuff?
+Home automation is probably one of the craziest things that you know, there's standard things that you want to do in home automation, you know, open the garage.
+But I've seen some people put together some amazing things that feed fish and turn lights on and off.
+True Rube Goldberg.
+Yeah, you can really get crazy with some of the things that people do.
+When I'm exactly five miles from home, it's going to do this and then have this.
+So that when I walk in the door, there's my milkshake.
+Like, you know, it's amazing when you, when you give people the power, what they can do
+with it and what their creativity, it's just endless.
+And that's the way it should be.
+Yeah.
+yeah
+Rose and I were at Sal's house last year and when we, for the bonus automators episode,
+we played mousetrap with Sal because we figured if there's one game that we should play with
+Sal's a going it's Mouse
+Right.
+That was fun.
+Yeah, it was.
+I think you won, too.
+Did I win or did Naomi win?
+Who won that one?
+I can't remember.
+Well, it's really great to have you come on and talk about this stuff.
+I think for listeners, the big Point Stephen and I wanted to make is just not enough people are using these services.
+And we could do a whole other show about shortcuts on iOS and maybe on the Mac in a few months.
+Who knows?
+But for now, these Services Menus can dramatically increase your productivity on things like title case or sorting or draft stamping a PDF.
+Whatever it is, the thing that you find yourself doing repeatedly on your Mac, there's a really good chance that between the resources at macosxautomation.com and the show and even just that Services menu, you may be able to dramatically increase your productivity.
+have any favorite services that you run a lot I'm glad you brought up text case i too had recently
+come uh come around to that uh because it was on ios and I've used it on ios but having it on the
+Mac is really cool i mean looking through mine uh i really have several that I've I've made for
+things like scaling images or uh putting different files and folders different places it's actually
+in Apple's human interface guideline, they say, don't make a service that just says open in your app.
+They actually don't want you to do that because you have the open in menu in the contextual menu.
+But even simple stuff like that, like, yeah, I want this sort of file to nine times out of 10 open in byw word.
+But occasionally I do want to open something in BBEdit that I don't normally do.
+So beyond the Custom Image stuff, a lot of what I'm using day-to-day is, hey, sometimes I do want to open things in different places.
+But one of the ones that I use absolutely just all the time is, I believe it's one of the built-in ones, but it is the lookup in dictionary.
+You know, Apple has a dictionary app built in.
+It has several different like tools within it.
+So you have a thesaurus, you have Apple's own dictionary, you have Wikipedia.
+And very often when I'm writing, I will just right click on a word, open a dictionary and then use the thesaurus or make sure that I am, you know, using a word in the way that I think I am.
+I think a lot of people would just copy the word, paste it into Google, you know, look for the dictionary website and go from there.
+but just right there right behind the contextual menu is a way for me to very quickly jump into
+the dictionary it sounds boring and it probably is but as someone who writes a lot i mean i use
+that thing countless times a week and that time really adds up yeah when i was prepping for the
+show you know because i hadn't spent enough time myself in Services i set them up the way i wanted
+them probably six months ago and i hadn't looked at it and when i went in my services menu there
+services that started with TC.
+It's like, and I just counted them while you were talking 54 TC Services
+I'm like, what the heck is TC?
+Why is it putting all the services in it?
+It took me a while to figure out it was text case, but it put, it put 54
+services in the menu for me.
+
+That's a good example of maybe uncheck some of those that you don't need.
+Yeah.
+But they're all available to you.
+That's the beauty, right?
+And they're like text case has been an issue for me.
+Like I didn't know which text case I wanted to use and it's got all of them
+here.
+once I picked the one i wanted um i won't say now you're the journalism major Stephen which text case
+format am i supposed to use i mean for five fill of pixels and for podcast episodes i use the ap
+style for headlines i know not everybody agrees with that Jason Snell but that's uh that's how i
+operate well they've got it here text case ap yep it's one of the ones that I've got selected i use
+it all the time because some of those things like I'm not sure this word is supposed to do this or
+that well yeah maybe in the past i would copy the text find some website paste it in get the result
+copy it paste it back where I'm working and what's great about this is it doesn't take you out of the
+flow you can just do it right within your context and that's really the beautiful the beautiful
+thing to me about these Services is that i don't have to take what I'm doing and put it somewhere
+else i can just continue to work the way i want to work and let the computer work for me and i
+I think the best automations are exactly like that.
+Yes, that makes total sense.
+One of my favorite Services is creating an Epub document just in the finder from text
+files and image files.
+There's an automator action that allows you to turn past information into an EPUB file
+automatically and it ships with the operating system. There's also one for turning text into
+images too. And I did a whole tutorial on, I used to do a tutorial on creating an EPUB book. We would
+recreate Alice in Wonderland from text on a webpage to files on disk and images, and it would put it
+all together and go open it up in iBooks for you automatically. And I believe you still have
+resources for that at macosxautomation.com yeah yep I'll put a link up there for that too as well
+it's still still an absolutely amazing thing to do so it's like you guys said there's whole levels
+of productivity that are available here it's just a matter of creativity and and looking at it and
+finding those kind of tools that you mentioned that give you that extra support that makes a
+lot of difference. Now, Sal, if people want to learn more about this, they go to macosxautomation.com.
+I know that one. Is there anywhere else they should go? I'll put some links up there that
+will take them to a couple other sources and to watch some videos that I've recorded previously
+with Alex Lindsay over at MacBreakDev that really talk about this whole concept and goes into detail
+of using services with Apple Remote Desktop.
+So not only can you run a service on your computer,
+but you can run services on other computers
+that you're managing and administrating.
+Yeah, and that's a whole can of worms
+we didn't even open today.
+You also wrote a bunch of automation scripts
+that people use to run iOS deployment too.
+I mean, you're all over the company.
+Well, yes.
+the concept of creating automator workflows for Apple Configurator. And once we added a set of
+Apple Configurator actions, then we figured out how to do it on attachment so that you basically,
+as soon as your iPad plugs into the Mac, it automatically goes through whatever formatting
+process you wanted to and configuration. And Apple took that concept and created a Configuration
+utility that they use with their Professional Services that manages countless numbers of
+iOS devices using Automator on the Mac as the base.
+Yeah.
+Well, we sure appreciate all the hard work you've done over the years to help not only
+create automation, but Advocate it.
+I really believe one of the reasons we're having this kind of Renaissance of automation
+on iOS is because all the hard work you did over the years at Apple.
+That's nice.
+That's always my goal was to share and, you know, to keep it open and it was my belief
+that the more people that use it, the better it would be for everybody because automation
+is such a freeing experience and such a freeing technology.
+And that's very gratifying, David, that that you think that, you know, the efforts of myself and the dozens of Engineers and people that I worked with at Apple makes a difference in people's lives.
+That's a good thing.
+well uh one other thing i would recommend is if you want to learn apple script if you want to go
+a level deeper sal has a great book on that called Apple script one two three and we'll put a link
+for that in the show Notes too i bought that and learned a lot from it even after i took your
+course yeah well we are at the Mac power users you can find us over at relay.fm slash mpu
+you can sound off in the forums about this episode at talk.macpowerusers.com everybody
+make sure to go over and check out macosxautomation.com. Sal has just over the years
+built this massive repository of information on automation on the Mac and you can download scripts
+and learn things there. It's one of my favorite sites to go just browsing and you will like it
+too. Thank you to our sponsors, 1Password, Microsoft and Indeed, and we'll see you next time.
+We'll be right back.

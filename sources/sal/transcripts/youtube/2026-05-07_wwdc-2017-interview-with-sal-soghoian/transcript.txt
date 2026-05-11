@@ -1,0 +1,103 @@
+Hi, I'm Jeff Gamet for the Mac Observer, and I'm at Alt Conf, which is running simultaneously
+with Worldwide Developer Conference in San Jose.
+And I'm with Sal Segoyan, who is the master of automation and scripting.
+Sal, thank you so much for joining me today.
+Thank you for having me here.
+I appreciate this.
+Thank you.
+We don't get to see each other nearly often enough, so I love events like this.
+It gives us an excuse.
+Totally.
+I enjoy talking to the automation community.
+hanging out with you for sure.
+So now this is the first time you've spoken at Alt Conf, is that true?
+Yes, yeah, this is my first time at the Alt Conf and I'm really impressed with the people
+and the attendees and it's just a really nice experience.
+Cool.
+All right, now what did you speak about?
+I'm here to talk about Omni Automation, which is a technology that's been working with the
+Omni Group.
+of JavaScript for scripting their applications on both Mac OS and iOS so
+just for clarification for me Mac OS and iOS you're not meaning you can script
+for either of them you script and it works with both of them yes it's the
+same script will work on both of them okay and there it's based upon JavaScript
+core that ships with WebKit okay so that's an essential element that's on
+every Apple device, right? Every Apple device has WebKit and what the Omni group has done
+very creatively is exposed the object model of their applications and documents to JavaScript
+core. So you can write basic simple JavaScripts that do incredible stuff with their applications.
+cool okay so give me an example because I I'm like kind of like really excited now right and I
+I want to know more about how this works well so a simple example there's multiple levels of what
+you can do with this because it's so revolutionary and powerful for a basic level you can create
+scripts that automate something that you would do in the document yourself for example in omni
+grapple people often use that to create like org charts where you you know click something and it
+creates another box it shows a relationship so you can create those i i wrote an omni automation
+script that does a circular so if you need like five or six or seven components in a circular
+relationship you can run this select one run the script and instantly all of the geometry necessary
+to figure out the spacing between several objects and space them evenly and make the connection
+lines and the arrows all that gets done in a microsecond so to answer your question the first
+thing you can do is just automate processes that you do with the applications but the really
+interesting part about what Omni has done is by enabling this relationship with
+core JavaScript they've also developed a secondary relationship with JavaScript
+that's part of web browsers. Okay. So you can take your script and convert it into
+a URL format that then becomes ability to communicate with other applications
+or even communicate with webpages.
+So as an example, I had a stencil in OmniGraffle
+that was a map of the United States.
+Okay.
+So individual state objects on a page in OmniGraffle,
+but I went to a webpage and tapped a button,
+and it executed an Omni Automation script
+that extracted information about each state
+from the table on the page
+and dynamically colorized each state
+based upon the level of information that corresponded to it on the web page and
+it happens in a fraction of a second so we're able to transfer data and have
+that tapping of a web page create a heat map in a document all right so that to
+me this sounds like really sexy yeah so is this something that would be
+relatively easy for someone like me to do? Assuming I'm the the average Mac or
+iPad user. Well you can use it without knowing anything. I mean you can basically
+these type of automation tools can be created as plugins to Omni applications
+and you can just tap a link on a web page or double click a file and have
+that installed into your app and it becomes part of your environment. So for
+For example, I could create a set of Omni automation scripts for doing video production.
+you could install that into Omni Grapple and then have that used to generate logos or generate
+setups or bars or whatever you want.
+You wouldn't have to know how to write any of this, you could just take advantage of
+it.
+okay
+But if you chose, you could just learn how to write the basic script to perform the
+actions yourself and to customize what it is you want to do.
+and it's core JavaScript, so you follow the basic JavaScript constructs that are well
+documented.
+And in addition, we have a website, Omni-automation.com.
+And on that site I have hundreds of scripts that you can click and have execute for you or you can copy and they're fully documented and explained for you.
+So to get up to speed on this is not really a difficult process.
+Okay, so you can get into it easily and if you want to really trick it out, you can do that too.
+Yeah.
+Okay.
+And just be prepared to give up sleep for a while because it's that interesting.
+Once you start being able to do one thing, I know how your mind works.
+You're going to be going, well, if I could do this, this, and this,
+and the next thing you know, there goes a week.
+Yeah, I think my sleep pattern for the next couple of weeks is shot now.
+Yeah.
+Hey, we're about out of time.
+Oh, man.
+I know, so we're going to have to wrap up.
+Sal, it's so great to get to chat with you.
+Where can people find you?
+Well, right now, where you can find me is at Omni-automation.com is where I'm hanging
+out.
+Okay.
+And you can visit the website daily and I'm putting up changes all the time as we're
+in this development mode.
+Okay, great.
+Yeah.
+Thanks for being here.
+Thanks for taking time to chat.
+It was great.
+Thanks for having me here.
+It's great to see you guys.
+And thanks for watching.
+I'm Jeff Gamet for the Mac Observer.
+You

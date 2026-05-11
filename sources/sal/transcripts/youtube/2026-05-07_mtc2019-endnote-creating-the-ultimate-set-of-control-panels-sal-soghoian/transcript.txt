@@ -1,0 +1,490 @@
+So, Steve Jobs always used to call Sal, saul
+And no matter how many times he was corrected he would call Sal, Saul.
+And so this is Saul, the guy you know, or Sal, the guy you actually really know.
+And so I've known Sal for, you're also in that category for many, many years, exactly, mini Buffalo.
+And Sal, as you well know, is the automation god in our community.
+I get to say that.
+And today he's actually doing contract work for both Apple and Omni and some other stuff that he's got going on as well.
+doesn't need much of an introduction. So how about a very, very warm welcome for Sal Seguin.
+Thank you very much. Neil reached into the pocket and went, click, okay First of all,
+thank you for your patience. I also want to send out a special thank you to Ed. His presentation
+spot on because I'm a living example of what Ed was talking about, and I consider myself to be
+an automation researcher. So when Neil was discussing my attendance at the conference
+and stuff, I had my presentation together, and he asked if I had anything else in my pocket.
+and I said well I have this thing that nobody's seen that I think is pretty
+darn interesting but I've never shown it before and nobody's ever actually seen
+this thing in action and I don't think Apple knows that it's possible and he
+said well that sounds perfect for Mac tech right little did we know how
+complex it would be to try to pull off what it is I'm about to show you. And I'm
+fascinated by all things automation and I have a vision that automation should be
+easy on the computer. Unfortunately that vision is always met with difficulties
+because people aren't aware of automation as they are other factors on
+the computer and sometimes it gets missed or overlooked. But I think you'll
+pretty interesting so i'm going to start with a little bit of slide deck that explains exactly
+what i'm going to be doing how you can do this yourself today and then i'm going to go into
+a demo that we're going to try live across four monitors and three computers simultaneously
+Are you ready?
+Here we go.
+Once upon a time, there was a guy that had a Macbook.
+And with this Macbook, he also had this little thing called a Luna Display.
+And he plugged that little thing called the Luna Display into his computer one day.
+and he realized that he could do some pretty cool things because all of a
+sudden he was able to connect his iPad Pro to it and do things with the iPad
+Pro that he had not been able to do before and in the process of researching
+automation he had come across this little app buried into the operating
+system in the system library input methods there was an app called assistive control and inside of
+it was something called the panel editor hmm panel editor this man said well let's take a look at
+what that does and it turns out that using this app you can create your own custom assistive
+keyboards but they don't have to be keyboards in the normal sense of
+keyboards they can be something else they can be full control panels that you
+can use on your iPad and all of this is you can turn this on by going to the
+accessibility system preference pane and checking that one box and that allows
+the control of assistive devices and you can actually get to the panel editor
+application from this system preference as well by clicking that button it will
+launch this panel editor and you can also set very special preferences about
+it so that you can control the dwell time hot corners and those kind of
+things but I pretty much just left all of that normal in addition there was one
+other control that it had. If you go into the keyboard preference pane, you can enable
+the ability to have the emoji and assistive keyboard controls put into the main menu of
+your computer. So you can call this up anytime you want, or dismiss it anytime you want.
+And I said, whoa this looks pretty interesting. I can create a keyboard and I can call it
+up whenever I want and using the little Luna thing I can actually put it on the
+iPad and then as I'm touching things on the iPad it's controlling things on the
+Mac hmm this is like a touch bar but only 50 rows long and each one of these
+little things that I do I can define what those are and control how they
+work and control how they interact with the computer. So you're probably saying
+well you know doesn't Catalina have this thing called Sidecar? And you know
+Apple's got this thing called Sidecar that's supposed to let your iPad be
+another view in of your Mac OS. And it will take pen input and you can draw
+and then see the results of the draw on your computer,
+and you can mark things up and all of that.
+But the issue about it is that it doesn't support touch.
+The sidecar, you can use a pen, but you can't use your finger.
+You can use two fingers as a swipe, but you can't use one finger.
+So I said, hmm, it turns out that the Luna doesn't have that prejudice,
+anything that you want and I said okay so I got this little thing called the
+Luna display and it's a little red little thing that plugs into the side
+and it connects through software to both devices so let me tell you about how I
+created my panel and how I have it set up and then this will make it a little
+bit more aware about how this whole thing works so with the panel editor
+application there's a initial window that contains a list of all the
+different panels that you have currently installed you can create as many as you
+like so you can have a custom panel for each app or you can have five panels for
+each app or you can have panels that just show up when you call them by by
+hand if you want them but at the top at the very top of the window is a plus
+And these are the pre-done templates.
+So there's a bunch of different standard ISO keyboards
+and different types of assisted keyboards
+that you can go and you can create one of these instantly
+by just using one of the templates,
+but there's also one called empty.
+So if I do that, I can create a new blank panel,
+keyboard panel, and I can name it.
+I'm gonna just call it example, right?
+Then on the other side there are controls for defining which app this panel floats over.
+So you can have this particular panel be visible whenever the finder is active or whenever
+the finder and photos are active.
+Or you can define which applications are going to be using this panel.
+So you can define contextuality and the operating system will automatically handle the switching
+for you between the panels that you've created in addition you can also have
+how you want the panel to be displayed when you can cause some in it from a
+button so the you can display a list of all the panels and pick them if you want
+to and at the top I'm going to create a button so this is how you create an
+interactive button in our panel you click the add button thing and you'll
+now you can resize this any way that you want you can make it as big or as large
+as you want as a matter of fact that it can even be an image you can import an
+image into this and do whatever you like with this particular button and there's
+controls for the button here so the text you enter in there becomes the button
+text and then you can control the size of it the color of the text the position
+for a text alignment and if you want to use an image you would select use that
+and select the image and you can choose a button color as well in addition at
+the bottom you can determine what kind of action you want to happen because
+that button is activated and here's where I was pleasantly surprised it
+It turns out that there's quite a bit that you can do with these buttons.
+This is the list of all the different actions that can happen when that button is pressed.
+and let's take a look at what they do.
+For example, you can have it return to the previous panel that you were using.
+You can have it open a specific panel.
+so if I want to create a button that switches between that panel and another panel i can create
+it just have that be a simple button I can show or hide the toolbar and there's a variety of
+toolbars that you can show and hide it turns out the assistive keyboard has its own version of the
+computer's touch bar that you can have show up on the screen as well and you can have that because
+be the result of an action of a button in addition there's a concept called dwell
+and what it means is how long that particular view is showing and you can
+have it so that after five seconds it does a particular action it might move
+or switch or perform something and it's called dwell I don't particularly use
+that for what I'm doing but you can do that if you want to have it insert text
+that you specify you can have the action for the button be insert this copyright
+notice click and it can be that if you like you can have it press keys any key
+combinations that you want you can have it do a series of key combinations for
+you and attach that as the action for a button.
+You can also have it open an application.
+You can have it open the panel editor app itself.
+And you can also have it trigger a system event, which would be like mute, lower volume,
+those are volume controls, brightness controls, you want to eject whatever is connected to
+the computer, rewind, play, pause, and fast forward.
+So those are playback controls and those are considered system events and you can have a set of buttons
+that do playback if you like or eject and you can have the the action for the button be one of those and
+you can have typing suggestions where it will bring up a
+view in your panel that as you're typing will bring up the words that it thinks you're going to need and you could tap them and
+insert them into the text and you can even have the current text in the Mac
+that's being edited show up on your iPad and have it right there and as you edit
+it it goes back into the Mac automatically but there's one that I was
+particularly interested in that I didn't talk about here and it's this one you
+You can run an AppleScript script."
+And I said, oh wow, that kind of opens the door for stuff, doesn't it?
+So what you do is you create an AppleScript script file, standard script file, right,
+doing your favorite action or whatever.
+You choose New, and then you navigate to that particular script file that you saved.
+In this case, I wrote a script that will say the words, how now, brown cow?
+and I select that and now that is the action from my button so to make this
+whole thing happen I just remember that I have it turned on I turned it on in
+either the system preference or from the menu and what happens is I'll get like
+since I haven't specified any particular app or something you'll get the
+standard accessibility keyboard will show up like this since I haven't said I'm in
+and I want it to show this panel we're just doing a simple example here so
+there's a button there on the right side that will show me my panel list and
+currently I have one panel list one panel right our example panel and if I
+select that it will show that panel and this is my floating panel this window
+will float and it has my one button on it and that button is set to trigger that
+script so that when I select it we should have heard volume there of how
+now brown cow that didn't get any volume on that I'll try to get energetic cow
+hey how are you drink chocolate milk that's me all right but so that's
+basically the strategy behind this you know you have the ability to create
+buttons and you can attach all these different types of interaction with the
+computer to these buttons now so since I'm using AppleScript I was thinking is
+there an efficient way that instead of writing a bunch of different scripts I
+could just have one script that has all my favorite functions in it like you
+know rename a file or create a new presentation or add a slide or you know
+whatever it is it want to do you can create an apple script library and it's so simple an apple
+script library is nothing more than a regular script file that has functions apple script
+functions on so and so the name of your function and then end so and so so there's a function there
+for creating a new keynote presentation i think that's what it is and then there's another
+function, and then there's another function. And your library can have a thousand functions in it
+if you want to. So I started creating a bunch of AppleScript libraries. And then to call into that
+library, you simply take the file and you place it in the script libraries folder in your home
+library directory. There's in that folder, in the home library directory is a folder called
+script libraries if there's not you can create it you put your script file in
+there and now you can call that library from any other script so I can have a
+simple little one-line script here that basically says tell script the name of
+the library keynote dash library and then the name of the function that I'm
+calling and I'm passing in a couple initial parameters right so make a new
+gradient presentation 1920 by 1080 so it's really simple then to just have a
+library and then be able to call it and I can create a script and then link to
+that small script instead of linking to a larger script all the time keep all my
+code in one library but just have the other things be linked to that
+particular library. Make sense so far? Interesting, huh? Okay, now let's talk
+about macOS security. Remember, I'm an automation researcher, so I look at
+security differently.
+Hello, I'm a Mac. Mac has issued a salutation, cancel or allow? Allow, and I'm a PC.
+You're returning Mac salutation, cancel or allow? Allow. Mac is asking
+Cancel or allow?
+Allow.
+He's part of Vista, my new operating system.
+PCs have a lot of security problems, so he asked me to authorize pretty much anything
+I do.
+You're pointing out Vista's flaws.
+Cancel or allow?
+Allow.
+I could turn him off, but then he wouldn't give me any warnings at all, and that would
+defeat the purpose, so.
+You are coming to a sad realization.
+Cancel or allow?
+Allow.
+enough said so while I appreciate the need for security in a modern world you know I'm still
+the same guy sitting in my den working on my computer who are you protecting me from by making
+me jump through incredible amount of hoops and it's make it they're making it more and more
+automation to do what you want to do and the other problem is like I said at the
+beginning a lot of people inside of Apple aren't familiar with automation
+and they don't think about it when they're building their architectures so
+the thing that's controlling all of our panels and everything else is an app
+called assistive control it is in the system folder library folder input
+methods It's an application. So anything that you have to do to enable this, you have to know that
+this exists, and you also have to know how to get to it. So if I'm here in this particular system
+preference, like the first thing I want to do is enable full file access. So I go to this, and all
+right, now, how do I navigate to that particular input control app? Well, what you have to do is
+up a command line thing and then type this in to get to that particular path and then
+once you've done that then you have to select the assistive control app and then select it
+and add it into your files and you have to do that for all of the different security services
+You have to go in and add, but the problem is, is that once you've had to do this for
+all of these different apps, just to enable the computer to do what you used to be able
+to do right out of the box, then you come across some that don't have plus buttons.
+They're supposed to automatically sense this for you, but they don't because nobody thought
+about that there might be an automation running.
+So sometimes you just hit a brick wall, and in one of the instances I'm going to demo to you,
+you'll see me have to deal with this particular brick wall. But basically that's what it is,
+is you set it up, you set up all the security to allow that app to do what it's going to need to
+do. And once you've done that, then you can create your custom panel. So let's take a look at one of
+the panels that I'm going to show you today. And this is how I've been envisioning it and how I'm
+So this is my keynote panel.
+I have a different panel for each app,
+and it automatically is contextually switched
+as you change the app that's in the foreground.
+It will switch automatically.
+Now let me explain how I have this set up.
+And this is how I envision it.
+You can do it any way that you want,
+but I seem to find that this particular way works best for me.
+Remember what Ed said.
+It's important for researchers to share.
+Right, Ed?
+There you go.
+So what I did is I decided, well, one of the things I want to get rid of
+or make even easier is switching between apps.
+So I took, you know, this double row of like 28 apps or whatever.
+How many there are there? I can't even count.
+And I put them all at the top as icons,
+and I use the one's ability to open app.
+So those are just icons that I imported into a button
+and chose open app and selected the app.
+So it's super simple to set up.
+But I take each panel has the same set in the same location
+so that I can sit there and I instantly have muscle memory
+on how to get between the different apps.
+There are also some special functions as well.
+Notice the airport one here, that's for if you've ever wanted to airdrop drop to your computer,
+it doesn't have the stupid window open in the finder, right, and it's not seeing it.
+You just tap that and it automatically opens up an airport, an air drop window in the finder
+for you.
+There's iCloud one, there's automatic mission control, and Siri, so if I want to ask Siri
+a question or have Siri open something for me, I just tap that button.
+So I can do screenshots, there's all kinds of special functions.
+I can bring up my own keyboard, I can edit edit as well,
+and then my favorite apps that I use are up at the top.
+And each panel has the same thing.
+So my strategy is this makes it easier for me
+to switch back and forth.
+Now at the bottom, there's certain system preferences
+I find I go to all the time as well.
+So the bottom row is all locations
+within the system preferences application.
+So I can get to the accessibility keyboard, security,
+dock preferences, startup disk, display preferences,
+sound sharing, and Siri preferences, speech preferences,
+all from within that bottom row.
+That leaves me all of the center for controls for the app
+that this panel is going to be addressing.
+so what I've done is in my keynote controls I have this set up a certain
+way so that it helps me to make apps easily so all of my document controls
+are the first two rows so if I want to make a new app a new presentation you'll
+notice I have icons for standard size and wide so I just tap that presentation
+opens instantly. Then I can save the front doc, close it, close all, show file info if I want to
+add tags and stuff into the metadata. So all my document controls are at the top. Then the next
+set is slide controls. So I can change all my slide masters with just a tap. So if I want to
+go between this slide master and that one, it's like click, click, click, click, click, click,
+click click and it's done. Then on this left side, I have insert blank, append blank, move to end,
+delete slide, skip, unskip, edit title, edit body, undo, redo, overlay titles, magic duplicate,
+replace images. So some of these, a lot of these aren't particular one-to-one commands. A magic
+duplicate takes a slide, duplicates and it applies a magic move to the first one so that you can
+animation by just tapping magic duplicate and changing the shape of the items on
+the second slide then there's replace images and then I get into transitions
+so I can reset a transition have an auto transition transition on click I can do
+a panoramic sequence with the image that you'll see then I can apply my favorite
+dissolves and and transitions magic move dissolve object zoom and swap are the
+ones I use and then the final two smaller rows are the durations so to set
+up a duration set up a transition a duration is an instantaneous thing as
+you'll see and then I have playback control so when I want to play the
+presentation on the left hand side are all of my playback controls and specific
+image controls so if I want to take an image and open that image back up into
+I can do that from the right side using one of the image controls.
+So that's one of the panels right there.
+And then if I'm in presentation mode,
+you can take advantage of the navigator bar.
+So here I am, I have a presentation going on the computer.
+Right if I move my panel over a little bit,
+you'll see a button there that says show navigator.
+What it will do is show the slide navigator on my iPad.
+Then I can use a double swipe, because this is the one thing Apple will allow.
+I can use a double swipe to get to the slide that I want, tap it, and then the slide appears
+up there, and I can dismiss the navigator and go back to my regular thing.
+In addition, I have some pretty cool things that I've done, like if I want to hear the
+presenter notes for this slide, I can hear the presenter notes by just tapping it.
+Humans have inhabited South Dakota for several millennia, with the Sioux becoming dominant by
+the early 19th century. In the late 19th century, European-American settlement intensified after a
+gold rush in the Black Hills and the construction of railroads from the east. Encroaching miners and
+settlers triggered a number of Indian wars, ending with the Wounded Knee Massacre in 1890.
+Key events in the 20th century included the Dust Bowl and Great Depression,
+increased federal spending during the 1940s and 50s for agriculture and
+defense, and an industrialization of agriculture which has much reduced
+family farming. So why shouldn't that just be built into the the app? I don't
+know, but since I'm running a script, I can get that information. As a matter of
+fact if I want to know about that image, I have a button that allows me to have the
+image description, the metadata from the image read.
+Mount Rushmore National Memorial is visited by nearly 3 million people each year that
+come to marvel at the majestic beauty of the Black Hills of South Dakota and learn about
+the birth, growth, development, and preservation of the country.
+From the history of the first inhabitants to the diversity of America today, Mount Rushmore
+to face with the rich heritage we all share.
+and then it goes away automatically.
+The point why I showed you that is that
+it's not just a one-to-one correspondence
+between existing commands.
+This is about enabling what you do
+and allowing you to express that
+to your own custom control panel
+that you can design for every app that you use.
+Interesting?
+Ah, well, now we're going to see how this works live.
+Here we go.
+So I'm going to switch over here.
+Okay, did I not switch?
+Channel 2.
+There we go.
+And so I can't see that here.
+see that down there right all right so to show you what i'm talking about so i think right over here
+is the which one of these is keynote am i close to keynote
+okay so then let's take this panel and move this over
+to here, which for me is right here. So then if I tap this,
+okay, I have to move this here,
+because we have three different video screens going here. There it is. So then if I want to
+change that to that, that, no, I want that, no, that, now how about this? Okay, this, maybe this,
+then insert a blank slide after that and then have that blank be this no go back to the top
+and then let's apply a dissolve but let's have it be 250 and then try playing that
+okay now do an advance
+there you go and then stop go to the top and then let's delete that slide and then we can change
+this up neil i'm losing losing this here so let's figure out okay my assistant hold it
+so let's close that
+then I can open up another one
+if I want to do this one
+apparently Keynote really believes
+in opening up over here
+let's instead try having Siri do something for us
+instead
+open presentation
+the states of the United States
+okay she opened it up over here now let me move it over to there
+right and then i can go go to the top and then play
+and that does its little intro
+So, then I can advance to the next slide, which will be like Alabama, and I can advance
+again, advance some more, and then if I move the, you see on the side screens what I'm
+doing?
+I moved it over.
+I'm going to go show navigator, and then I'm going to tap California, go.
+So, now California should be here, and then I can say, okay, I'd like the notes for that,
+please.
+Okay, and then I could say image metadata.
+okay very good and then I can even say something like well I'd like to open get
+the notes out of all of those slides and send them in mail so I'll tap that and
+then it opens up mail on which over here let's see if it actually made the mail
+for us here. Where did the mail open? Oh, the mail's on the iPad. It was not designed to be used
+across here. Let's grab the mail there and bring that back to here. So that particular button,
+And since I'm often, when I'm doing presentations, I need to share it with other people, that
+pulled all the notes out of the slide deck, created a new email for me that I can send
+off to somebody else.
+And it did it automatically with just a touch.
+So I'm going to go back here and bring me back to my keynote slide again.
+The power of this is just phenomenal.
+What you can do with this and how much you can work this into what you do.
+been learning as I explore this, that it's becoming an indispensable thing, especially
+when I'm working between apps. So for my final demo for you, I'm going to try working, I'm
+going to try creating a presentation using photos. In the Photos app, I'm going to create
+a new presentation, then I'm going to work with those and edit them back in Photos, put
+them back in the Keynote, find a location and map, import that map into my presentation,
+it so here we go so first thing I'm going to do is close any presentations I
+currently have open then I'm going to go to photos and photos is where oh it's
+over there okay all right so I want to select this is gonna be tricky I'm gonna
+that I'm going to select that select that and select that so I have five images
+selected now my panel is a photos panel it's not a keynote panel I don't have as
+many commands in there because I've just figured this out a couple of weeks ago
+and although I want to sit down and write 500 controls I haven't had the
+time so I'm going to export to a new slideshow so that will take those
+export those images to a good resolution and then create a new presentation with
+them let's see if it pulls it up and there it is okay so now it's bringing in
+the images. Okay, so now let me go over here and I can't see if I'm grabbing that screen
+correctly and move that over there and see if I can get to the bottom of this, somewhere
+down here. Right there? Okay, so I have a bunch of images there. This one at the top,
+I got that selected.
+Let's see.
+Select.
+No, that's the slide.
+I want to move that to the bottom.
+So I have move to end.
+So that moves it down to the end.
+And then let's go up, back.
+And this slide, this is a picture of a lock on the Rhone River.
+It needs some editing.
+So what I'm going to do is I'm actually going to go over here to Keynote and I'm going to select this image and then I'm going to say open this in Photos for editing.
+And now I'm in Photos.
+So it knew that image came from Photos and it knew how to find it and it made it editable for me.
+And so I could go up here.
+I think there's an edit button here, right?
+No, what did I just do?
+I switched.
+Okay, are we in photos now?
+Okay, let's just assume that I edited this image.
+I wonder if there's something I can do with it without having to look at, see it from here.
+I can't see i can't see that screen it's too far away so
+okay can you as long as you're looking at it can you like make it grayscale or something just
+like take the color and move it to the right or left or the other way okay that'll do anything
+and then just close the edit when you're done.
+Okay, so now I'll just send that back.
+And then in photos, I'm going to say updating Keynote.
+Beginning export.
+So I was able to work on,
+take the image from Keynote,
+it to photos, edit it, tell photos with a tap over here to bring that back in and update
+it in Keynote.
+Pretty impressive, huh?
+There's also another one command here that I have.
+Let's take this slide and move that up.
+And I have, that's the church slide, and that needs to go down to the end.
+Okay, and where's my?
+cursor and then there's that i want one more thing I want to show you is here so
+this is a panorama image of Pontegarde which is the Roman aqueduct that's 3,000
+years old so the first thing I need to do is fit that horizontally on the slide
+then once I've had that fit on the slide so there it is it's on the slide right
+Panoramic Sequence for that, so I'm going to go over here and tap the Panoramic Sequence button, and let that go to work.
+So what it does is it automatically creates a sequence of controls and slides that allow it to be set, and now it's going to play it back for me.
+Now, how long would that take you to do by hand?
+Isn't that a nice thing to have at a button?
+And then I'm back, I can go stop, and I'm back to my slides.
+There's one last thing I'll show for this because it's hard for me to actually see here,
+So this one, I want, this is the Pope's summer palace in Arleigh.
+And I want to see where this is on a map.
+So the location data for that is in the image.
+I should be able to pull that up on my computer.
+So over here on the right-hand side, I'm going to click the button for maps.
+Let's see if it does that.
+And there it is.
+And then if I could see it, I could zoom in on it,
+give you 3D and put it in position.
+But the other thing I can also do is go ahead and copy that to current slide.
+Let's see if it'll do it.
+It's not responding to that.
+particular command for some reason might be one it doesn't it's probably confused by which monitor
+it's supposed to work with anyway what this does is it takes that map and it puts it on that slide
+and then I can do a transition between them so if I go back to keynote here if I go back to keynote
+then I can take this particular slide that has the church and then I can say give me a magic
+duplicate, and then what I can do is go to the second slide and take the image, I can't see what
+I'm doing, and make it smaller, I'm guessing. I'll just move it. And then let's go back one
+like that and then go play and then go advance so that would be shrinking with
+a map behind it it want you to do a little imagination there so that's the
+whole concept behind what I've come across here with these accessibility
+panels is you can create your own sets of panels for the particular work you're
+doing so if you have an app that you use and you are doing a certain type of
+task you can have a panel just for that if you have a certain type of workflow
+that you're working on you can have your own panel for that as well you can have
+as many panels as you want and you can even save them and put them on other
+computers because you can export your panel as an XML file bundle there's a
+control there for saving off your panel and then you can open it up on another
+machine, if you like as well. So I thought you'd just be interested in this.
+I'm not quite sure that Apple intended for that to happen, but I think it's got
+a lot of potential and I can't wait to see once the word gets out about this
+and I post a video about how to set it up and how to do it like I showed you
+that people are going to start doing this quite a bit and maybe even in the
+future Apple will respond like Ed said companies respond from feedback maybe
+Apple will enable that in side guard someday too as well but thank you guys
+thank you for letting me be part of your experience here and part of your life
+it thank you I'll take questions we have according to Neal's little thing here we
+have some time huh we started late that's okay we can take questions this is Catalina I'm running
+Catalina. As buggy as it is, I'm running it. The panel editor existed in Mojave. I'm not quite sure
+it had the same abilities as it does now, but I'm using Catalina. Another question?
+a majority are, but a lot of them are just like the app ones are just using the app control
+option. The one for bringing up the keyboards at the right, that's one of the show panel
+editor options. There's a lot you can do with that. There's system events you can do. For
+For this particular app, I didn't really need to put in play controls, but I could have
+used play controls because Keynote responds to standard play commands as well.
+I use Keynote as just an example app.
+Any other questions?
+How about a big thank you to Sal.
+You

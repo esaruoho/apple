@@ -1,0 +1,1039 @@
+This is Triangulation, episode 359, for Friday, August 10th, 2018, Sal Seguyen.
+Triangulation is brought to you by Rocket Mortgage from Quicken Loans,
+shield approval if you're in the market to buy a home rate shield approval locks up your rate
+for up to 90 days while you shop it's a real game changer learn more and get started
+at rocketmortgage.com slash triangulation it's time for triangulation the show we get together
+with some of the most interesting people in technology and spend an hour getting to know
+them answering questions from the chat room and having a generally good time this is kind of my
+favorite show of the week because i get to really you know get down with it and this week is going
+to be the best ever because it's a dear friend uh in fact the guy we started mac break with
+way back in 2005 i think we figured out oh ought five as we say sal segoyan is here the king
+of apple Automation actually automation in general now great to see you Sal great to see you leo my
+a question is that the same beret since 2005 or have you updated it since no i think there's been
+one update it's your trademark you gotta wear it now man you can't you can't take it off it's
+become that hasn't it yeah with the years it's a great trademark the Zorba the Greek of automation
+uh so great to see you and and you were saying Naomi Pierce who's your wife in here and love
+Naomi too said what are you what are you guys going to talk about and I said and you thought
+I might have been joking perhaps I have no idea I have no notes for this conversation
+but I do have to I think I have to I think our audience would want me to start with and you say
+if you don't want to talk about it but what the hell happened at Apple so for years we knew Sal
+as the guy in fact you told some great stories about convincing Steve Jobs for instance that
+that automation that Apple script was vital to Mac os right yeah yeah uh my history at Apple was
+accidental really before i got to Apple i was making a living playing music and writing
+automation scripts for big companies you look like a jazz what kind of music i would play jazz
+basically that's what it was i lived in Charlottesville Virginia i worked on the
+downtown mall at a small place called pixels it was a print service bureau and when i wasn't there
+during the day running you know hundreds of jobs coming through and using QuarkXPress QuarkXPress and page
+maker and stuff I'd be out playing at night nice and so i had a very interesting life like that
+and uh as being in the print industry we get hundreds of jobs coming through and and you have
+to review each one and figure out what's going on within is the file set up correctly and those
+kind of things and I was always looking for ways to automate that process. So I got into you know
+working with Quark extension developers and that helped automate it some but then in 1993 I saw an
+ad in the Apple developer brochure about this amazing English-like language that could control
+the action of the computers and the apps that are on it so i sent in the money and i paid an extra
+fifteen dollars for a scriptable finder which came on like a 400k floppy right was this from Apple
+or a third party this was from Apple and so i got the Apple script disc and i and at that time
+the app that was really powerful that was scriptable was QuarkXPress QuarkXPress which was used for
+page layout yes it became it took over from page maker was the dominant program but right about
+that time quark kind of took over Dave Dave and Ralph rish had implemented Apple event scripting
+AppleScript AppleScript in QuarkXPress express with Tim gill's help right and uh so i remember it was in the evening
+it was after the day and i was sitting there alone at night and I'm going through this trying
+to figure out what this is all about and it says okay there's a dictionary and this should be
+called a box and then okay it has properties all right so i write my first script so i selected a
+box and you've not been a programmer in the past no no programming at all yeah no programming at
+all and i drew out a box and my first script that i ever wrote was set the color of the current box
+to blue you remember it i remember it it's infused in my brain and i ran that and that box changed
+Boing and i really yeah yes at that point i let go all my clients i would have a business doing
+you know desktop publishing design business and i let go all my clients and i just focused on
+learning everything i could possibly learn about Apple script for like months was that just because
+you loved it or did you see a like you see how it could be used what was it that got you it it hit a
+profound concept within me it opened up a profound concept that has stayed with me my entire
+professional life which is that the power of the computer should reside in the hands of the one
+using it i don't have to go to a developer and say please can you make this so that this does this
+complications so that I can do this. It put all that power in my hands. And for me, that was an
+awakening. And after that, I started developing automation around the print industry because I was
+in it. And I expanded out into other industries too, like media production and video production
+to automate them. And Apple noticed me because I was writing books on the topic and I'd be at the
+And my audience would be the Apple employees standing there watching this.
+Because they probably didn't know all the things you could do with this stuff.
+There was maybe a handful of guys that knew it was in the system, but they would stand there and eventually they started to ask me, would I join?
+And I said, well, why should I join?
+I'd take a 50% pay cut to work for you.
+I don't want to do that.
+And then over a period of time, about a year, it was a group effort by Shafas Syed, Bamandara, and Guy Kawasaki, and a couple other people, and Chris Espinosa.
+They got me on board at Apple, and I joined at, like, the worst time.
+Steve had left.
+Yeah.
+I joined in January of 97.
+So Apple had the word beleaguered tattooed the
+leader years. And if you look at where I was hired, I was hired in January. And at one point,
+Apple put out these boards on campus that all the employees could see. They had a list of every
+Apple employee and when in order of their hiring. And so there was like 13 boards around campus and
+everybody was walking around looking for their name, right? And I was over here like on board
+number two. And if you look after my name, then it's like Craig Fegariti and Avi and all the next
+guys came in. Yeah. So I was like the last hire, one of the last hires. Under Gil Emilio. Yes.
+Before everything opened up. And so automation to me came from a very personal basis. I was always
+looking at automation from the the aspect of getting stuff done in the real world and that
+knowledge about what customers needed and how it gets used in the end was essential to my role
+at Apple when i came on board to you know to protect this technology because at that time
+Apple script was not part of the operating system it was an add-on thing it wasn't part of it so
+What is Apple Events?
+Apple Events is a messaging architecture.
+So any GUI operating system is message-based.
+The operating system just kind of sits in this loop and waits for messages to come in.
+You moved a mouse.
+You clicked something.
+An event loop.
+An event loop, they call it.
+And so these little messages coming into the event loop, those are Apple Events?
+Yes.
+yes
+So an application could send an event to another application.
+That's interesting.
+or to the operating system.
+So an application could say,
+tell Finder to close every window.
+And the Finder would do that.
+It would get this message, translate that, and then...
+It understood what that meant.
+It understood what that meant.
+And so using that technology,
+you can accomplish incredible things with the computer.
+That's extremely powerful.
+Totally.
+But there wasn't a user interface to that.
+had to use the built-in ROM capabilities, the API, to do.
+Well, there is an interface for it.
+It's through the script editor.
+Every scriptable application.
+When did that start?
+Back in System 7.
+They had an editor?
+All of this was designed back in System 7.
+So they were thinking, okay, Chris Espinoza and company were thinking,
+okay, it'd be nice if users could get a hook into this
+and basically write an application that was a series of events.
+Yeah.
+Right?
+But it was a script.
+It was kind of like from the idea of HyperCard,
+where you had the HyperTalk language.
+HyperTalk looks a lot like AppleScript.
+Yes, and AppleScript was thought of like a system-like HyperTalk language
+that normal people could use to control the action of applications and the system.
+It was very, and I think some programmers didn't like it.
+It bugged me because I learned programming languages first.
+And it was so much like English where you have a subject and an object and a verb.
+It was like, well, that's not how you program.
+It's funky.
+It's funky.
+And it was hard for me to get used to it just because I would have been taught to do something completely different.
+You find, over the years, I found that most engineer types were kind of confused by AppleScript
+because it didn't follow the document dot blibler dot colon slash but it was much more human but it
+was much more human yeah so i could say so that was always in there since system seven yes it
+became an official part of the operating system at system eight this is still before your time
+no i came in at system seven five okay and we were going to deliver eight and we had a small
+automation team at the time and Chris Espinosa was part of that team i worked for marketing i
+actually reported to Phil Schiller i did not report to the engineering world so they didn't
+want you to write scripts they wanted you to talk to pre-press guys and in the language they
+Anderson well that's interesting actually that's not how it worked Apple had a unique way of how
+apps were created at Apple that made them different than any other company. And it was
+a special relationship between a product manager who reported to marketing world and the engineering
+manager reported to the engineering world. So you could not ship a product unless both of those
+people signed off on it. So they couldn't ship a product without my approval. You were on the
+My role was to bring my experience and my awareness of customer needs to the foreground and develop a set of features that I thought would address the issues.
+It's interesting.
+They've kind of returned to that model with the latest hardware.
+They've even said, we brought in experts in the domains to sit there and help us design the next Macintosh.
+Getting input is invaluable.
+You've got to.
+So I would present engineering with, this is what I think we should be doing.
+that and go well we can't give you this and this because we don't have the resources but we can
+give you this and this and we also have this would this help and then we would go back and forth and
+come to the solution so it's a negotiation it was a negotiation and that's what a product manager
+did and then i would take that and i would represent it to the world and figure out how do
+we document that? How do we market it? But then, as we just said, I came at the time when Apple was
+falling over. I mean, Shelly Winters was doing the stroke down the hallway. There was columns
+falling over. It was like, it was beside an adventure, right? So everybody had to take on
+like four or five jobs. So I was basically the developer representative. I was the guy writing
+the scripting code. I was the guy writing the documentation. I did the website. You must have
+been going crazy. Well, you know, it was Wild West time, but that's gave us a level of freedom
+and independence that allowed them to create, allowed product managers to create a horizontal
+link. You owned the whole stack. You owned your, that whole stack was yours. Yes. And we were free
+to to move laterally through the organization interesting there wasn't the stove piping that
+you have now whether you have vertical parts of the organization a product manager i spent as much
+of my time over in retail or in the itunes as i did in other parts i would be in engineering one
+day I'd be working with the itunes Group one day i'd be working over here and those personal
+relationships between those organizations focus through a product manager is what enabled the
+and enable Apple to turn around quickly.
+That's interesting, yeah.
+When I first got there,
+I got called into this meeting in the boardroom
+and Steve was there.
+And I was sitting next to Chris Espinoza, you know,
+and I'm like, wow, what am I doing here?
+But apparently Steve was reviewing everything
+and he was talking about it.
+And he goes, and he laid it out to us
+right there in that meeting.
+He said, we're going to beat these people
+and we're going to beat them by moving faster.
+We're going to out-innovate them, out-maneuver them, out-deliver them.
+Who was them, Microsoft?
+Everybody that we had to compete with.
+Everybody we had to compete with.
+Everybody that thought we were going to die.
+And he had a fire in his eyes, right?
+He wanted to save Apple.
+Oh, yeah.
+And actually, he felt very strongly that Apple had screwed the pooch for the last 10 years.
+And thank God they brought me back.
+Right?
+Didn't he?
+You know, I'm glad he got back, too.
+It changed everything.
+So I turned to Espinosa, and I said,
+when was the last time you were in a meeting with Steve?
+And, you know, Chris-
+Espinosa is one of the original Mac engineers.
+I mean, this guy-
+He has a brain that's like a machine,
+and he goes, oh, it was April 13th, blah, blah, blah, blah.
+And I said, so what's the difference?
+And he goes, they're not trying to get rid of them.
+Big difference.
+So it's a big difference.
+Now, he was, at that point, the I-CEO,
+and they kept pretending that this is just temporary,
+I'm advising, but they had acquired Next.
+recently well this was actually before that this was even before they acquired this is when he just
+got back what they brought him as a consultant i don't even know if he had taken on a specific
+title but they said come in Steve we're dying please and change the company and at that time
+Apple had was like a lot of companies where you had little fiefdoms where you know people were
+in charge of their little thing and they weren't working as a cohesive unit and Steve was a very
+strong King he was a holistic guy too he thought it had to be a hole it couldn't be and he just
+said well you know this is where we're going I'm sorry your stuff's going to get cut but it's
+getting cut if you want if you don't want to do that fine there get somebody else we're going
+this way and the product managers like myself had a role to play in that mobility of turning that
+chip. Guys like Mitchell Weinstock, who was the product manager for QuickTime, masterful at
+marketing a technology way beyond just him doing that. He looked like an entire organization of
+50 people. You know, you had Richard Ford, who was handling all the network stuff. And he was
+the master at running things through the system he could get them through the system very quickly
+and then there was Eric Zelenka who was the most one of the most amazing product managers i ever
+met the guy took over Mac os 10 server and just turned that in from a raw lump of coal into this
+fantastic thing he was consummate inside guy so being a product manager was like
+handful there was like maybe 10 of us in the company at the time so you're at this meeting
+all the project managers are there and Steve is at this point is he product manager product yeah
+he is it is Steve at this point wielding an axe well Stephen had started wielding the axe since he
+got there i mean every day you would hear people fall off the roof it'd be like
+all day long you know literally he just he would work his way through you know it was the cluster
+buildings needed to be done yeah and the first time i met Steve we got in a fight well this is
+the story i i heard was that he didn't think much of what you were up to uh no it wasn't that he
+didn't think much of what uh you needed to justify your existence yeah so Steve basically fired our
+vice president in front of us and you know called all the product marketing into into town hall
+And our VP says goodbye, and then Steve starts, you know, raving on us, telling us that we didn't know what you're doing.
+You're screwing the company up.
+You don't know what you're doing.
+It was easier when we were 100 times better than Windows, but now that we're not, you don't know what to do.
+And so I said to him, the first words I ever said to Steve were, no, you're wrong.
+And he turns, spins around, and he looks at me, and he goes, and you are?
+This is in Town Hall.
+In Town Hall.
+In front of everybody else.
+Yeah.
+You stood up and said, no, you're wrong to Steve Jobs.
+Yeah.
+My first words to Steve were, no, you're wrong.
+And he spins around and looks at me and says, and you are?
+I said, I'm Sal Segoin.
+I'm the AppleScript product manager.
+No, you're wrong.
+My technology is many times better than Windows.
+And he goes, well, that's not what they've been telling me.
+And then we just, we went at it.
+In front of everybody, I look over and there's my boss, like Peter Lowe,
+looking at me commit employee seppuku in front of everybody.
+Well, what's your choice, right?
+You either save, you convince him this is a great product,
+or you're not going to be working there anyway.
+So what Steve was doing, it turns out,
+so we fought for a couple minutes,
+and then he goes on to something else.
+What's he saying, and what are you saying?
+Give me an example.
+Well, he said, you know, nobody's using this stuff.
+And I said, that's absolutely wrong.
+I said, all the companies are depending on this.
+We use this.
+So all of our big customers, small customers use this.
+And he goes, well, that's not what I've heard.
+And I said, well, you guys are lying to you.
+And so, you know, we just went at it.
+But that's what you, you know what?
+I bet you, I guarantee you, that's exactly what he wanted from you.
+It was.
+What he was looking for, he was being like this on purpose
+to see who in the room was pushed back on him.
+And, you know, after that.
+red what was it that gave you permission to say Steve you're wrong well i figured it this way you
+know the Apple asked me to join i might be a dog on my square yard of dirt but you know i know every
+piece of that square yard and you're on my square yard of dirt and I'm gonna bite your leg off and
+i know what i'm talking about and i know what I'm talking about and he was wrong and you need to
+hear this and you need to hear this and so he went on to something else and then he tested somebody
+oh, he's testing to see who he has to work with.
+And everybody that fought him back stayed,
+and the rest of the people left, right?
+Basically is how it worked.
+And so after that, he liked me.
+Yeah, I would too.
+You want guys that are going to tell you the truth?
+You don't want some schmuck who's going to tell you what you want to hear?
+Yeah.
+And Steve got automation very quickly.
+Did he?
+Oh, absolutely.
+Steve was an ally and an advocate of automation.
+He didn't necessarily understand all the different details about writing the code and everything,
+but he understood its importance and its role and why it was necessary for customers to have that option.
+And while he was there, we got resources that we needed consistently.
+He made sure that we had the resources we needed to advance the technology with each system release.
+it got better and better it got better and better and there was many times when you know he we would
+have converse he and i would have conversations about stuff there was there was one time he had
+it in his mind about there was some particular thing about AppleScript script and languages that was
+triggering his mind and he would keep coming back to me with emails and stuff so one day I'm sitting
+in the in the lunchroom i'm standing in line getting my pasta spaghetti right and I'm standing
+this voice at the back of my head so what are we going to do about blah blah blah and you know and
+i turn around and it's sj and he's like right in your face fire with 20 questions he goes so what
+are we going to do and I'm responding right like and i finally go Steve my pasta is getting cold
+and it was like he just noticed it for the first time that i was actually holding food
+And he goes, oh, I'm sorry, I'm sorry.
+But he was really, he was focused on it.
+He was passionate about it.
+I didn't always win the arguments.
+There were some times he took other people's,
+you know, he would referee an argument
+between me and another guy
+over something about automation.
+And I didn't always win,
+but Steve always supported me
+and always supported the automation team.
+And that's why we were able to deliver Automator.
+And we were able to take AppleScript native code.
+We were able to deliver AppleScript Objective-C.
+Those kind of things were possible because from management, we had this buy-in.
+And that was important.
+That was really crucial and very important.
+So we're talking to Sal Seguyen.
+That's all I have to say.
+You know who he is.
+Well, if you didn't, you know now who he is.
+he was wrong and he was right you were right he was wrong um what's osa osa is the open scripting
+architecture AppleScript script is a language that works in osa so does JavaScript the jxa or javascript
+for automation is a peer of Apple script in Mac os so you can write the same kind of Apple event
+scripts using Script or apple script is osa specific to Apple yes okay yes Apple events is
+specifically to Apple so osa is a way of describing kind of the inner the the the fact that there's a
+hook to these Apple events directly yes and then you could are there other osa languages between
+besides oh yeah there's uh Apple script there was an osa osa Python osa ruby yeah are they
+still in use or uh somewhat sometimes yeah there was a scripting bridge put in place uh for different
+languages so so the bridge is effectively an api to the Apple events okay and this api is open
+enough that people could hook in you know they'd write a library for Python or write a library for
+ruby that would take advantage of this api and they allow you to send any uh is there a set set
+of system events that you can say you can't create an arbitrary system event every language every
+application that is scriptable carries internally a dictionary it has its own events all the
+different objects the classes that it has what their properties are what commands they accept
+and the different parameters so you can go to the script editor or script debugger scripting
+editing application and choose open dictionary and open the keynote dictionary and you can see oh
+a document there's a slide uh there's a text box there's an image and each one of those has
+different properties oh there's a thing called a transition oh it has a property that's duration
+okay and so all that means it's scriptable all of that means it's scriptable all that means
+that is so brilliant totally such a useful tool absolutely and it kind of always bugged me that
+it wasn't better known but but you always reassured me don't worry the people who need
+know about this and are using it yeah it pre-press is a big area yeah but there's a lot of people
+using automation Oh video production yeah is sure huge right uh i got to spend uh about uh four or
+five weeks with Showtime in New York my friend Dirk van dole was vp at Showtime and they would
+do these on-air menus you know those 20 second things of next Bob discovers America with this
+Thursday. And when we first looked at the problem of creating 1,800 of those,
+there was a room with four guys sitting back to back with Media 100 systems,
+creating these things, these 20-second promos by hand. And Dirk said, can we take this spreadsheet
+of what's coming up and turn that into an automation? And we did. What we did is we
+Read the spreadsheet, figured out what the titles would be, when it was going to be.
+And then there was an audio segment that had all of the overdubs.
+This guy that recorded those would sit there in the studio and he would record them in a row.
+They just turned it on.
+He would do 20 seconds, take 10 seconds to cough, then do another 20 seconds and stuff, and he would do all of them.
+And so the script would extract the 20 seconds from each one of them, get the appropriate video background, whether it's one of the 13 different channels from FX and all the different things, put the appropriate video background, overlay the text that it took and made in Photoshop and Illustrator, bring it in, put a mask on it, an alpha channel on it, fade it in and fade it out at a certain time, put the audio back in.
+put all of this on a timeline and they could scrub the timeline to see that everything worked
+out and then they would run another script that would export all of it to high res on the server
+for showing and another copy onto another server for viewing on a web page sweet and all of that
+got automated with Apple script amazing that's the power yeah and that kind of production and
+video is not unusual right there was a lot of color studios like Technicolor and people
+Hollywood man I'd go down there and visit those guys and they would be or uh film scoring you
+know there there's a lot of people that do film scoring they automate processes there's can't do
+it otherwise this is what the promise of computing always was yeah was it would do the boring stuff
+for you so yeah you know and do it anything you did more than once you should automate right
+you get speed accuracy consistent output and scalability yeah you can't scale by adding bodies
+that you have to automate the key though that makes this so interesting is people do that all
+the time on Linux and any other operating system right writing shell scripts or Ruby scripts or
+python scripts the key here was that you could hook into not only the operating system but all
+these applications that have a dictionary and have them all work together that's a very beautiful
+elegant system it it's what saved Apple there was many times during my early career when i i saw that
+fact become a reality where the only reason Apple stayed in the company was because they had
+automated processes with Apple script and they did not have another way to do that on any other
+showtime's not going to say okay well let's get 100 Windows machines sorry they won't do that
+no oh well i guess we'll get some more macs there was like Simon and Schuster and a lot of big
+publishing companies that were all automated and it was the macs in the graphics divisions
+their automations that basically kept Apple in the game in the building yes until they could
+turn around and start offering a richer environment and newer equipment and things like that but
+But automation plays a role for everybody, not only for big corporations, which totally automate what they do, but for smaller companies that are trying to be efficient, who handle a lot of video or tasks, and for individuals that just need a better way to do something easy on their devices.
+Automation is for everybody.
+You know, Apple has a great idea with the everyone can Code but I would also say everyone can automate.
+It's like the step in between that process.
+Everybody can learn to automate,
+whether you're using Automator,
+whether you're using Workflow,
+whether you're using AppleScript,
+whatever, or JavaScript.
+Everybody can learn how to put these things together
+and make their own story and make their own tools.
+All right.
+Sal Segoian, I guess I want to take a little break.
+I want to talk about,
+because that's all past.
+I want to talk about present
+and how we got to the present with Sal Segoian
+a little bit on triangulation our guests today our show today brought to you by rocket mortgage
+if you're buying a house biggest purchase you'll ever make right biggest check you'll ever write
+and uh for most of us that's not going to be cash you're going to get a mortgage right you're going
+to get a home loan may i suggest Quicken Loans the biggest the best lender in the country
+number one in customer satisfaction year after year eight years in a row according to jd Power
+number one but also number one in volume they go hand in hand they just recently took over from
+big bank which deserves to be knocked down a point or two if you ask me last time we bought a house
+it was we went through that big bank you got to go to a banker right you got to put on a tie a nice
+dress you got to be pretend you're prosperous you're yeah the only people they lend money to
+are people who don't need the money right so you go in oh no oh yes oh absolutely and they say okay
+boom here's a big stack of uh papers to fill out your loan application then you got to go to the
+got to get bank statements since 2010 and you got to do all the brigham roll and in our case Lisa
+and I'm when we bought our house four years ago it took literally not one month we we're going to go
+on a vacation a month and we said oh we'll have this done but we want to buy this house we'll
+have the house by the time we leave no we're late we left went on a vacation we're still
+they're coming banks coming back to us saying well you need this we need this we're faxing
+stuff from a cruise ship we're we're calling Lisa's sister and say can you the bank now the
+bank wants this it was a nightmare we almost lost the house two months later we finally got the loan
+but the day three days after we get back from the cruise we got the loan it's like now now you do it
+this is the way we're doing it next time rocket mortgage from Quicken Loans it's aptly named it's
+it's as fast as a rocket and it's entirely online no more going to the bank no more filling out a
+long application you just go to rocket mortgage.com slash triangulation answer a few simple questions
+because Quicken Loans is the biggest lender in the country.
+They've got relationships with all the financial institutions.
+So as soon as you say, yeah, yeah, I give you permission,
+they'll go out, they'll get your income, your assets, your credit.
+They'll verify all that information.
+Now, the first thing you get is what they call,
+and you get this within 10 minutes, is qualified approval.
+That you can get at the open house and show the realtor,
+yep, we're good for this.
+Within 24 hours, they'll verify all of this stuff,
+and they will give you then verified approval.
+Now, that's awesome.
+That basically says you've got the money.
+It makes you a cash buyer now.
+this is a problem when you you know it's a seller's market if you go in and say hey we want your house
+but uh and we're going to get the loan so it's contingent on getting that's your new no if you
+go in there's a no we already got verified approval you're right at the front of the line
+that's like saying what we got we'll write you check right now now this is the next thing that's
+great takes a lot of the anxiety out of home buying because right now rates are starting to
+tick up that means there's pressure as you shop around to buy right now because if you wait a
+if you don't buy this house rates could go up it cost you thousands of dollars more so
+that's why rocket mortgages created this is all new exclusive rate shield approval they lock up
+your rate for up to 90 days while you shop you get up to three months without any chance the
+rates will not go up the rates go up in the real world your rate stays the same you're locked in
+for for up to 90 days and if the rates go down your rate drops so you win either way it's kind
+America's anyway, best mortgage lender.
+I don't know if they're the world's best.
+They probably are.
+Rocketmortgage.com slash triangulation.
+Go there right now and get started.
+Now here's the law stuff, legal stuff, I got to say.
+Rocket mortgage stuff, you know, here.
+Rate shield approval is only valid on certain 30-year purchase transactions.
+Additional conditions or exclusions may apply based on Quicken Loans data
+in comparison to public data records.
+Equal Housing lender licensed in all 50 states.
+NMLSconsumeraccess.org number 3030.
+You don't have to remember that stuff.
+Just remember this.
+rocketmortgage.com slash triangulation.
+Take all the stress, all the nervous making out of buying a new home
+and enjoy the process.
+Get that perfect house and up to three months to look for it.
+rocketmortgage.com slash triangulation.
+We're talking to Sal Sigoyan, who is a dear friend and a legend in the industry.
+The guy who brought us Automator, who helped so many companies automate their workflow,
+AppleScript
+Do applications still have AppleScript dictionaries?
+Is that fairly common when a new application comes out on the Mac?
+There's a lot of applications on the Mac that have scriptable dictionaries.
+They do?
+Yes.
+Microsoft and Adobe products and Apple products.
+It's not slipped into the dark ages.
+Oh, absolutely not.
+AppleScript's, you know, it's a tool that people use, especially Apple.
+Apple does a lot of automation themselves.
+And I wouldn't be having my commandee down-home scripting boot camp this year
+if Apple Script wasn't a vital and growing industry.
+So you're still teaching.
+But at some point a couple of years ago, you and Apple parted company.
+Yeah.
+Can you talk about that?
+What happened?
+um basically Apple came to me and said that the position that i had uh wasn't being supported
+anymore and they canceled your job they canceled that job and i guess you know it's the decision
+that they made they they know I'd really don't you know i can't speak for why they did something or
+what they do you have to ask them about did you want to stay there the rest of your life
+your know me i wouldn't mind just keep pushing automation forever and uh i you're like a pro
+you're like you're like John the Baptist you're like you're proselytizing you're bringing the
+bringing the good word about automation well you know it's a there's a certain truth to it leo
+is we all have our own little place in the world our own garden and like i said earlier that my
+power of the computer should reside in the hands of the one using it so agree and that's been with
+me and it's something that i feel i can make a contribution to society with right that if i if
+i expand that truth and i share that truth with other people and i help them to experience the
+power and abilities through automation then I'm making a contribution to the world no matter how
+small it might be this is your mission this is very much like a mission and it's a you know what
+i celebrate it and thank you for it i mean it really is a great mission um does the fact that
+this job no longer exists does Apple mean that Apple is less uh supportive of automation are
+they moving away from this i mean you have to ask Apple about their intentions or everything but if
+we look at what they're doing well that's the only way we can judge yeah i i'd say i see automation
+heavily in what they're doing with the on ios with with a purchase the workflow app and now
+they're introducing uh siri shortcuts which are basically the automation now combined with voice
+i had the laugh when i saw that i thought oh yeah good they're getting rid of Sal in the os 10 but
+they're putting it all in a Siri you could have been you could have been the King automation on
+Is it the same kind of thing as OSA scripting?
+No, there is not that scripting architecture.
+There is no underlying scripting architecture on iOS.
+I would have always loved to have Apple events over on iOS.
+Is that for security, would you say?
+Probably, because...
+You don't want one application to tell another application to do something.
+Well, they solved that problem on Mac though.
+Automation on Mac has certain channels that it runs through,
+and it acts as the user.
+The user gives it the authority to do stuff on their behalf.
+That's how all operating systems work.
+It only has the privilege level of the user.
+Yes.
+So if you're not acting as an administrator,
+you haven't given an administrator password,
+it can't do anything dangerous.
+It can only do what you could do.
+Yeah, the way that they designed, when we decided, when the automation team met the security team for the first time, it was an interesting experience.
+Yeah, because security would like you to just not do any of this.
+Security doesn't want anything to happen, and the automation team wants everything to happen.
+Yeah, right.
+So we came to the solution.
+Yvonne's team, remarkable individuals, they're so smart.
+They've done a great job.
+Yes, they're fantastic.
+came to the idea that we would have system processes like Automator Runner and the Script Monitor would run the automations, and they're handled by the system.
+And as long as the user puts those scripts in there, that's the user telling the operating system, I want to do this, so get out of the way, I'm approving this.
+An application can't put that script in there.
+an application the user has to implement the script and because the system's running the
+script and the user has implemented it it has the authority to do whatever it wants that's a good
+compromise because it's my system I'm the user right you don't want an outside third party
+manipulating my system right but as long as i say i want to do this you should let the user
+rights although we are living in a world now where increasingly the user is a consumer uh not a
+creator and is not allowed to do anything right that's worrisome so an application if an application
+wants to control another application it has to have an entitlement it has to pre-ask for approval
+to do that that's like when you ask can i look at location yeah and so then that application's
+given that but from the user perspective of user automation it's all based upon Leo's intent Leo
+put the script in there Leo is running it let's let Leo script do what it needs i can see how
+security guy might say well we don't want to let the users do that either because we don't trust
+the right users but at some point for a computer to be useful yes you have to let the user yes and
+i think that the what they've done with Mac os is a great balance on that and it's continuing with
+hobby where now this is so cool where now you can have Automator workflows that actually become
+system extensions and they can be run off the touch bar let me show you this sal brought in a
+video this is a touch bar uh widget a touch bar Automator uh workflow that's taking the data from
+the table and making a pie chart in keynote now I'm going to select a column of data and I'm going
+to do the same thing thing is on the touch bar you can see that's the touch bar right there if you
+put it in accessibility mode you can record it like that so in a couple seconds I'm able to
+create a presentation using data from a spreadsheet split screen let me show you that again using
+using automation on Mac os Mojave using the touch bar using the touch bar the touch bar is a useful
+user-defined tool this is gonna this is gonna change how i use the touch bar Oh totally if
+scriptable. Yeah. I'm going to put a bunch of buttons on there to do what I want to do. There
+you go. So if you have something that you like to do a lot, you can create an automator workflow
+that is saved as a touch bar quick action, they call it. A quick action. Yeah, quick action. So
+it's this tradition is carrying on. To answer your question, Automation has a great feature
+with Apple. I'm really excited by what's happening on iOS and what's happening on Mac And I'm
+feeling a community come from that I'm feeling excitement in the in the user community like i
+haven't seen since those early days people are excited about the products see this is part of
+the problem though is of course that uh there's a class there are two classes of users there's
+users who want to do this who are motivated to do this who write scripts who like to like to get
+hood who want all the power of the computer and but especially now with ios there's a whole new
+class of users that are that don't that they just just i just want to do this i don't want to do
+anything i don't want program and i think actually it's interesting how Apple's handled this on ios
+with Siri shortcuts where Siri kind of suggests things that you do a lot oh well would you like
+me to make that a script in effect it doesn't say that but an action but then with workflow which
+they're going to have the capability for somebody like me to write our own stuff to.
+Under one word, I mean, they've given it the title series Shortcuts,
+but there's a lot going on there.
+Like you said, your actions in using the device can make suggestions
+that appear, that filter up and percolate.
+So an application, if you're using my application
+and I see that you do something often,
+I can send this suggestion over to the queue and the operating system to say, hey, I can give you a shortcut for that.
+Then in addition to that, you have this wonderful application workflow.
+Which is going to be renamed with iOS 12 to Shortcuts.
+And it carries on to traditions that we established with Automator on the Mac, where it takes data as an input.
+Each action is a step and a recipe.
+It looks a lot like an Automator script.
+Very much so.
+So you have this flow, and the output of one unit then goes as the input to the next unit, basically.
+You're basically making an automation recipe where you have cut the carrots, cut the celery, cut the onions, mix together, heat, serve.
+And the material that's being processed is passed through this chain.
+That's what we established with Automator.
+And the workflow app has taken those ideas and those traditions and brought them to iOS for those same people you just talked about.
+For the people that are motivated, that they see, I need a shortcut for this.
+I need an easier way to do this, but I don't want to write all this stuff.
+Well, they can figure it out with Siri shortcuts, or Siri can say, hey, Leo, I see you're doing this a lot.
+Do you want me to automate that for you?
+And you go, yeah.
+So Apple's actually taken it another step.
+like it because i think Apple found this as a solution for the issue with Siri of not being
+Syria not being very smart and but yet not wanting to make it smarter by spying on what i do right
+so they handed off to third party applications and the applications know Phil's coffee knows
+that you buy this mint mojito every morning at nine yeah and so since it knows that it can
+interact with Siri it also which I'm I'm thrilled about encourages third party application developers
+to start adding those capabilities.
+Yes, absolutely.
+So if you can relate that to the concept,
+remember on the Mac we said applications have scripting dictionaries.
+So the application developer created this rich environment that you could tie to.
+Well, this is kind of like that on a lighter level
+where the application is now publishing these different points that Siri can connect into.
+But there is still a user that needs more.
+of user that needs the more advanced scripting and that's why I'm excited by
+what I've been working with with the Omni group so Omni group who's really
+been one of the best app and and application developers here Macintosh
+with Omni Graffle and Omni project and Omni Outliner Omni Graffle Omni plan plan
+Omni focus are their core I love Omni focus one of the best getting things
+personal management and then for planning a project omni plan is absolutely uh the essential
+tool so you're not an employee of them but you've been working with them no I'm not an employee but
+I've been working with ken and the guys great on implementing a cross-platform scripting solution
+for both ios and mac os let me show you some of this here which so uh let me tell you what it is
+okay and then explain what we're going to see yeah and then i'll explain what you're going to see
+so to find a common ground between the two platforms see they were very clever they decided
+to work with core JavaScript that is part of WebKit since WebKit is on every Apple device
+there's this language JavaScript in there core JavaScript which they then took the strategy
+of exposing all the objects of the application
+like AppleScript does,
+the document, the boxes, everything down the chain
+to JavaScript, to core JavaScript.
+So their apps are scriptable.
+Right now, OmniGraffle and OmniOutliner
+are fully scriptable in the same kind of way
+that you do traditional scripting on macOS,
+but to JavaScript.
+And it works both platforms.
+So you can write a script in JavaScript for OmniGraffle,
+it on ios take the same script and run it on Mac and it's the same and another advantage is
+because they're using javascript it implements and integrates with html and other applications
+there's a lot of applications on ios that are implementing the same strategy of JavaScript to
+do that so let me show you a couple examples here I'm going to do the Mac one first all right uh
+Heat map iOS?
+Mac OS.
+Here it is.
+Okay, so we have split screen.
+I have a web page over here.
+I'm going to click a picture on the web page,
+and that's going to create a stencil in OmniGraffle.
+I'm going to do it twice on two different canvases there.
+So just the act of clicking that image,
+then I'm going to click the table,
+and the data from that table is going to get extracted and mapped to the objects.
+That's with JavaScript.
+This is JavaScript Omni Automation embedded in a web page,
+it's interacting with the document so now that i have two examples this is uh so basically a click
+of a button and you were able to color each of these states on this with data from a table the
+table the numbers numbers in the data so this data is about how states get money back from the federal
+government over years and you can see a 10-year period there between 2000 and 2013 and what I'm
+going to do is use that as a way of finding out important aspects about this over time so now i
+have the two you can see there you've labeled them yeah I've labeled them and now omni grapple which
+is a wonderful program also has a presentation mode so i can put this into presentation mode
+where i can dynamically go back and forth and watch this so i can look at okay there's 2000
+Ah, something changing in 2013.
+Notice down here in the central region of the country,
+all of a sudden it got really dark right around there.
+That means they're taking more money from the federal government.
+Situation changed.
+And same up here.
+But look at this.
+All of a sudden, North Dakota changed.
+So I click the link.
+It takes me to the page, and I can see that oil extraction boom
+is the reason that their economy was more prosperous.
+This is all JavaScript.
+using Apple events.
+This is not using Apple events.
+Sorry, WebKit.
+This is JavaScript based on the core JavaScript in WebKit
+that Omni has implemented,
+and I've implemented it to a web page.
+Now, here's the kicker.
+Let's do the same thing, but now on an iPad.
+So I'm going to drag out a split screen on an iPad,
+go to the same web page.
+I'm going to tap the same image and watch what happens.
+There's the script.
+There's the JavaScript.
+You can actually see the script that's running,
+and it does the same stenciling in OmniGraffle.
+This is OmniGraffle for iOS.
+There's the data coming across as JSON.
+You can see all the different objects.
+I'll add another canvas here.
+I'm going to do the same thing.
+I'm going to tap it, add a stencil.
+There's a script for that.
+And now I'm going to go down,
+grab the data from the other table.
+There's the JSON data for that.
+And I'm going to heat map it.
+That's incredibly powerful.
+Yes. That could be a corporate internal website that I go to. It could be a financial thing for
+the SEC. It could be, you know, just the idea that I can have stuff in a web page and tapping
+that interacts with my document in my application shows the potential power that Omni has opened up
+here. That's really exciting. And so currently they have Omni Graffle and Omni Outliner fully
+scriptable like this they're planning to do Omni plan and OmniFocus OmniFocus the same way and then i believe
+that they're going to be releasing the frameworks to uh other developers that's the question will
+other companies do the same thing because that would be a great oh yeah absolutely and well
+there's uh software now like the drafts app right you use love drafts oh i live in drafts it's
+really robustly supports Apple script and you can talk between drafts and Omni all the omni apps go
+and transfer data between them.
+Oh, I didn't know that.
+Yeah, because this whole thing is designed
+around the core JavaScript architecture
+and it uses a URL messaging instead of Apple events,
+they're able to pull this kind of thing off.
+And I think that this shows the potential
+that automation has on mobile devices.
+I'm really thrilled about that.
+And I think once we add in the Siri shortcuts,
+you're going to see more and more people switch to this.
+happen for Apple? I know Apple wants to increase sales of their devices. They would like to see
+more iOS devices in the enterprise. And I think that automation is going to help give them that
+penetration in the enterprise that they're looking for. I think more people, companies are going to
+go, hmm, I can take this device and I can automate these processes. I'll take some iPads and do that
+with that. And I think the customers you mentioned, the people that are using their phone,
+just want to automate processes are going to be thrilled with the new Siri shortcuts and the
+professionals are using Mac and being able to put things on a touch bar. This is a great time
+for automation. I think it's definitely a rebirth and a continuation of philosophies and strategies
+that we laid out years and years ago. So you've found a place to stand outside of Apple where you
+You can support people.
+You can promote these technologies in much the same way you did inside of Apple.
+As long as Apple keeps providing the support in the OS, you can do what you're doing.
+Now, if you go to macOSautomation.com, this is Sal's site.
+That's a conglomerate site there.
+This is a portal site into like six other sites.
+Are these all your sites?
+Yes, they're all mine.
+The Omni Automation site is down lower.
+Wow.
+On the left-hand side, Omni-automation.com.
+You can click that and go to all the different examples.
+I have a thing for the Command-D conference.
+Yeah, tell me about that, because you started doing that last year, right?
+Right.
+and you're doing your second Command-D in a month, a little more than a month.
+In October.
+Sorry, didn't mean to scare you.
+Two months.
+In October, I'm working with Ray Robertson, who's a master of scripting and instruction.
+very calm and patient instructor. And he's very knowledgeable about scripting and teaching
+scripting. And we're doing it in Cartersville, Georgia, outside of Atlanta. It's called the
+Command D Down Home Scripting Boot Camp. And it's going to be three days of hands-on instruction.
+The first day is going to be just the fundamentals. All you have to do is remember just to show up.
+the food's going to be taken care of you don't have to worry about anything and the second day
+we're going to go over the basics and and then the third day we're going to get into some specific
+applications as well but I've always enjoyed teaching people and watching the light bulb
+go off yeah i know you you experience the same thing yourself you love it when you see the
+change in people and they go oh my gosh i get that yeah and so uh last year we had a conference
+attending the conference in Santa Clara.
+This year, we've decided to go focus on the hands-on aspect
+and get people in the room where we can actually teach them the scripting for three days.
+So it's kind of scripting boot camp.
+It's all Apple script for three days.
+They're going to have an indoctrination.
+We'd love to have you down there.
+I would love to go.
+And you've put the videos from last year's command D.
+Yeah, there's a link there for 2017 videos.
+And if you click those, you can...
+free you can yeah oh nice my my lectures on the scripting triumvirate uh i you know i did an hour
+and a half presentation last year on all aspects about the scripting and Automator all the advanced
+things about Automator that people didn't know about using workflow variables and things it's
+up there and there's uh sessions from uh all of our instructors up there like Brett and uh Shelley
+Nice.
+Yeah.
+This is all free.
+It's all free, yeah.
+Just go up there and just go.
+CNDDCONF.com.
+Yep, CMNDDCONF.
+Wow, look at that.
+And David Sparks, a fun session on using the Workflow app.
+Nice, nice.
+Allison Sheridan, code-free automation.
+I love Allison.
+She has an opinion, and you're going to find it out.
+It's Bret yeah.
+And Brett Terpster.
+Well, that's a great lineup from last year,
+and I'm sure it'll be equally interesting this year.
+That sounds like a lot of fun.
+So, you know, I have multiple clients I work with,
+one of which is Apple.
+I work as a contractor with Apple.
+Do you feel like you're getting the inside information from Apple?
+Are they kind of helping you understand what's going on?
+Not really.
+I mean, I don't want to know.
+I don't ask.
+You know, I'm very conscious about my role and my position.
+But you must have been thrilled to see serious suggestions
+and see the acquisition of WorkCloud.
+Oh, yeah.
+commitment to scripting and automation oh yeah re and Conrad and the guys from the workflow app
+absolutely brilliant people who are motivated to do the right thing did you know about workflow
+before it came out oh sure sure they worked they talked to you yeah yeah it wasn't a surprise no
+i was surprised because i didn't think you could i thought you can't do that on ios
+they're very clever guys smart it's all the it's all url it was url based but now that they're
+actually part of Apple you can get access to the things that's what intrigues me that workflow
+could potentially as shortcuts be incredibly useful this could eventually become Apple events
+for ios basically i don't know if it has that level of granularity i think there's always room
+to have like a really granular thing like apple events i would love to see that i think what
+omni is doing by exposing their applications to JavaScript shows that level of granularity does
+Does WebKit have some deep hooks into the operating system?
+It's got to be fairly limited.
+It has some.
+A lot of that is sandboxed.
+Right.
+It's not like on Mac OS X where you can do shell script
+and talk directly down at the low level.
+Or you can use Apple script.
+You could delete your hard drive if you wanted to on OS X.
+I guess if you really wanted to do damage, you could hurt yourself.
+You could hurt yourself.
+Hey, I look for a tool that's good enough to hurt myself.
+I don't think I've ever heard anybody doing that.
+No.
+But the point is I need enough power that I could.
+I mean, you could take your Tesla and run it off a bridge if you want to.
+But I'm not going to.
+But I don't usually hear people doing that.
+No, I just want to know that I can.
+I don't want any artificial constraints on what I can do.
+You're a Mac guy like me.
+I am too.
+I love having that freedom and the ability to work with a Mac.
+And I just love it.
+And now that I can actually use the touch bar for something, dude, I'm all over this.
+Yeah, I was not a fan of the touch bar.
+Yeah, you can put a series of buttons that do stuff that you use, that you want.
+And I'm going to have to find out more about that one.
+That's very interesting.
+I got a bunch already written for you.
+Oh, good.
+Yeah.
+Will that be on the website?
+Well, I'll be talking about it once it comes out as an official release.
+Then I'll have pages with them for download.
+Okay.
+And if you can use JavaScript to do this stuff, can you use some of the...
+There's a lot of tools now around JavaScript, TypeSafe JavaScript with TypeScript.
+I'm a Lisp kind of guy.
+script yeah i presume that i could do the same thing with closure script as long because it
+outputs standard JavaScript so yeah there's i mean there's many ways into this yeah there's many
+ways into it and since javascript is like a string-based text-based language right it works
+like in the web pages right which is text-based is it a dom is it using the Dom well uh the way
+that i did that is i used JavaScript on the page to talk to the table to extract the data
+and then that gets data gets in the json gets inserted into the omni automation javascript
+which gets executed as a url okay omni grabs that parses the whole thing executes puts that
+out into a script and executes it and it all happened when i just clicked you know you saw
+the click yeah it's just that momentary thing all of that happened the data came from the web page
+got translated and put over there over nice so it's a brave new automator still on os 10 yes
+and it will be in Mojave it is the touch Bart creates that's how you're doing it yeah you go
+into Automator now you now have instead of a system service they now call it a touch bar
+quick action template but it looks just like automate it's it is an Automator it's an
+automator workflow that gets saved as a system extension interesting so okay sure i understand
+for the Finder or for the Touch Bar,
+you can have Automator has more life than it's had before.
+And you have no reason to think they're going to abandon that.
+Oh, no.
+There's too many people who use it.
+Well, it's just too useful, and Apple uses it.
+Right.
+You know, how do you think Apple does the work that they need to do?
+How do you think that they produce video and content?
+They probably do all this stuff.
+Oh, yeah, they do a lot of automation.
+you know, part of my job as a product manager, like I said, is I work with lots of different teams.
+I'd be over at retail helping them automate a process or with iTunes.
+You know, all the audio that gets processed for high quality for the iTunes stores done with Apple.
+I'd have to be. You wouldn't want to do that by hand.
+No. And you want to give customers the solution that it's just, hey, drag this onto this, right?
+And so there's automation throughout everything that Apple does as a corporation.
+And every other corporation is the same as Apple.
+They automate these processes.
+They don't do that stuff by hand.
+And for that reason alone, you keep automation in the operating system.
+And now I think automation is going to be a competitive advantage for AppleScript.
+I think they're going to sell more iPads to the enterprise and Education because they can automate it on iOS now.
+And I think they're going to sell more Macs because they've integrated another step into the automation story on Mac OS Mojave.
+so I think this is financially going to do a great thing for Apple.
+So, Craig, if you're listening, Tim, keep it in there.
+It's good for you.
+It'll sell more hardware, right?
+That's absolutely right.
+It's really great stuff.
+Sal, I'm glad you're doing so well.
+You're very, very busy, which is a good thing.
+I can always use more if other companies out there are interested.
+If you need automation, you go to Command D Conference or you go to macosautomation.com.
+Yep.
+Is it Mac 10?
+It's Mac
+MacOS 10 Automation.
+Or either one, Mac or Mac 10 Automation.
+Smart.
+You got them both because the names change.
+Yes.
+But the page stays the same.
+Page stays the same.
+Scriptable Swift apps.
+I think that's interesting.
+Ah.
+And I just recently wrote a template for Xcode for creating Swift Automator actions.
+So if you want to write your own Automator action, you can do it in Swift.
+So anything you could do in Swift, you could make an automator action.
+That's pretty powerful.
+I'd say so.
+Wow.
+And now that it can become part of the operating system through a system extension with Mojave,
+wow, there's even more reason to write the custom Automator stuff.
+There really isn't anything it can't do.
+No.
+So on Windows, they try to have this kind of automation.
+They PowerShell.
+They try to give you some access to this.
+But this is really one of the real strengths of Mac
+There's a stack from the very bottom all the way up to the very top of programmability that is unparalleled.
+Automation is really about the heart of Apple.
+It's what Apple stands for, of empowering the user.
+I don't know if that's widely known, but it's...
+That's what attracted me to the company.
+And I know for a fact that's what Steve believed in.
+And it's creating tools to change the world.
+No matter, you can meet the crustiest Apple employee
+and you scrape the surface air
+and they all believe that same story
+that they're there to change the world.
+And automation is a way that you change the world
+for people in a positive way.
+Yes, I agree 100%.
+It fits the Apple story.
+if they're going to really push iOS, they've got to bring it to iOS.
+They have to.
+Yeah, that's clear.
+Yeah.
+That's what it says right here on the site.
+The power of the computer should reside in the hands of the one using it.
+And this guy's done more to put that power in people's hands than anybody I know.
+And I'm so great to see you again and welcome you back.
+And if you want to have some fun, go back to the very first episodes of Mac Break
+that Sal taught me how to use Automator and AppleScript.
+Man, that's awesome.
+You're going to do a coupon?
+Are you going to do a coupon?
+
+That's right.
+We can't let that go.
+No, don't do a coupon.
+Because you're you.
+That's too good.
+For the Command D conference?
+For the Command D conference, we set up a special coupon.
+If you want to go to Command D in October, we have a coupon with triangulation that will give you the early bird price right now.
+Because it's not early anymore.
+so it'll give you $200 off the price of the conference.
+That's a great sell.
+Thank you.
+Who's going to be at the conference besides the great Sal Seguyan?
+Well, Ray Robertson is going to be hosting the conference with me.
+And we'll both be doing hands-on teaching together in the classroom there.
+And we have a wide variety of people.
+We have somebody from NASA showing up.
+We have school teachers showing up.
+We have all kinds of people.
+What people are doing with automation is, to me, very, very interesting.
+And you learn a lot.
+Oh, totally.
+oh you can do oh that's a good idea yeah i could use that yeah yeah that's great and in addition
+I'm gonna to put a plug in for a couple of the other conferences I'm doing too this year
+maxis admin in Sweden I'll be doing that conference and i'll be doing the jamf conference I'll be
+speaking on the automation part jamf is a sponsor and then one of my favorite is Mac tech in always
+in LA, because the food is so good.
+Neil has figured that one out.
+He's got it down.
+Thank you, Neil.
+Love the food.
+And I get to speak there, too.
+And so I can tell you firsthand that automation is well.
+It's doing well.
+It's growing.
+It's prospering.
+People are interested in automation again.
+It's so important.
+It totally is.
+And it's so powerful.
+And if you haven't played with it on your Mac, play with it.
+workflow yet you still can in about a month when we all get shortcuts on ios 12 yeah that's going
+to really i think that's going to change things dramatically people start seeing serious suggestions
+pop up and then maybe just delve a little bit into what they can do with shortcuts i think there's
+going to be some really interesting stuff have you noticed the websites are starting to pick up on
+that here's a 10 shortcut ideas and stuff have you noticed that it's like the whole community
+find some of those that sounds great that really it is it's exciting you're gonna have a lot of it
+on your shows yeah we've you know it's funny because uh I've shown people how to use automator
+and i think sometimes people go that's complicated that's complicated or worse workflow oh that's
+complicated i don't know but i think we should do maybe we'll do maybe we'll start doing an
+automator tip of the week or something like that maybe i get you i think you're gonna do a serious
+shortcut tip of the week i think that's how it's gonna start how about that i think it's gonna
+to absolutely start that way we'll start doing and you're going to have built into your website
+people will be able to download these you can click it and you know it's going to be a twit
+thing do you have the twit shortcuts why don't you have the twit you know what i want to do is
+as a progressive web app so this is in a way this fits into that that's the idea that you go to a
+website it had there's some there's some uh workers on ios or on Mac or on Windows that uh
+to support it that an offline version of the website so it downloads its caches it uses
+workers to do a lot of the things and it can even work offline and that basically means you
+can go to our website and get a twit podcast app there's no reason not with JavaScript enabling
+there's no reason i couldn't be doing a lot more interesting things totally yeah that's really
+thank you sal it's always a pleasure thank you so great to see you again we shouldn't make it
+so long next time come back soon I'll come to dinner and stay all winter well you well we are
+our reservation is is we're gonna have dinner I'm gonna try to beat Neil on the food here
+we do triangulation uh every uh usually every Friday about 3 p.m Pacific 6 p.m Eastern 2200
+utc uh it's called triangulation not because there's three of me no there's one of me one
+of our guests and one of you you're the third side of the triangle if you join us in the chat
+IRC.twit.tv.
+But if you can't watch live, don't worry.
+We make on-demand versions of everything available, audio or video.
+For this show, it's Twitter.tv.tri.
+You can also subscribe in your favorite podcast application and get it automatically.
+Or better yet, write an automator script.
+They should just pull them all down.
+That's the way to do it.
+We'll put a button on the website.
+Download everything.
+Cashfly I'll be on the phone.
+What's going on?
+Thanks for joining us.
+We'll see you next time on Triangulation.
+Bye-bye.

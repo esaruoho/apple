@@ -1,0 +1,146 @@
+Mac Voices is sponsored by Smile and PDF Pen 9, the best way to do more with your PDF documents,
+including optical character recognition, search and replace, secure redacting,
+highlighting features, and much more. Get all the details and download a free trial
+at smilesoftware.com.
+Mac Voices is in San Jose for Alt Conf and WWDC.
+I'm Chuck Joyner.
+Folks, this is my first AllstarAllstar interview of the show.
+I've had some great guests on,
+but now I've got two big stars, and I love it.
+Ken Case of the Omni Group.
+Ken, it's great to have you.
+Oh, thank you for having me.
+And Sal Seguyan, all things automation.
+That's all he does.
+Sal, it's good to have you.
+Big fan, big fan.
+Thank you.
+I appreciate that.
+announcements here and Sal was talking about them today. Can I let you start and then we can
+let Sal tell us what we're going to do with it. Sure. Well, the thing that we just added or that
+we showed today was Omni Automation, which is the ability for users to customize our apps and add
+functionality that wasn't already built into the apps. So some of what Sal showed, for example,
+was, you know, he started out with some capabilities that he added to the apps that weren't there
+already, and because the user automation is now available to build these apps, build into
+these apps and add capabilities, he could say, for example, that he wanted to capture
+an outline and put it into OmniGraffle, you know, as a simple example.
+So, Sal, every time I hear you, I hear about so many different kinds of Automation
+and options that I have.
+What does this new thing from the Omni Group bring to the table?
+I've been in automation quite a long time.
+And the thing that really Thrills me about what the Omni Group is doing with Omni Automation
+is the fact that I can write a script that is productive for me on the Mac
+and that same script is going to be productive for me on my iOS device.
+and that to me is really empowering and enlightening and it is also opened up
+the ability to be able to store information and and tools in other
+places beside in the application for example the I can store script in a
+web and have it interface with data from the webpage that I can then use in
+my Omni applications document so a mere tap on a table in a web page can
+suddenly heat map a graphic in my document and that transfer all happens
+because of the power and the flexibility of the Omni automation that has been
+written it's quite amazing and I'm constantly thrilled and excited by every
+little thing that happens like that I don't want to take us down too many
+example, does the data on the table on the website have to be formatted in some special way? Or is
+this scripting smart enough to pull out exactly the way I want it? Or can I customize it to pull
+out exactly what I want? So the Omni Automation tool is based upon JavaScript core, the same
+JavaScript core that is part of WebKit on all of Apple's devices. And because it is part of and
+JavaScript core, it enables a special relationship with HTML that you just don't have with other
+languages. And you can use standard HTML practices to extract the data out of a table. You don't
+have to do anything special. That's standard routines that will convert the contents of
+a table on a web page into a Json object. Then it's just a matter of adding that Json
+object to your Omni automation script but since they're both in JavaScript and
+since they're both text-based that just becomes a simple matter of running the
+JavaScript replace command on a placeholder and then once you've done
+that a simple click or a tap to trigger the URL makes that action happen with
+the information in the Omni application document it's quite incredible to see if
+If you go to omni-automation.com, you can watch the videos and you'll instantly understand
+the feasibility of this and why you want this kind of ability and technology on your mobile
+device.
+One of the interesting things about it being built on top of Apple's JavaScript
+Core is that it is also really highly tuned for performance.
+So it is blazingly fast, the automation scripting that we're doing.
+You know, we've been doing Automation in our apps with AppleScript since early OS X,
+but the difference in performance of these scripts versus the AppleScripts that were happening before is just night and day.
+Yes. I mean, you know, you can create 40 objects in a microsecond.
+You don't even see the separate objects being created. It's just a blur.
+It's really efficient, fast, and it's fun.
+That's the best part is I've just opened up my mind and I get to explore.
+And Ken and the engineers are just laying down the plumbing as I need it to go.
+And we're just seeing the possibility and the potential of what you can do when you finally have an automation technology on an iOS device the same way that you do on a Mac device.
+Now, obviously, you're building these tools so that anyone has the ability to learn them and use them.
+But for someone that maybe isn't into scripting or maybe doesn't feel proficient with it,
+are you going to be building, say, pre-prepared scripts to execute certain functions?
+Ken or Sal, either one of you?
+The design, the future-proofing of the Omni design is they first thought about creating plug-ins.
+that somebody, a developer or a motivated user,
+could create these plugins that would contain the individual scripts
+or libraries that a normal user would run.
+And then the user could just tap a link on a page
+or double-click a file to install that
+and make that part of their Omni environment.
+So as somebody that wants to take advantage of automation
+but not write it themselves, here's a perfect way to do that.
+They can go to somebody that they trust, install this plug-in, and then have a whole set of tools that can affect what they're doing, but they don't need to write the automation themselves.
+That's encouraging because I think there are a lot of omniFocus users out there that are very comfortable with omniFocus
+I'm not sure they're quite comfortable with scripting, but this would allow them to start to tap the power and maybe give them an entry into scripting.
+and part of the way that we've Design This This that it's really easy to distribute those scripts off of a web page so that they can go to, you know, if we set up a page for sharing some of these examples or if people post things on our discussion forums or if they've set up their own web pages, right, then those make an easy way for people to just Tip a link and have it either start right away or tap a link and have it install into their application to use again later.
+over and over.
+Yeah, Kim brings up an interesting point is that if I like,
+I'm a person that likes sharing the automation tools that I create
+because I get a joy from people responding and saying,
+you know, that really changed my life.
+I was able to save an hour every day and spend that time elsewhere.
+So they've developed the architecture in a way
+where I can put that Omni-automation tool in a web page
+and make it a button that you can click and it will affect your document
+and you don't have to install anything.
+that web page open on a split view on the Mac or on iOS and just go okay tap
+and it will ask you do you want to run this and then it will show you the
+actual script just so you can peruse to make sure it's okay click run and all of
+the Power and ability of that automation tool executes on your document but you
+didn't have to change your environment you just went to a web page so that's an
+option and flexibility that I've never seen in any automation language or
+functionality nobody's ever done anything that has this depth but this
+much flexibility at the same time so your career has been about bringing
+automation I think to everyone at one level or another is is this something
+now Omni group is adopting or is it just something that is a natural evolution
+of the things you've been doing I guess this is a natural evolution what we've
+Ken's going to adopt me.
+My last name's going to become Case.
+But it has been a lot of fun to work with Sal on this.
+Really, this project started about two years ago,
+and we've been working at it very hard for all of that time.
+But when we heard that Sal was available to work with us on this,
+that was, well, I guess within an hour, I was talking with him.
+what are you up to now?
+I would imagine your phone was ringing off the hook, but this was the one you answered.
+Oh, yeah.
+You know, I've always appreciated the quality of the Omni Group, The kind of software that they develop,
+their commitment to giving their customers the finest tools they can,
+having scripting support, full scripting support in their products.
+That always impressed me.
+And as a matter of fact, Apple had a lot of tools that I helped develop that we used internally to automate processes that were based on Omni applications like OmniPlan.
+And it's because of that commitment that I felt very confident working with the team, that they were open to my ideas and open to my suggestions.
+And it's just been a great relationship working with them.
+That's terrific.
+So where do we send folks to learn more about all this, to see it in action?
+I think you already gave the website.
+I'll ask you to give it again.
+Omni-automation.com.
+And there's plenty of videos.
+There's video Pages
+You can just peruse the videos for a while and get a quick concept of the level of what can be done.
+Then all of the examples of the scripts written out on the page, you can either click it to copy it or click it to run it.
+So there's so much to try.
+And we're constantly changing it and updating it as we're going and proceeding in the development cycle.
+over time but there's plenty of good stuff there to take a look at right now
+and can the the Omni group site is of course Omni group calm I kind of
+thought so gentlemen thank you so much for the time really appreciate it thank
+you thank you now the throngs of fans are about to engulf us all yeah folks
+we'll have more from Alton-conf and WWDC in San Jose I'm Chuck Joyner thanks for
+watching. Visit macvoices.com for show notes, links to subscribe, and to connect with Chuck
+on Twitter, Google+, Facebook, YouTube, Vimeo, SoundCloud, the Mac Voices blog,
+Mac Voices Dispatch, our Weekly Newsletter and on Mac Voices Magazine, free on Flipboard that
+helps you do more with your Apple tech. Advertising handled by BackBeat Media at
+BackBeat.com. Bandwidth provided by CashFly at cashfly.com.
+We'll be right back.
