@@ -90,7 +90,7 @@ echo ""
 echo "Folder:  $FOLDER_NAME"
 echo ""
 
-# Create the folder in Shortcuts.app (idempotent)
+# Create the folder in Shortcuts.app (safe to re-run; nothing breaks if it already exists)
 echo "Creating folder '$FOLDER_NAME'..."
 osascript -e "
 tell application \"Shortcuts\"
