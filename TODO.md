@@ -19,7 +19,7 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 - [ ] **Run `bin/capture-vocal-shortcut-schemas.py`** — 5-min interactive session in front of System Settings to lock down `siriRequest` + `accessibility` JSON shapes. Updates `analysis/sal/vocal-shortcuts-storage-format.md` once both shapes captured.
 - [x] **Fixed matcher bug: "show me hide dock" → wrong target.** Root cause: "show" + "hide" both scored as content words → tie → arbitrary winner. Fix: added 10-entry `COMMAND_PREFIXES` table and `strip_command_prefix()`; when the utterance opens with one ("show me", "run", "do", "tell me", etc.) we score only the stripped form, so prefix verbs no longer contaminate overlap. Added "me" + "i" to `STOPWORDS`. Router-verify now reports **39/39 full-match, 0 partial**.
 - [ ] **Execute the daemon-reload probe** (`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`). 3-terminal procedure; ~15 min. Result: identify the signal System Settings fires on Vocal Shortcut add/edit/delete.
-- [ ] **Execute the plist-write-firing test** (`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`). Requires building `bin/avs-prefs-write.py` first (binary plist round-trip helper). Then 6-step manual experiment. Result: definitive answer on whether plist-only installs can fire without retraining.
+- [ ] **Execute the plist-write-firing test** (`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`). `bin/avs-prefs-write.py` built 2026-05-11; helper has list/dump/backup/restore/remove-id/add/reload-cfprefsd/kick-daemons subcommands with auto-timestamped backups on every write. 6-step manual experiment remaining.
 - [ ] **Bind 5 top router-verified candidates through Hey Sal** — pick from the 38 full-match candidates by Sal-purpose score; verify each runs cleanly end-to-end via voice. No new training needed.
 
 ---
@@ -54,10 +54,10 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 
 The voice-memos→calendar xref proved the pattern. Drop the same idiom into:
 
-- [ ] `voice-memos-exporter xref --notes` — match recording titles against Notes.app body content
+- [x] `voice-memos-exporter xref --notes` — shipped 2026-05-11. Notes bodies are protobuf (not SQL-searchable); restricted to ZTITLE1 with ≥2 distinct ≥3-char token overlap. First run surfaced clean matches like "Mauri Rantala" ↔ a Facebook URL note, and "Inkiväärikuja 6 7" ↔ three property-related notes.
 - [ ] `safari-exporter xref --notes` — match open-tab URLs against Notes.app body URL mentions
-- [ ] `mail-exporter xref --calendar` — match received messages to ±60 min meetings
-- [ ] `photos-exporter xref --calendar` — match photo capture date to ±10 min events
+- [x] `mail-exporter xref --calendar` — shipped 2026-05-11; default ±60 min, optional `--since YYYY-MM-DD` + `--limit`, JSON or text.
+- [x] `photos-exporter xref --calendar` — shipped 2026-05-11; default ±10 min, surfaces event location alongside summary; first run with `--since 2026-05-01` returned 4 photo↔event correlations.
 - [ ] `reminders-exporter xref --calendar` — match reminder due_date to events near it
 
 ### Next exporter targets — Tier 2
@@ -69,7 +69,7 @@ The voice-memos→calendar xref proved the pattern. Drop the same idiom into:
 - [ ] **`books-exporter`** — library + annotations + highlights (`~/Library/Containers/com.apple.iBooksX/Data/Documents/`)
 - [ ] **`tv-exporter`** — same idea as Books for the TV library
 - [ ] **`contacts-exporter`** — Contacts sdef + `~/Library/Application Support/AddressBook/AddressBook-v22.abcddb`
-- [ ] **`shortcuts-exporter`** — `shortcuts list` CLI + per-shortcut plist data; export every shortcut as readable markdown so AI assistants can study the user's automation library
+- [x] **`shortcuts-exporter`** — shipped 2026-05-11. Reads Shortcuts.sqlite via the WAL-safe snapshot helper. Subcommands: status / list / folders / show / export. Per-Shortcut markdown with YAML frontmatter under `exported/shortcuts/by-uuid/<uuid>.md` + folder indexes + master `_index.md`. First run: 278 Shortcuts catalogued across 5 folders. Action contents (NSKeyedArchiver bplists) not yet decoded — metadata-only export.
 
 ### Next exporter targets — Tier 5 dark via back-door pattern
 
@@ -92,7 +92,7 @@ The voice-memos→calendar xref proved the pattern. Drop the same idiom into:
 
 - [ ] **Swap rule-based intent classifier for `LanguageModelSession`** (FoundationModels Swift framework). The dispatch loop stays the same; replace the regex bank with a Swift one-liner that emits `{exporter, subcommand, args}` JSON. Detection trick is already in `bin/apple-summarize` — instantiate `LanguageModelSession()`, not just `import FoundationModels`.
 - [ ] **Vocal Shortcuts trigger** — register "Hey Sal" as a macOS Vocal Shortcut that pipes the captured utterance into `bin/hey-sal --speak`.
-- [ ] **More intent patterns** — current 13 cover ~60% of natural utterances; add patterns for: "remind me to X tomorrow at Y", "play track X", "show me photos from <month>", "draft an email to X about Y".
+- [x] **More intent patterns** — 3 of 4 shipped 2026-05-11: `remind me to X [tomorrow|today|at Y]`, `play [track|song] X`, `draft/compose email to X about Y`. Each handler shells out via osascript through the app's sdef — no exporter subcommand dependency. The 4th ("show me photos from <month>") deferred: photos-exporter needs a date-range search subcommand first.
 
 ### Cross-package layer — still missing
 
@@ -100,7 +100,7 @@ The voice-memos→calendar xref proved the pattern. Drop the same idiom into:
 
 ### Documentation refresh
 
-- [ ] **`automation-tiers.md` refresh** — promote Mission Control from Tier 6 to Tier 5 (already done in skill.md but not in the standalone file).
+- [x] **`automation-tiers.md` refresh** — verified 2026-05-11 that the standalone file has no per-app classification list (it's all surface-level tier descriptions). skill.md summary tier list updated to put Mission Control under Tier 5; the body-text reclassification note at line 541 was already there.
 - [ ] **`exported/README.md` cardinality refresh** — auto-update the live numbers each time `apple-grand-export` runs.
 - [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots of the survey to catch new apps / new keys after macOS updates. Run after each system update; commit the diff so the repo tracks Apple's evolution.
 

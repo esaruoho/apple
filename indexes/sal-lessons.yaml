@@ -906,3 +906,183 @@ lessons:
       type: tool-plus-analysis
       target: "bin/sdef-to-jxa.py"
       note: "204-page PDF + two-part analysis (pages 1–55 and 56–204). Cross-links to all 31 JXA dictionary cheat-sheets in dictionaries/*/*.jxa.md."
+
+  # ─── WWDC sessions captured 2026-05-11 (commit 98702f4) ─────────────────────
+  # 11 additional Sal-on-stage sessions completing the 2003–2015 corpus.
+  # Each transcript + analysis + metadata captured under sources/sal/wwdc/.
+
+  - id: foundations-wwdc-2004-723
+    title: "WWDC 2004 #723 — AppleScript and QuickTime"
+    track: foundations
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2004-session-723-applescript-and-quicktime/transcript.md"
+    source_status: captured
+    goal: "Second iteration of the AppleScript+QuickTime story (Tonna, Lynch as co-presenters); pairs with 2003 #718 to show the cross-year curriculum continuity for media scripting."
+    allows:
+      - "Compare 2003 vs 2004 framings of the same Sal/Tonna/Lynch material."
+      - "Establish QuickTime as a stable AppleScript target across the Tiger transition."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2004-session-723-applescript-and-quicktime/analysis.md"
+
+  - id: foundations-wwdc-2005-138
+    title: "WWDC 2005 #138 — AppleScript for C, C++, and Java Programmers"
+    track: foundations
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2005-session-138-applescript-for-c-cpp-java/transcript.md"
+    source_status: captured
+    goal: "Sal solo: deliberate bridge to systems-language developers — frames AppleScript as a peer language deserving the same mental model as C++/Java."
+    allows:
+      - "Cite the C-family-to-AppleScript translation table for onboarding non-Mac engineers."
+      - "Anchor WWSD #1 (democratization) in a 2005 explicit appeal to systems programmers."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2005-session-138-applescript-for-c-cpp-java/analysis.md"
+
+  - id: workflow-wwdc-2007-206
+    title: "WWDC 2007 #206 — Building Automator Actions"
+    track: workflow-building
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2007-session-206-building-automator-actions/transcript.md"
+    source_status: captured
+    goal: "Sal solo: the authorial side of Automator — how third-party apps ship actions that compose into user workflows."
+    allows:
+      - "Apply the 2007 Action-author rubric (single-purpose, deterministic, well-typed I/O) to current Shortcuts-action authoring."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2007-session-206-building-automator-actions/analysis.md"
+
+  - id: foundations-wwdc-2007-224
+    title: "WWDC 2007 #224 — Next Generation Automation"
+    track: foundations
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2007-session-224-next-generation-automation/transcript.md"
+    source_status: captured
+    goal: "Sal solo — the session where his title shifts to Product Manager for Automation Technologies. Anchors the role-name this entire repo is built around."
+    allows:
+      - "Cite the canonical source for Sal's Product-Manager-for-Automation-Technologies title."
+      - "Trace the 2007 'next generation' framing forward to 2024 Vocal Shortcuts as a continuous line."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2007-session-224-next-generation-automation/analysis.md"
+      note: "The title-naming session. Why this repo's skill is called Product Manager of Automation Technologies."
+
+  - id: workflow-wwdc-2008-547
+    title: "WWDC 2008 #547 — Building and Leveraging Automator Actions"
+    track: workflow-building
+    level: 3
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2008-session-547-building-and-leveraging-automator-actions/transcript.md"
+    source_status: captured
+    goal: "Hazelgren/Kim/Silva alongside Sal: Savant Systems commercial validation of WWSD #1 (democratization) — third-party shipping production Automator actions."
+    allows:
+      - "Cite Savant Systems as the commercial proof-point for the Automator-action ecosystem Sal built."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2008-session-547-building-and-leveraging-automator-actions/analysis.md"
+
+  - id: admin-wwdc-2009-607
+    title: "WWDC 2009 #607 — Services in Snow Leopard for IT"
+    track: admin-deployment
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2009-session-607-services-for-it-snow-leopard/transcript.md"
+    source_status: captured
+    goal: "Hayman+Sal: Point-of-Need doctrine, four C's rubric, AppleScriptObjC launch, macosxautomation.com soft-launch — the conceptual scaffolding for the entire pre-2017 Sal era."
+    allows:
+      - "Cite the four C's (Convert, Combine, Create, Capture) as the IT-Services classification rubric."
+      - "Anchor the Point-of-Need doctrine to its 2009 source — 'automation appears where the user is, not where the admin scheduled it'."
+      - "Date the launch of macosxautomation.com (whose content this repo preserves) to 2009 Snow Leopard era."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2009-session-607-services-for-it-snow-leopard/analysis.md"
+
+  - id: workflow-wwdc-2010-302
+    title: "WWDC 2010 #302 — Automating the Creation of iPad Content"
+    track: workflow-building
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2010-session-302-automating-ipad-content/transcript.md"
+    source_status: captured
+    goal: "Jouaux+Sal: content-pipeline pivot to iPad — Apache-as-AppleScript-CGI demo. The web-hosted automation surface."
+    allows:
+      - "Recognize Apache-as-AppleScript-CGI as the 2010 ancestor of modern Shortcuts-via-iCloud-sharing publishing."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2010-session-302-automating-ipad-content/analysis.md"
+
+  - id: accessibility-wwdc-2011-133
+    title: "WWDC 2011 #133 — Lion-Sized Automation"
+    track: accessibility-voice
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2011-session-133-lion-sized-automation/transcript.md"
+    source_status: captured
+    goal: "The `listen for` AppleScript primitive — the 2011 first take on on-device voice triggers that becomes the 13-year lineage anchor for Custom Commands (2014) → Vocal Shortcuts (2024)."
+    allows:
+      - "Cite `listen for` as the canonical 2011 source for WWSD #2 (local-over-cloud) on voice."
+      - "Trace the unbroken 2011→2024 lineage through the three eras (`listen for` / Custom Commands / Vocal Shortcuts)."
+      - "Recognize the Sinatra branching dialog as the 2011 ancestor of the Hey Sal router pattern."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "analysis/sal/voice-trigger-lineage-2011-to-2024.md"
+      note: "Primary 2011 source for the voice-trigger lineage analysis doc."
+
+  - id: foundations-wwdc-2013-416
+    title: "WWDC 2013 #416 — Introducing AppleScript Libraries"
+    track: foundations
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2013-session-416-introducing-applescript-libraries/transcript.md"
+    source_status: captured
+    goal: "Page+Sal: 20th anniversary — the `use` clause, .sdef walk-through, AppleScript Library packaging. The reusable-handlers era opens."
+    allows:
+      - "Cite the 2013 `use` clause as the WWDC source for Sal's DC-XXX .scptd library architecture."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2013-session-416-introducing-applescript-libraries/analysis.md"
+      note: "The library mechanism that underpins Sal's 588-handler CitrusPeel corpus."
+
+  - id: modern-wwdc-2013-417
+    title: "WWDC 2013 #417 — OS X Automation Update"
+    track: modern-translation
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2013-session-417-osx-automation-update/transcript.md"
+    source_status: captured
+    goal: "Nebel+Sal: one-click signing, speakable workflows, Notification Center integration. The 'production-ready Automator' year."
+    allows:
+      - "Cite one-click code-signing as the 2013 entry point that smoothed sandbox+notarisation friction for end-user automation."
+    modern_equivalent:
+      type: analysis
+      target: "sources/sal/wwdc/2013-session-417-osx-automation-update/analysis.md"
+
+  - id: admin-wwdc-2015-306
+    title: "WWDC 2015 #306 — Supporting the Enterprise with OS X Automation"
+    track: admin-deployment
+    level: 4
+    category: primary-source-wwdc
+    source_site: wwdc
+    source_page: "sources/sal/wwdc/2015-session-306-supporting-enterprise-osx-automation/transcript.md"
+    source_status: captured
+    goal: "Sal solo — the last enterprise-track WWDC before the November 2016 elimination. The closing argument for institutional macOS automation."
+    allows:
+      - "Cite the 2015 enterprise framing as the late-era statement that institutional automation was a first-class Apple priority before the cut."
+    modern_equivalent:
+      type: analysis-plus-wwsd
+      target: "sources/sal/wwdc/2015-session-306-supporting-enterprise-osx-automation/analysis.md"
+      note: "Last WWDC session Sal solo-presented before the elimination. The 'we still believe in this' bookend."
