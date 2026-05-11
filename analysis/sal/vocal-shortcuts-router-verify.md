@@ -8,8 +8,8 @@ what: simulates Hey Sal voice routing for each audit-matched candidate
 # Summary
 
 - Candidates tested: **39**
-- Full-match (all phrasings resolve correctly): **38**
-- Partial: **1**
+- Full-match (all phrasings resolve correctly): **39**
+- Partial: **0**
 - No-match: **0**
 
 # Detail
@@ -38,6 +38,7 @@ what: simulates Hey Sal voice routing for each audit-matched candidate
 | `system-events-bluetooth-toggle` | 4/4 | — |
 | `system-events-disk-usage` | 4/4 | — |
 | `system-events-dock-add-spacer` | 4/4 | — |
+| `system-events-hide-dock` | 4/4 | — |
 | `system-events-ip-address` | 4/4 | — |
 | `system-events-list-running-apps` | 4/4 | — |
 | `system-events-notification-count` | 4/4 | — |
@@ -54,4 +55,3 @@ what: simulates Hey Sal voice routing for each audit-matched candidate
 | `terminal-new-tab` | 4/4 | — |
 | `terminal-new-tab-at-path` | 4/4 | — |
 | `Wi-Fi` | 4/4 | — |
-| `system-events-hide-dock` | 3/4 | wrong: system-events-show-dock |
