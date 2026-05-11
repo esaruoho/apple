@@ -7,7 +7,7 @@
 # This script: for each affected library, decompile → search/replace bundle
 # IDs → recompile → install to ~/Library/Script Libraries/.
 #
-# Idempotent. Safe to re-run.
+# Safe to re-run any time.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

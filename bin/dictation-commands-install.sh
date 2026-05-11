@@ -12,7 +12,7 @@
 # See analysis/sal/macos-sequoia-dictation-runtime-removal.md for details.
 #
 # Replaces the manual UI flow Sal shipped (1) Install Automation Tools.app with a
-# scriptable installer. Idempotent. Logs everything.
+# scriptable installer. Safe to re-run any time. Logs everything.
 #
 # What this does:
 #   1. Copies 18 .scptd AppleScriptObjC libraries to ~/Library/Script Libraries/
