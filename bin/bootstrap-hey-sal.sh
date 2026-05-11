@@ -13,8 +13,8 @@
 #   4. Detect missing Accessibility/Automation grants and print precise
 #      next-step instructions.
 #
-# Run anytime — idempotent. Re-running rebuilds wrappers/app/Shortcuts and
-# re-imports cleanly.
+# Run anytime — safe to re-run. Re-running rebuilds wrappers/app/Shortcuts
+# and re-imports cleanly; no duplicates, no half-states.
 #
 # Usage:
 #   bash ~/work/apple/bin/bootstrap-hey-sal.sh
