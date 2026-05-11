@@ -102,6 +102,20 @@ Modes: text (default), `--json`, `--write [PATH]` (markdown to [`analysis/sal/vo
 
 First reading on this Mac: **39 audit-matched candidates ready for binding** (`finder-compress-selected`, `system-events-wifi-toggle`, `mail-unread-count`, `homepod-climate-reading`, `system-events-screenshot-area`, et al.) — these are the highest-leverage next Vocal targets per Sal's seven-purpose framework.
 
+**Router-verification** ([`bin/vocal-shortcuts-router-verify.py`](bin/vocal-shortcuts-router-verify.py)): runs the 39 audit-matched candidates through the Hey Sal matcher to confirm each resolves without retraining. **38/39 full-match**, 1 partial. The router pattern works at production scale.
+
+**Schema-capture** ([`bin/capture-vocal-shortcut-schemas.py`](bin/capture-vocal-shortcut-schemas.py)): interactive helper to lock down the two unobserved action kinds (`siriRequest`, `accessibility`) — walks the user through System Settings UI, captures Apple's JSON via plist polling.
+
+**`--fix-drift`** mode added to `vocal-shortcuts-suggest.py`: rewrites `AVSPreferenceKey` to repair cached `associatedShortcut.name` after Shortcut renames. Drift is cosmetic (binding is UUID-stable) but the cached label shows up in System Settings.
+
+**WAL-safe SQLite snapshot helper** ([`bin/lib/apple_sqlite_snapshot.py`](bin/lib/apple_sqlite_snapshot.py)) — extracted from `vocal-shortcuts-suggest.py` and now used across all 7 first-party exporters (Voice Memos, Safari, Mail, Notes, iMessage, Photos, Calendar). Snapshots `.sqlite + -wal + -shm` to a temp dir before opening read-only, so the live WAL state is visible (vs `?immutable=1` which silently drops uncommitted writes). Picked up an extra row in Shortcuts.sqlite on the first run after refactor — proof the WAL was hiding live data.
+
+**Two open-experiment runbooks** for the remaining unknowns:
+- [`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`](analysis/sal/vocal-shortcuts-daemon-reload-probe.md) — what signal does the System Settings UI fire on add/edit/delete that a raw `defaults write` doesn't?
+- [`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`](analysis/sal/vocal-shortcuts-plist-write-firing-test.md) — does plist-only write produce a fireable trigger, or just orphaned binding metadata?
+
+**Full session findings:** [`analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md`](analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md) (six findings codified).
+
 **Build pipeline:**
 
 | Stage | Tool | What it does |

@@ -36,6 +36,11 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# WAL-safe Apple SQLite snapshot helper. Safari is often running during exports
+# so use the snapshot path to see uncommitted WAL state.
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import snapshot_open_persistent  # noqa: E402
 DEFAULT_ENV = ROOT / ".env"
 
 SAFARI_TABS_DB = Path(os.path.expanduser(
@@ -80,8 +85,7 @@ def open_ro(path: Path) -> sqlite3.Connection:
     if not path.exists():
         sys.exit(f"DB not found at {path}.\n"
                  "Grant Full Disk Access to Terminal in System Settings → Privacy & Security.")
-    uri = f"file:{path}?mode=ro&immutable=1"
-    return sqlite3.connect(uri, uri=True)
+    return snapshot_open_persistent(path)
 
 
 SLUG_RE = re.compile(r"[^a-zA-Z0-9._-]+")

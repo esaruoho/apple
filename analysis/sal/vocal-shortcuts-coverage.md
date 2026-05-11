@@ -11,11 +11,11 @@ sources:
 # Tallies
 
 - Vocal Shortcut entries: **2**
-- Live (non-tombstoned) Shortcuts: **277**
+- Live (non-tombstoned) Shortcuts: **278**
 - Live Shortcuts with a Vocal binding: **2**
 - Orphaned bindings: **0**
 - Rename drift: **0**
-- Unbound Shortcuts: **275**
+- Unbound Shortcuts: **276**
 - Triple-channel audit candidates: **73**
 
 # Orphans

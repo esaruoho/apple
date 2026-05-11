@@ -38,6 +38,11 @@ except ImportError:
     print("ERROR: markdownify not installed. Run: pip3 install -r ../requirements.txt")
     sys.exit(1)
 
+# WAL-safe Apple SQLite snapshot helper. Notes.app stays running on most
+# Macs; use the snapshot path so we see WAL-uncommitted edits.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import snapshot_open_persistent  # noqa: E402
+
 
 # --- Constants ---
 
@@ -160,11 +165,8 @@ def slugify(text):
 # --- SQLite queries ---
 
 def get_db_connection(db_path):
-    """Open read-only connection to Apple Notes database."""
-    uri = f"file:{db_path}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Open read-only WAL-safe connection to Apple Notes database."""
+    return snapshot_open_persistent(db_path, row_factory=sqlite3.Row)
 
 
 def get_folders(conn):

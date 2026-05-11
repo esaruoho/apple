@@ -34,6 +34,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# WAL-safe Apple SQLite snapshot helper. Photos.sqlite is ~3 GB on a real
+# library — too costly to snapshot every export. Use immutable; Photos.app's
+# WAL writes are slow enough that staleness is rarely material.
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import open_immutable  # noqa: E402
 DEFAULT_ENV = ROOT / ".env"
 PHOTOS_LIB = Path(os.path.expanduser("~/Pictures/Photos Library.photoslibrary"))
 DB_PATH = PHOTOS_LIB / "database" / "Photos.sqlite"
@@ -82,7 +88,7 @@ def load_env() -> dict[str, str]:
 def open_ro() -> sqlite3.Connection:
     if not DB_PATH.exists():
         sys.exit(f"Photos library DB not found at {DB_PATH}")
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro&immutable=1", uri=True)
+    return open_immutable(DB_PATH)
 
 
 def cocoa_to_dt(z: float | None) -> datetime | None:

@@ -32,6 +32,11 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
+# WAL-safe Apple SQLite snapshot helper. Messages.app runs continuously and
+# writes constantly — snapshot is critical to catch recent messages in WAL.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import snapshot_open_persistent  # noqa: E402
+
 
 # --- Constants ---
 
@@ -500,10 +505,8 @@ def check_db_access(db_path):
 
 
 def get_db_connection(db_path):
-    """Open read-only connection to iMessage database."""
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Open read-only WAL-safe connection to iMessage database."""
+    return snapshot_open_persistent(db_path, row_factory=sqlite3.Row)
 
 
 # --- Query functions ---

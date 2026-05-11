@@ -36,12 +36,12 @@ import argparse
 import json
 import plistlib
 import re
-import shutil
-import sqlite3
 import sys
-import tempfile
 from datetime import date
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+from apple_sqlite_snapshot import snapshot_open  # noqa: E402
 
 HOME = Path.home()
 REPO = Path(__file__).resolve().parent.parent
@@ -87,25 +87,16 @@ def read_shortcuts_db():
     """
     Return {workflow_uuid: name} for live (non-tombstoned) Shortcuts.
 
-    Copies the SQLite file to a temp path to avoid WAL contention with the
-    running Shortcuts.app. Read-only.
+    Uses the WAL-safe snapshot helper so the running Shortcuts.app's
+    uncommitted WAL state is included.
     """
     if not SHORTCUTS_DB.exists():
         return {}
-    with tempfile.TemporaryDirectory() as tmp:
-        snap = Path(tmp) / "Shortcuts.sqlite"
-        shutil.copy2(SHORTCUTS_DB, snap)
-        # also copy WAL/SHM siblings so the snapshot is consistent
-        for suffix in ("-wal", "-shm"):
-            sib = SHORTCUTS_DB.with_name(SHORTCUTS_DB.name + suffix)
-            if sib.exists():
-                shutil.copy2(sib, snap.parent / sib.name)
-        con = sqlite3.connect(f"file:{snap}?mode=ro", uri=True)
+    with snapshot_open(SHORTCUTS_DB) as con:
         rows = con.execute(
             "SELECT ZWORKFLOWID, ZNAME FROM ZSHORTCUT "
             "WHERE ZTOMBSTONED = 0 AND ZWORKFLOWID IS NOT NULL"
         ).fetchall()
-        con.close()
     return {uuid: name for uuid, name in rows if uuid}
 
 
@@ -335,6 +326,42 @@ def render_markdown(report):
     return "\n".join(lines)
 
 
+def fix_drift(report) -> int:
+    """
+    Rewrite AVSPreferenceKey, replacing each drifted entry's cached
+    associatedShortcut.name with the live ZNAME from Shortcuts.sqlite.
+
+    Drift is cosmetic — bindings stay UUID-stable across renames — but the
+    cached name shows up in the Vocal Shortcuts list in System Settings,
+    so out-of-sync labels confuse the user. Returns count of entries fixed.
+    """
+    drift = report["drift"]
+    if not drift:
+        return 0
+
+    raw_entries = read_vocal_shortcuts()
+    drift_by_phrase = {d["phrase"]: d["live_name"] for d in drift}
+    fixed = 0
+    for entry in raw_entries:
+        live = drift_by_phrase.get(entry.get("name"))
+        if live is None:
+            continue
+        entry.setdefault("associatedShortcut", {})["name"] = live
+        fixed += 1
+
+    new_blob = json.dumps(raw_entries, separators=(",", ":")).encode("utf-8")
+    with open(PLIST, "rb") as f:
+        plist = plistlib.load(f)
+    plist[PLIST_KEY] = new_blob
+    with open(PLIST, "wb") as f:
+        plistlib.dump(plist, f, fmt=plistlib.FMT_BINARY)
+
+    # cfprefsd caches the plist in memory; ask it to reread.
+    import subprocess
+    subprocess.run(["killall", "-HUP", "cfprefsd"], check=False, capture_output=True)
+    return fixed
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     p.add_argument("--json", action="store_true", help="emit JSON instead of text")
@@ -342,9 +369,18 @@ def main():
                    help="filter suggestions to triple-channel audit matches")
     p.add_argument("--write", nargs="?", const=str(DEFAULT_OUT),
                    help=f"write markdown report (default: {DEFAULT_OUT.relative_to(REPO)})")
+    p.add_argument("--fix-drift", action="store_true",
+                   help="rewrite AVSPreferenceKey to repair drifted cached names")
     args = p.parse_args()
 
     report = build_report(audit_only=args.audit_only)
+
+    if args.fix_drift:
+        n = fix_drift(report)
+        print(f"Fixed drift on {n} entr{'y' if n == 1 else 'ies'}.")
+        if n:
+            print("Re-run without --fix-drift to verify drift count is now 0.")
+        return
 
     if args.json:
         print(json.dumps(report, indent=2))

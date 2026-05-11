@@ -34,6 +34,12 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV = ROOT / ".env"
 STATE_FILE = ROOT / ".state.json"
 
+# WAL-safe Apple SQLite snapshot helper (bin/lib/apple_sqlite_snapshot.py).
+# Voice Memos DB is small but Voice Memos.app may be running — use immutable
+# for speed (the user typically isn't writing to it during exports).
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import open_immutable  # noqa: E402
+
 VM_DB = Path(os.path.expanduser(
     "~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/CloudRecordings.db"
 ))
@@ -110,9 +116,7 @@ def open_db() -> sqlite3.Connection:
     if not VM_DB.exists():
         sys.exit(f"Voice Memos DB not found at {VM_DB}.\n"
                  "Grant Full Disk Access to Terminal in System Settings → Privacy & Security.")
-    # read-only via uri
-    uri = f"file:{VM_DB}?mode=ro"
-    return sqlite3.connect(uri, uri=True)
+    return open_immutable(VM_DB)
 
 
 def load_memos() -> list[Memo]:
@@ -745,7 +749,7 @@ def cmd_xref(args) -> int:
         print("(no recordings to xref)", file=sys.stderr)
         return 0
 
-    cal = sqlite3.connect(f"file:{cal_db}?mode=ro&immutable=1", uri=True)
+    cal = open_immutable(cal_db)
     window_secs = args.window * 60
 
     out_rows: list[dict] = []

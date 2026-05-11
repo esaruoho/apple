@@ -29,6 +29,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# WAL-safe Apple SQLite snapshot helper. Calendar agent writes continuously
+# (event reminders, sync deltas); snapshot to see uncommitted WAL state.
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import snapshot_open_persistent  # noqa: E402
 DEFAULT_ENV = ROOT / ".env"
 DB_PATH = Path(os.path.expanduser(
     "~/Library/Group Containers/group.com.apple.calendar/Calendar.sqlitedb"
@@ -53,7 +58,7 @@ def load_env() -> dict[str, str]:
 def open_ro() -> sqlite3.Connection:
     if not DB_PATH.exists():
         sys.exit(f"Calendar DB not found at {DB_PATH}.")
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro&immutable=1", uri=True)
+    return snapshot_open_persistent(DB_PATH)
 
 
 def cocoa_to_dt(z: float | None) -> datetime | None:

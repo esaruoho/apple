@@ -38,6 +38,12 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV = ROOT / ".env"
 COCOA_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
+# WAL-safe Apple SQLite snapshot helper. The Envelope Index is ~1 GB on a
+# real user's machine; copying it every export is costly. Use immutable —
+# Mail.app's WAL turnover is slow and a few minutes of staleness is fine.
+sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))
+from apple_sqlite_snapshot import open_immutable  # noqa: E402
+
 
 def find_envelope_index() -> Path:
     """The V<N> dir number changes across macOS versions; pick the highest."""
@@ -76,7 +82,7 @@ def load_env() -> dict[str, str]:
 
 
 def open_ro() -> sqlite3.Connection:
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro&immutable=1", uri=True)
+    return open_immutable(DB_PATH)
 
 
 def cocoa_to_iso(z: float | None) -> str:

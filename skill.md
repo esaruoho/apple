@@ -622,9 +622,19 @@ Full schema documentation: `analysis/sal/vocal-shortcuts-storage-format.md`. Com
 
 **Three action kinds** the JSON schema supports: `siriShortcut` (verified in the wild), `siriRequest` (free-form Siri call, inferred from UI), `accessibility` (toggle Voice Control / VoiceOver / Zoom, inferred from UI). Need to capture an example of the latter two to lock down the schema.
 
-**Write bottleneck:** each phrase must be trained by speaking it three times via System Settings UI. There is no public API to install trained-audio models programmatically. This forces either UI scripting (slow, fragile) or the **single-phrase router pattern** ("Hey Sal" → matcher → N targets), which is what the live Hey Sal v1 entry uses to collapse N trainings into 1.
+**Write bottleneck — and the project ceiling:** each phrase must be trained by speaking it three times via System Settings UI. There is no public API to install trained-audio models programmatically. **This is the only hard wall in the Vocal Shortcuts stack** — read, coverage, schema, plist-write are all solved or solvable; training is not. Every architectural decision should be evaluated against "does this reduce the training-utterance count?"
 
-**Coverage tool:** `bin/vocal-shortcuts-suggest.py` joins `AVSPreferenceKey` ↔ `~/Library/Shortcuts/Shortcuts.sqlite` (`ZSHORTCUT.ZWORKFLOWID` is the UUID match) ↔ `analysis/sal/seven-purpose-audit.md` and reports orphans (binding points at missing Shortcut), drift (cached name ≠ live name; cosmetic only since binding is UUID-stable), and suggestions (Shortcuts with no Vocal binding). `--audit-only` fuzzy-filters suggestions to triple-channel audit candidates. `--write` emits markdown to `analysis/sal/vocal-shortcuts-coverage.md`. First reading (2026-05-11): 2/277 Shortcuts bound, 0 orphans, 0 drift, 39 audit-matched candidates ready for binding.
+**Router-pattern math — 588×:** direct binding of Sal's 588 CitrusPeel phrasings would require 588 × 3 = **1,764 manual training utterances**. The single-phrase router ("Hey Sal" → matcher → N targets) collapses this to 1 × 3 = **3 utterances**. Three orders of magnitude. This is why the router is not a polish item — it's the only path that scales. The 2026-05-08 Hey Sal v1 deployment is the working implementation; matcher at `bin/sal-siri-match.py`.
+
+**Coverage tool:** `bin/vocal-shortcuts-suggest.py` joins `AVSPreferenceKey` ↔ `~/Library/Shortcuts/Shortcuts.sqlite` (`ZSHORTCUT.ZWORKFLOWID` is the UUID match) ↔ `analysis/sal/seven-purpose-audit.md` and reports orphans (binding points at missing Shortcut), drift (cached name ≠ live name; cosmetic only since binding is UUID-stable), and suggestions (Shortcuts with no Vocal binding). `--audit-only` fuzzy-filters suggestions to triple-channel audit candidates. `--write` emits markdown to `analysis/sal/vocal-shortcuts-coverage.md`. `--fix-drift` rewrites `AVSPreferenceKey` to repair cached names. Coverage as of 2026-05-11: **2/278 Shortcuts bound**, 0 orphans, 0 drift, 39 audit-matched candidates ready for binding.
+
+**Router-verify tool:** `bin/vocal-shortcuts-router-verify.py` runs the 39 audit-matched candidates through `bin/sal-siri-match.py` to confirm the Hey Sal router resolves each one without retraining. First run (2026-05-11): **38/39 full-match**, 1 partial. The partial (`system-events-hide-dock`) exposes a matcher quirk where the prefix "show me" outweighs the antonym "hide" in scoring — known limitation.
+
+**Schema capture tool:** `bin/capture-vocal-shortcut-schemas.py` walks the user through adding one test entry of each of the two unobserved action kinds (`siriRequest`, `accessibility`) via System Settings, captures Apple's JSON output via plist polling, and writes the shapes to `analysis/sal/vocal-shortcuts-captured-schemas.json`. Run when you have 5 minutes to lock down the remaining schema gaps.
+
+**Open experiments** with runbooks ready to execute:
+- `analysis/sal/vocal-shortcuts-daemon-reload-probe.md` — what signal does the System Settings UI fire on add/edit/delete?
+- `analysis/sal/vocal-shortcuts-plist-write-firing-test.md` — does a plist-only write produce a fireable trigger, or just orphaned metadata?
 
 ## HomePod Climate Sensor
 
