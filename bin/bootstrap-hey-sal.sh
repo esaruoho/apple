@@ -3,16 +3,16 @@
 #
 # Paketti (https://github.com/esaruoho/paketti) is the open-source Quality-of-
 # Life workflow suite for Renoise (the audio-tracker DAW). It exposes hundreds
-# of named commands the user binds to key chords in Renoise. This script reads
-# the user's KeyBindings.xml and makes every bound Paketti chord voice- or
-# typeable from the Hey Sal Vocal Shortcut, the Spotlight-launchable .app, the
-# menu-bar Shortcuts pin, or any shell.
+# of named commands the user binds to keyboard shortcuts in Renoise. This
+# script reads the user's KeyBindings.xml and makes every bound Paketti
+# shortcut voice- or typeable from the Hey Sal Vocal Shortcut, the
+# Spotlight-launchable .app, the menu-bar Shortcuts pin, or any shell.
 #
 # What it installs, in order:
 #
-#   1. Per-binding AppleScript wrappers — one per Paketti chord — generated
-#      from Renoise's KeyBindings.xml (so any bound Paketti binding becomes
-#      voice/typeable).
+#   1. Per-binding AppleScript wrappers — one per Paketti keyboard shortcut —
+#      generated from Renoise's KeyBindings.xml (so any bound Paketti binding
+#      becomes voice/typeable).
 #   2. Compile ~/Applications/Hey Sal.app — the Spotlight-launchable typed
 #      entry. Index it so Spotlight finds it.
 #   3. Build + import the Shortcuts.app workflows:
@@ -76,7 +76,7 @@ fi
 mkdir -p "$RENOISE_BIN_DIR" "$SHORTCUTS_DIR" "$USER_APPS" "$APPLETS_DIR" "$(dirname "$LOG")"
 
 # --------------------------------------------------- 1. Paketti verbs ---
-bold "Step 1 — Paketti verb wrappers (one per Paketti binding with chord)"
+bold "Step 1 — Paketti verb wrappers (one per Paketti binding with a keyboard shortcut)"
 if [ "$HAVE_KB" -eq 1 ]; then
   if [ ! -x "$BIN_DIR/build-paketti-verbs.py" ]; then
     fail "missing $BIN_DIR/build-paketti-verbs.py"

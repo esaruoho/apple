@@ -8,7 +8,7 @@
 
 ## What this is, in one paragraph
 
-[Paketti](https://github.com/esaruoho/paketti) is the open-source Quality-of-Life workflow suite Esa has been building for [Renoise](https://renoise.com) (the digital audio workstation) since 2018 — 181 Lua files, 1,180+ commits, ~3,022 features, GPL-3.0. It ships hundreds of named commands ("verbs") that the user binds to key chords inside Renoise — Pattern Shrink, Groovebox, Paketti Gater, BPM Increase, and so on. This work makes those verbs voice- and Spotlight-callable from outside Renoise, by treating Renoise's exported `KeyBindings.xml` as the source-of-truth and generating one AppleScript wrapper per bound chord. The Sal Soghoian voice-routing surface ("Hey Sal", part of the wider apple-skill) becomes the entry point. Result: any Paketti chord becomes a spoken or typed phrase.
+[Paketti](https://github.com/esaruoho/paketti) is the open-source Quality-of-Life workflow suite Esa has been building for [Renoise](https://renoise.com) (the digital audio workstation) since 2018 — 181 Lua files, 1,180+ commits, ~3,022 features, GPL-3.0. It ships hundreds of named commands ("verbs") that the user binds to keyboard shortcuts inside Renoise — Pattern Shrink, Groovebox, Paketti Gater, BPM Increase, and so on. This work makes those verbs voice- and Spotlight-callable from outside Renoise, by treating Renoise's exported `KeyBindings.xml` as the source-of-truth and generating one AppleScript wrapper per bound shortcut. The Sal Soghoian voice-routing surface ("Hey Sal", part of the wider apple-skill) becomes the entry point. Result: any Paketti keyboard shortcut becomes a spoken or typed phrase.
 
 ---
 
@@ -24,7 +24,7 @@ You can now say (or type) the name of any of 343 Paketti commands and the right 
 |---|---|
 | Voice control of Renoise was a wishlist item | 343 Paketti commands are voice-callable from any of three places |
 | The path *Esa's mouth → Paketti function* was a 4-handoff design exercise | One bash script installs the whole stack |
-| "Hey Sal" was a Vocal Shortcut that knew Sal's 588 demo intents but nothing about Paketti | "Hey Sal" knows everything Sal knows **plus** every Paketti chord you've bound |
+| "Hey Sal" was a Vocal Shortcut that knew Sal's 588 demo intents but nothing about Paketti | "Hey Sal" knows everything Sal knows **plus** every Paketti keyboard shortcut you've bound |
 | No way to type into Sal from Spotlight | `Cmd+Space → "Hey Sal" → type "groovebox" → Renoise opens` |
 
 ---
@@ -57,10 +57,10 @@ Direct wrapper call works in any context where you can run a shell command — p
 
 | Path | Job |
 |---|---|
-| `~/work/apple/bin/build-paketti-verbs.py` | Reads `~/Library/Preferences/Renoise/V3.5.4/KeyBindings.xml`, generates one bash wrapper per Paketti binding that has a chord. Currently 343. |
-| `~/work/apple/bin/renoise/<verb>` × 343 | One per Paketti command. Each focuses Renoise via System Events and sends its key chord. |
+| `~/work/apple/bin/build-paketti-verbs.py` | Reads `~/Library/Preferences/Renoise/V3.5.4/KeyBindings.xml`, generates one bash wrapper per Paketti binding that has a keyboard shortcut. Currently 348. |
+| `~/work/apple/bin/renoise/<verb>` × 343 | One per Paketti command. Each focuses Renoise via System Events and sends its keyboard shortcut. |
 | `~/work/apple/bin/renoise/_send` | The shared AppleScript helper every verb wrapper calls. |
-| `~/work/apple/analysis/sal/paketti-verbs.json` | Full registry: name, scope, chord, slug, wrapper path. The router reads this. |
+| `~/work/apple/analysis/sal/paketti-verbs.json` | Full registry: name, scope, keyboard shortcut, slug, wrapper path. The router reads this. |
 | `~/work/apple/bin/hey-sal` (patched) | Loads the registry; any utterance fuzzy-matches against the 343 verbs as a fallback. |
 | `~/Applications/Hey Sal.app` | Spotlight-launchable typed entry. Pops a dialog, runs `hey-sal`. |
 | `~/work/apple/applets/hey-sal-type.applescript` | Source for the .app. |
@@ -114,7 +114,7 @@ None of these can be granted by any script. Apple keeps them GUI-only on purpose
 ### Done since first draft
 
 **Voice now speaks Paketti** *(2026-05-11)*
-`sal-siri-match.py` falls through to `bin/hey-sal` when no Sal intent matches. Saying "Hey Sal, groovebox" now fires the chord, not just typing it via Spotlight. Verified: existing Sal intents still route correctly; nonsense still rejects.
+`sal-siri-match.py` falls through to `bin/hey-sal` when no Sal intent matches. Saying "Hey Sal, groovebox" now fires the keyboard shortcut, not just typing it via Spotlight. Verified: existing Sal intents still route correctly; nonsense still rejects.
 
 **PeakedBracket gap closed** *(2026-05-11)*
 The 5 Paketti verbs using the Finnish § angle bracket (key code 10) — previously skipped — are now wrapped. Verb count: 343 → 348. Layout note: those wrappers only fire correctly on Finnish/ISO keyboards.
@@ -127,14 +127,14 @@ The 5 Paketti verbs using the Finnish § angle bracket (key code 10) — previou
 **1. Pin both Shortcuts to the menu bar** *(30 seconds in Shortcuts.app)*
 Right-click "Hey Sal" → Pin in Menu Bar. Same for "Hey Sal Type." Get the `⚡` icon working.
 
-**2. Bind Pattern Preset Dialog to a chord in Renoise** *(10 sec in Renoise Prefs)*
+**2. Bind Pattern Preset Dialog to a keyboard shortcut in Renoise** *(10 sec in Renoise Prefs)*
 Pattern Preset Dialog is the one verb from the original list still missing. Bind it to anything (e.g. ⌃⌥P), re-run `bash ~/work/apple/bin/bootstrap-hey-sal.sh`, and it joins the registry.
 
 ### Medium (this week)
 
 **3. Stream Deck / Loupedeck wrapping** — every wrapper at `~/work/apple/bin/renoise/<verb>` is a one-line shell command. Dropping them into a Stream Deck profile gives you physical buttons for any of the 348 verbs. No code, just configuration.
 
-**4. Wider verb coverage** — bind chords in Renoise for the verbs that don't have them yet (Pattern Preset, the dBlue Pattern Shrink/Expand, Claude Chat Dialog). The bootstrap picks them up next run.
+**4. Wider verb coverage** — bind shortcuts in Renoise for the verbs that don't have them yet (Pattern Preset, the dBlue Pattern Shrink/Expand, Claude Chat Dialog). The bootstrap picks them up next run.
 
 ### Bigger (later)
 

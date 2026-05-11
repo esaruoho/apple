@@ -41,7 +41,7 @@ pause() {
 verb() {
   local phrase="$1"
   echo "    \$ hey-sal \"$phrase\""
-  "$HEY_SAL" "$phrase" 2>&1 | grep -E "Paketti verb|Chord|wrapper|sent key|ERROR" | head -4 || true
+  "$HEY_SAL" "$phrase" 2>&1 | grep -E "Paketti verb|Keyboard shortcut|wrapper|sent key|ERROR" | head -4 || true
   pause 2
 }
 

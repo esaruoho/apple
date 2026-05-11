@@ -9,7 +9,7 @@ purpose: Save the five findings that were ephemeral — facts learned during the
 
 Companion to `hey-sal-paketti-stack-state.md`. That doc captures *what was built*. This one captures *what was learned while building it* — Apple-internals facts, decision records, and gotchas that would otherwise be lost when the chat that produced them ends.
 
-**Context if you're new to this:** [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source workflow tool for [Renoise](https://renoise.com), the audio-tracker DAW. It ships hundreds of named commands the user binds to key chords. This work makes those chord-bindings voice/typeable from outside Renoise by routing through the Sal-Siri "Hey Sal" surface (the wider apple-skill). See `hey-sal-paketti-stack-state.md` for the stack diagram.
+**Context if you're new to this:** [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source workflow tool for [Renoise](https://renoise.com), the audio-tracker DAW. It ships hundreds of named commands the user binds to keyboard shortcuts. This work makes those shortcut-bindings voice/typeable from outside Renoise by routing through the Sal-Siri "Hey Sal" surface (the wider apple-skill). See `hey-sal-paketti-stack-state.md` for the stack diagram.
 
 Five items. Short.
 
@@ -20,12 +20,12 @@ Five items. Short.
 Both paths got built today. The decision wasn't theoretical — both were tried.
 
 **MCP path** (`PakettiMCP/tools/paketti.lua` + `pmcp` CLI):
-- Pros: typed JSON, structured returns, queries state two-way, no key-chord mapping needed
+- Pros: typed JSON, structured returns, queries state two-way, no keyboard-shortcut mapping needed
 - Cons: requires the MCP server to be running inside Renoise. Server has to be started manually (Tools → Paketti → !Preferences → MCP Server Start) every Renoise session. If it's down, the verb fails.
 
 **AppleScript path** (`bin/renoise/<verb>` wrappers + `_send`):
-- Pros: works as long as Renoise is open. No daemon, no port, no manual start. Faithful to the chord the user already bound — same as pressing the key by hand.
-- Cons: limited to verbs that have a key chord assigned. Can't query state (output-only). Each verb maps to exactly one chord.
+- Pros: works as long as Renoise is open. No daemon, no port, no manual start. Faithful to the shortcut the user already bound — same as pressing the key by hand.
+- Cons: limited to verbs that have a keyboard shortcut assigned. Can't query state (output-only). Each verb maps to exactly one shortcut.
 
 **Decision:** AppleScript path is the daily driver for *firing* verbs. MCP stays available for *reading* state (e.g. "what's the current BPM?"). The two cover different jobs — they aren't competitors.
 

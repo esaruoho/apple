@@ -155,7 +155,7 @@ def i_reminders(m, q):
 # Paketti / Renoise — voice → AppleScript keystroke dispatch
 #
 # Generated wrappers live in ~/work/apple/bin/renoise/, one per Paketti
-# binding that has a chord assigned in Renoise's KeyBindings.xml.
+# binding that has a keyboard shortcut assigned in Renoise's KeyBindings.xml.
 # Registry is built by `build-paketti-verbs.py` and consumed here.
 # Each wrapper focuses Renoise via System Events, then sends one key
 # code with modifiers — same pattern Sal Soghoian used for vocal
@@ -244,11 +244,11 @@ def i_paketti_verb(m, q):
                 "no Paketti verb matched")
     verb, score = pick
     display = (
-        "Paketti verb: " + verb["binding"] + "\n"
-        "Scope:        " + verb["scope"] + "\n"
-        "Chord:        " + verb["chord"] + "\n"
-        "Wrapper:      " + verb["wrapper"] + "\n"
-        "Match score:  " + str(score) + "\n"
+        "Paketti verb:      " + verb["binding"] + "\n"
+        "Scope:             " + verb["scope"] + "\n"
+        "Keyboard shortcut: " + verb["shortcut"] + "\n"
+        "Wrapper:           " + verb["wrapper"] + "\n"
+        "Match score:       " + str(score) + "\n"
         "----\n"
     )
     out, brief = _run_wrapper(verb["wrapper"])

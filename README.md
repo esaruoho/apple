@@ -118,12 +118,12 @@ First reading on this Mac: **39 audit-matched candidates ready for binding** (`f
 
 ### Hey Sal speaks Paketti (2026-05-11)
 
-The router pattern extended to third-party apps. [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source Quality-of-Life workflow suite for [Renoise](https://renoise.com) (the audio-tracker DAW) — 181 Lua files, ~3,022 features, GPL-3.0. Paketti exposes hundreds of named commands the user binds to key chords in Renoise's `KeyBindings.xml`. This work generates one AppleScript wrapper per bound chord and plugs them into the Hey Sal router, making any Paketti chord voice- or Spotlight-callable from outside Renoise.
+The router pattern extended to third-party apps. [Paketti](https://github.com/esaruoho/paketti) is Esa's open-source Quality-of-Life workflow suite for [Renoise](https://renoise.com) (the audio-tracker DAW) — 181 Lua files, ~3,022 features, GPL-3.0. Paketti exposes hundreds of named commands the user binds to keyboard shortcuts in Renoise's `KeyBindings.xml`. This work generates one AppleScript wrapper per bound shortcut and plugs them into the Hey Sal router, making any Paketti keyboard shortcut voice- or Spotlight-callable from outside Renoise.
 
 - Stack state + three trigger surfaces: [`analysis/sal/hey-sal-paketti-stack-state.md`](analysis/sal/hey-sal-paketti-stack-state.md)
 - Session discoveries (decision records, gotchas): [`analysis/sal/session-discoveries-2026-05-11.md`](analysis/sal/session-discoveries-2026-05-11.md)
 - One-command install: [`bin/bootstrap-hey-sal.sh`](bin/bootstrap-hey-sal.sh)
-- Verb generator: [`bin/build-paketti-verbs.py`](bin/build-paketti-verbs.py) (reads `KeyBindings.xml`, writes one wrapper per bound chord)
+- Verb generator: [`bin/build-paketti-verbs.py`](bin/build-paketti-verbs.py) (reads `KeyBindings.xml`, writes one wrapper per bound shortcut)
 - Generated wrappers: `bin/renoise/*` (one per Paketti verb, gitignored)
 - Live registry: [`analysis/sal/paketti-verbs.json`](analysis/sal/paketti-verbs.json) (343 verbs currently)
 
