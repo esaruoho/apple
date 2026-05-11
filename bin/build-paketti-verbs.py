@@ -61,6 +61,12 @@ KEY_CODES = {
     "APOSTROPHE": 39, "CAPITAL": 57, "CAPSLOCK": 57,
     "LBRACKET": 33, "RBRACKET": 30,
     "MOUSEUP": None, "MOUSEDOWN": None,  # handled via skip below
+    # Finnish / European angle bracket key between Z and Shift. Renoise
+    # calls it 'PeakedBracket'. On Finnish/ISO layouts this is key code 10
+    # (§/±). On US ANSI keyboards this key doesn't exist — wrappers will
+    # send a key that does nothing on US layouts. Document the layout
+    # dependency in the wrapper comment.
+    "PEAKEDBRACKET": 10,
     # Numpad
     "NUMPAD0": 82, "NUMPAD1": 83, "NUMPAD2": 84, "NUMPAD3": 85, "NUMPAD4": 86,
     "NUMPAD5": 87, "NUMPAD6": 88, "NUMPAD7": 89, "NUMPAD8": 91, "NUMPAD9": 92,

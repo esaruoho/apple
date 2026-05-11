@@ -1,29 +1,8 @@
 {
   "generated_from": "/Users/esaruoho/Library/Preferences/Renoise/V3.5.4/KeyBindings.xml",
-  "count": 337,
-  "skipped_unparseable_count": 5,
-  "skipped_unparseable_examples": [
-    [
-      "\u223f Delay Column Increase (+1)",
-      "Shift + Control + PeakedBracket"
-    ],
-    [
-      "\u223f Delay Column Decrease (-1)",
-      "Control + PeakedBracket"
-    ],
-    [
-      "\u223f Clever Note Off Right After",
-      "Option + PeakedBracket"
-    ],
-    [
-      "\u223f Clever Note Off Right Before",
-      "Option + Control + PeakedBracket"
-    ],
-    [
-      "\u223f Clever Note Off Half Before",
-      "Command + PeakedBracket"
-    ]
-  ],
+  "count": 348,
+  "skipped_unparseable_count": 0,
+  "skipped_unparseable_examples": [],
   "verbs": [
     {
       "slug": "show-paketti-preferences",
@@ -443,6 +422,41 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/impulse-tracker-f12-master"
     },
     {
+      "slug": "set-selection-or-track-instrument-to-next",
+      "binding": "\u223f Set Selection or Track Instrument to Next",
+      "scope": "Global",
+      "chord": "Command + Period",
+      "key_code": 47,
+      "modifiers": [
+        "command"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/set-selection-or-track-instrument-to-next"
+    },
+    {
+      "slug": "set-selection-or-track-instrument-to-previous",
+      "binding": "\u223f Set Selection or Track Instrument to Previous",
+      "scope": "Global",
+      "chord": "Shift + Command + Period",
+      "key_code": 47,
+      "modifiers": [
+        "command",
+        "shift"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/set-selection-or-track-instrument-to-previous"
+    },
+    {
+      "slug": "set-current-slot-instrument-to-next",
+      "binding": "\u223f Set Current Slot Instrument to Next",
+      "scope": "Global",
+      "chord": "Shift + Command + S",
+      "key_code": 1,
+      "modifiers": [
+        "command",
+        "shift"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/set-current-slot-instrument-to-next"
+    },
+    {
       "slug": "impulse-tracker-ctrl-n-new-song-dialog",
       "binding": "\u223f Impulse Tracker CTRL-N New Song Dialog...",
       "scope": "Global",
@@ -463,19 +477,6 @@
         "command"
       ],
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/impulse-tracker-alt-y-swap-block"
-    },
-    {
-      "slug": "select-first-instrument-box-slot",
-      "binding": "\u223f Select First Instrument Box Slot",
-      "scope": "Global",
-      "chord": "Shift + Option + Control + 1",
-      "key_code": 18,
-      "modifiers": [
-        "shift",
-        "option",
-        "control"
-      ],
-      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/select-first-instrument-box-slot"
     },
     {
       "slug": "impulse-tracker-ctrl-o-pattern-to-sample",
@@ -513,6 +514,19 @@
         "control"
       ],
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/octamed-note-spread-decrement"
+    },
+    {
+      "slug": "pattern-preset-dialog",
+      "binding": "\u223f Pattern Preset Dialog",
+      "scope": "Global",
+      "chord": "Shift + Option + Control + 1",
+      "key_code": 18,
+      "modifiers": [
+        "shift",
+        "option",
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/pattern-preset-dialog"
     },
     {
       "slug": "randomize-automation-envelope",
@@ -751,18 +765,6 @@
         "control"
       ],
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/paketti-playerpro-openmpt-linear-keyboard-layer"
-    },
-    {
-      "slug": "paketti-switcharoo",
-      "binding": "\u223f Paketti Switcharoo...",
-      "scope": "Global",
-      "chord": "Shift + Command + S",
-      "key_code": 1,
-      "modifiers": [
-        "command",
-        "shift"
-      ],
-      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/paketti-switcharoo"
     },
     {
       "slug": "paketti-function-search",
@@ -1828,18 +1830,6 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/modify-pitchstep-steps-hard-detune"
     },
     {
-      "slug": "modify-pitchstep-steps-octave-up-2-octave-down-2",
-      "binding": "\u223f Modify PitchStep Steps (Octave Up+2, Octave Down-2)",
-      "scope": "Global",
-      "chord": "Option + Command + P",
-      "key_code": 35,
-      "modifiers": [
-        "command",
-        "option"
-      ],
-      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/modify-pitchstep-steps-octave-up-2-octave-down-2"
-    },
-    {
       "slug": "paketti-steppers-dialog",
       "binding": "\u223f Paketti Steppers Dialog...",
       "scope": "Global",
@@ -1931,6 +1921,19 @@
         "control"
       ],
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/real-time-slice-insert-marker-at-current-position"
+    },
+    {
+      "slug": "create-new-rhythmic-slice-drumchain-with-current-slices-normalized",
+      "binding": "\u223f Create New Rhythmic Slice DrumChain with Current Slices (Normalized)",
+      "scope": "Global",
+      "chord": "Shift + Option + Control + R",
+      "key_code": 15,
+      "modifiers": [
+        "shift",
+        "option",
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/create-new-rhythmic-slice-drumchain-with-current-slices-normalized"
     },
     {
       "slug": "polyend-buddy-pti-file-browser",
@@ -2573,6 +2576,29 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/slide-selected-track-content-down"
     },
     {
+      "slug": "delay-column-increase-1",
+      "binding": "\u223f Delay Column Increase (+1)",
+      "scope": "Pattern Editor",
+      "chord": "Shift + Control + PeakedBracket",
+      "key_code": 10,
+      "modifiers": [
+        "shift",
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/delay-column-increase-1"
+    },
+    {
+      "slug": "delay-column-decrease-1",
+      "binding": "\u223f Delay Column Decrease (-1)",
+      "scope": "Pattern Editor",
+      "chord": "Control + PeakedBracket",
+      "key_code": 10,
+      "modifiers": [
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/delay-column-decrease-1"
+    },
+    {
       "slug": "kapslock-capslock-caps-lock-note-off",
       "binding": "\u223f KapsLock CapsLock Caps Lock Note Off",
       "scope": "Pattern Editor",
@@ -2580,6 +2606,40 @@
       "key_code": 57,
       "modifiers": [],
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/kapslock-capslock-caps-lock-note-off"
+    },
+    {
+      "slug": "clever-note-off-right-after",
+      "binding": "\u223f Clever Note Off Right After",
+      "scope": "Pattern Editor",
+      "chord": "Option + PeakedBracket",
+      "key_code": 10,
+      "modifiers": [
+        "option"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/clever-note-off-right-after"
+    },
+    {
+      "slug": "clever-note-off-right-before",
+      "binding": "\u223f Clever Note Off Right Before",
+      "scope": "Pattern Editor",
+      "chord": "Option + Control + PeakedBracket",
+      "key_code": 10,
+      "modifiers": [
+        "option",
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/clever-note-off-right-before"
+    },
+    {
+      "slug": "clever-note-off-half-before",
+      "binding": "\u223f Clever Note Off Half Before",
+      "scope": "Pattern Editor",
+      "chord": "Command + PeakedBracket",
+      "key_code": 10,
+      "modifiers": [
+        "command"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/clever-note-off-half-before"
     },
     {
       "slug": "set-pattern-length-to-004-004",
@@ -3355,6 +3415,17 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/move-slice-end-right-by-100"
     },
     {
+      "slug": "impulse-tracker-alt-s-set-selection-to-instrument-mixer",
+      "binding": "\u223f Impulse Tracker ALT-S Set Selection to Instrument",
+      "scope": "Mixer",
+      "chord": "Command + S",
+      "key_code": 1,
+      "modifiers": [
+        "command"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/impulse-tracker-alt-s-set-selection-to-instrument-mixer"
+    },
+    {
       "slug": "impulse-tracker-home-2-behaviour-mixer",
       "binding": "\u223f Impulse Tracker Home *2 behaviour",
       "scope": "Mixer",
@@ -3527,6 +3598,28 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/clean-render-selected-track-group-wav-only-mixer"
     },
     {
+      "slug": "duplicate-pattern-above-clear-muted-tracks-pattern-sequencer",
+      "binding": "\u223f Duplicate Pattern Above & Clear Muted Tracks",
+      "scope": "Pattern Sequencer",
+      "chord": "Control + Up",
+      "key_code": 126,
+      "modifiers": [
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/duplicate-pattern-above-clear-muted-tracks-pattern-sequencer"
+    },
+    {
+      "slug": "duplicate-pattern-below-clear-muted-tracks",
+      "binding": "\u223f Duplicate Pattern Below & Clear Muted Tracks",
+      "scope": "Pattern Sequencer",
+      "chord": "Control + Down",
+      "key_code": 125,
+      "modifiers": [
+        "control"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/duplicate-pattern-below-clear-muted-tracks"
+    },
+    {
       "slug": "duplicate-pattern-above-clear-muted-tracks-pattern-matrix",
       "binding": "\u223f Duplicate Pattern Above & Clear Muted Tracks",
       "scope": "Pattern Matrix",
@@ -3538,7 +3631,7 @@
       "wrapper": "/Users/esaruoho/work/apple/bin/renoise/duplicate-pattern-above-clear-muted-tracks-pattern-matrix"
     },
     {
-      "slug": "duplicate-pattern-below-clear-muted-tracks",
+      "slug": "duplicate-pattern-below-clear-muted-tracks-pattern-matrix",
       "binding": "\u223f Duplicate Pattern Below & Clear Muted Tracks",
       "scope": "Pattern Matrix",
       "chord": "Control + Down",
@@ -3546,7 +3639,18 @@
       "modifiers": [
         "control"
       ],
-      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/duplicate-pattern-below-clear-muted-tracks"
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/duplicate-pattern-below-clear-muted-tracks-pattern-matrix"
+    },
+    {
+      "slug": "change-current-slot-instruments-to-selected-instrument",
+      "binding": "\u223f Change Current Slot Instruments to Selected Instrument",
+      "scope": "Pattern Matrix",
+      "chord": "Command + S",
+      "key_code": 1,
+      "modifiers": [
+        "command"
+      ],
+      "wrapper": "/Users/esaruoho/work/apple/bin/renoise/change-current-slot-instruments-to-selected-instrument"
     },
     {
       "slug": "solo-tracks-with-pattern-data",

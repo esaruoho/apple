@@ -53,23 +53,18 @@ Doing that now would invalidate the existing TCC grants (macOS treats it as a di
 
 ---
 
-## 3. Voice still routes through `sal-siri-match.py`, not `hey-sal`
+## 3. Voice now speaks Paketti via fallback in `sal-siri-match.py` (FIXED 2026-05-11)
 
-The Vocal Shortcut "Hey Sal" → Shortcut "Hey Sal" → Run Shell Script → `sal-siri-match.py` (the 588-intent Sal matcher).
+**Originally a gap:** the Vocal Shortcut "Hey Sal" → Shortcut "Hey Sal" → Run Shell Script → `sal-siri-match.py` (the 588-intent Sal matcher), which didn't know Paketti. Typed path worked; voice path returned "I did not understand."
 
-`sal-siri-match.py` **does not know about Paketti**. Only `bin/hey-sal` knows the 343 Paketti verbs.
+**Fix applied** (option A from the original plan): `sal-siri-match.py` now falls through to `bin/hey-sal` when no Sal intent matches. If hey-sal finds a Paketti verb, sal-siri-match emits a `do shell script` line invoking it; the downstream AppleScript stage executes it verbatim. Roughly 18 lines at the end of `main()`. No Shortcut rebuild required.
 
-So today:
-- **Typed path** ("Hey Sal" .app via Spotlight, or `bin/hey-sal` direct) → knows Paketti ✓
-- **Voice path** (saying "Hey Sal" via Vocal Shortcut) → only knows Sal's original 588 intents, returns "I did not understand" for Paketti verbs ✗
+**Verified behaviour:**
+- Existing Sal intents still route correctly (e.g. `sal-siri-match.py "show me today's calendar"` → original Sal AppleScript)
+- Paketti verbs not in the Sal catalogue now route via hey-sal (e.g. `"groovebox"` → `do shell script "~/work/apple/bin/hey-sal "groovebox""`)
+- Pure nonsense still rejects with exit 1
 
-**Two fixes possible:**
-
-A. **Patch `sal-siri-match.py` to fall through to `hey-sal`** when no Sal intent matches. About 10 lines at the end of `sal-siri-match.py`'s `main()`. Cleanest because it preserves the voice Shortcut's existing routing.
-
-B. **Rebuild the voice Shortcut** (`build-hey-sal-shortcut.py`) to route through `hey-sal` instead of `sal-siri-match.py`. Then `hey-sal` is the single router; `sal-siri-match` becomes a library it can call. Architecturally cleaner.
-
-**Recommendation:** A first (5 minutes, no Shortcut rebuild, no re-import). B if we ever do a bigger router refactor.
+**Option B (rebuild the voice Shortcut to route directly through hey-sal, making sal-siri-match a library)** is still cleaner architecturally and remains an open refactor for whenever the router gets a bigger overhaul.
 
 ---
 

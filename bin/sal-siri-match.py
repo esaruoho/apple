@@ -168,6 +168,26 @@ def main():
     scoring_utterance = strip_command_prefix(utterance) or utterance
     best = best_match(scoring_utterance, sal_catalog, user_catalog)
     if best is None:
+        # Fallback: try the Paketti / Renoise router. hey-sal knows the 348
+        # Paketti verbs generated from KeyBindings.xml plus the original
+        # Sal-Siri intents. Returning a do-shell-script that re-invokes
+        # hey-sal makes the voice "Hey Sal" Shortcut speak Paketti without
+        # rebuilding the Shortcut. The downstream AppleScript step runs the
+        # printed line verbatim, which fires hey-sal → wrapper → Renoise.
+        try:
+            heysal = Path.home() / "work/apple/bin/hey-sal"
+            if heysal.exists():
+                proc = subprocess.run(
+                    [str(heysal), utterance],
+                    capture_output=True, text=True, timeout=8,
+                )
+                out = (proc.stdout or "").strip()
+                if proc.returncode == 0 and out and "no Paketti verb matched" not in out:
+                    safe = utterance.replace('\\', '\\\\').replace('"', '\\"')
+                    print(f'do shell script "{heysal} \\"{safe}\\""')
+                    return
+        except Exception:
+            pass
         sys.exit(1)
 
     kind, score, payload, matched = best

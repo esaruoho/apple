@@ -111,31 +111,30 @@ None of these can be granted by any script. Apple keeps them GUI-only on purpose
 
 ## What's next (in order of payoff)
 
-### Fast wins (today, if you want them)
+### Done since first draft
+
+**Voice now speaks Paketti** *(2026-05-11)*
+`sal-siri-match.py` falls through to `bin/hey-sal` when no Sal intent matches. Saying "Hey Sal, groovebox" now fires the chord, not just typing it via Spotlight. Verified: existing Sal intents still route correctly; nonsense still rejects.
+
+**PeakedBracket gap closed** *(2026-05-11)*
+The 5 Paketti verbs using the Finnish § angle bracket (key code 10) — previously skipped — are now wrapped. Verb count: 343 → 348. Layout note: those wrappers only fire correctly on Finnish/ISO keyboards.
+
+**Josh demo script** *(2026-05-11)*
+`bin/sal-paketti-demo.sh` — 60-second narrated demo. Toggles Groovebox + Gater (non-destructive: same dialog opens/closes), reads the verb count aloud, lands the punchline. Flags: `--silent` (no narration), `--fast` (no pauses).
+
+### Fast wins (require your GUI clicks; can't be scripted)
 
 **1. Pin both Shortcuts to the menu bar** *(30 seconds in Shortcuts.app)*
 Right-click "Hey Sal" → Pin in Menu Bar. Same for "Hey Sal Type." Get the `⚡` icon working.
 
-**2. Make voice route Paketti** *(5-min code change)*
-Currently voice → `sal-siri-match.py` (Sal's 588 intents, no Paketti).
-Patch: have `sal-siri-match.py` fall through to `bin/hey-sal` when nothing matches. Then voice "Hey Sal, groovebox" actually opens the Groovebox, not just typed "groovebox" through Spotlight.
-
-**3. Bind Pattern Preset Dialog to a chord in Renoise** *(10 sec in Renoise Prefs)*
-Pattern Preset Dialog is the one verb from the original list still missing. Bind it to anything (e.g. ⌃⌥P), re-run `bash ~/work/apple/bin/bootstrap-hey-sal.sh`, and it joins the 343.
+**2. Bind Pattern Preset Dialog to a chord in Renoise** *(10 sec in Renoise Prefs)*
+Pattern Preset Dialog is the one verb from the original list still missing. Bind it to anything (e.g. ⌃⌥P), re-run `bash ~/work/apple/bin/bootstrap-hey-sal.sh`, and it joins the registry.
 
 ### Medium (this week)
 
-**4. The Josh demo script** — a 60-second routine that shows the chain off:
-- Open Renoise → empty state
-- "Hey Sal, groovebox" (or Spotlight typed) → Groovebox dialog appears
-- "Hey Sal, gater" → Gater dialog appears
-- "Hey Sal, BPM increase" → tempo bumps
-- Show `~/work/apple/bin/hey-sal --list-intents | grep paketti | wc -l` → "343"
-- Punchline: *"This is Sal Soghoian's WWDC 2016 vision running on a 2026 Mac, plus Paketti — the open-source Renoise tool I wrote — talking to it."*
+**3. Stream Deck / Loupedeck wrapping** — every wrapper at `~/work/apple/bin/renoise/<verb>` is a one-line shell command. Dropping them into a Stream Deck profile gives you physical buttons for any of the 348 verbs. No code, just configuration.
 
-**5. Stream Deck / Loupedeck wrapping** — every wrapper at `~/work/apple/bin/renoise/<verb>` is a one-line shell command. Dropping them into a Stream Deck profile gives you physical buttons for any of the 343 verbs. No code, just configuration.
-
-**6. Wider verb coverage** — bind chords in Renoise for the verbs that don't have them yet (Pattern Preset, the dBlue Pattern Shrink/Expand, Claude Chat Dialog). The bootstrap picks them up next run.
+**4. Wider verb coverage** — bind chords in Renoise for the verbs that don't have them yet (Pattern Preset, the dBlue Pattern Shrink/Expand, Claude Chat Dialog). The bootstrap picks them up next run.
 
 ### Bigger (later)
 
