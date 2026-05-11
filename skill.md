@@ -391,6 +391,27 @@ Two read-only catalog/export packages live at the repo root, mirroring
 the `notes-exporter/` and `imessage-exporter/` shape. Both write only into a
 user-configurable vault path; never modify Apple's data.
 
+### Exporter SQLite access — use the shared helper
+
+Every Apple SQLite store uses WAL journaling and the owning app typically stays
+running. Naive `sqlite3.connect(file:…?mode=ro)` either contends with the
+writer, or with `?immutable=1` silently ignores the `-wal` sibling and serves
+stale data. **All exporters consult `bin/lib/apple_sqlite_snapshot.py`:**
+
+- `snapshot_open_persistent(path)` — copies `.sqlite + -wal + -shm` to a temp
+  dir, opens the copy read-only, registers `atexit` cleanup. Drop-in replacement
+  for `sqlite3.connect`. Use for live apps where WAL freshness matters and the
+  file is small/medium (≤ ~100 MB): Shortcuts, Notes, Safari, Messages, Calendar.
+- `open_immutable(path)` — opens the live file with `?mode=ro&immutable=1`. Fast,
+  no copy, but ignores the `-wal`. Use for large files where snapshot cost
+  outweighs WAL freshness: Mail Envelope Index (~1 GB), Photos.sqlite (~3 GB),
+  or apps the user typically closes before export (Voice Memos).
+
+When adding a new exporter: `sys.path.insert(0, str(ROOT.parent / "bin" / "lib"))`
+then `from apple_sqlite_snapshot import snapshot_open_persistent` (or
+`open_immutable`). Never write a bare `sqlite3.connect` against an Apple store
+— pick the right mode in the helper.
+
 ### `reminders-exporter/`
 - AppleScript-driven (Reminders.app has a real sdef).
 - Parallel-array fetch (`id of every reminder of theList`) — orders of magnitude faster than `repeat with R in theReminders` and avoids two AppleScript landmines:

@@ -1,6 +1,26 @@
 # Apple Repo TODO
 
-Working state. Cross items off as they land. Updated 2026-05-08.
+Working state. Cross items off as they land. Updated 2026-05-11.
+
+---
+
+## Session 2026-05-11 — Vocal Shortcuts coverage tooling + WAL helper
+
+**Shipped:**
+- `bin/lib/apple_sqlite_snapshot.py` — WAL-safe snapshot helper; 7 exporters refactored
+- `bin/vocal-shortcuts-suggest.py` — orphans/drift/suggestions report + `--fix-drift`
+- `bin/vocal-shortcuts-router-verify.py` — confirms 38/39 audit-matched candidates route through Hey Sal
+- `bin/capture-vocal-shortcut-schemas.py` — interactive helper for the two unobserved action kinds
+- 6 findings codified in `analysis/sal/vocal-shortcuts-session-findings-2026-05-11.md`
+- Trigger-stack comparative analysis in `analysis/sal/vocal-shortcuts-in-the-trigger-stack.md`
+
+### Open from this session — execute next
+
+- [ ] **Run `bin/capture-vocal-shortcut-schemas.py`** — 5-min interactive session in front of System Settings to lock down `siriRequest` + `accessibility` JSON shapes. Updates `analysis/sal/vocal-shortcuts-storage-format.md` once both shapes captured.
+- [ ] **Fix matcher bug: "show me hide dock" → wrong target.** `bin/sal-siri-match.py` scores "show" as a content word, outweighing "hide" when both appear. Fix: add "show me" / "show" to STOPWORDS for the prefix-utterance case, OR boost negation-bearing words (hide, close, stop, off) when they appear in the candidate Shortcut name. Verified by `vocal-shortcuts-router-verify.py`: 38/39 full-match, this is the only partial.
+- [ ] **Execute the daemon-reload probe** (`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`). 3-terminal procedure; ~15 min. Result: identify the signal System Settings fires on Vocal Shortcut add/edit/delete.
+- [ ] **Execute the plist-write-firing test** (`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`). Requires building `bin/avs-prefs-write.py` first (binary plist round-trip helper). Then 6-step manual experiment. Result: definitive answer on whether plist-only installs can fire without retraining.
+- [ ] **Bind 5 top router-verified candidates through Hey Sal** — pick from the 38 full-match candidates by Sal-purpose score; verify each runs cleanly end-to-end via voice. No new training needed.
 
 ---
 
