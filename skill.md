@@ -790,6 +790,7 @@ Tools in this repo that follow Sal's philosophy: one action, one result.
 | `prbuild` | `prbuild` / `prbuild 2373` | Trigger Mac DMG builds, watch progress, download when done. 9 steps → 1. |
 | `ghd` | `ghd` | Open GitHub Watcher dashboard (localhost:3008). |
 | `slideshow` | `python3 bin/slideshow.py /path` | Fullscreen slideshow on any screen. Folder → presentation. One command. |
+| `invert-images` | `swift bin/invert-images.swift <inDir> <outDir> [gamma=6.0] [contrast=2.0]` | Convert dark-mode screenshots (Kindle, Books, Reader View) → light-mode. Apple-native CoreImage: CIColorInvert + CIGammaAdjust + CIColorControls. Naive RGB invert produces washed-out gray-on-white because dark themes use `#bbb` text on `#0a0a0a` bg, not pure white-on-black; gamma 6 + contrast 2 pushes the inverted text down to crisp black. Mirrored as the `invert` skill at `~/.claude/skills/invert/`. |
 
 ## Slideshow — Folder → Fullscreen Presentation
 
