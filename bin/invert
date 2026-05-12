@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# invert — non-destructive darkmode -> lightmode for an image OR a folder of images.
+#   invert <path>                   gamma=6.0 contrast=2.0
+#   invert <path> [gamma] [contrast]
+#
+# File:   <name>.png         ->  <name>_inverted.png       in same directory
+# Folder: /path/to/dir       ->  /path/to/dir_inverted/    sibling directory
+# Always opens the output in Finder/Preview when done.
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+  echo "usage: invert <file-or-dir> [gamma=6.0] [contrast=2.0]" >&2
+  exit 2
+fi
+
+SRC="$1"
+GAMMA="${2:-6.0}"
+CONTRAST="${3:-2.0}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SWIFT_TOOL="$SCRIPT_DIR/invert-images.swift"
+
+if [ ! -e "$SRC" ]; then
+  echo "invert: not found: $SRC" >&2
+  exit 1
+fi
+
+if [ ! -f "$SWIFT_TOOL" ]; then
+  echo "invert: missing $SWIFT_TOOL" >&2
+  exit 1
+fi
+
+if [ -d "$SRC" ]; then
+  # Folder mode: write to sibling <dir>_inverted/
+  SRC="${SRC%/}"
+  PARENT="$(dirname -- "$SRC")"
+  BASE="$(basename -- "$SRC")"
+  OUT="$PARENT/${BASE}_inverted"
+  mkdir -p "$OUT"
+  /usr/bin/swift "$SWIFT_TOOL" "$SRC" "$OUT" "$GAMMA" "$CONTRAST"
+  open "$OUT"
+  echo "inverted folder -> $OUT"
+  exit 0
+fi
+
+# Single-file mode: write <name>_inverted.<ext> alongside the source
+DIR="$(dirname -- "$SRC")"
+FILE="$(basename -- "$SRC")"
+NAME="${FILE%.*}"
+EXT="${FILE##*.}"
+[ "$EXT" = "$FILE" ] && EXT="png"  # no extension -> default png
+OUT_FILE="$DIR/${NAME}_inverted.${EXT}"
+
+# Use a tiny temp staging dir so we can reuse the swift batch tool unchanged.
+STAGE="$(mktemp -d -t invert.XXXXXX)"
+trap 'rm -rf "$STAGE"' EXIT
+mkdir -p "$STAGE/in" "$STAGE/out"
+cp -- "$SRC" "$STAGE/in/$FILE"
+/usr/bin/swift "$SWIFT_TOOL" "$STAGE/in" "$STAGE/out" "$GAMMA" "$CONTRAST"
+
+# Output filename in stage matches input filename; rename to *_inverted.* on copy out.
+mv -- "$STAGE/out/$FILE" "$OUT_FILE"
+open -R "$OUT_FILE"
+echo "inverted -> $OUT_FILE"
