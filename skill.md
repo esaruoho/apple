@@ -94,6 +94,27 @@ Sal's 2016 `PictureTaker Helper.app` (one of the 5 helper apps shipped in Citrus
 
 The matcher routes "take my picture" preferentially to the user Shortcut (USER_BOOST=1.5) so Sal's broken `takeVSnapshotAndAddToPhotos` handler is never selected.
 
+## Mail Smart Mailboxes — READ-ONLY in practice (2026-05-13)
+
+**Do not write to `~/Library/Mail/V*/MailData/SyncedSmartMailboxes.plist` and assume the change sticks. It does not.** The "Synced" prefix is real — Mail keeps its own in-memory canonical version and overwrites the on-disk plist within ~1 second of launch, even when Mail was fully quit during the write.
+
+Proven empirically: appending one `from` criterion to "Free Energy" with Mail quit landed on disk (12597 → 12835 bytes, new sender visible via re-read). Mail relaunched, took ~17s, wrote back to 12597 bytes with mtime jumping to Mail's write time and our criterion gone. Same outcome whether the script initiated the quit or the user did it manually.
+
+**What works (read):**
+- `mail-exporter smartboxes list / show / dump / export / diff` — pure reads against the plist
+- Decoded criterion schema: `NotInTrash`, `NotInJunk`, `NotInASpecialMailbox`+`SpecialMailboxType`, `InSpecialMailbox`, `DateLastViewed`/`DateReceived`/`DateSent` + `Qualifier`+`Expression`+`DateUnitType`, `Compound` (recursive AND/OR groups with `AllCriteriaMustBeSatisfied`), generic `Subject`/`From`/`Body` + `Qualifier`+`Expression`. `MailboxType=7` is the smart-mailbox sentinel. `SpecialMailboxType`: 0=Inbox 1=Drafts 2=Outbox 3=Sent 4=Trash 5=Junk 6=Archive. `DateUnitType`: 1=day 2=week 3=month 4=year.
+- Mail's smart-mailbox UI exposes these predicates (verified from the dropdown, 2026-05-13): **Entire message**, From, Any recipient, Subject, Date received, Date last viewed, Account, Sender is VIP, Sender is member of group, Message is flagged/unflagged/read/unread, Priority low/normal/high, Message has flag, Message was replied to / not replied to, Message is/is not in mailbox, Contains attachments, Any attachment name, Attachment type. **There is NO "Sender is in my Contacts" and NO "Message is addressed to a mailing list" predicate** — earlier specs claimed these; both were fabrications.
+
+**What does not work (write):**
+- Raw plist edits (any tool, any quit-and-write dance)
+- `AppleScript make new smart mailbox` — the `mail.sdef` has no smart-mailbox class
+
+**The only viable write path:** UI-scripting Mail's "Edit Smart Mailbox" sheet via System Events. Drives Apple's own dialog so Mail's own iCloud-aware write fires. Not yet built.
+
+**Full diagnostic + schema:** `analysis/mail/smart-mailboxes.md`, `analysis/mail/human-digest-logic.md`, `analysis/mail/human-only-expansion-list.md`, `analysis/mail/raw-source-forensics.md`.
+
+This is a Tier-5-flavoured trap: the data is visible and editable, but the app refuses to honour external writes. Distinct from Stickies (where quit-then-write works) and Vocal Shortcuts (where quit-then-write works). Test before assuming the Tier 5 pattern generalises.
+
 ## AppleScript Best Practices
 
 1. **Activate apps**: Use `tell application "AppName" to activate`
@@ -411,6 +432,12 @@ When adding a new exporter: `sys.path.insert(0, str(ROOT.parent / "bin" / "lib")
 then `from apple_sqlite_snapshot import snapshot_open_persistent` (or
 `open_immutable`). Never write a bare `sqlite3.connect` against an Apple store
 — pick the right mode in the helper.
+
+### `mail-exporter/` — Envelope Index SQLite + read-only smart-mailbox surface
+
+- **Catalog side:** SQLite at `~/Library/Mail/V*/MailData/Envelope Index` (~1 GB on a real user's Mac). Open `?mode=ro&immutable=1` via `apple_sqlite_snapshot.open_immutable`. Subcommands: `status`, `mailboxes`, `top-senders`, `subjects --match REGEX`, `search --subject/--sender/--since`, `export --per-mailbox-limit`, `xref --calendar`. Live numbers: 331,867 messages / 181,698 unique subjects / 25 mailboxes on Esa's Mac.
+- **Smart-mailbox side (read-only — see the "Mail Smart Mailboxes" section above for why writes don't stick):** Subcommands `smartboxes list / show <name> / dump / export / diff <snap> [--write]`. Reads `SyncedSmartMailboxes.plist` (definitions) + `SmartMailboxesLocalProperties.plist` (per-Mac UI state — sort order, filters, unread count, focus). Decodes the full criterion tree including recursive `Compound` AND/OR groups.
+- **Phase 2 omitted on purpose:** `compose`, `mark-read`, `flag`, `smartboxes add-from / remove-from / create` — message-state write actions are in Mail's sdef but message bodies live as `.emlx` files in `~/Library/Mail/V*/<account>/<mailbox>.mbox/Data/...`. Smart-mailbox writes specifically are blocked by Mail's revert-on-launch behaviour (analysis/mail/smart-mailboxes.md).
 
 ### `reminders-exporter/`
 - AppleScript-driven (Reminders.app has a real sdef).
