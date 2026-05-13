@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import plistlib
 import re
 import sqlite3
 import sys
@@ -378,6 +379,293 @@ def cmd_xref_calendar(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Smart Mailboxes — plist-backed, NOT in Mail's sdef
+#
+# Definitions live in SyncedSmartMailboxes.plist; per-Mac UI state (sort,
+# filters, unread count) in SmartMailboxesLocalProperties.plist. Both files
+# are read-safe at any time.
+#
+# Write side is intentionally NOT exposed here. Proven empirically on
+# 2026-05-13: editing the plist while Mail is quit lands on disk, but
+# Mail overwrites it with its own canonical version within ~1 second of
+# launch (size 12835→12597, mtime jumps to Mail's write time, our edit
+# is gone). The only viable write path is UI-scripting Mail's own "Edit
+# Smart Mailbox" sheet. See analysis/mail/smart-mailboxes.md for the
+# full diagnostic + schema.
+# ---------------------------------------------------------------------------
+
+SPECIAL_MAILBOX_TYPE = {
+    0: "Inbox", 1: "Drafts", 2: "Outbox", 3: "Sent",
+    4: "Trash", 5: "Junk", 6: "Archive",
+}
+DATE_UNIT_TYPE = {1: "day", 2: "week", 3: "month", 4: "year"}
+
+
+def find_smartbox_plists() -> tuple[Path, Path | None]:
+    """Locate the SyncedSmartMailboxes + LocalProperties plists in the
+    highest-V MailData dir. Returns (synced, local-or-None)."""
+    md = DB_PATH.parent  # ~/Library/Mail/V*/MailData
+    synced = md / "SyncedSmartMailboxes.plist"
+    local = md / "SmartMailboxesLocalProperties.plist"
+    if not synced.exists():
+        sys.exit(f"Smart mailbox definitions not found at {synced}")
+    return synced, (local if local.exists() else None)
+
+
+def load_smartboxes() -> tuple[list[dict], dict[str, dict]]:
+    """Return (definitions_list, local_props_by_mailbox_id)."""
+    synced_path, local_path = find_smartbox_plists()
+    with open(synced_path, "rb") as f:
+        defs = plistlib.load(f)
+    locals_by_id: dict[str, dict] = {}
+    if local_path:
+        with open(local_path, "rb") as f:
+            for _outer_id, entry in plistlib.load(f).items():
+                info = entry.get("MailboxUserInfo", {}) or {}
+                mid = info.get("MailboxID")
+                if mid:
+                    locals_by_id[mid] = {
+                        "unread": entry.get("MailboxUnreadCount", 0),
+                        "sort_order": info.get("SortOrder", ""),
+                        "descending": info.get("SortedDescending") == "YES",
+                        "filters": [f.get("FilterIdentifier", "")
+                                    for f in info.get("SelectedFilters", []) or []],
+                        "threaded": info.get("DisplayInThreadedMode") == "YES",
+                        "focus": info.get("FocusEnabled") == "YES",
+                    }
+    return defs, locals_by_id
+
+
+def describe_criterion(c: dict, indent: int = 0) -> list[str]:
+    """Render one criterion (recursive for Compound) as indented text lines."""
+    pad = "  " * indent
+    header = c.get("Header", "?")
+    name = c.get("Name")
+    out: list[str] = []
+    if header == "Compound":
+        combiner = "AND" if c.get("AllCriteriaMustBeSatisfied") else "OR"
+        title = f"{pad}group ({combiner})"
+        if name:
+            title += f"  # {name}"
+        out.append(title)
+        for sub in c.get("Criteria", []) or []:
+            out.extend(describe_criterion(sub, indent + 1))
+        return out
+    if header == "NotInTrashMailbox":
+        out.append(f"{pad}NOT in Trash")
+    elif header == "NotInJunkMailbox":
+        out.append(f"{pad}NOT in Junk")
+    elif header == "NotInASpecialMailbox":
+        smt = c.get("SpecialMailboxType")
+        out.append(f"{pad}NOT in {SPECIAL_MAILBOX_TYPE.get(smt, f'Special#{smt}')}")
+    elif header == "InSpecialMailbox":
+        smt = c.get("SpecialMailboxType")
+        out.append(f"{pad}IN {SPECIAL_MAILBOX_TYPE.get(smt, f'Special#{smt}')}")
+    elif header == "DateLastViewed":
+        qual = c.get("Qualifier", "?")
+        expr = c.get("Expression", "")
+        unit = DATE_UNIT_TYPE.get(c.get("DateUnitType"), "?")
+        rel = " (relative)" if c.get("DateIsRelative") else ""
+        out.append(f"{pad}DateLastViewed {qual} {expr} {unit}{rel}")
+    elif header == "DateReceived" or header == "DateSent":
+        qual = c.get("Qualifier", "?")
+        expr = c.get("Expression", "")
+        unit = DATE_UNIT_TYPE.get(c.get("DateUnitType"), "?")
+        rel = " (relative)" if c.get("DateIsRelative") else ""
+        out.append(f"{pad}{header} {qual} {expr} {unit}{rel}")
+    else:
+        # Generic: From/To/Cc/Subject/MessageContent/etc.
+        qual = c.get("Qualifier")
+        expr = c.get("Expression")
+        bits = [pad + header]
+        if qual:
+            bits.append(qual)
+        if expr is not None:
+            bits.append(repr(expr))
+        out.append(" ".join(bits))
+    if name and header != "Compound":
+        out[-1] += f"  # {name}"
+    return out
+
+
+def cmd_smartboxes_list(args) -> int:
+    defs, locals_by_id = load_smartboxes()
+    if args.json:
+        print(json.dumps([{
+            "name": d.get("MailboxName"),
+            "id": d.get("MailboxID"),
+            "criteria_count": len(d.get("MailboxCriteria", []) or []),
+            "children": len(d.get("MailboxChildren", []) or []),
+            "combiner": "AND" if d.get("MailboxAllCriteriaMustBeSatisfied") else "OR",
+            "ui": locals_by_id.get(d.get("MailboxID"), {}),
+        } for d in defs], indent=2, ensure_ascii=False))
+        return 0
+    print(f"Smart mailboxes ({len(defs)}) — {find_smartbox_plists()[0]}")
+    for d in defs:
+        mid = d.get("MailboxID", "")
+        name = d.get("MailboxName", "?")
+        combiner = "AND" if d.get("MailboxAllCriteriaMustBeSatisfied") else "OR"
+        nc = len(d.get("MailboxCriteria", []) or [])
+        ui = locals_by_id.get(mid, {})
+        unread = ui.get("unread", "—")
+        sort = ui.get("sort_order", "")
+        suffix = f"  [unread {unread}"
+        if sort:
+            arrow = "↓" if ui.get("descending") else "↑"
+            suffix += f", sort {sort}{arrow}"
+        if ui.get("filters"):
+            suffix += f", filter {'+'.join(ui['filters'])}"
+        suffix += "]"
+        print(f"  {name}  ({combiner}, {nc} criteria){suffix}")
+    return 0
+
+
+def cmd_smartboxes_show(args) -> int:
+    defs, locals_by_id = load_smartboxes()
+    name = args.name
+    hits = [d for d in defs if d.get("MailboxName") == name]
+    if not hits:
+        # case-insensitive fallback
+        hits = [d for d in defs if (d.get("MailboxName") or "").lower() == name.lower()]
+    if not hits:
+        names = ", ".join(repr(d.get("MailboxName")) for d in defs)
+        sys.exit(f"No smart mailbox named {name!r}. Known: {names}")
+    d = hits[0]
+    mid = d.get("MailboxID", "")
+    if args.json:
+        print(json.dumps({
+            "definition": d,
+            "ui_state": locals_by_id.get(mid, {}),
+        }, indent=2, ensure_ascii=False, default=str))
+        return 0
+    print(f"Smart mailbox: {d.get('MailboxName')}")
+    print(f"  ID:        {mid}")
+    print(f"  Type:      {d.get('MailboxType')} (7 == smart)")
+    combiner = "AND" if d.get("MailboxAllCriteriaMustBeSatisfied") else "OR"
+    print(f"  Combiner:  {combiner}")
+    children = d.get("MailboxChildren") or []
+    if children:
+        print(f"  Children:  {len(children)} nested smart mailboxes")
+    ui = locals_by_id.get(mid)
+    if ui:
+        print(f"  Unread:    {ui['unread']}")
+        sort_arrow = "↓" if ui["descending"] else "↑"
+        print(f"  Sort:      {ui['sort_order']}{sort_arrow}"
+              f"   threaded={ui['threaded']}   focus={ui['focus']}")
+        if ui["filters"]:
+            print(f"  Filters:   {', '.join(ui['filters'])}")
+    print("  Criteria:")
+    for c in d.get("MailboxCriteria", []) or []:
+        for line in describe_criterion(c, indent=2):
+            print(line)
+    return 0
+
+
+def cmd_smartboxes_dump(args) -> int:
+    """Raw plist contents as JSON — for piping into jq."""
+    defs, locals_by_id = load_smartboxes()
+    print(json.dumps({
+        "definitions": defs,
+        "local_properties": locals_by_id,
+    }, indent=2, ensure_ascii=False, default=str))
+    return 0
+
+
+def cmd_smartboxes_export(args) -> int:
+    """Write one markdown file per smart mailbox into the vault."""
+    env = load_env()
+    vault = Path(env["VAULT_PATH"]) / "smartboxes"
+    vault.mkdir(parents=True, exist_ok=True)
+    defs, locals_by_id = load_smartboxes()
+
+    index_lines = ["# Smart Mailboxes", "",
+                   f"Source: `{find_smartbox_plists()[0]}`", "",
+                   f"Count: **{len(defs)}**", "",
+                   "| Name | Combiner | Criteria | Unread | Sort |",
+                   "|------|----------|----------|--------|------|"]
+    for d in defs:
+        name = d.get("MailboxName", "?")
+        mid = d.get("MailboxID", "")
+        combiner = "AND" if d.get("MailboxAllCriteriaMustBeSatisfied") else "OR"
+        nc = len(d.get("MailboxCriteria", []) or [])
+        ui = locals_by_id.get(mid, {})
+        unread = ui.get("unread", "—")
+        sort = ui.get("sort_order", "")
+        if sort:
+            sort += "↓" if ui.get("descending") else "↑"
+        slug = slugify(name)
+        index_lines.append(f"| [{name}]({slug}.md) | {combiner} | {nc} | {unread} | {sort} |")
+
+        body = [f"# {name}", "",
+                f"- **ID:** `{mid}`",
+                f"- **Combiner:** {combiner}",
+                f"- **MailboxType:** {d.get('MailboxType')}"]
+        children = d.get("MailboxChildren") or []
+        if children:
+            body.append(f"- **Children:** {len(children)} nested")
+        if ui:
+            body.append(f"- **Unread:** {ui['unread']}")
+            arrow = "↓" if ui["descending"] else "↑"
+            body.append(f"- **Sort:** {ui['sort_order']}{arrow}")
+            if ui["filters"]:
+                body.append(f"- **Filters:** {', '.join(ui['filters'])}")
+            body.append(f"- **Threaded:** {ui['threaded']}   **Focus:** {ui['focus']}")
+        body += ["", "## Criteria", "", "```"]
+        for c in d.get("MailboxCriteria", []) or []:
+            body.extend(describe_criterion(c, indent=0))
+        body.append("```")
+        write_md(vault / f"{slug}.md", "\n".join(body) + "\n")
+
+    write_md(vault / "_index.md", "\n".join(index_lines) + "\n")
+    print(f"Wrote {len(defs)} smartbox(es) + index to {vault}")
+    return 0
+
+
+def cmd_smartboxes_diff(args) -> int:
+    """Compare current definitions against a saved snapshot file."""
+    snap = Path(os.path.expanduser(args.snapshot))
+    defs, _ = load_smartboxes()
+    if args.write:
+        snap.parent.mkdir(parents=True, exist_ok=True)
+        with open(snap, "wb") as f:
+            plistlib.dump(defs, f, fmt=plistlib.FMT_XML)
+        print(f"Wrote snapshot: {snap}")
+        return 0
+    if not snap.exists():
+        sys.exit(f"No snapshot at {snap}. Run with --write to create one.")
+    with open(snap, "rb") as f:
+        prev = plistlib.load(f)
+
+    def by_id(seq):
+        return {d.get("MailboxID"): d for d in seq if d.get("MailboxID")}
+
+    cur, old = by_id(defs), by_id(prev)
+    added = [cur[k].get("MailboxName") for k in cur.keys() - old.keys()]
+    removed = [old[k].get("MailboxName") for k in old.keys() - cur.keys()]
+    changed = []
+    for k in cur.keys() & old.keys():
+        if cur[k] != old[k]:
+            changed.append((cur[k].get("MailboxName"), old[k].get("MailboxName")))
+    if not (added or removed or changed):
+        print(f"No changes since {snap}")
+        return 0
+    if added:
+        print("Added:")
+        for n in added:
+            print(f"  + {n}")
+    if removed:
+        print("Removed:")
+        for n in removed:
+            print(f"  - {n}")
+    if changed:
+        print("Changed:")
+        for new_n, old_n in changed:
+            label = new_n if new_n == old_n else f"{old_n} → {new_n}"
+            print(f"  ~ {label}")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="mail-exporter")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -395,6 +683,25 @@ def main() -> int:
     sp.add_argument("--per-mailbox-limit", type=int,
                     help="Max headers per mailbox in vault (default 200)")
     sp.set_defaults(func=cmd_export)
+
+    sp = sub.add_parser("smartboxes", help="read Smart Mailboxes (plist-backed; not in Mail.sdef)")
+    sb = sp.add_subparsers(dest="action", required=True)
+    sb_list = sb.add_parser("list", help="list smart mailboxes with combiner + unread + sort")
+    sb_list.add_argument("--json", action="store_true")
+    sb_list.set_defaults(func=cmd_smartboxes_list)
+    sb_show = sb.add_parser("show", help="show one smart mailbox criteria tree")
+    sb_show.add_argument("name")
+    sb_show.add_argument("--json", action="store_true")
+    sb_show.set_defaults(func=cmd_smartboxes_show)
+    sb_dump = sb.add_parser("dump", help="raw plist contents as JSON")
+    sb_dump.set_defaults(func=cmd_smartboxes_dump)
+    sb_export = sb.add_parser("export", help="write one .md per smart mailbox to the vault")
+    sb_export.set_defaults(func=cmd_smartboxes_export)
+    sb_diff = sb.add_parser("diff", help="diff current definitions vs a saved snapshot")
+    sb_diff.add_argument("snapshot", help="path to snapshot .plist")
+    sb_diff.add_argument("--write", action="store_true",
+                         help="write current state to snapshot instead of comparing")
+    sb_diff.set_defaults(func=cmd_smartboxes_diff)
 
     sp = sub.add_parser("xref", help="cross-reference messages against Calendar events")
     sp.add_argument("--calendar", action="store_true",
