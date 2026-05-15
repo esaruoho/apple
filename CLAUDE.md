@@ -55,6 +55,15 @@ TODO.md.
 | Transcription workflow | `analysis/sal/transcription-pipeline.md` |
 | Sal correspondence | `analysis/sal/correspondence/` |
 | Discovery results | `analysis/sal/interviews-discovered.md` |
+| Slash commands | `commands/README.md` — 14 zero-roundtrip slashes (`/invert`, `/qr`, `/qr-wifi`, `/sal-status`, `/grand-search`, etc.) |
+
+## Zero-roundtrip slash commands
+
+`commands/*.md` are thin pointers to `bin/<tool>` — the slash invocation is
+the only LLM touch. Run `commands/install.sh` once per Mac to symlink them
+into `~/.claude/commands/`. New verbs go: write `bin/<tool>` first, then a
+~10-line slash `.md` that shells `$ARGUMENTS` to it. Never ask Claude to
+"analyze the output" in the slash — that re-introduces a roundtrip.
 
 ## Commit + push policy
 
