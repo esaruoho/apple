@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# qr-wifi — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins
+# the network without typing the password.
+#
+# Usage:
+#   qr-wifi <SSID> <password>                       # WPA, visible
+#   qr-wifi <SSID> <password> <output.png>          # custom path
+#   qr-wifi <SSID> <password> <output.png> <auth>   # WPA|WEP|nopass
+#   qr-wifi <SSID> <password> <output.png> <auth> hidden
+#
+# Payload format (Wi-Fi QR spec):
+#   WIFI:T:<auth>;S:<ssid>;P:<password>;H:<true|false>;;
+#
+# Special chars in SSID/password ( \ ; , " : ) are backslash-escaped per spec.
+#
+# Apple-native: shells to bin/sal-qr (CoreImage QR generator).
+
+set -euo pipefail
+
+if [ $# -lt 2 ]; then
+  echo "usage: qr-wifi <SSID> <password> [output.png] [auth=WPA] [hidden]" >&2
+  exit 2
+fi
+
+SSID="$1"
+PASSWORD="$2"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SAL_QR="$SCRIPT_DIR/sal-qr"
+
+if [ ! -x "$SAL_QR" ]; then
+  echo "qr-wifi: missing $SAL_QR" >&2
+  exit 1
+fi
+
+# Default output: ~/Desktop/wifi-<ssid-slug>.png
+slugify() {
+  printf '%s' "$1" | tr ' ' '-' | tr -cd 'A-Za-z0-9._-'
+}
+OUT="${3:-$HOME/Desktop/wifi-$(slugify "$SSID").png}"
+AUTH="${4:-WPA}"
+HIDDEN="${5:-}"
+
+case "$AUTH" in
+  WPA|WEP|nopass) ;;
+  *) echo "qr-wifi: auth must be WPA, WEP, or nopass (got: $AUTH)" >&2; exit 2 ;;
+esac
+
+# Escape special chars per Wi-Fi QR spec: \ ; , " :
+escape() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/;/\\;/g' -e 's/,/\\,/g' -e 's/"/\\"/g' -e 's/:/\\:/g'
+}
+ESC_SSID="$(escape "$SSID")"
+ESC_PW="$(escape "$PASSWORD")"
+
+if [ "$AUTH" = "nopass" ]; then
+  PAYLOAD="WIFI:T:nopass;S:${ESC_SSID};;"
+else
+  PAYLOAD="WIFI:T:${AUTH};S:${ESC_SSID};P:${ESC_PW};"
+  if [ "$HIDDEN" = "hidden" ] || [ "$HIDDEN" = "true" ]; then
+    PAYLOAD="${PAYLOAD}H:true;"
+  fi
+  PAYLOAD="${PAYLOAD};"
+fi
+
+"$SAL_QR" "$PAYLOAD" "$OUT"
+open -R "$OUT"
+echo "wifi qr -> $OUT"
+echo "  SSID:     $SSID"
+echo "  auth:     $AUTH"
+if [ "$HIDDEN" = "hidden" ] || [ "$HIDDEN" = "true" ]; then
+  echo "  hidden:   yes"
+fi
