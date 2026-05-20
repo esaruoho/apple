@@ -37,6 +37,38 @@ On the first Apple-related turn in a session:
 
 If the user asks "what's left", "what did we get", "continue", or "boot up Apple skill", refresh the status first unless they clearly only want unrelated scripting help.
 
+## Menu-Bar Toolbox — SwiftBar (the third zero-roundtrip channel)
+
+`topbar/` ships a SwiftBar plugin that gives a single 🧰 menu-bar item
+combining live-status display + click-to-run actions. Sits alongside slash
+commands (keyboard) and Loupedeck buttons (physical) as the **third
+zero-roundtrip channel** — mouse + glanceable + refresh-driven.
+
+```
+🧰 23.9° 40% ⚡96% · Sal 235/359   ← in the menu bar, refreshes every 5 min
+└─ HomePod Climate
+└─ Battery
+└─ Sal Archive (recovered/total/missing)
+└─ Stop Voicebox · Empty Trash · Desktop Icons
+└─ Audio ▸ (mute/unmute/volume)
+└─ Finder ▸ (kill, hidden files, menu bar restart)
+```
+
+Install: `bash topbar/install.sh` (or `/topbar`). SwiftBar is sandboxed —
+first launch shows a folder picker, choose `topbar/plugins/`.
+
+**Plugin pattern.** `<Name>.<interval>.sh` in `plugins/`. stdout above the
+first `---` is the bar label; below it is the dropdown. Submenu items prefix
+with `--`. Click actions append `| shell="<path>" terminal=false`.
+
+Anything you currently run via slash command or Loupedeck button has a
+1-line SwiftBar plugin equivalent. Pick the channel that fits the moment:
+- **Slash** (`/qr`) — keyboard, scriptable, batch jobs, text input
+- **Loupedeck** — physical, hands-free, DAW workflow
+- **SwiftBar** — mouse, glanceable, *live status display*
+
+See `topbar/README.md` for the splitting/extending pattern.
+
 ## Hardware Controller Integration
 
 Any programmable controller (Loupedeck Live, Stream Deck, Contour Shuttle Pro, etc.) that can run shell commands works with these scripts:

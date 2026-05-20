@@ -55,7 +55,8 @@ TODO.md.
 | Transcription workflow | `analysis/sal/transcription-pipeline.md` |
 | Sal correspondence | `analysis/sal/correspondence/` |
 | Discovery results | `analysis/sal/interviews-discovered.md` |
-| Slash commands | `commands/README.md` — 14 zero-roundtrip slashes (`/invert`, `/qr`, `/qr-wifi`, `/sal-status`, `/grand-search`, etc.) |
+| Slash commands | `commands/README.md` — 15 zero-roundtrip slashes (`/invert`, `/qr`, `/qr-wifi`, `/sal-status`, `/grand-search`, `/topbar`, etc.) |
+| Menu-bar toolbox | `topbar/` — SwiftBar plugin combining click-to-run actions + live status (HomePod climate, Sal archive %, battery). One 🧰 in the menu bar. Install via `/topbar`. |
 
 ## Zero-roundtrip slash commands
 

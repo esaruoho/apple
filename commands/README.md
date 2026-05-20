@@ -24,6 +24,8 @@ This is the Sal pattern in Claude Code form: one verb, one result, no dialog.
 | `/siri-phrases` | `bin/sal-siri-list-phrases.py` | Dump Sal-Siri 588-phrase corpus |
 | `/workflow-catalog` | `bin/workflow-gen.py --catalog` | Regenerate `scripts.md` |
 | `/apple-report [--ai] [--can-run "<spec>"]` | `bin/apple-report` | Full Mac capability dump + AI-workload "can I run X" |
+| `/topbar` | `topbar/install.sh` | Install + launch SwiftBar menu-bar toolbox (one 🧰 with live status + click-to-run) |
+| `/qr-wifi <SSID> <password>` | `bin/sal-qr` (wrapped) | Wi-Fi-join QR code |
 
 ## Install
 
