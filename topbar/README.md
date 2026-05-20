@@ -14,10 +14,16 @@ bash ~/work/apple/topbar/install.sh
 
 Or use the slash: `/topbar`.
 
-This installs SwiftBar via Homebrew (if missing), points it at the `plugins/`
-folder, and launches it. SwiftBar is **sandboxed**, so on first launch it
-shows a folder picker — choose `/Users/esaruoho/work/apple/topbar/plugins/`
-and click Open. Then the menu-bar items appear.
+This installs SwiftBar via Homebrew (if missing) and symlinks every plugin
+from `topbar/plugins/` into `~/Documents/swiftbar/`.
+
+**Why the symlink dance:** SwiftBar is sandboxed. Its plugin folder is
+locked behind a security-scoped bookmark that *only* the Finder folder
+picker can grant — `defaults write PluginDirectory` alone fails silently
+with no access. SwiftBar's first-launch default is `~/Documents/swiftbar/`,
+which it auto-bookmarks. By symlinking into that pre-authorized folder we
+sidestep the picker entirely: edits to `topbar/plugins/Apple.5m.sh` flow
+through immediately because it's the same file.
 
 ## What's in the toolbox
 
