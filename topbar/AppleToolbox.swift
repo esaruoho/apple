@@ -398,6 +398,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             submenu("🪟 Snap Windows", items: [
                 action("◧◨ Side by Side (front 2 apps)",
                     cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/SideBySide.scpt"]),
+                action("⬒⬓ Top / Bottom (front 2 apps)",
+                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/TopBottom.scpt"]),
+                action("⬛⬛⬛ Thirds (front 3 apps)",
+                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/Thirds.scpt"]),
+                NSMenuItem.separator(),
                 action("Mosaic (all of front app)",
                     cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicWindows.scpt"]),
                 action("Mosaic +1 window",
