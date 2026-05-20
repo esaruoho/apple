@@ -1,58 +1,49 @@
 #!/bin/bash
-# Apple Toolbox — SwiftBar install + setup
-# Safe to re-run.
+# Apple Toolbox — Apple-native install. NO HOMEBREW.
 #
-# Sandboxing reality: SwiftBar is sandboxed and stores plugin-folder access
-# as a security-scoped bookmark. `defaults write PluginDirectory` alone does
-# not grant read access — only the Finder folder-picker dialog does.
+# 1. Compile AppleToolbox.swift via xcrun (Apple Developer Tools — ships
+#    with macOS / Command Line Tools).
+# 2. Bundle into AppleToolbox.app with LSUIElement=true (menu bar only,
+#    no Dock icon).
+# 3. Move bundle to /Applications/Apple-Workflows/ (matches the existing
+#    spotlight-export pattern from the apple skill).
+# 4. Launch.
 #
-# Workaround: SwiftBar's first-launch default is ~/Documents/swiftbar, and it
-# auto-bookmarks that location. We create that folder and SYMLINK our plugin
-# into it, so SwiftBar can read it without us ever needing the picker.
+# Safe to re-run. Quits any running instance first.
 
 set -e
 
 TOPBAR_DIR="$HOME/work/apple/topbar"
-SWIFTBAR_DIR="$HOME/Documents/swiftbar"
+INSTALL_DIR="/Applications/Apple-Workflows"
+APP_PATH="$INSTALL_DIR/AppleToolbox.app"
 
-echo "==> Apple Toolbox installer"
+echo "==> Apple Toolbox installer (Apple-native, no Homebrew)"
 
-# 1. Install SwiftBar if missing
-if [ ! -d "/Applications/SwiftBar.app" ]; then
-  echo "==> Installing SwiftBar via Homebrew..."
-  brew install --cask swiftbar
-else
-  echo "==> SwiftBar already installed."
-fi
+# Quit any running instance
+osascript -e 'tell application "AppleToolbox" to quit' 2>/dev/null || true
+sleep 0.5
 
-# 2. Make plugin + scripts executable
-echo "==> Making plugin + helper scripts executable..."
-chmod +x "$TOPBAR_DIR"/plugins/*.sh
+# Build
+echo "==> Building..."
+bash "$TOPBAR_DIR/build.sh"
+
+# Move into place
+echo "==> Installing into $INSTALL_DIR/"
+mkdir -p "$INSTALL_DIR"
+rm -rf "$APP_PATH"
+mv "$TOPBAR_DIR/AppleToolbox.app" "$APP_PATH"
+
+# Make helper scripts executable (the menu items call them)
 chmod +x "$TOPBAR_DIR"/scripts/*.sh
 
-# 3. Create SwiftBar's default plugin folder + symlink our plugin in
-echo "==> Wiring symlink into $SWIFTBAR_DIR/"
-mkdir -p "$SWIFTBAR_DIR"
-for plugin in "$TOPBAR_DIR"/plugins/*.sh; do
-  ln -sf "$plugin" "$SWIFTBAR_DIR/$(basename "$plugin")"
-done
-ls -la "$SWIFTBAR_DIR"
-
-# 4. Launch SwiftBar (it'll appear in menu bar)
-echo "==> Launching SwiftBar..."
-open -a /Applications/SwiftBar.app
-sleep 2
-
-# 5. Refresh plugins (in case SwiftBar was already running)
-open "swiftbar://refreshallplugins" 2>/dev/null || true
+# Launch
+echo "==> Launching..."
+open "$APP_PATH"
+sleep 1
 
 echo ""
 echo "✅ Done. Look for 🧰 in your menu bar."
 echo ""
-echo "If SwiftBar's first-launch dialog appears asking to choose a plugin"
-echo "folder, accept the default (~/Documents/swiftbar). The symlink above"
-echo "already lives there."
-echo ""
-echo "To add new entries: edit $TOPBAR_DIR/plugins/Apple.5m.sh"
-echo "Or drop a new <Name>.<interval>.sh into $TOPBAR_DIR/plugins/ and"
-echo "re-run this script to add the symlink."
+echo "Bundle: $APP_PATH"
+echo "Source: $TOPBAR_DIR/AppleToolbox.swift"
+echo "Edit + rerun this script to apply changes."

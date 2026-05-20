@@ -1,10 +1,11 @@
 # Apple Toolbox — Menu Bar Script Launcher & Live Dashboard
 
-A 🧰 icon in the macOS menu bar with a dropdown of one-click scripts, **plus**
-extra status items that show live data (HomePod temp, Sal archive recovery,
-battery). Built on [SwiftBar](https://github.com/swiftbar/SwiftBar) — native
-Swift, free, open-source. Zero roundtrip: click → script runs. No LLM, no
-Shortcuts engine warm-up, no Terminal flash.
+**Apple-native. No third-party dependencies.** A 🧰 icon in the macOS menu
+bar with a dropdown of one-click scripts and live status (HomePod climate,
+battery, Sal archive). Built on `NSStatusItem` + `NSMenu`, compiled with
+the Swift compiler that ships with Apple's Developer Tools (`xcrun swiftc`).
+
+Zero roundtrip: click → script runs. No daemon, no plugin format, no Homebrew.
 
 ## Install (once)
 
@@ -14,146 +15,120 @@ bash ~/work/apple/topbar/install.sh
 
 Or use the slash: `/topbar`.
 
-This installs SwiftBar via Homebrew (if missing) and symlinks every plugin
-from `topbar/plugins/` into `~/Documents/swiftbar/`.
-
-**Why the symlink dance:** SwiftBar is sandboxed. Its plugin folder is
-locked behind a security-scoped bookmark that *only* the Finder folder
-picker can grant — `defaults write PluginDirectory` alone fails silently
-with no access. SwiftBar's first-launch default is `~/Documents/swiftbar/`,
-which it auto-bookmarks. By symlinking into that pre-authorized folder we
-sidestep the picker entirely: edits to `topbar/plugins/Apple.5m.sh` flow
-through immediately because it's the same file.
+This compiles `AppleToolbox.swift` into a `.app` bundle with
+`LSUIElement=true` (menu bar only, no Dock icon), ad-hoc codesigns it,
+installs into `/Applications/Apple-Workflows/AppleToolbox.app`, launches it.
 
 ## What's in the toolbox
 
-One unified status item in the bar combining live data + click-to-run actions:
+One unified status item in the menu bar:
 
 ```
-🧰 23.9° 40% ⚡96% · Sal 235/359
+🧰
 ```
 
-Refreshes every 5 minutes. Click it for the dropdown.
+Click for the dropdown. Refreshes every 5 minutes (and again every time
+you open it via the 🔄 Refresh item).
 
-**Live status (top of dropdown):**
+**Live status (top — informational, disabled rows):**
 
 | Section | Shows |
 |---|---|
-| 🌡 HomePod Climate | latest temp + humidity from `~/work/homepod-watcher/climate-logs/` |
-| 🔋/⚡ Battery | % + state + time remaining (`pmset`) |
-| 🗂 Sal Archive | recovered / total / missing (regenerates `current-status.md` on every refresh) |
+| 🌡 Climate | latest temp + humidity from `~/work/homepod-watcher/climate-logs/*.jsonl` |
+| 🔋 Battery | % + state + time remaining (`pmset -g batt`) |
+| 🗂 Sal | recovered / total + missing count (regenerates `current-status.md` on read) |
 
 **Click-to-run actions (below):**
 
 | Entry | What it does |
 |---|---|
-| 🔇 Stop Voicebox | runs `voicebox-stop` (same as `vstop` alias) |
+| 🔇 Stop Voicebox | runs `~/bin/voicebox-stop` (same as `vstop` alias) |
 | 🗑 Empty Trash | tells Finder to empty trash |
 | 👁 / 👀 Desktop Icons | hide / show desktop icons |
 | Audio ▸ | mute / unmute / volume presets (25/50/75) |
 | Finder ▸ | kill Finder, show/hide hidden files, restart menu bar |
-| Edit Toolbox… | opens the plugin script in TextEdit |
-| 🔄 Refresh | re-reads the plugin immediately |
+| 🔄 Refresh | re-reads live status + rebuilds menu |
+| Quit | terminate AppleToolbox |
 
-## Adding a new entry to the toolbox dropdown
+## Adding a new entry
 
-Edit `plugins/Apple.5m.sh` — scroll to the "Toolbox quick actions" section.
-The format is one line per entry:
+Edit `AppleToolbox.swift` — find the `rebuildMenu()` function. Each entry
+is one line:
 
-```
-Label here | shell="/path/to/script" terminal=false
-```
-
-For a one-liner shell command, call any binary directly:
-
-```
-🎵 Pause Music | shell="/usr/bin/osascript" param1="-e" param2='tell app "Music" to pause' terminal=false
+```swift
+menu.addItem(action("🎵 Pause Music",
+    cmd: "/usr/bin/osascript",
+    args: ["-e", "tell app \"Music\" to pause"]))
 ```
 
-For multi-command actions, drop a script into `scripts/`, `chmod +x` it, and
-point at it:
+For multi-command actions, drop a script into `scripts/`, `chmod +x` it,
+and call it directly:
 
-```
-🌑 Dark Mode | shell="$TB/dark-mode.sh" terminal=false
-```
-
-Save the file. SwiftBar picks it up automatically.
-
-### Submenus
-
-Indent submenu items with `--`:
-
-```
-Audio
--- 🔇 Mute | shell="/usr/bin/osascript" param1="-e" param2='set volume with output muted' terminal=false
--- 🔊 Unmute | shell="/usr/bin/osascript" param1="-e" param2='set volume without output muted' terminal=false
+```swift
+menu.addItem(action("🌑 Dark Mode", cmd: "\(TOPBAR)/scripts/dark-mode.sh"))
 ```
 
-## Splitting out a separate status item
+Submenus:
 
-Apple.5m.sh combines four sections into one bar item. If you want one section
-on its own refresh cadence (e.g. Sal hourly, Renoise BPM every second), drop
-a new file into `plugins/` with the pattern `<Name>.<interval>.sh`:
-
-- `5s` / `30s` / `5m` / `1h` / `1d` — how often SwiftBar re-runs the script
-- the script's stdout becomes the menu structure: first chunk = bar label,
-  lines after `---` = dropdown items
-
-Example: a Renoise BPM display refreshing every second:
-
-```bash
-# plugins/RenoiseBPM.1s.sh
-#!/bin/bash
-BPM=$(curl -s localhost:19714/bpm)
-echo "♫ ${BPM}"
-echo "---"
-echo "Renoise BPM: ${BPM}"
+```swift
+let root = NSMenuItem(title: "Devices", action: nil, keyEquivalent: "")
+let sub = NSMenu()
+sub.addItem(action("Reset Bluetooth", cmd: "/usr/bin/sudo", args: ["pkill", "bluetoothd"]))
+root.submenu = sub
+menu.addItem(root)
 ```
 
-`chmod +x` it. Done.
+Save the file, then re-run `./install.sh` (it quits, rebuilds, relaunches).
+
+## Adding a new live-status reader
+
+Add a function like `climateRead()` / `batteryRead()` / `salRead()` and
+call it from `rebuildMenu()` via `menu.addItem(header("Title", body: reader()))`.
 
 ## Files
 
 ```
 topbar/
-├── plugins/                # SwiftBar reads this folder ONLY
-│   └── Apple.5m.sh         # the one unified bar item
-├── scripts/                # multi-line helper scripts (called by Toolbox)
+├── AppleToolbox.swift      # the entire app — NSStatusItem + NSMenu + data readers
+├── build.sh                # compile + bundle into AppleToolbox.app
+├── install.sh              # build, move to /Applications/Apple-Workflows/, launch
+├── scripts/                # multi-line helper scripts (called by menu actions)
 │   ├── hide-desktop.sh
 │   ├── show-desktop.sh
 │   ├── show-hidden.sh
 │   └── hide-hidden.sh
-├── install.sh              # installer / re-runner
 └── README.md               # this file
 ```
 
-The filename suffix `.5m` tells SwiftBar to refresh every 5 minutes. Other
-intervals: `5s`, `30s`, `1h`, `1d`. Pick the cadence of the freshest data
-you're surfacing in that plugin.
+## Why Apple-native (not SwiftBar via Homebrew)
 
-`install.sh` and `README.md` live OUTSIDE `plugins/` deliberately — SwiftBar
-loads every file in its plugin folder, so these would otherwise try to run
-as plugins.
+The apple skill's first rule is **"Apple-Native Only — No Third-Party
+Dependencies"** (see `skill.md`). SwiftBar via Homebrew violates that:
+- Adds an outside daemon to maintain
+- Sandboxing forces a security-scoped folder bookmark that only the Finder
+  picker can grant — fragile, repeatedly broke during install
+- Plugin format is a SwiftBar-specific text protocol
+- Removes if Homebrew goes away
 
-## Why SwiftBar (not Shortcuts pinned to menu bar)
+The native path uses tools Apple already ships:
+- `xcrun swiftc` — Apple's Swift compiler
+- `Cocoa` / `AppKit` — Apple's UI framework
+- `/usr/libexec/PlistBuddy` — Apple's plist editor
+- `codesign` — Apple's signing tool
 
-- One icon with a dropdown vs. one icon per Shortcut (top bar gets crowded fast)
-- Submenus → grouping (Audio, Finder, …)
-- Click → script runs immediately. No Shortcuts engine warm-up (~0.5s/click).
-- Plugin = a plain shell script you can edit in any editor. No Shortcuts.app UI.
-- Folder-mirrored, so this is version-controlled in the apple repo.
-- Refresh-driven status items: the bar becomes a live heads-up display.
+The whole app is one 215-line Swift file that compiles to a 108KB binary.
+This is the [Tier 5 dark — three back-door pattern](`~/.claude/projects/-Users-esaruoho-work-apple/memory/tier_5_backdoor_pattern.md`)
+"framework via Swift one-liner" branch, formalized.
 
-## Pattern: the third channel
+## The third zero-roundtrip channel
 
-This is the third zero-roundtrip channel alongside slash commands and
-Loupedeck buttons:
+This is the third channel alongside slash commands and Loupedeck buttons:
 
 | Channel | Strength | Best for |
 |---|---|---|
 | Slash (`/qr`) | keyboard, instant, scriptable | text input, batch jobs |
 | Loupedeck button | physical, hands-free | DAW workflow, single verbs |
-| SwiftBar menu | mouse, glanceable, *live* | quick actions + status display |
+| Menu-bar app | mouse, glanceable, *live* | quick actions + status display |
 
-Anything you currently run via slash or Loupedeck has a 1-line SwiftBar
-plugin equivalent. Pick the channel that fits the moment.
+Anything you currently run via slash or Loupedeck has a 3-line Swift entry
+here. Pick the channel that fits the moment.

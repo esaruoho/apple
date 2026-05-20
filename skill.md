@@ -37,37 +37,49 @@ On the first Apple-related turn in a session:
 
 If the user asks "what's left", "what did we get", "continue", or "boot up Apple skill", refresh the status first unless they clearly only want unrelated scripting help.
 
-## Menu-Bar Toolbox — SwiftBar (the third zero-roundtrip channel)
+## Menu-Bar Toolbox — Apple-native (third zero-roundtrip channel)
 
-`topbar/` ships a SwiftBar plugin that gives a single 🧰 menu-bar item
-combining live-status display + click-to-run actions. Sits alongside slash
-commands (keyboard) and Loupedeck buttons (physical) as the **third
-zero-roundtrip channel** — mouse + glanceable + refresh-driven.
+`topbar/AppleToolbox.swift` is a 215-line Apple-native menu-bar app —
+`NSStatusItem` + `NSMenu`, compiled by `xcrun swiftc`, bundled into
+`AppleToolbox.app` with `LSUIElement=true`. **No Homebrew. No daemon. No
+plugin format.** One 🧰 in the menu bar.
 
 ```
-🧰 23.9° 40% ⚡96% · Sal 235/359   ← in the menu bar, refreshes every 5 min
-└─ HomePod Climate
-└─ Battery
-└─ Sal Archive (recovered/total/missing)
-└─ Stop Voicebox · Empty Trash · Desktop Icons
-└─ Audio ▸ (mute/unmute/volume)
-└─ Finder ▸ (kill, hidden files, menu bar restart)
+🧰
+├─ 🌡 Climate: 23.9°C  40% RH      (read from ~/work/homepod-watcher logs)
+├─ 🔋 Battery: 96% · charging
+├─ 🗂 Sal: 235 / 359 recovered  ·  3 missing
+├─ ─────
+├─ 🔇 Stop Voicebox
+├─ 🗑 Empty Trash
+├─ 👁 / 👀 Desktop Icons
+├─ Audio ▸ (mute / unmute / 25 / 50 / 75)
+├─ Finder ▸ (kill / hidden files / restart menu bar)
+└─ 🔄 Refresh  ·  Quit
 ```
 
-Install: `bash topbar/install.sh` (or `/topbar`). SwiftBar is sandboxed —
-first launch shows a folder picker, choose `topbar/plugins/`.
+Install: `bash topbar/install.sh` (or `/topbar`). Installs into
+`/Applications/Apple-Workflows/AppleToolbox.app`. Refreshes every 5 min.
 
-**Plugin pattern.** `<Name>.<interval>.sh` in `plugins/`. stdout above the
-first `---` is the bar label; below it is the dropdown. Submenu items prefix
-with `--`. Click actions append `| shell="<path>" terminal=false`.
+**Build chain (all Apple-shipped):**
+- `xcrun swiftc -O ... -framework Cocoa` — Swift compiler from Developer Tools
+- `/usr/libexec/PlistBuddy` — Info.plist editor
+- `codesign --force --sign -` — ad-hoc signature
+
+**Adding entries.** Edit `AppleToolbox.swift` → `rebuildMenu()`. Each entry
+is one `menu.addItem(action("Label", cmd: "/path", args: [...]))` line.
+Re-run `install.sh` to rebuild + relaunch.
+
+This is the **Tier 5 dark — three back-door pattern** "framework via Swift
+one-liner" branch formalized into a recurring tool.
 
 Anything you currently run via slash command or Loupedeck button has a
-1-line SwiftBar plugin equivalent. Pick the channel that fits the moment:
+3-line Swift entry here. Pick the channel that fits the moment:
 - **Slash** (`/qr`) — keyboard, scriptable, batch jobs, text input
 - **Loupedeck** — physical, hands-free, DAW workflow
-- **SwiftBar** — mouse, glanceable, *live status display*
+- **Menu-bar app** — mouse, glanceable, *live status display*
 
-See `topbar/README.md` for the splitting/extending pattern.
+See `topbar/README.md` for the full extending pattern.
 
 ## Hardware Controller Integration
 
