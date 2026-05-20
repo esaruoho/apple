@@ -135,23 +135,33 @@ func wifiRead() -> String {
     return out.trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
-func mailUnreadRead() -> String {
-    // Only ask Mail if it's already running — otherwise this would launch Mail.
-    let running = run("/usr/bin/pgrep", ["-x", "Mail"]).trimmingCharacters(in: .whitespacesAndNewlines)
-    if running.isEmpty { return "—" }
-    let out = run("/usr/bin/osascript",
-        ["-e", "tell application \"Mail\" to return unread count of inbox"], timeout: 3)
+func mailUnreadRead() -> String? {
+    // Read Mail's Envelope Index SQLite directly — works without launching Mail.
+    // Path: ~/Library/Mail/V<n>/MailData/Envelope Index. V-number changes across
+    // macOS releases, so glob it.
+    let mailDir = "\(HOME)/Library/Mail"
+    guard let versions = try? FileManager.default.contentsOfDirectory(atPath: mailDir) else { return nil }
+    let v = versions.filter { $0.hasPrefix("V") }.sorted().last
+    guard let v = v else { return nil }
+    let db = "\(mailDir)/\(v)/MailData/Envelope Index"
+    guard FileManager.default.fileExists(atPath: db) else { return nil }
+    let out = run("/usr/bin/sqlite3", ["-readonly", db,
+        "SELECT COALESCE(SUM(unread_count), 0) FROM mailboxes WHERE url LIKE '%INBOX%' OR url LIKE '%inbox%';"], timeout: 2)
         .trimmingCharacters(in: .whitespacesAndNewlines)
-    return out.isEmpty ? "—" : "\(out) unread"
+    guard let count = Int(out) else { return nil }
+    let fmt = NumberFormatter()
+    fmt.numberStyle = .decimal
+    fmt.groupingSeparator = ","
+    return "\(fmt.string(from: NSNumber(value: count)) ?? "\(count)") unread"
 }
 
-func nowPlayingRead() -> String {
+func nowPlayingRead() -> String? {
     let running = run("/usr/bin/pgrep", ["-x", "Music"]).trimmingCharacters(in: .whitespacesAndNewlines)
-    if running.isEmpty { return "—" }
+    if running.isEmpty { return nil }  // hide the row entirely
     let out = run("/usr/bin/osascript",
         ["-e", "tell application \"Music\" to if player state is playing then return (name of current track) & \" — \" & (artist of current track)"],
         timeout: 3).trimmingCharacters(in: .whitespacesAndNewlines)
-    return out.isEmpty ? "(paused)" : out
+    return out.isEmpty ? nil : out
 }
 
 func whispQueueRead() -> String {
@@ -330,15 +340,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func rebuildMenu() {
         let menu = NSMenu()
 
-        // Live status (top, disabled)
-        menu.addItem(header("🌡 Climate", body: climateRead()))
-        menu.addItem(header("🔋 Battery", body: batteryRead()))
-        menu.addItem(header("🗂 Sal", body: salRead()))
-        menu.addItem(header("💿 Disk", body: diskRead()))
-        menu.addItem(header("📶 Wi-Fi", body: wifiRead()))
-        menu.addItem(header("📬 Mail", body: mailUnreadRead()))
-        menu.addItem(header("🎵 Music", body: nowPlayingRead()))
-        menu.addItem(header("🎙 Whisp", body: whispQueueRead()))
+        // Live status — readers that return nil get their row skipped entirely
+        // (no "—" placeholders cluttering the menu).
+        func addIf(_ title: String, _ body: String?) {
+            if let b = body, !b.isEmpty, b != "—" {
+                menu.addItem(header(title, body: b))
+            }
+        }
+        addIf("🌡 Climate", climateRead())
+        addIf("🔋 Battery", batteryRead())
+        addIf("🗂 Sal",     salRead())
+        addIf("💿 Disk",    diskRead())
+        addIf("📶 Wi-Fi",   wifiRead())
+        addIf("📬 Mail",    mailUnreadRead())
+        addIf("🎵 Music",   nowPlayingRead())
+        addIf("🎙 Whisp",   whispQueueRead())
         menu.addItem(.separator())
 
         // Quick actions
