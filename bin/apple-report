@@ -1,0 +1,548 @@
+#!/usr/bin/env python3
+"""apple-report — full hardware/software/capability dump for the current Mac.
+
+Apple-native only: shells out to system_profiler, sysctl, sw_vers, vm_stat,
+diskutil, pmset, ioreg, networksetup, df, uptime, csrutil, fdesetup, spctl,
+mdutil, tmutil. No pip dependencies.
+
+Usage:
+    apple-report                # human-readable text (default)
+    apple-report --md           # markdown
+    apple-report --json         # raw structured JSON
+    apple-report --ai           # only the AI-workload section
+    apple-report --can-run "70b q4"   # answer one model-fit question
+
+The AI section maps the detected Apple Silicon chip to known specs
+(GPU cores, memory bandwidth, Neural Engine TOPS) and applies the
+unified-memory rule of thumb to estimate the largest LLM that fits.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Apple Silicon chip database
+# Source: Apple product pages + Anandtech / Geekerwan reviews.
+# Memory bandwidth is per-package peak; GPU cores are max config.
+# ---------------------------------------------------------------------------
+CHIP_DB: dict[str, dict[str, Any]] = {
+    "Apple M1":       {"gpu_cores_max": 8,  "bandwidth_gbs": 68.25, "ne_tops": 11.0, "ram_max_gb": 16,  "year": 2020},
+    "Apple M1 Pro":   {"gpu_cores_max": 16, "bandwidth_gbs": 200,   "ne_tops": 11.0, "ram_max_gb": 32,  "year": 2021},
+    "Apple M1 Max":   {"gpu_cores_max": 32, "bandwidth_gbs": 400,   "ne_tops": 11.0, "ram_max_gb": 64,  "year": 2021},
+    "Apple M1 Ultra": {"gpu_cores_max": 64, "bandwidth_gbs": 800,   "ne_tops": 22.0, "ram_max_gb": 128, "year": 2022},
+    "Apple M2":       {"gpu_cores_max": 10, "bandwidth_gbs": 100,   "ne_tops": 15.8, "ram_max_gb": 24,  "year": 2022},
+    "Apple M2 Pro":   {"gpu_cores_max": 19, "bandwidth_gbs": 200,   "ne_tops": 15.8, "ram_max_gb": 32,  "year": 2023},
+    "Apple M2 Max":   {"gpu_cores_max": 38, "bandwidth_gbs": 400,   "ne_tops": 15.8, "ram_max_gb": 96,  "year": 2023},
+    "Apple M2 Ultra": {"gpu_cores_max": 76, "bandwidth_gbs": 800,   "ne_tops": 31.6, "ram_max_gb": 192, "year": 2023},
+    "Apple M3":       {"gpu_cores_max": 10, "bandwidth_gbs": 100,   "ne_tops": 18.0, "ram_max_gb": 24,  "year": 2023},
+    "Apple M3 Pro":   {"gpu_cores_max": 18, "bandwidth_gbs": 150,   "ne_tops": 18.0, "ram_max_gb": 36,  "year": 2023},
+    "Apple M3 Max":   {"gpu_cores_max": 40, "bandwidth_gbs": 400,   "ne_tops": 18.0, "ram_max_gb": 128, "year": 2023},
+    "Apple M4":       {"gpu_cores_max": 10, "bandwidth_gbs": 120,   "ne_tops": 38.0, "ram_max_gb": 32,  "year": 2024},
+    "Apple M4 Pro":   {"gpu_cores_max": 20, "bandwidth_gbs": 273,   "ne_tops": 38.0, "ram_max_gb": 64,  "year": 2024},
+    "Apple M4 Max":   {"gpu_cores_max": 40, "bandwidth_gbs": 546,   "ne_tops": 38.0, "ram_max_gb": 128, "year": 2024},
+}
+
+# Quantization → bytes per parameter (active inference weights only).
+QUANT_BYTES = {
+    "fp16": 2.0, "bf16": 2.0, "f16": 2.0,
+    "q8": 1.05, "int8": 1.05, "8bit": 1.05,
+    "q6": 0.78, "q6_k": 0.78,
+    "q5": 0.65, "q5_k": 0.65, "q5_k_m": 0.68,
+    "q4": 0.55, "q4_k": 0.55, "q4_k_m": 0.58, "int4": 0.50,
+    "q3": 0.42, "q3_k": 0.42,
+    "q2": 0.32, "q2_k": 0.32,
+}
+
+
+def sh(cmd: list[str] | str, check: bool = False) -> str:
+    """Run a shell command, return stdout (text). Empty string on failure."""
+    try:
+        if isinstance(cmd, str):
+            r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=20)
+        else:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        if check and r.returncode != 0:
+            return ""
+        return r.stdout
+    except Exception:
+        return ""
+
+
+def sysctl(key: str) -> str:
+    return sh(["sysctl", "-n", key]).strip()
+
+
+def sp_json(*data_types: str) -> dict[str, Any]:
+    out = sh(["system_profiler", "-json", *data_types])
+    if not out:
+        return {}
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError:
+        return {}
+
+
+def human_bytes(n: int | float) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB"):
+        if abs(n) < 1024:
+            return f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} EB"
+
+
+# ---------------------------------------------------------------------------
+# Collectors — each returns a dict that goes into the master report.
+# ---------------------------------------------------------------------------
+def collect_hardware() -> dict[str, Any]:
+    hw = sp_json("SPHardwareDataType").get("SPHardwareDataType", [{}])[0]
+    chip = hw.get("chip_type") or sysctl("machdep.cpu.brand_string") or "unknown"
+    mem_bytes = int(sysctl("hw.memsize") or 0)
+    return {
+        "chip": chip,
+        "model_name": hw.get("machine_name", ""),
+        "model_identifier": hw.get("machine_model", ""),
+        "model_number": hw.get("model_number", ""),
+        "serial": hw.get("serial_number", ""),
+        "boot_rom": hw.get("boot_rom_version", ""),
+        "cores_total": int(sysctl("hw.ncpu") or 0),
+        "cores_physical": int(sysctl("hw.physicalcpu") or 0),
+        "cores_logical": int(sysctl("hw.logicalcpu") or 0),
+        "cores_perf": int(sysctl("hw.perflevel0.physicalcpu") or 0) or None,
+        "cores_efficiency": int(sysctl("hw.perflevel1.physicalcpu") or 0) or None,
+        "ram_bytes": mem_bytes,
+        "ram_gb": round(mem_bytes / 1024**3) if mem_bytes else 0,
+        "page_size": int(sysctl("hw.pagesize") or 0),
+    }
+
+
+def collect_software() -> dict[str, Any]:
+    out = sh(["sw_vers"])
+    fields = dict(line.split(":", 1) for line in out.strip().splitlines() if ":" in line)
+    fields = {k.strip(): v.strip() for k, v in fields.items()}
+    uname = sh(["uname", "-a"]).strip()
+    uptime = sh(["uptime"]).strip()
+    return {
+        "macos_product": fields.get("ProductName", ""),
+        "macos_version": fields.get("ProductVersion", ""),
+        "macos_build": fields.get("BuildVersion", ""),
+        "kernel": uname,
+        "uptime": uptime,
+        "hostname": sh(["hostname"]).strip(),
+    }
+
+
+def collect_gpu() -> list[dict[str, Any]]:
+    data = sp_json("SPDisplaysDataType").get("SPDisplaysDataType", [])
+    out: list[dict[str, Any]] = []
+    for g in data:
+        out.append({
+            "name": g.get("sppci_model") or g.get("_name", ""),
+            "cores": g.get("sppci_cores"),
+            "bus": g.get("sppci_bus"),
+            "metal_family": g.get("spdisplays_mtlgpufamilysupport"),
+            "vendor": g.get("spdisplays_vendor"),
+            "displays": [
+                {
+                    "name": d.get("_name"),
+                    "pixels": d.get("_spdisplays_pixels"),
+                    "resolution": d.get("_spdisplays_resolution"),
+                    "type": d.get("spdisplays_display_type"),
+                    "connection": d.get("spdisplays_connection_type"),
+                }
+                for d in g.get("spdisplays_ndrvs", [])
+            ],
+        })
+    return out
+
+
+def collect_memory_pressure() -> dict[str, Any]:
+    out = sh(["vm_stat"])
+    page_size = int(sysctl("hw.pagesize") or 4096)
+    pages: dict[str, int] = {}
+    for line in out.splitlines():
+        m = re.match(r"^([A-Za-z][^:]+):\s+(\d+)\.?\s*$", line.strip())
+        if m:
+            pages[m.group(1).strip()] = int(m.group(2))
+    def bytes_for(key: str) -> int:
+        return pages.get(key, 0) * page_size
+    free   = bytes_for("Pages free")
+    active = bytes_for("Pages active")
+    inactive = bytes_for("Pages inactive")
+    wired = bytes_for("Pages wired down")
+    compressed = bytes_for("Pages occupied by compressor")
+    swap_out = sh(["sysctl", "-n", "vm.swapusage"]).strip()
+    return {
+        "free_bytes": free,
+        "active_bytes": active,
+        "inactive_bytes": inactive,
+        "wired_bytes": wired,
+        "compressed_bytes": compressed,
+        "swap": swap_out,
+    }
+
+
+def collect_storage() -> list[dict[str, Any]]:
+    data = sp_json("SPStorageDataType").get("SPStorageDataType", [])
+    out: list[dict[str, Any]] = []
+    for v in data:
+        out.append({
+            "mount": v.get("mount_point"),
+            "name": v.get("_name"),
+            "fs": v.get("file_system"),
+            "size_bytes": v.get("size_in_bytes"),
+            "free_bytes": v.get("free_space_in_bytes"),
+            "writable": v.get("writable"),
+            "physical": (v.get("physical_drive") or {}).get("device_name"),
+            "protocol": (v.get("physical_drive") or {}).get("protocol"),
+            "smart": (v.get("physical_drive") or {}).get("smart_status"),
+            "is_internal": (v.get("physical_drive") or {}).get("is_internal_disk"),
+        })
+    return out
+
+
+def collect_power() -> dict[str, Any]:
+    batt = sp_json("SPPowerDataType").get("SPPowerDataType", [])
+    info: dict[str, Any] = {"raw": batt}
+    for entry in batt:
+        if "sppower_battery_health_info" in entry:
+            h = entry["sppower_battery_health_info"]
+            info["cycle_count"] = h.get("sppower_battery_cycle_count")
+            info["condition"] = h.get("sppower_battery_health")
+            info["max_capacity_pct"] = h.get("sppower_battery_health_maximum_capacity")
+        if "sppower_battery_charge_info" in entry:
+            c = entry["sppower_battery_charge_info"]
+            info["charge_pct"] = c.get("sppower_battery_state_of_charge")
+            info["charging"] = c.get("sppower_battery_is_charging")
+    info["pmset"] = sh(["pmset", "-g"]).strip()
+    return info
+
+
+def collect_network() -> dict[str, Any]:
+    ifc = sh(["ifconfig"]).strip()
+    routes = sh(["route", "-n", "get", "default"]).strip()
+    ports = sh(["networksetup", "-listallhardwareports"]).strip()
+    wifi = sh(["networksetup", "-getairportnetwork", "en0"]).strip()
+    return {"hardware_ports": ports, "default_route": routes, "wifi": wifi, "ifconfig_excerpt": ifc[:1200]}
+
+
+def collect_security() -> dict[str, Any]:
+    return {
+        "sip": sh(["csrutil", "status"]).strip(),
+        "filevault": sh(["fdesetup", "status"]).strip(),
+        "gatekeeper": sh(["spctl", "--status"]).strip(),
+        "spotlight_root": sh(["mdutil", "-s", "/"]).strip(),
+    }
+
+
+def collect_timemachine() -> str:
+    return sh(["tmutil", "destinationinfo"]).strip() or "(no destinations configured)"
+
+
+# ---------------------------------------------------------------------------
+# AI workload assessment
+# ---------------------------------------------------------------------------
+def chip_specs(chip: str) -> dict[str, Any] | None:
+    if chip in CHIP_DB:
+        return dict(CHIP_DB[chip])
+    for name, specs in CHIP_DB.items():
+        if name.lower() in chip.lower() or chip.lower() in name.lower():
+            return dict(specs)
+    return None
+
+
+def estimate_max_model_params_billions(ram_gb: int, quant_bytes_per_param: float, os_overhead_gb: float = 6.0) -> float:
+    usable_gb = max(0.0, ram_gb - os_overhead_gb)
+    usable_bytes = usable_gb * 1024**3
+    params = usable_bytes / quant_bytes_per_param
+    return params / 1e9
+
+
+def fit_check(ram_gb: int, params_billions: float, quant_key: str) -> dict[str, Any]:
+    quant_key = quant_key.lower()
+    bpp = QUANT_BYTES.get(quant_key, QUANT_BYTES["q4"])
+    weight_gb = params_billions * 1e9 * bpp / 1024**3
+    ctx_overhead_gb = max(2.0, weight_gb * 0.15)
+    os_gb = 6.0
+    total_need = weight_gb + ctx_overhead_gb + os_gb
+    fits = total_need <= ram_gb
+    return {
+        "params_billions": params_billions,
+        "quant": quant_key,
+        "bytes_per_param": bpp,
+        "weight_gb": round(weight_gb, 2),
+        "context_overhead_gb": round(ctx_overhead_gb, 2),
+        "os_reserve_gb": os_gb,
+        "total_need_gb": round(total_need, 2),
+        "ram_gb": ram_gb,
+        "headroom_gb": round(ram_gb - total_need, 2),
+        "fits": fits,
+    }
+
+
+def parse_model_spec(spec: str) -> tuple[float, str]:
+    """Parse strings like '70b q4', '13B fp16', '8b'."""
+    s = spec.lower().strip()
+    m = re.search(r"(\d+(?:\.\d+)?)\s*b\b\s*(.*)", s)
+    if not m:
+        raise ValueError(f"can't parse model spec: {spec!r} (try '70b q4')")
+    params = float(m.group(1))
+    quant = m.group(2).strip() or "q4"
+    quant = re.sub(r"\s+", "_", quant)
+    if quant not in QUANT_BYTES:
+        for k in QUANT_BYTES:
+            if k in quant:
+                quant = k
+                break
+        else:
+            quant = "q4"
+    return params, quant
+
+
+def build_ai_assessment(hw: dict[str, Any]) -> dict[str, Any]:
+    chip = hw["chip"]
+    ram_gb = hw["ram_gb"]
+    specs = chip_specs(chip)
+    bandwidth_gbs = specs["bandwidth_gbs"] if specs else None
+    ne_tops = specs["ne_tops"] if specs else None
+    gpu_max = specs["gpu_cores_max"] if specs else None
+
+    headlines: list[dict[str, Any]] = []
+    for params_b, quant in [(7, "q4"), (13, "q4"), (34, "q4"), (70, "q4"), (70, "q8"), (8, "fp16")]:
+        headlines.append(fit_check(ram_gb, params_b, quant))
+
+    max_q4 = estimate_max_model_params_billions(ram_gb, QUANT_BYTES["q4"])
+    max_q8 = estimate_max_model_params_billions(ram_gb, QUANT_BYTES["q8"])
+    max_fp16 = estimate_max_model_params_billions(ram_gb, QUANT_BYTES["fp16"])
+
+    tokens_per_sec_est = None
+    if bandwidth_gbs:
+        # rough llama.cpp-style estimate: tok/s ~ bandwidth / weight_gb_per_token
+        # for a 7B Q4 model (~4.0 GB), this gives a usable ceiling.
+        tokens_per_sec_est = {
+            "7b_q4": round(bandwidth_gbs / 4.0, 1),
+            "13b_q4": round(bandwidth_gbs / 7.5, 1),
+            "70b_q4": round(bandwidth_gbs / 39.0, 1),
+        }
+
+    return {
+        "chip": chip,
+        "chip_known": specs is not None,
+        "ram_gb": ram_gb,
+        "gpu_cores_detected": (collect_gpu()[0].get("cores") if collect_gpu() else None),
+        "gpu_cores_max_for_chip": gpu_max,
+        "memory_bandwidth_gbs": bandwidth_gbs,
+        "neural_engine_tops": ne_tops,
+        "max_model_b_q4": round(max_q4, 1),
+        "max_model_b_q8": round(max_q8, 1),
+        "max_model_b_fp16": round(max_fp16, 1),
+        "headline_fit_checks": headlines,
+        "estimated_tokens_per_sec": tokens_per_sec_est,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Renderers
+# ---------------------------------------------------------------------------
+def gather_all() -> dict[str, Any]:
+    hw = collect_hardware()
+    return {
+        "hardware": hw,
+        "software": collect_software(),
+        "gpu": collect_gpu(),
+        "memory_pressure": collect_memory_pressure(),
+        "storage": collect_storage(),
+        "power": collect_power(),
+        "network": collect_network(),
+        "security": collect_security(),
+        "time_machine": collect_timemachine(),
+        "ai": build_ai_assessment(hw),
+    }
+
+
+def render_text(rep: dict[str, Any]) -> str:
+    hw = rep["hardware"]; sw = rep["software"]; ai = rep["ai"]
+    lines: list[str] = []
+    def h(s): lines.append(""); lines.append(f"=== {s} ==="); lines.append("")
+    def kv(k, v): lines.append(f"  {k:<26} {v}")
+
+    lines.append(f"Apple Report  —  {sw['hostname']}")
+    lines.append(f"Generated by apple-report (Apple-native, no pip deps).")
+
+    h("HARDWARE")
+    kv("Model",        f"{hw['model_name']} ({hw['model_identifier']}) {hw['model_number']}")
+    kv("Chip",         hw['chip'])
+    cores = f"{hw['cores_total']} ({hw['cores_perf']}P + {hw['cores_efficiency']}E)" if hw['cores_perf'] else str(hw['cores_total'])
+    kv("CPU cores",    cores)
+    kv("RAM",          f"{hw['ram_gb']} GB ({human_bytes(hw['ram_bytes'])})")
+    kv("Serial",       hw['serial'])
+    kv("Boot ROM",     hw['boot_rom'])
+
+    h("SOFTWARE")
+    kv("macOS",        f"{sw['macos_product']} {sw['macos_version']} ({sw['macos_build']})")
+    kv("Kernel",       sw['kernel'])
+    kv("Uptime",       sw['uptime'])
+
+    h("GPU")
+    for g in rep["gpu"]:
+        kv("GPU",          f"{g['name']} ({g['cores']} cores, {g['metal_family']})")
+        for d in g["displays"]:
+            kv("  Display",  f"{d['name']}  {d['pixels']}  {d['resolution']}  [{d['type']}]")
+
+    h("MEMORY PRESSURE")
+    mp = rep["memory_pressure"]
+    kv("Active",       human_bytes(mp["active_bytes"]))
+    kv("Wired",        human_bytes(mp["wired_bytes"]))
+    kv("Inactive",     human_bytes(mp["inactive_bytes"]))
+    kv("Compressed",   human_bytes(mp["compressed_bytes"]))
+    kv("Free",         human_bytes(mp["free_bytes"]))
+    kv("Swap",         mp["swap"])
+
+    h("STORAGE")
+    for v in rep["storage"]:
+        if not v.get("mount"): continue
+        size = v.get("size_bytes") or 0
+        free = v.get("free_bytes") or 0
+        used_pct = (1 - free / size) * 100 if size else 0
+        kv(v["mount"], f"{v['name']} [{v['fs']}]  {human_bytes(size)}  ({used_pct:.1f}% used)  {v.get('protocol') or ''}  SMART:{v.get('smart') or '-'}")
+
+    h("POWER / BATTERY")
+    p = rep["power"]
+    if "charge_pct" in p:    kv("Charge",       f"{p.get('charge_pct')}%  charging={p.get('charging')}")
+    if "cycle_count" in p:   kv("Cycle count",  p.get("cycle_count"))
+    if "condition" in p:     kv("Condition",    p.get("condition"))
+    if "max_capacity_pct" in p: kv("Max capacity", str(p.get('max_capacity_pct')).rstrip('%').strip() + "%")
+
+    h("SECURITY")
+    s = rep["security"]
+    kv("SIP",          s["sip"])
+    kv("FileVault",    s["filevault"])
+    kv("Gatekeeper",   s["gatekeeper"])
+    kv("Spotlight /",  s["spotlight_root"])
+
+    h("TIME MACHINE")
+    lines.append("  " + rep["time_machine"].replace("\n", "\n  "))
+
+    h("NETWORK")
+    n = rep["network"]
+    kv("Wi-Fi",        n["wifi"])
+    lines.append("  --- default route ---")
+    for ln in n["default_route"].splitlines():
+        lines.append("  " + ln)
+
+    h("AI WORKLOAD ASSESSMENT")
+    kv("Chip",                ai["chip"] + ("" if ai["chip_known"] else "  (UNKNOWN — estimates skipped)"))
+    kv("Unified RAM",         f"{ai['ram_gb']} GB")
+    if ai["chip_known"]:
+        kv("GPU cores",           f"{ai['gpu_cores_detected']} (max for chip family: {ai['gpu_cores_max_for_chip']})")
+        kv("Memory bandwidth",    f"{ai['memory_bandwidth_gbs']} GB/s")
+        kv("Neural Engine",       f"{ai['neural_engine_tops']} TOPS")
+        lines.append("")
+        lines.append("  Largest model that fits (assuming 6 GB OS reserve + 15% context overhead):")
+        kv("  Q4 quantization",   f"~{ai['max_model_b_q4']:.1f}B params")
+        kv("  Q8 quantization",   f"~{ai['max_model_b_q8']:.1f}B params")
+        kv("  FP16 (full)",       f"~{ai['max_model_b_fp16']:.1f}B params")
+        lines.append("")
+        lines.append("  Common model fit checks:")
+        for f in ai["headline_fit_checks"]:
+            mark = "✓ fits" if f["fits"] else "✗ does NOT fit"
+            lines.append(f"    {f['params_billions']:>4.0f}B {f['quant']:<6}  need={f['total_need_gb']:>6.1f} GB / have={f['ram_gb']} GB   {mark} (headroom {f['headroom_gb']:+.1f} GB)")
+        if ai["estimated_tokens_per_sec"]:
+            lines.append("")
+            lines.append("  Estimated token throughput (bandwidth-bound, llama.cpp-style ceiling):")
+            for k, v in ai["estimated_tokens_per_sec"].items():
+                lines.append(f"    {k:<10} ~{v} tok/s")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+def render_ai_only(rep: dict[str, Any]) -> str:
+    hw = rep["hardware"]; ai = rep["ai"]
+    out: list[str] = []
+    out.append(f"AI WORKLOAD ASSESSMENT  —  {hw['chip']}  /  {hw['ram_gb']} GB unified RAM")
+    out.append("")
+    if not ai["chip_known"]:
+        out.append("  (chip not in DB — estimates skipped)")
+        return "\n".join(out)
+    out.append(f"  GPU cores:         {ai['gpu_cores_detected']} (max for chip family: {ai['gpu_cores_max_for_chip']})")
+    out.append(f"  Memory bandwidth:  {ai['memory_bandwidth_gbs']} GB/s")
+    out.append(f"  Neural Engine:     {ai['neural_engine_tops']} TOPS")
+    out.append("")
+    out.append("  Largest model that fits (6 GB OS reserve, 15% context overhead):")
+    out.append(f"    Q4:   ~{ai['max_model_b_q4']:.1f}B params")
+    out.append(f"    Q8:   ~{ai['max_model_b_q8']:.1f}B params")
+    out.append(f"    FP16: ~{ai['max_model_b_fp16']:.1f}B params")
+    out.append("")
+    out.append("  Common fit checks:")
+    for f in ai["headline_fit_checks"]:
+        mark = "✓ fits" if f["fits"] else "✗ no fit"
+        out.append(f"    {f['params_billions']:>4.0f}B {f['quant']:<6}  need={f['total_need_gb']:>6.1f} GB   {mark}  (headroom {f['headroom_gb']:+.1f} GB)")
+    if ai["estimated_tokens_per_sec"]:
+        out.append("")
+        out.append("  Bandwidth-bound throughput ceiling (llama.cpp-style):")
+        for k, v in ai["estimated_tokens_per_sec"].items():
+            out.append(f"    {k:<10} ~{v} tok/s")
+    return "\n".join(out)
+
+
+def render_markdown(rep: dict[str, Any]) -> str:
+    # Reuse text and wrap in code fence for now — keeps things tight.
+    return "```\n" + render_text(rep) + "\n```\n"
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Apple Report — full Mac capability dump.")
+    ap.add_argument("--json", action="store_true", help="emit raw JSON (machine-readable)")
+    ap.add_argument("--md",   action="store_true", help="emit markdown")
+    ap.add_argument("--ai",   action="store_true", help="only the AI-workload section")
+    ap.add_argument("--can-run", metavar="SPEC", help="answer one model-fit question, e.g. '70b q4'")
+    args = ap.parse_args()
+
+    if args.can_run:
+        hw = collect_hardware()
+        try:
+            params, quant = parse_model_spec(args.can_run)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        f = fit_check(hw["ram_gb"], params, quant)
+        verdict = "FITS" if f["fits"] else "DOES NOT FIT"
+        print(f"{args.can_run!r} on {hw['chip']} / {hw['ram_gb']} GB:  {verdict}")
+        print(f"  weights:  {f['weight_gb']} GB")
+        print(f"  context:  {f['context_overhead_gb']} GB")
+        print(f"  OS:       {f['os_reserve_gb']} GB")
+        print(f"  total:    {f['total_need_gb']} GB / {f['ram_gb']} GB  (headroom {f['headroom_gb']:+.1f} GB)")
+        return 0 if f["fits"] else 1
+
+    if args.ai:
+        hw = collect_hardware()
+        rep = {"hardware": hw, "ai": build_ai_assessment(hw)}
+        if args.json:
+            print(json.dumps(rep, indent=2, default=str))
+        else:
+            print(render_ai_only(rep))
+        return 0
+
+    rep = gather_all()
+    if args.json:
+        print(json.dumps(rep, indent=2, default=str))
+    elif args.md:
+        print(render_markdown(rep))
+    else:
+        print(render_text(rep))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

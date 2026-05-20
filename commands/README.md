@@ -23,6 +23,7 @@ This is the Sal pattern in Claude Code form: one verb, one result, no dialog.
 | `/vocal-shortcuts-list` | `bin/list-vocal-shortcuts.py` | Dump registered Vocal Shortcuts |
 | `/siri-phrases` | `bin/sal-siri-list-phrases.py` | Dump Sal-Siri 588-phrase corpus |
 | `/workflow-catalog` | `bin/workflow-gen.py --catalog` | Regenerate `scripts.md` |
+| `/apple-report [--ai] [--can-run "<spec>"]` | `bin/apple-report` | Full Mac capability dump + AI-workload "can I run X" |
 
 ## Install
 
