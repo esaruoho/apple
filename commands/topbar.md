@@ -1,10 +1,10 @@
 ---
-description: Install + launch the SwiftBar Apple Toolbox in the macOS menu bar. One unified status item — HomePod climate + Sal archive + battery + click-to-run actions (Stop Voicebox, Empty Trash, audio, Finder). Usage `/topbar`.
+description: Build + install + launch AppleToolbox — Apple-native menu-bar app (Swift NSStatusItem, no Homebrew). One 🧰 in the menu bar with live status (HomePod climate, battery, Sal archive, disk, Wi-Fi, Mail, Now Playing, Whisp queue) + click actions (Stop Voicebox, Audio ▸, Finder ▸, System ▸, Slashes ▸). LaunchAgent auto-starts it at login. Usage `/topbar`.
 allowed-tools: Bash
 argument-hint: (no args)
 ---
 
-Install + launch the menu-bar toolbox. Idempotent.
+Build, install, and launch AppleToolbox.app. Safe to re-run.
 
 Use Bash to execute (one call, then stop):
 
@@ -12,7 +12,6 @@ Use Bash to execute (one call, then stop):
 bash /Users/esaruoho/work/apple/topbar/install.sh
 ```
 
-After the command completes, report only whether SwiftBar is now running
-(`pgrep SwiftBar`) and remind the user to look for the 🧰 in the menu bar
-(SwiftBar will show a folder picker on first launch — they must choose
-`/Users/esaruoho/work/apple/topbar/plugins/`).
+After the command completes, report whether AppleToolbox is now running
+(`pgrep AppleToolbox`) and remind the user to look for the 🧰 in the
+menu bar.
