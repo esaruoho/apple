@@ -396,6 +396,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 customAction("Window (click to choose)", selector: #selector(screenshotWindow(_:))),
             ]),
             submenu("🪟 Snap Windows", items: [
+                action("◧◨ Side by Side (front 2 apps)",
+                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/SideBySide.scpt"]),
                 action("Mosaic (all of front app)",
                     cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicWindows.scpt"]),
                 action("Mosaic +1 window",
