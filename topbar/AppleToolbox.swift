@@ -311,6 +311,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
+    /// Clickable status row — title:body label, click runs `open` + args.
+    func statusRow(_ title: String, body: String, open: String, args: [String] = []) -> NSMenuItem {
+        let item = NSMenuItem(title: "\(title): \(body)", action: #selector(runAction(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = ["cmd": open, "args": args]
+        return item
+    }
+
     func submenu(_ title: String, items: [NSMenuItem]) -> NSMenuItem {
         let root = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let sub = NSMenu()
@@ -341,20 +349,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
 
         // Live status — readers that return nil get their row skipped entirely
-        // (no "—" placeholders cluttering the menu).
-        func addIf(_ title: String, _ body: String?) {
-            if let b = body, !b.isEmpty, b != "—" {
-                menu.addItem(header(title, body: b))
-            }
+        // (no "—" placeholders cluttering the menu). Each row is CLICKABLE and
+        // opens the relevant app / file / preference pane.
+        func addIf(_ title: String, _ body: String?, open: String, args: [String] = []) {
+            guard let b = body, !b.isEmpty, b != "—" else { return }
+            menu.addItem(statusRow(title, body: b, open: open, args: args))
         }
-        addIf("🌡 Climate", climateRead())
-        addIf("🔋 Battery", batteryRead())
-        addIf("🗂 Sal",     salRead())
-        addIf("💿 Disk",    diskRead())
-        addIf("📶 Wi-Fi",   wifiRead())
-        addIf("📬 Mail",    mailUnreadRead())
-        addIf("🎵 Music",   nowPlayingRead())
-        addIf("🎙 Whisp",   whispQueueRead())
+        addIf("🌡 Climate", climateRead(),
+              open: "/usr/bin/open", args: ["\(APPLE_DIR)/homepod/climate-graph.html"])
+        addIf("🔋 Battery", batteryRead(),
+              open: "/usr/bin/open", args: ["x-apple.systempreferences:com.apple.preference.battery"])
+        addIf("🗂 Sal",     salRead(),
+              open: "/usr/bin/open", args: ["\(APPLE_DIR)/analysis/sal/current-status.md"])
+        addIf("💿 Disk",    diskRead(),
+              open: "/usr/bin/open", args: ["x-apple.systempreferences:com.apple.settings.Storage"])
+        addIf("📶 Wi-Fi",   wifiRead(),
+              open: "/usr/bin/open", args: ["x-apple.systempreferences:com.apple.Network-Settings.extension"])
+        addIf("📬 Mail",    mailUnreadRead(),
+              open: "/usr/bin/open", args: ["-a", "Mail"])
+        addIf("🎵 Music",   nowPlayingRead(),
+              open: "/usr/bin/open", args: ["-a", "Music"])
+        addIf("🎙 Whisp",   whispQueueRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/whisp-transcripts/queue"])
         menu.addItem(.separator())
 
         // Quick actions
