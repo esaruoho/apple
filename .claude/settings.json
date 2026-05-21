@@ -3,7 +3,7 @@
     "SessionStart": [{
       "hooks": [{
         "type": "command",
-        "command": "cd /Users/esaruoho/work/apple && python3 bin/sal-archive-status.py --write analysis/sal/current-status.md >/dev/null && echo '<<APPLE SKILL ACTIVE>> Invoke the apple skill via the Skill tool before responding. Sal archive status refreshed at analysis/sal/current-status.md — read it first.'"
+        "command": "echo '<<APPLE SKILL ACTIVE>> Invoke the apple skill via the Skill tool before responding.'"
       }]
     }]
   }
