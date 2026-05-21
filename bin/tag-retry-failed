@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""
+tag-retry-failed — re-submit OCR failures back to the Syncthing queue.
+
+Two failure modes from the Mac Mini PDFWorkshop worker:
+
+  download_failed   The worker couldn't read its uploads/ copy. Re-submitting
+                    with a fresh copy via bbs-ocr-submit.sh almost always works.
+
+  ocr_failed        GLM-OCR choked on the content. Same engine, same fail.
+                    By default we leave these alone; pass --force to retry
+                    anyway, or re-tag them as ocr-engine-failed for human triage.
+
+What it does
+------------
+For each .job file in worker-status/failed/ (and done/ with embedded error:)
+that resolves to an archive PDF:
+
+  · download_failed →
+        - archive the .job (move into worker-status/failed/.retried/)
+        - strip ocr-failed tag
+        - ensure needs-ocr:red is present
+        - on next tag-watcher tick (or --kick now), file goes back to inbox
+
+  · ocr_failed →
+        - strip ocr-failed
+        - stamp ocr-engine-failed:red (different tag so the Smart Folder
+          for ocr-failed empties of the unretriable ones)
+        - skip resubmission unless --force given
+
+Modes
+-----
+  tag-retry-failed             retry all download_failed
+  tag-retry-failed --dry-run   show what would happen, change nothing
+  tag-retry-failed --force     also retry ocr_failed (re-runs same engine)
+  tag-retry-failed --kick      fire tag-watcher immediately after queuing
+"""
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+APPLE_BIN = HOME / "work" / "apple" / "bin"
+TAG = APPLE_BIN / "tag"
+WATCHER = APPLE_BIN / "tag-watcher"
+COMMS = HOME / "work" / "comms" / "queue"
+WS_ROOT = COMMS / "worker-status"
+RETRIED_DIR = WS_ROOT / "failed" / ".retried"
+
+ARCHIVE_ROOT = HOME / "work" / "merlib-dump"
+JOB_PREFIX_RE = re.compile(r"^\d+_")
+TS_PREFIX_RE = re.compile(r"^\d{8}-\d{6}-")
+
+
+def job_basename(job_filename):
+    name = job_filename
+    name = JOB_PREFIX_RE.sub("", name)
+    if name.endswith(".job"):
+        name = name[:-4]
+    return name
+
+
+def candidate_basenames(name):
+    out = {name}
+    stripped = TS_PREFIX_RE.sub("", name)
+    if stripped != name:
+        out.add(stripped)
+    return out
+
+
+_archive_index = None
+
+
+def archive_index():
+    global _archive_index
+    if _archive_index is not None:
+        return _archive_index
+    idx = {}
+    if ARCHIVE_ROOT.is_dir():
+        for p in ARCHIVE_ROOT.rglob("*.pdf"):
+            if p.is_file():
+                idx.setdefault(p.name, []).append(p)
+    _archive_index = idx
+    return idx
+
+
+def resolve(basename):
+    idx = archive_index()
+    for c in candidate_basenames(basename):
+        if c in idx and len(idx[c]) == 1:
+            return idx[c][0]
+    return None
+
+
+def read_error(job):
+    try:
+        text = job.read_text()
+    except Exception:
+        return None
+    for line in text.splitlines():
+        if line.startswith("error:"):
+            return line.split(":", 1)[1].strip()
+    return None
+
+
+def collect_failed_jobs():
+    out = []
+    for sub in ("failed", "done"):
+        d = WS_ROOT / sub
+        if not d.is_dir():
+            continue
+        for j in d.glob("*.job"):
+            err = read_error(j)
+            if err:
+                out.append((j, err))
+    return out
+
+
+def main():
+    argv = sys.argv[1:]
+    dry_run = "--dry-run" in argv
+    force = "--force" in argv
+    kick = "--kick" in argv
+
+    jobs = collect_failed_jobs()
+    if not jobs:
+        print("no failed jobs found")
+        return
+
+    retried_download = 0
+    retried_ocr = 0
+    skipped_ocr = 0
+    unresolved = 0
+
+    for job, err in jobs:
+        base = job_basename(job.name)
+        original = resolve(base)
+        if original is None:
+            unresolved += 1
+            continue
+
+        retry = (err == "download_failed") or (force and err == "ocr_failed")
+        if err == "ocr_failed" and not retry:
+            # Move it out of the generic ocr-failed bucket so we don't keep
+            # blocking on it. Stamp ocr-engine-failed:red for human triage.
+            if dry_run:
+                print(f"[dry] {original}  ocr_failed → ocr-engine-failed (skip retry, --force to override)")
+            else:
+                subprocess.run([str(TAG), "remove", "ocr-failed", str(original)],
+                               capture_output=True)
+                subprocess.run([str(TAG), "add", "ocr-engine-failed:red", str(original)],
+                               capture_output=True)
+                print(f"  ⚠ {original}  → ocr-engine-failed (engine choked, manual triage)")
+            skipped_ocr += 1
+            continue
+
+        if dry_run:
+            print(f"[dry] {original}  ({err}) → re-queue")
+            if err == "download_failed":
+                retried_download += 1
+            else:
+                retried_ocr += 1
+            continue
+
+        # Real retry: strip ocr-failed, ensure needs-ocr is present,
+        # archive the .job so the next worker-status sync doesn't re-stamp it.
+        subprocess.run([str(TAG), "remove", "ocr-failed,ocr-engine-failed", str(original)],
+                       capture_output=True)
+        subprocess.run([str(TAG), "add", "needs-ocr:red", str(original)],
+                       capture_output=True)
+        RETRIED_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(job), str(RETRIED_DIR / job.name))
+        if err == "download_failed":
+            retried_download += 1
+        else:
+            retried_ocr += 1
+        print(f"  ↻ {original}  ({err})")
+
+    print()
+    print(f"retried download_failed:   {retried_download}")
+    print(f"retried ocr_failed:        {retried_ocr}   "
+          + ("(--force was set)" if force else ""))
+    print(f"skipped ocr_failed:        {skipped_ocr}   "
+          + ("(stamped ocr-engine-failed for triage)" if skipped_ocr else ""))
+    print(f"unresolved (no archive hit): {unresolved}")
+
+    if kick and (retried_download + retried_ocr) > 0:
+        print()
+        print("firing tag-watcher...")
+        subprocess.run([str(WATCHER), "--once", "needs-ocr"])
+
+
+if __name__ == "__main__":
+    main()
