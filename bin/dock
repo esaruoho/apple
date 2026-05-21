@@ -8,6 +8,8 @@ dock — Apple-native Dock manager. Reads/writes ~/Library/Preferences/com.apple
   dock add-spacer           Add a blank spacer tile to persistent-others
   dock remove <path|name>   Remove by full path OR by label match (first match)
   dock clear-others         Remove every persistent-others entry (right-side)
+  dock snap                 Tile every currently-running visible app's main window
+                            into an auto-sized grid on the main screen
 
 Notes
 -----
@@ -203,12 +205,27 @@ def cmd_clear_others(_args):
     print(f"cleared {n} item(s) from persistent-others (right side of Dock)")
 
 
+def cmd_snap(_args):
+    """Run the compiled DockSnap.scpt which tiles all running apps in a grid."""
+    here = Path(__file__).resolve().parent
+    script = here.parent / "scripts/workflows/system-events/compiled/DockSnap.scpt"
+    if not script.is_file():
+        die(f"compiled script missing: {script}")
+    r = subprocess.run(["/usr/bin/osascript", str(script)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"DockSnap failed: {r.stderr.strip()}")
+    if r.stdout.strip():
+        print(r.stdout.strip())
+
+
 SUBS = {
     "list": cmd_list, "ls": cmd_list,
     "add": cmd_add,
     "add-spacer": cmd_add_spacer,
     "remove": cmd_remove, "rm": cmd_remove,
     "clear-others": cmd_clear_others,
+    "snap": cmd_snap,
 }
 
 
