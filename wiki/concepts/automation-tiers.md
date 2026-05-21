@@ -280,4 +280,4 @@ The dream: one protocol, one permission, one way to automate everything. The rea
 
 ---
 
-*Generated 2026-03-08. Part of the [Apple Automation Atlas](README.md).*
+*Generated 2026-03-08. Part of the [Apple Automation Atlas](../../README.md).*

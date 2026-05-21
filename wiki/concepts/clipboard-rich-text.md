@@ -1,9 +1,9 @@
 ---
-name: Apple-native rich-text clipboard recipe (Markdown → RTF → clipboard)
 description: How to put genuine rich text on the macOS clipboard from a CLI without Homebrew/pip/PyObjC. Failures + working path documented 2026-05-08.
-type: feedback
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# Apple-native rich-text clipboard recipe (Markdown → RTF → clipboard)
+
 ## Goal
 
 Take a Markdown source, render it as rich text, put it on the macOS clipboard so `Cmd-V` into Mail / TextEdit / Notes pastes with bold / italic / lists / links / code formatting. Apple-native only.

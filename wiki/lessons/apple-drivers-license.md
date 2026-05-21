@@ -230,12 +230,12 @@ The Apple Driver's License tests:
 
 ## Relationship to the Automation Atlas
 
-The Apple Driver's License is the **user knowledge layer** that sits above the [Automation Atlas](README.md) (the technical automation layer). The Atlas maps what you *can script*. The Driver's License maps what you *need to understand*.
+The Apple Driver's License is the **user knowledge layer** that sits above the [Automation Atlas](../../README.md) (the technical automation layer). The Atlas maps what you *can script*. The Driver's License maps what you *need to understand*.
 
 | Layer | Document | Question it answers |
 |---|---|---|
 | **User Knowledge** | Apple Driver's License (this doc) | "Where is my data and what happens to it?" |
-| **Automation** | [Automation Atlas](README.md) | "What can I script and control?" |
+| **Automation** | [Automation Atlas](../../README.md) | "What can I script and control?" |
 | **Scripting Dictionaries** | [dictionaries/](dictionaries/) | "What commands does each app expose?" |
 | **Workflows** | [scripts/](scripts/) | "What ready-made automations exist?" |
 

@@ -1,9 +1,9 @@
 ---
-name: app-plist-probe meta tool + top mineable apps
 description: bin/app-plist-probe.py scans every Apple-app plist and reports which apps have user-extractable data. Use this BEFORE deciding what to build next. Built 2026-05-08.
-type: project
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# app-plist-probe meta tool + top mineable apps
+
 ## Tool
 
 `~/work/apple/bin/app-plist-probe.py`

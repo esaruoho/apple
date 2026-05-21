@@ -36,95 +36,32 @@ Then read `analysis/sal/current-status.md` and report. **Do not run the refresh 
 
 For everything else, treat this file as a routing table: identify the topic, grep the matching wiki page, answer.
 
-## Where things live
+## Repo layout
 
-**Repo layout** (`/Users/esaruoho/work/apple/`):
+`/Users/esaruoho/work/apple/`:
 
-- `bin/` — 65 CLI tools (executing layer); slashes in `commands/`
-- `commands/` — 21 zero-roundtrip slash command pointers (install via `commands/install.sh`)
+- `bin/` — 65+ CLI tools; slashes in `commands/`
+- `commands/` — 30+ zero-roundtrip slash command pointers (install via `commands/install.sh`)
 - `scripts/` — 301 launcher + workflow AppleScripts
 - `dictionaries/` — 68 scripting-dictionary probe files
-- `topbar/` — AppleToolbox menu-bar app (Apple-native Swift, no Homebrew)
-- `homepod/` — HomePod climate sensor bridge
-- `github-watcher/` — PR + CI awareness bot
-- `painpoints/` — Apple UX evaluations
-- `patents/` — automation patents + analyses
-- `sources/sal/` — Sal Soghoian primary-source archive (transcripts, articles, media)
-- `analysis/sal/` — Sal-specific working docs (status, discoveries, runbooks)
-- `wiki/` — entity / concept / lesson / operations / compiled knowledge pages
+- `topbar/`, `homepod/`, `github-watcher/` — entity sub-packages
+- `painpoints/`, `patents/` — Apple UX evaluations + automation patents
+- `sources/sal/`, `analysis/sal/` — Sal Soghoian primary-source archive + working docs
+- `wiki/` — knowledge layer:
+  - **`wiki/INDEX.md`** — auto-generated catalog of every page with one-line description. **Read this first for any topical question.** Regenerate with `/wiki-index` or `python3 bin/wiki-index.py`.
+  - `wiki/log.md` — append-only chronological record (ingests, lint passes, migrations).
+  - `wiki/README.md` — schema and conventions.
 
-## Wiki index (load on demand)
+## Wiki schema
 
-### Entities
-- AppleToolbox menu-bar app → `wiki/entities/appletoolbox.md`
-- Sal Soghoian (person, philosophy, WWSD) → `wiki/entities/sal-soghoian.md`
-- Sal-like tools (one verb, one result) → `wiki/entities/sal-like.md`
-- Loupedeck Live setup → `wiki/entities/loupedeck-guide.md`
-- Loupedeck window management → `wiki/entities/loupedeck-window-management.md`
-- Whiteboard Knob → `wiki/entities/whiteboard-knob.md`
-- HomePod climate → `wiki/entities/homepod.md`
-- GitHub Watcher + props + prbuild → `wiki/entities/github-watcher.md`
-- Thought Multiplier → `wiki/entities/thought-multiplier.md`
-- Bash aliases → `wiki/entities/bash-aliases.md`
+| Subdir | Purpose |
+|---|---|
+| `wiki/entities/` | one page per *thing* — person, app, device, package |
+| `wiki/concepts/` | one page per *how X works* — atlas, principle, pattern |
+| `wiki/lessons/` | didactic / narrative / runbook |
+| `wiki/operations/` | active project state — current work, status, plans |
+| `wiki/compiled/` | auto-generated, do not hand-edit |
 
-### Concepts (how X works)
-- Goldilocks Zone (respect user state) → `wiki/concepts/goldilocks-zone.md`
-- Hardware controllers → `wiki/concepts/hardware-controllers.md`
-- Apple-Native Only rule → `wiki/concepts/apple-native-only.md`
-- Apple bundle ID drift (post-2016) → `wiki/concepts/apple-bundle-id-drift.md`
-- PictureTaker broken on Sequoia → `wiki/concepts/picturetaker-sequoia.md`
-- Mail smart-mailboxes dead → `wiki/concepts/mail-smart-mailboxes-dead.md`
-- AppleScript best practices → `wiki/concepts/applescript-best-practices.md`
-- Automation tiers (10-tier atlas) → `wiki/concepts/automation-tiers.md`
-- Automator vs Shortcuts → `wiki/concepts/automator-vs-shortcuts.md`
-- Scripting dictionaries → `wiki/concepts/scripting-dictionaries.md`
-- App probe (13 layers) → `wiki/concepts/app-probe.md`
-- App plist probe (1,934 plists) → `wiki/concepts/app-plist-probe.md`
-- Apple's 7-layer automation architecture → `wiki/concepts/automation-architecture-7-layers.md`
-- Sal Hand-Crafted Conformance → `wiki/concepts/sal-hand-crafted-conformance.md`
-- CLI tool intelligence → `wiki/concepts/cli-tool-intelligence.md`
-- Messages / iMessage automation → `wiki/concepts/messages-automation.md`
-- Bulk exporters overview → `wiki/concepts/bulk-exporters.md`
-- Vocal Shortcuts trigger surface → `wiki/concepts/vocal-shortcuts-trigger.md`
-- Whiteboards (generated) → `wiki/concepts/whiteboards.md`
-- Slideshow (folder → fullscreen) → `wiki/concepts/slideshow.md`
-- Spotlight automation (5 paths + APFS bug + TCC fix) → `wiki/concepts/spotlight-automation.md`
-- Self-learning behavior → `wiki/concepts/self-learning.md`
-- Whiteboard integration → `wiki/concepts/whiteboard-integration.md`
-- App icon extraction → `wiki/concepts/app-icon-extraction.md`
-- iCloud.com URL shortcuts → `wiki/concepts/icloud-url-shortcuts.md`
-- Pattern Reusability (the core principle) → `wiki/concepts/pattern-reusability.md`
-- XPC atlas (2,359 services) → `wiki/concepts/xpc-atlas.md`
-- Data type chaining → `wiki/concepts/data-type-chaining.md`
-- WWSD decision tree → `wiki/concepts/wwsd-decision-tree.md`
-- Script generators (workflow-gen, shortcut-gen, batch-import) → `wiki/concepts/script-generators.md`
-- Tier-5-dark three-backdoor pattern → `wiki/concepts/tier-5-backdoor.md`
-- Safari export schema gotchas → `wiki/concepts/safari-export-schema.md`
-- Voice Memos `tsrp` atom → `wiki/concepts/voice-memos-tsrp-atom.md`
-- QuickTime Pro scriptability cliff → `wiki/concepts/quicktime-pro-cliff.md`
-- Rich-text clipboard recipe → `wiki/concepts/clipboard-rich-text.md`
-- Sal cross-decade lineages → `wiki/concepts/sal-cross-decade-lineages.md`
-- Steve Jobs as RBI practitioner → `wiki/concepts/steve-jobs-rbi.md`
-- Compatibility (Apple Silicon, Sequoia) → `wiki/concepts/compatibility.md`
-- Patents catalog → `wiki/concepts/patents.md`
+Each page: one H1, optional `description:` frontmatter, ≤250 lines, cross-link to related pages. After adding or editing, run `/wiki-index` then `/wiki-lint` to refresh the index and catch orphans / oversized pages / broken refs.
 
-### Lessons (runbooks / didactic)
-- macOS installer + bootable USB → `wiki/lessons/macos-installer-bootable-usb.md`
-- Apple ID credential recovery → `wiki/lessons/apple-id-recovery.md`
-- Apple Driver's License + quiz → `wiki/lessons/apple-drivers-license.md`
-- How this repo was built → `wiki/lessons/how-it-was-built.md`
-- Sal: career to code → `wiki/lessons/sal-career-to-code.md`
-- App-probe Sal pitch → `wiki/lessons/app-probe-sal-pitch.md`
-- Video script → `wiki/lessons/video-script.md`
-
-### Operations (active project state)
-- Sal Session 717 replication → `wiki/operations/session-717-replication.md`
-- WWDC Sal archive → `wiki/operations/wwdc-archive.md`
-- Hey Sal v0 (seven layers) → `wiki/operations/hey-sal-v0.md`
-- Sal archive operations runbook → `wiki/operations/sal-archive.md`
-
-### Compiled (auto-regen, do not hand-edit)
-- Scripts catalog → `wiki/compiled/scripts.md` (`bin/workflow-gen.py --catalog`)
-- Siri phrases → `wiki/compiled/siri-phrases.md`
-- Exporters index → `wiki/compiled/EXPORTERS.md` (`bin/gen-skill-indexes.py`)
-
+When you learn something new and durable, write it to the right subdir, then `/wiki-index`. The catalog is the source of truth for the LLM — keep it fresh.

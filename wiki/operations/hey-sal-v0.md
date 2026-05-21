@@ -1,9 +1,9 @@
 ---
-name: Hey Sal v0 + seven cross-package layers shipped 2026-05-08
 description: bin/apple-grand-search + apple-grand-export + hey-sal + apple-summarize + apple-bootstrap + voice-memos xref --calendar + scripts/exporter-loupedeck. Apple-native dispatch on top of the 15 -exporter packages.
-type: project
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# Hey Sal v0 + seven cross-package layers shipped 2026-05-08
+
 ## What landed today
 
 Seven cross-package tools sitting on top of the 15 `-exporter` packages. All Apple-native (no pip, no Homebrew except optional ripgrep that gracefully falls back to `grep -r`).

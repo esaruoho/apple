@@ -1,9 +1,9 @@
 ---
-name: Voice Memos tsrp atom + ZFLAGS bit 3 = transcript marker
 description: Apple's auto-generated Voice Memo transcripts ARE persisted to disk — appended to the m4a file as a `tsrp` JSON atom; ZFLAGS bit 3 (mask 0x08) on ZCLOUDRECORDING marks presence. Discovered 2026-05-08.
-type: project
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# Voice Memos tsrp atom + ZFLAGS bit 3 = transcript marker
+
 ## Where Apple stores Voice Memos auto-transcripts
 
 - **Detection**: `ZCLOUDRECORDING.ZFLAGS & 0x08` is the "has transcript" bit. SQL: `SELECT ZUNIQUEID, ZPATH FROM ZCLOUDRECORDING WHERE (ZFLAGS & 8) != 0;`

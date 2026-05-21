@@ -1,9 +1,9 @@
 ---
-name: Safari export schema gotchas + safari-export package
 description: Six SafariTabs/CloudTabs/History.db schema landmines that wasted probes on 2026-05-08, plus the layout of ~/work/apple/safari-export/ which reads them all read-only.
-type: project
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# Safari export schema gotchas + safari-export package
+
 ## Where Safari data lives
 
 Three SQLite stores, all readable with Full Disk Access already granted on Esa's Mac:

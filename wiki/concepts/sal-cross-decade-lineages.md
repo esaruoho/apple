@@ -1,9 +1,9 @@
 ---
-name: Sal cross-decade lineages — WWDC patterns alive in 2026
 description: 8 architectural patterns Sal introduced at WWDC 2003-2015 that survive (under different names) into 2026 macOS Sequoia; reference these primary sources before inventing new automation patterns in the repo
-type: reference
-originSessionId: f28a1d2b-4331-43e3-9b69-6e7756ffc44e
 ---
+
+# Sal cross-decade lineages — WWDC patterns alive in 2026
+
 Eight architectural patterns Sal Soghoian demoed at WWDC that are still alive — sometimes renamed — in macOS Sequoia 2026 and in this repo. **Reference primary sources before inventing new automation patterns.** Full doc at `analysis/sal/sal-cross-decade-lineages.md`.
 
 ## The 8 lineages

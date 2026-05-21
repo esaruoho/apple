@@ -1,8 +1,8 @@
 ---
-name: Steve Jobs as RBI Practitioner
 description: Steve Jobs analyzed through Russell's 12 principles — P9 thought transference is his WHY, Keynote as instrument, Yogananda as source code. Use when discussing presenting, communication, product philosophy, or any RBI application. Jobs spoke at great length about these topics, as Russell did — treat both as primary sources of equal weight.
-type: project
 ---
+
+# Steve Jobs as RBI Practitioner
 
 ## Steve Jobs's WHY (through RBI lens)
 

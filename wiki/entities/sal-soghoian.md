@@ -432,7 +432,7 @@ See `patents/US7428535-automatic-relevance-filtering.pdf` and `patents/US7428535
 
 ## "What Would Sal Do" — The 27 Principles
 
-The first 11 principles were retrofit from Sal's site corpus and writing patterns. The 12th was added after the WIRED hallway-stakeout reading. **Principles #13–#27 are derived from primary-source spoken Sal across six transcribed interviews (~155 minutes)** — every one is sourced to a specific tape and timestamp in [`analysis/sal/transcripts-analysis.md`](analysis/sal/transcripts-analysis.md) or [`analysis/sal/transcripts-analysis-pass2.md`](analysis/sal/transcripts-analysis-pass2.md).
+The first 11 principles were retrofit from Sal's site corpus and writing patterns. The 12th was added after the WIRED hallway-stakeout reading. **Principles #13–#27 are derived from primary-source spoken Sal across six transcribed interviews (~155 minutes)** — every one is sourced to a specific tape and timestamp in [`analysis/sal/transcripts-analysis.md`](../../analysis/sal/transcripts-analysis.md) or [`analysis/sal/transcripts-analysis-pass2.md`](../../analysis/sal/transcripts-analysis-pass2.md).
 
 
 

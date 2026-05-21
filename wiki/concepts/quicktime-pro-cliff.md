@@ -1,9 +1,9 @@
 ---
-name: QuickTime Player 7 Pro vs QT Player X scriptability cliff
 description: The 2003/2004 QT scripting era ($29.99 QT 7 Pro license) had a 40-property annotation system, chapter manipulation, current-matrix transforms, save-export-settings (.qtex), HREF embedding, media skins; QT Player X in Sequoia has a drastically stripped sdef
-type: reference
-originSessionId: f28a1d2b-4331-43e3-9b69-6e7756ffc44e
 ---
+
+# QuickTime Player 7 Pro vs QT Player X scriptability cliff
+
 **QuickTime Player 7 Pro** ($29.99 license, Mac OS X 10.5-10.11 era) had a richly scriptable QuickTime Player with ~150 ready-made Apple-shipped scripts in the QuickTime Scripts Collection.
 
 **Modern QuickTime Player X** (Sequoia 2026) has had its sdef drastically stripped. Most of the 2003/2004 demo scripts do not work against the modern player.

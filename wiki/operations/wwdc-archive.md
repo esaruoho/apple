@@ -1,9 +1,9 @@
 ---
-name: WWDC Sal archive complete (17 sessions, 2003-2015)
 description: Status of the WWDC Sal Soghoian archive — 17 confirmed sessions captured with transcript+analysis, 21 inferred sessions enumerated for future passes, five-pillar canon, WWSD #31-45
-type: project
-originSessionId: f28a1d2b-4331-43e3-9b69-6e7756ffc44e
 ---
+
+# WWDC Sal archive complete (17 sessions, 2003-2015)
+
 The WWDC Sal Soghoian archive at `sources/sal/wwdc/` contains **17 confirmed sessions across 13 years (2003-2015)**, each with metadata.md + transcript.md + analysis.md. Plus a WWDC PDF for 2014 #306 (204 pages).
 
 **Why:** primary-source spoken Sal on Apple's own stage, predating the existing 2012-2023 interview corpus by 9 years. Sal was eliminated October 2016; WWDC 2016 had no Sal session. The 2015 #306 transcript is the last primary-source on-stage Sal.

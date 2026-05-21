@@ -1,9 +1,9 @@
 ---
-name: Tier 5 dark apps — three back-door pattern
 description: Every "nearly dark" Apple app (no sdef, no App Intents, no URL scheme) is reachable through one of three back-doors. Codified 2026-05-08 after building Stickies, Console, Audio MIDI Setup, Image Capture exporters.
-type: project
-originSessionId: c9cf684f-ae13-48ad-8a1c-14f9dd2464c7
 ---
+
+# Tier 5 dark apps — three back-door pattern
+
 ## The pattern
 
 When an Apple app is classified Tier 5 (skill.md "Nearly Dark"), don't give up. Each one has reached via exactly one of three predictable back-doors:

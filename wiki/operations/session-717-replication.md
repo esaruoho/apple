@@ -1,9 +1,9 @@
 ---
-name: Sal Session 717 Replication — current state
 description: Where the WWDC 2016 session 717 replication stands as of 2026-05-08; what works, what's broken, what's next
-type: project
-originSessionId: 0208bf47-64d5-4f64-aaaa-3a5263db0103
 ---
+
+# Sal Session 717 Replication — current state
+
 The Sal Soghoian WWDC 2016 session 717 demo has been replicated end-to-end on Esa's M3 Pro / macOS 15.6.1, voice-driven via Hey Sal Vocal Shortcut. The thing Apple killed in 2016 runs in 2026.
 
 **Why:** session 717 was pulled by Apple a week after delivery, four months before Sal's role was eliminated. The recovered transcript (`sources/sal/wwdc2016-session-717/717-transcript.txt`) plus CitrusPeel255.zip (the public installer with 18 .scptd AppleScriptObjC libraries) are enough to rebuild the entire voice-automation stack on current macOS — but with caveats Apple changed underneath.

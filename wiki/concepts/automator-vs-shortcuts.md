@@ -159,7 +159,7 @@ This is the real gap — the things someone at Apple should be building.
 
 | Gap | Why it matters |
 |-----|---------------|
-| **Record audio in one action** | [NOTES-001](painpoints/NOTES-001-record-audio.md) — Notes has 318 Siri phrases but "start recording" isn't one |
+| **Record audio in one action** | [NOTES-001](../../painpoints/NOTES-001-record-audio.md) — Notes has 318 Siri phrases but "start recording" isn't one |
 | **Chain AppleScript into Shortcuts** | No `Run AppleScript` action in Shortcuts. The depth layer is severed from the width layer. This is the AND Sal asked for. |
 | **Access scripting dictionaries from Shortcuts** | Shortcuts can't send Apple Events. 30 apps with rich sdef dictionaries are invisible to Shortcuts. |
 | **UI recording/playback** | Automator's Watch Me Do is frozen in time. Shortcuts has nothing. No modern macro recorder. |
