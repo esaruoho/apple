@@ -14,6 +14,45 @@ is a focused next deliverable I can pick up unattended.
 
 ### Blocked on you — physical action
 
+- [ ] **Get CloudcityMacMini back online and activate `!pk voice` end-to-end.**
+  Status as of 2026-05-21 ~15:18: the Mini went silent — all three Syncthing
+  heartbeats (`voicebox-heartbeat.json`, `whisp-heartbeat.json`,
+  `ocr-heartbeat.json` in `~/work/comms/queue/`) stopped updating at the same
+  instant. Likely the Mini slept, lost network, or powered down. SSH from
+  this Mac is also broken (id_rsa not in Mini's authorized_keys from this
+  shell; earlier sessions were going through a control-master socket that's
+  now gone).
+  Recovery sequence once the Mini is back:
+  1. Wake / power on the Mini. Wait for Cloudcity-Boot.app to launch its
+     iTerm panes (~30 s).
+  2. Verify heartbeats refresh:
+     `ls -lt ~/work/comms/queue/*-heartbeat.json | head`
+  3. Paste the clipboard-ready instructions (~1770 chars; in
+     `analysis/voicebox/pakettibot-activation-clipboard.md`) into Discord
+     as `!pk claude <paste>`. The cloudcity agent will:
+     - Verify `~/work/pakettibot-agent/src/commands/voice-commands.js` is
+       present (untracked, survives `git pull`).
+     - Re-apply the `import { voice } from './commands/voice-commands.js';`
+       + `voice: voice,` / `say: voice,` handler entries in
+       `src/commands.js` if the daemon's startup-pull reverted them.
+     - Restart pakettibot, smoke-test `voice list` via the file-drop
+       bridge (`~/work/comms/queue/pakettibot-inbox/voice-list-…cmd`),
+       then **commit + push** so future restarts keep the wiring durable.
+  4. From Discord, confirm with `!pk voice list` then
+     `!pk voice bearden "Talk to me about Tesla."` — expect a thread on
+     the original message with the WAV attached, archive line appended
+     at `~/work/apple/voicebox-archive/index.jsonl`, content-addressed
+     by id so replays are zero-synth cache hits.
+  Voice farm migration is already done: RayMac → Mini, 6 cloned profiles
+  (Bearden 416 samples, Esa 169, Rob Teaching 103, Erickson 22, Rob Sleep
+  5, Heart preset). qwen-tts-1.7B model loaded. voicebox-worker LaunchAgent
+  was bootstrapped at last sighting. Local pieces on this Mac (Apple skill):
+  `bin/voicebox-submit`, `bin/read-aloud`, `bin/show` (with caption-via-Voicebox),
+  `bin/voicebox-worker.py`, `bin/build-turn-into-voice-shortcut.py`, slash
+  commands `/read`, `/show`, `/voicebox-submit`, `/turn-into-voice`. Mini-side
+  stack: `voicebox-worker.py` + LaunchAgent plist (both at `/Users/esaruoho/work/apple/bin/`),
+  `~/Desktop/VOICEBOX-SETUP/` walk-up folder with RTF + `.command`
+  shortcuts + `.webloc` bookmarks.
 - [ ] **Run `bin/capture-vocal-shortcut-schemas.py`** — 5-min interactive session
   in System Settings → Accessibility → Speech → Vocal Shortcuts. Captures
   Apple's JSON for the two unobserved action kinds (`siriRequest` + `accessibility`).

@@ -25,7 +25,7 @@ INBOX="${VOICEBOX_INBOX:-$HOME/work/comms/queue/voicebox-inbox}"
 RESULTS="${VOICEBOX_RESULTS:-$HOME/work/comms/queue/voicebox-results}"
 HEARTBEAT="$HOME/work/comms/queue/voicebox-heartbeat.json"
 DEFAULT_PROFILE="${VOICEBOX_PROFILE:-Heart}"
-DEFAULT_ENGINE="${VOICEBOX_ENGINE:-kokoro}"
+DEFAULT_ENGINE="${VOICEBOX_ENGINE:-qwen}"
 
 log() { echo "[voicebox-submit] $*" >&2; }
 die() { echo "[voicebox-submit] ERROR: $*" >&2; exit 1; }
