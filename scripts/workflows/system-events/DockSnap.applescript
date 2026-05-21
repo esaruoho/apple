@@ -1,5 +1,5 @@
 -- DockSnap.applescript
--- Tile windows into an auto-sized grid on the main screen.
+-- Tile windows into an auto-sized non-uniform grid on the main screen.
 --
 -- Two modes:
 --   no args               → every visible foreground app, one cell per app
@@ -7,14 +7,19 @@
 --   <appname>             → just that app's windows tiled in a grid
 --                           (case-insensitive substring match against process name)
 --
+-- The grid is row-based and non-uniform: rows = round(sqrt(n)), each row gets
+-- ceil/floor of n/rows cells. So n=5 → rows of 3+2, n=7 → 4+3, n=11 → 4+4+3 —
+-- every cell filled, no empty slots.
+--
+-- Windows are snapshotted into a stable list BEFORE positioning, because
+-- iterating `windows of app` live causes z-order shuffling to double-hit
+-- some windows while skipping others.
+--
 -- Apple-native: NSScreen.main via /usr/bin/swift + System Events.
 
 on run argv
-    -- Optional app filter
     set targetName to ""
-    if (count of argv) ≥ 1 then
-        set targetName to item 1 of argv as text
-    end if
+    if (count of argv) ≥ 1 then set targetName to item 1 of argv as text
 
     set screenInfo to do shell script "/usr/bin/swift -e 'import AppKit; let s = NSScreen.main!; let f = s.frame; let v = s.visibleFrame; let topY = f.size.height - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"
 
@@ -34,19 +39,78 @@ on run argv
 end run
 
 
-on chooseGrid(n)
-    if n ≤ 1 then return {1, 1}
-    if n = 2 then return {2, 1}
-    if n = 3 then return {3, 1}
+-- Compute non-uniform row layout for n cells. Returns a list of integers,
+-- one per row, summing to n. Example: rowLayout(5) → {3, 2}; rowLayout(7) → {4, 3}.
+on rowLayout(n)
+    if n ≤ 1 then return {1}
+    if n = 2 then return {2}
+    if n = 3 then return {3}
     if n = 4 then return {2, 2}
-    if n ≤ 6 then return {3, 2}
-    if n ≤ 9 then return {3, 3}
-    if n ≤ 12 then return {4, 3}
-    if n ≤ 16 then return {4, 4}
-    if n ≤ 20 then return {5, 4}
-    if n ≤ 25 then return {5, 5}
-    return {6, 5}
-end chooseGrid
+    -- rows ≈ sqrt(n), rounded
+    set r to round (n ^ 0.5) rounding to nearest
+    if r < 1 then set r to 1
+    set base to n div r
+    set extra to n mod r
+    set out to {}
+    repeat with i from 1 to r
+        if i ≤ extra then
+            set end of out to base + 1
+        else
+            set end of out to base
+        end if
+    end repeat
+    return out
+end rowLayout
+
+
+-- Snapshot a windows-of-process list into a stable list of references.
+on snapshotWindows(p)
+    set snap to {}
+    tell application "System Events"
+        repeat with w in (windows of p)
+            try
+                set end of snap to contents of w
+            end try
+        end repeat
+    end tell
+    return snap
+end snapshotWindows
+
+
+-- Place a list of window references into the grid layout starting at (sx, sy)
+-- with total width sw, height sh.
+on tileWindows(wins, sx, sy, sw, sh)
+    set winCount to count of wins
+    if winCount = 0 then return 0
+
+    set layout to my rowLayout(winCount)
+    set rowCount to count of layout
+    set rowH to sh div rowCount
+
+    set placed to 0
+    set idx to 1
+    repeat with rowI from 1 to rowCount
+        set cellsInRow to item rowI of layout
+        set cellW to sw div cellsInRow
+        repeat with colI from 0 to (cellsInRow - 1)
+            if idx > winCount then exit repeat
+            set tx to sx + (colI * cellW)
+            set ty to sy + ((rowI - 1) * rowH)
+            set w to item idx of wins
+            tell application "System Events"
+                try
+                    set size of w to {cellW, rowH}
+                    set position of w to {tx, ty}
+                    set size of w to {cellW, rowH}
+                    set position of w to {tx, ty}
+                    set placed to placed + 1
+                end try
+            end tell
+            set idx to idx + 1
+        end repeat
+    end repeat
+    return placed
+end tileWindows
 
 
 on tileAllApps(sx, sy, sw, sh)
@@ -58,48 +122,54 @@ on tileAllApps(sx, sy, sw, sh)
                 if (count of windows of p) > 0 then set end of targetApps to contents of p
             end try
         end repeat
-        set appCount to count of targetApps
-        if appCount = 0 then
-            do shell script "/usr/bin/osascript -e 'display notification \"No visible foreground apps with windows\" with title \"Dock Snap\"'"
-            return
-        end if
+    end tell
 
-        set gridDim to my chooseGrid(appCount)
-        set gridCols to item 1 of gridDim
-        set gridRows to item 2 of gridDim
-        set cellW to sw div gridCols
-        set cellH to sh div gridRows
+    set appCount to count of targetApps
+    if appCount = 0 then
+        do shell script "/usr/bin/osascript -e 'display notification \"No visible foreground apps with windows\" with title \"Dock Snap\"'"
+        return
+    end if
 
-        set idx to 0
-        set windowsMoved to 0
-        repeat with a in targetApps
-            if idx ≥ (gridCols * gridRows) then exit repeat
-            set colIdx to idx mod gridCols
-            set rowIdx to idx div gridCols
-            set tx to sx + (colIdx * cellW)
-            set ty to sy + (rowIdx * cellH)
-            try
-                repeat with w in (windows of a)
+    set layout to my rowLayout(appCount)
+    set rowCount to count of layout
+    set rowH to sh div rowCount
+
+    set appIdx to 1
+    set totalWins to 0
+    repeat with rowI from 1 to rowCount
+        set cellsInRow to item rowI of layout
+        set cellW to sw div cellsInRow
+        repeat with colI from 0 to (cellsInRow - 1)
+            if appIdx > appCount then exit repeat
+            set tx to sx + (colI * cellW)
+            set ty to sy + ((rowI - 1) * rowH)
+            set a to item appIdx of targetApps
+            -- Snapshot first, then move all of this app's windows to the cell.
+            set appWins to my snapshotWindows(a)
+            repeat with w in appWins
+                tell application "System Events"
                     try
-                        set size of w to {cellW, cellH}
+                        set size of w to {cellW, rowH}
                         set position of w to {tx, ty}
-                        set size of w to {cellW, cellH}
+                        set size of w to {cellW, rowH}
                         set position of w to {tx, ty}
-                        set windowsMoved to windowsMoved + 1
+                        set totalWins to totalWins + 1
                     end try
-                end repeat
-            end try
-            set idx to idx + 1
+                end tell
+            end repeat
+            set appIdx to appIdx + 1
         end repeat
+    end repeat
 
+    tell application "System Events"
         repeat with a in (reverse of targetApps)
             try
                 set frontmost of a to true
             end try
         end repeat
-
-        do shell script "/usr/bin/osascript -e 'display notification \"" & windowsMoved & " windows across " & idx & " apps in " & gridCols & "×" & gridRows & " grid\" with title \"Dock Snap\"'"
     end tell
+
+    do shell script "/usr/bin/osascript -e 'display notification \"" & totalWins & " windows across " & (appIdx - 1) & " apps\" with title \"Dock Snap\"'"
 end tileAllApps
 
 
@@ -117,43 +187,37 @@ on tileOneApp(targetName, sx, sy, sw, sh)
                 exit repeat
             end if
         end repeat
-
-        if match is missing value then
-            do shell script "/usr/bin/osascript -e 'display notification \"No running app matching \\\"" & targetName & "\\\"\" with title \"Dock Snap\"'"
-            return
-        end if
-
-        set wins to windows of match
-        set winCount to count of wins
-        if winCount = 0 then
-            do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & " has no windows\" with title \"Dock Snap\"'"
-            return
-        end if
-
-        set gridDim to my chooseGrid(winCount)
-        set gridCols to item 1 of gridDim
-        set gridRows to item 2 of gridDim
-        set cellW to sw div gridCols
-        set cellH to sh div gridRows
-
-        set idx to 0
-        repeat with w in wins
-            if idx ≥ (gridCols * gridRows) then exit repeat
-            set colIdx to idx mod gridCols
-            set rowIdx to idx div gridCols
-            set tx to sx + (colIdx * cellW)
-            set ty to sy + (rowIdx * cellH)
-            try
-                set size of w to {cellW, cellH}
-                set position of w to {tx, ty}
-                set size of w to {cellW, cellH}
-                set position of w to {tx, ty}
-            end try
-            set idx to idx + 1
-        end repeat
-
-        set frontmost of match to true
-
-        do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & idx & " windows in " & gridCols & "×" & gridRows & " grid\" with title \"Dock Snap\"'"
     end tell
+
+    if match is missing value then
+        do shell script "/usr/bin/osascript -e 'display notification \"No running app matching \\\"" & targetName & "\\\"\" with title \"Dock Snap\"'"
+        return
+    end if
+
+    set wins to my snapshotWindows(match)
+    set winCount to count of wins
+    if winCount = 0 then
+        do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & " has no windows\" with title \"Dock Snap\"'"
+        return
+    end if
+
+    set placed to my tileWindows(wins, sx, sy, sw, sh)
+
+    tell application "System Events"
+        try
+            set frontmost of match to true
+        end try
+    end tell
+
+    set layout to my rowLayout(winCount)
+    set rowStr to ""
+    repeat with r in layout
+        if rowStr is "" then
+            set rowStr to (r as text)
+        else
+            set rowStr to rowStr & "+" & (r as text)
+        end if
+    end repeat
+
+    do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & placed & " windows in " & rowStr & " layout\" with title \"Dock Snap\"'"
 end tileOneApp
