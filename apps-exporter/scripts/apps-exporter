@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# apps-exporter — Clock / Weather / Stocks / Maps in one package.
+# Resolves symlinks so it works whether invoked directly or via ~/bin/ symlink.
+set -euo pipefail
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do
+    dir="$(cd "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+done
+SCRIPT_DIR="$(cd "$(dirname "$src")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+exec "$PYTHON" "$SCRIPT_DIR/apps_exporter.py" "$@"

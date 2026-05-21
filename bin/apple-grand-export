@@ -23,6 +23,7 @@ ROOT="${APPLE_REPO:-$HOME/work/apple}"
 #      delay the quick wins.
 EXPORTERS=(
     "stickies-exporter:export"
+    "apps-exporter:export"
     "audio-midi-exporter:export"
     "image-capture-exporter:export"
     "console-exporter:status"
