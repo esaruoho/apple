@@ -26,6 +26,8 @@ This is the Sal pattern in Claude Code form: one verb, one result, no dialog.
 | `/apple-report [--ai] [--can-run "<spec>"]` | `bin/apple-report` | Full Mac capability dump + AI-workload "can I run X" |
 | `/topbar` | `topbar/install.sh` | Install + launch SwiftBar menu-bar toolbox (one 🧰 with live status + click-to-run) |
 | `/qr-wifi <SSID> <password>` | `bin/sal-qr` (wrapped) | Wi-Fi-join QR code |
+| `/tag <sub>…` | `bin/tag` / `bin/tag-smart` | Finder tag CRUD + Smart Folder generator (xattr + plistlib + mdfind) |
+| `/dock <sub>…` | `bin/dock` | Dock manager — add/remove/list/clear items via com.apple.dock.plist |
 
 ## Install
 

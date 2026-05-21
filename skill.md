@@ -36,6 +36,8 @@ Then read `analysis/sal/current-status.md` and report. **Do not run the refresh 
 
 For everything else, treat this file as a routing table: identify the topic, grep the matching wiki page, answer.
 
+**Tag pipeline + Dock manager (added 2026-05-21):** Two Apple-native control surfaces wired into the skill. When the user says "tag this", "needs-ocr", "send to OCR", "ocr-failed", "Smart Folder", "talkback" → see [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md). When the user says "add to Dock", "pin to Dock", "Dock tile" → see [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md). Sidebar Favorites is dead on Sequoia — [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md) for why.
+
 ## Repo layout
 
 `/Users/esaruoho/work/apple/`:

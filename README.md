@@ -387,6 +387,71 @@ Symlinks make the difference. `voice-memos-exporter` ships with `.m4a` symlinks 
 
 ---
 
+## Finder Tag Pipeline + Dock Manager (2026-05-21)
+
+Two Apple-native control surfaces wired in this session, both surviving Sequoia's lockdown of older APIs.
+
+### The Finder tag → CloudcityMacMini pipeline
+
+Tag a PDF with `needs-ocr:red` and within 60 seconds it's in CloudcityMacMini's PDFWorkshop OCR queue via Syncthing, with the file's tags reflecting the worker's live state through to completion.
+
+```
+needs-ocr:red                    user tagged it
+  + ocr-queued:yellow            tag-watcher copied it into ocr-inbox
+  + ocr-processing:blue          Mac Mini worker is OCRing it (heartbeat says so)
+ocr-complete:green               OCR'd version replaced the original, .txt sidecar parked
+ocr-failed:orange                Mac Mini gave up (download_failed — retryable)
+ocr-engine-failed:red            GLM-OCR choked on content — same engine = same fail
+```
+
+Eight tools wire the loop:
+
+| Tool | What it does |
+|---|---|
+| `bin/tag` | xattr CRUD on `_kMDItemUserTags` (Apple-native: xattr + plistlib + mdfind, stdlib only) |
+| `bin/tag-smart` | Generates `.savedSearch` Smart Folder plists |
+| `bin/tag-finder-selection` | Tag whatever's selected in Finder; AppleScript-driven |
+| `bin/tag-trinity` | Stamp a shared link-tag across N files (binds conversation md ↔ app ↔ skill) |
+| `bin/tag-send-to-ocr` | One-shot: tag selection + fire watcher immediately |
+| `bin/tag-watcher` | LaunchAgent-driven dispatcher → reads each TRIGGER tag → drops files into matching Syncthing inbox |
+| `bin/tag-result-handler` | Closes the loop: heartbeat + `worker-status/` polling, swaps tags, replaces image-only PDFs with OCR'd versions |
+| `bin/tag-retry-failed` | Distinguish download_failed (retry) vs ocr_failed (manual triage) |
+
+LaunchAgent fires both every 60 seconds. New triggers (e.g. `needs-transcription` → whisp) are one dict entry in `TRIGGERS`.
+
+The talkback channel: CloudcityMacMini's PDFWorkshop worker writes per-job `.job` sidecars into `~/work/comms/queue/worker-status/{pending,priority,processing,done,failed}/`. Syncthing carries them back. `tag-result-handler` reads them and reflects the state onto archive originals (resolved via `tag-watcher-map.json` first, then a one-time `rglob` of the archive).
+
+Discovery via Smart Folders in `~/Library/Saved Searches/` — including a meta `All Smart Folders.savedSearch` that lists every other `.savedSearch` live. AppleToolbox menu enumerates them dynamically: `🧰 → 🏷 Tags → 🗂 Smart Folders ▸`.
+
+Deep doc: [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md).
+
+### The Dock manager
+
+Apple killed both the public `LSSharedFileList` sidebar API (segfaults on Sequoia) and the File menu's "Add to Sidebar" item. The Dock's plist is still writable.
+
+```bash
+dock list                       # show every Dock tile
+dock add <path>                 # folder / .savedSearch / file / .app
+dock add-spacer                 # blank tile in persistent-others
+dock remove <path|label>        # match by full path OR displayed label
+dock clear-others               # nuke entire right-side (apps left alone)
+```
+
+Apple-native: plistlib (stdlib) only. Writes `~/Library/Preferences/com.apple.dock.plist`, killalls `cfprefsd` + Dock. No Homebrew, no `dockutil`, no `defaults` shell-outs.
+
+`.savedSearch` files render as Smart-Folder stacks. The replacement for "I want this in my sidebar."
+
+Deep doc: [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md).
+
+### Both surfaced via slashes
+
+- `/tag <sub>` — Finder tag operations
+- `/dock <sub>` — Dock operations
+
+Add `~/work/apple/bin` to your PATH (one-liner in `~/.bashrc` or `~/.zshrc`) and `tag`, `dock`, `tag-watcher`, etc. become first-class shell commands.
+
+---
+
 ## Roadmap to the Full Apple Experience
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.
