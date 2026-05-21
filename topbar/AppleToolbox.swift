@@ -356,6 +356,31 @@ func whispQueueRead() -> String {
     }
 }
 
+func fileerataQueueRead() -> String? {
+    // Fileerata segment-extraction queue. Counts files across:
+    //   ~/work/comms/queue/segment-requests/   (pending — written by tag watcher)
+    //   ~/work/comms/queue/segment-outbox/     (ready clips — *.mp4/.m4a/.md)
+    //   ~/work/comms/queue/segment-failed/     (errors)
+    let fm = FileManager.default
+    let base = "\(HOME)/work/comms/queue"
+    func count(_ sub: String, suffix: String) -> Int {
+        let dir = "\(base)/\(sub)"
+        guard let files = try? fm.contentsOfDirectory(atPath: dir) else { return 0 }
+        return files.filter { $0.hasSuffix(suffix) }.count
+    }
+    let pending = count("segment-requests", suffix: ".req")
+    let mp4s = count("segment-outbox", suffix: ".mp4")
+    let m4as = count("segment-outbox", suffix: ".m4a")
+    let failed = count("segment-failed", suffix: ".req")
+    let ready = max(mp4s, m4as)
+    if pending == 0 && ready == 0 && failed == 0 { return nil }
+    var parts: [String] = []
+    if pending > 0 { parts.append("\(pending) pending") }
+    if ready > 0   { parts.append("\(ready) ready") }
+    if failed > 0  { parts.append("\(failed) failed") }
+    return parts.joined(separator: " · ")
+}
+
 // ─── inline-detail data readers ───────────────────────────────────────────
 //
 // These return rich detail strings (multi-line, monospaced) that the live
@@ -716,6 +741,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return root
     }
 
+    /// Enumerate ~/Library/Saved Searches/ and return one `action` item per
+    /// `.savedSearch` file. Each click opens that smart folder in Finder.
+    /// Rebuilt every time the menu opens so newly-created smart folders show
+    /// up without restarting AppleToolbox.
+    func smartFolderItems() -> [NSMenuItem] {
+        let dir = "\(HOME)/Library/Saved Searches"
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir) else {
+            return [NSMenuItem(title: "(no Smart Folders)", action: nil, keyEquivalent: "")]
+        }
+        let saved = names
+            .filter { $0.hasSuffix(".savedSearch") && !$0.hasPrefix(".") }
+            .sorted()
+        if saved.isEmpty {
+            return [NSMenuItem(title: "(no Smart Folders)", action: nil, keyEquivalent: "")]
+        }
+        return saved.map { name -> NSMenuItem in
+            let path = "\(dir)/\(name)"
+            // Strip extension and pick a glyph from the leading word.
+            let stem = String(name.dropLast(".savedSearch".count))
+            let lc = stem.lowercased()
+            let glyph: String
+            if lc.contains("ocr failed") || lc.contains("engine failed") {
+                glyph = "⚠️"
+            } else if lc.contains("ocr") {
+                glyph = "🤖"
+            } else if lc.contains("corpus") {
+                glyph = "📚"
+            } else if lc.contains("trinity") {
+                glyph = "🔗"
+            } else if lc.contains("all smart folders") {
+                glyph = "🗂"
+            } else if lc.contains("needing") || lc.contains("needs") {
+                glyph = "📋"
+            } else {
+                glyph = "📁"
+            }
+            return action("\(glyph) \(stem)", cmd: "/usr/bin/open", args: [path])
+        }
+    }
+
     // ─── NSAlert text prompt ───────────────────────────────────────────────
 
     func promptForText(message: String) -> String? {
@@ -810,6 +876,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["-a", "Music"])
         addIf("🎙 Whisp",   whispQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
+        addIf("✂️ Fileerata", fileerataQueueRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/segment-outbox"])
         menu.addItem(.separator())
 
         // Quick actions
@@ -916,9 +984,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 cmd: "\(APPLE_DIR)/bin/tag-send-to-ocr"),
             action("▶ Run Tag Watcher Now",
                 cmd: "\(APPLE_DIR)/bin/tag-watcher"),
+            action("↻ Retry OCR-failed (download_failed only)",
+                cmd: "\(APPLE_DIR)/bin/tag-retry-failed", args: ["--kick"]),
             action("📊 Tag Watcher Status (open log)",
                 cmd: "/usr/bin/open",
                 args: ["\(HOME)/work/comms/queue/tag-watcher.log"]),
+            NSMenuItem.separator(),
+            submenu("🗂 Smart Folders", items: smartFolderItems()),
+            action("📂 Open Saved Searches folder",
+                cmd: "/usr/bin/open",
+                args: ["\(HOME)/Library/Saved Searches"]),
         ]))
 
         // Slashes submenu — Apple-skill verbs as menu items with prompts
@@ -1085,6 +1160,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     var headerLabel: NSTextField!
     var statusTimer: Timer?
     var watchTimer: Timer?
+    /// Background maintenance — mirrors dictation/*.wav into cc/vault and
+    /// runs `vault.py backfill` so the conversations folder stays current
+    /// without the user having to run it by hand. Every 15 min, off main.
+    var maintenanceTimer: Timer?
+    let maintenanceInterval: TimeInterval = 900
     var sourceMtime: TimeInterval = 0
     var sourcePath: String { "\(TOPBAR)/AppleToolbox.swift" }
     var reloading: Bool = false
@@ -1111,6 +1191,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     // shown next to each folder mark the ones with ongoing conversations.
     var chatCwd: String = "\(HOME)/work"
     var claudeBin: String = "\(HOME)/.local/bin/claude"
+    /// Single source of truth for the flag(s) every claude spawn in this app
+    /// must carry. DRY: every `claude` invocation — terminal handoff, in-panel
+    /// Process — pulls from this. Add/change here, both call sites pick it up.
+    static let claudeCommonFlags: [String] = ["--dangerously-skip-permissions"]
+    static var claudeCommonFlagsCmdline: String {
+        claudeCommonFlags.joined(separator: " ")
+    }
     var currentSessionId: String?
     var chatProcess: Process?
     var chatBusy: Bool = false
@@ -1207,6 +1294,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }
         watchTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.checkSource()
+        }
+        // Background maintenance — first pass 30s after launch (let UI
+        // settle + first paint complete), then every 15 min.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
+            self?.runMaintenance()
+        }
+        maintenanceTimer = Timer.scheduledTimer(withTimeInterval: maintenanceInterval,
+                                                repeats: true) { [weak self] _ in
+            self?.runMaintenance()
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, event.window === self.panel else { return event }
@@ -1564,6 +1660,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         chatTranscript.autoresizingMask = [.width]
         chatTranscript.isEditable = false
         chatTranscript.isSelectable = true
+        // Make programmatically-added .link attributes clickable — NSTextView
+        // hands clicks to NSWorkspace.open by default when the view is
+        // non-editable + selectable. The dict here just paints them blue +
+        // underlined + pointing-hand-cursor so they look obviously clickable.
+        chatTranscript.linkTextAttributes = [
+            .foregroundColor: NSColor.systemBlue,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .cursor: NSCursor.pointingHand,
+        ]
         chatTranscript.drawsBackground = false
         chatTranscript.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
         chatTranscript.textContainerInset = NSSize(width: 6, height: 6)
@@ -1889,6 +1994,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             "/usr/bin/open", ["-a", "Music"], symbol: "music.note")
         add("Whisp",   whispQueueRead(),
             "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "mic.fill")
+        if let f = fileerataQueueRead() {
+            add("Fileerata", f,
+                "/usr/bin/open", ["\(HOME)/work/comms/queue/segment-outbox"], symbol: "scissors")
+        }
 
         rowsStack.arrangedSubviews.forEach {
             rowsStack.removeArrangedSubview($0)
@@ -2890,7 +2999,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     func handoffSessionToTerminal(sessionId: String?) {
         // Quote the cwd to survive paths with spaces.
         let cwd = chatCwd.replacingOccurrences(of: "\"", with: "\\\"")
-        var cmd = "cd \"\(cwd)\" && \(claudeBin)"
+        var cmd = "cd \"\(cwd)\" && \(claudeBin) \(Self.claudeCommonFlagsCmdline)"
         if let sid = sessionId, !sid.isEmpty {
             cmd += " --resume \(sid)"
         }
@@ -3103,22 +3212,30 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         panel.makeFirstResponder(chatInput)
         let wasRunning = smartDictation.isRunning
         if !wasRunning {
-            let stamp = isoStamp().replacingOccurrences(of: ":", with: "-")
+            let stamp = compactStamp()
             // Land the audio NEXT TO THE WORK — under <chatCwd>/dictation/.
             // Previously these went into ~/.claude/projects/<escaped>/audio/
             // which is hidden Claude metadata; the user couldn't find them.
+            // Filename starts as just <stamp>.wav; after stop we rename to
+            // <stamp>-<slug-of-what-was-said>.wav.
             let dir = "\(chatCwd)/dictation"
-            smartDictation.nextAudioPath = "\(dir)/dictation-\(stamp).caf"
+            smartDictation.nextAudioPath = "\(dir)/\(stamp).wav"
         }
         smartDictation.toggle(target: chatInput)
         if wasRunning {
             if let path = smartDictation.lastAudioPath {
-                pendingAudioFiles.append(path)
+                let finalPath = renameDictationFileWithTranscript(
+                    path: path,
+                    transcript: smartDictation.sessionTranscript)
+                pendingAudioFiles.append(finalPath)
                 // Log the FULL absolute path (clickable in many renderers) so
                 // there's no guessing where the recording landed.
-                appendToConversationLog("\n_(🎙 audio captured: [`\(path)`](\(path)))_\n")
-                appendTranscript("\n🎙 audio: \(path)\n",
-                                 color: NSColor(white: 0.7, alpha: 1.0))
+                appendToConversationLog("\n_(🎙 audio captured: [`\(finalPath)`](\(finalPath)))_\n")
+                appendTranscriptPathLink(prefix: "\n🎙 audio: ", path: finalPath)
+                // The dictation/ folder didn't exist before this session
+                // first ran — refresh the file browser so the user can see
+                // it appear without having to navigate away and back.
+                if browserStack != nil { loadBrowserItems() }
             } else if let attempted = smartDictation.lastAttemptedAudioPath {
                 // The capture file failed to open — surface where it tried so
                 // the user isn't left wondering whether the audio is anywhere.
@@ -3137,6 +3254,154 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f.string(from: Date())
+    }
+
+    /// Background maintenance — fired by `maintenanceTimer`. Hops off the
+    /// main queue so the file walks + `vault.py backfill` never block UI.
+    /// Both sub-tasks are safe to re-run (mirror skips files already at
+    /// the destination with matching size; vault.py backfill is itself
+    /// safe to re-run).
+    func runMaintenance() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.mirrorDictationToVault()
+            self?.runVaultBackfill()
+        }
+    }
+
+    /// Walks `~/work/*/dictation/` (depth 5) and copies every `.wav` into
+    /// `~/work/cc/vault/sources/dictation/<YYYY-MM-DD>/`. Copy (not move)
+    /// — the source must stay next to the work it was captured against.
+    /// Date subfolder is derived from the filename's leading `yyyymmdd`
+    /// prefix written by `compactStamp()`.
+    func mirrorDictationToVault() {
+        let workRoot = "\(HOME)/work"
+        let vaultDictation = "\(HOME)/work/cc/vault/sources/dictation"
+        let task = Process()
+        task.launchPath = "/usr/bin/find"
+        task.arguments = [workRoot, "-maxdepth", "5", "-type", "d", "-name", "dictation"]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+        do { try task.run() } catch { return }
+        task.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let dirs = String(data: data, encoding: .utf8)?
+            .split(separator: "\n").map(String.init) ?? []
+        let fm = FileManager.default
+        for dir in dirs {
+            if dir.hasPrefix(vaultDictation) { continue }
+            guard let entries = try? fm.contentsOfDirectory(atPath: dir) else { continue }
+            for name in entries where name.hasSuffix(".wav") {
+                let src = "\(dir)/\(name)"
+                let datePrefix: String
+                if name.count >= 8,
+                   let _ = Int(name.prefix(4)),
+                   let _ = Int(name.dropFirst(4).prefix(2)),
+                   let _ = Int(name.dropFirst(6).prefix(2)) {
+                    let yyyy = String(name.prefix(4))
+                    let mm = String(name.dropFirst(4).prefix(2))
+                    let dd = String(name.dropFirst(6).prefix(2))
+                    datePrefix = "\(yyyy)-\(mm)-\(dd)"
+                } else {
+                    datePrefix = "undated"
+                }
+                let destDir = "\(vaultDictation)/\(datePrefix)"
+                let dest = "\(destDir)/\(name)"
+                if fm.fileExists(atPath: dest),
+                   let sAttr = try? fm.attributesOfItem(atPath: src),
+                   let dAttr = try? fm.attributesOfItem(atPath: dest),
+                   let sSize = sAttr[.size] as? NSNumber,
+                   let dSize = dAttr[.size] as? NSNumber,
+                   sSize == dSize {
+                    continue
+                }
+                try? fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+                try? fm.removeItem(atPath: dest)
+                try? fm.copyItem(atPath: src, toPath: dest)
+            }
+        }
+    }
+
+    /// Runs `python3 ~/.claude/skills/vault/vault.py backfill` so the
+    /// cc/vault conversations folder picks up every Claude Code session
+    /// that's been written since the last pass. Silent — if vault.py is
+    /// missing or python3 isn't on PATH, this is a no-op.
+    func runVaultBackfill() {
+        let vaultPy = "\(HOME)/.claude/skills/vault/vault.py"
+        guard FileManager.default.fileExists(atPath: vaultPy) else { return }
+        let task = Process()
+        task.launchPath = "/usr/bin/env"
+        task.arguments = ["python3", vaultPy, "backfill"]
+        task.standardOutput = Pipe()
+        task.standardError = Pipe()
+        do { try task.run() } catch { return }
+        task.waitUntilExit()
+    }
+
+    /// `yyyyMMdd-HHmmss` in local time — the filename prefix for dictation
+    /// audio so files sort chronologically in Finder without colons or `T`.
+    func compactStamp() -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        return f.string(from: Date())
+    }
+
+    /// Rename `<stamp>.wav` → `<stamp>-<slug>.wav` once the dictation
+    /// session has produced its committed transcript. If the transcript is
+    /// empty or the rename fails, return the original path so the log
+    /// entry still points at a real file.
+    func renameDictationFileWithTranscript(path: String, transcript: String) -> String {
+        let slug = slugifyTranscript(transcript)
+        guard !slug.isEmpty else { return path }
+        let ns = path as NSString
+        let dir = ns.deletingLastPathComponent
+        let ext = ns.pathExtension                   // "wav"
+        let stem = ns.lastPathComponent              // "20260521-143207.wav"
+        let stampOnly = (stem as NSString).deletingPathExtension
+        let newName = "\(stampOnly)-\(slug).\(ext)"
+        let newPath = (dir as NSString).appendingPathComponent(newName)
+        if newPath == path { return path }
+        do {
+            try FileManager.default.moveItem(atPath: path, toPath: newPath)
+            return newPath
+        } catch {
+            fputs("[AppleToolbox] dictation rename failed: \(error)\n", stderr)
+            return path
+        }
+    }
+
+    /// Lower-case, kebab-case slug of the dictated text, capped at 60
+    /// chars on a word boundary. Non-ASCII letters/digits collapse to `-`.
+    /// Empty input → empty string (caller leaves the file un-renamed).
+    func slugifyTranscript(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        var out = ""
+        var lastDash = true
+        for scalar in trimmed.lowercased().unicodeScalars {
+            let isAlnum = (scalar >= "a" && scalar <= "z") ||
+                          (scalar >= "0" && scalar <= "9")
+            if isAlnum {
+                out.unicodeScalars.append(scalar)
+                lastDash = false
+            } else if !lastDash {
+                out.append("-")
+                lastDash = true
+            }
+        }
+        while out.hasSuffix("-") { out.removeLast() }
+        let cap = 60
+        if out.count > cap {
+            let cut = out.index(out.startIndex, offsetBy: cap)
+            var truncated = String(out[..<cut])
+            if let lastDash = truncated.lastIndex(of: "-"),
+               truncated.distance(from: truncated.startIndex, to: lastDash) > cap / 2 {
+                truncated = String(truncated[..<lastDash])
+            }
+            out = truncated
+        }
+        return out
     }
 
     /// NSTextViewDelegate hook: keep the smart-dictation anchor synced
@@ -3282,8 +3547,8 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
         let p = Process()
         p.executableURL = URL(fileURLWithPath: claudeBin)
-        var args: [String] = ["-p", "--verbose", "--output-format", "stream-json",
-                              "--permission-mode", "acceptEdits"]
+        var args: [String] = ["-p", "--verbose", "--output-format", "stream-json"]
+                              + Self.claudeCommonFlags
         if let sid = currentSessionId, !sid.isEmpty {
             args += ["--resume", sid]
         }
@@ -3405,6 +3670,29 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         chatTranscript.scrollToEndOfDocument(nil)
     }
 
+    /// Append a line that contains a clickable file-path link. NSTextView
+    /// handles the click via NSWorkspace.open — for a `.wav` that opens in
+    /// QuickTime / Finder's audio handler. The visible glyphs are still the
+    /// absolute path so you can copy-paste it too.
+    func appendTranscriptPathLink(prefix: String, path: String,
+                                  color: NSColor = NSColor(white: 0.7, alpha: 1.0)) {
+        let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        let storage = chatTranscript.textStorage
+        if !prefix.isEmpty {
+            storage?.append(NSAttributedString(string: prefix,
+                                               attributes: [.foregroundColor: color, .font: font]))
+        }
+        let url = URL(fileURLWithPath: path)
+        let linkAttrs: [NSAttributedString.Key: Any] = [
+            .link: url,
+            .font: font,
+        ]
+        storage?.append(NSAttributedString(string: path, attributes: linkAttrs))
+        storage?.append(NSAttributedString(string: "\n",
+                                            attributes: [.foregroundColor: color, .font: font]))
+        chatTranscript.scrollToEndOfDocument(nil)
+    }
+
     @objc func resetChat(_ sender: Any?) {
         if let p = chatProcess, p.isRunning {
             p.terminate()
@@ -3517,6 +3805,10 @@ class SpeechDictationController: NSObject {
     /// fallback. Tracking the stub here.
     var nextAudioPath: String?
     private(set) var lastAudioPath: String?
+    /// Accumulates every committed (final) phrase during one start→stop
+    /// session. Cleared on start. Read by the host after stop to slug the
+    /// audio filename, so the .wav ends up named after what was said.
+    private(set) var sessionTranscript: String = ""
     /// The path we tried to write even if AVAudioFile setup failed — used
     /// by the host so it can surface a "tried <path>, failed" message
     /// instead of silently dropping the recording.
@@ -3598,6 +3890,7 @@ class SpeechDictationController: NSObject {
         audioFile = nil
         lastAudioPath = nil
         lastAttemptedAudioPath = nil
+        sessionTranscript = ""
         if let path = nextAudioPath {
             lastAttemptedAudioPath = path
             let dir = (path as NSString).deletingLastPathComponent
@@ -3734,6 +4027,16 @@ class SpeechDictationController: NSObject {
             range.length = max(0, storeLen - range.location)
         }
         ts.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range)
+        // Grab the committed substring so the host can slug it into the
+        // audio filename after stop. NSString substring keeps UTF-16 math
+        // aligned with the range we just used.
+        if range.length > 0 {
+            let committed = (ts.string as NSString).substring(with: range)
+            if !committed.isEmpty {
+                if !sessionTranscript.isEmpty { sessionTranscript += " " }
+                sessionTranscript += committed
+            }
+        }
         tentativeRange = NSRange(location: range.location + range.length, length: 0)
     }
 
