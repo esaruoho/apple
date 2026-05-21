@@ -8,8 +8,9 @@ dock — Apple-native Dock manager. Reads/writes ~/Library/Preferences/com.apple
   dock add-spacer           Add a blank spacer tile to persistent-others
   dock remove <path|name>   Remove by full path OR by label match (first match)
   dock clear-others         Remove every persistent-others entry (right-side)
-  dock snap                 Tile every currently-running visible app's main window
-                            into an auto-sized grid on the main screen
+  dock snap                 Tile every currently-running visible app, one cell per app
+  dock snap <appname>       Tile just <appname>'s windows in a grid (case-insensitive
+                            substring match: `dock snap iterm2`, `dock snap subl`)
 
 Notes
 -----
@@ -205,14 +206,17 @@ def cmd_clear_others(_args):
     print(f"cleared {n} item(s) from persistent-others (right side of Dock)")
 
 
-def cmd_snap(_args):
-    """Run the compiled DockSnap.scpt which tiles all running apps in a grid."""
+def cmd_snap(args):
+    """Tile windows in a grid. No args = every app, one cell per app.
+    With <appname> = just that app's windows in a grid."""
     here = Path(__file__).resolve().parent
     script = here.parent / "scripts/workflows/system-events/compiled/DockSnap.scpt"
     if not script.is_file():
         die(f"compiled script missing: {script}")
-    r = subprocess.run(["/usr/bin/osascript", str(script)],
-                       capture_output=True, text=True)
+    cmd = ["/usr/bin/osascript", str(script)]
+    if args:
+        cmd.append(args[0])
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         die(f"DockSnap failed: {r.stderr.strip()}")
     if r.stdout.strip():
