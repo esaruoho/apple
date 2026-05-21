@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""
+tag-trinity — stamp a shared link-tag across the three files that form a
+"conversation trinity":
+
+    1. The conversation markdown (the transcript of the chat where it happened)
+    2. The app / code that the conversation produced
+    3. The skill knowledgebase that documents how the app works
+
+Usage
+-----
+  tag-trinity <name> <convo.md> <app-path> <skill-path> [more paths...]
+
+  --color COLOR    one of: gray green purple blue yellow red orange (default: purple)
+  --extra TAG      extra tag to apply to all files alongside the trinity tag
+                   (can be repeated). Example: --extra archive:red
+
+The shared tag is `trinity-<name>`. After stamping, a Smart Folder named
+"Trinity — <name>" is created under ~/Library/Saved Searches/ so the three
+files appear together in Finder regardless of where they live on disk.
+
+This is the operational answer to "how do I bind the conversation that
+spawned an app to the app itself and the skill knowledge of it" — Apple-native
+Spotlight handles the rest.
+"""
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TAG = HERE / "tag"
+TAG_SMART = HERE / "tag-smart"
+
+
+def slugify(name):
+    s = re.sub(r"[^a-zA-Z0-9._-]+", "-", name).strip("-").lower()
+    return s or "untitled"
+
+
+def main():
+    argv = sys.argv[1:]
+    if not argv or argv[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+
+    color = "purple"
+    extras = []
+    paths = []
+    name = None
+
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--color":
+            color = argv[i + 1]; i += 2; continue
+        if a == "--extra":
+            extras.append(argv[i + 1]); i += 2; continue
+        if name is None:
+            name = a
+        else:
+            paths.append(a)
+        i += 1
+
+    if not name or len(paths) < 2:
+        sys.stderr.write("usage: tag-trinity <name> <path1> <path2> [path3...]\n")
+        sys.exit(2)
+
+    tag = f"trinity-{slugify(name)}"
+    spec = f"{tag}:{color}"
+
+    # Expand and verify all paths first — fail fast.
+    abspaths = []
+    for p in paths:
+        ap = Path(os.path.expanduser(p)).resolve()
+        if not ap.exists():
+            sys.stderr.write(f"tag-trinity: not found: {p}\n")
+            sys.exit(1)
+        abspaths.append(str(ap))
+
+    all_specs = [spec] + extras
+    subprocess.run([str(TAG), "add", ",".join(all_specs)] + abspaths, check=True)
+
+    # Build a persistent Smart Folder for this trinity (ALL match — the shared tag is enough).
+    sf_name = f"Trinity — {name}"
+    subprocess.run([str(TAG_SMART), sf_name, tag], check=True)
+
+    print(f"trinity stamped: {tag} ({color}) on {len(abspaths)} files")
+    for p in abspaths:
+        print(f"  · {p}")
+    if extras:
+        print(f"extras: {extras}")
+    print(f"smart folder: ~/Library/Saved Searches/{sf_name}.savedSearch")
+
+
+if __name__ == "__main__":
+    main()
