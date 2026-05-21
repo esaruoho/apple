@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# snap — tile windows into a non-uniform auto-sized grid.
+#
+# Standalone wrapper around scripts/workflows/system-events/compiled/DockSnap.scpt
+# that the apple-skill, terminal, slash commands, and AppleToolbox menu all
+# call into. Same engine, one source of truth.
+#
+# Modes
+#   snap                       Tile every visible foreground app, one cell per app
+#   snap <appname>             Tile <appname>'s windows in a grid (main screen)
+#   snap <appname> <screen>    Tile on a specific screen (0=main, 1=second, …)
+#   snap <appname> all         Distribute round-robin across every screen
+#   snap --screens             List available displays with index + visible-frame
+#   snap --passes N <args…>    Override the 3-pass convergence loop
+#
+# Why 3 passes:
+#   Sequoia apps silently fail the first `set position` call and only settle
+#   after 2-3 retries. For apps with stable window IDs (Safari/Mail/iTerm/…)
+#   the app-dictionary path runs reliably in one pass; the loop is harmless.
+#   For apps that fall back to System Events, the retries are what saves it.
+#
+# See: wiki/concepts/dock-management.md for the full state of the dispatcher,
+#      the System-Events positional-reference bug, and how to add more apps.
+
+set -euo pipefail
+
+APPLE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCPT="$APPLE_DIR/scripts/workflows/system-events/compiled/DockSnap.scpt"
+
+if [[ ! -f "$SCPT" ]]; then
+    echo "snap: compiled script missing: $SCPT" >&2
+    exit 1
+fi
+
+passes=3
+args=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        --passes|-p)
+            shift
+            if [[ -z "${1:-}" || ! "$1" =~ ^[0-9]+$ ]]; then
+                echo "snap: --passes needs a number" >&2
+                exit 2
+            fi
+            passes="$1"
+            shift
+            ;;
+        --screens)
+            /usr/bin/swift -e 'import AppKit; print("idx\tname\tvisible-frame"); for (i, s) in NSScreen.screens.enumerated() { let v = s.visibleFrame; print("\(i)\t\(s.localizedName)\t\(Int(v.origin.x)),\(Int(v.origin.y)) \(Int(v.size.width))x\(Int(v.size.height))") }'
+            exit 0
+            ;;
+        *)
+            args+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# AppleScript expects at most two positional args: <appname> and <screen|all>
+# (or zero args = tile every visible foreground app).
+osa_args=()
+if [[ ${#args[@]} -ge 1 ]]; then osa_args+=("${args[0]}"); fi
+if [[ ${#args[@]} -ge 2 ]]; then osa_args+=("${args[1]}"); fi
+
+for ((i = 1; i <= passes; i++)); do
+    /usr/bin/osascript "$SCPT" "${osa_args[@]+"${osa_args[@]}"}" || true
+    if (( i < passes )); then
+        sleep 0.25
+    fi
+done
+
+printf '(ran %d passes for convergence)\n' "$passes"

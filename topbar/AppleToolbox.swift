@@ -13,7 +13,8 @@
 // Sections:
 //   Live status   — HomePod climate, battery, disk, WiFi, Mail, Now Playing, Whisp queue
 //   Quick actions — Stop Voicebox, Empty Trash, Hide/Show Desktop, Hide-Others
-//   System ▸      — Dark mode toggle, Lock screen, Sleep, Screenshot ▸, Snap Windows ▸
+//   Snap Windows ▸ — Side-by-side / Thirds / Mosaic / Dock Snap / Snap App ▸
+//   System ▸      — Dark mode toggle, Lock screen, Sleep, Screenshot ▸
 //   Audio ▸       — Mute / Unmute / Volume presets
 //   Finder ▸      — Kill / Show-Hidden / Hide-Hidden / Restart Menu Bar
 //   Slashes ▸     — Hey Sal… / Grand Search… / QR… / Wi-Fi QR… / Apple Report / Webcam Photo / Grand Export
@@ -224,12 +225,39 @@ func batteryRead() -> String {
 }
 
 func diskRead() -> String {
-    let out = run("/bin/df", ["-h", "/"])
-    let lines = out.split(separator: "\n")
-    guard lines.count >= 2 else { return "—" }
-    let cols = lines[1].split(separator: " ", omittingEmptySubsequences: true).map(String.init)
-    guard cols.count >= 5 else { return "—" }
-    return "\(cols[3]) free of \(cols[1])  ·  \(cols[4]) used"
+    // APFS makes `df -h /` lie about Use%: it divides the visible Used by
+    // Size, ignoring that other volumes in the same container (Data, VM,
+    // snapshots) consume space too. 35 GiB free of 1.8 TiB should read
+    // ~98% full, not "34% used". Compute it ourselves from the Data
+    // volume's total + available bytes — same source Finder reads.
+    let dataVolume = URL(fileURLWithPath: "/System/Volumes/Data")
+    let keys: Set<URLResourceKey> = [
+        .volumeTotalCapacityKey,
+        .volumeAvailableCapacityForImportantUsageKey,
+        .volumeAvailableCapacityKey,
+    ]
+    guard let values = try? dataVolume.resourceValues(forKeys: keys),
+          let total = values.volumeTotalCapacity, total > 0 else {
+        return "—"
+    }
+    // "Important usage" is the number Finder shows — it excludes purgeable
+    // caches the OS can reclaim on demand. Fall back to the raw available
+    // capacity if the important-usage key isn't populated.
+    let availInt64 = values.volumeAvailableCapacityForImportantUsage
+        ?? Int64(values.volumeAvailableCapacity ?? 0)
+    let avail = Int(availInt64)
+    let used = max(0, total - avail)
+    let pct = Int((Double(used) / Double(total) * 100.0).rounded())
+
+    let bcf = ByteCountFormatter()
+    bcf.countStyle = .file       // 1 GB = 10^9 bytes — matches Finder
+    bcf.allowedUnits = [.useGB, .useTB]
+    bcf.includesUnit = true
+    bcf.zeroPadsFractionDigits = false
+
+    let freeStr = bcf.string(fromByteCount: Int64(avail))
+    let totalStr = bcf.string(fromByteCount: Int64(total))
+    return "\(freeStr) free of \(totalStr)  ·  \(pct)% full"
 }
 
 func wifiRead() -> String {
@@ -241,6 +269,57 @@ func wifiRead() -> String {
         return String(out[r.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
     return out.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+func trashSummary() -> (label: String, isEmpty: Bool) {
+    let trash = "\(HOME)/.Trash"
+    let fm = FileManager.default
+    let entries = (try? fm.contentsOfDirectory(atPath: trash))?.filter { $0 != ".DS_Store" } ?? []
+    if entries.isEmpty { return ("🗑 Empty Trash (empty)", true) }
+    let out = run("/usr/bin/du", ["-sk", trash])
+    let kb = Int64(out.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+    let size = ByteCountFormatter.string(fromByteCount: kb * 1024, countStyle: .file)
+    let n = entries.count
+    let noun = n == 1 ? "item" : "items"
+    return ("🗑 Empty Trash — \(size), \(n) \(noun)", false)
+}
+
+// ─── Snap-with-app ───────────────────────────────────────────────────────────
+// "Open BBS & Snap" — launches a user-configured app and tiles it next to the
+// AppleToolbox Live panel. App path persists at ~/.config/appletoolbox/snap-app.
+
+func snapAppPathFile() -> String { "\(HOME)/.config/appletoolbox/snap-app" }
+
+func currentSnapAppPath() -> String {
+    if let s = try? String(contentsOfFile: snapAppPathFile(), encoding: .utf8) {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !t.isEmpty { return t }
+    }
+    return "/Applications/BBS.app"
+}
+
+func setSnapAppPath(_ p: String) {
+    let f = snapAppPathFile()
+    let dir = (f as NSString).deletingLastPathComponent
+    try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+    try? p.write(toFile: f, atomically: true, encoding: .utf8)
+}
+
+func snapAppDisplayName(_ path: String) -> String {
+    let base = (path as NSString).lastPathComponent
+    return base.hasSuffix(".app") ? String(base.dropLast(4)) : base
+}
+
+/// Read a string key from an .app bundle's Info.plist. System Events refers
+/// to processes by their executable name (CFBundleExecutable) which often
+/// differs from the bundle's display name — e.g. BBS.app's executable is
+/// `bbs-app`, so `tell process "BBS"` silently fails and the snap no-ops.
+func snapAppPlistKey(_ key: String, fromAppPath appPath: String) -> String? {
+    let plistPath = (appPath as NSString).appendingPathComponent("Contents/Info.plist")
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: plistPath)),
+          let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
+          let s = plist[key] as? String, !s.isEmpty else { return nil }
+    return s
 }
 
 func mailDataDir() -> String? {
@@ -558,6 +637,113 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let toast = p["toast"] as? String { notify("Apple Toolbox", toast) }
     }
 
+    @objc func openSnapApp(_ sender: Any?) {
+        let path = currentSnapAppPath()
+        // Display name (for `tell application "X" to activate` — resolves via
+        // LaunchServices using CFBundleName) and process name (for System
+        // Events `tell process` — uses CFBundleExecutable). These two often
+        // differ for Tauri/Electron-style apps (BBS.app → "BBS" / "bbs-app").
+        let displayName = snapAppPlistKey("CFBundleName", fromAppPath: path) ?? snapAppDisplayName(path)
+        let processName = snapAppPlistKey("CFBundleExecutable", fromAppPath: path) ?? displayName
+
+        // Make sure the Live panel is up so there's something to dock against.
+        showLivePanel()
+
+        // Launch the configured app.
+        runDetached("/usr/bin/open", [path])
+
+        guard let screen = NSScreen.main else { return }
+        let vf = screen.visibleFrame
+        let full = screen.frame
+        let margin: CGFloat = 20
+        let panelW: CGFloat = 380
+        let panelH: CGFloat = min(920, vf.height - margin * 2)
+
+        let panelX = vf.maxX - panelW - margin
+        let panelYns = vf.minY + (vf.height - panelH - margin)
+        let appX = vf.minX + margin
+        let appYns = vf.minY + margin
+        let appW = panelX - margin - appX
+        let appH = vf.height - margin * 2
+
+        // NSScreen → System Events coords (top-left of main display).
+        let panelSEY = Int(full.maxY - (panelYns + panelH))
+        let appSEY = Int(full.maxY - (appYns + appH))
+
+        func q(_ s: String) -> String { "\"" + s.replacingOccurrences(of: "\"", with: "\\\"") + "\"" }
+
+        // Two-phase script:
+        //  1. Activate the target app and wait (up to 5 s) for its first
+        //     window to materialise — Tauri cold-starts can take ~1.5 s.
+        //  2. Walk every AppleToolbox process and snap whichever window's
+        //     title starts with "AppleToolbox" (i.e. the --live panel; the
+        //     menu-bar instance has no windows).
+        let script = """
+        tell application \(q(displayName)) to activate
+        tell application "System Events"
+            set tries to 0
+            repeat until (exists window 1 of process \(q(processName))) or tries > 50
+                delay 0.1
+                set tries to tries + 1
+            end repeat
+            tell process \(q(processName))
+                set position of window 1 to {\(Int(appX)), \(appSEY)}
+                set size of window 1 to {\(Int(appW)), \(Int(appH))}
+            end tell
+            repeat with p in (every process whose name is "AppleToolbox")
+                tell p
+                    repeat with w in windows
+                        try
+                            if name of w starts with "AppleToolbox" then
+                                set position of w to {\(Int(panelX)), \(panelSEY)}
+                                set size of w to {\(Int(panelW)), \(Int(panelH))}
+                            end if
+                        end try
+                    end repeat
+                end tell
+            end repeat
+        end tell
+        """
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let task = Process()
+            task.launchPath = "/usr/bin/osascript"
+            task.arguments = ["-e", script]
+            let errPipe = Pipe()
+            task.standardError = errPipe
+            do { try task.run() } catch {
+                DispatchQueue.main.async { notify("Snap failed", error.localizedDescription) }
+                return
+            }
+            task.waitUntilExit()
+            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            if task.terminationStatus != 0, let msg = String(data: errData, encoding: .utf8) {
+                let trimmed = msg.trimmingCharacters(in: .whitespacesAndNewlines)
+                let hint = trimmed.contains("1002") || trimmed.contains("not allowed assistive access")
+                    ? "Grant AppleToolbox Accessibility in System Settings → Privacy."
+                    : trimmed
+                DispatchQueue.main.async { notify("Snap failed", hint) }
+            }
+        }
+    }
+
+    @objc func configureSnapApp(_ sender: Any?) {
+        let alert = NSAlert()
+        alert.messageText = "Snap-with app"
+        alert.informativeText = "Path to a .app to launch and tile next to the Live panel."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
+        field.stringValue = currentSnapAppPath()
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.async { alert.window.makeFirstResponder(field) }
+        if alert.runModal() == .alertFirstButtonReturn {
+            let p = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !p.isEmpty { setSnapAppPath(p) }
+        }
+    }
+
     @objc func runQR(_ sender: NSMenuItem) {
         guard let input = promptForText(message: "QR contents:"), !input.isEmpty else { return }
         let ts = ISO8601DateFormatter().string(from: Date())
@@ -665,6 +851,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func refresh() { rebuildMenu() }
     @objc func quit() { NSApp.terminate(nil) }
+
+    /// Dock-icon click handler. The menu-bar instance runs .accessory so
+    /// it has no Dock icon of its own, but the user pinned AppleToolbox.app
+    /// to the Dock as a shortcut — clicking it sends a Reopen Apple Event
+    /// to whichever instance is already running. Treat that click as
+    /// "show me the live panel" so AppleToolbox behaves like a real app
+    /// you can hide-and-restore from the Dock, not a ghost that swallows
+    /// clicks. showLivePanel() is safe to call repeatedly — it notifies
+    /// the running --live process or spawns one if none exists.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        showLivePanel()
+        return false
+    }
 
     /// Bring the floating live panel back to front. Posts a distributed
     /// notification first so an already-running `--live` process can
@@ -781,6 +980,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Enumerate ~/Library/Saved Searches/ and return one `action` item per
     /// `.savedSearch` file. Each click opens that smart folder in Finder.
+    /// Every regular (UI-having) running app gets a row that snaps just
+    /// that app's windows into a grid via `bin/dock-snap-bump <appname>`
+    /// (which ticks the usage counter, then exec's `dock snap`).
+    func snapAppItems() -> [NSMenuItem] {
+        let apps = NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .compactMap { $0.localizedName }
+        let unique = Array(Set(apps)).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        if unique.isEmpty {
+            return [NSMenuItem(title: "(no running apps)", action: nil, keyEquivalent: "")]
+        }
+        return unique.map { name in
+            action("🔲 \(name)", cmd: "\(APPLE_DIR)/bin/dock-snap-bump", args: [name])
+        }
+    }
+
+    /// Read snap-history.json and return the top `limit` app names by count.
+    /// Click-tracking happens via `bin/dock-snap-bump`. Pure count, no decay.
+    func frequentSnaps(limit: Int) -> [String] {
+        let path = "\(HOME)/Library/Application Support/AppleToolbox/snap-history.json"
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return []
+        }
+        let scored: [(String, Int)] = obj.compactMap { (name, raw) in
+            if let dict = raw as? [String: Any], let n = dict["count"] as? Int { return (name, n) }
+            return nil
+        }
+        return scored.sorted { $0.1 > $1.1 }.prefix(limit).map { $0.0 }
+    }
+
+    /// Render the top-N frequents as menu rows. Returns [] if history is empty
+    /// so the caller can skip the section entirely on a fresh install.
+    func frequentSnapItems(limit: Int) -> [NSMenuItem] {
+        return frequentSnaps(limit: limit).map { name in
+            action("🔲 Snap \(name)", cmd: "\(APPLE_DIR)/bin/dock-snap-bump", args: [name])
+        }
+    }
+
     /// Rebuilt every time the menu opens so newly-created smart folders show
     /// up without restarting AppleToolbox.
     func smartFolderItems() -> [NSMenuItem] {
@@ -928,13 +1166,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(action("⏹ Stop Reading",
             cmd: "\(APPLE_DIR)/bin/read-aloud", args: ["--stop"]))
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
-        menu.addItem(action("🗑 Empty Trash",
+        let trash = trashSummary()
+        let trashItem = action(trash.label,
             cmd: "/usr/bin/osascript",
-            args: ["-e", "tell application \"Finder\" to empty trash"]))
+            args: ["-e", "tell application \"Finder\" to empty trash"])
+        if trash.isEmpty { trashItem.isEnabled = false }
+        menu.addItem(trashItem)
         menu.addItem(action("👁 Hide Desktop Icons", cmd: "\(TOPBAR)/scripts/hide-desktop.sh"))
         menu.addItem(action("👀 Show Desktop Icons", cmd: "\(TOPBAR)/scripts/show-desktop.sh"))
         menu.addItem(action("🙈 Hide All Other Apps",
             cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/HideAllOthers.scpt"]))
+
+        let snapName = snapAppDisplayName(currentSnapAppPath())
+        menu.addItem(customAction("🪟 Open \(snapName) & Snap",
+                                  selector: #selector(openSnapApp(_:))))
+        menu.addItem(customAction("   ⚙ Configure Snap App…",
+                                  selector: #selector(configureSnapApp(_:))))
+        menu.addItem(.separator())
+
+        // Frequent Snaps — top 3 by usage count, one-click at root.
+        // Click history lives in ~/Library/Application Support/AppleToolbox/
+        // snap-history.json, bumped by bin/dock-snap-bump on every click.
+        let rootFavs = frequentSnapItems(limit: 3)
+        for item in rootFavs { menu.addItem(item) }
+        if !rootFavs.isEmpty { menu.addItem(.separator()) }
+
+        // Snap Windows — promoted to root menu (frequently used).
+        // Top 5 frequents pinned to the top of the submenu so common targets
+        // (iTerm2, Sublime Text…) are one click away, no Snap-App dig.
+        let subFavs = frequentSnapItems(limit: 5)
+        var snapItems: [NSMenuItem] = []
+        if !subFavs.isEmpty {
+            snapItems.append(contentsOf: subFavs)
+            snapItems.append(.separator())
+        }
+        snapItems.append(contentsOf: [
+            action("◧◨ Side by Side (front 2 apps)",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/SideBySide.scpt"]),
+            action("⬒⬓ Top / Bottom (front 2 apps)",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/TopBottom.scpt"]),
+            action("⬛⬛⬛ Thirds (front 3 apps)",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/Thirds.scpt"]),
+            NSMenuItem.separator(),
+            action("Mosaic (all of front app)",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicWindows.scpt"]),
+            action("Mosaic +1 window",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicKnob.scpt", "more"]),
+            action("Mosaic −1 window",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicKnob.scpt", "less"]),
+            NSMenuItem.separator(),
+            action("🔲 Snap (every running app, auto-grid)",
+                cmd: "\(APPLE_DIR)/bin/snap"),
+            submenu("📐 Snap App", items: snapAppItems()),
+        ])
+        menu.addItem(submenu("🪟 Snap Windows", items: snapItems))
         menu.addItem(.separator())
 
         // System submenu
@@ -948,24 +1233,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 customAction("Selection (interactive)", selector: #selector(screenshotSelection(_:))),
                 customAction("Window (click to choose)", selector: #selector(screenshotWindow(_:))),
                 customAction("Frontmost app's window (no click)", selector: #selector(screenshotFrontWindow(_:))),
-            ]),
-            submenu("🪟 Snap Windows", items: [
-                action("◧◨ Side by Side (front 2 apps)",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/SideBySide.scpt"]),
-                action("⬒⬓ Top / Bottom (front 2 apps)",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/TopBottom.scpt"]),
-                action("⬛⬛⬛ Thirds (front 3 apps)",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/Thirds.scpt"]),
-                NSMenuItem.separator(),
-                action("Mosaic (all of front app)",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicWindows.scpt"]),
-                action("Mosaic +1 window",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicKnob.scpt", "more"]),
-                action("Mosaic −1 window",
-                    cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicKnob.scpt", "less"]),
-                NSMenuItem.separator(),
-                action("🔲 Dock Snap (every running app, auto-grid)",
-                    cmd: "\(APPLE_DIR)/bin/dock", args: ["snap"]),
             ]),
             action("📋 Restart Menu Bar", cmd: "/usr/bin/killall", args: ["SystemUIServer"]),
             NSMenuItem.separator(),
@@ -1190,16 +1457,18 @@ class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
-    /// Yellow miniaturize button hides the panel (orderOut) instead of Dock-
-    /// minimizing — AppleToolbox is LSUIElement so there's no Dock icon to
-    /// restore from. Re-show via the menu-bar "Show Live Panel" item, which
-    /// posts the distributed notification listened to in LiveViewportDelegate.
+    /// Yellow miniaturize button → real Dock minimize. The --live process
+    /// runs .regular activation policy, so it has a Dock icon (merged with
+    /// the user's pinned AppleToolbox.app shortcut when present) — that
+    /// gives the user a thumbnail to click to restore. Re-show also works
+    /// via the menu-bar "Show Live Panel" item or a Dock-icon click, both
+    /// of which route through applicationShouldHandleReopen.
     override func miniaturize(_ sender: Any?) {
-        orderOut(nil)
+        super.miniaturize(sender)
     }
 }
 
-class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, NSTextFieldDelegate {
+class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, NSTextFieldDelegate, NSSplitViewDelegate {
     // Status pane
     var panel: NSPanel!
     var rowsStack: NSStackView!
@@ -1837,69 +2106,134 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         inputRow.alignment = .top   // buttons pin to top as composer grows
         inputRow.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
 
-        // Outer vertical layout
-        let outer = NSStackView(views: [headerLabel, statusScroll, detailLabel, sep,
-                                         browserCrumbRow, browserFilterField, browserScroll, sep2,
-                                         chatHeaderRow, chatScroll, inputRow])
-        outer.orientation = .vertical
-        outer.alignment = .leading
-        outer.distribution = .fill
-        outer.spacing = 6
-        outer.edgeInsets = NSEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
-        outer.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(outer)
+        // ── Three resizable panes inside an NSSplitView ──
+        // Each pane is a plain NSView wrapping the pane's content in a
+        // vertical NSStackView. The split view gives drag-to-resize between
+        // panes for free, and the delegate hook below makes a double-click
+        // on a divider toggle the adjacent pane's collapsed state.
+        // sep / sep2 are no longer needed — the split-view dividers replace them.
+
+        let statusPane = NSView()
+        statusPane.translatesAutoresizingMaskIntoConstraints = false
+        let statusInner = NSStackView(views: [statusScroll, detailLabel])
+        statusInner.orientation = .vertical
+        statusInner.alignment = .leading
+        statusInner.distribution = .fill
+        statusInner.spacing = 6
+        statusInner.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        statusInner.translatesAutoresizingMaskIntoConstraints = false
+        statusPane.addSubview(statusInner)
+
+        let browserPane = NSView()
+        browserPane.translatesAutoresizingMaskIntoConstraints = false
+        let browserInner = NSStackView(views: [browserCrumbRow, browserFilterField, browserScroll])
+        browserInner.orientation = .vertical
+        browserInner.alignment = .leading
+        browserInner.distribution = .fill
+        browserInner.spacing = 6
+        browserInner.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        browserInner.translatesAutoresizingMaskIntoConstraints = false
+        browserPane.addSubview(browserInner)
+
+        let chatPane = NSView()
+        chatPane.translatesAutoresizingMaskIntoConstraints = false
+        let chatInner = NSStackView(views: [chatHeaderRow, chatScroll, inputRow])
+        chatInner.orientation = .vertical
+        chatInner.alignment = .leading
+        chatInner.distribution = .fill
+        chatInner.spacing = 6
+        chatInner.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        chatInner.translatesAutoresizingMaskIntoConstraints = false
+        chatPane.addSubview(chatInner)
+
+        let splitView = NSSplitView()
+        splitView.isVertical = false             // horizontal dividers = stacked top→bottom
+        splitView.dividerStyle = .paneSplitter   // thick, visibly grabbable
+        splitView.translatesAutoresizingMaskIntoConstraints = false
+        splitView.delegate = self
+        splitView.autosaveName = "AppleToolbox.LivePanes"
+        splitView.addArrangedSubview(statusPane)
+        splitView.addArrangedSubview(browserPane)
+        splitView.addArrangedSubview(chatPane)
+
+        // Chat pane absorbs window-resize slack — status + browser hold their
+        // height. Lower number = stickier (holds size harder). Default is 250.
+        splitView.setHoldingPriority(NSLayoutConstraint.Priority(260), forSubviewAt: 0)
+        splitView.setHoldingPriority(NSLayoutConstraint.Priority(260), forSubviewAt: 1)
+        splitView.setHoldingPriority(NSLayoutConstraint.Priority(250), forSubviewAt: 2)
+
+        headerLabel.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(headerLabel)
+        content.addSubview(splitView)
 
         NSLayoutConstraint.activate([
-            outer.topAnchor.constraint(equalTo: content.topAnchor),
-            outer.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            outer.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            outer.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-
+            headerLabel.topAnchor.constraint(equalTo: content.topAnchor, constant: 8),
+            headerLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
+            headerLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12),
             headerLabel.heightAnchor.constraint(equalToConstant: 20),
-            headerLabel.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 12),
-            headerLabel.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -12),
 
-            statusScroll.heightAnchor.constraint(equalToConstant: 200),
-            statusScroll.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 8),
-            statusScroll.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -8),
+            splitView.topAnchor.constraint(equalTo: headerLabel.bottomAnchor, constant: 6),
+            splitView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            splitView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            splitView.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -8),
 
-            detailLabel.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 14),
-            detailLabel.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -14),
+            // Each pane's inner stack fills its container.
+            statusInner.topAnchor.constraint(equalTo: statusPane.topAnchor),
+            statusInner.leadingAnchor.constraint(equalTo: statusPane.leadingAnchor),
+            statusInner.trailingAnchor.constraint(equalTo: statusPane.trailingAnchor),
+            statusInner.bottomAnchor.constraint(lessThanOrEqualTo: statusPane.bottomAnchor),
 
-            sep.heightAnchor.constraint(equalToConstant: 1),
-            sep.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
-            sep.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
+            browserInner.topAnchor.constraint(equalTo: browserPane.topAnchor),
+            browserInner.leadingAnchor.constraint(equalTo: browserPane.leadingAnchor),
+            browserInner.trailingAnchor.constraint(equalTo: browserPane.trailingAnchor),
+            browserInner.bottomAnchor.constraint(equalTo: browserPane.bottomAnchor),
 
+            chatInner.topAnchor.constraint(equalTo: chatPane.topAnchor),
+            chatInner.leadingAnchor.constraint(equalTo: chatPane.leadingAnchor),
+            chatInner.trailingAnchor.constraint(equalTo: chatPane.trailingAnchor),
+            chatInner.bottomAnchor.constraint(equalTo: chatPane.bottomAnchor),
+
+            // Pane content stretches full width of its inner stack.
+            statusScroll.leadingAnchor.constraint(equalTo: statusInner.leadingAnchor),
+            statusScroll.trailingAnchor.constraint(equalTo: statusInner.trailingAnchor),
+            detailLabel.leadingAnchor.constraint(equalTo: statusInner.leadingAnchor, constant: 6),
+            detailLabel.trailingAnchor.constraint(equalTo: statusInner.trailingAnchor, constant: -6),
+
+            browserCrumbRow.leadingAnchor.constraint(equalTo: browserInner.leadingAnchor),
+            browserCrumbRow.trailingAnchor.constraint(equalTo: browserInner.trailingAnchor),
             browserCrumbRow.heightAnchor.constraint(equalToConstant: 22),
-            browserCrumbRow.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
-            browserCrumbRow.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
-
+            browserFilterField.leadingAnchor.constraint(equalTo: browserInner.leadingAnchor),
+            browserFilterField.trailingAnchor.constraint(equalTo: browserInner.trailingAnchor),
             browserFilterField.heightAnchor.constraint(equalToConstant: 24),
-            browserFilterField.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 8),
-            browserFilterField.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -8),
+            browserScroll.leadingAnchor.constraint(equalTo: browserInner.leadingAnchor),
+            browserScroll.trailingAnchor.constraint(equalTo: browserInner.trailingAnchor),
 
-            browserScroll.heightAnchor.constraint(equalToConstant: 180),
-            browserScroll.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 8),
-            browserScroll.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -8),
-
-            sep2.heightAnchor.constraint(equalToConstant: 1),
-            sep2.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
-            sep2.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
-
+            chatHeaderRow.leadingAnchor.constraint(equalTo: chatInner.leadingAnchor),
+            chatHeaderRow.trailingAnchor.constraint(equalTo: chatInner.trailingAnchor),
             chatHeaderRow.heightAnchor.constraint(equalToConstant: 22),
-            chatHeaderRow.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
-            chatHeaderRow.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
-
-            chatScroll.leadingAnchor.constraint(equalTo: outer.leadingAnchor, constant: 8),
-            chatScroll.trailingAnchor.constraint(equalTo: outer.trailingAnchor, constant: -8),
+            chatScroll.leadingAnchor.constraint(equalTo: chatInner.leadingAnchor),
+            chatScroll.trailingAnchor.constraint(equalTo: chatInner.trailingAnchor),
 
             // Composer: 3 lines minimum (~58pt @ 12pt system font), grows
             // up to ~8 lines before scrolling kicks in inside chatInputScroll.
             chatInputScroll.heightAnchor.constraint(greaterThanOrEqualToConstant: 58),
             chatInputScroll.heightAnchor.constraint(lessThanOrEqualToConstant: 140),
-            inputRow.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
-            inputRow.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
+            inputRow.leadingAnchor.constraint(equalTo: chatInner.leadingAnchor),
+            inputRow.trailingAnchor.constraint(equalTo: chatInner.trailingAnchor),
         ])
+
+        // Initial pane sizes — set on the next runloop tick so autolayout
+        // has resolved the split view's final bounds first. Without the
+        // dispatch, setPosition runs against a zero-height splitView and
+        // does nothing.
+        DispatchQueue.main.async {
+            splitView.setPosition(220, ofDividerAt: 0)   // top of browser
+            splitView.setPosition(440, ofDividerAt: 1)   // top of chat
+        }
+
+        // sep / sep2 are unused now that the split view supplies the dividers.
+        _ = sep
+        _ = sep2
 
         panel.contentView = content
         panel.makeKeyAndOrderFront(nil)
@@ -1907,6 +2241,48 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // Initial focus = file browser so cursor keys immediately navigate the
         // project list. Switch to chat composer with Tab / by clicking it.
         panel.makeFirstResponder(browserFilterField)
+    }
+
+    // ─── NSSplitViewDelegate ───────────────────────────────────────────────
+    // Drag the divider to resize panes (NSSplitView does this for free).
+    // Double-click a divider to toggle the adjacent pane's collapsed state:
+    // double-click divider 0 → collapse/expand the status pane; double-click
+    // divider 1 → collapse/expand the chat pane. Middle (browser) stays put.
+
+    func splitView(_ splitView: NSSplitView, canCollapseSubview subview: NSView) -> Bool {
+        return true
+    }
+
+    func splitView(_ splitView: NSSplitView,
+                   shouldCollapseSubview subview: NSView,
+                   forDoubleClickOnDividerAt dividerIndex: Int) -> Bool {
+        // dividerIndex 0 sits between pane 0 (status) and pane 1 (browser).
+        // dividerIndex 1 sits between pane 1 (browser) and pane 2 (chat).
+        // Return true for the "outer" pane in each case so a double-click
+        // toggles status / chat collapse without ever hiding the browser.
+        let arranged = splitView.arrangedSubviews
+        guard arranged.count >= 3 else { return false }
+        if dividerIndex == 0 { return subview === arranged[0] }
+        if dividerIndex == 1 { return subview === arranged[2] }
+        return false
+    }
+
+    // Minimum sizes when dragging — keeps every pane from disappearing past
+    // a usable threshold (collapse via double-click goes through a separate
+    // code path and is unaffected by these constraints).
+    func splitView(_ splitView: NSSplitView,
+                   constrainMinCoordinate proposedMin: CGFloat,
+                   ofSubviewAt dividerIndex: Int) -> CGFloat {
+        if dividerIndex == 0 { return proposedMin + 80 }   // status pane ≥ 80
+        if dividerIndex == 1 { return proposedMin + 80 }   // browser pane ≥ 80
+        return proposedMin
+    }
+
+    func splitView(_ splitView: NSSplitView,
+                   constrainMaxCoordinate proposedMax: CGFloat,
+                   ofSubviewAt dividerIndex: Int) -> CGFloat {
+        if dividerIndex == 1 { return proposedMax - 120 }  // chat pane ≥ 120
+        return proposedMax
     }
 
     func currentMtime() -> TimeInterval {
@@ -2055,31 +2431,55 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }
         rowButtons.removeAll()
         rowKinds.removeAll()
-        let titleW = rows.map { $0.title.count }.max() ?? 0
+        // Three-column row layout snapped to pixel-fixed X positions:
+        //   col 0 = icon  (NSTextAttachment, exactly 22pt wide — same for every
+        //                  symbol, so title-start-X never shifts row to row)
+        //   col 1 = title (starts at 26pt — tab after icon)
+        //   col 2 = value (starts at 130pt — tab after title)
+        // We build the row as an attributedTitle with an inline NSTextAttachment
+        // for the icon instead of NSButton's built-in imageLeft, because the
+        // built-in layout computes title-X from the actual rendered glyph
+        // width, which differs between thermometer / battery / wifi etc.
+        let titleFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
         for r in rows {
-            let padded = r.title.padding(toLength: titleW + 2, withPad: " ", startingAt: 0) + r.body
-            let btn = LiveRowButton(title: padded, target: self, action: #selector(rowClicked(_:)))
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.tabStops = [
+                NSTextTab(textAlignment: .left, location: 26, options: [:]),
+                NSTextTab(textAlignment: .left, location: 130, options: [:]),
+            ]
+            paragraph.defaultTabInterval = 26
+            paragraph.lineBreakMode = .byTruncatingTail
+
+            let attr = NSMutableAttributedString()
+            if !r.symbol.isEmpty, #available(macOS 11.0, *),
+               let img = NSImage(systemSymbolName: r.symbol, accessibilityDescription: r.title)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)) {
+                let attach = NSTextAttachment()
+                attach.image = img
+                // Fixed bounds = fixed column width, no matter what symbol.
+                attach.bounds = NSRect(x: 0, y: -3, width: 18, height: 16)
+                attr.append(NSAttributedString(attachment: attach))
+            }
+            let body = NSAttributedString(
+                string: "\t\(r.title)\t\(r.body)",
+                attributes: [
+                    .font: titleFont,
+                    .foregroundColor: NSColor.labelColor,
+                    .paragraphStyle: paragraph,
+                ])
+            attr.append(body)
+
+            let btn = LiveRowButton(title: "", target: self, action: #selector(rowClicked(_:)))
             btn.cmd = r.cmd
             btn.args = r.args
             btn.bezelStyle = .inline
             btn.isBordered = false
             btn.alignment = .left
-            btn.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+            btn.font = titleFont
             btn.contentTintColor = NSColor.labelColor
             btn.translatesAutoresizingMaskIntoConstraints = false
-            // SF Symbol on the left, monospaced text on the right. All rows
-            // get the same icon-column width via fixed-point symbol config,
-            // so the text column stays aligned without the emoji prefix.
-            if !r.symbol.isEmpty, #available(macOS 11.0, *),
-               let img = NSImage(systemSymbolName: r.symbol, accessibilityDescription: r.title)?
-                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)) {
-                btn.image = img
-                btn.imagePosition = .imageLeft
-                btn.imageHugsTitle = true
-                (btn.cell as? NSButtonCell)?.imageScaling = .scaleNone
-            } else {
-                (btn.cell as? NSButtonCell)?.imagePosition = .noImage
-            }
+            (btn.cell as? NSButtonCell)?.imagePosition = .noImage
+            btn.attributedTitle = attr
 
             if r.icons.isEmpty {
                 rowsStack.addArrangedSubview(btn)
@@ -2161,6 +2561,16 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     @objc func showLivePanelRequested(_ note: Notification) {
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Dock-icon click → restore the panel. --live runs .regular so it
+    /// gets a real Dock icon; clicking it after KeyablePanel.miniaturize
+    /// orderOut'd the panel needs to bring it back. Also covers the case
+    /// where the panel is alive-but-behind: orderFront raises it.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        panel?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return true
     }
 
     // ─── chat: state persistence ───────────────────────────────────────────
@@ -2320,33 +2730,89 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         return infos.sorted { $0.mtime > $1.mtime }.prefix(limit).map { $0 }
     }
 
-    /// Extracts the first user message text from a session JSONL. Falls back
-    /// to "(empty)" if none found in the first 50 lines (sessions usually have
-    /// the first user message on line 1).
+    /// Extracts the first SUBSTANTIVE user message text from a session JSONL.
+    /// "Substantive" = with the leading "boot up X skill." preamble stripped.
+    /// If a session's first prompt is purely a skill-boot ("boot up apple
+    /// skill."), we advance to the next user message where the real ask
+    /// lives. Falls back to "(no user prompt)" if every message is boot-only
+    /// or no user messages exist in the first ~16K of the file.
     func sessionSnippet(path: String) -> String {
         guard let fh = FileHandle(forReadingAtPath: path) else { return "(unreadable)" }
         defer { try? fh.close() }
-        let data = fh.readData(ofLength: 16_384)  // first ~16K is plenty
+        // Bumped from 32K/120 to 512K/2000 lines — a long session's second
+        // user message can sit deep past hundreds of assistant tool-use
+        // lines. Without enough scan budget, "boot up X skill." sessions
+        // collapsed back to the boot fallback even when a real follow-up
+        // prompt existed.
+        let data = fh.readData(ofLength: 524_288)
         guard let s = String(data: data, encoding: .utf8) else { return "(binary?)" }
-        for line in s.split(separator: "\n").prefix(50) {
+        var firstBootText: String?     // remembered as last-resort fallback
+        for line in s.split(separator: "\n").prefix(2000) {
             guard let lineData = line.data(using: .utf8),
                   let obj = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
-                  obj["type"] as? String == "user" else { continue }
-            if let msg = obj["message"] as? [String: Any] {
-                if let c = msg["content"] as? String, !c.isEmpty {
-                    return trimSnippet(c)
-                }
-                if let arr = msg["content"] as? [[String: Any]] {
-                    for item in arr {
-                        if let t = item["type"] as? String, t == "text",
-                           let txt = item["text"] as? String, !txt.isEmpty {
-                            return trimSnippet(txt)
-                        }
+                  obj["type"] as? String == "user",
+                  let msg = obj["message"] as? [String: Any] else { continue }
+            var text: String?
+            if let c = msg["content"] as? String, !c.isEmpty { text = c }
+            else if let arr = msg["content"] as? [[String: Any]] {
+                for item in arr {
+                    if (item["type"] as? String) == "text",
+                       let txt = item["text"] as? String, !txt.isEmpty {
+                        text = txt
+                        break
                     }
                 }
             }
+            guard let raw = text else { continue }
+            // Skip Claude Code's synthetic user messages: <command-…> tags
+            // AND the "Base directory for this skill:" message that the
+            // skill loader injects (looks like a user prompt in the JSONL
+            // but is really just the skill file content).
+            let trimmedRaw = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedRaw.hasPrefix("<command-") || trimmedRaw.hasPrefix("<local-command-") {
+                continue
+            }
+            if trimmedRaw.hasPrefix("Base directory for this skill:")
+                || trimmedRaw.hasPrefix("Launching skill:") {
+                continue
+            }
+            let stripped = stripSkillBootPreamble(raw)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !stripped.isEmpty {
+                return trimSnippet(stripped)
+            }
+            // Boot-only message — remember it, keep scanning for a real ask.
+            if firstBootText == nil { firstBootText = trimmedRaw }
         }
+        if let fallback = firstBootText { return trimSnippet(fallback) }
         return "(no user prompt)"
+    }
+
+    /// Strip a leading "boot up <skill> skill[.]" / "load X skill" / etc.
+    /// preamble from a user prompt. Matches the user's habitual openings
+    /// across the Apple / BBS / Free-Energy / Hypnosis / cc-vault skills.
+    /// Returns the message with the preamble + a single trailing sentence
+    /// separator removed; if no preamble matches, returns the input
+    /// unchanged.
+    func stripSkillBootPreamble(_ raw: String) -> String {
+        // Single-line view for the regex — the snippet pass already collapses
+        // newlines later, so doing it here just makes the match easier.
+        let oneline = raw.replacingOccurrences(of: "\n", with: " ")
+        // ^[ws]?(boot up|load|activate|use|invoke|fire up|run|start|spin up)
+        //   <1-4 short words> skill[s][.,!:]?[ws]?
+        // Followed by an optional "now," or "now." connector.
+        let pattern = #"^\s*(?:boot(?:\s*up)?|load|activate|use|invoke|fire\s*up|run|start|spin\s*up)\s+(?:[\w/+\-]+\s+){0,4}skills?\b[\s.,!:;\-]*(?:now[\s.,!:;\-]*)?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern,
+                                                    options: [.caseInsensitive]) else {
+            return raw
+        }
+        let range = NSRange(oneline.startIndex..<oneline.endIndex, in: oneline)
+        guard let m = regex.firstMatch(in: oneline, options: [], range: range),
+              m.range.location == 0,
+              let r = Range(m.range, in: oneline) else {
+            return raw
+        }
+        return String(oneline[r.upperBound...])
     }
 
     func trimSnippet(_ s: String) -> String {
@@ -2556,7 +3022,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         fmt.dateFormat = "MM-dd HH:mm"
         let sessionItems: [BrowserItem] = listSessions(limit: 50).map { s in
             let label = sessionNames[s.uuid] ?? s.snippet
-            let display = "\(fmt.string(from: s.mtime))   \(label)"
+            // Tab between date and label so renderBrowser's paragraph style
+            // can snap both columns to fixed X positions. Plain spaces don't
+            // render at consistent widths inside .inline bezel buttons, which
+            // caused the date column to wobble across rows.
+            let display = "\(fmt.string(from: s.mtime))\t\(label)"
             return BrowserItem(name: display, path: s.uuid, isDir: false,
                                glyph: "💬", sessionCount: 0, sessionId: s.uuid)
         }
@@ -2625,8 +3095,18 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // even inside a monospaced font, so `"💬  date snippet"` would
             // jitter. With `"💬\t…"` and a left tab at 26pt, every body
             // column starts at the same X regardless of glyph width.
+            // Three-column layout snapped to fixed X positions:
+            //   col 0 = glyph (starts at 0)
+            //   col 1 = date  (starts at 26pt — tab after glyph)
+            //   col 2 = body  (starts at 124pt — tab after date)
+            // Session rows always have a date in col 1 (encoded with a tab
+            // separator at construction time). Non-session rows have no
+            // embedded tab so they simply fill col 1 onward.
             let paragraph = NSMutableParagraphStyle()
-            paragraph.tabStops = [NSTextTab(textAlignment: .left, location: 26, options: [:])]
+            paragraph.tabStops = [
+                NSTextTab(textAlignment: .left, location: 26, options: [:]),
+                NSTextTab(textAlignment: .left, location: 124, options: [:]),
+            ]
             paragraph.defaultTabInterval = 26
             paragraph.lineBreakMode = .byTruncatingTail
             let attrs: [NSAttributedString.Key: Any] = [
@@ -2873,6 +3353,22 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         case #selector(NSResponder.insertNewline(_:)):
             openSelectedBrowserItem()
             return true
+        case #selector(NSResponder.moveLeftAndModifySelection(_:)):
+            // ⇧← on a highlighted file row → move that file up one directory
+            // (to the parent of chatCwd). Gated on caret-at-start so it
+            // doesn't fight ordinary text-selection inside the filter field.
+            // Directories are left alone — moving a whole tree is too easy to
+            // do by accident; this is a file-promotion shortcut.
+            if browserFilterCaretAtStart(),
+               browserSelectedIndex >= 0,
+               browserSelectedIndex < browserFilteredItems.count {
+                let item = browserFilteredItems[browserSelectedIndex]
+                if !item.isDir && item.sessionId == nil {
+                    promoteFileToParent(path: item.path)
+                    return true
+                }
+            }
+            return false
         case #selector(NSResponder.moveRightAndModifySelection(_:)):
             // ⇧→ behaviour depends on the highlighted row:
             //   • 💬 session row    → hand off to iTerm with that UUID
@@ -2978,6 +3474,36 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     ///     attaches it. No bytes-to-string mangling.
     ///
     /// Failures beep + log instead of putting garbage on the clipboard.
+    /// ⇧← in the file browser: move a file from chatCwd up one level into
+    /// chatCwd's parent. The shortcut exists because organising a project
+    /// folder often means "this file belongs one level up, not in the
+    /// subfolder I'm currently in". Beeps + flashes on collision or error.
+    /// Re-renders the browser so the row disappears from the current view.
+    func promoteFileToParent(path: String) {
+        let fm = FileManager.default
+        let name = (path as NSString).lastPathComponent
+        let parent = (chatCwd as NSString).deletingLastPathComponent
+        guard !parent.isEmpty, parent != chatCwd else {
+            NSSound.beep()
+            flashBrowserPath("✗ Already at filesystem root")
+            return
+        }
+        let dest = (parent as NSString).appendingPathComponent(name)
+        if fm.fileExists(atPath: dest) {
+            NSSound.beep()
+            flashBrowserPath("✗ \(name) already exists in \((parent as NSString).lastPathComponent)/")
+            return
+        }
+        do {
+            try fm.moveItem(atPath: path, toPath: dest)
+            loadBrowserItems()
+            flashBrowserPath("⬅ Moved \(name) → \((parent as NSString).abbreviatingWithTildeInPath)/")
+        } catch {
+            NSSound.beep()
+            flashBrowserPath("✗ Move failed: \(error.localizedDescription)")
+        }
+    }
+
     func copyFileContentsToClipboard(path: String) {
         let url = URL(fileURLWithPath: path)
         let name = url.lastPathComponent

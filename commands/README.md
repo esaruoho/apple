@@ -28,6 +28,7 @@ This is the Sal pattern in Claude Code form: one verb, one result, no dialog.
 | `/qr-wifi <SSID> <password>` | `bin/sal-qr` (wrapped) | Wi-Fi-join QR code |
 | `/tag <sub>…` | `bin/tag` / `bin/tag-smart` | Finder tag CRUD + Smart Folder generator (xattr + plistlib + mdfind) |
 | `/dock <sub>…` | `bin/dock` | Dock manager — add/remove/list/clear items via com.apple.dock.plist |
+| `/snap [app] [screen]` | `bin/snap` | Tile windows in a non-uniform auto-sized grid (per-app via app-dictionary stable IDs, multi-screen aware) |
 
 ## Install
 

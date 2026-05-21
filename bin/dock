@@ -213,43 +213,16 @@ def cmd_clear_others(_args):
 
 
 def cmd_snap(args):
-    """Tile windows in a grid. No args = every app, one cell per app.
-    With <appname> = just that app's windows in a grid.
-
-    AppleScript's window positioning is single-pass-unreliable on Sequoia —
-    apps like iTerm2 / Safari / Sublime fight back, fail silently on the
-    first set position, and only converge after 2-3 attempts. We loop the
-    script internally so the user gets a clean grid in one invocation."""
+    """Tile windows in a grid. Delegates to the standalone `bin/snap`
+    wrapper so the engine has a single source of truth (one path is also
+    callable as `snap …` from the shell, `/snap …` from Claude Code, and
+    AppleToolbox via the same binary)."""
     here = Path(__file__).resolve().parent
-    script = here.parent / "scripts/workflows/system-events/compiled/DockSnap.scpt"
-    if not script.is_file():
-        die(f"compiled script missing: {script}")
-
-    passes = 3
-    if args and args[0] in ("--passes", "-p"):
-        if len(args) < 2 or not args[1].isdigit():
-            die("--passes needs a number")
-        passes = int(args[1])
-        args = args[2:]
-
-    cmd = ["/usr/bin/osascript", str(script)]
-    # Pass through up to two positional args: <appname> and <screen|all>
-    for a in args[:2]:
-        cmd.append(a)
-
-    last_stdout = ""
-    for i in range(passes):
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
-            die(f"DockSnap failed on pass {i+1}: {r.stderr.strip()}")
-        if r.stdout.strip():
-            last_stdout = r.stdout.strip()
-        if i < passes - 1:
-            time.sleep(0.25)
-
-    if last_stdout:
-        print(last_stdout)
-    print(f"(ran {passes} passes for convergence)")
+    snap = here / "snap"
+    if not snap.is_file():
+        die(f"missing: {snap}")
+    r = subprocess.run([str(snap)] + list(args))
+    sys.exit(r.returncode)
 
 
 def cmd_screens(_args):
