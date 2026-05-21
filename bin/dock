@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""
+dock — Apple-native Dock manager. Reads/writes ~/Library/Preferences/com.apple.dock.plist.
+
+  dock list                 Show every Dock item (apps + folders/files)
+  dock add <path>           Add a folder, .savedSearch, file, or .app to the Dock
+                            (right-side for folders/files, left-side for apps)
+  dock add-spacer           Add a blank spacer tile to persistent-others
+  dock remove <path|name>   Remove by full path OR by label match (first match)
+  dock clear-others         Remove every persistent-others entry (right-side)
+
+Notes
+-----
+- The Dock daemon caches plists in cfprefsd. We `killall cfprefsd` + `killall Dock`
+  after every write so changes appear immediately.
+- Idempotent: `add` refuses to add a duplicate of an existing path.
+- `.savedSearch` files are treated as directory-tiles — same as folders.
+
+Apple-native: plistlib (stdlib) only. No Homebrew, no defaults shell-outs.
+"""
+import os
+import plistlib
+import subprocess
+import sys
+import time
+from pathlib import Path
+from urllib.parse import quote
+
+DOCK_PLIST = Path.home() / "Library" / "Preferences" / "com.apple.dock.plist"
+
+
+def die(msg, code=1):
+    sys.stderr.write(f"dock: {msg}\n")
+    sys.exit(code)
+
+
+def load_dock():
+    if not DOCK_PLIST.is_file():
+        die(f"not found: {DOCK_PLIST}")
+    # cfprefsd may hold the live copy in memory; flush first so plistlib sees
+    # the actual on-disk state.
+    subprocess.run(["/usr/bin/defaults", "read", "com.apple.dock"],
+                   capture_output=True)
+    with DOCK_PLIST.open("rb") as f:
+        return plistlib.load(f)
+
+
+def save_dock(data):
+    subprocess.run(["killall", "cfprefsd"], capture_output=True)
+    time.sleep(0.2)
+    with DOCK_PLIST.open("wb") as f:
+        plistlib.dump(data, f, fmt=plistlib.FMT_BINARY)
+    subprocess.run(["killall", "cfprefsd"], capture_output=True)
+    subprocess.run(["killall", "Dock"], capture_output=True)
+
+
+def file_url(path: Path):
+    """file:// URL with proper percent-encoding; trailing / for directories."""
+    p = str(path)
+    encoded = quote(p, safe="/")
+    if path.is_dir() or path.suffix == ".savedSearch":
+        # .savedSearch is a file but Dock treats it as a directory-tile.
+        # Folders need a trailing slash.
+        if path.is_dir() and not encoded.endswith("/"):
+            encoded += "/"
+    return "file://" + encoded
+
+
+def is_app(path: Path):
+    return path.suffix == ".app" or (path.is_dir() and path.suffix == ".app")
+
+
+def existing_paths(arr):
+    out = []
+    for it in arr or []:
+        try:
+            url = it["tile-data"]["file-data"]["_CFURLString"]
+            out.append(url)
+        except (KeyError, TypeError):
+            continue
+    return out
+
+
+def make_tile(path: Path):
+    """Return (key, tile-dict) where key is 'persistent-apps' or 'persistent-others'."""
+    abs_path = path.resolve()
+    if not abs_path.exists():
+        die(f"not found: {abs_path}")
+
+    label = abs_path.stem if abs_path.suffix == ".savedSearch" else abs_path.name
+
+    if is_app(abs_path):
+        key = "persistent-apps"
+        tile_type = "file-tile"
+        file_type = 41
+    elif abs_path.is_dir():
+        key = "persistent-others"
+        tile_type = "directory-tile"
+        file_type = 2
+    elif abs_path.suffix == ".savedSearch":
+        key = "persistent-others"
+        tile_type = "directory-tile"
+        file_type = 2
+    else:
+        key = "persistent-others"
+        tile_type = "file-tile"
+        file_type = 32
+
+    tile = {
+        "tile-data": {
+            "file-data": {
+                "_CFURLString": file_url(abs_path),
+                "_CFURLStringType": 15,  # 15 = file URL string
+            },
+            "file-label": label,
+            "file-type": file_type,
+        },
+        "tile-type": tile_type,
+    }
+    return key, tile
+
+
+def cmd_list(_args):
+    data = load_dock()
+    for key, label in [("persistent-apps", "Apps (left side)"),
+                       ("persistent-others", "Folders/Files (right side)")]:
+        arr = data.get(key, [])
+        print(f"\n{label}: {len(arr)} items")
+        for i, it in enumerate(arr):
+            try:
+                td = it.get("tile-data", {})
+                lab = td.get("file-label") or "(spacer)"
+                url = td.get("file-data", {}).get("_CFURLString", "")
+                print(f"  {i:2}. {lab}   {url}")
+            except Exception:
+                print(f"  {i:2}. (unparseable)")
+
+
+def cmd_add(args):
+    if not args:
+        die("usage: dock add <path>")
+    p = Path(os.path.expanduser(args[0])).resolve()
+    key, tile = make_tile(p)
+    data = load_dock()
+    arr = list(data.get(key, []))
+    if tile["tile-data"]["file-data"]["_CFURLString"] in existing_paths(arr):
+        print(f"dock: already in {key}: {p}")
+        return
+    arr.append(tile)
+    data[key] = arr
+    save_dock(data)
+    print(f"added → {key}: {p}")
+
+
+def cmd_add_spacer(_args):
+    data = load_dock()
+    arr = list(data.get("persistent-others", []))
+    arr.append({"tile-data": {}, "tile-type": "spacer-tile"})
+    data["persistent-others"] = arr
+    save_dock(data)
+    print("added → persistent-others: (spacer)")
+
+
+def cmd_remove(args):
+    if not args:
+        die("usage: dock remove <path|label>")
+    needle = args[0]
+    needle_path = str(Path(os.path.expanduser(needle)).resolve()) if "/" in needle else None
+    data = load_dock()
+    removed = 0
+    for key in ("persistent-apps", "persistent-others"):
+        arr = data.get(key, []) or []
+        kept = []
+        for it in arr:
+            try:
+                td = it.get("tile-data", {})
+                url = td.get("file-data", {}).get("_CFURLString", "")
+                label = td.get("file-label", "")
+            except Exception:
+                kept.append(it); continue
+            match = False
+            if needle_path and url.startswith("file://") and url.replace("file://", "").rstrip("/").startswith(needle_path):
+                match = True
+            elif label == needle:
+                match = True
+            if match:
+                removed += 1
+            else:
+                kept.append(it)
+        data[key] = kept
+    if removed == 0:
+        print(f"dock: nothing matched '{needle}'")
+        return
+    save_dock(data)
+    print(f"removed {removed} item(s) matching '{needle}'")
+
+
+def cmd_clear_others(_args):
+    data = load_dock()
+    n = len(data.get("persistent-others", []))
+    data["persistent-others"] = []
+    save_dock(data)
+    print(f"cleared {n} item(s) from persistent-others (right side of Dock)")
+
+
+SUBS = {
+    "list": cmd_list, "ls": cmd_list,
+    "add": cmd_add,
+    "add-spacer": cmd_add_spacer,
+    "remove": cmd_remove, "rm": cmd_remove,
+    "clear-others": cmd_clear_others,
+}
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+    sub = sys.argv[1]
+    if sub not in SUBS:
+        die(f"unknown subcommand '{sub}'. try: {', '.join(sorted(set(SUBS)))}")
+    SUBS[sub](sys.argv[2:])
+
+
+if __name__ == "__main__":
+    main()

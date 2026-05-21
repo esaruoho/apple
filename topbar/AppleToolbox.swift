@@ -356,6 +356,44 @@ func whispQueueRead() -> String {
     }
 }
 
+func vaultStatusRead() -> String? {
+    // Lightweight count of derivative artifacts. Reads dir listings only — no
+    // file parsing. Shows N transcripts / C concepts / F figures and whether
+    // the derivatives loop has run recently.
+    let fm = FileManager.default
+    let vault = "\(HOME)/work/cc/vault"
+    func count(_ rel: String, suffix: String = "") -> Int {
+        guard let entries = try? fm.contentsOfDirectory(atPath: "\(vault)/\(rel)") else { return 0 }
+        return suffix.isEmpty ? entries.count : entries.filter { $0.hasSuffix(suffix) }.count
+    }
+    let transcripts = count("sources/transcripts")
+    let concepts    = count("concepts", suffix: ".md")
+    let figures     = count("_router/figure-inboxes", suffix: ".md")
+    let dupesPath   = "\(vault)/_index/transcripts-duplicates.md"
+
+    var staleHint = ""
+    let byDate = "\(vault)/_index/transcripts-by-date.md"
+    if let attrs = try? fm.attributesOfItem(atPath: byDate),
+       let mtime = attrs[.modificationDate] as? Date {
+        let mins = Int(Date().timeIntervalSince(mtime) / 60)
+        if mins > 30 { staleHint = " · stale \(mins)m" }
+    } else {
+        staleHint = " · never built"
+    }
+
+    var dupes = 0
+    if let txt = try? String(contentsOfFile: dupesPath, encoding: .utf8) {
+        dupes = txt.components(separatedBy: "\n## ").count - 1
+    }
+
+    if transcripts == 0 && concepts == 0 { return nil }
+    var parts: [String] = ["\(transcripts) transcripts"]
+    if concepts > 0 { parts.append("\(concepts) concepts") }
+    if figures > 0  { parts.append("\(figures) figures") }
+    if dupes > 0    { parts.append("\(dupes) dupe-sets") }
+    return parts.joined(separator: " · ") + staleHint
+}
+
 func fileerataQueueRead() -> String? {
     // Fileerata segment-extraction queue. Counts files across:
     //   ~/work/comms/queue/segment-requests/   (pending — written by tag watcher)
@@ -876,6 +914,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["-a", "Music"])
         addIf("🎙 Whisp",   whispQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
+        addIf("📚 Vault",   vaultStatusRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/cc/vault/_index/transcripts-by-date.md"])
         addIf("✂️ Fileerata", fileerataQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/segment-outbox"])
         menu.addItem(.separator())
@@ -994,6 +1034,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             action("📂 Open Saved Searches folder",
                 cmd: "/usr/bin/open",
                 args: ["\(HOME)/Library/Saved Searches"]),
+            action("📌 Pin All Smart Folders to Dock",
+                cmd: "\(APPLE_DIR)/bin/dock",
+                args: ["add", "\(HOME)/Library/Saved Searches/All Smart Folders.savedSearch"]),
         ]))
 
         // Slashes submenu — Apple-skill verbs as menu items with prompts
@@ -1994,6 +2037,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             "/usr/bin/open", ["-a", "Music"], symbol: "music.note")
         add("Whisp",   whispQueueRead(),
             "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "mic.fill")
+        if let v = vaultStatusRead() {
+            add("Vault", v,
+                "/usr/bin/open", ["\(HOME)/work/cc/vault/_index/transcripts-by-date.md"], symbol: "books.vertical.fill")
+        }
         if let f = fileerataQueueRead() {
             add("Fileerata", f,
                 "/usr/bin/open", ["\(HOME)/work/comms/queue/segment-outbox"], symbol: "scissors")
