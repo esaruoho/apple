@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""pair-and-tile — open 1-4 paths in the right Apple-native viewer and tile them on the main screen.
+
+Layouts:
+    1 path : fullscreen visible area
+    2 paths: side-by-side (||)
+    3 paths: three columns (|||)
+    4 paths: 2x2 grid (::)
+
+Dispatch by extension:
+    Preview          : .jpg .jpeg .png .gif .heic .webp .tiff .tif .bmp .pdf .svg
+    QuickTime Player : .mp4 .mov .m4v .mp3 .m4a .wav .aiff .aif
+    TextEdit         : .md .txt .yaml .yml .json .html .htm .xml .applescript .py .sh .swift .lua .c .cpp .h
+    Safari           : http:// https:// or .webloc
+    Finder reveal    : anything else, or path prefixed with 'reveal:'
+
+Usage:
+    pair-and-tile <path1> [<path2> [<path3> [<path4>]]]
+    pair-and-tile reveal:<path>           # force Finder reveal
+    pair-and-tile https://example.com     # open URL in default browser
+
+Apple-native only: open(1), osascript(1), swift(1). No deps.
+"""
+from __future__ import annotations
+import os
+import shlex
+import subprocess
+import sys
+import time
+
+PREVIEW_EXTS  = {".jpg", ".jpeg", ".png", ".gif", ".heic", ".webp", ".tiff", ".tif", ".bmp", ".pdf", ".svg"}
+QT_EXTS       = {".mp4", ".mov", ".m4v", ".mp3", ".m4a", ".wav", ".aiff", ".aif"}
+TEXT_EXTS     = {".md", ".txt", ".yaml", ".yml", ".json", ".html", ".htm", ".xml",
+                 ".applescript", ".py", ".sh", ".swift", ".lua", ".c", ".cpp", ".h",
+                 ".js", ".ts", ".css", ".rb", ".go", ".rs", ".toml", ".ini", ".conf"}
+
+
+def visible_frame() -> tuple[int, int, int, int]:
+    """Return (x, y, w, h) of NSScreen.main.visibleFrame in top-left coords."""
+    out = subprocess.check_output([
+        "swift", "-e",
+        'import AppKit; let s = NSScreen.main!; let v = s.visibleFrame; let f = s.frame; '
+        'let yTop = f.size.height - (v.origin.y + v.size.height); '
+        'print("\\(Int(v.origin.x)) \\(Int(yTop)) \\(Int(v.size.width)) \\(Int(v.size.height))")'
+    ], text=True).strip().split()
+    return tuple(int(n) for n in out)  # type: ignore
+
+
+def layout(n: int, vx: int, vy: int, vw: int, vh: int) -> list[tuple[int, int, int, int]]:
+    """Return N (x,y,w,h) rects for the given layout."""
+    if n == 1:
+        return [(vx, vy, vw, vh)]
+    if n == 2:
+        half = vw // 2
+        return [(vx, vy, half, vh), (vx + half, vy, vw - half, vh)]
+    if n == 3:
+        third = vw // 3
+        return [
+            (vx,             vy, third,           vh),
+            (vx + third,     vy, third,           vh),
+            (vx + 2 * third, vy, vw - 2 * third,  vh),
+        ]
+    if n == 4:
+        halfW, halfH = vw // 2, vh // 2
+        return [
+            (vx,         vy,         halfW,        halfH),
+            (vx + halfW, vy,         vw - halfW,   halfH),
+            (vx,         vy + halfH, halfW,        vh - halfH),
+            (vx + halfW, vy + halfH, vw - halfW,   vh - halfH),
+        ]
+    raise SystemExit(f"unsupported window count: {n} (1-4 only)")
+
+
+def dispatch(arg: str) -> tuple[str, str]:
+    """Return (app_process_name, action_kind) and side-effect: open the resource.
+
+    action_kind is one of: 'app' (frontmost-window of app), 'finder' (Finder reveal).
+    """
+    # URL?
+    if arg.startswith(("http://", "https://")):
+        subprocess.run(["open", arg], check=True)
+        return ("Safari", "app")
+
+    # Explicit reveal request
+    if arg.startswith("reveal:"):
+        path = os.path.abspath(os.path.expanduser(arg[len("reveal:"):]))
+        subprocess.run(["open", "-R", path], check=True)
+        return ("Finder", "app")
+
+    path = os.path.abspath(os.path.expanduser(arg))
+    if not os.path.exists(path):
+        raise SystemExit(f"path not found: {path}")
+
+    ext = os.path.splitext(path)[1].lower()
+
+    if os.path.isdir(path):
+        subprocess.run(["open", path], check=True)  # Finder window for the dir
+        return ("Finder", "app")
+
+    if ext in PREVIEW_EXTS:
+        subprocess.run(["open", "-a", "Preview", path], check=True)
+        return ("Preview", "app")
+
+    if ext in QT_EXTS:
+        subprocess.run(["open", "-a", "QuickTime Player", path], check=True)
+        # auto-play after a beat
+        time.sleep(0.4)
+        subprocess.run([
+            "osascript", "-e",
+            'tell application "QuickTime Player" to play (front document)'
+        ], check=False)
+        return ("QuickTime Player", "app")
+
+    if ext in TEXT_EXTS:
+        subprocess.run(["open", "-a", "TextEdit", path], check=True)
+        return ("TextEdit", "app")
+
+    # Unknown extension — reveal in Finder rather than guess
+    subprocess.run(["open", "-R", path], check=True)
+    return ("Finder", "app")
+
+
+def set_window(process: str, x: int, y: int, w: int, h: int) -> None:
+    script = f'''
+tell application "System Events" to tell process "{process}"
+    if (count of windows) > 0 then
+        set position of window 1 to {{{x}, {y}}}
+        set size of window 1 to {{{w}, {h}}}
+    end if
+end tell
+'''
+    subprocess.run(["osascript", "-e", script], check=False)
+
+
+def activate(process: str) -> None:
+    # `tell application "X" to activate` brings to front cleanly.
+    subprocess.run(["osascript", "-e", f'tell application "{process}" to activate'], check=False)
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+
+    args = argv[1:]
+    if len(args) > 4:
+        print("pair-and-tile: max 4 paths", file=sys.stderr)
+        return 2
+
+    vx, vy, vw, vh = visible_frame()
+    rects = layout(len(args), vx, vy, vw, vh)
+
+    processes: list[str] = []
+    for arg in args:
+        proc, _ = dispatch(arg)
+        processes.append(proc)
+        # let the window materialize before positioning
+        time.sleep(0.5)
+
+    # Activate each so windows have focus state, then position.
+    # Position in reverse so the first-listed app ends up frontmost.
+    for proc in processes:
+        activate(proc)
+        time.sleep(0.15)
+
+    for proc, (x, y, w, h) in zip(processes, rects):
+        set_window(proc, x, y, w, h)
+
+    # Re-activate the first so it gets the keyboard
+    activate(processes[0])
+
+    print(f"tiled {len(args)} window(s):")
+    for proc, (x, y, w, h) in zip(processes, rects):
+        print(f"  {proc:<18} {w}x{h} @ ({x},{y})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

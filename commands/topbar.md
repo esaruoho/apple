@@ -1,5 +1,5 @@
 ---
-description: Build + install + launch AppleToolbox — Apple-native menu-bar app (Swift NSStatusItem, no Homebrew). One 🧰 in the menu bar with live status (HomePod climate, battery, Sal archive, disk, Wi-Fi, Mail, Now Playing, Whisp queue) + click actions (Stop Voicebox, Audio ▸, Finder ▸, System ▸, Slashes ▸). LaunchAgent auto-starts it at login. Usage `/topbar`.
+description: Build + install + launch AppleToolbox — Apple-native menu-bar app (Swift NSStatusItem, no Homebrew). One 🧰 in the menu bar with live status (HomePod climate, battery, disk, Wi-Fi, Mail, Now Playing, Whisp queue) + click actions (Stop Voicebox, Audio ▸, Finder ▸, System ▸, Slashes ▸). LaunchAgent auto-starts it at login. Usage `/topbar`.
 allowed-tools: Bash
 argument-hint: (no args)
 ---

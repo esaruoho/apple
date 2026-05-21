@@ -64,3 +64,8 @@ exported/*
 # Compiled Swift binaries (regenerable via swiftc on first use)
 bin/sal-take-photo
 bin/sal-qr
+
+# Per-machine exporter target paths (VAULT_PATH)
+*-exporter/.env
+# Built menu-bar app
+topbar/AppleToolbox.app/
