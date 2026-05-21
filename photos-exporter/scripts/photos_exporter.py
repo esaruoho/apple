@@ -250,6 +250,81 @@ def cmd_favorites(args) -> int:
     return 0
 
 
+def _parse_iso_date(s: str, *, end_of_day: bool = False) -> float:
+    """Parse YYYY-MM-DD (or full ISO) to Cocoa-epoch seconds (UTC).
+
+    end_of_day=True bumps a bare YYYY-MM-DD to 23:59:59 so --until 2025-08-05
+    is inclusive of that whole day.
+    """
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        sys.exit(f"date must be ISO (YYYY-MM-DD or full ISO): {s!r}")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    if end_of_day and len(s) == 10:
+        dt = dt.replace(hour=23, minute=59, second=59)
+    return (dt - COCOA_EPOCH).total_seconds()
+
+
+def cmd_dates(args) -> int:
+    """List assets captured within a date range.
+
+    Powers the "show me photos from <month>" Hey Sal intent. Filters
+    ZASSET by ZDATECREATED with --since / --until, optional --kind
+    photo|video, --favorites-only, --limit.
+    """
+    con = open_ro()
+    where = ["ZTRASHEDSTATE = 0", "ZDATECREATED IS NOT NULL"]
+    params: list = []
+    if args.since:
+        where.append("ZDATECREATED >= ?")
+        params.append(_parse_iso_date(args.since))
+    if args.until:
+        where.append("ZDATECREATED <= ?")
+        params.append(_parse_iso_date(args.until, end_of_day=True))
+    if args.kind == "photo":
+        where.append("ZKIND = 0")
+    elif args.kind == "video":
+        where.append("ZKIND = 1")
+    if args.favorites_only:
+        where.append("ZFAVORITE = 1")
+    order = "ASC" if args.oldest_first else "DESC"
+    q = (
+        "SELECT ZDATECREATED, ZFILENAME, ZDIRECTORY, ZWIDTH, ZHEIGHT, "
+        "ZKIND, ZFAVORITE, ZLATITUDE, ZLONGITUDE FROM ZASSET WHERE "
+        + " AND ".join(where)
+        + f" ORDER BY ZDATECREATED {order} LIMIT ?"
+    )
+    params.append(args.limit)
+    rows = con.execute(q, params).fetchall()
+    con.close()
+    if args.json:
+        out = []
+        for d, fn, dr, w, h, k, fav, lat, lon in rows:
+            out.append({
+                "captured": cocoa_to_iso(d),
+                "filename": fn,
+                "directory": dr,
+                "size": f"{w}x{h}" if w and h else "",
+                "kind": "video" if k == 1 else "photo",
+                "favorite": bool(fav),
+                "lat": lat if lat is not None and lat != -180 else None,
+                "lon": lon if lon is not None and lat != -180 else None,
+            })
+        print(json.dumps(out, indent=2, ensure_ascii=False))
+        return 0
+    for d, fn, dr, w, h, k, fav, lat, lon in rows:
+        date = cocoa_to_iso(d)[:16]
+        kind = "vid" if k == 1 else "img"
+        favstr = "★" if fav else " "
+        gps = f"  ({lat:.3f},{lon:.3f})" if lat is not None and lat != -180 else ""
+        size = f"{w}x{h}" if w and h else "?"
+        print(f"  {date}  {kind} {favstr} {size}  {dr}/{fn}{gps}")
+    print(f"\n{len(rows)} asset(s) in range")
+    return 0
+
+
 def write_md(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
@@ -434,6 +509,18 @@ def main() -> int:
     sp = sub.add_parser("keywords"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_keywords)
     sp = sub.add_parser("places"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_places)
     sp = sub.add_parser("favorites"); sp.add_argument("--limit", type=int); sp.set_defaults(func=cmd_favorites)
+    sp = sub.add_parser("dates", help="list assets captured in a date range")
+    sp.add_argument("--since", help="ISO date YYYY-MM-DD lower bound (inclusive)")
+    sp.add_argument("--until", help="ISO date YYYY-MM-DD upper bound (inclusive)")
+    sp.add_argument("--kind", choices=("photo", "video"),
+                    help="filter to photos or videos only")
+    sp.add_argument("--favorites-only", action="store_true",
+                    help="only ZFAVORITE=1 assets")
+    sp.add_argument("--oldest-first", action="store_true",
+                    help="ASC order (default DESC: newest first)")
+    sp.add_argument("--limit", type=int, default=200)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_dates)
     sp = sub.add_parser("xref", help="cross-reference assets against Calendar")
     sp.add_argument("--calendar", action="store_true",
                     help="match capture dates to Calendar events (required selector)")

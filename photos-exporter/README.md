@@ -18,6 +18,8 @@ photos-exporter album "Pampula"                   # 4,700 assets in this album
 photos-exporter keywords --limit 50
 photos-exporter places --limit 50                 # photos with GPS
 photos-exporter favorites --limit 100
+photos-exporter dates --since 2025-05-01 --until 2025-05-31
+photos-exporter dates --since 2025-06-01 --kind video --favorites-only
 photos-exporter export                            # full vault
 photos-exporter export --heads-only               # albums index only, no asset lists
 photos-exporter export --per-album-limit 1000     # cap per-album md size

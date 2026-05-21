@@ -1,11 +1,11 @@
 # Sal Archive Status
 
-Updated: 2026-05-10T21:17:35Z
+Updated: 2026-05-21T09:46:34Z
 
 ## Current State
 
 - Extracted inline AppleScript examples: `597`
-- Curriculum lesson modules indexed: `38` across `6` tracks
+- Curriculum lesson modules indexed: `55` across `6` tracks
 - Download/media targets indexed: `359`
 - Unique target status counts:
   - `recovered`: `235`

@@ -49,9 +49,10 @@ Highest-leverage first:
 - [ ] **`bin/avs-prefs-write` companion: a test harness** — once you've run the
   plist-write-firing test once, codify the outcome as a regression test so the
   daemon's behaviour is pinned across macOS updates.
-- [ ] **`photos-exporter dates --since/--until`** — date-range subcommand. Unblocks
-  the 4th hey-sal intent pattern ("show me photos from <month>"); the pattern
-  table is ready, waiting on the subcommand.
+- [x] **`photos-exporter dates --since/--until`** — landed 2026-05-21. Flags:
+  `--kind photo|video`, `--favorites-only`, `--oldest-first`, `--json`, `--limit`.
+  Hey Sal intent `i_photos_dates` parses "photos from <month|year|YYYY-MM-DD|
+  YYYY-MM-DD to YYYY-MM-DD|this/last week/month/year|today|yesterday>".
 - [ ] **`safari-exporter xref --notes`** — match open-tab URLs against Notes body URL mentions.
 - [ ] **`reminders-exporter xref --calendar`** — match reminder `due_date` to events near it.
 - [ ] **`safari-exporter close-tab <selector>`** — UI-script Safari to close one tab
@@ -228,7 +229,7 @@ The voice-memos→calendar xref proved the pattern. Drop the same idiom into:
 
 ### Documentation refresh
 
-- [x] **`automation-tiers.md` refresh** — verified 2026-05-11 that the standalone file has no per-app classification list (it's all surface-level tier descriptions). skill.md summary tier list updated to put Mission Control under Tier 5; the body-text reclassification note at line 541 was already there.
+- [x] **`wiki/concepts/automation-tiers.md` refresh** — verified 2026-05-11 that the standalone file has no per-app classification list (it's all surface-level tier descriptions). skill.md summary tier list updated to put Mission Control under Tier 5; the body-text reclassification note at line 541 was already there.
 - [ ] **`exported/README.md` cardinality refresh** — auto-update the live numbers each time `apple-grand-export` runs.
 - [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots of the survey to catch new apps / new keys after macOS updates. Run after each system update; commit the diff so the repo tracks Apple's evolution.
 

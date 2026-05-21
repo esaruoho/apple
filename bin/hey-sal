@@ -146,6 +146,72 @@ def i_take_photo(m, q):
     return out, _shorten(out, 2)
 
 
+_MONTH_NAMES = {
+    "january": 1, "jan": 1, "february": 2, "feb": 2, "march": 3, "mar": 3,
+    "april": 4, "apr": 4, "may": 5, "june": 6, "jun": 6, "july": 7, "jul": 7,
+    "august": 8, "aug": 8, "september": 9, "sep": 9, "sept": 9,
+    "october": 10, "oct": 10, "november": 11, "nov": 11, "december": 12, "dec": 12,
+}
+
+
+def _month_range(month: int, year: int) -> tuple[str, str]:
+    """Return (since, until) ISO dates for a calendar month."""
+    from calendar import monthrange
+    last = monthrange(year, month)[1]
+    return f"{year:04d}-{month:02d}-01", f"{year:04d}-{month:02d}-{last:02d}"
+
+
+def i_photos_dates(m, q):
+    """photos|pictures from <month>|<year>|<YYYY-MM-DD>|last week|yesterday|today"""
+    span = m.group(1).strip().lower()
+    today = datetime.now()
+    since = until = None
+
+    # YYYY-MM-DD to YYYY-MM-DD
+    rng = re.match(r"(\d{4}-\d{2}-\d{2})\s+(?:to|until|through|-)\s+(\d{4}-\d{2}-\d{2})", span)
+    if rng:
+        since, until = rng.group(1), rng.group(2)
+    elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", span):
+        since = until = span
+    elif span == "today":
+        since = until = today.strftime("%Y-%m-%d")
+    elif span == "yesterday":
+        y = today - timedelta(days=1)
+        since = until = y.strftime("%Y-%m-%d")
+    elif span in ("this week", "last week"):
+        days_back = 7 if span == "last week" else today.weekday()
+        start = today - timedelta(days=days_back + (7 if span == "last week" else 0))
+        end = start + timedelta(days=6) if span == "last week" else today
+        since = start.strftime("%Y-%m-%d")
+        until = end.strftime("%Y-%m-%d")
+    elif span in ("this month", "last month"):
+        ref_year = today.year
+        ref_month = today.month - (1 if span == "last month" else 0)
+        if ref_month == 0:
+            ref_month = 12
+            ref_year -= 1
+        since, until = _month_range(ref_month, ref_year)
+    elif span in ("this year", "last year"):
+        y = today.year - (1 if span == "last year" else 0)
+        since, until = f"{y}-01-01", f"{y}-12-31"
+    elif re.fullmatch(r"\d{4}", span):
+        since, until = f"{span}-01-01", f"{span}-12-31"
+    else:
+        # "<month> [year]" or "<month>"
+        mm = re.match(r"([a-z]+)(?:\s+(\d{4}))?", span)
+        if mm and mm.group(1) in _MONTH_NAMES:
+            month = _MONTH_NAMES[mm.group(1)]
+            year = int(mm.group(2)) if mm.group(2) else today.year
+            since, until = _month_range(month, year)
+
+    if not since:
+        return f"(could not parse date span: {span!r})", "date parse failed"
+    rc, out = run_exporter("photos-exporter", "dates",
+                           "--since", since, "--until", until,
+                           "--limit", "50")
+    return out, _shorten(out, 4)
+
+
 def i_reminders(m, q):
     rc, out = run_exporter("reminders-exporter", "status")
     return out, _shorten(out, 5)
@@ -407,6 +473,10 @@ INTENTS: list[tuple[re.Pattern, callable]] = [
     # camera
     (re.compile(r"(?:take|snap|capture).*(?:my|a)\s+(?:photo|picture|selfie)", re.I),
      i_take_photo),
+
+    # photos — date range ("show me photos from <month|year|range>")
+    (re.compile(r"(?:show|find|list|my)?\s*(?:me\s+)?(?:my\s+)?(?:photos?|pictures?|pics)\s+(?:from|in|during|on|between)\s+(.+?)\s*\??$", re.I),
+     i_photos_dates),
 
     # reminders — read
     (re.compile(r"(?:list|show|what).{0,15}reminders?", re.I),

@@ -120,6 +120,10 @@ def load_config():
         "whisper_model": env.get("WHISPER_MODEL", DEFAULT_WHISPER_MODEL),
         "watch_interval_seconds": int(env.get("WATCH_INTERVAL", DEFAULT_WATCH_INTERVAL)),
         "folders": data.get("folders", []),
+        # Optional: map an Apple Notes folder name to a custom subpath under vault_path.
+        # E.g., {"HLER": "music/HLER/sources", "Health": "health/sources"}.
+        # Unmapped folders fall back to vault_path/<folder_name>/.
+        "folder_map": data.get("folder_map", {}),
     }
     return cfg
 
@@ -467,7 +471,9 @@ def export_folder(folder_name, cfg, state, conn, force=False):
 
     print(f"  Found {len(notes)} notes")
 
-    folder_dir = vault_path / folder_name
+    # Honor folder_map override if present, else default to vault_path/<folder_name>
+    subpath = cfg.get("folder_map", {}).get(folder_name, folder_name)
+    folder_dir = vault_path / subpath
     os.makedirs(folder_dir, exist_ok=True)
 
     exported = 0
