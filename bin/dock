@@ -9,10 +9,14 @@ dock — Apple-native Dock manager. Reads/writes ~/Library/Preferences/com.apple
   dock remove <path|name>   Remove by full path OR by label match (first match)
   dock clear-others         Remove every persistent-others entry (right-side)
   dock snap                       Tile every visible foreground app, one cell per app
-  dock snap <appname>             Tile just <appname>'s windows in a grid (case-insensitive
-                                  substring match: `dock snap iterm2`, `dock snap subl`)
-  dock snap --passes N [<app>]    Run the snap N times (default 3). Sequoia apps fight
-                                  back on the first pass; multiple passes converge.
+  dock snap <appname>             Tile <appname>'s windows in a grid (main screen)
+  dock snap <appname> <screen>    Tile on a specific screen (0=main, 1=second, …)
+                                  e.g. `dock snap iterm2 0`, `dock snap terminal 1`
+  dock snap <appname> all         Distribute <appname>'s windows round-robin across
+                                  every screen, then tile per-screen
+  dock snap --passes N <args…>    Run N times (default 3); Sequoia apps fight back on
+                                  the first pass.
+  dock screens                    List available displays with their index for --snap
 
 Notes
 -----
@@ -229,8 +233,9 @@ def cmd_snap(args):
         args = args[2:]
 
     cmd = ["/usr/bin/osascript", str(script)]
-    if args:
-        cmd.append(args[0])
+    # Pass through up to two positional args: <appname> and <screen|all>
+    for a in args[:2]:
+        cmd.append(a)
 
     last_stdout = ""
     for i in range(passes):
@@ -247,6 +252,23 @@ def cmd_snap(args):
     print(f"(ran {passes} passes for convergence)")
 
 
+def cmd_screens(_args):
+    """List available displays with index, name, and visible-frame dimensions."""
+    swift = (
+        'import AppKit;'
+        ' for (i, s) in NSScreen.screens.enumerated() {'
+        '   let v = s.visibleFrame;'
+        '   print("\\(i)\\t\\(s.localizedName)\\t\\(Int(v.origin.x)),\\(Int(v.origin.y)) \\(Int(v.size.width))x\\(Int(v.size.height))")'
+        ' }'
+    )
+    r = subprocess.run(["/usr/bin/swift", "-e", swift], capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"swift failed: {r.stderr.strip()}")
+    print("idx\tname\tvisible-frame")
+    for line in r.stdout.splitlines():
+        print(line)
+
+
 SUBS = {
     "list": cmd_list, "ls": cmd_list,
     "add": cmd_add,
@@ -254,6 +276,7 @@ SUBS = {
     "remove": cmd_remove, "rm": cmd_remove,
     "clear-others": cmd_clear_others,
     "snap": cmd_snap,
+    "screens": cmd_screens,
 }
 
 

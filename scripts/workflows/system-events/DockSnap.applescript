@@ -1,30 +1,47 @@
 -- DockSnap.applescript
--- Tile windows into an auto-sized non-uniform grid on the main screen.
+-- Tile windows into an auto-sized non-uniform grid.
 --
--- Two modes:
---   no args               → every visible foreground app, one cell per app
---                           (every window of that app stacks in the cell)
---   <appname>             → just that app's windows tiled in a grid
---                           (case-insensitive substring match against process name)
+-- Modes:
+--   no args                     → every visible foreground app, one cell per app, main screen
+--   <appname>                   → that app's windows tiled in a grid, main screen
+--   <appname> <screenIdx>       → tile on a specific screen (0 = main)
+--   <appname> all               → distribute windows across ALL screens
+--                                 (round-robin: window 1 → screen 0, window 2 → screen 1, …)
+--   --list-screens              → print one screen per line: idx<TAB>name<TAB>visible-frame
 --
 -- The grid is row-based and non-uniform: rows = round(sqrt(n)), each row gets
--- ceil/floor of n/rows cells. So n=5 → rows of 3+2, n=7 → 4+3, n=11 → 4+4+3 —
--- every cell filled, no empty slots.
+-- ceil/floor of n/rows cells. n=5 → 3+2, n=7 → 4+3, n=11 → 4+4+3 — every cell
+-- filled, no empty slots.
 --
--- Windows are snapshotted into a stable list BEFORE positioning, because
--- iterating `windows of app` live causes z-order shuffling to double-hit
--- some windows while skipping others.
---
--- Apple-native: NSScreen.main via /usr/bin/swift + System Events.
+-- Apple-native: NSScreen via /usr/bin/swift + System Events.
 
 on run argv
     set targetName to ""
+    set screenArg to "0"   -- 0 = main; "all" = distribute across screens
+
     if (count of argv) ≥ 1 then set targetName to item 1 of argv as text
+    if (count of argv) ≥ 2 then set screenArg to item 2 of argv as text
 
-    set screenInfo to do shell script "/usr/bin/swift -e 'import AppKit; let s = NSScreen.main!; let f = s.frame; let v = s.visibleFrame; let topY = f.size.height - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"
+    if targetName is "--list-screens" then
+        listScreens()
+        return
+    end if
 
+    if screenArg is "all" then
+        -- Distribute across all screens
+        set screenCount to my screenCountInt()
+        if targetName is "" then
+            do shell script "/usr/bin/osascript -e 'display notification \"--all needs an appname\" with title \"Dock Snap\"'"
+            return
+        end if
+        distributeAcrossScreens(targetName)
+        return
+    end if
+
+    set screenIdx to screenArg as integer
+    set frameStr to my screenFrame(screenIdx)
     set AppleScript's text item delimiters to " "
-    set parts to text items of screenInfo
+    set parts to text items of frameStr
     set sx to (item 1 of parts) as integer
     set sy to (item 2 of parts) as integer
     set sw to (item 3 of parts) as integer
@@ -39,14 +56,29 @@ on run argv
 end run
 
 
--- Compute non-uniform row layout for n cells. Returns a list of integers,
--- one per row, summing to n. Example: rowLayout(5) → {3, 2}; rowLayout(7) → {4, 3}.
+-- Return the visible frame of screen N in TOP-LEFT coordinates as "x y w h".
+on screenFrame(idx)
+    return do shell script "/usr/bin/swift -e 'import AppKit; let scrs = NSScreen.screens; let i = " & idx & "; guard i >= 0 && i < scrs.count else { print(\"0 0 1440 900\"); exit(1) }; let s = scrs[i]; let totalH = scrs.map { $0.frame.origin.y + $0.frame.size.height }.max()!; let f = s.frame; let v = s.visibleFrame; let topY = totalH - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"
+end screenFrame
+
+
+on screenCountInt()
+    set s to do shell script "/usr/bin/swift -e 'import AppKit; print(NSScreen.screens.count)'"
+    return s as integer
+end screenCountInt
+
+
+on listScreens()
+    do shell script "/usr/bin/swift -e 'import AppKit; for (i, s) in NSScreen.screens.enumerated() { let v = s.visibleFrame; print(\"\\(i)\\t\\(s.localizedName)\\t\\(Int(v.origin.x)),\\(Int(v.origin.y)) \\(Int(v.size.width))x\\(Int(v.size.height))\") }'"
+end listScreens
+
+
+-- Non-uniform row layout: rows = round(sqrt(n)), each row gets ceil/floor of n/rows.
 on rowLayout(n)
     if n ≤ 1 then return {1}
     if n = 2 then return {2}
     if n = 3 then return {3}
     if n = 4 then return {2, 2}
-    -- rows ≈ sqrt(n), rounded
     set r to round (n ^ 0.5) rounding to nearest
     if r < 1 then set r to 1
     set base to n div r
@@ -63,7 +95,6 @@ on rowLayout(n)
 end rowLayout
 
 
--- Snapshot a windows-of-process list into a stable list of references.
 on snapshotWindows(p)
     set snap to {}
     tell application "System Events"
@@ -77,9 +108,7 @@ on snapshotWindows(p)
 end snapshotWindows
 
 
--- Place a list of window references into the grid layout starting at (sx, sy)
--- with total width sw, height sh.
-on tileWindows(wins, sx, sy, sw, sh)
+on tileWindowsInFrame(wins, sx, sy, sw, sh)
     set winCount to count of wins
     if winCount = 0 then return 0
 
@@ -110,7 +139,7 @@ on tileWindows(wins, sx, sy, sw, sh)
         end repeat
     end repeat
     return placed
-end tileWindows
+end tileWindowsInFrame
 
 
 on tileAllApps(sx, sy, sw, sh)
@@ -144,7 +173,6 @@ on tileAllApps(sx, sy, sw, sh)
             set tx to sx + (colI * cellW)
             set ty to sy + ((rowI - 1) * rowH)
             set a to item appIdx of targetApps
-            -- Snapshot first, then move all of this app's windows to the cell.
             set appWins to my snapshotWindows(a)
             repeat with w in appWins
                 tell application "System Events"
@@ -173,22 +201,22 @@ on tileAllApps(sx, sy, sw, sh)
 end tileAllApps
 
 
-on tileOneApp(targetName, sx, sy, sw, sh)
+on findProcessByName(targetName)
     set targetNameLC to do shell script "echo " & quoted form of targetName & " | tr '[:upper:]' '[:lower:]'"
-
     tell application "System Events"
         set procs to every process whose visible is true and background only is false
-        set match to missing value
         repeat with p in procs
             set pName to name of p
             set pNameLC to do shell script "echo " & quoted form of pName & " | tr '[:upper:]' '[:lower:]'"
-            if pNameLC contains targetNameLC then
-                set match to contents of p
-                exit repeat
-            end if
+            if pNameLC contains targetNameLC then return contents of p
         end repeat
     end tell
+    return missing value
+end findProcessByName
 
+
+on tileOneApp(targetName, sx, sy, sw, sh)
+    set match to my findProcessByName(targetName)
     if match is missing value then
         do shell script "/usr/bin/osascript -e 'display notification \"No running app matching \\\"" & targetName & "\\\"\" with title \"Dock Snap\"'"
         return
@@ -201,7 +229,7 @@ on tileOneApp(targetName, sx, sy, sw, sh)
         return
     end if
 
-    set placed to my tileWindows(wins, sx, sy, sw, sh)
+    set placed to my tileWindowsInFrame(wins, sx, sy, sw, sh)
 
     tell application "System Events"
         try
@@ -209,15 +237,67 @@ on tileOneApp(targetName, sx, sy, sw, sh)
         end try
     end tell
 
-    set layout to my rowLayout(winCount)
-    set rowStr to ""
-    repeat with r in layout
-        if rowStr is "" then
-            set rowStr to (r as text)
-        else
-            set rowStr to rowStr & "+" & (r as text)
-        end if
+    do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & placed & "/" & winCount & " windows tiled\" with title \"Dock Snap\"'"
+end tileOneApp
+
+
+-- Distribute one app's windows across all available screens (round-robin),
+-- then tile per-screen.
+on distributeAcrossScreens(targetName)
+    set match to my findProcessByName(targetName)
+    if match is missing value then
+        do shell script "/usr/bin/osascript -e 'display notification \"No running app matching \\\"" & targetName & "\\\"\" with title \"Dock Snap\"'"
+        return
+    end if
+
+    set wins to my snapshotWindows(match)
+    set winCount to count of wins
+    if winCount = 0 then return
+
+    set screenCount to my screenCountInt()
+    if screenCount ≤ 1 then
+        -- Only one screen — just tile here.
+        set frameStr to my screenFrame(0)
+        set AppleScript's text item delimiters to " "
+        set parts to text items of frameStr
+        set sx to (item 1 of parts) as integer
+        set sy to (item 2 of parts) as integer
+        set sw to (item 3 of parts) as integer
+        set sh to (item 4 of parts) as integer
+        set AppleScript's text item delimiters to ""
+        my tileWindowsInFrame(wins, sx, sy, sw, sh)
+        return
+    end if
+
+    -- Partition windows round-robin into per-screen lists.
+    set perScreen to {}
+    repeat with s from 1 to screenCount
+        set end of perScreen to {}
+    end repeat
+    repeat with i from 1 to winCount
+        set targetScreen to ((i - 1) mod screenCount) + 1
+        set the end of (item targetScreen of perScreen) to item i of wins
     end repeat
 
-    do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & placed & " windows in " & rowStr & " layout\" with title \"Dock Snap\"'"
-end tileOneApp
+    set totalPlaced to 0
+    repeat with s from 1 to screenCount
+        set frameStr to my screenFrame(s - 1)
+        set AppleScript's text item delimiters to " "
+        set parts to text items of frameStr
+        set sx to (item 1 of parts) as integer
+        set sy to (item 2 of parts) as integer
+        set sw to (item 3 of parts) as integer
+        set sh to (item 4 of parts) as integer
+        set AppleScript's text item delimiters to ""
+        set placed to my tileWindowsInFrame(item s of perScreen, sx, sy, sw, sh)
+        set totalPlaced to totalPlaced + placed
+    end repeat
+
+    tell application "System Events"
+        try
+            set frontmost of match to true
+        end try
+    end tell
+
+    do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & totalPlaced & " windows across " & screenCount & " screens\" with title \"Dock Snap\"'"
+end distributeAcrossScreens
