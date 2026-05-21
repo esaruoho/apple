@@ -88,6 +88,10 @@ def open_smart_folder(scope: Path, query: str, label: str) -> Path:
     with out.open("wb") as f:
         plistlib.dump(plist, f, fmt=plistlib.FMT_XML)
     subprocess.run(["open", str(out)], check=False)
+    # Bring Finder to the front so the Smart Folder doesn't open BEHIND the
+    # user's focused window — the "blink at the back" trap.
+    subprocess.run(["/usr/bin/osascript", "-e", 'tell application "Finder" to activate'],
+                   check=False, capture_output=True)
     return out
 
 
@@ -137,6 +141,46 @@ def speak_via_voicebox(text: str):
     t.start()
 
 
+def show_fallback(term: str):
+    """Open a throwaway Smart Folder for any term not in concepts.json.
+    Searches filenames AND content across ~/work/. Speaks a caption
+    that names the term and the match count so you know it was the
+    fallback, not a curated concept."""
+    scope = Path(os.path.expanduser("~/work")).resolve()
+    if not scope.is_dir():
+        sys.exit(f"show: fallback scope missing: {scope}")
+    # Filename OR content match, case + diacritic insensitive.
+    safe = term.replace('"', '\\"')
+    query = (
+        f'(kMDItemDisplayName == "*{safe}*"cd) || '
+        f'(kMDItemTextContent == "{safe}"cd)'
+    )
+    # Quick count via mdfind so the caption is honest.
+    try:
+        r = subprocess.run(
+            ["mdfind", "-onlyin", str(scope), query],
+            capture_output=True, text=True, timeout=8,
+        )
+        n = sum(1 for line in r.stdout.splitlines() if line.strip())
+    except Exception:
+        n = 0
+    label = "".join(c if c.isalnum() else "-" for c in term.lower())[:40] or "fallback"
+    out = open_smart_folder(scope, query, f"fallback-{label}")
+    plural = "" if n == 1 else "es"
+    caption = (
+        f"{term}, {n} match{plural} across work. "
+        f"Not registered; show --add to lock it in."
+    )
+    speak_via_voicebox(caption)
+    print(f"show -> {out}  (fallback, {n} matches)")
+    print(f"term:    {term}")
+    print(f"scope:   {scope}  (fallback)")
+    print(f"items:   {n}")
+    print(f"caption: {caption}")
+    if n == 0:
+        print(f"hint:    nothing matched. try a broader spelling, or check ~/work/ paths.", file=sys.stderr)
+
+
 def show_concept(key: str):
     data = load_concepts()
     defaults = data.get("_defaults", {})
@@ -152,8 +196,13 @@ def show_concept(key: str):
                 key = k
                 break
     if entry is None:
-        keys = [k for k in data if not k.startswith("_")]
-        sys.exit(f"show: unknown concept '{key}'. known: {', '.join(sorted(keys))}")
+        # AUTO-FALLBACK: not registered → broad mdfind across ~/work/ for
+        # filenames OR content containing the term. Opens a throwaway Smart
+        # Folder with the results. Registered concepts stay the fast path
+        # (pre-scoped + curated caption); this catches everything else so
+        # `show <anything>` always does SOMETHING useful.
+        show_fallback(key)
+        return
 
     scope = Path(os.path.expanduser(entry["scope"])).resolve()
     if not scope.is_dir():
