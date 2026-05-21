@@ -46,7 +46,6 @@ USER_FACING_BIN=(
     ghc
     invert
     loom-status
-    mini-up
     md-to-clipboard
     qr-wifi
     read-aloud
