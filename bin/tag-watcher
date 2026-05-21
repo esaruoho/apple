@@ -137,17 +137,36 @@ def matches_extension(path, exts):
     return path.suffix.lower() in exts
 
 
+QUEUE_ROOT = COMMS  # files inside ~/work/comms/queue/ are inbox/result copies,
+                    # NOT originals — never dispatch them even if they carry tags.
+
+
+def is_under_queue(path):
+    try:
+        path.resolve().relative_to(QUEUE_ROOT.resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def find_pending(trigger_name, cfg):
-    """Files carrying the trigger tag but NOT the queued/complete tag."""
+    """Files carrying the trigger tag but not already queued/processing/complete,
+    and that live OUTSIDE the queue folders (so the inbox copy — which inherits
+    xattrs from `cp -p` — never gets re-dispatched)."""
     queued_name = cfg["queued_tag"].split(":", 1)[0]
     complete_name = cfg["complete_tag"].split(":", 1)[0]
+    processing_name = queued_name.replace("queued", "processing")
     pending = []
     for p in mdfind_tag(trigger_name):
         if not p.is_file():
             continue
+        if is_under_queue(p):
+            continue
         if not matches_extension(p, cfg["extensions"]):
             continue
-        if file_has_tag(p, queued_name) or file_has_tag(p, complete_name):
+        if (file_has_tag(p, queued_name)
+                or file_has_tag(p, processing_name)
+                or file_has_tag(p, complete_name)):
             continue
         pending.append(p)
     return pending
@@ -177,7 +196,9 @@ def cmd_status():
     print()
     for name, cfg in TRIGGERS.items():
         pending = len(find_pending(name, cfg))
-        queued = len(mdfind_tag(cfg["queued_tag"].split(":", 1)[0]))
+        queued_name = cfg["queued_tag"].split(":", 1)[0]
+        queued = len(mdfind_tag(queued_name))
+        processing = len(mdfind_tag(queued_name.replace("queued", "processing")))
         complete = len(mdfind_tag(cfg["complete_tag"].split(":", 1)[0]))
         result_count = 0
         rd = Path(cfg["result_dir"])
@@ -186,9 +207,10 @@ def cmd_status():
         submit_ok = "✓" if Path(cfg["submit"]).is_file() else "✗ MISSING"
         print(f"  {name}")
         print(f"    submit:    {cfg['submit']}  [{submit_ok}]")
-        print(f"    pending:   {pending}   (tagged, not yet queued)")
-        print(f"    queued:    {queued}   (in flight)")
-        print(f"    complete:  {complete}   (already returned)")
+        print(f"    pending:    {pending}   (tagged, not yet queued)")
+        print(f"    queued:     {queued}   (in our local inbox, awaiting Mac Mini)")
+        print(f"    processing: {processing}   (Mac Mini actively OCRing — from heartbeat)")
+        print(f"    complete:   {complete}   (already returned)")
         print(f"    result-dir items: {result_count}   ({cfg['result_dir']})")
         print()
     print(f"map: {MAP_PATH}")
@@ -224,7 +246,9 @@ def cmd_reset(target):
     if not p.exists():
         sys.exit(f"tag-watcher: not a file: {p}")
     for cfg in TRIGGERS.values():
-        remove_tag(p, cfg["queued_tag"].split(":", 1)[0])
+        queued = cfg["queued_tag"].split(":", 1)[0]
+        remove_tag(p, queued)
+        remove_tag(p, queued.replace("queued", "processing"))
         remove_tag(p, cfg["complete_tag"].split(":", 1)[0])
     mapping = load_map()
     mapping.pop(p.name, None)

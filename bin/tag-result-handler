@@ -47,6 +47,7 @@ LOG_PATH = COMMS / "tag-result-handler.log"
 
 OCR_RESULTS = COMMS / "ocr-results"
 OCR_PROCESSED = OCR_RESULTS / "processed"
+OCR_HEARTBEAT = COMMS / "ocr-heartbeat.json"
 
 # Worker uses this suffix on the OCR'd PDF (the readable copy).
 OCR_PDF_SUFFIX = "_ocr.pdf"
@@ -167,6 +168,7 @@ def handle_ocr_result(result_pdf, mapping, dry_run=False):
     # Swap tags on the now-OCR'd file
     remove_tag(dest_pdf, "needs-ocr")
     remove_tag(dest_pdf, "ocr-queued")
+    remove_tag(dest_pdf, "ocr-processing")
     add_tag(dest_pdf, "ocr-complete:green")
 
     # Move processed result files out of the live results folder
@@ -181,23 +183,78 @@ def handle_ocr_result(result_pdf, mapping, dry_run=False):
     return True
 
 
+def heartbeat_current_job():
+    """Return (basename, page, total_pages) the Mac Mini worker is processing now."""
+    if not OCR_HEARTBEAT.is_file():
+        return (None, None, None)
+    try:
+        data = json.loads(OCR_HEARTBEAT.read_text())
+    except Exception:
+        return (None, None, None)
+    if data.get("status") != "processing":
+        return (None, None, None)
+    return (data.get("current_job"),
+            data.get("current_page"),
+            data.get("total_pages"))
+
+
+def update_processing_state(mapping, dry_run=False):
+    """If the Mac Mini heartbeat names a file we know about and we haven't yet
+    flipped it to ocr-processing, do so now."""
+    job, page, total = heartbeat_current_job()
+    if not job:
+        return 0
+    matched_key = None
+    for c in candidate_basenames(job):
+        if c in mapping:
+            matched_key = c
+            break
+    if matched_key is None:
+        return 0
+    entry = mapping[matched_key]
+    if entry.get("state") == "processing":
+        return 0
+    original = Path(entry["original_path"])
+    if not original.is_file():
+        return 0
+    progress = f"{page}/{total}" if page and total else "?"
+    if dry_run:
+        print(f"[dry] {original} → ocr-processing  ({progress})")
+        return 1
+    remove_tag(original, "ocr-queued")
+    add_tag(original, "ocr-processing:blue")
+    entry["state"] = "processing"
+    entry["progress"] = progress
+    log(f"PROC  {original}  ← heartbeat:{job}  page {progress}")
+    print(f"  ⏳ {original}  (page {progress})")
+    return 1
+
+
 def cmd_run(dry_run=False):
     if not OCR_RESULTS.is_dir():
         sys.exit(f"no results dir: {OCR_RESULTS}")
     mapping = load_map()
+
+    # Step 1: heartbeat → flip ocr-queued to ocr-processing for the file
+    # currently in flight on the Mac Mini.
+    proc = update_processing_state(mapping, dry_run=dry_run)
+
+    # Step 2: scan results/ for completed OCR jobs.
     pdfs = sorted(p for p in OCR_RESULTS.iterdir()
                   if p.is_file() and p.name.endswith(OCR_PDF_SUFFIX))
-    if not pdfs:
-        print("no _ocr.pdf results to reconcile")
-        return
-    print(f"{len(pdfs)} OCR result(s) to reconcile")
     handled = 0
-    for p in pdfs:
-        if handle_ocr_result(p, mapping, dry_run=dry_run):
-            handled += 1
-    if not dry_run and handled:
+    if pdfs:
+        print(f"{len(pdfs)} OCR result(s) to reconcile")
+        for p in pdfs:
+            if handle_ocr_result(p, mapping, dry_run=dry_run):
+                handled += 1
+    elif proc == 0:
+        print("nothing to reconcile (no heartbeat match, no _ocr.pdf results)")
+
+    if not dry_run and (handled or proc):
         save_map(mapping)
-    print(f"reconciled: {handled}/{len(pdfs)}")
+    if pdfs:
+        print(f"reconciled: {handled}/{len(pdfs)}")
 
 
 def cmd_status():
