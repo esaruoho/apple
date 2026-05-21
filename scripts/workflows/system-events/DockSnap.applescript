@@ -222,6 +222,19 @@ on tileOneApp(targetName, sx, sy, sw, sh)
         return
     end if
 
+    tell application "System Events"
+        set procName to name of match
+    end tell
+
+    -- Per-app dispatcher: apps whose own AppleScript dictionary exposes
+    -- stable window IDs let us position them reliably without the System
+    -- Events positional-reference reshuffling bug. Fall through to System
+    -- Events for everything else.
+    if procName is "iTerm2" or procName is "iTerm" then
+        my tileWithITerm(sx, sy, sw, sh)
+        return
+    end if
+
     set wins to my snapshotWindows(match)
     set winCount to count of wins
     if winCount = 0 then
@@ -239,6 +252,50 @@ on tileOneApp(targetName, sx, sy, sw, sh)
 
     do shell script "/usr/bin/osascript -e 'display notification \"" & (name of match) & ": " & placed & "/" & winCount & " windows tiled\" with title \"Dock Snap\"'"
 end tileOneApp
+
+
+-- iTerm2-specific path: address windows by stable id via iTerm's own
+-- dictionary. Avoids System Events positional-reference reshuffling.
+on tileWithITerm(sx, sy, sw, sh)
+    tell application "iTerm"
+        set winIds to id of every window
+    end tell
+    set winCount to count of winIds
+    if winCount = 0 then
+        do shell script "/usr/bin/osascript -e 'display notification \"iTerm2: no scriptable windows\" with title \"Dock Snap\"'"
+        return
+    end if
+
+    set layout to my rowLayout(winCount)
+    set rowCount to count of layout
+    set rowH to sh div rowCount
+
+    set placed to 0
+    set idx to 1
+    repeat with rowI from 1 to rowCount
+        set cellsInRow to item rowI of layout
+        set cellW to sw div cellsInRow
+        repeat with colI from 0 to (cellsInRow - 1)
+            if idx > winCount then exit repeat
+            set tx to sx + (colI * cellW)
+            set ty to sy + ((rowI - 1) * rowH)
+            set bx1 to tx
+            set by1 to ty
+            set bx2 to tx + cellW
+            set by2 to ty + rowH
+            set wid to item idx of winIds
+            try
+                tell application "iTerm"
+                    set bounds of (first window whose id is wid) to {bx1, by1, bx2, by2}
+                end tell
+                set placed to placed + 1
+            end try
+            set idx to idx + 1
+        end repeat
+    end repeat
+
+    do shell script "/usr/bin/osascript -e 'display notification \"iTerm2: " & placed & "/" & winCount & " windows in app-native layout\" with title \"Dock Snap\"'"
+end tileWithITerm
 
 
 -- Distribute one app's windows across all available screens (round-robin),
