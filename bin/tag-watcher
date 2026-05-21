@@ -191,8 +191,26 @@ def dispatch_one(path, cfg, mapping):
     return True
 
 
+def mini_worker_counts():
+    """Read Mac Mini's worker-status/ directly via Syncthing-shared folder."""
+    ws = HOME / "work" / "comms" / "queue" / "worker-status"
+    out = {}
+    for sub in ("pending", "priority", "processing", "done", "failed"):
+        d = ws / sub
+        out[sub] = len(list(d.glob("*.job"))) if d.is_dir() else 0
+    return out
+
+
 def cmd_status():
     print(f"tag-watcher status — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    mc = mini_worker_counts()
+    print("CloudcityMacMini PDFWorkshop queue (talkback via worker-status/):")
+    print(f"  pending:    {mc['pending']:>4}")
+    print(f"  priority:   {mc['priority']:>4}")
+    print(f"  processing: {mc['processing']:>4}")
+    print(f"  done:       {mc['done']:>4}   (lifetime)")
+    print(f"  failed:     {mc['failed']:>4}   (lifetime)")
     print()
     for name, cfg in TRIGGERS.items():
         pending = len(find_pending(name, cfg))

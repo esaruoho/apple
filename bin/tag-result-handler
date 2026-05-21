@@ -49,6 +49,20 @@ OCR_RESULTS = COMMS / "ocr-results"
 OCR_PROCESSED = OCR_RESULTS / "processed"
 OCR_HEARTBEAT = COMMS / "ocr-heartbeat.json"
 
+# The Mac Mini worker writes per-job .job files under worker-status/<subdir>/.
+# This is the real talkback channel — pending/priority/processing/done/failed.
+# Syncthing carries it back to this Mac so we can reflect Mini's state in tags.
+WS_ROOT = COMMS / "worker-status"
+
+ARCHIVE_ROOTS = [
+    Path.home() / "work" / "merlib-dump",
+]
+
+# .job filenames look like "<jobnum>_<basename>.job"; submit also adds a
+# "YYYYMMDD-HHMMSS-" prefix on the inbox copy. Both need stripping to recover
+# the original archive basename.
+JOB_PREFIX_RE = re.compile(r"^\d+_")
+
 # Worker uses this suffix on the OCR'd PDF (the readable copy).
 OCR_PDF_SUFFIX = "_ocr.pdf"
 
@@ -86,6 +100,54 @@ def add_tag(path, spec):
 def remove_tag(path, name):
     subprocess.run([str(TAG), "remove", name, str(path)],
                    capture_output=True, check=False)
+
+
+_archive_index_cache = None
+
+
+def archive_index():
+    """basename → list of full paths under ARCHIVE_ROOTS. Cached per-run."""
+    global _archive_index_cache
+    if _archive_index_cache is not None:
+        return _archive_index_cache
+    idx = {}
+    for root in ARCHIVE_ROOTS:
+        if not root.is_dir():
+            continue
+        for p in root.rglob("*.pdf"):
+            if p.is_file():
+                idx.setdefault(p.name, []).append(p)
+    _archive_index_cache = idx
+    return idx
+
+
+def resolve_basename(basename):
+    """basename (no jobnum, no timestamp prefix) → archive Path or None.
+    Prefers map.json, falls back to filesystem search."""
+    # 1. Map.json direct or via timestamp-stripped variants
+    mapping = load_map()
+    for c in candidate_basenames(basename):
+        if c in mapping:
+            return Path(mapping[c]["original_path"])
+    # 2. Filesystem search
+    idx = archive_index()
+    for c in candidate_basenames(basename):
+        if c in idx and len(idx[c]) == 1:
+            return idx[c][0]
+        if c in idx and len(idx[c]) > 1:
+            log(f"AMBIGUOUS {basename}: {len(idx[c])} matches in archive — skipping")
+            return None
+    return None
+
+
+def job_basename(job_filename):
+    """Strip '<jobnum>_' prefix and '.job' suffix and any timestamp prefix
+    to recover the original-archive basename."""
+    name = job_filename
+    name = JOB_PREFIX_RE.sub("", name)
+    if name.endswith(".job"):
+        name = name[:-4]
+    return name
 
 
 def candidate_basenames(result_name):
@@ -230,10 +292,108 @@ def update_processing_state(mapping, dry_run=False):
     return 1
 
 
+def parse_job_file(p):
+    """Return dict from the YAML-ish .job file (one key:value per line)."""
+    out = {}
+    try:
+        for line in p.read_text().splitlines():
+            if ":" in line:
+                k, v = line.split(":", 1)
+                out.setdefault(k.strip(), v.strip())  # first occurrence wins
+    except Exception:
+        return out
+    return out
+
+
+def worker_status_sync(dry_run=False):
+    """Read worker-status/<subdir>/*.job and stamp tags on the archive originals.
+
+    State mapping:
+      pending/  + priority/  → ocr-queued:yellow      (Mac Mini has the job, hasn't started)
+      processing/            → ocr-processing:blue   (Mac Mini is OCRing now)
+      done/    (no error:)   → leave for result-handler step 2 (result file owns this)
+      done/    (with error:) → ocr-failed:orange
+      failed/                → ocr-failed:orange
+    """
+    if not WS_ROOT.is_dir():
+        return {}
+
+    counts = {"queued": 0, "processing": 0, "failed": 0, "unresolved": 0}
+
+    def stamp(p, *, queued=False, processing=False, failed=False):
+        if dry_run:
+            tags = []
+            if queued: tags.append("ocr-queued")
+            if processing: tags.append("ocr-processing")
+            if failed: tags.append("ocr-failed")
+            print(f"[dry] {p} → {','.join(tags)}")
+            return
+        if processing:
+            remove_tag(p, "ocr-queued")
+            add_tag(p, "ocr-processing:blue")
+        elif queued:
+            # Only stamp ocr-queued if not already ahead in the pipeline.
+            subprocess.run([str(TAG), "list", str(p)], capture_output=True)
+            add_tag(p, "ocr-queued:yellow")
+        elif failed:
+            remove_tag(p, "ocr-queued")
+            remove_tag(p, "ocr-processing")
+            add_tag(p, "ocr-failed:orange")
+
+    for sub, kind in [("pending", "queued"), ("priority", "queued"),
+                      ("processing", "processing"), ("failed", "failed")]:
+        d = WS_ROOT / sub
+        if not d.is_dir():
+            continue
+        for job in d.glob("*.job"):
+            base = job_basename(job.name)
+            original = resolve_basename(base)
+            if original is None:
+                counts["unresolved"] += 1
+                continue
+            stamp(original,
+                  queued=(kind == "queued"),
+                  processing=(kind == "processing"),
+                  failed=(kind == "failed"))
+            counts[kind] = counts.get(kind, 0) + 1
+
+    # done/ with embedded error:
+    done = WS_ROOT / "done"
+    if done.is_dir():
+        for job in done.glob("*.job"):
+            data = parse_job_file(job)
+            # parse_job_file keeps only first occurrence per key — a "done"
+            # job that ultimately succeeded won't have error: line first.
+            # Use raw text scan to catch any "error:" line.
+            try:
+                text = job.read_text()
+            except Exception:
+                continue
+            if "error:" not in text:
+                continue
+            base = job_basename(job.name)
+            original = resolve_basename(base)
+            if original is None:
+                counts["unresolved"] += 1
+                continue
+            stamp(original, failed=True)
+            counts["failed"] = counts.get("failed", 0) + 1
+
+    return counts
+
+
 def cmd_run(dry_run=False):
     if not OCR_RESULTS.is_dir():
         sys.exit(f"no results dir: {OCR_RESULTS}")
     mapping = load_map()
+
+    # Step 0: reflect Mac Mini's worker-status/ into local tags.
+    ws_counts = worker_status_sync(dry_run=dry_run)
+    if ws_counts:
+        print(f"worker-status sync: queued={ws_counts.get('queued',0)} "
+              f"processing={ws_counts.get('processing',0)} "
+              f"failed={ws_counts.get('failed',0)} "
+              f"unresolved={ws_counts.get('unresolved',0)}")
 
     # Step 1: heartbeat → flip ocr-queued to ocr-processing for the file
     # currently in flight on the Mac Mini.
