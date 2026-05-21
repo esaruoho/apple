@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.esa.tag-watcher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>/Users/esaruoho/work/apple/bin/tag-watcher &gt;&gt; /Users/esaruoho/work/comms/queue/tag-watcher.stdout 2&gt;&amp;1 &amp;&amp; /Users/esaruoho/work/apple/bin/tag-result-handler &gt;&gt; /Users/esaruoho/work/comms/queue/tag-result-handler.stdout 2&gt;&amp;1</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/esaruoho/work/comms/queue/tag-watcher.launchagent.stdout</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/esaruoho/work/comms/queue/tag-watcher.launchagent.stderr</string>
+</dict>
+</plist>

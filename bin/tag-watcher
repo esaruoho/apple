@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""
+tag-watcher — Finder tag → Mac Mini work pipeline.
+
+When a file in any Spotlight-indexed location carries a "trigger tag" (e.g.
+`needs-ocr`), this watcher drops it into the matching Syncthing queue inbox
+on the Mac Mini side, then stamps a "queued" tag back on the file so it isn't
+re-submitted.
+
+Workflow
+--------
+  user (or AppleToolbox menu) adds tag ──┐
+                                          ▼
+            Spotlight indexes the xattr   │
+                                          ▼
+            tag-watcher (run by LaunchAgent every 60 sec)
+                  │
+                  ├─ mdfind kMDItemUserTags == "needs-ocr"
+                  ├─ filter out files already carrying ocr-queued
+                  ├─ for each new hit:
+                  │     · invoke the submit script (bbs-ocr-submit.sh …)
+                  │     · record original-path mapping in
+                  │       ~/work/comms/queue/tag-watcher-map.json
+                  │     · add `ocr-queued:yellow` tag
+                  ▼
+            Syncthing carries inbox file → Mac Mini worker
+            Worker writes result back to ocr-results/ via Syncthing
+            (separate tag-result-handler script picks the result up)
+
+Triggers shipped
+----------------
+- needs-ocr            → ~/.claude/skills/bbs/bin/bbs-ocr-submit.sh
+                         · accepts .pdf
+                         · queued-tag: ocr-queued:yellow
+- needs-transcription  → ~/work/whisp-transcripts/whisp-submit
+                         · accepts audio/video extensions
+                         · queued-tag: whisp-queued:yellow
+
+To add a trigger, drop another entry into TRIGGERS below.
+
+Run modes
+---------
+  tag-watcher                  one-shot scan: dispatch any newly-tagged files
+  tag-watcher --dry-run        list what would be dispatched, do nothing
+  tag-watcher --status         show counts: pending / queued / complete
+  tag-watcher --once <trigger> run a single trigger only (e.g. needs-ocr)
+  tag-watcher --reset <file>   strip queued/complete tags so the file is
+                               re-eligible for dispatch
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HOME = Path.home()
+APPLE_BIN = HOME / "work" / "apple" / "bin"
+TAG = APPLE_BIN / "tag"
+COMMS = HOME / "work" / "comms" / "queue"
+MAP_PATH = COMMS / "tag-watcher-map.json"
+LOG_PATH = COMMS / "tag-watcher.log"
+
+TRIGGERS = {
+    "needs-ocr": {
+        "submit": str(HOME / ".claude" / "skills" / "bbs" / "bin" / "bbs-ocr-submit.sh"),
+        "queued_tag": "ocr-queued:yellow",
+        "complete_tag": "ocr-complete:green",
+        "result_dir": str(COMMS / "ocr-results"),
+        "extensions": [".pdf"],
+    },
+    "needs-transcription": {
+        "submit": str(HOME / "work" / "whisp-transcripts" / "whisp-submit"),
+        "queued_tag": "whisp-queued:yellow",
+        "complete_tag": "whisp-complete:green",
+        "result_dir": str(HOME / "work" / "whisp-transcripts"),
+        "extensions": [".mp3", ".m4a", ".wav", ".flac", ".mp4", ".m4v", ".mov", ".aiff"],
+    },
+}
+
+
+def log(msg):
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a") as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}  {msg}\n")
+
+
+def load_map():
+    if not MAP_PATH.exists():
+        return {}
+    try:
+        return json.loads(MAP_PATH.read_text())
+    except Exception:
+        return {}
+
+
+def save_map(data):
+    MAP_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = MAP_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
+    tmp.replace(MAP_PATH)
+
+
+def mdfind_tag(name, scope=None):
+    cmd = ["mdfind"]
+    if scope:
+        cmd += ["-onlyin", scope]
+    cmd.append(f'kMDItemUserTags == "{name}"')
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    return [Path(p) for p in r.stdout.splitlines() if p]
+
+
+def file_has_tag(path, tag_name):
+    r = subprocess.run([str(TAG), "list", str(path)],
+                       capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        name = line.split(":", 1)[0].strip()
+        if name == tag_name:
+            return True
+    return False
+
+
+def add_tag(path, spec):
+    subprocess.run([str(TAG), "add", spec, str(path)],
+                   capture_output=True, check=False)
+
+
+def remove_tag(path, name):
+    subprocess.run([str(TAG), "remove", name, str(path)],
+                   capture_output=True, check=False)
+
+
+def matches_extension(path, exts):
+    if not exts:
+        return True
+    return path.suffix.lower() in exts
+
+
+def find_pending(trigger_name, cfg):
+    """Files carrying the trigger tag but NOT the queued/complete tag."""
+    queued_name = cfg["queued_tag"].split(":", 1)[0]
+    complete_name = cfg["complete_tag"].split(":", 1)[0]
+    pending = []
+    for p in mdfind_tag(trigger_name):
+        if not p.is_file():
+            continue
+        if not matches_extension(p, cfg["extensions"]):
+            continue
+        if file_has_tag(p, queued_name) or file_has_tag(p, complete_name):
+            continue
+        pending.append(p)
+    return pending
+
+
+def dispatch_one(path, cfg, mapping):
+    submit = cfg["submit"]
+    if not Path(submit).is_file():
+        log(f"SKIP {path}: submit script missing: {submit}")
+        return False
+    r = subprocess.run([submit, str(path)], capture_output=True, text=True)
+    if r.returncode != 0:
+        log(f"FAIL {path}: {submit} exit={r.returncode} stderr={r.stderr.strip()[:200]}")
+        return False
+    add_tag(path, cfg["queued_tag"])
+    mapping[path.name] = {
+        "original_path": str(path),
+        "queued_at": time.strftime("%Y-%m-%dT%H:%M:%S%z") or time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "trigger": [k for k, v in TRIGGERS.items() if v == cfg][0],
+    }
+    log(f"OK   {path} → {submit}")
+    return True
+
+
+def cmd_status():
+    print(f"tag-watcher status — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    for name, cfg in TRIGGERS.items():
+        pending = len(find_pending(name, cfg))
+        queued = len(mdfind_tag(cfg["queued_tag"].split(":", 1)[0]))
+        complete = len(mdfind_tag(cfg["complete_tag"].split(":", 1)[0]))
+        result_count = 0
+        rd = Path(cfg["result_dir"])
+        if rd.is_dir():
+            result_count = sum(1 for p in rd.iterdir() if p.is_file() and not p.name.startswith("."))
+        submit_ok = "✓" if Path(cfg["submit"]).is_file() else "✗ MISSING"
+        print(f"  {name}")
+        print(f"    submit:    {cfg['submit']}  [{submit_ok}]")
+        print(f"    pending:   {pending}   (tagged, not yet queued)")
+        print(f"    queued:    {queued}   (in flight)")
+        print(f"    complete:  {complete}   (already returned)")
+        print(f"    result-dir items: {result_count}   ({cfg['result_dir']})")
+        print()
+    print(f"map: {MAP_PATH}")
+    print(f"log: {LOG_PATH}")
+
+
+def cmd_run(dry_run=False, only_trigger=None):
+    mapping = load_map()
+    total = 0
+    for name, cfg in TRIGGERS.items():
+        if only_trigger and name != only_trigger:
+            continue
+        pending = find_pending(name, cfg)
+        if not pending:
+            continue
+        print(f"{name}: {len(pending)} file(s) to dispatch")
+        for p in pending:
+            if dry_run:
+                print(f"  [dry] {p}")
+                continue
+            if dispatch_one(p, cfg, mapping):
+                total += 1
+                print(f"  ✓ {p}")
+            else:
+                print(f"  ✗ {p}  (see {LOG_PATH})")
+    if not dry_run and total:
+        save_map(mapping)
+    return total
+
+
+def cmd_reset(target):
+    p = Path(os.path.expanduser(target)).resolve()
+    if not p.exists():
+        sys.exit(f"tag-watcher: not a file: {p}")
+    for cfg in TRIGGERS.values():
+        remove_tag(p, cfg["queued_tag"].split(":", 1)[0])
+        remove_tag(p, cfg["complete_tag"].split(":", 1)[0])
+    mapping = load_map()
+    mapping.pop(p.name, None)
+    save_map(mapping)
+    print(f"reset queued/complete tags on {p}")
+
+
+def main():
+    argv = sys.argv[1:]
+    if argv and argv[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+    if argv and argv[0] == "--status":
+        cmd_status()
+        return
+    if argv and argv[0] == "--dry-run":
+        cmd_run(dry_run=True)
+        return
+    if argv and argv[0] == "--once":
+        if len(argv) < 2:
+            sys.exit("tag-watcher: --once needs a trigger name")
+        n = cmd_run(only_trigger=argv[1])
+        print(f"dispatched: {n}")
+        return
+    if argv and argv[0] == "--reset":
+        if len(argv) < 2:
+            sys.exit("tag-watcher: --reset needs a file path")
+        cmd_reset(argv[1])
+        return
+    n = cmd_run()
+    print(f"dispatched: {n}")
+
+
+if __name__ == "__main__":
+    main()

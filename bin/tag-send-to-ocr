@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# tag-send-to-ocr — tag whatever's selected in Finder with `needs-ocr:red`,
+# then trigger the watcher immediately so the PDFs go out via Syncthing
+# without waiting for the 60-sec LaunchAgent tick.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+"$HERE/tag-finder-selection" --tag "needs-ocr:red"
+"$HERE/tag-watcher"

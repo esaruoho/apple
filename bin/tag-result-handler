@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+tag-result-handler — close the tag-watcher loop.
+
+When the Mac Mini worker finishes a job, the result lands in a Syncthing-
+mirrored results folder (e.g. ~/work/comms/queue/ocr-results/). This script:
+
+  1. Scans the results folder for completed jobs
+  2. Looks up the original file via tag-watcher-map.json (basename match,
+     trying timestamp-stripped variants since bbs-ocr-submit.sh prefixes
+     YYYYMMDD-HHMMSS-)
+  3. For OCR: replaces the in-archive image-only original with the _ocr.pdf
+     version, parks the .txt sidecar next to it, archives the leftover
+     .pdfws sidecar into a processed/ subfolder
+  4. Swaps tags on the original file:
+       needs-ocr      → removed
+       ocr-queued     → removed
+       ocr-complete:green added (plus primary-source if it was there)
+  5. Moves processed result files into ocr-results/processed/ so we don't
+     re-handle them
+
+Currently wired only for `needs-ocr`. Whisp transcription completion is
+detectable but doesn't replace the original file — the transcript is a
+separate artifact. Stub remains for future extension.
+
+Run modes
+---------
+  tag-result-handler             one-shot scan
+  tag-result-handler --dry-run   print what would happen, don't move anything
+  tag-result-handler --status    counts only
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HOME = Path.home()
+APPLE_BIN = HOME / "work" / "apple" / "bin"
+TAG = APPLE_BIN / "tag"
+COMMS = HOME / "work" / "comms" / "queue"
+MAP_PATH = COMMS / "tag-watcher-map.json"
+LOG_PATH = COMMS / "tag-result-handler.log"
+
+OCR_RESULTS = COMMS / "ocr-results"
+OCR_PROCESSED = OCR_RESULTS / "processed"
+
+# Worker uses this suffix on the OCR'd PDF (the readable copy).
+OCR_PDF_SUFFIX = "_ocr.pdf"
+
+# Strip a leading YYYYMMDD-HHMMSS- prefix that bbs-ocr-submit.sh adds on submit.
+TS_PREFIX_RE = re.compile(r"^\d{8}-\d{6}-")
+
+
+def log(msg):
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a") as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}  {msg}\n")
+
+
+def load_map():
+    if not MAP_PATH.exists():
+        return {}
+    try:
+        return json.loads(MAP_PATH.read_text())
+    except Exception:
+        return {}
+
+
+def save_map(data):
+    MAP_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = MAP_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
+    tmp.replace(MAP_PATH)
+
+
+def add_tag(path, spec):
+    subprocess.run([str(TAG), "add", spec, str(path)],
+                   capture_output=True, check=False)
+
+
+def remove_tag(path, name):
+    subprocess.run([str(TAG), "remove", name, str(path)],
+                   capture_output=True, check=False)
+
+
+def candidate_basenames(result_name):
+    """Given e.g. '20260520-080123-SomeFile.pdf' return possible original basenames."""
+    out = {result_name}
+    stripped = TS_PREFIX_RE.sub("", result_name)
+    if stripped != result_name:
+        out.add(stripped)
+    # Also strip trailing _ocr from the .pdf stem if present.
+    if result_name.endswith(OCR_PDF_SUFFIX):
+        body = result_name[: -len(OCR_PDF_SUFFIX)]
+        out.add(body + ".pdf")
+        stripped_body = TS_PREFIX_RE.sub("", body)
+        out.add(stripped_body + ".pdf")
+    return out
+
+
+def find_original(result_name, mapping):
+    """Return (original_path, map_key) or (None, None)."""
+    for name in candidate_basenames(result_name):
+        if name in mapping:
+            return Path(mapping[name]["original_path"]), name
+    # Loose match: the worker may have lowercased / re-encoded the name. Try
+    # case-insensitive scan as last resort.
+    lc = {k.lower(): k for k in mapping}
+    for name in candidate_basenames(result_name):
+        if name.lower() in lc:
+            key = lc[name.lower()]
+            return Path(mapping[key]["original_path"]), key
+    return None, None
+
+
+def gather_sidecars(result_pdf):
+    """Return list of sidecar files (.txt, .pdfws) sharing the result_pdf stem (sans _ocr)."""
+    body = result_pdf.name
+    if body.endswith(OCR_PDF_SUFFIX):
+        stem_with_dash = body[: -len(OCR_PDF_SUFFIX)]  # e.g. "Foo-"
+    else:
+        stem_with_dash = result_pdf.stem
+    parent = result_pdf.parent
+    sidecars = []
+    # Worker writes "<stem>.txt" and "<stem>.pdfws" (note no _ocr suffix on these).
+    for ext in (".txt", ".pdfws"):
+        candidate = parent / f"{stem_with_dash}{ext}"
+        if candidate.is_file():
+            sidecars.append(candidate)
+    return sidecars
+
+
+def handle_ocr_result(result_pdf, mapping, dry_run=False):
+    """Reconcile one *_ocr.pdf result with its original. Return True on success."""
+    original, map_key = find_original(result_pdf.name, mapping)
+    if original is None:
+        log(f"ORPHAN {result_pdf.name}: no mapping entry — leaving in results/")
+        return False
+    if not original.parent.exists():
+        log(f"SKIP {result_pdf.name}: original folder gone: {original.parent}")
+        return False
+
+    dest_pdf = original.with_suffix(".pdf")  # same name as original
+    dest_txt = original.with_suffix(".txt")
+    sidecars = gather_sidecars(result_pdf)
+    txt_sidecar = next((s for s in sidecars if s.suffix.lower() == ".txt"), None)
+
+    if dry_run:
+        print(f"[dry] {result_pdf}")
+        print(f"      → replace {original}")
+        if txt_sidecar:
+            print(f"      → write   {dest_txt}  (from {txt_sidecar.name})")
+        print(f"      → tags: -needs-ocr -ocr-queued +ocr-complete:green")
+        return True
+
+    OCR_PROCESSED.mkdir(parents=True, exist_ok=True)
+
+    # Replace original PDF with OCR'd version
+    shutil.copy2(result_pdf, dest_pdf)
+    if txt_sidecar:
+        shutil.copy2(txt_sidecar, dest_txt)
+
+    # Swap tags on the now-OCR'd file
+    remove_tag(dest_pdf, "needs-ocr")
+    remove_tag(dest_pdf, "ocr-queued")
+    add_tag(dest_pdf, "ocr-complete:green")
+
+    # Move processed result files out of the live results folder
+    for src in [result_pdf] + sidecars:
+        shutil.move(str(src), str(OCR_PROCESSED / src.name))
+
+    # Drop the map entry — job is done
+    mapping.pop(map_key, None)
+
+    log(f"DONE  {original}  ← {result_pdf.name}")
+    print(f"  ✓ {original}")
+    return True
+
+
+def cmd_run(dry_run=False):
+    if not OCR_RESULTS.is_dir():
+        sys.exit(f"no results dir: {OCR_RESULTS}")
+    mapping = load_map()
+    pdfs = sorted(p for p in OCR_RESULTS.iterdir()
+                  if p.is_file() and p.name.endswith(OCR_PDF_SUFFIX))
+    if not pdfs:
+        print("no _ocr.pdf results to reconcile")
+        return
+    print(f"{len(pdfs)} OCR result(s) to reconcile")
+    handled = 0
+    for p in pdfs:
+        if handle_ocr_result(p, mapping, dry_run=dry_run):
+            handled += 1
+    if not dry_run and handled:
+        save_map(mapping)
+    print(f"reconciled: {handled}/{len(pdfs)}")
+
+
+def cmd_status():
+    if not OCR_RESULTS.is_dir():
+        print(f"no results dir: {OCR_RESULTS}")
+        return
+    pdfs = [p for p in OCR_RESULTS.iterdir()
+            if p.is_file() and p.name.endswith(OCR_PDF_SUFFIX)]
+    processed = list(OCR_PROCESSED.glob("*")) if OCR_PROCESSED.is_dir() else []
+    mapping = load_map()
+    print(f"tag-result-handler status — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  pending _ocr.pdf in results/  : {len(pdfs)}")
+    print(f"  archived in processed/        : {len(processed)}")
+    print(f"  map entries (in flight)       : {len(mapping)}")
+
+
+def main():
+    argv = sys.argv[1:]
+    if argv and argv[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+    if argv and argv[0] == "--status":
+        cmd_status()
+        return
+    if argv and argv[0] == "--dry-run":
+        cmd_run(dry_run=True)
+        return
+    cmd_run()
+
+
+if __name__ == "__main__":
+    main()

@@ -30,6 +30,7 @@ import EventKit              // Calendar + Reminders pre-auth
 import Contacts              // Contacts pre-auth
 import Photos                // Photos pre-auth
 import ApplicationServices   // AXIsProcessTrustedWithOptions — accessibility prompt
+import UniformTypeIdentifiers // UTType — classify files for type-aware clipboard copy
 
 let HOME = NSHomeDirectory()
 let TOPBAR = "\(HOME)/work/apple/topbar"
@@ -910,6 +911,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 message: "Tag name(s), comma-separated:",
                 cmd: "\(APPLE_DIR)/bin/tag-smart",
                 argsPrefix: ["--tmp"]),
+            NSMenuItem.separator(),
+            action("🤖 Send Selection to OCR (Mac Mini)",
+                cmd: "\(APPLE_DIR)/bin/tag-send-to-ocr"),
+            action("▶ Run Tag Watcher Now",
+                cmd: "\(APPLE_DIR)/bin/tag-watcher"),
+            action("📊 Tag Watcher Status (open log)",
+                cmd: "/usr/bin/open",
+                args: ["\(HOME)/work/comms/queue/tag-watcher.log"]),
         ]))
 
         // Slashes submenu — Apple-skill verbs as menu items with prompts
@@ -1127,6 +1136,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     // File browser — bound to chatCwd. Navigating in here switches the chat
     // project so Sessions ▾ automatically scopes to the folder you're in.
     var browserAllItems: [BrowserItem] = []
+    // path -> name of the child that was selected the last time we sat in this
+    // path. Set by switchChatCwd whenever the navigation crosses a parent /
+    // child boundary; read by loadBrowserItems to restore the highlighted row.
+    // Result: descending into bbs and coming back leaves bbs selected.
+    var browserSelectionMemo: [String: String] = [:]
     /// Items currently visible after the filter is applied. Maintained
     /// alongside the visual rows so ↑/↓/Return on the filter field has
     /// an authoritative target list.
@@ -2389,6 +2403,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }
         browserAllItems = sessionItems + items
         renderBrowser()
+
+        // Restore the previously-selected child for this path (if any). Lets
+        // the user step into a folder, come back, and find the same row still
+        // highlighted — instead of having to re-scroll from the top.
+        if let memoName = browserSelectionMemo[chatCwd],
+           let idx = browserFilteredItems.firstIndex(where: { $0.name == memoName }) {
+            browserSelectedIndex = idx
+            applyBrowserHighlight()
+        }
     }
 
     /// Apply the filter field's text and rebuild the row buttons. Called on
@@ -2692,17 +2715,23 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             openSelectedBrowserItem()
             return true
         case #selector(NSResponder.moveRightAndModifySelection(_:)):
-            // ⇧→ on a session row → hand off to iTerm/Terminal with that
-            // specific UUID. AppKit normally sends this selector to extend
-            // text selection; we repurpose it when caret-at-end and the
-            // highlighted row is a 💬 session entry. Other rows fall
-            // through to default text-extend behaviour.
+            // ⇧→ behaviour depends on the highlighted row:
+            //   • 💬 session row    → hand off to iTerm with that UUID
+            //   • regular file row  → copy file's text contents to clipboard
+            //   • directory row     → fall through (default text-extend)
+            // Gated on caret-at-end so it doesn't fight ordinary text editing.
             if browserFilterCaretAtEnd(),
                browserSelectedIndex >= 0,
-               browserSelectedIndex < browserFilteredItems.count,
-               let sid = browserFilteredItems[browserSelectedIndex].sessionId {
-                handoffSessionToTerminal(sessionId: sid)
-                return true
+               browserSelectedIndex < browserFilteredItems.count {
+                let item = browserFilteredItems[browserSelectedIndex]
+                if let sid = item.sessionId {
+                    handoffSessionToTerminal(sessionId: sid)
+                    return true
+                }
+                if !item.isDir {
+                    copyFileContentsToClipboard(path: item.path)
+                    return true
+                }
             }
             return false
         case #selector(NSResponder.cancelOperation(_:)):
@@ -2773,6 +2802,91 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// (passes currentSessionId) and the Shift+→ shortcut on a 💬 browser
     /// row (passes that row's session id). Same command construction +
     /// AppleScript regardless of caller.
+    /// ⇧→ on a regular file row copies its contents to the clipboard.
+    /// Reads as UTF-8; falls back to lossy decoding so binary previews don't
+    /// silently swallow the action. Posts a brief flash on the path label so
+    /// the user sees something happened.
+    /// Type-aware clipboard copy. UTType classification, no gibberish:
+    ///   • image (png/jpg/gif/heic/tiff/webp/bmp/svg) → image data on the
+    ///     pasteboard (NSImage). Paste into Preview/Mail/Notes/Keynote gets
+    ///     the picture. File URL also written so Finder/Mail-as-attachment
+    ///     recipients see it as a file too.
+    ///   • text (md/txt/source code/json/xml/html/yaml/etc., anything UTI-
+    ///     conformant to .text) → string on the pasteboard. Paste into any
+    ///     text field gets the content.
+    ///   • everything else (mp3/mp4/zip/dmg/pdf/etc.) → file URL on the
+    ///     pasteboard. Paste into Finder copies the file, paste into Mail
+    ///     attaches it. No bytes-to-string mangling.
+    ///
+    /// Failures beep + log instead of putting garbage on the clipboard.
+    func copyFileContentsToClipboard(path: String) {
+        let url = URL(fileURLWithPath: path)
+        let name = url.lastPathComponent
+        let pb = NSPasteboard.general
+
+        // Resolve UTI via the file's resource values — same identification
+        // mechanism Finder uses, so behavior matches user expectations.
+        let type: UTType = (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType) ?? .data
+        let size = (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int) ?? 0
+        let bytesStr = ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+
+        // ── Image branch ──
+        if type.conforms(to: .image) {
+            guard let img = NSImage(contentsOf: url) else {
+                NSSound.beep()
+                flashBrowserPath("✗ Couldn't decode \(name) as image")
+                return
+            }
+            pb.clearContents()
+            // writeObjects([img]) puts the image (as TIFF + other reps NSImage
+            // exposes) on the pasteboard. Appending the file URL afterwards
+            // ADDS it to the same paste record without clearing the image —
+            // multi-format paste recipients pick whichever they prefer.
+            pb.writeObjects([img])
+            pb.writeObjects([url as NSURL])
+            let w = Int(img.size.width), h = Int(img.size.height)
+            flashBrowserPath("📋 Copied \(name) as image (\(w)×\(h), \(bytesStr))")
+            return
+        }
+
+        // ── Text branch ──
+        // UTType.text is the abstract base every text-bearing UTI conforms
+        // to (md, source code, json, html, xml, yaml, log, csv, etc.).
+        if type.conforms(to: .text) {
+            guard let data = try? Data(contentsOf: url),
+                  let text = String(data: data, encoding: .utf8) else {
+                NSSound.beep()
+                flashBrowserPath("✗ Couldn't decode \(name) as UTF-8")
+                return
+            }
+            pb.clearContents()
+            pb.setString(text, forType: .string)
+            let lines = text.split(separator: "\n").count
+            flashBrowserPath("📋 Copied \(name) (\(lines) lines, \(bytesStr))")
+            return
+        }
+
+        // ── Default: file reference ──
+        // mp3, mp4, zip, dmg, pdf, app, anything not text or image. ⌘V in
+        // Finder copies the file; ⌘V in Mail attaches it.
+        pb.clearContents()
+        pb.writeObjects([url as NSURL])
+        let kindHint = type.preferredFilenameExtension ?? type.identifier
+        flashBrowserPath("📋 Copied \(name) as file (\(kindHint), \(bytesStr))")
+    }
+
+    /// Briefly overlay a status message on the browser's path label, then
+    /// restore it. Used for one-shot acknowledgements (copy, etc.).
+    func flashBrowserPath(_ message: String) {
+        guard let label = browserPathLabel else { return }
+        let prior = label.stringValue
+        label.stringValue = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self] in
+            guard let self = self, self.browserPathLabel?.stringValue == message else { return }
+            self.browserPathLabel?.stringValue = prior
+        }
+    }
+
     func handoffSessionToTerminal(sessionId: String?) {
         // Quote the cwd to survive paths with spaces.
         let cwd = chatCwd.replacingOccurrences(of: "\"", with: "\\\"")
@@ -2906,6 +3020,23 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
     func switchChatCwd(to newCwd: String) {
         guard newCwd != chatCwd else { return }
+        let old = chatCwd
+        // Memoise the selection so re-arriving at a parent/child path restores
+        // its highlight. Two cases:
+        //   - Descending old → newCwd (newCwd is a child of old): remember the
+        //     immediate child name under old so coming back highlights it.
+        //   - Ascending old → newCwd (newCwd is an ancestor of old): remember
+        //     the immediate child of newCwd on the path to old (same idea, the
+        //     row the user just stepped out of).
+        if newCwd.hasPrefix(old + "/") {
+            let rel = String(newCwd.dropFirst(old.count + 1))
+            let child = rel.split(separator: "/", maxSplits: 1).first.map(String.init) ?? rel
+            if !child.isEmpty { browserSelectionMemo[old] = child }
+        } else if old.hasPrefix(newCwd + "/") {
+            let rel = String(old.dropFirst(newCwd.count + 1))
+            let child = rel.split(separator: "/", maxSplits: 1).first.map(String.init) ?? rel
+            if !child.isEmpty { browserSelectionMemo[newCwd] = child }
+        }
         if let p = chatProcess, p.isRunning { p.terminate() }
         chatCwd = newCwd
         currentSessionId = nil
@@ -2973,16 +3104,28 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         let wasRunning = smartDictation.isRunning
         if !wasRunning {
             let stamp = isoStamp().replacingOccurrences(of: ":", with: "-")
-            let dir = "\(HOME)/.claude/projects/" +
-                      chatCwd.replacingOccurrences(of: "/", with: "-") + "/audio"
+            // Land the audio NEXT TO THE WORK — under <chatCwd>/dictation/.
+            // Previously these went into ~/.claude/projects/<escaped>/audio/
+            // which is hidden Claude metadata; the user couldn't find them.
+            let dir = "\(chatCwd)/dictation"
             smartDictation.nextAudioPath = "\(dir)/dictation-\(stamp).caf"
         }
         smartDictation.toggle(target: chatInput)
-        if wasRunning, let path = smartDictation.lastAudioPath {
-            pendingAudioFiles.append(path)
-            // Note it in the log immediately too so even if you never hit
-            // Send, the audio is referenced in the chronological record.
-            appendToConversationLog("\n_(🎙 audio captured: `\((path as NSString).lastPathComponent)`)_\n")
+        if wasRunning {
+            if let path = smartDictation.lastAudioPath {
+                pendingAudioFiles.append(path)
+                // Log the FULL absolute path (clickable in many renderers) so
+                // there's no guessing where the recording landed.
+                appendToConversationLog("\n_(🎙 audio captured: [`\(path)`](\(path)))_\n")
+                appendTranscript("\n🎙 audio: \(path)\n",
+                                 color: NSColor(white: 0.7, alpha: 1.0))
+            } else if let attempted = smartDictation.lastAttemptedAudioPath {
+                // The capture file failed to open — surface where it tried so
+                // the user isn't left wondering whether the audio is anywhere.
+                appendToConversationLog("\n_(⚠ audio NOT saved — tried `\(attempted)`)_\n")
+                appendTranscript("\n⚠ audio NOT saved — tried \(attempted)\n",
+                                 color: .systemRed)
+            }
         }
     }
 
@@ -3045,9 +3188,62 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
     // ─── chat: send / receive ──────────────────────────────────────────────
 
+    /// Local router: "show <X>" → `bin/show <X>`. Speaks via Voicebox if
+    /// up, opens a Smart Folder in Finder. Confirmation line lands in the
+    /// chat log so the action is visible in the chronological record.
+    func routeShow(_ concept: String) {
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let showBin = "\(APPLE_DIR)/bin/show"
+        appendTranscript("\n▶ You\nshow \(concept)\n", color: .systemOrange, bold: true)
+        appendToConversationLog("\n## ▶ You · \(stamp)\n\nshow \(concept)\n")
+        guard FileManager.default.isExecutableFile(atPath: showBin) else {
+            appendTranscript("✗ \(showBin) not executable\n", color: .systemRed)
+            appendToConversationLog("\n_(✗ \(showBin) not executable)_\n")
+            return
+        }
+        let p = Process()
+        p.launchPath = showBin
+        p.arguments = [concept]
+        let out = Pipe(); p.standardOutput = out; p.standardError = out
+        do { try p.run() } catch {
+            appendTranscript("✗ show failed to launch: \(error)\n", color: .systemRed)
+            return
+        }
+        // Don't block the UI — read the output asynchronously.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            p.waitUntilExit()
+            let data = out.fileHandleForReading.readDataToEndOfFile()
+            let text = String(data: data, encoding: .utf8) ?? ""
+            DispatchQueue.main.async {
+                let ok = (p.terminationStatus == 0)
+                let badge = ok ? "✓" : "✗"
+                self?.appendTranscript("\(badge) show \(concept)\n\(text)",
+                                       color: ok ? .systemGreen : .systemRed)
+                self?.appendToConversationLog("\n_(\(badge) show \(concept))_\n")
+            }
+        }
+    }
+
     @objc func sendChat(_ sender: Any?) {
         let text = chatInput.string.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !chatBusy else { return }
+
+        // Local routers — caught BEFORE the Claude round-trip. Single-line
+        // commands that map to a `bin/<verb>` script run locally; the chat
+        // log gets a confirmation line so the action is visible in the
+        // chronological record. Pattern: case-insensitive, full-line match.
+        let lower = text.lowercased()
+        if lower.hasPrefix("show ") && !text.contains("\n") {
+            let arg = String(text.dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !arg.isEmpty {
+                routeShow(arg)
+                chatInput.string = ""
+                chatInput.needsDisplay = true
+                draftSaveTimer?.invalidate()
+                saveDraft()
+                return
+            }
+        }
 
         guard FileManager.default.isExecutableFile(atPath: claudeBin) else {
             appendTranscript("\n✗ claude binary not found at \(claudeBin)\n", color: .systemRed)
@@ -3321,6 +3517,10 @@ class SpeechDictationController: NSObject {
     /// fallback. Tracking the stub here.
     var nextAudioPath: String?
     private(set) var lastAudioPath: String?
+    /// The path we tried to write even if AVAudioFile setup failed — used
+    /// by the host so it can surface a "tried <path>, failed" message
+    /// instead of silently dropping the recording.
+    private(set) var lastAttemptedAudioPath: String?
     private var audioFile: AVAudioFile?
 
     /// Range of text currently rendered as "tentative" (light-grey,
@@ -3397,7 +3597,9 @@ class SpeechDictationController: NSObject {
         // the user wants smaller archive files is one `afconvert` away.
         audioFile = nil
         lastAudioPath = nil
+        lastAttemptedAudioPath = nil
         if let path = nextAudioPath {
+            lastAttemptedAudioPath = path
             let dir = (path as NSString).deletingLastPathComponent
             try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
             audioFile = try? AVAudioFile(forWriting: URL(fileURLWithPath: path),
