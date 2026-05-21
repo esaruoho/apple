@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# mini-up — is CloudcityMacMini reachable / alive?
+#
+# Returns 0 if the Mini is healthy, 1 if silent. One-line stderr status.
+# Cheaper than ssh: reads the locally-mirrored Syncthing heartbeats first
+# (no network at all), falls back to a 2-second TCP probe on :22 only if
+# the heartbeats are stale.
+#
+#   mini-up                # silent unless --quiet; exit code says it all
+#   mini-up --quiet        # suppress status line
+#   mini-up || echo "no"   # standard guard pattern before any ssh call
+#
+# Use this as a precondition before every Mini ssh:
+#   mini-up && ssh CloudcityMacMini.local '<remote-command>'
+
+set -uo pipefail
+
+QUEUE="$HOME/work/comms/queue"
+MAX_HEARTBEAT_AGE=300        # seconds — three heartbeats poll ≤ every ~2 min
+TCP_PROBE_TIMEOUT=2          # seconds for the fallback nc probe
+
+quiet=0
+[ "${1:-}" = "--quiet" ] && quiet=1
+
+note() { [ "$quiet" -eq 1 ] || echo "[mini-up] $*" >&2; }
+
+# Pass 1: heartbeats (no network). Three workers should all be writing
+# their heartbeat file every ~2 minutes. If all three are stale, the Mini
+# is genuinely silent.
+fresh_count=0
+oldest=0
+declare -a beats=(
+    "$QUEUE/voicebox-heartbeat.json"
+    "$QUEUE/whisp-heartbeat.json"
+    "$QUEUE/ocr-heartbeat.json"
+)
+for hb in "${beats[@]}"; do
+    [ -f "$hb" ] || continue
+    age=$(( $(date +%s) - $(stat -f %m "$hb") ))
+    [ "$age" -lt "$MAX_HEARTBEAT_AGE" ] && fresh_count=$((fresh_count + 1))
+    [ "$age" -gt "$oldest" ] && oldest=$age
+done
+
+if [ "$fresh_count" -ge 1 ]; then
+    note "alive — $fresh_count/3 heartbeats fresh (oldest ${oldest}s)"
+    exit 0
+fi
+
+# Pass 2: heartbeats are all stale, but the workers may have died while
+# the Mini itself is up. One short TCP probe on :22 settles it.
+if /usr/bin/nc -z -G "$TCP_PROBE_TIMEOUT" CloudcityMacMini.local 22 >/dev/null 2>&1; then
+    note "reachable on :22 but all heartbeats stale (oldest ${oldest}s) — workers down"
+    exit 0
+fi
+
+note "SILENT — all heartbeats stale (oldest ${oldest}s) and :22 unreachable"
+exit 1
