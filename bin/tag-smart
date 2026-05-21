@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""
+tag-smart — turn a set of Finder tags into a Smart Folder (.savedSearch).
+
+  tag-smart <name> <tag>[,<tag>...] [--scope <dir>] [--any]
+        Build a .savedSearch in ~/Library/Saved Searches/<name>.savedSearch
+        matching files that have ALL listed tags (default: AND).
+        Pass --any for OR-matching.
+
+  tag-smart --tmp <tag>[,<tag>...] [--scope <dir>] [--any]
+        Throwaway: write to /tmp and `open` it. Use for quick browsing.
+
+Smart Folders show up in Finder's sidebar under "Saved Searches" and are
+re-evaluated live by Spotlight — same engine Mail uses for Smart Mailboxes,
+which means once a file is tagged, every app that consults Spotlight
+(Finder, Mail attachments, Files import dialogs) sees the linkage.
+
+Example use case
+----------------
+A markdown conversation, the app it spawned, the skill knowledgebase:
+tag all three with `convo-2026-05-21-tagging`, then:
+
+  tag-smart "Tagging Project" convo-2026-05-21-tagging
+
+— a single Finder window shows the conversation + the app source +
+the skill files together, no matter where they live on disk.
+"""
+import os
+import plistlib
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+def die(msg):
+    sys.stderr.write(f"tag-smart: {msg}\n")
+    sys.exit(1)
+
+
+def build_query(tags, any_match):
+    parts = [f'kMDItemUserTags == "{t}"' for t in tags]
+    return (" || " if any_match else " && ").join(parts)
+
+
+def build_plist(query, scope):
+    raw = {
+        "RawQuery": query,
+        "RawQueryDict": {
+            "FinderFilesOnly": True,
+            "RawQuery": query,
+            "SearchScopes": [str(scope)] if scope else ["kMDQueryScopeHome"],
+            "UserFilesOnly": False,
+        },
+        "SearchCriteria": {
+            "FXCriteriaSlices": [],
+            "FXScope": "FXScopeSpecifiedItems" if scope else "FXScopeAllComputerScope",
+        },
+        "SearchResultsViewOptions": {
+            "FXArrangeGroupViewBy": "Name",
+            "FXPreferredViewStyle": "Nlsv",  # list view
+        },
+    }
+    if scope:
+        raw["SearchCriteria"]["FXScopeArrayOfPaths"] = [str(scope)]
+    return raw
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+
+    any_match = False
+    if "--any" in args:
+        any_match = True
+        args.remove("--any")
+
+    scope = None
+    if "--scope" in args:
+        i = args.index("--scope")
+        if i + 1 >= len(args):
+            die("--scope needs a path")
+        scope = Path(os.path.expanduser(args[i + 1])).resolve()
+        if not scope.is_dir():
+            die(f"scope not a directory: {scope}")
+        args = args[:i] + args[i + 2:]
+
+    tmp = False
+    if args and args[0] == "--tmp":
+        tmp = True
+        args = args[1:]
+        if not args:
+            die("usage: tag-smart --tmp <tag>[,<tag>...] [--scope <dir>]")
+        tags = [t for t in (s.strip() for s in args[0].split(",")) if t]
+        name = "tags-" + "-".join(tags)[:48]
+    else:
+        if len(args) < 2:
+            die("usage: tag-smart <name> <tag>[,<tag>...] [--scope <dir>] [--any]")
+        name = args[0]
+        tags = [t for t in (s.strip() for s in args[1].split(",")) if t]
+
+    if not tags:
+        die("need at least one tag name")
+
+    query = build_query(tags, any_match)
+    plist = build_plist(query, scope)
+
+    if tmp:
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        out = Path(f"/tmp/tag-smart-{stamp}.savedSearch")
+    else:
+        saved_searches = Path.home() / "Library/Saved Searches"
+        saved_searches.mkdir(parents=True, exist_ok=True)
+        out = saved_searches / f"{name}.savedSearch"
+
+    with out.open("wb") as f:
+        plistlib.dump(plist, f, fmt=plistlib.FMT_XML)
+
+    subprocess.run(["open", str(out)], check=False)
+    print(f"tag-smart -> {out}")
+    print(f"match:  {'ANY' if any_match else 'ALL'} of {tags}")
+    print(f"scope:  {scope or 'whole computer'}")
+
+
+if __name__ == "__main__":
+    main()

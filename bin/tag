@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+"""
+tag — Finder tag helper (Apple-native, stdlib only).
+
+Reads and writes the extended attribute `com.apple.metadata:_kMDItemUserTags`,
+which is what Finder, Spotlight, and Mail Smart Mailboxes all see.
+
+Subcommands
+-----------
+  tag list <file>...
+        Show tags on each file. Format: NAME[:color] per line.
+
+  tag add <spec>[,<spec>...] <file>...
+        Add tags, preserving existing ones. <spec> is NAME or NAME:COLOR.
+
+  tag set <spec>[,<spec>...] <file>...
+        Replace all tags with the given list.
+
+  tag remove <name>[,<name>...] <file>...
+        Remove tags by name (color ignored). Silent if absent.
+
+  tag clear <file>...
+        Remove the xattr entirely.
+
+  tag find <name> [--scope <dir>]
+        List files with this tag via mdfind.
+
+  tag find-all <name>[,<name>...] [--scope <dir>]
+        Files that carry ALL given tags (AND).
+
+  tag find-any <name>[,<name>...] [--scope <dir>]
+        Files that carry ANY of the given tags (OR).
+
+  tag link [--color COLOR] [--name NAME] <file> <file>...
+        Stamp every listed file with a shared link-tag so they appear
+        together in Finder and Spotlight. Auto-generates a tag name
+        like "link-<8-char-hash>" unless --name is given.
+        Use case: bind a conversation markdown ↔ the app it spawned ↔
+        the skill that knowledge-bases it.
+
+  tag rename <old> <new>
+        Rename a tag across the user-tag preference store
+        (~/Library/SyncedPreferences/com.apple.finder.plist).
+        Existing files keep the old name in their xattr — re-tag them
+        with `tag find <old>` + `tag add <new>` + `tag remove <old>`.
+
+  tag colors
+        Print the 7 color names and their numeric codes.
+
+Color codes (Finder's built-in palette — only 7, plus 0=none):
+  0 none    1 gray    2 green    3 purple   4 blue
+  5 yellow  6 red     7 orange
+
+The colors themselves are not user-redefinable. A custom-named tag
+binds to one of the 7 swatches.
+"""
+import hashlib
+import os
+import plistlib
+import subprocess
+import sys
+from pathlib import Path
+
+XATTR = "com.apple.metadata:_kMDItemUserTags"
+
+COLORS = {
+    "none": 0, "gray": 1, "grey": 1, "green": 2, "purple": 3,
+    "blue": 4, "yellow": 5, "red": 6, "orange": 7,
+}
+COLOR_NAMES = ["none", "gray", "green", "purple", "blue", "yellow", "red", "orange"]
+
+
+def die(msg, code=1):
+    sys.stderr.write(f"tag: {msg}\n")
+    sys.exit(code)
+
+
+def color_to_int(s):
+    s = s.strip().lower()
+    if s.isdigit():
+        n = int(s)
+        if 0 <= n <= 7:
+            return n
+        die(f"color code {n} out of range (0-7)")
+    if s in COLORS:
+        return COLORS[s]
+    die(f"unknown color '{s}' — try one of: {', '.join(COLOR_NAMES)} or 0-7")
+
+
+def parse_spec(spec):
+    """'Name' or 'Name:color' -> 'Name' or 'Name\\n<int>'."""
+    spec = spec.strip()
+    if not spec:
+        die("empty tag spec")
+    if ":" in spec:
+        name, color = spec.split(":", 1)
+        name = name.strip()
+        if not name:
+            die("empty tag name in spec")
+        return f"{name}\n{color_to_int(color)}"
+    return spec
+
+
+def read_tags(path):
+    """Return list of raw tag strings (each 'Name' or 'Name\\n<int>')."""
+    try:
+        raw = subprocess.run(
+            ["xattr", "-px", XATTR, str(path)],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        die("`xattr` not available — this tool requires macOS")
+    if raw.returncode != 0:
+        return []
+    hex_blob = "".join(raw.stdout.split())
+    try:
+        data = bytes.fromhex(hex_blob)
+        parsed = plistlib.loads(data)
+    except Exception as e:
+        die(f"failed to decode tag xattr on {path}: {e}")
+    if not isinstance(parsed, list):
+        return []
+    return [str(t) for t in parsed]
+
+
+def write_tags(path, tags):
+    """Replace the tag xattr with `tags` (list of raw strings). Empty -> clear."""
+    if not tags:
+        subprocess.run(["xattr", "-d", XATTR, str(path)],
+                       capture_output=True, check=False)
+        return
+    blob = plistlib.dumps(tags, fmt=plistlib.FMT_BINARY)
+    hex_blob = blob.hex()
+    r = subprocess.run(["xattr", "-wx", XATTR, hex_blob, str(path)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"xattr write failed for {path}: {r.stderr.strip()}")
+
+
+def name_of(raw):
+    return raw.split("\n", 1)[0]
+
+
+def color_of(raw):
+    parts = raw.split("\n", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return int(parts[1])
+    return 0
+
+
+def fmt_tag(raw):
+    n = name_of(raw)
+    c = color_of(raw)
+    return n if c == 0 else f"{n}:{COLOR_NAMES[c]}"
+
+
+def expand_files(args):
+    out = []
+    for a in args:
+        p = Path(os.path.expanduser(a))
+        if not p.exists():
+            die(f"no such file: {a}")
+        out.append(p)
+    return out
+
+
+# ── subcommands ───────────────────────────────────────────────
+
+def cmd_list(args):
+    if not args:
+        die("usage: tag list <file>...")
+    files = expand_files(args)
+    multi = len(files) > 1
+    for f in files:
+        tags = read_tags(f)
+        if multi:
+            print(f"{f}:")
+        for t in tags:
+            print(f"  {fmt_tag(t)}" if multi else fmt_tag(t))
+        if multi and not tags:
+            print("  (no tags)")
+
+
+def split_specs(s):
+    return [x for x in (p.strip() for p in s.split(",")) if x]
+
+
+def cmd_add(args):
+    if len(args) < 2:
+        die("usage: tag add <spec>[,<spec>...] <file>...")
+    new = [parse_spec(s) for s in split_specs(args[0])]
+    new_names = {name_of(t) for t in new}
+    for f in expand_files(args[1:]):
+        existing = [t for t in read_tags(f) if name_of(t) not in new_names]
+        write_tags(f, existing + new)
+        print(f"tag add: {f}")
+
+
+def cmd_set(args):
+    if len(args) < 2:
+        die("usage: tag set <spec>[,<spec>...] <file>...")
+    new = [parse_spec(s) for s in split_specs(args[0])]
+    for f in expand_files(args[1:]):
+        write_tags(f, new)
+        print(f"tag set: {f}")
+
+
+def cmd_remove(args):
+    if len(args) < 2:
+        die("usage: tag remove <name>[,<name>...] <file>...")
+    drop = {n.strip() for n in split_specs(args[0])}
+    for f in expand_files(args[1:]):
+        existing = read_tags(f)
+        kept = [t for t in existing if name_of(t) not in drop]
+        if len(kept) != len(existing):
+            write_tags(f, kept)
+            print(f"tag remove: {f}")
+
+
+def cmd_clear(args):
+    if not args:
+        die("usage: tag clear <file>...")
+    for f in expand_files(args):
+        write_tags(f, [])
+        print(f"tag clear: {f}")
+
+
+def mdfind(query, scope=None):
+    cmd = ["mdfind"]
+    if scope:
+        cmd += ["-onlyin", str(Path(os.path.expanduser(scope)).resolve())]
+    cmd.append(query)
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"mdfind failed: {r.stderr.strip()}")
+    return [line for line in r.stdout.splitlines() if line]
+
+
+def pop_scope(args):
+    """Strip --scope <dir> from args; return (args, scope_or_None)."""
+    if "--scope" in args:
+        i = args.index("--scope")
+        if i + 1 >= len(args):
+            die("--scope needs a path")
+        scope = args[i + 1]
+        return args[:i] + args[i + 2:], scope
+    return args, None
+
+
+def cmd_find(args):
+    args, scope = pop_scope(args)
+    if len(args) != 1:
+        die("usage: tag find <name> [--scope <dir>]")
+    name = args[0]
+    for hit in mdfind(f'kMDItemUserTags == "{name}"', scope):
+        print(hit)
+
+
+def _find_multi(args, joiner):
+    args, scope = pop_scope(args)
+    if not args:
+        die("need at least one tag name")
+    names = split_specs(args[0]) if len(args) == 1 else args
+    parts = [f'kMDItemUserTags == "{n}"' for n in names]
+    query = (" " + joiner + " ").join(parts)
+    for hit in mdfind(query, scope):
+        print(hit)
+
+
+def cmd_find_all(args):
+    _find_multi(args, "&&")
+
+
+def cmd_find_any(args):
+    _find_multi(args, "||")
+
+
+def cmd_link(args):
+    color = None
+    name = None
+    files_args = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--color":
+            color = args[i + 1]; i += 2; continue
+        if a == "--name":
+            name = args[i + 1]; i += 2; continue
+        files_args.append(a); i += 1
+    if len(files_args) < 2:
+        die("usage: tag link [--color C] [--name N] <file> <file>...")
+    files = expand_files(files_args)
+    if name is None:
+        h = hashlib.sha1()
+        for f in sorted(str(p) for p in files):
+            h.update(f.encode("utf-8"))
+        name = "link-" + h.hexdigest()[:8]
+    spec = name if color is None else f"{name}:{color}"
+    raw = parse_spec(spec)
+    raw_name = name_of(raw)
+    for f in files:
+        existing = [t for t in read_tags(f) if name_of(t) != raw_name]
+        write_tags(f, existing + [raw])
+        print(f"tag link: {f}")
+    print(f"linked as: {raw_name}")
+
+
+def cmd_rename(args):
+    if len(args) != 2:
+        die("usage: tag rename <old> <new>")
+    old, new = args
+    plist_path = Path.home() / "Library/SyncedPreferences/com.apple.finder.plist"
+    if not plist_path.is_file():
+        die(f"not found: {plist_path}")
+    # Use defaults / PlistBuddy is fragile across formats — read via plistlib.
+    with plist_path.open("rb") as f:
+        data = plistlib.load(f)
+    # Tag store lives under values -> FinderTagDict -> value -> Tags (a list of {n: name, l: colorIdx?, p: bool}).
+    try:
+        tags = data["values"]["FinderTagDict"]["value"]["Tags"]
+    except (KeyError, TypeError):
+        die("could not locate Tags array in finder plist — structure may have changed")
+    renamed = False
+    for t in tags:
+        if t.get("n") == old:
+            t["n"] = new
+            renamed = True
+    if not renamed:
+        die(f"no user-defined tag named '{old}' found in Finder's tag list")
+    with plist_path.open("wb") as f:
+        plistlib.dump(data, f, fmt=plistlib.FMT_BINARY)
+    # cfprefsd caches this — kick it.
+    subprocess.run(["killall", "cfprefsd"], capture_output=True)
+    print(f"renamed Finder tag: {old} -> {new}")
+    print("note: existing files keep the old name in their xattr — re-tag them with:")
+    print(f"  tag find {old} | xargs -I {{}} tag add {new} {{}}")
+    print(f"  tag find {old} | xargs -I {{}} tag remove {old} {{}}")
+
+
+def cmd_colors(_args):
+    for i, n in enumerate(COLOR_NAMES):
+        print(f"{i} {n}")
+
+
+SUBS = {
+    "list": cmd_list, "ls": cmd_list,
+    "add": cmd_add,
+    "set": cmd_set,
+    "remove": cmd_remove, "rm": cmd_remove,
+    "clear": cmd_clear,
+    "find": cmd_find,
+    "find-all": cmd_find_all,
+    "find-any": cmd_find_any,
+    "link": cmd_link,
+    "rename": cmd_rename,
+    "colors": cmd_colors, "colours": cmd_colors,
+}
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+    sub = sys.argv[1]
+    if sub not in SUBS:
+        die(f"unknown subcommand '{sub}'. try one of: {', '.join(sorted(set(SUBS)))}")
+    SUBS[sub](sys.argv[2:])
+
+
+if __name__ == "__main__":
+    main()
