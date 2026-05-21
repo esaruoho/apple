@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""cc-index — index every Claude Code conversation by the files it touched.
+
+Walks `~/.claude/projects/<encoded-cwd>/*.jsonl` and emits two JSONL artefacts
+under `~/work/cc/vault/_index/`:
+
+  cc-sessions.jsonl     One row per session/conversation:
+    {sessionId, cwd, gitBranch, startedAt, endedAt, firstPrompt,
+     filesTouched, projectKey, jsonlPath}
+
+  cc-files.jsonl        One row per (sessionId, file_path), the file-touch
+                        index used by `cc-here`:
+    {sessionId, cwd, file, firstTouch, lastTouch, tools, projectKey}
+
+Re-running is safe — outputs are rewritten in full. The walk is cheap
+(~few-hundred-MB worst case across stdlib JSON parsing).
+
+Apple-native: stdlib only.
+
+Usage:
+    cc-index                        # rebuild both index files
+    cc-index --stats                # rebuild and print summary
+    cc-index --since 2026-04-01     # only include sessions whose newest
+                                    # event is on/after this ISO date
+"""
+from __future__ import annotations
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Iterable, Iterator
+
+CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+INDEX_DIR = Path.home() / "work" / "cc" / "vault" / "_index"
+SESSIONS_OUT = INDEX_DIR / "cc-sessions.jsonl"
+FILES_OUT = INDEX_DIR / "cc-files.jsonl"
+
+FILE_TOUCH_TOOLS = {"Edit", "Write", "Read", "NotebookEdit"}
+
+
+def iter_events(jsonl_path: Path) -> Iterator[dict]:
+    """Yield decoded JSON objects from a .jsonl, skipping malformed lines."""
+    try:
+        with jsonl_path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    yield json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+    except (OSError, FileNotFoundError):
+        return
+
+
+def extract_text(content) -> str:
+    """Pull the first user-readable text out of a message.content value."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        for c in content:
+            if isinstance(c, dict) and c.get("type") == "text":
+                return c.get("text", "")
+    return ""
+
+
+def summarize_session(jsonl_path: Path) -> dict | None:
+    """Walk one .jsonl and return a {session, files} pair, or None if empty."""
+    session_id = jsonl_path.stem
+    project_key = jsonl_path.parent.name
+
+    cwd: str | None = None
+    git_branch: str | None = None
+    started_at: str | None = None
+    ended_at: str | None = None
+    first_prompt: str | None = None
+    file_touches: dict[str, dict] = {}  # path -> {firstTouch, lastTouch, tools{set}}
+
+    has_any_event = False
+    for ev in iter_events(jsonl_path):
+        has_any_event = True
+        ts = ev.get("timestamp")
+        if ts:
+            if started_at is None or ts < started_at:
+                started_at = ts
+            if ended_at is None or ts > ended_at:
+                ended_at = ts
+        if cwd is None and "cwd" in ev:
+            cwd = ev["cwd"]
+        if git_branch is None and "gitBranch" in ev:
+            git_branch = ev["gitBranch"]
+
+        et = ev.get("type")
+        msg = ev.get("message") if isinstance(ev.get("message"), dict) else None
+
+        if et == "user" and first_prompt is None and msg:
+            txt = extract_text(msg.get("content"))
+            # ignore tool-result echoes that arrive as 'user' events
+            if txt and not txt.startswith("<") and not txt.startswith("["):
+                first_prompt = txt.strip()[:500]
+
+        if msg and isinstance(msg.get("content"), list):
+            for c in msg["content"]:
+                if not isinstance(c, dict) or c.get("type") != "tool_use":
+                    continue
+                tool = c.get("name", "")
+                if tool not in FILE_TOUCH_TOOLS:
+                    continue
+                inp = c.get("input")
+                if not isinstance(inp, dict):
+                    continue
+                path = inp.get("file_path") or inp.get("path") or inp.get("notebook_path")
+                if not isinstance(path, str) or not path:
+                    continue
+                rec = file_touches.setdefault(path, {
+                    "firstTouch": ts, "lastTouch": ts, "tools": set()
+                })
+                if ts:
+                    if rec["firstTouch"] is None or ts < rec["firstTouch"]:
+                        rec["firstTouch"] = ts
+                    if rec["lastTouch"] is None or ts > rec["lastTouch"]:
+                        rec["lastTouch"] = ts
+                rec["tools"].add(tool)
+
+    if not has_any_event:
+        return None
+
+    files_list = sorted(file_touches.keys())
+    return {
+        "session": {
+            "sessionId": session_id,
+            "projectKey": project_key,
+            "cwd": cwd,
+            "gitBranch": git_branch,
+            "startedAt": started_at,
+            "endedAt": ended_at,
+            "firstPrompt": first_prompt,
+            "filesTouched": len(files_list),
+            "jsonlPath": str(jsonl_path),
+        },
+        "files": [
+            {
+                "sessionId": session_id,
+                "projectKey": project_key,
+                "cwd": cwd,
+                "file": path,
+                "firstTouch": file_touches[path]["firstTouch"],
+                "lastTouch": file_touches[path]["lastTouch"],
+                "tools": sorted(file_touches[path]["tools"]),
+            }
+            for path in files_list
+        ],
+    }
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--stats", action="store_true",
+                    help="print a summary after building")
+    ap.add_argument("--since", default=None,
+                    help="only include sessions whose endedAt >= this ISO date")
+    args = ap.parse_args(argv[1:])
+
+    if not CLAUDE_PROJECTS.exists():
+        print(f"cc-index: not found: {CLAUDE_PROJECTS}", file=sys.stderr)
+        return 1
+
+    INDEX_DIR.mkdir(parents=True, exist_ok=True)
+
+    n_sessions = 0
+    n_files = 0
+    n_touches = 0
+    projects_seen: set[str] = set()
+    files_to_sessions: dict[str, set[str]] = {}
+
+    # Stream output so memory stays small even at scale.
+    with SESSIONS_OUT.open("w") as sfh, FILES_OUT.open("w") as ffh:
+        for proj_dir in sorted(CLAUDE_PROJECTS.iterdir()):
+            if not proj_dir.is_dir():
+                continue
+            for jsonl_path in sorted(proj_dir.glob("*.jsonl")):
+                result = summarize_session(jsonl_path)
+                if result is None:
+                    continue
+                sess = result["session"]
+                if args.since and sess.get("endedAt") and sess["endedAt"] < args.since:
+                    continue
+                sfh.write(json.dumps(sess, ensure_ascii=False) + "\n")
+                n_sessions += 1
+                projects_seen.add(sess["projectKey"])
+                for row in result["files"]:
+                    ffh.write(json.dumps(row, ensure_ascii=False) + "\n")
+                    n_touches += 1
+                    files_to_sessions.setdefault(row["file"], set()).add(row["sessionId"])
+                n_files += len(result["files"])
+
+    print(f"wrote {SESSIONS_OUT}")
+    print(f"wrote {FILES_OUT}")
+    if args.stats:
+        n_unique_files = len(files_to_sessions)
+        print()
+        print(f"sessions      : {n_sessions}")
+        print(f"projects      : {len(projects_seen)}")
+        print(f"file-touches  : {n_touches}")
+        print(f"unique files  : {n_unique_files}")
+        if files_to_sessions:
+            top = sorted(files_to_sessions.items(), key=lambda kv: -len(kv[1]))[:5]
+            print()
+            print("most-touched files:")
+            for path, sids in top:
+                print(f"  {len(sids):>4}  {path}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

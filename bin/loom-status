@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# loom-status — report progress of loom-mirror running on CloudcityMacMini
+# Zero LLM roundtrip. Deterministic shell only.
+set -u
+
+HOST="CloudcityMacMini.local"
+ROOT="/Volumes/CLOUDCITY4TB/loom-mirror"
+
+ssh -o BatchMode=yes -o ConnectTimeout=5 "$HOST" "
+set -u
+ROOT='$ROOT'
+MANIFEST=\"\$ROOT/manifest.jsonl\"
+LOG=\"\$ROOT/run.log\"
+VIDEOS=\"\$ROOT/videos\"
+
+echo '═══ loom-mirror status ═══'
+echo \"host:   $HOST\"
+echo \"root:   \$ROOT\"
+echo
+
+if pgrep -fl loom-mirror.py >/dev/null 2>&1; then
+  pid=\$(pgrep -f loom-mirror.py | head -1)
+  echo \"process: ALIVE  (PID \$pid)\"
+else
+  echo 'process: STOPPED'
+fi
+echo
+
+if [ -f \"\$MANIFEST\" ]; then
+  total_lines=\$(wc -l < \"\$MANIFEST\" | awk '{print \$1}')
+  echo 'manifest counts:'
+  awk -F\\\" '{for(i=1;i<=NF;i++) if(\$i==\"status\") print \$(i+2)}' \"\$MANIFEST\" | sort | uniq -c | sed 's/^/  /'
+  echo \"  total processed: \$total_lines / 519\"
+else
+  echo 'manifest: not yet created'
+fi
+echo
+
+if [ -d \"\$VIDEOS\" ]; then
+  files=\$(ls \"\$VIDEOS\" 2>/dev/null | wc -l | awk '{print \$1}')
+  size=\$(du -sh \"\$VIDEOS\" 2>/dev/null | cut -f1)
+  echo \"files on disk: \$files\"
+  echo \"size:          \$size\"
+fi
+echo
+
+echo 'disk:'
+df -h \"\$ROOT\" 2>/dev/null | tail -1 | awk '{printf \"  %s used / %s avail (%s)\\n\", \$3, \$4, \$5}'
+echo
+
+if [ -f \"\$LOG\" ]; then
+  echo '─── last 8 log lines ───'
+  tail -8 \"\$LOG\"
+fi
+"

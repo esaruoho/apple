@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""cc-here — list (and optionally open) Claude Code conversations that touched
+files under a given folder.
+
+Reads the index produced by `cc-index` at
+`~/work/cc/vault/_index/cc-{sessions,files}.jsonl`. Path matching is
+prefix-based on absolute path, so "conversations under this folder" is
+asked-and-answered: any session whose file-touch starts with the query path.
+
+Resolution to a readable artefact, in order of preference:
+    1. Vault markdown at ~/work/cc/vault/sources/conversations/<date>/…
+       (matched by `session_id:` frontmatter — cached on disk)
+    2. Raw transcript at ~/.claude/projects/<key>/<sessionId>.jsonl
+
+Usage:
+    cc-here                       # use Finder selection, else cwd
+    cc-here <folder-or-file>      # explicit
+    cc-here --limit 20            # cap listing
+    cc-here --json                # machine-readable
+    cc-here --pick                # show NSAppleScript chooser, open chosen
+    cc-here --open <sessionId>    # open a specific session directly
+    cc-here --rebuild-vault-map   # refresh sessionId → vault markdown index
+
+Apple-native: stdlib + osascript + open(1).
+"""
+from __future__ import annotations
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Iterator
+
+VAULT_ROOT = Path.home() / "work" / "cc" / "vault"
+INDEX_DIR = VAULT_ROOT / "_index"
+SESSIONS_IDX = INDEX_DIR / "cc-sessions.jsonl"
+FILES_IDX = INDEX_DIR / "cc-files.jsonl"
+VAULT_MAP = INDEX_DIR / "cc-vault-map.json"  # {sessionId: vaultMdPath}
+VAULT_CONVS = VAULT_ROOT / "sources" / "conversations"
+
+
+# ── helpers ────────────────────────────────────────────────────────────────
+
+def die(msg: str, code: int = 1):
+    print(f"cc-here: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def read_jsonl(path: Path) -> Iterator[dict]:
+    if not path.exists():
+        die(f"missing index: {path} — run `cc-index` first")
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                yield json.loads(line)
+
+
+def finder_selection() -> str | None:
+    script = '''
+tell application "Finder"
+    set sel to selection as alias list
+    if (count of sel) = 0 then return ""
+    return POSIX path of (item 1 of sel as alias)
+end tell
+'''
+    out = subprocess.run(["osascript", "-e", script],
+                         capture_output=True, text=True).stdout.strip()
+    return out or None
+
+
+def normalize_query_path(p: str) -> str:
+    """Make an absolute, resolved path; trailing slash significant only for dirs."""
+    return os.path.abspath(os.path.expanduser(p))
+
+
+def build_vault_map() -> dict[str, str]:
+    """Walk vault markdown and extract `session_id:` from frontmatter."""
+    mapping: dict[str, str] = {}
+    if not VAULT_CONVS.exists():
+        return mapping
+    pat = re.compile(r'^session_id:\s*([0-9a-f-]+)\s*$', re.IGNORECASE | re.MULTILINE)
+    for md in VAULT_CONVS.rglob("*.md"):
+        try:
+            # frontmatter is at top — read first ~2KB
+            head = md.open("r", encoding="utf-8", errors="replace").read(2048)
+        except OSError:
+            continue
+        m = pat.search(head)
+        if m:
+            mapping[m.group(1)] = str(md)
+    VAULT_MAP.parent.mkdir(parents=True, exist_ok=True)
+    VAULT_MAP.write_text(json.dumps(mapping, ensure_ascii=False, indent=0))
+    return mapping
+
+
+def load_vault_map() -> dict[str, str]:
+    if VAULT_MAP.exists():
+        try:
+            return json.loads(VAULT_MAP.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            pass
+    return build_vault_map()
+
+
+# ── core query ─────────────────────────────────────────────────────────────
+
+def sessions_under(query_path: str) -> list[dict]:
+    """Return session records (sessions index) whose file-touches start with query_path,
+    enriched with `matchedFiles` count and `lastTouchAt`.
+    """
+    qp = normalize_query_path(query_path)
+    qp_with_sep = qp if qp.endswith(os.sep) else qp + os.sep
+    # Allow exact-file match (when qp itself is the file)
+    matched: dict[str, dict] = {}  # sessionId -> {count, lastTouch}
+    for row in read_jsonl(FILES_IDX):
+        f = row.get("file", "")
+        if f == qp or f.startswith(qp_with_sep):
+            sid = row["sessionId"]
+            cur = matched.setdefault(sid, {"matchedFiles": 0, "lastTouchAt": ""})
+            cur["matchedFiles"] += 1
+            lt = row.get("lastTouch") or ""
+            if lt > cur["lastTouchAt"]:
+                cur["lastTouchAt"] = lt
+
+    if not matched:
+        return []
+
+    sessions_by_id: dict[str, dict] = {}
+    for s in read_jsonl(SESSIONS_IDX):
+        if s["sessionId"] in matched:
+            sessions_by_id[s["sessionId"]] = s
+
+    out: list[dict] = []
+    for sid, meta in matched.items():
+        s = sessions_by_id.get(sid)
+        if s is None:
+            continue
+        s = dict(s)  # don't mutate the cached row
+        s["matchedFiles"] = meta["matchedFiles"]
+        s["matchedLastTouch"] = meta["lastTouchAt"]
+        out.append(s)
+    out.sort(key=lambda r: r.get("matchedLastTouch", ""), reverse=True)
+    return out
+
+
+def open_session(session_id: str, vault_map: dict[str, str]) -> None:
+    """Resolve sessionId → vault md (preferred) or raw JSONL; open it."""
+    md = vault_map.get(session_id)
+    if md and Path(md).exists():
+        print(f"opening vault md: {md}")
+        subprocess.run(["open", md], check=False)
+        return
+    # fallback to raw transcript
+    for s in read_jsonl(SESSIONS_IDX):
+        if s["sessionId"] == session_id:
+            jp = s.get("jsonlPath")
+            if jp and Path(jp).exists():
+                print(f"opening raw transcript: {jp}")
+                subprocess.run(["open", "-a", "TextEdit", jp], check=False)
+                return
+    die(f"sessionId not found anywhere: {session_id}")
+
+
+# ── output formatting ──────────────────────────────────────────────────────
+
+def short(sid: str) -> str:
+    return sid.split("-", 1)[0]
+
+
+def short_ts(ts: str | None) -> str:
+    if not ts:
+        return "?"
+    return ts[:16].replace("T", " ")  # 2026-05-20 08:39
+
+
+def fmt_row(s: dict, vault_map: dict[str, str]) -> str:
+    has_md = "📄" if vault_map.get(s["sessionId"]) else "  "
+    title = (s.get("firstPrompt") or "").splitlines()[0].strip()
+    if len(title) > 90:
+        title = title[:87] + "…"
+    return (
+        f"{has_md} {short_ts(s.get('matchedLastTouch'))}  "
+        f"{short(s['sessionId'])}  "
+        f"({s['matchedFiles']:>2}f)  "
+        f"{title}"
+    )
+
+
+def pick_with_chooser(sessions: list[dict], vault_map: dict[str, str]) -> str | None:
+    """Show macOS chooser dialog, return chosen sessionId or None."""
+    labels = [fmt_row(s, vault_map) for s in sessions]
+    # AppleScript escape: keep it simple — labels won't include quotes thanks to fmt_row
+    items_lit = ", ".join('"' + l.replace('"', "'") + '"' for l in labels)
+    script = f'''
+set picks to {{{items_lit}}}
+set chosen to choose from list picks with prompt "Conversations:" with title "cc-here"
+if chosen is false then return "CANCEL"
+return item 1 of chosen
+'''
+    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    chosen = r.stdout.strip()
+    if not chosen or chosen == "CANCEL":
+        return None
+    # Map back to sessionId by matching the short prefix in the chosen label
+    for s, l in zip(sessions, labels):
+        if l == chosen:
+            return s["sessionId"]
+    return None
+
+
+# ── main ───────────────────────────────────────────────────────────────────
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("path", nargs="?", default=None)
+    ap.add_argument("--limit", type=int, default=30)
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--pick", action="store_true",
+                    help="show a chooser, open the picked session")
+    ap.add_argument("--open", dest="open_id", default=None,
+                    help="open a sessionId directly (no listing)")
+    ap.add_argument("--rebuild-vault-map", action="store_true")
+    args = ap.parse_args(argv[1:])
+
+    if args.rebuild_vault_map:
+        m = build_vault_map()
+        print(f"vault map: {len(m)} entries → {VAULT_MAP}")
+        return 0
+
+    vault_map = load_vault_map()
+
+    if args.open_id:
+        open_session(args.open_id, vault_map)
+        return 0
+
+    # determine query path
+    path = args.path or finder_selection() or os.getcwd()
+    qp = normalize_query_path(path)
+
+    if not (os.path.isdir(qp) or os.path.exists(qp)):
+        # Allow non-existent paths too — index may carry rows for deleted files
+        pass
+
+    sessions = sessions_under(qp)
+
+    if args.json:
+        print(json.dumps(sessions[:args.limit], ensure_ascii=False, indent=2))
+        return 0
+
+    if not sessions:
+        print(f"no conversations touched anything under: {qp}")
+        return 0
+
+    if args.pick:
+        chosen = pick_with_chooser(sessions[:args.limit], vault_map)
+        if chosen is None:
+            print("cancelled")
+            return 0
+        open_session(chosen, vault_map)
+        return 0
+
+    # Plain listing
+    print(f"# {len(sessions)} conversations under: {qp}")
+    print(f"# (📄 = vault markdown exists,  Nf = files touched in this scope)")
+    print()
+    for s in sessions[:args.limit]:
+        print(fmt_row(s, vault_map))
+    if len(sessions) > args.limit:
+        print(f"\n… {len(sessions) - args.limit} more (raise --limit)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

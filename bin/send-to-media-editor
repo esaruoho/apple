@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""send-to-media-editor — push a Finder-selected (or argument) video into the BBS Media Editor.
+
+Flow:
+    1. Resolve the input path:
+         - argv[1] if given
+         - else the first item of the Finder selection
+    2. Find a matching video in ray-graph via GET /api/list_videos
+         - match by absolute path, then by filename, then by stem (YouTube-ID)
+    3. Dispatch into the Media Editor:
+         - If BBS-app (Tauri "bbs-app") is running:
+             UI-script the omnibar with `editor:<id>` + Return
+         - Else fall back to opening
+             http://localhost:8000/editor.html?video=<id>
+           in the default browser
+
+Apple-native only: stdlib + open(1) + osascript(1) + curl(1).
+"""
+from __future__ import annotations
+import json
+import os
+import subprocess
+import sys
+import urllib.parse
+import urllib.request
+
+RAY_BASE = "http://localhost:8000"
+# BBS-app identity (verified via Info.plist of BBS.app):
+#   CFBundleExecutable  = bbs-app   (process name — pgrep target)
+#   CFBundleName        = BBS       (use with `tell application "BBS"`)
+#   CFBundleIdentifier  = com.cloudcity.bbs
+BBS_PROCESS_NAME = "bbs-app"
+BBS_APP_NAME = "BBS"
+BBS_APP_PATH_CANDIDATES = (
+    os.path.expanduser("~/work/bbs-app/src-tauri/target/release/bundle/macos/BBS.app"),
+    "/Applications/BBS.app",
+)
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(f"send-to-media-editor: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def finder_selection() -> str | None:
+    """Return the POSIX path of the first item selected in Finder, or None."""
+    script = '''
+tell application "Finder"
+    set sel to selection as alias list
+    if (count of sel) = 0 then return ""
+    return POSIX path of (item 1 of sel as alias)
+end tell
+'''
+    out = subprocess.run(
+        ["osascript", "-e", script],
+        capture_output=True, text=True,
+    ).stdout.strip()
+    return out or None
+
+
+def list_videos() -> list[dict]:
+    try:
+        with urllib.request.urlopen(f"{RAY_BASE}/api/list_videos", timeout=5) as r:
+            data = json.load(r)
+    except Exception as e:
+        die(f"could not reach ray-graph at {RAY_BASE} — is it running?  ({e})")
+    if not data.get("success"):
+        die("ray-graph /api/list_videos returned success=false")
+    return data.get("videos", [])
+
+
+def resolve(path: str, videos: list[dict]) -> dict | None:
+    """Find a ray-graph video that matches the given local path."""
+    abs_path = os.path.abspath(os.path.expanduser(path))
+    base = os.path.basename(abs_path)
+    stem, _ = os.path.splitext(base)
+
+    # 1) absolute path match (ray-graph paths are relative to the repo root)
+    ray_root = os.path.expanduser("~/work/ray-graph")
+    for v in videos:
+        vpath = os.path.join(ray_root, v.get("path", ""))
+        if os.path.abspath(vpath) == abs_path:
+            return v
+
+    # 2) filename match
+    for v in videos:
+        if v.get("filename") == base:
+            return v
+
+    # 3) stem == id (YouTube ID convention)
+    for v in videos:
+        if v.get("id") == stem:
+            return v
+    return None
+
+
+def bbs_running() -> bool:
+    """True iff the BBS-app process is running."""
+    r = subprocess.run(["pgrep", "-x", BBS_PROCESS_NAME], capture_output=True, text=True)
+    return bool(r.stdout.strip())
+
+
+def launch_bbs() -> bool:
+    """Launch BBS.app from the first candidate path that exists.
+
+    Waits up to ~6 s for the process to register, then a small grace period for
+    the window to be ready to receive keystrokes. Returns True if the process
+    appears to be running afterwards.
+    """
+    import time
+
+    app_path = next((p for p in BBS_APP_PATH_CANDIDATES if os.path.isdir(p)), None)
+    if app_path is None:
+        return False
+
+    print(f"launching     : {app_path}")
+    subprocess.run(["open", "-a", app_path], check=False)
+
+    deadline = time.time() + 6.0
+    while time.time() < deadline:
+        if bbs_running():
+            time.sleep(0.8)  # let the window finish loading before keystrokes
+            return True
+        time.sleep(0.2)
+    return bbs_running()
+
+
+def send_via_bbs_omnibar(verb: str) -> None:
+    """Activate BBS, open a new tab, focus omnibar (Cmd+L), type verb, Return.
+    The verb is e.g. 'editor:GeOQEEV3oYI' or 'editor:<id>@<sec>'.
+    """
+    script = f'''
+tell application "{BBS_APP_NAME}" to activate
+delay 0.35
+tell application "System Events"
+    keystroke "t" using command down  -- new tab
+    delay 0.15
+    keystroke "l" using command down  -- focus omnibar
+    delay 0.15
+    keystroke "{verb}"
+    delay 0.08
+    key code 36  -- Return
+end tell
+'''
+    subprocess.run(["osascript", "-e", script], check=False)
+
+
+def open_editor_url(video_id: str, t_sec: str | None = None) -> str:
+    qs = [f"video={urllib.parse.quote(video_id)}"]
+    if t_sec:
+        qs.append(f"t={urllib.parse.quote(t_sec)}")
+    url = f"{RAY_BASE}/editor.html?{'&'.join(qs)}"
+    subprocess.run(["open", url], check=True)
+    return url
+
+
+def main(argv: list[str]) -> int:
+    # ── parse args ────────────────────────────────────────────────────────────
+    path: str | None = None
+    t_sec: str | None = None
+    force_browser = False
+    args = argv[1:]
+    while args:
+        a = args.pop(0)
+        if a in ("-h", "--help"):
+            print(__doc__); return 0
+        if a == "--browser":
+            force_browser = True
+        elif a in ("--at", "-t") and args:
+            t_sec = args.pop(0)
+        elif a == "--dry-run":
+            os.environ["DRY_RUN"] = "1"
+        else:
+            path = a
+
+    if path is None:
+        path = finder_selection()
+        if not path:
+            die("no path given and Finder has no selection")
+
+    if path.endswith("/"):
+        die(f"selection is a folder, not a file: {path}")
+
+    print(f"input         : {path}")
+
+    # ── resolve to videoId ───────────────────────────────────────────────────
+    videos = list_videos()
+    video = resolve(path, videos)
+    if video is None:
+        die(
+            f"no ray-graph video matches {os.path.basename(path)} "
+            f"(searched {len(videos)} videos in /api/list_videos). "
+            "Ingest the file into ray-graph first, then retry."
+        )
+    video_id = video["id"]
+    print(f"resolved      : {video_id} — {video.get('title', '?')[:60]}")
+
+    if os.environ.get("DRY_RUN"):
+        print(f"would open    : {RAY_BASE}/editor.html?video={video_id}" +
+              (f"&t={t_sec}" if t_sec else ""))
+        return 0
+
+    # ── dispatch ─────────────────────────────────────────────────────────────
+    if force_browser:
+        url = open_editor_url(video_id, t_sec)
+        print(f"dispatch      : default browser  →  {url}")
+        return 0
+
+    if not bbs_running():
+        if not launch_bbs():
+            url = open_editor_url(video_id, t_sec)
+            print(f"dispatch      : default browser  →  {url}")
+            print("                (BBS.app not found — install it or pass --browser)")
+            return 0
+
+    verb = f"editor:{video_id}" + (f"@{t_sec}" if t_sec else "")
+    print(f"dispatch      : BBS omnibar  →  {verb}")
+    send_via_bbs_omnibar(verb)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

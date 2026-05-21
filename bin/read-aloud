@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""
+read-aloud — speak the macOS clipboard via Voicebox (Kokoro/MLX, local).
+
+  read-aloud                 read whatever's currently on the clipboard
+  read-aloud --grab          synthesize Cmd-C first (capture current selection),
+                             then read it. Requires Accessibility permission for
+                             whichever process invokes this (Terminal / iTerm /
+                             AppleToolbox / Claude Code).
+  read-aloud --stop          kill any in-flight read-aloud playback
+  read-aloud --text "..."    speak literal text (skip clipboard)
+  read-aloud --profile X     override voice profile for this call
+
+The reading runs as a background job so the verb returns immediately. Pressing
+the button while a previous reading is mid-flight cancels it and starts the
+new one (kill-previous via dedicated PID file — does NOT touch the Claude
+chat-speak hook's PID).
+
+Defaults (override via env or --flags):
+  READ_VOICEBOX_URL       http://127.0.0.1:17493
+  READ_VOICEBOX_PROFILE   Nicole          (distinct from Claude's "Heart" and /show's "Bella")
+  READ_VOICEBOX_ENGINE    kokoro
+  READ_MAX_CHARS          4000
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+VB = os.environ.get("READ_VOICEBOX_URL", "http://127.0.0.1:17493")
+PROFILE = os.environ.get("READ_VOICEBOX_PROFILE", "Nicole")
+ENGINE = os.environ.get("READ_VOICEBOX_ENGINE", "kokoro")
+MAX_CHARS = int(os.environ.get("READ_MAX_CHARS", "4000"))
+
+PID_FILE = "/tmp/read-aloud.pid"
+AUDIO_FILE = "/tmp/read-aloud.wav"
+
+
+def kill_previous():
+    try:
+        with open(PID_FILE) as f:
+            pid = int(f.read().strip())
+        os.kill(pid, 15)
+    except (FileNotFoundError, ProcessLookupError, ValueError, PermissionError):
+        pass
+
+
+def grab_selection():
+    """Synthesize Cmd-C so the current selection lands on the clipboard.
+
+    Uses System Events. Whichever app is invoking this (Terminal/iTerm/
+    AppleToolbox) needs Accessibility permission, granted at first prompt.
+    """
+    script = 'tell application "System Events" to keystroke "c" using {command down}'
+    subprocess.run(["osascript", "-e", script], check=False,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(0.15)  # let the source app put text on the pasteboard
+
+
+def read_clipboard():
+    r = subprocess.run(["pbpaste"], capture_output=True, text=True)
+    return r.stdout
+
+
+def main():
+    argv = sys.argv[1:]
+    if argv and argv[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__)
+        sys.exit(2)
+
+    if argv and argv[0] == "--stop":
+        kill_previous()
+        print("read-aloud: stopped")
+        return
+
+    text = None
+    grab = False
+    profile = PROFILE
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--grab":
+            grab = True
+        elif a == "--text" and i + 1 < len(argv):
+            text = argv[i + 1]
+            i += 1
+        elif a == "--profile" and i + 1 < len(argv):
+            profile = argv[i + 1]
+            i += 1
+        else:
+            sys.exit(f"read-aloud: unknown arg '{a}'")
+        i += 1
+
+    if text is None:
+        if grab:
+            grab_selection()
+        text = read_clipboard()
+
+    text = (text or "").strip()
+    if not text:
+        sys.exit("read-aloud: nothing to read (clipboard empty)")
+    if len(text) > MAX_CHARS:
+        text = text[:MAX_CHARS] + " ... truncated."
+
+    # Probe voicebox
+    try:
+        urllib.request.urlopen(VB + "/health", timeout=1).read()
+    except Exception:
+        sys.exit(f"read-aloud: Voicebox not responding at {VB}")
+
+    # Cancel any previous playback before kicking off a new one
+    kill_previous()
+
+    req = urllib.request.Request(
+        VB + "/speak", method="POST",
+        headers={"Content-Type": "application/json"},
+        data=json.dumps({"text": text, "profile": profile, "engine": ENGINE}).encode(),
+    )
+    try:
+        resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
+    except Exception as e:
+        sys.exit(f"read-aloud: /speak failed: {e}")
+    gen_id = resp.get("id")
+    if not gen_id:
+        sys.exit(f"read-aloud: no id in /speak response: {resp}")
+
+    print(f"read-aloud: synthesizing ({len(text)} chars, voice={profile}, id={gen_id})")
+
+    # Wait for completion
+    deadline = time.time() + 120
+    completed = False
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(f"{VB}/generate/{gen_id}/status", timeout=5) as r:
+                for raw in r:
+                    line = raw.decode().strip()
+                    if line.startswith("data:"):
+                        ev = json.loads(line[5:].strip())
+                        if ev.get("status") == "completed":
+                            completed = True
+                            break
+                        if ev.get("status") == "failed":
+                            sys.exit(f"read-aloud: synth failed: {ev}")
+        except Exception:
+            pass
+        if completed:
+            break
+        time.sleep(0.5)
+    if not completed:
+        sys.exit("read-aloud: synth timed out")
+
+    urllib.request.urlretrieve(f"{VB}/audio/{gen_id}", AUDIO_FILE)
+
+    proc = subprocess.Popen(
+        ["afplay", AUDIO_FILE],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    with open(PID_FILE, "w") as f:
+        f.write(str(proc.pid))
+    print(f"read-aloud: playing (pid={proc.pid})")
+
+
+if __name__ == "__main__":
+    main()

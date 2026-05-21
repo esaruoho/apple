@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""
+show — open a Smart Folder for a known concept and speak a caption via Voicebox.
+
+  show <concept>          look up <concept> in concepts.json, open Smart Folder,
+                          speak "<name> archive, N items, opening now"
+  show --list             print every known concept
+  show --add <key> <path> [name]
+                          register a new concept and re-run it
+
+Zero LLM in the hot path. The lookup is a dict. The Smart Folder is a plist.
+The audio is local Kokoro via Voicebox (silent no-op if Voicebox isn't up).
+
+concepts.json lives at apple/concepts.json — hand-editable, version-tracked.
+"""
+import json
+import os
+import plistlib
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CONCEPTS = ROOT / "concepts.json"
+VB = os.environ.get("SHOW_VOICEBOX_URL", "http://127.0.0.1:17493")
+# A different voice profile from the chat-speak hook (which uses "Heart"),
+# so /show captions are audibly distinct from Claude's own voice.
+PROFILE = os.environ.get("SHOW_VOICEBOX_PROFILE", "Bella")
+ENGINE = os.environ.get("SHOW_VOICEBOX_ENGINE", "kokoro")
+
+PRESETS = {
+    "images": 'kMDItemContentTypeTree == "public.image"',
+    "pdfs":   'kMDItemContentType == "com.adobe.pdf"',
+    "audio":  'kMDItemContentTypeTree == "public.audio"',
+    "video":  'kMDItemContentTypeTree == "public.movie"',
+    "docs":   '(kMDItemContentTypeTree == "public.text" || kMDItemContentTypeTree == "com.apple.iwork") && kMDItemKind != "Folder"',
+}
+
+
+def load_concepts():
+    with CONCEPTS.open() as f:
+        return json.load(f)
+
+
+def save_concepts(data):
+    with CONCEPTS.open("w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+
+def count_items(scope: Path, query_kind: str) -> int:
+    """Quick mdfind count for the caption. Falls back to 0 on error."""
+    expr = PRESETS.get(query_kind, PRESETS["images"])
+    try:
+        r = subprocess.run(
+            ["mdfind", "-onlyin", str(scope), expr],
+            capture_output=True, text=True, timeout=5,
+        )
+        return sum(1 for line in r.stdout.splitlines() if line.strip())
+    except Exception:
+        return 0
+
+
+def open_smart_folder(scope: Path, query: str, label: str) -> Path:
+    plist = {
+        "RawQuery": query,
+        "RawQueryDict": {
+            "FinderFilesOnly": True,
+            "RawQuery": query,
+            "SearchScopes": [str(scope)],
+            "UserFilesOnly": False,
+        },
+        "SearchCriteria": {
+            "FXCriteriaSlices": [],
+            "FXScope": "FXScopeSpecifiedItems",
+            "FXScopeArrayOfPaths": [str(scope)],
+        },
+        "SearchResultsViewOptions": {
+            "FXArrangeGroupViewBy": "Name",
+            "FXPreferredViewStyle": "icnv",
+        },
+    }
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    out = Path(f"/tmp/show-{label}-{stamp}.savedSearch")
+    with out.open("wb") as f:
+        plistlib.dump(plist, f, fmt=plistlib.FMT_XML)
+    subprocess.run(["open", str(out)], check=False)
+    return out
+
+
+def speak_via_voicebox(text: str):
+    """Fire-and-forget. Silent no-op if Voicebox isn't running."""
+    def _run():
+        try:
+            urllib.request.urlopen(VB + "/health", timeout=1).read()
+        except Exception:
+            return
+        try:
+            req = urllib.request.Request(
+                VB + "/speak", method="POST",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps({"text": text, "profile": PROFILE, "engine": ENGINE}).encode(),
+            )
+            resp = json.loads(urllib.request.urlopen(req, timeout=10).read())
+            gen_id = resp.get("id")
+            if not gen_id:
+                return
+            deadline = time.time() + 60
+            while time.time() < deadline:
+                try:
+                    with urllib.request.urlopen(f"{VB}/generate/{gen_id}/status", timeout=5) as r:
+                        for raw in r:
+                            line = raw.decode().strip()
+                            if line.startswith("data:"):
+                                ev = json.loads(line[5:].strip())
+                                if ev.get("status") == "completed":
+                                    wav = f"/tmp/show-speak-{gen_id}.wav"
+                                    urllib.request.urlretrieve(f"{VB}/audio/{gen_id}", wav)
+                                    subprocess.Popen(
+                                        ["afplay", wav],
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                        start_new_session=True,
+                                    )
+                                    return
+                                if ev.get("status") == "failed":
+                                    return
+                except Exception:
+                    pass
+                time.sleep(0.5)
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+
+def show_concept(key: str):
+    data = load_concepts()
+    defaults = data.get("_defaults", {})
+    entry = data.get(key)
+    if entry is None:
+        # Try fuzzy: case-insensitive, prefix
+        kl = key.lower()
+        for k in data:
+            if k.startswith("_"):
+                continue
+            if k.lower() == kl or k.lower().startswith(kl):
+                entry = data[k]
+                key = k
+                break
+    if entry is None:
+        keys = [k for k in data if not k.startswith("_")]
+        sys.exit(f"show: unknown concept '{key}'. known: {', '.join(sorted(keys))}")
+
+    scope = Path(os.path.expanduser(entry["scope"])).resolve()
+    if not scope.is_dir():
+        sys.exit(f"show: concept '{key}' scope missing: {scope}")
+
+    preset = entry.get("preset", defaults.get("preset", "images"))
+    query = entry.get("query") or PRESETS.get(preset, PRESETS["images"])
+    name = entry.get("name", key.replace("-", " ").title())
+
+    n = count_items(scope, preset)
+    caption_tmpl = entry.get("caption", defaults.get("caption", "{name}. {n} item{s}."))
+    caption = caption_tmpl.format(name=name, n=n, s=("" if n == 1 else "s"))
+
+    out = open_smart_folder(scope, query, key)
+    speak_via_voicebox(caption)
+    print(f"show -> {out}")
+    print(f"concept: {key}  ({name})")
+    print(f"scope:   {scope}")
+    print(f"items:   {n}")
+    print(f"caption: {caption}")
+
+
+def list_concepts():
+    data = load_concepts()
+    rows = []
+    for k, v in data.items():
+        if k.startswith("_"):
+            continue
+        scope = Path(os.path.expanduser(v["scope"]))
+        present = "✓" if scope.is_dir() else "✗"
+        rows.append((present, k, v.get("name", k), str(scope)))
+    width = max(len(r[1]) for r in rows) if rows else 0
+    for present, k, name, scope in sorted(rows, key=lambda r: r[1]):
+        print(f"  {present}  {k:<{width}}  {name}")
+
+
+def add_concept(key: str, path: str, name: str = None):
+    data = load_concepts()
+    scope = Path(os.path.expanduser(path)).resolve()
+    if not scope.is_dir():
+        sys.exit(f"show: path is not a directory: {scope}")
+    data[key] = {"scope": str(scope), "name": name or key.replace("-", " ").title()}
+    save_concepts(data)
+    print(f"added concept '{key}' -> {scope}")
+    show_concept(key)
+
+
+argv = sys.argv[1:]
+if not argv or argv[0] in ("-h", "--help"):
+    sys.stderr.write(__doc__)
+    sys.exit(2)
+
+if argv[0] == "--list":
+    list_concepts()
+elif argv[0] == "--add":
+    if len(argv) < 3:
+        sys.exit("show: --add needs <key> <path> [name]")
+    add_concept(argv[1], argv[2], " ".join(argv[3:]) if len(argv) > 3 else None)
+else:
+    show_concept(argv[0])

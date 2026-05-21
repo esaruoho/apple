@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""
+smart — throwaway Smart Folder generator.
+
+  smart <scope>                       images in scope (default preset)
+  smart <scope> <preset>              one of: images pdfs audio video docs recent big
+  smart <scope> --query "<mdfind>"    raw mdfind expression
+  smart --from <markdown-file> [scope]
+                                      extract image references from the markdown,
+                                      show ONLY those images (scope defaults to
+                                      the directory containing the file)
+
+Writes a .savedSearch plist to /tmp and opens it in Finder. The window
+is the result — close it and it's gone. Re-run to get a fresh one.
+
+Wiki mode supports:
+  ![[image.png]]           Obsidian wikilinks (including nested paths)
+  ![alt](path/img.jpg)     Standard markdown image syntax
+  <img src="img.gif">      Raw HTML img tags
+
+Examples:
+  smart ~/Documents/MyWiki                       # all images in wiki
+  smart ~/Downloads pdfs
+  smart ~/Pictures recent                        # modified in last 7d
+  smart ~ --query 'kMDItemPixelHeight > 2000'    # tall images anywhere
+  smart --from ~/wiki/MyPage.md                  # the 50 images that page references
+  smart --from ~/wiki/MyPage.md ~/wiki           # same, with explicit scope
+"""
+import os
+import plistlib
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+PRESETS = {
+    "images": 'kMDItemContentTypeTree == "public.image"',
+    "pdfs":   'kMDItemContentType == "com.adobe.pdf"',
+    "audio":  'kMDItemContentTypeTree == "public.audio"',
+    "video":  'kMDItemContentTypeTree == "public.movie"',
+    "docs":   '(kMDItemContentTypeTree == "public.text" || kMDItemContentTypeTree == "com.apple.iwork") && kMDItemKind != "Folder"',
+    "recent": 'kMDItemFSContentChangeDate >= $time.today(-7)',
+    "big":    'kMDItemFSSize > 100000000',
+}
+
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".heif",
+              ".bmp", ".tif", ".tiff", ".svg", ".avif"}
+
+# ![[wikilink.png]]  or  ![[folder/wikilink.png|alt text]]
+WIKILINK_RE = re.compile(r'!\[\[([^\]\|#]+?)(?:#[^\]\|]*)?(?:\|[^\]]*)?\]\]')
+# ![alt](path/img.jpg)  or  ![alt](path/img.jpg "title")
+MD_IMG_RE = re.compile(r'!\[[^\]]*\]\(\s*([^\s\)]+)(?:\s+"[^"]*")?\s*\)')
+# <img src="..."> or <img src='...'>
+HTML_IMG_RE = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
+
+
+def usage():
+    sys.stderr.write(__doc__)
+    sys.exit(2)
+
+
+def extract_image_refs(md_path: Path):
+    """Return a list of basename strings referenced as images in the markdown."""
+    text = md_path.read_text(encoding="utf-8", errors="replace")
+    refs = []
+    for pat in (WIKILINK_RE, MD_IMG_RE, HTML_IMG_RE):
+        for m in pat.finditer(text):
+            ref = m.group(1).strip()
+            # Strip URL fragments / query strings
+            ref = ref.split("#", 1)[0].split("?", 1)[0]
+            # Skip http(s) / data URIs
+            if ref.startswith(("http://", "https://", "data:")):
+                continue
+            base = os.path.basename(ref)
+            if not base:
+                continue
+            # Keep image extensions only (wikilinks can also be PDFs etc.)
+            ext = os.path.splitext(base)[1].lower()
+            if ext and ext not in IMAGE_EXTS:
+                continue
+            refs.append(base)
+    # Dedupe, preserve order
+    seen = set()
+    out = []
+    for r in refs:
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
+
+
+def build_filename_query(filenames):
+    """Spotlight query matching any of the given basenames."""
+    # kMDItemFSName matches the on-disk filename including extension.
+    parts = [f'kMDItemFSName == "{f.replace(chr(34), "")}"' for f in filenames]
+    return "(" + " || ".join(parts) + ")"
+
+
+argv = sys.argv[1:]
+if not argv or argv[0] in ("-h", "--help"):
+    usage()
+
+# Wiki mode: --from <markdown-file> [scope]
+if argv[0] == "--from":
+    if len(argv) < 2:
+        sys.exit("smart: --from needs a markdown file path")
+    md_path = Path(os.path.expanduser(argv[1])).resolve()
+    if not md_path.is_file():
+        sys.exit(f"smart: not a file: {md_path}")
+    scope = (Path(os.path.expanduser(argv[2])).resolve()
+             if len(argv) >= 3 else md_path.parent)
+    if not scope.is_dir():
+        sys.exit(f"smart: scope is not a directory: {scope}")
+    refs = extract_image_refs(md_path)
+    if not refs:
+        sys.exit(f"smart: no image references found in {md_path}")
+    if len(refs) > 400:
+        sys.stderr.write(f"smart: warning — {len(refs)} refs may stress the Spotlight parser; trimming to first 400\n")
+        refs = refs[:400]
+    query = build_filename_query(refs)
+    label = f"wiki-{md_path.stem}"
+    print(f"smart wiki mode: {len(refs)} image refs from {md_path.name}")
+else:
+    scope = Path(os.path.expanduser(argv[0])).resolve()
+    if not scope.is_dir():
+        sys.exit(f"smart: not a directory: {scope}")
+    if len(argv) >= 3 and argv[1] == "--query":
+        query = argv[2]
+        label = "custom"
+    elif len(argv) >= 2:
+        preset = argv[1]
+        if preset not in PRESETS:
+            sys.exit(f"smart: unknown preset '{preset}'. choices: {', '.join(PRESETS)}")
+        query = PRESETS[preset]
+        label = preset
+    else:
+        query = PRESETS["images"]
+        label = "images"
+
+plist = {
+    "RawQuery": query,
+    "RawQueryDict": {
+        "FinderFilesOnly": True,
+        "RawQuery": query,
+        "SearchScopes": [str(scope)],
+        "UserFilesOnly": False,
+    },
+    "SearchCriteria": {
+        "FXCriteriaSlices": [],
+        "FXScope": "FXScopeSpecifiedItems",
+        "FXScopeArrayOfPaths": [str(scope)],
+    },
+    "SearchResultsViewOptions": {
+        "FXArrangeGroupViewBy": "Name",
+        "FXPreferredViewStyle": "icnv",  # icon view; thumbnails show
+    },
+}
+
+stamp = time.strftime("%Y%m%d-%H%M%S")
+out = Path(f"/tmp/smart-{label}-{stamp}.savedSearch")
+with out.open("wb") as f:
+    plistlib.dump(plist, f, fmt=plistlib.FMT_XML)
+
+subprocess.run(["open", str(out)], check=False)
+print(f"smart -> {out}")
+print(f"scope:  {scope}")
+print(f"query:  {query[:200]}{'…' if len(query) > 200 else ''}")

@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# voicebox-submit — submit text for TTS via Syncthing to the Mac Mini's Voicebox.
+#
+# Drops a job spec into ~/work/comms/queue/voicebox-inbox/ which Syncthing
+# mirrors to the Mac Mini. The voicebox-worker daemon there picks it up,
+# POSTs to localhost:17493, and writes the WAV to ~/work/comms/queue/voicebox-results/
+# which Syncthing carries back here.
+#
+# Usage:
+#   voicebox-submit <file.txt|file.md>          # submit a file's contents
+#   voicebox-submit --text "Hello world"        # submit literal text
+#   echo "hello" | voicebox-submit -            # submit stdin
+#   voicebox-submit --id <slug> --text "..."    # content-addressed clip (cached forever)
+#   voicebox-submit --profile Heart <file>      # override voice
+#   voicebox-submit --wait <file>               # block until result returns; open WAV
+#   voicebox-submit --status                    # show inbox + results counts + heartbeat
+#   voicebox-submit --list-results              # list completed WAVs
+#
+# Environment overrides:
+#   VOICEBOX_INBOX, VOICEBOX_RESULTS, VOICEBOX_PROFILE, VOICEBOX_ENGINE
+
+set -euo pipefail
+
+INBOX="${VOICEBOX_INBOX:-$HOME/work/comms/queue/voicebox-inbox}"
+RESULTS="${VOICEBOX_RESULTS:-$HOME/work/comms/queue/voicebox-results}"
+HEARTBEAT="$HOME/work/comms/queue/voicebox-heartbeat.json"
+DEFAULT_PROFILE="${VOICEBOX_PROFILE:-Heart}"
+DEFAULT_ENGINE="${VOICEBOX_ENGINE:-kokoro}"
+
+log() { echo "[voicebox-submit] $*" >&2; }
+die() { echo "[voicebox-submit] ERROR: $*" >&2; exit 1; }
+
+mkdir -p "$INBOX" "$RESULTS"
+
+# Status mode
+if [[ "${1:-}" == "--status" ]]; then
+  pending=$(find "$INBOX" -maxdepth 1 -type f \( -name '*.json' -o -name '*.txt' \) 2>/dev/null | wc -l | tr -d ' ')
+  done_count=$(find "$RESULTS" -maxdepth 1 -type f -name '*.wav' 2>/dev/null | wc -l | tr -d ' ')
+  echo "inbox    : $INBOX  ($pending jobs awaiting Syncthing → worker)"
+  echo "results  : $RESULTS  ($done_count WAVs ready)"
+  if [[ -f "$HEARTBEAT" ]]; then
+    age=$(($(date +%s) - $(stat -f %m "$HEARTBEAT" 2>/dev/null || echo 0)))
+    echo "heartbeat: ${age}s ago"
+  else
+    echo "heartbeat: never (worker has not started yet)"
+  fi
+  exit 0
+fi
+
+if [[ "${1:-}" == "--list-results" ]]; then
+  ls -lt "$RESULTS"/*.wav 2>/dev/null | head -30
+  exit 0
+fi
+
+# Parse args
+TEXT=""
+SOURCE_FILE=""
+SLUG_ID=""
+PROFILE="$DEFAULT_PROFILE"
+ENGINE="$DEFAULT_ENGINE"
+WAIT=0
+LANGUAGE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --text)    TEXT="$2"; shift 2 ;;
+    --id)      SLUG_ID="$2"; shift 2 ;;
+    --profile) PROFILE="$2"; shift 2 ;;
+    --engine)  ENGINE="$2"; shift 2 ;;
+    --language|--lang) LANGUAGE="$2"; shift 2 ;;
+    --wait)    WAIT=1; shift ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+    -)         TEXT="$(cat)"; shift ;;
+    -*)        die "unknown flag: $1" ;;
+    *)
+      if [[ -z "$SOURCE_FILE" && -f "$1" ]]; then SOURCE_FILE="$1"
+      else die "unexpected arg: $1"
+      fi
+      shift ;;
+  esac
+done
+
+if [[ -n "$SOURCE_FILE" && -z "$TEXT" ]]; then
+  TEXT="$(cat "$SOURCE_FILE")"
+fi
+
+[[ -n "$TEXT" ]] || die "no text — pass <file>, --text, or pipe via stdin (-)"
+
+# Generate job ID
+ts="$(date +%Y%m%d-%H%M%S)"
+if [[ -n "$SLUG_ID" ]]; then
+  safe_id="$(printf '%s' "$SLUG_ID" | sed 's/[^A-Za-z0-9._-]/_/g')"
+  job_id="${safe_id}"     # content-addressed: same id → same wav, replays forever
+else
+  job_id="${ts}-$(printf '%s' "${SOURCE_FILE:-$TEXT}" | shasum | cut -c1-8)"
+fi
+
+job_file="$INBOX/${job_id}.json"
+result_file="$RESULTS/${job_id}.wav"
+
+# If content-addressed and we already have the wav, just play and exit
+if [[ -n "$SLUG_ID" && -f "$result_file" ]]; then
+  log "cached hit: $result_file"
+  open "$result_file"
+  exit 0
+fi
+
+# Write job spec (atomic via tmp + mv so Syncthing/worker never see a partial file)
+tmp="$INBOX/.${job_id}.json.tmp"
+/usr/bin/python3 -c "
+import json, sys
+spec = {
+  'id': '$job_id',
+  'text': sys.stdin.read(),
+  'profile': '$PROFILE',
+  'engine': '$ENGINE',
+  'language': '$LANGUAGE',
+  'source_file': '${SOURCE_FILE//\'/}',
+  'submitted_at': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+  'submitter_host': '$(hostname -s)',
+}
+json.dump(spec, sys.stdout, indent=2, ensure_ascii=False)
+" <<< "$TEXT" > "$tmp"
+mv "$tmp" "$job_file"
+
+log "submitted: $job_file"
+log "result will appear at: $result_file"
+
+if [[ "$WAIT" -eq 1 ]]; then
+  log "waiting for result (Ctrl-C to detach)..."
+  deadline=$(( $(date +%s) + 300 ))
+  while [[ ! -f "$result_file" ]]; do
+    if [[ $(date +%s) -gt $deadline ]]; then
+      die "timed out after 5 minutes. job still queued at $job_file"
+    fi
+    sleep 2
+  done
+  log "result ready: $result_file"
+  open "$result_file"
+fi
