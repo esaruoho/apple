@@ -1,5 +1,7 @@
 -- Run the Good Night HomeKit scene via Shortcuts
 -- App: Homepod
+-- Triggers: good, night, scene, run, homekit, shortcuts
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-good-night-scene.applescript
 -- Requires: A Shortcut named "Good Night" that triggers a HomeKit scene
 

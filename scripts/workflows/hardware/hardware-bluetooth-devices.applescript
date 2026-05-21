@@ -1,4 +1,6 @@
 -- List Bluetooth devices and connection status
+-- Triggers: bluetooth, devices, list, connection, status
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-bluetooth-devices.applescript
 

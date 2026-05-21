@@ -1,4 +1,6 @@
 -- Mosaic Knob: single script with two subroutines for Loupedeck knob.
+-- Triggers: mosaicknob, mosaic, knob, single, script, two, subroutines, loupedeck
+-- Category: System Events
 -- Subroutine "more" = turn right = show one more window tiled.
 -- Subroutine "less" = turn left = show one fewer window tiled.
 -- State persisted in /tmp/mosaic-knob-state between turns.

@@ -1,4 +1,6 @@
 -- Mosaic Windows: tile all windows of the frontmost app into a grid
+-- Triggers: mosaicwindows, mosaic, windows, tile, frontmost, app, grid
+-- Category: System Events
 -- Uses NSScreen visibleFrame to respect menu bar and Dock.
 -- Grid auto-selects best layout (closest to 16:10 aspect ratio per cell).
 -- 1 window = maximize. 2 = side by side. 4 = 2x2. 6 = 3x2. etc.

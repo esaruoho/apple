@@ -1,4 +1,6 @@
 -- Display current screen brightness level
+-- Triggers: display, brightness, screen, level
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-display-brightness.applescript
 

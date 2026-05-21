@@ -1,5 +1,7 @@
 -- Turn off lights via HomeKit shortcut
 -- App: Homepod
+-- Triggers: lights, off, turn, homekit, shortcut
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-lights-off.applescript
 -- Requires: A Shortcut named "Lights Off" that controls HomeKit lights
 

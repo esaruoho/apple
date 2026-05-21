@@ -1,4 +1,6 @@
 -- Open System Settings Displays pane via Accessibility API
+-- Triggers: ax, system, settings, displays, open, pane, accessibility, api
+-- Category: Accessibility
 -- Tier 8: Accessibility API — reaches apps with zero AppleScript support
 -- Usage: osascript scripts/workflows/accessibility/ax-system-settings-displays.applescript
 

@@ -1,4 +1,6 @@
 -- Show disk usage for the startup volume
+-- Triggers: disk, usage, show, startup, volume
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-disk-usage.applescript
 

@@ -1,4 +1,6 @@
 -- List connected USB devices
+-- Triggers: usb, devices, list, connected
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-usb-devices.applescript
 

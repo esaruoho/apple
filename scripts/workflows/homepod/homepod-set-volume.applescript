@@ -1,5 +1,7 @@
 -- Set HomePod volume via dialog and Shortcuts
 -- App: Homepod
+-- Triggers: set, volume, homepod, dialog, shortcuts
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-set-volume.applescript
 -- Requires: A Shortcut named "Set HomePod Volume" that accepts volume level as input
 

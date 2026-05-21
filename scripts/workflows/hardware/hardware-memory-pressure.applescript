@@ -1,4 +1,6 @@
 -- Show memory pressure and usage statistics
+-- Triggers: memory, pressure, show, usage, statistics
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-memory-pressure.applescript
 

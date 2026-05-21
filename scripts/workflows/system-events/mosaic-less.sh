@@ -1,5 +1,7 @@
 #!/bin/bash
 # Mosaic Less: show one fewer window of the frontmost app, tiled.
+# Triggers: mosaic, less, show, one, fewer, window, frontmost, app
+# Category: System Events
 # Loupedeck knob turn LEFT. Pair with mosaic-more.sh for knob turn RIGHT.
 # Loupedeck: /Users/esaruoho/work/apple/scripts/workflows/system-events/mosaic-less.sh
 

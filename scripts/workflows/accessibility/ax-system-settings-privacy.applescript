@@ -1,4 +1,6 @@
 -- Open System Settings Privacy & Security pane via Accessibility API
+-- Triggers: ax, system, settings, privacy, open, security, pane, accessibility
+-- Category: Accessibility
 -- Tier 8: Accessibility API — reaches apps with zero AppleScript support
 -- Usage: osascript scripts/workflows/accessibility/ax-system-settings-privacy.applescript
 

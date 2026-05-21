@@ -1,4 +1,6 @@
 -- Thirds.applescript
+-- Triggers: thirds, applescript
+-- Category: System Events
 -- Place the three frontmost apps' main windows in three vertical columns on
 -- the main screen. Order: frontmost LEFT, second MIDDLE, third RIGHT.
 --

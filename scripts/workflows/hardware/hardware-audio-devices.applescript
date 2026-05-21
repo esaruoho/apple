@@ -1,4 +1,6 @@
 -- List audio input and output devices
+-- Triggers: audio, devices, list, input, output
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-audio-devices.applescript
 

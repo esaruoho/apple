@@ -1,4 +1,6 @@
 -- WhiteboardKnob: Browse ALL whiteboards across ~/work/ and ~/.claude/skills/ with a Loupedeck knob.
+-- Triggers: whiteboardknob, browse, whiteboards, across, work, claude, skills, loupedeck
+-- Category: System Events
 -- Button press (browse): scans all PNGs into a flat list. No dialogs — just loads and starts.
 -- Knob right (next): show next board.
 -- Knob left (prev): show previous board.

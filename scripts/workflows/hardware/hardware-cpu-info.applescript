@@ -1,4 +1,6 @@
 -- Show CPU model, core count, and current load
+-- Triggers: cpu, info, show, model, core, count, load
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-cpu-info.applescript
 

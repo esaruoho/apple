@@ -1,5 +1,7 @@
 -- Play music on HomePod via Shortcuts
 -- App: Homepod
+-- Triggers: play, music, homepod, shortcuts
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-play-music.applescript
 -- Requires: A Shortcut named "Play Music" that targets HomePod
 

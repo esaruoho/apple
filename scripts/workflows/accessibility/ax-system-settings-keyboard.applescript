@@ -1,4 +1,6 @@
 -- Open System Settings Keyboard pane via Accessibility API
+-- Triggers: ax, system, settings, keyboard, open, pane, accessibility, api
+-- Category: Accessibility
 -- Tier 8: Accessibility API — reaches apps with zero AppleScript support
 -- Usage: osascript scripts/workflows/accessibility/ax-system-settings-keyboard.applescript
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 # Mosaic More: show one more window of the frontmost app, tiled.
+# Triggers: mosaic, more, show, one, window, frontmost, app, tiled
+# Category: System Events
 # Loupedeck knob turn RIGHT. Pair with mosaic-less.sh for knob turn LEFT.
 # Loupedeck: /Users/esaruoho/work/apple/scripts/workflows/system-events/mosaic-more.sh
 

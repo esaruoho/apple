@@ -1,4 +1,6 @@
 -- TopBottom.applescript
+-- Triggers: topbottom, applescript
+-- Category: System Events
 -- Stack the two frontmost apps' main windows top + bottom on the main screen.
 -- Frontmost app goes TOP, second-frontmost goes BOTTOM.
 --

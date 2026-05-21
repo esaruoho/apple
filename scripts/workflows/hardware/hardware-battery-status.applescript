@@ -1,4 +1,6 @@
 -- Full battery status via IOKit (ioreg)
+-- Triggers: battery, status, full, iokit, ioreg
+-- Category: Hardware
 -- Tier 10: IOKit — reads hardware state directly
 -- Usage: osascript scripts/workflows/hardware/hardware-battery-status.applescript
 

@@ -1,5 +1,7 @@
 -- Pause music on HomePod via Shortcuts
 -- App: Homepod
+-- Triggers: pause, music, homepod, shortcuts
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-pause-music.applescript
 -- Requires: A Shortcut named "Pause Music" that targets HomePod
 

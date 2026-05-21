@@ -1,5 +1,7 @@
 -- Run the Good Morning HomeKit scene via Shortcuts
 -- App: Homepod
+-- Triggers: good, morning, scene, run, homekit, shortcuts
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-good-morning-scene.applescript
 -- Requires: A Shortcut named "Good Morning" that triggers a HomeKit scene
 

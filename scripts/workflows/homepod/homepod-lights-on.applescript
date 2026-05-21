@@ -1,5 +1,7 @@
 -- Turn on lights via HomeKit shortcut
 -- App: Homepod
+-- Triggers: lights, turn, homekit, shortcut
+-- Category: Homepod
 -- Usage: osascript scripts/workflows/homepod/homepod-lights-on.applescript
 -- Requires: A Shortcut named "Lights On" that controls HomeKit lights
 

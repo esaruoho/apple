@@ -1,4 +1,6 @@
 -- SideBySide.applescript
+-- Triggers: sidebyside, applescript
+-- Category: System Events
 -- Place the two frontmost apps' main windows side-by-side on the main screen.
 -- Frontmost app goes LEFT, second-frontmost goes RIGHT.
 --
