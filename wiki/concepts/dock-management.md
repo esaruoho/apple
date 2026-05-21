@@ -34,14 +34,47 @@ Each entry is a dict:
 ## CLI
 
 ```
-bin/dock list                  # show every Dock item
-bin/dock add  <path>           # folder / .savedSearch / file / .app
-bin/dock add-spacer            # blank tile in persistent-others
-bin/dock remove <path|label>   # match by path OR by displayed label
-bin/dock clear-others          # nuke the entire right-side
+dock list                              # show every Dock item
+dock add  <path>                       # folder / .savedSearch / file / .app
+dock add-spacer                        # blank tile in persistent-others
+dock remove <path|label>               # match by path OR by displayed label
+dock clear-others                      # nuke the entire right-side
+
+dock screens                           # list available displays with index
+dock snap                              # tile every running app, one cell per app
+dock snap <appname>                    # tile <appname>'s windows in a grid
+dock snap <appname> <screenIdx>        # …on a specific screen (0=main, 1=second, …)
+dock snap <appname> all                # distribute round-robin across all screens
+dock snap --passes N <args…>           # override 3-pass convergence
 ```
 
-After every write the script kills cfprefsd (twice — once to flush stale cache, once after write) and Dock. Change appears instantly.
+After every Dock write the script kills cfprefsd (twice — once to flush stale cache, once after write) and Dock. Change appears instantly.
+
+## Window tiling — `dock snap`
+
+Non-uniform row-based grid: `rows = round(sqrt(n))`, cells per row = ceil/floor of `n/rows`. Every cell fills, no empty slots. Examples: 5 → `3+2`, 7 → `4+3`, 11 → `4+4+3`.
+
+**Two execution paths, dispatched by process name:**
+
+1. **App-native (preferred)** — for apps whose AppleScript dictionary exposes stable `id of window`. Currently: iTerm/iTerm2. `tell application "iTerm" to set bounds of (first window whose id is wid)`. Reliable, no convergence loop needed.
+
+2. **System Events fallback** — for everything else. Reads `windows of process` and sets position/size per window. **Known broken** in the general case because System Events' window references are POSITIONAL and resolve lazily — when you set position on window 1, the app reorders, and the next iteration's "window 2" hits what was window 1. The Python wrapper retries 3 times with 250 ms gaps to coax convergence; some apps settle, some still leave duplicates.
+
+**To add another app's stable-ID path:**
+
+1. Confirm `osascript -e 'tell application "X" to id of every window'` returns integers
+2. In `DockSnap.applescript`, add a branch in `tileOneApp` matching the process name
+3. Write a `tileWithX` handler mirroring `tileWithITerm` — compute the grid layout from `winIds`, set bounds via the app's dictionary
+
+Process names worth checking next: Safari, Mail, Finder, Sublime Text. Each likely has stable IDs but needs the per-app handler.
+
+## Multi-screen
+
+`dock screens` lists displays via NSScreen.screens with index, localizedName, and visibleFrame.
+
+`dock snap <app> <N>` targets a specific screen. The Swift one-liner picks `NSScreen.screens[N].visibleFrame` and converts to AppleScript's top-left coordinates using the total bounding height across all screens (handles negative Y for displays positioned above main).
+
+`dock snap <app> all` partitions the app's windows round-robin: window 1 → screen 0, window 2 → screen 1, window 3 → screen 0, … then tiles per-screen using the same row-layout logic.
 
 ## Slash + AppleToolbox
 

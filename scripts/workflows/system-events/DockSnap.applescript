@@ -230,8 +230,9 @@ on tileOneApp(targetName, sx, sy, sw, sh)
     -- stable window IDs let us position them reliably without the System
     -- Events positional-reference reshuffling bug. Fall through to System
     -- Events for everything else.
-    if procName is "iTerm2" or procName is "iTerm" then
-        my tileWithITerm(sx, sy, sw, sh)
+    set appName to my appNameForProcess(procName)
+    if appName is not "" then
+        my tileWithAppDict(appName, sx, sy, sw, sh)
         return
     end if
 
@@ -254,15 +255,44 @@ on tileOneApp(targetName, sx, sy, sw, sh)
 end tileOneApp
 
 
--- iTerm2-specific path: address windows by stable id via iTerm's own
--- dictionary. Avoids System Events positional-reference reshuffling.
-on tileWithITerm(sx, sy, sw, sh)
-    tell application "iTerm"
-        set winIds to id of every window
-    end tell
+-- Map a System Events process name to the AppleScript application name to
+-- use with its own dictionary. Empty string = no known dictionary path,
+-- fall back to System Events.
+on appNameForProcess(procName)
+    if procName is "iTerm2" then return "iTerm"
+    if procName is "iTerm" then return "iTerm"
+    if procName is "Safari" then return "Safari"
+    if procName is "Mail" then return "Mail"
+    if procName is "Terminal" then return "Terminal"
+    if procName is "Finder" then return "Finder"
+    if procName is "Sublime Text" then return "Sublime Text"
+    if procName is "Google Chrome" then return "Google Chrome"
+    if procName is "TextEdit" then return "TextEdit"
+    if procName is "Music" then return "Music"
+    if procName is "Notes" then return "Notes"
+    if procName is "Preview" then return "Preview"
+    return ""
+end appNameForProcess
+
+
+-- Generic per-app tiler. Uses `run script` to dispatch into the app's own
+-- AppleScript dictionary at runtime, so we don't have to write a separate
+-- handler per app. The literal app name must be inlined into the script
+-- string (AppleScript can't bind `tell application <variable>` dynamically).
+--
+-- Builds ONE big tell-block containing every set-bounds call and runs it in
+-- a single round trip, which is dramatically faster than N invocations.
+on tileWithAppDict(appName, sx, sy, sw, sh)
+    set getIdsScript to "tell application \"" & appName & "\" to return id of every window"
+    try
+        set winIds to run script getIdsScript
+    on error errMsg
+        do shell script "/usr/bin/osascript -e 'display notification \"" & appName & ": " & errMsg & "\" with title \"Dock Snap\"'"
+        return
+    end try
     set winCount to count of winIds
     if winCount = 0 then
-        do shell script "/usr/bin/osascript -e 'display notification \"iTerm2: no scriptable windows\" with title \"Dock Snap\"'"
+        do shell script "/usr/bin/osascript -e 'display notification \"" & appName & ": no scriptable windows\" with title \"Dock Snap\"'"
         return
     end if
 
@@ -270,7 +300,7 @@ on tileWithITerm(sx, sy, sw, sh)
     set rowCount to count of layout
     set rowH to sh div rowCount
 
-    set placed to 0
+    set body to "tell application \"" & appName & "\"" & linefeed
     set idx to 1
     repeat with rowI from 1 to rowCount
         set cellsInRow to item rowI of layout
@@ -284,18 +314,20 @@ on tileWithITerm(sx, sy, sw, sh)
             set bx2 to tx + cellW
             set by2 to ty + rowH
             set wid to item idx of winIds
-            try
-                tell application "iTerm"
-                    set bounds of (first window whose id is wid) to {bx1, by1, bx2, by2}
-                end tell
-                set placed to placed + 1
-            end try
+            set body to body & "  try" & linefeed & ¬
+                "    set bounds of (first window whose id is " & wid & ") to {" & bx1 & ", " & by1 & ", " & bx2 & ", " & by2 & "}" & linefeed & ¬
+                "  end try" & linefeed
             set idx to idx + 1
         end repeat
     end repeat
+    set body to body & "end tell"
 
-    do shell script "/usr/bin/osascript -e 'display notification \"iTerm2: " & placed & "/" & winCount & " windows in app-native layout\" with title \"Dock Snap\"'"
-end tileWithITerm
+    try
+        run script body
+    end try
+
+    do shell script "/usr/bin/osascript -e 'display notification \"" & appName & ": " & (idx - 1) & "/" & winCount & " windows in app-native layout\" with title \"Dock Snap\"'"
+end tileWithAppDict
 
 
 -- Distribute one app's windows across all available screens (round-robin),

@@ -429,6 +429,8 @@ Deep doc: [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipe
 
 Apple killed both the public `LSSharedFileList` sidebar API (segfaults on Sequoia) and the File menu's "Add to Sidebar" item. The Dock's plist is still writable.
 
+**Pin to Dock — replaces dead sidebar API:**
+
 ```bash
 dock list                       # show every Dock tile
 dock add <path>                 # folder / .savedSearch / file / .app
@@ -437,18 +439,42 @@ dock remove <path|label>        # match by full path OR displayed label
 dock clear-others               # nuke entire right-side (apps left alone)
 ```
 
-Apple-native: plistlib (stdlib) only. Writes `~/Library/Preferences/com.apple.dock.plist`, killalls `cfprefsd` + Dock. No Homebrew, no `dockutil`, no `defaults` shell-outs.
+Apple-native: plistlib (stdlib) only. Writes `~/Library/Preferences/com.apple.dock.plist`, killalls `cfprefsd` + Dock. No Homebrew, no `dockutil`, no `defaults` shell-outs. `.savedSearch` files render as Smart-Folder stacks.
 
-`.savedSearch` files render as Smart-Folder stacks. The replacement for "I want this in my sidebar."
+**Tile windows — `dock snap`:**
+
+```bash
+dock screens                    # list available displays w/ index, name, frame
+dock snap                       # tile every visible foreground app, one cell per app
+dock snap iterm2                # tile just iTerm2's windows in a grid
+dock snap iterm2 1              # …on screen 1 (second display)
+dock snap subl all              # distribute Sublime windows round-robin across all screens
+dock snap --passes 5 mail       # override the default 3-pass convergence
+```
+
+Grid is non-uniform row-based: 5 windows → `3+2` rows, 7 → `4+3`, 11 → `4+4+3`. Every cell filled, no empty slots.
+
+Two execution paths:
+- **Per-app dictionary** — used when the app has stable window IDs (iTerm/iTerm2 confirmed; Safari/Mail/Sublime ready to add). Bypasses System Events entirely.
+- **System Events fallback** — for apps without their own dictionary support. 3-pass convergence loop because Sequoia apps silently fail the first `set position` and only settle after 2–3 retries.
+
+The System-Events bug worth knowing: `windows of process` returns POSITIONAL references that resolve lazily. When you `set position of window 1`, the app may reorder its window list, so the next iteration's "window 2" is no longer the same window. `contents of w` does NOT freeze the reference. Two windows land in the same cell, one cell empty. **The only stable identifier across set-position calls is the app's own `id of window` from its AppleScript dictionary.** That's why `dock snap iterm2` uses iTerm's dictionary directly.
 
 Deep doc: [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md).
 
 ### Both surfaced via slashes
 
 - `/tag <sub>` — Finder tag operations
-- `/dock <sub>` — Dock operations
+- `/dock <sub>` — Dock operations + window tiling
 
-Add `~/work/apple/bin` to your PATH (one-liner in `~/.bashrc` or `~/.zshrc`) and `tag`, `dock`, `tag-watcher`, etc. become first-class shell commands.
+Add `~/work/apple/bin` to your PATH (one-liner in `~/.bash_profile` — `.bashrc` doesn't fire for macOS Terminal login shells):
+
+```bash
+echo 'export PATH="$HOME/work/apple/bin:$PATH"' >> ~/.bash_profile
+source ~/.bash_profile
+```
+
+Then `tag`, `dock`, `tag-watcher`, etc. become first-class shell commands.
 
 ---
 
