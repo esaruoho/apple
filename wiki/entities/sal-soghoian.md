@@ -502,6 +502,18 @@ When writing AppleScript, channel Sal's mindset:
 
 ---
 
+## Tier 2 — Primary-source spoken Sal, WWDC 2016 session 717 (principles #28-30)
+
+Recovered WWDC 2016 session 717 — *Beyond Dictation: Enhanced Voice Control for macOS Apps* — captured 2026-05-07. Transcript at `sources/sal/wwdc2016-session-717/717-transcript.txt` (524 lines). Deep analysis: `analysis/sal/wwdc2016-session-717-transcript-analysis.md`.
+
+28. **Procedural vs task-oriented commands.** *"It's like describing how to make a peanut butter sandwich. You hold the jar with this hand, you turn the top this way."* (line 132.) User commands name the **task**, not the steps. A task-oriented command is a self-multiplying primitive; a procedural one has to be re-expanded every invocation. (session 717, lines 132–138, 250–253.)
+
+29. **Voice is a peer modality to touch, keys, and cursor.** *"speech is no longer just an assistive technology. And now voice is a peer to touch keys and cursor."* (line 515.) Voice is a fourth fundamental input on equal footing with the others — not text entry, not assistive — and **only on the Mac** can users program it themselves via AppleScript / Automator / JavaScript. This positioning sentence is the most likely trigger for the session pull. (session 717, lines 512–519.)
+
+30. **The seven-purpose framework — when to build a voice command.** Sal's closing decision tool: build a voice command when a workflow scores 3+ on these criteria: (1) need to remain in context, (2) multi-step (≥3 manual steps), (3) requires dexterity, (4) moves data between apps, (5) transforms data type, (6) does something not in the app's UI, (7) does something the user wants but doesn't know how. (session 717, lines 480–504.)
+
+---
+
 ## Tier 3 — Primary-source spoken Sal, WWDC 2003 (principles #31-38)
 
 The 2003 WWDC archive captured at `sources/sal/wwdc/2003-session-{306,401,623,718}-*/` is the **earliest primary-source spoken Sal in the entire WWSD canon** — predates the existing 2012-2023 interview corpus by 9 years.

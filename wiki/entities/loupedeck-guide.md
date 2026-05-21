@@ -118,7 +118,7 @@ To use in Loupedeck: click the button icon area and select the PNG from the `ico
   ```
   These are the same scripts compiled by `bin/spotlight-export.sh`.
 
-- **Full script list:** Run `bin/workflow-gen.py --catalog` to regenerate `scripts.md` with the complete catalog of all available workflows.
+- **Full script list:** Run `bin/workflow-gen.py --catalog` to regenerate `../compiled/scripts.md` with the complete catalog of all available workflows.
 
 ---
 
@@ -148,4 +148,4 @@ The commands are identical across all controllers. Only the UI for assigning com
 | `scripts/workflows/photos/` | varies | Photos library and export |
 | `scripts/workflows/terminal/` | varies | Terminal window management |
 
-Full list: 33 app categories across `scripts/workflows/`. See `scripts.md` for the complete catalog.
+Full list: 33 app categories across `scripts/workflows/`. See `../compiled/scripts.md` for the complete catalog.

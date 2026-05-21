@@ -85,7 +85,7 @@ He worked at Apple in 1997 and until 2016. find about this dude. 'what would
 sal do' 'sal' are the trigger words for this knowledge.
 ```
 
-**Result:** Researched Sal Soghoian — Apple's Product Manager of Automation Technologies (1997-2016), co-inventor of Automator. Created `sal-soghoian.md` with full profile, philosophy, and "What Would Sal Do" (WWSD) 10 principles.
+**Result:** Researched Sal Soghoian — Apple's Product Manager of Automation Technologies (1997-2016), co-inventor of Automator. Created `../entities/sal-soghoian.md` with full profile, philosophy, and "What Would Sal Do" (WWSD) 10 principles.
 
 #### Prompt 7 — Bash Profile
 ```

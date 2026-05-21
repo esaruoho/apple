@@ -194,7 +194,7 @@ path to all three surfaces. Shortcuts is the most direct path to Siri.
   on my Desktop."
 - Name scripts after the task: `new-desktop-folder`, not `finder-make-cfol`.
 - Group scripts by what the user is doing, not by which API they use.
-  The `scripts.md` catalog is organized by app because that matches how users think:
+  The `../compiled/scripts.md` catalog is organized by app because that matches how users think:
   "I want to do something with Music" not "I want to use the `play` command."
 
 ---

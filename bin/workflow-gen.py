@@ -25,7 +25,7 @@ from pathlib import Path
 from datetime import datetime
 
 SCRIPTS_DIR = Path(__file__).parent.parent / "scripts" / "workflows"
-CATALOG_PATH = Path(__file__).parent.parent / "scripts.md"
+CATALOG_PATH = Path(__file__).parent.parent / "wiki" / "compiled" / "scripts.md"
 
 # ─── Recipe Registry ─────────────────────────────────────────────────────────
 # Each recipe: (filename_suffix, description, applescript_code)

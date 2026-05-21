@@ -78,7 +78,7 @@ into `~/.claude/commands/`. New verbs go: write `bin/<tool>` first, then a
 See `.gitignore`. In summary:
 
 - **Public:** code, indexes, correspondence, HTML mirrors, ZIPs under 100 MB, transcripts (text)
-- **Private (gitignored):** `*.mp4`/`*.m4v`/`*.mov`/`*.mp3`/`*.m4a` under `sources/sal/**`, three named oversized zips (AUTOWKSHP-03-Leader, EPUB-Demo-Kit-Lg, movies-from-dictations-comannds), `bash-aliases.md`, `whiteboards/`, `icons/`, `__pycache__/`, GitHub Watcher runtime data, Apple Notes / iMessage exporter runtime caches
+- **Private (gitignored):** `*.mp4`/`*.m4v`/`*.mov`/`*.mp3`/`*.m4a` under `sources/sal/**`, three named oversized zips (AUTOWKSHP-03-Leader, EPUB-Demo-Kit-Lg, movies-from-dictations-comannds), `wiki/entities/bash-aliases.md`, `whiteboards/`, `icons/`, `__pycache__/`, GitHub Watcher runtime data, Apple Notes / iMessage exporter runtime caches
 
 User declined git-lfs ("don't want to pay extra"). Local-only preservation continues; transcripts go to GitHub.
 

@@ -1,0 +1,18 @@
+# Apple's Automation Architecture — 7 Layers
+
+Discovered through framework analysis:
+
+```
+Layer 1: Apple Events / OSA        ← osascript, OSAKit, ScriptingBridge (DEPTH)
+Layer 2: Automator                  ← AMWorkflow, AMAction
+Layer 3: Intents (legacy, ObjC)     ← INIntent, 14 apps
+Layer 4: AppIntents (modern, Swift) ← 82 protocols, 23 apps (WIDTH)
+Layer 5: Shortcuts/WorkflowKit      ← Visual composition of Layer 4
+Layer 6: Siri/AssistantSchema       ← Natural language routing
+Layer 7: Apple Intelligence         ← GenerativeAssistantActions
+```
+
+The `shortcuts run` CLI is the bridge: Layer 1 scripts can invoke Layer 4-6 actions.
+
+**160+ private frameworks** power the automation stack internally, including 80+ Siri frameworks, WorkflowKit (Shortcuts engine), ActionKit, and bridge frameworks like `_Photos_AppIntents`.
+

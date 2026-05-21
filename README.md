@@ -1,6 +1,6 @@
 # apple
 
-### Apple Automation Architecture & Workflows — preserving the automation work Apple did not preserve institutionally, and continuing [Sal Soghoian's](sal-soghoian.md) vision.
+### Apple Automation Architecture & Workflows — preserving the automation work Apple did not preserve institutionally, and continuing [Sal Soghoian's](wiki/entities/sal-soghoian.md) vision.
 
 > **The Roundtrip Rule (WWSD #54):** *If you did a roundtrip for something that could be done locally, you have wasted everyone's time. Time is of the essence.* — Esa Ruoho, 2026-05-11. The operational corollary of Sal's local-over-cloud (WWSD #2) + time-as-meta-why (WWSD #41) + AI-as-intern-not-director (WWSD #49).
 >
@@ -17,7 +17,7 @@
 
 ## What is this?
 
-In November 2016, Apple eliminated the position of **Product Manager of Automation Technologies** — the role [Sal Soghoian](sal-soghoian.md) held for nearly 20 years. The person who built Automator, championed AppleScript, and believed *"the power of the computer should reside in the hands of the one using it"* was told his job no longer existed.
+In November 2016, Apple eliminated the position of **Product Manager of Automation Technologies** — the role [Sal Soghoian](wiki/entities/sal-soghoian.md) held for nearly 20 years. The person who built Automator, championed AppleScript, and believed *"the power of the computer should reside in the hands of the one using it"* was told his job no longer existed.
 
 This repo picks up where that role left off.
 
@@ -25,7 +25,7 @@ This repo picks up where that role left off.
 
 Apple did not preserve this material institutionally. This repo does: the scripts, the site corpus, the lesson structure, the downloads, the demo media, and the philosophy behind them.
 
-**288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](automation-tiers.md) mapping every layer from AppleScript to IOKit.
+**288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](wiki/concepts/automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
 ## Sal Archive Layout
 
@@ -56,7 +56,7 @@ Six primary-source talks have been transcribed and analyzed. The full corpus is 
 
 The **WWDC 2016 session 717** (Sal's dictation/automation talk) was **pulled a week after he gave it. Four months later his position was eliminated.** **Session 717 was recovered on 2026-05-07 from archive.org** — full 33-minute transcript at [`sources/sal/wwdc2016-session-717/717-transcript.txt`](sources/sal/wwdc2016-session-717/717-transcript.txt) (524 lines, titled *"Beyond Dictation: Enhanced Voice Control for macOS Apps"*). Three deep analyses cover the recovery: [`analysis/sal/wwdc2016-session-717-transcript-analysis.md`](analysis/sal/wwdc2016-session-717-transcript-analysis.md) (line-by-line of the recovered talk), [`analysis/sal/wwdc2016-session-717-deep-analysis.md`](analysis/sal/wwdc2016-session-717-deep-analysis.md) (CitrusPeel engine + public-surrogate cross-reference), and [`analysis/sal/wwdc2016-session-717-replication-plan.md`](analysis/sal/wwdc2016-session-717-replication-plan.md) (concrete steps to replicate the entire stack on current macOS). Best inference for why it was pulled: Sal's closing thesis *"voice is a peer to touch keys and cursor… it's only something that can happen on a Mac"* (line 515–519) directly contradicted Apple's upcoming Siri-on-Mac launch positioning for fall 2016.
 
-The analyses derive **30 sourced "What Would Sal Do" (WWSD) principles** from primary-source spoken Sal — including the Carpenter Move (look for the underlying principle, sourced to his master-carpenter father), Observer + Participant simultaneously, Forward Motion with a paddle, Speak the Receiver's Language, Pay in What Cash Can't Buy, Authorization as Bridge, Identify the Trigger Phrases, **Procedural-vs-Task commands** (#28, session 717), **Voice as Peer Modality** (#29, session 717), and **the Seven-Purpose Framework** for when to build a voice command (#30, session 717). Full list in [`sal-soghoian.md`](sal-soghoian.md).
+The analyses derive **30 sourced "What Would Sal Do" (WWSD) principles** from primary-source spoken Sal — including the Carpenter Move (look for the underlying principle, sourced to his master-carpenter father), Observer + Participant simultaneously, Forward Motion with a paddle, Speak the Receiver's Language, Pay in What Cash Can't Buy, Authorization as Bridge, Identify the Trigger Phrases, **Procedural-vs-Task commands** (#28, session 717), **Voice as Peer Modality** (#29, session 717), and **the Seven-Purpose Framework** for when to build a voice command (#30, session 717). Full list in [`wiki/entities/sal-soghoian.md`](wiki/entities/sal-soghoian.md).
 
 ### Session 717 Replication — Hey Sal v1 (2026-05-08)
 
@@ -456,7 +456,7 @@ What's left to make this repo a **complete** unlock of every Apple-shipped app f
 
 ### Documentation
 
-- [ ] **`automation-tiers.md` refresh** — promote Mission Control from Tier 6 to Tier 5 (already done in skill.md but not in the standalone file).
+- [ ] **`wiki/concepts/automation-tiers.md` refresh** — promote Mission Control from Tier 6 to Tier 5 (already done in skill.md but not in the standalone file).
 - [ ] **`exported/README.md` cardinality refresh** — auto-update the live numbers each time `apple-grand-export` runs.
 - [ ] **`bin/app-plist-probe.py --diff`** — diff two snapshots of the survey to catch new apps / new keys after macOS updates. Run after each system update; commit the diff so the repo tracks Apple's evolution.
 
@@ -828,13 +828,13 @@ The key insight from the probe: **every "dark" app is a GUI wrapper around a CLI
 | Launchpad | `open -a` | Same |
 | Mission Control | `defaults write com.apple.dock` | Same |
 
-**Sal knew this.** His "use the whole toolkit" principle (#6 from [WWSD](sal-soghoian.md)) — AppleScript is the hub, but chain with `do shell script` for anything the GUI can't reach. The CLI tools ARE the automation surface for these apps.
+**Sal knew this.** His "use the whole toolkit" principle (#6 from [WWSD](wiki/entities/sal-soghoian.md)) — AppleScript is the hub, but chain with `do shell script` for anything the GUI can't reach. The CLI tools ARE the automation surface for these apps.
 
 ---
 
 ## Sal-Like Tools
 
-Tools in this repo that follow [Sal Soghoian's automation philosophy](sal-like.md): one action, one result.
+Tools in this repo that follow [Sal Soghoian's automation philosophy](wiki/entities/sal-like.md): one action, one result.
 
 | Tool | Command | What it does |
 |------|---------|-------------|
@@ -907,20 +907,20 @@ Seed Capture → The Fork → 5 parallel branches → Rebound Dashboard
 
 | Document | What it covers |
 |----------|---------------|
-| [**Automation Tiers**](automation-tiers.md) | Full 10-tier stack: AppleScript → XPC → Accessibility → IOKit. Coverage matrix. |
-| [**XPC Atlas**](xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
-| [**Data Type Chaining**](data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
-| [**WWSD Decision Tree**](wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
-| [**Siri Phrases**](siri-phrases.md) | All 288 voice commands for generated shortcuts in a browsable table. |
-| [**Compatibility**](compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
-| [**Automator vs Shortcuts**](automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
-| [**Spotlight Automation**](spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
-| [**Apple Driver's License**](apple-drivers-license.md) | The user knowledge layer: where your data lives, what you own vs. rent, what breaks when. |
-| [**Loupedeck Guide**](loupedeck-guide.md) | Setup guide for Loupedeck Live, Stream Deck, and hardware controllers. |
+| [**Automation Tiers**](wiki/concepts/automation-tiers.md) | Full 10-tier stack: AppleScript → XPC → Accessibility → IOKit. Coverage matrix. |
+| [**XPC Atlas**](wiki/concepts/xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
+| [**Data Type Chaining**](wiki/concepts/data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
+| [**WWSD Decision Tree**](wiki/concepts/wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
+| [**Siri Phrases**](wiki/compiled/siri-phrases.md) | All 288 voice commands for generated shortcuts in a browsable table. |
+| [**Compatibility**](wiki/concepts/compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
+| [**Automator vs Shortcuts**](wiki/concepts/automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
+| [**Spotlight Automation**](wiki/concepts/spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
+| [**Apple Driver's License**](wiki/lessons/apple-drivers-license.md) | The user knowledge layer: where your data lives, what you own vs. rent, what breaks when. |
+| [**Loupedeck Guide**](wiki/entities/loupedeck-guide.md) | Setup guide for Loupedeck Live, Stream Deck, and hardware controllers. |
 | [**Thought Multiplier**](thought-multiplier/architecture.md) | BBS meets Ray Browser: type once, radiate to 5 destinations, catch every rebound. |
-| [**How It Was Built**](how-it-was-built.md) | One conversation, 167 files — the build story. |
-| [**App Probe Pitch**](app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
-| [**Video Script**](video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
+| [**How It Was Built**](wiki/lessons/how-it-was-built.md) | One conversation, 167 files — the build story. |
+| [**App Probe Pitch**](wiki/lessons/app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
+| [**Video Script**](wiki/lessons/video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
 | [**iCloud URL Shortcuts**](https://esaruoho.medium.com/apples-icloud-services-quick-urls-and-future-improvements-67256b841809) | 12 working `x.icloud.com` direct-access subdomains mapped (2016, updated 2023). |
 
 ---
@@ -947,7 +947,7 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 
 ## Automator vs Shortcuts
 
-[**The Gap Analysis**](automator-vs-shortcuts.md) — 227 Automator actions vs 246 Shortcuts actions. What each can do that the other can't. And the bridge that doesn't exist: Shortcuts has no `Run AppleScript` action, so 30 apps with rich scripting dictionaries are invisible to it. 36 apps have zero sdef. 20 apps have zero automation surface at all. The whole sausage.
+[**The Gap Analysis**](wiki/concepts/automator-vs-shortcuts.md) — 227 Automator actions vs 246 Shortcuts actions. What each can do that the other can't. And the bridge that doesn't exist: Shortcuts has no `Run AppleScript` action, so 30 apps with rich scripting dictionaries are invisible to it. 36 apps have zero sdef. 20 apps have zero automation surface at all. The whole sausage.
 
 ---
 
@@ -970,7 +970,7 @@ This works because the skill knows the `defaults` commands, `osascript` patterns
 **What this unlocks:**
 - No need to remember command syntax — just describe what you want
 - Claude chains multiple commands when needed (toggle dark mode + hide dock + set wallpaper)
-- The [bash aliases](bash-aliases.md) and [workflow scripts](scripts.md) serve as Claude's playbook
+- The [bash aliases](wiki/entities/bash-aliases.md) and [workflow scripts](wiki/compiled/scripts.md) serve as Claude's playbook
 - Every "dark app" CLI equivalent (see table above) is directly invocable
 
 This is Sal's vision realized differently: instead of Automator's drag-and-drop, you get **natural language automation** backed by the same AppleScript and CLI toolkit.
@@ -979,7 +979,7 @@ This is Sal's vision realized differently: instead of Automator's drag-and-drop,
 
 ## How It All Connects
 
-[**From Publishing Consultant to Patent to This Repo**](sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s -> Automator at Apple -> context-aware relevance filtering -> scripting dictionaries -> departure -> this repo as open-source continuation.
+[**From Publishing Consultant to Patent to This Repo**](wiki/lessons/sal-career-to-code.md) — the cross-analysis tracing Sal's career arc through the Automator patent to what this repository builds. Publishing automation in the 1990s -> Automator at Apple -> context-aware relevance filtering -> scripting dictionaries -> departure -> this repo as open-source continuation.
 
 ---
 
@@ -987,14 +987,14 @@ This is Sal's vision realized differently: instead of Automator's drag-and-drop,
 
 Sal, if you ever find this: hello. My name is Esa Ruoho. I'm a software tester and workflow obsessive from Finland. I've been studying your work — the sites, the talks, the patent, the philosophy — and building on it in the open.
 
-This repo contains a [detailed profile of your career and thinking](sal-soghoian.md), sourced from your own websites, your MacStories piece, the Omni Show, the Rebooting interview, and your 2018 conversation with Allison Sheridan and Ray Robertson on Chit Chat Across the Pond. Everything is attributed. Everything links back to you.
+This repo contains a [detailed profile of your career and thinking](wiki/entities/sal-soghoian.md), sourced from your own websites, your MacStories piece, the Omni Show, the Rebooting interview, and your 2018 conversation with Allison Sheridan and Ray Robertson on Chit Chat Across the Pond. Everything is attributed. Everything links back to you.
 
 I've also been cataloguing your websites — [macosxautomation.com](http://macosxautomation.com), [iworkautomation.com](http://iworkautomation.com), [photosautomation.com](http://photosautomation.com), [configautomation.com](http://configautomation.com), [dictationcommands.com](http://dictationcommands.com), [omni-automation.com](http://omni-automation.com), and [cmddconf.com](http://cmddconf.com) — because they represent decades of automation knowledge that exists on self-hosted infrastructure with no institutional backing. You said it yourself: *"Many times I put those examples up there for me so that I can go back later on."* We'd like to make sure those examples stay findable — for you and for everyone else.
 
 **What this repo does with your legacy:**
 
-- Your 10 automation principles ([WWSD](sal-soghoian.md#what-would-sal-do--the-10-principles)) guide every script we write
-- Your Automator patent's data-type-chaining concept is realized as a [lookup table](data-type-chaining.md) across 31 apps
+- Your 10 automation principles ([WWSD](wiki/entities/sal-soghoian.md#what-would-sal-do--the-10-principles)) guide every script we write
+- Your Automator patent's data-type-chaining concept is realized as a [lookup table](wiki/concepts/data-type-chaining.md) across 31 apps
 - Your iWork scripting dictionaries (which you wrote at Apple) are extracted, structured, and paired with 288 runnable workflow scripts
 - Your "everyone can automate" philosophy drives the pipeline: one command generates scripts, compiles them for Spotlight, and creates Siri Shortcuts — so the barrier to automation keeps dropping
 - Your iWorkAutomation.com examples are being cross-referenced with our machine-readable dictionaries to create the complete picture you always intended: human-readable pedagogy on top of structured data
@@ -1015,7 +1015,7 @@ This repo is that responsibility being returned. If anything here misrepresents 
 
 Built with [Claude Code](https://claude.ai/) and a custom [Apple skill](https://github.com/esaruoho/esa-skills).
 
-Inspired by **Sal Soghoian** — Apple's Product Manager of Automation Technologies (1997-2016), co-inventor of Automator ([US Patent 7,428,535](patents/US7428535-analysis.md)), and the person who proved that the power of the computer should reside in the hands of the one using it. [Read the full profile ->](sal-soghoian.md)
+Inspired by **Sal Soghoian** — Apple's Product Manager of Automation Technologies (1997-2016), co-inventor of Automator ([US Patent 7,428,535](patents/US7428535-analysis.md)), and the person who proved that the power of the computer should reside in the hands of the one using it. [Read the full profile ->](wiki/entities/sal-soghoian.md)
 
 ---
 
