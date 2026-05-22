@@ -1,10 +1,11 @@
-# Bulk Exporters Index — 19 exporters
+# Bulk Exporters Index — 20 exporters
 
 **The agent should ONLY read a specific exporter's directory when the user's question is about that data source.**
 An AppleScript question never needs to touch any exporter. A 'where are my safari bookmarks' question reads ONLY `safari-exporter/`.
 
 Format: `exporter-name` — purpose — `path/`
 Regenerate: `python3 bin/gen-skill-indexes.py`
+`apps-exporter` — Four small Apple consumer apps in one package: **Clock**, **Weather**, — `apps-exporter/`
 `audio-midi-exporter` — Audio MIDI Setup data without launching Audio MIDI Setup. Tier 5 dark — `audio-midi-exporter/`
 `books-exporter` — Apple Books library, collections, and annotations → markdown vault. — `books-exporter/`
 `calendar-exporter` — Apple Calendar → markdown vault. Reads — `calendar-exporter/`

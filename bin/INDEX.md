@@ -1,4 +1,4 @@
-# CLI Tools Index — 68 tools in bin/
+# CLI Tools Index — 94 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -23,26 +23,35 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `build-sal-demo-guide.py` — (no description) — `bin/build-sal-demo-guide.py`
 `build-sal-demo-shortcuts.py` — (no description) — `bin/build-sal-demo-shortcuts.py`
 `build-sal-vacation-demo.py` — (no description) — `bin/build-sal-vacation-demo.py`
+`build-send-to-ocr-shortcut.py` — (no description) — `bin/build-send-to-ocr-shortcut.py`
 `build-take-my-picture-shortcut.py` — (no description) — `bin/build-take-my-picture-shortcut.py`
+`build-turn-into-voice-shortcut.py` — (no description) — `bin/build-turn-into-voice-shortcut.py`
 `capture-vocal-shortcut-schemas.py` — (no description) — `bin/capture-vocal-shortcut-schemas.py`
+`cc-here` — (no description) — `bin/cc-here`
+`cc-index` — (no description) — `bin/cc-index`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
 `dictation-commands-port-audit.py` — (no description) — `bin/dictation-commands-port-audit.py`
 `dictation-commands-to-shortcuts.py` — (no description) — `bin/dictation-commands-to-shortcuts.py`
 `dictation-commands-vocal-shortcuts-import.py` — (no description) — `bin/dictation-commands-vocal-shortcuts-import.py`
+`dock` — (no description) — `bin/dock`
+`dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
 `hey-sal` — (no description) — `bin/hey-sal`
+`install-exporters.sh` — symlink every apple/<name>-exporter/scripts/<name> — `bin/install-exporters.sh`
 `install-sal-demo-library.sh` — One-command Sal Demo library installer. — `bin/install-sal-demo-library.sh`
 `invert` — non-destructive darkmode -> lightmode for an image OR a folder of images. — `bin/invert`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
+`pair-and-tile` — (no description) — `bin/pair-and-tile`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `probe-vocal-shortcuts.sh` — Probe where Vocal Shortcuts stores its phrase→Shortcut mappings. — `bin/probe-vocal-shortcuts.sh`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
+`read-aloud` — (no description) — `bin/read-aloud`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`
 `sal-archive-status.py` — (no description) — `bin/sal-archive-status.py`
 `sal-discover-interviews.py` — (no description) — `bin/sal-discover-interviews.py`
@@ -60,15 +69,32 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
+`screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
 `sdef-extract.py` — (no description) — `bin/sdef-extract.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
+`send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
+`show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
 `smart` — (no description) — `bin/smart`
+`snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
+`tag` — (no description) — `bin/tag`
+`tag-finder-selection` — (no description) — `bin/tag-finder-selection`
+`tag-result-handler` — (no description) — `bin/tag-result-handler`
+`tag-retry-failed` — (no description) — `bin/tag-retry-failed`
+`tag-send-to-ocr` — tag whatever's selected in Finder with `needs-ocr:red`, — `bin/tag-send-to-ocr`
+`tag-smart` — (no description) — `bin/tag-smart`
+`tag-trinity` — (no description) — `bin/tag-trinity`
+`tag-watcher` — (no description) — `bin/tag-watcher`
 `thought-archive.py` — (no description) — `bin/thought-archive.py`
 `vocal-shortcuts-router-verify.py` — (no description) — `bin/vocal-shortcuts-router-verify.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
+`voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
+`voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
+`wiki-index.py` — (no description) — `bin/wiki-index.py`
+`wiki-lint.py` — (no description) — `bin/wiki-lint.py`
+`window-frame` — report on-screen window geometry vs. screen geometry. — `bin/window-frame`
 `workflow-gen.py` — (no description) — `bin/workflow-gen.py`
 `xpc-probe.py` — (no description) — `bin/xpc-probe.py`

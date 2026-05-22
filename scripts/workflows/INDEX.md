@@ -1,4 +1,4 @@
-# Workflows Index — 301 scripts across 33 apps
+# Workflows Index — 303 scripts across 34 apps
 
 **Grep this file to find the right script without scanning every app.**
 Grep by trigger keyword (`grep airdrop`), by app name (`^## finder`), or by description token.
@@ -17,6 +17,10 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 `ax-system-settings-privacy` — Open System Settings Privacy & Security pane via Accessibility API — triggers: ax, system, settings, privacy, open, security, pane, accessibility — `scripts/workflows/accessibility/ax-system-settings-privacy.applescript`
 `ax-system-settings-sound` — Open System Settings Sound pane via Accessibility API — triggers: ax, system, settings, sound, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-sound.applescript`
 `ax-system-settings-wifi` — Open System Settings Wi-Fi pane via Accessibility API — triggers: ax, system, settings, wifi, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-wifi.applescript`
+
+## appletoolbox (1)
+
+`hey-apple` — Activate AppleToolbox — bring the live panel to the front (or launch it). — triggers: hey apple, activate appletoolbox, apple toolbox, toolbox on, wake apple — `scripts/workflows/appletoolbox/hey-apple.applescript`
 
 ## automator (5)
 
@@ -310,8 +314,9 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 `shortcuts-run-shortcut` — Run a named Shortcut — triggers: run, shortcut, named — `scripts/workflows/shortcuts/shortcuts-run-shortcut.applescript`
 `shortcuts-search-shortcuts` — Search for a Shortcut by name and run it — triggers: search, shortcut, name, run — `scripts/workflows/shortcuts/shortcuts-search-shortcuts.applescript`
 
-## system-events (39)
+## system-events (40)
 
+`DockSnap` — DockSnap.applescript — `scripts/workflows/system-events/DockSnap.applescript`
 `SideBySide` — SideBySide.applescript — triggers: sidebyside, applescript — `scripts/workflows/system-events/SideBySide.applescript`
 `System-Events-HideAllOthers` — Hide All Others (native, no keystroke simulation) — triggers: hideallothers, hide, others, native, keystroke, simulation — `scripts/workflows/system-events/System-Events-HideAllOthers.applescript`
 `System-Events-MosaicKnob` — Mosaic Knob: single script with two subroutines for Loupedeck knob. — triggers: mosaicknob, mosaic, knob, single, script, two, subroutines, loupedeck — `scripts/workflows/system-events/System-Events-MosaicKnob.applescript`

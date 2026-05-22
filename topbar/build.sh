@@ -40,6 +40,12 @@ if [ ! -f "AppleToolbox.icns" ]; then
 fi
 cp AppleToolbox.icns "$APP/Contents/Resources/AppleToolbox.icns"
 
+# Bundled icon assets used by the file-browser row glyphs (Copilot SVG,
+# any future per-provider art). Loaded at runtime from Bundle.main.
+if [ -d "icons" ]; then
+    cp -R icons "$APP/Contents/Resources/icons"
+fi
+
 echo "==> Writing Info.plist (LSUIElement=true, bundle id, usage strings)..."
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
