@@ -1,0 +1,68 @@
+#!/bin/bash
+# toolbox-goto — open AppleToolbox --live at a given folder.
+#
+# If --live is already running: posts a Distributed Notification telling it
+# to switch the browser to <path> (warm path, instant, no relaunch).
+# If --live is not running: cold-launches it with `--cwd <path>`.
+#
+# Usage:
+#   toolbox-goto <path>
+#   toolbox-goto                  # uses $PWD
+#
+# Called by the "Open in AppleToolbox" Finder service.
+
+set -e
+
+if [ $# -ge 1 ]; then
+    TARGET="$1"
+else
+    TARGET="$PWD"
+fi
+
+# Expand ~ and resolve relative paths.
+TARGET="$(python3 -c "import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))" "$TARGET")"
+
+if [ ! -e "$TARGET" ]; then
+    echo "toolbox-goto: path does not exist: $TARGET" >&2
+    exit 1
+fi
+
+# DO NOT collapse a file selection to its parent here — the receiver
+# (goToCwdRequested in Swift, or --cwd parsing on cold launch) splits the
+# file's basename out so it can be highlighted in the browser row list.
+# Collapsing here would lose the basename and the highlight wouldn't fire.
+
+# Is --live already running?
+if /usr/bin/pgrep -f "AppleToolbox.*--live" >/dev/null 2>&1; then
+    # Warm path: post the Distributed Notification with the path payload.
+    # Match the constant in AppleToolbox.swift goToCwdRequested(_:).
+    /usr/bin/osascript <<APPLESCRIPT
+use framework "Foundation"
+set userInfo to current application's NSDictionary's dictionaryWithObject:"$TARGET" forKey:"path"
+current application's NSDistributedNotificationCenter's defaultCenter()'s ¬
+    postNotificationName:"com.esaruoho.appletoolbox.GoToCwd" ¬
+    object:(missing value) ¬
+    userInfo:userInfo ¬
+    deliverImmediately:true
+APPLESCRIPT
+else
+    # Cold path: spawn a fresh --live with --cwd.
+    # IMPORTANT: must exec the binary directly, NOT `open -a --args`. When the
+    # menu-bar instance is already running, `open -a App --args …` re-activates
+    # that existing process and silently drops the args — the new --live never
+    # spawns. Direct exec forces a separate process with our flags honored.
+    APP="/Applications/Apple-Workflows/AppleToolbox.app"
+    DEV="$(cd "$(dirname "$0")/.." && pwd)/topbar/AppleToolbox.app"
+    if [ -x "$APP/Contents/MacOS/AppleToolbox" ]; then
+        BIN="$APP/Contents/MacOS/AppleToolbox"
+    elif [ -x "$DEV/Contents/MacOS/AppleToolbox" ]; then
+        BIN="$DEV/Contents/MacOS/AppleToolbox"
+    else
+        echo "toolbox-goto: AppleToolbox.app not found at $APP or $DEV" >&2
+        exit 1
+    fi
+    # nohup + disown so the spawned process survives the parent shell exit
+    # (Automator Quick Actions reap their script's child PIDs on completion).
+    nohup "$BIN" --live --cwd "$TARGET" >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+fi
