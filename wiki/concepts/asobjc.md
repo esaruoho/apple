@@ -90,6 +90,22 @@ Reads Finder tags via `NSURL`'s `NSURLTagNamesKey` resource value. Demonstrates 
 
 Run: `osascript bin/asobjc-tag-demo.applescript ~/Desktop/somefile.png`
 
+### 3. `bin/tag-asobjc-full.applescript` — color-preserving pilot
+
+Round-trips the full Finder-tag xattr (`com.apple.metadata:_kMDItemUserTags`) through `NSPropertyListSerialization`. Verified 2026-05-22: writes via this pilot are read back with colors intact by both itself AND `bin/tag` (Python). Inverse also works — Python writes `python:purple,reverse:yellow`, this pilot reads `python:purple` and `reverse:yellow`. Full feature parity for `list`/`set`/`clear` of color-tagged files.
+
+**The recipe whenever ASObjC needs to touch arbitrary xattrs:**
+
+1. `do shell script "xattr -px <key> <path>"` → hex-encoded blob (Apple-shipped CLI)
+2. `xxd -r -p` via tempfile → `NSData` (Foundation doesn't expose a hex decoder)
+3. `NSPropertyListSerialization propertyListWithData:options:format:error:` → `NSArray`
+4. Mutate as AppleScript list
+5. `NSPropertyListSerialization dataWithPropertyList:format:options:error:` with `NSPropertyListBinaryFormat_v1_0` → `NSData`
+6. `xxd -p` via tempfile → hex string
+7. `do shell script "xattr -wx <key> <hex> <path>"`
+
+**Foundation gotcha:** `NSPropertyListSerialization`'s `format:` out-parameter must be passed as `(reference)`, not `(missing value)`. Passing `missing value` returns a 2-tuple instead of the 3-tuple `{plistObj, fmt, err}` that AppleScript destructures. The error is non-obvious (`Can't get item 3 of {...}`).
+
 ### 2. `bin/tag-asobjc.applescript` — A/B reimplementation of `bin/tag` core I/O
 
 Reimplements `list`/`add`/`set`/`remove`/`clear` against the same xattr that `bin/tag` (Python) writes. Tested round-trip: Python writes → ASObjC reads, ASObjC writes → Python reads. Same file, same xattr, both tools see each other's writes.
@@ -116,12 +132,58 @@ The extended-attribute write path from ASObjC needs a wrapper — `NSFileManager
 
 **Lesson for the tier model:** "Apple-supported" ≠ "feature-parity with the underlying syscall." `NSURL` resource values are the *sanctioned* path but they normalize away detail the lower-level xattr preserves. Treat each ASObjC migration as a fidelity audit, not a drop-in replacement.
 
+## Mandatory pre-flight: `bin/cocoa-class-probe`
+
+Before proposing OR writing any ASObjC migration, probe every Cocoa class name against the SDK headers. Do not infer from plausible-sounding names. Run:
+
+```bash
+bin/cocoa-class-probe NSSomeClassName AnotherClass [...]
+bin/cocoa-class-probe --runtime NSPossiblyPrivateClass     # also check ObjC runtime
+bin/cocoa-class-probe --framework Foundation NSFileManager  # narrow scope
+```
+
+Verdicts:
+- `PUBLIC` — declared in at least one shipped SDK header. Safe to use.
+- `RUNTIME-ONLY` — not in headers but resolvable at runtime. Private SPI, will fail App Review, may break across macOS versions.
+- `ABSENT` — name is wrong or made up. Stop. Do not migrate.
+
+Exit code 1 if any symbol is `ABSENT`, so this can guard a CI hook for future migrations.
+
+**Why this tool exists:** during the 2026-05-22 pilot pass, I proposed migrating `/smart` and `/show` to `NSSavedSearch`. The class name was pattern-matched from "Saved Search file format" — it does not exist in any public SDK header. I caught it before writing the migration only because I read the existing plist code first. The probe makes this a one-line check instead of a luck-dependent catch.
+
+## Production migrations log
+
+| Date | Tool | What changed | Verified |
+|---|---|---|---|
+| 2026-05-22 | `bin/build-delete-now-shortcut.py` — embedded AppleScript inside the "Delete Immediately" Finder Quick Action | `do shell script "/bin/rm -rf"` → `NSFileManager removeItemAtURL:error:`. Per-item typed `NSError` reporting, no shell quoting, no `/bin/rm` process spawn. | Smoke-tested on normal, space-bearing, and Unicode-bold (`Ünicode-böld‐文件.txt`) filenames — all deleted cleanly. Non-existent path correctly returns typed error. |
+
+### Idioms learned
+
+- **Destructuring `setResourceValue:error:` and similar dual-returns:** don't write `set {ok, err} to ...` — AppleScript's destructuring infers types ambiguously and can emit `Expected variable name or property but found class name` from positions you can't easily debug. Safer pattern: `set theResult to (...)` then `item 1 of theResult` / `item 2 of theResult`. Verified working on `NSFileManager removeItemAtURL:error:`.
+
+## Findings from the pilot pass (2026-05-22)
+
+Two pilots completed; two "obvious" ASObjC wins evaluated; verdicts honest.
+
+### Finding A — `NSURLTagNamesKey` is names-only
+
+Documented above. The "elegant" ASObjC path drops color info. Color preservation requires the xattr+NSPropertyListSerialization recipe (`bin/tag-asobjc-full.applescript`).
+
+### Finding B — `NSSavedSearch` is not a public class
+
+The originally-planned migration of `/smart` and `/show` from hand-rolled plist to `NSSavedSearch` **cannot happen**. `NSSavedSearch` is a Finder-private class. The `.savedSearch` file IS the API — Finder reads a plain plist with the documented structure (`RawQuery`, `SearchScopes`, `SearchCriteria`, `SearchResultsViewOptions`). Python's `plistlib` (stdlib, Apple-native) is already the optimal implementation. **Do not migrate `bin/smart` or `bin/show`** — there is no ASObjC equivalent that wins on any axis. Leaving them in Python is the correct choice.
+
+### Generalized lesson
+
+When considering an ASObjC migration, ask first: *does a public Cocoa class actually exist for the thing I'm doing?* If the Finder/Cocoa interface is "write this plist shape," then `plistlib` already wins — there's no class to bridge to. ASObjC's value is exclusively when there's a real Foundation/AppKit class that the Python tool currently substitutes for via shell + parsing. Tag I/O has `NSURL` resource values (partial win). SavedSearch does not.
+
 ## Next steps for the skill
 
-1. Migrate `bin/tag*` (the `/tag` skill backend) from xattr+plistlib to ASObjC-native NSURL resource values. Compare line count + edge cases.
-2. Replace hand-rolled `.savedSearch` plist generation in `/smart` and `/show` with `NSSavedSearch`.
-3. Add an ASObjC section to [wwsd-decision-tree.md](wwsd-decision-tree.md) — when sdef is too thin, before reaching for Swift, try ASObjC.
+1. **No production migration of `bin/tag` yet.** Both ASObjC pilots are kept as references. The Python tool stays as the production interface; the pilots demonstrate the pattern for future tools.
+2. **No migration of `bin/smart` or `bin/show`** — verdict above.
+3. Add an ASObjC branch to [wwsd-decision-tree.md](wwsd-decision-tree.md) — *when sdef is too thin, before reaching for Swift, try ASObjC. Before writing a new ASObjC tool, audit whether a public Cocoa class exists — if not, `plistlib`/`do shell script` is already optimal.*
 4. Document the `current application's` idiom + `(reference)` out-param convention in a future `wiki/concepts/asobjc-idioms.md` once we have 3+ pilot tools using them.
+5. **New audit candidate:** look for places in `bin/` where we shell out + parse output (`mdfind`, `sips`, `sysctl`, etc.) and check whether a public Cocoa class exists for that domain. `NSMetadataQuery` for `mdfind` is the obvious one — that one IS a real public class, unlike `NSSavedSearch`.
 
 ---
 

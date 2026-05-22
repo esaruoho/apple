@@ -9,6 +9,19 @@ one action, produce one clear result, and survive the next macOS update.
 
 ---
 
+## 0. Default Tool Order (updated 2026-05-22)
+
+Before walking the tree below, remember the language order:
+
+1. **AppleScript + ASObjC** — default. `use framework "Foundation"` reaches every public Cocoa class from a plain `.applescript` file. See [asobjc.md](asobjc.md).
+2. **Python stdlib** — when no public Cocoa class exists for the domain. Verify with `bin/cocoa-class-probe ClassName`. PUBLIC = use ASObjC. ABSENT = the Cocoa path doesn't exist, use Python.
+3. **Swift compile** — only when AS+ASObjC truly can't reach (KVO subclassing, NSWindow subclasses, Carbon hotkeys via menu-bar apps).
+4. **Shell** — orchestration + Apple-shipped CLIs only.
+
+The tree below tells you *which surface* (sdef vs Intents vs CLI vs AX); the tool order tells you *which language* to write the glue in.
+
+---
+
 ## 1. Decision Tree
 
 Start here. Ask yourself: **"What am I trying to automate?"**
@@ -71,13 +84,22 @@ What are you trying to automate?
 │    │
 │    ├─ Finder-level operation? (trash, tag, label, comment, reveal)
 │    │  YES → AppleScript: `tell application "Finder"`
+│    │         For tags with colors → ASObjC + NSPropertyListSerialization
+│    │         (see bin/tag-asobjc-full.applescript)
+│    │  NO  ↓
+│    │
+│    ├─ Need typed file metadata, predicates, enumeration?
+│    │  YES → ASObjC: NSFileManager, NSURL resource values, NSMetadataQuery
+│    │         (probe class names with bin/cocoa-class-probe first)
 │    │  NO  ↓
 │    │
 │    ├─ Bulk/fast operation? (thousands of files, no GUI needed)
 │    │  YES → CLI: mv, cp, rsync, find, xattr, mdls, mdfind
+│    │         OR ASObjC NSFileManager for typed enumeration
 │    │  NO  ↓
 │    │
-│    └─ Need both? → AppleScript + `do shell script` bridge
+│    └─ Need both? → AppleScript + `do shell script` bridge,
+│                    or pure ASObjC for everything in one .applescript file
 │
 ├─── Web / Network (HTTP requests, downloads, scraping)
 │    │
@@ -112,6 +134,7 @@ What are you trying to automate?
 | Approach | Best For | Depth | Ease | Siri | Spotlight | Hardware Buttons |
 |---|---|---|---|---|---|---|
 | **AppleScript** | App control, dialogs, Finder ops | Deep — full scripting dictionaries | Medium | Via Shortcuts wrapper | Via osacompile .app | Via Loupedeck/Stream Deck |
+| **AppleScript + ASObjC** | Everything AppleScript does PLUS any public Cocoa class (NSFileManager, NSMetadataQuery, NSURL, NSWorkspace, NSPasteboard, NSImage, NSPropertyListSerialization, NSDistributedNotificationCenter, …) | Very deep — full Foundation/AppKit | Medium — same launch surface as AppleScript | Via Shortcuts wrapper | Via osacompile .app | Via Loupedeck/Stream Deck |
 | **Shortcuts** | HomeKit, App Intents, chaining | Medium — limited to exposed intents | Easy | Native ("Hey Siri, ...") | Native (by name) | Via Loupedeck/Stream Deck |
 | **CLI / shell** | System config, file ops, network | Deep — full UNIX toolbox | Hard (for non-devs) | Via Shortcuts + shell action | Via shell wrapper .app | Via Loupedeck/Stream Deck |
 | **Accessibility API** | Unscriptable apps, UI clicking | Shallow — fragile, version-dependent | Hard | Via Shortcuts wrapper | Via osacompile .app | Via Loupedeck/Stream Deck |

@@ -16,7 +16,8 @@ Knowledge layer for the Apple skill — entity pages, concept atlases, lessons, 
 
 ## `concepts/` — how X works
 
-- [automation-tiers.md](concepts/automation-tiers.md) — the 10-tier macOS automation atlas
+- **[asobjc.md](concepts/asobjc.md) — AppleScriptObjective-C (Tier 1.5).** The default tool for new automation work since 2026-05-22 (Sal pointed it out; we'd missed it for 17 years). Lets a plain `.applescript` file call any public Cocoa class. Pre-flight: run `bin/cocoa-class-probe` before naming any class.
+- [automation-tiers.md](concepts/automation-tiers.md) — the 11-tier macOS automation atlas (ASObjC = Tier 1.5)
 - [automator-vs-shortcuts.md](concepts/automator-vs-shortcuts.md) — gap analysis
 - [data-type-chaining.md](concepts/data-type-chaining.md) — how AppleScript data flows between apps
 - [spotlight-automation.md](concepts/spotlight-automation.md) — 5 paths + APFS bug + TCC fix

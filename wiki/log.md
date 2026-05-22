@@ -30,3 +30,23 @@ App-probe, pattern-reusability, thought-multiplier, loupedeck-window-management,
 ## [2026-05-21] build | wiki-index + wiki-lint pipeline + INDEX.md + log.md
 
 `bin/wiki-index.py` auto-generates `wiki/INDEX.md` from filesystem walk + frontmatter/H1/first-paragraph. `bin/wiki-lint.py` checks orphans, oversized pages (>250 lines), broken cross-refs, `## From skill.md` regressions, missing H1, stale memory-type frontmatter. Slash wrappers: `/wiki-index` and `/wiki-lint`. skill.md shrunk further by replacing inline index with pointer to `wiki/INDEX.md`.
+
+## [2026-05-22] build | ASObjC promoted to Tier 1.5 — default tool order changed
+
+After Sal's 2026-05-22 reply to Esa pointing at AppleScriptObjective-C for file management + tags, the skill discovered a missing tier. ASObjC has shipped since macOS 10.6 (2009) but had zero wiki coverage. Promoted to Tier 1.5 in the automation atlas (between AppleScript and App Intents) and made the **default** in the language-order hierarchy. New artifacts:
+
+- `wiki/concepts/asobjc.md` (concept page, postmortem, migration recipes, pre-flight rules)
+- `bin/asobjc-tag-demo.applescript` (minimum-viable read pilot)
+- `bin/tag-asobjc.applescript` (A/B reimplementation of `bin/tag` core I/O — names-only)
+- `bin/tag-asobjc-full.applescript` (color-preserving pilot using NSPropertyListSerialization + xattr round-trip)
+- `bin/cocoa-class-probe` (SDK-header + ObjC-runtime probe — PUBLIC / RUNTIME-ONLY / ABSENT; required before any Cocoa class name appears in a proposal)
+
+Tool-order patches applied to `skill.md`, `wiki/concepts/wwsd-decision-tree.md`, `wiki/concepts/apple-native-only.md`. Comparison matrix in WWSD now has an explicit AppleScript+ASObjC row. Memory rules: `feedback_check_both_taxonomy_axes` (root-cause of missing tier) + `feedback_probe_before_naming_cocoa_classes` (no more hallucinated class names).
+
+Two findings worth carrying forward: (1) `NSURLTagNamesKey` is names-only — color preservation requires the NSPropertyListSerialization + xattr round-trip recipe; (2) `NSSavedSearch` is ABSENT in public headers — the `.savedSearch` plist IS the API, so `bin/smart` and `bin/show` stay in Python (`plistlib`).
+
+## [2026-05-22] migration | "Delete Immediately" Quick Action → ASObjC NSFileManager
+
+First production-shipped ASObjC migration. `bin/build-delete-now-shortcut.py` rebuilt with the embedded AppleScript body using `NSFileManager removeItemAtURL:error:` instead of `do shell script "/bin/rm -rf"`. Per-item typed `NSError` summary dialog on failure. Smoke-tested on shell-hostile filenames: normal, spaces, `Ünicode-böld‐文件.txt`, directories, and a missing path — all handled correctly without shell quoting. Shortcut regenerated and signed.
+
+New AppleScript idiom logged in `wiki/concepts/asobjc.md`: don't destructure dual-returns with `set {a, b} to ...` (ambiguous type inference yields cryptic compile errors); use `set r to (...)` then `item 1 of r` / `item 2 of r` instead.

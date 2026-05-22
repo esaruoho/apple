@@ -23,20 +23,51 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 NAME = "Delete Immediately"
 
 # Single AppleScript action: receives Shortcut input (the selected Finder
-# items as a list of files), counts them, asks once, then rm -rf each.
-APPLESCRIPT = r'''on run {input, parameters}
+# items as a list of files), counts them, asks once, then removes each via
+# AppleScriptObjective-C — NSFileManager's removeItemAtURL:error:. Direct
+# Cocoa call, no /bin/rm process spawn, typed NSError per failed item so
+# we can summarize which ones failed and why. Handles Unicode-bold and
+# other shell-hostile filenames natively (no shell quoting).
+#
+# ASObjC migration: 2026-05-22. See wiki/concepts/asobjc.md.
+APPLESCRIPT = r'''use framework "Foundation"
+use scripting additions
+
+on run {input, parameters}
 	if input is missing value or (count of input) = 0 then return input
 	set n to count of input
-	set msg to "Permanently delete " & n & " item" & (if n = 1 then "" else "s") & "?\n\nThis bypasses the Trash."
+	if n = 1 then
+		set msg to "Permanently delete 1 item?" & linefeed & linefeed & "This bypasses the Trash."
+	else
+		set msg to "Permanently delete " & n & " items?" & linefeed & linefeed & "This bypasses the Trash."
+	end if
 	display alert "Delete Immediately" message msg buttons {"Cancel", "Delete"} default button "Cancel" cancel button "Cancel" as critical
+
+	set fm to current application's NSFileManager's defaultManager()
+	set failed to {}
 	repeat with f in input
 		try
 			set p to POSIX path of (f as alias)
-			do shell script "/bin/rm -rf -- " & quoted form of p
+			set theURL to current application's NSURL's fileURLWithPath:p
+			set theResult to (fm's removeItemAtURL:theURL |error|:(reference))
+			if (item 1 of theResult) is false then
+				set theError to item 2 of theResult
+				set reason to theError's localizedDescription() as text
+				set end of failed to (p & " — " & reason)
+			end if
 		on error errMsg
-			-- skip and continue
+			set end of failed to ((f as text) & " — " & errMsg)
 		end try
 	end repeat
+
+	if (count of failed) > 0 then
+		set summary to ""
+		repeat with line in failed
+			set summary to summary & (line as text) & linefeed
+		end repeat
+		display alert "Delete Immediately — some items failed" message summary as warning
+	end if
+
 	return input
 end run'''
 

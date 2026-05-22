@@ -1,4 +1,4 @@
-# CLI Tools Index — 97 tools in bin/
+# CLI Tools Index — 100 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -21,6 +21,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `build-hey-sal-shortcut.py` — (no description) — `bin/build-hey-sal-shortcut.py`
 `build-hey-sal-type-shortcut.py` — (no description) — `bin/build-hey-sal-type-shortcut.py`
 `build-paketti-verbs.py` — (no description) — `bin/build-paketti-verbs.py`
+`build-pin-in-appletoolbox-shortcut.py` — (no description) — `bin/build-pin-in-appletoolbox-shortcut.py`
 `build-sal-demo-guide.py` — (no description) — `bin/build-sal-demo-guide.py`
 `build-sal-demo-shortcuts.py` — (no description) — `bin/build-sal-demo-shortcuts.py`
 `build-sal-vacation-demo.py` — (no description) — `bin/build-sal-vacation-demo.py`
@@ -30,6 +31,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `capture-vocal-shortcut-schemas.py` — (no description) — `bin/capture-vocal-shortcut-schemas.py`
 `cc-here` — (no description) — `bin/cc-here`
 `cc-index` — (no description) — `bin/cc-index`
+`cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
 `dictation-commands-port-audit.py` — (no description) — `bin/dictation-commands-port-audit.py`
@@ -82,6 +84,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
 `tag` — (no description) — `bin/tag`
+`tag-asobjc-full.applescript` — tag-asobjc-full.applescript — `bin/tag-asobjc-full.applescript`
 `tag-asobjc.applescript` — tag-asobjc.applescript — `bin/tag-asobjc.applescript`
 `tag-finder-selection` — (no description) — `bin/tag-finder-selection`
 `tag-result-handler` — (no description) — `bin/tag-result-handler`

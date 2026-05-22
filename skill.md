@@ -22,6 +22,17 @@ triggers:
 - **Hardware controllers**: Loupedeck Live, Contour Shuttle Pro, Stream Deck, and any programmable controller that can trigger shell commands
 - **Use case**: Hardware buttons, keyboard shortcuts, Siri, and CLI all trigger AppleScripts via osascript to launch/activate apps, automate workflows, and optimize the workday
 
+## Default tool order (updated 2026-05-22 after Sal's ASObjC pointer)
+
+When a task needs code, pick in this order:
+
+1. **AppleScript + AppleScriptObjective-C (ASObjC)** — `use framework "Foundation"` gives every public Cocoa class from a plain `.applescript` file. No Swift, no compile, runs in `osascript`. This is the default. See [`wiki/concepts/asobjc.md`](wiki/concepts/asobjc.md) for the tier doc; [`wiki/concepts/wwsd-decision-tree.md`](wiki/concepts/wwsd-decision-tree.md) for branching.
+2. **Python stdlib** — when no public Cocoa class exists for the domain (verify with `bin/cocoa-class-probe ClassName`), or when stdlib is genuinely cleaner (e.g. plain plist read/write — `NSSavedSearch` doesn't exist as a public class, so `plistlib` wins for Smart Folders).
+3. **Swift compile** — only when AS+ASObjC genuinely can't reach (e.g. KVO subclassing for AVFoundation, custom NSWindow subclasses, Carbon hotkeys via menu-bar apps).
+4. **Shell** — for orchestration and Apple-shipped CLIs (`mdfind`, `defaults`, `xattr`, etc.). NEVER for third-party CLIs.
+
+**Hard rule:** Before naming any Cocoa class in a proposal, run `bin/cocoa-class-probe NSXxxx`. PUBLIC verdict required. ABSENT means the name is wrong. See project memory `feedback_probe_before_naming_cocoa_classes.md`.
+
 ## Boot Protocol
 
 This skill is a thin index. Section bodies live in `wiki/` and are loaded only when relevant.

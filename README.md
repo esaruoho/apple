@@ -478,6 +478,67 @@ Then `tag`, `dock`, `tag-watcher`, etc. become first-class shell commands.
 
 ---
 
+## AppleScriptObjective-C (ASObjC) — Tier 1.5, the Missing Tier (2026-05-22)
+
+On 2026-05-22, after Esa wrote Sal about file management + tags + "breaking into Finder," Sal replied with one sentence: *"AppleScriptObjective-C can be used for File Management. It has access to tags as well."* — plus a pointer to [macosxautomation.com/bootcamp/](http://macosxautomation.com/bootcamp/).
+
+ASObjC has shipped since macOS 10.6 (2009). It's the bridge that lets a plain AppleScript file call **any public Cocoa class** — `NSFileManager`, `NSURL`, `NSMetadataQuery`, `NSWorkspace`, `NSPasteboard`, `NSImage`, `NSPropertyListSerialization`, `NSDistributedNotificationCenter`, every Foundation/AppKit/CoreImage class — directly. No Swift, no Xcode, no compile step. Runs in `osascript` like any other AppleScript.
+
+**This repo had no concept page for it.** The wiki diagnosed why: the existing 10-tier atlas was permission-shaped, and ASObjC has no distinct permission (runs as `osascript`), so it had no row in the table. Single-axis taxonomies hide entire tiers. Full postmortem in [`wiki/concepts/asobjc.md`](wiki/concepts/asobjc.md).
+
+### What got built that day
+
+- **[`wiki/concepts/asobjc.md`](wiki/concepts/asobjc.md)** — concept page with pain-point migration table, two color-handling recipes (names-only via `NSURLTagNamesKey` + color-preserving via `NSPropertyListSerialization` + xattr round-trip), Foundation gotchas, idioms log, production migrations log.
+- **[`bin/asobjc-tag-demo.applescript`](bin/asobjc-tag-demo.applescript)** — minimum-viable ASObjC read demo.
+- **[`bin/tag-asobjc.applescript`](bin/tag-asobjc.applescript)** — A/B reimplementation of `bin/tag` core I/O, names-only path. Round-trip verified against Python `bin/tag`.
+- **[`bin/tag-asobjc-full.applescript`](bin/tag-asobjc-full.applescript)** — color-preserving pilot using `NSPropertyListSerialization` on the raw xattr. Round-trip verified both directions.
+- **[`bin/cocoa-class-probe`](bin/cocoa-class-probe)** — SDK-header + ObjC-runtime probe returning `PUBLIC` / `RUNTIME-ONLY` / `ABSENT`. **Required before any Cocoa class name appears in a proposal.** Antidote to hallucinated names. Exit code 1 on ABSENT so it can guard CI.
+
+### What changed in the tool order
+
+The default language hierarchy was reordered across the three top-level routing files:
+
+| Surface | Patched to point at the new order |
+|---|---|
+| [`skill.md`](skill.md) | New "Default tool order" section at the top |
+| [`wiki/concepts/wwsd-decision-tree.md`](wiki/concepts/wwsd-decision-tree.md) | New Section 0 + ASObjC branches in File Operations + ASObjC row in the comparison matrix |
+| [`wiki/concepts/apple-native-only.md`](wiki/concepts/apple-native-only.md) | "Tool order" section: AS+ASObjC #1, Python stdlib when no public Cocoa class exists, Swift compile only for KVO subclasses / Carbon hotkeys, shell for orchestration |
+
+**New default:** AppleScript + ASObjC is the first choice for any new tool. Python stdlib is the fallback **only when `cocoa-class-probe` returns ABSENT** for the relevant class names. Swift compile is reserved for what AS+ASObjC genuinely cannot reach.
+
+### First production migration shipped same day
+
+**["Delete Immediately" Finder Quick Action](shortcuts/finder/Delete%20Immediately.shortcut)** — embedded body migrated from `do shell script "/bin/rm -rf"` to `NSFileManager removeItemAtURL:error:`. Smoke-tested on shell-hostile filenames including `Ünicode-böld‐文件.txt` (the exact pattern that burned 2h in the rsync incident logged in `MEMORY.md`) — all handled cleanly without quoting. Per-item typed `NSError` summary alert replaces the old silent-failure mode. Rebuilt and re-signed via [`bin/build-delete-now-shortcut.py`](bin/build-delete-now-shortcut.py).
+
+### Two findings worth carrying forward
+
+1. **`NSURLTagNamesKey` is names-only.** The "elegant" `NSURL` resource-value path drops colors on both read and write. Color preservation requires `NSPropertyListSerialization` + xattr round-trip via `xxd -r/-p` tempfile bridge. Foundation doesn't expose a public hex↔NSData decoder. Documented in `asobjc.md` with the full recipe.
+2. **`NSSavedSearch` doesn't exist in public headers.** The originally-planned migration of `/smart` and `/show` cannot happen — Smart Folders are written as plain plist; the `.savedSearch` file IS the API. Python's `plistlib` (stdlib, Apple-native) is already optimal. **Do not migrate `bin/smart` or `bin/show`.** The probe caught this before a single line of migration code was written.
+
+### Why this took 17 years to surface in this repo
+
+Six reasons documented in [`asobjc.md`](wiki/concepts/asobjc.md) so future tier audits use them as a checklist:
+
+1. Taxonomy was permission-shaped, not language-shaped — ASObjC has no distinct TCC gate, so it had no row.
+2. Probing bias — every `bin/` probe enumerates external surfaces (sdef, app probes, xpc); ASObjC is a dialect, nothing to enumerate.
+3. Veteran-tech blind spot — shipped since 2009; assumed into the background while new shiny things (App Intents, Apple Intelligence) got concept pages.
+4. Inverse-direction confusion — `ScriptingBridge` (Cocoa→AS, from Swift) absorbed `AppleScriptObjC` (AS→Cocoa, from `.applescript` files) in Layer 1 descriptions.
+5. No failure forced discovery — working xattr+plistlib code never triggered re-investigation.
+6. Entity → concept link missing — `sal-soghoian.md:121` mentioned ASObjC once as a 2009 credit; never promoted to a concept page.
+
+### Rules instated this session
+
+Project memory in `~/.claude/projects/-Users-esaruoho-work-apple/memory/` (lives outside the repo, but the rules govern repo work):
+
+- **`feedback_check_both_taxonomy_axes`** — classify every tier on BOTH permission AND language-surface axes. Single-axis taxonomy hides entire tiers.
+- **`feedback_probe_before_naming_cocoa_classes`** — never type "use NSXxxx" without first running `bin/cocoa-class-probe NSXxxx`. PUBLIC required.
+
+### The unifying insight
+
+The skill's three dispatch channels — Loupedeck/Stream Deck hardware buttons, Shortcuts "Run AppleScript" actions, and AppleToolbox menu items — all consume AppleScript natively. **ASObjC upgrades the script's expressive power without touching the dispatch wiring.** Every existing `bin/*.sh` and `bin/*.py` that shells out to xattr/sips/mdfind/curl is a candidate for a single-file `.applescript` port that does the same work in-process via Cocoa. The Delete Immediately migration is the template; the rest of the file-op verbs (Turn into Voice, Invert, Send to OCR) port the same way.
+
+---
+
 ## Roadmap to the Full Apple Experience
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.

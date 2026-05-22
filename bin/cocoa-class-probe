@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""
+cocoa-class-probe — answer "is <ClassOrSymbol> a public Cocoa API?" by
+grepping the actual SDK headers and (optionally) class-dumping framework
+binaries.
+
+This is the antidote to pattern-matching plausible-sounding class names
+("Smart Folder must be NSSavedSearch") instead of verifying against the
+real SDK. Run this BEFORE proposing any ASObjC migration.
+
+Usage
+-----
+  cocoa-class-probe NSSavedSearch                   # one symbol
+  cocoa-class-probe NSSavedSearch NSMetadataQuery NSURLTagNamesKey
+  cocoa-class-probe --framework Foundation NSFileManager
+  cocoa-class-probe --runtime NSSavedSearch         # also check loaded runtime
+
+Verdict labels
+--------------
+  PUBLIC      : symbol declared in at least one shipped SDK header
+  RUNTIME-ONLY: not in headers, but resolvable at runtime (private SPI)
+  ABSENT      : neither in headers nor runtime — name is wrong / made up
+
+The SDK is whatever `xcrun --show-sdk-path` returns. The runtime probe
+uses /usr/bin/python3's objc bridge (PyObjC, which is bundled into the
+system Python on macOS) — no third-party install required.
+"""
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def sdk_path():
+    r = subprocess.run(["xcrun", "--show-sdk-path"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit("cocoa-class-probe: xcrun unavailable (no Xcode tools?)")
+    return Path(r.stdout.strip())
+
+
+def header_hits(symbol, frameworks=None, sdk=None):
+    """Return list of header file paths (str) declaring symbol."""
+    sdk = sdk or sdk_path()
+    base = sdk / "System/Library/Frameworks"
+    if frameworks:
+        roots = [base / f"{fw}.framework/Headers" for fw in frameworks]
+    else:
+        roots = [base.glob("*.framework/Headers")]
+        roots = list(base.glob("*.framework/Headers"))
+    files = []
+    for root in roots:
+        if not root.exists():
+            continue
+        files.extend(root.rglob("*.h"))
+    hits = []
+    for h in files:
+        try:
+            text = h.read_text(errors="ignore")
+        except (OSError, UnicodeDecodeError):
+            continue
+        # Word-boundary match — avoids partial hits like NSMetadataQueryAttributeName
+        # when probing NSMetadataQuery (we still want both; grep is just substring).
+        if symbol in text:
+            hits.append(h)
+    return hits
+
+
+def runtime_present(symbol):
+    """Return True if `symbol` is a resolvable ObjC class at runtime."""
+    # Use objc.lookUpClass; fall back to NSClassFromString via Foundation.
+    code = (
+        "import objc, sys\n"
+        f"name = {symbol!r}\n"
+        "try:\n"
+        "    objc.lookUpClass(name)\n"
+        "    print('yes')\n"
+        "except objc.nosuchclass_error:\n"
+        "    print('no')\n"
+    )
+    r = subprocess.run([sys.executable, "-c", code],
+                       capture_output=True, text=True)
+    return r.stdout.strip() == "yes"
+
+
+def classify(symbol, frameworks=None, want_runtime=False):
+    hits = header_hits(symbol, frameworks=frameworks)
+    if hits:
+        return "PUBLIC", hits
+    if want_runtime and runtime_present(symbol):
+        return "RUNTIME-ONLY", []
+    return "ABSENT", []
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Probe whether a Cocoa class/symbol is in the public SDK.")
+    ap.add_argument("symbols", nargs="+", help="ClassName(s) or symbol(s) to probe")
+    ap.add_argument("--framework", action="append",
+                    help="Limit search to this framework (repeatable). "
+                         "Default: every framework under /System/Library/Frameworks.")
+    ap.add_argument("--runtime", action="store_true",
+                    help="If absent from headers, also probe the ObjC runtime "
+                         "(detects private classes loaded by some framework).")
+    ap.add_argument("--show-headers", action="store_true",
+                    help="Print every header file the symbol appears in.")
+    args = ap.parse_args()
+
+    width = max(len(s) for s in args.symbols)
+    rc = 0
+    for sym in args.symbols:
+        verdict, hits = classify(sym, frameworks=args.framework,
+                                 want_runtime=args.runtime)
+        if verdict == "ABSENT":
+            rc = 1
+        line = f"{sym:<{width}}  {verdict}"
+        if hits:
+            line += f"  ({len(hits)} header{'s' if len(hits) != 1 else ''})"
+        print(line)
+        if args.show_headers and hits:
+            for h in hits[:10]:
+                print(f"    {h}")
+            if len(hits) > 10:
+                print(f"    ... and {len(hits) - 10} more")
+    sys.exit(rc)
+
+
+if __name__ == "__main__":
+    main()
