@@ -136,10 +136,10 @@ if [ -d "$INSTALL_DIR" ]; then
     # Force Launch Services to re-read Info.plist — without this, the
     # Finder-toolbar drop target shows (X) for any newly-declared file
     # types because LS caches the previous Info.plist aggressively.
-    # Re-register BOTH bundle copies (source build + installed).
+    # Only the installed bundle remains after this run (see the rm at
+    # the end), so we only register that one.
     echo "==> Refreshing Launch Services registration..."
     LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-    "$LSREG" -f "$APP" >/dev/null 2>&1 || true
     "$LSREG" -f "$INSTALL_APP" >/dev/null 2>&1 || true
 
     echo "==> Relaunching menu-bar..."
@@ -151,6 +151,14 @@ if [ -d "$INSTALL_DIR" ]; then
     if pgrep -lf "AppleToolbox --live" >/dev/null 2>&1; then
         echo "    Note: --live was running — relaunch with: open -a AppleToolbox --args --live"
     fi
+
+    # Single-bundle invariant: remove the source-tree copy after a
+    # successful install. Two .app bundles (build artifact + installed)
+    # used to drift in mtime by a few seconds and confused "which one
+    # do I boot, which one is newest?" Now there is exactly one bundle
+    # on disk and it lives at $INSTALL_APP.
+    echo "==> Removing source-tree build artifact ($APP) — only $INSTALL_APP remains."
+    rm -rf "$APP"
 else
     echo "==> Install dir $INSTALL_DIR missing — run install.sh once for first-time setup."
 fi

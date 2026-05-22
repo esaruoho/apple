@@ -121,6 +121,26 @@ to consume the event.
 | "Rebuild + relaunch now" | `bash topbar/build.sh && /usr/bin/killall AppleToolbox; open topbar/AppleToolbox.app` — or, if `--live` is running, just save the file. | terminal |
 | "Install / reinstall the LaunchAgent" | `bash topbar/install.sh` (or `/topbar`). | terminal |
 
+### Launch Services registration — MANDATORY after Info.plist changes
+
+After **any** edit to keys Launch Services reads (`CFBundleDocumentTypes`, `CFBundleURLTypes`, `UTExportedTypeDeclarations`, `LSItemContentTypes`, `LSHandlerRank`), the .app bundle MUST be re-registered with `lsregister -f`, or Finder will refuse drops (showing the (X) cursor), URL schemes won't resolve, and "Open With" will omit AppleToolbox. Launch Services caches Info.plist contents per-bundle-path and never re-reads them on its own.
+
+`build.sh` already does this automatically: after the `cp -R` install step it runs `lsregister -f` on **both** the source build (`topbar/AppleToolbox.app`) and the installed bundle (`/Applications/Apple-Workflows/AppleToolbox.app`). Any future build script that produces an .app MUST do the same — copy that pattern.
+
+Manual one-liner when debugging:
+
+```bash
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Apple-Workflows/AppleToolbox.app
+```
+
+If `lsregister -f` doesn't fix the symptom, nuke and rebuild the entire LS database (~30s, rarely needed):
+
+```bash
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user
+```
+
+Memory rule: `feedback_lsregister_after_app_bundle_changes.md`.
+
 ### Reader pattern (canonical)
 
 ```swift
