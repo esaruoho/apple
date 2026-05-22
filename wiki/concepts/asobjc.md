@@ -32,7 +32,8 @@ After that, `current application's NSXxxxx` reaches every Cocoa class. `(referen
 
 | Pain-point in current skill | xattr / shell hack | ASObjC-native path |
 |---|---|---|
-| Read/write Finder tags | `xattr -p com.apple.metadata:_kMDItemUserTags` + binary plist decode | `NSURL`'s `NSURLTagNamesKey` resource value (Apple-supported, APFS-safe) |
+| Read/write Finder tags (names only) | `xattr -p com.apple.metadata:_kMDItemUserTags` + binary plist decode | `NSURL`'s `NSURLTagNamesKey` resource value (Apple-supported, APFS-safe — **strips colors**) |
+| Read/write Finder tags **with colors preserved** | xattr+plistlib (current `bin/tag`) | Raw xattr via `NSPropertyListSerialization` (binary plist round-trip in ASObjC) — see pilot finding below |
 | Generate Smart Folders | Hand-rolled `.savedSearch` plist via `plistlib` | `NSSavedSearch` (proper API, validates query strings) |
 | Live Spotlight queries from a script | `mdfind` shell out, parse stdout | `NSMetadataQuery` — observable, live-updating, structured results |
 | Open URL in default app | `do shell script "open ..."` | `NSWorkspace`'s `openURL:` |
@@ -81,11 +82,39 @@ Documented in this file so it doesn't happen again to another tier:
 - **Shane Stanley's books** — `Everyday AppleScriptObjC` and `Myriad Tables` — the canonical ASObjC references. Not Apple-published; Stanley is a contemporary of Sal's.
 - **Apple's official guide** — [Mac Automation Scripting Guide: AppleScriptObjC](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptObjC/) (archived but still authoritative).
 
-## Pilot tool
+## Pilot tools
 
-[`bin/asobjc-tag-demo.applescript`](../../bin/asobjc-tag-demo.applescript) — reads Finder tags via `NSURL`'s `NSURLTagNamesKey` resource value. Demonstrates the minimum viable ASObjC shape on a real skill pain-point.
+### 1. `bin/asobjc-tag-demo.applescript` — minimum-viable read
+
+Reads Finder tags via `NSURL`'s `NSURLTagNamesKey` resource value. Demonstrates the minimum viable ASObjC shape on a real skill pain-point.
 
 Run: `osascript bin/asobjc-tag-demo.applescript ~/Desktop/somefile.png`
+
+### 2. `bin/tag-asobjc.applescript` — A/B reimplementation of `bin/tag` core I/O
+
+Reimplements `list`/`add`/`set`/`remove`/`clear` against the same xattr that `bin/tag` (Python) writes. Tested round-trip: Python writes → ASObjC reads, ASObjC writes → Python reads. Same file, same xattr, both tools see each other's writes.
+
+**Pilot finding (2026-05-22):** `NSURLTagNamesKey` is **names-only** in both directions. Setting `"asobjc:red,bridge:orange"` via the ASObjC version produces tags named `asobjc` and `bridge` with **no colors** on disk — confirmed by reading back with the Python tool (which decodes the raw xattr). The color info is silently dropped.
+
+**Implication for production migration:** the "elegant" `NSURL` resource-value path covers the 90% case (names, multi-tag, search) but cannot replace `bin/tag` outright if color preservation matters (it does — Finder's swatch column is one of the main reasons to use tags). For color-preserving I/O via ASObjC, the binary plist must be round-tripped explicitly with `NSPropertyListSerialization`:
+
+```applescript
+use framework "Foundation"
+-- read
+set xattrData to ... -- read via NSTask/xattr or NSFileManager extended-attribute APIs
+set {plistObj, fmt, err} to (current application's NSPropertyListSerialization's ¬
+	propertyListWithData:xattrData options:0 format:(reference) |error|:(reference))
+-- plistObj is now an NSArray of "Name\n<int>" strings — same as Python sees
+-- write
+set newData to (current application's NSPropertyListSerialization's ¬
+	dataWithPropertyList:newArray format:(current application's NSPropertyListBinaryFormat_v1_0) ¬
+	options:0 |error|:(reference))
+-- then write back via the extended-attribute API
+```
+
+The extended-attribute write path from ASObjC needs a wrapper — `NSFileManager` doesn't expose `setxattr` directly to AppleScript. Options: shell out to `xattr -wx`, or write a tiny `bin/xattr-write.swift` helper.
+
+**Lesson for the tier model:** "Apple-supported" ≠ "feature-parity with the underlying syscall." `NSURL` resource values are the *sanctioned* path but they normalize away detail the lower-level xattr preserves. Treat each ASObjC migration as a fidelity audit, not a drop-in replacement.
 
 ## Next steps for the skill
 

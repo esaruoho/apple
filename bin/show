@@ -214,14 +214,28 @@ def show_concept(key: str):
         # Drop tab kind into ~/.bbs-focus-request — BBS polls this file once a
         # second and focuses (or spawns) the matching tab. File is consumed on
         # read by BBS's Rust side. Works whether BBS is already running or not.
+        #
+        # Optional extra args after the tab key get appended TAB-separated so
+        # the tab can do something with them. Currently used by `show compose`:
+        #   show compose jobs           → load speaker "jobs"
+        #   show compose jobs/sweden-2  → preset shortRef in first turn
         focus_path = Path.home() / ".bbs-focus-request"
+        line = tab
+        if SHOW_EXTRA_ARGS:
+            # Join multi-word args back with spaces so "jobs of cupertino"
+            # arrives as one payload — chat.html's URLSearchParams handles it.
+            line += "\t" + " ".join(SHOW_EXTRA_ARGS)
         try:
-            focus_path.write_text(tab + "\n")
+            focus_path.write_text(line + "\n")
         except Exception:
             pass
         subprocess.run(["open", "-a", "BBS"], check=False)
-        speak_via_voicebox(entry.get("caption", f"{name}, opening now."))
-        print(f"show -> BBS tab '{tab}' ({name})")
+        caption = entry.get("caption", f"{name}, opening now.")
+        if SHOW_EXTRA_ARGS:
+            caption = f"{name}, {' '.join(SHOW_EXTRA_ARGS)}, opening now."
+        speak_via_voicebox(caption)
+        extra = f"  payload='{' '.join(SHOW_EXTRA_ARGS)}'" if SHOW_EXTRA_ARGS else ""
+        print(f"show -> BBS tab '{tab}' ({name}){extra}")
         return
     if action == "app":
         app = entry.get("app", key.title())
@@ -295,6 +309,11 @@ argv = sys.argv[1:]
 if not argv or argv[0] in ("-h", "--help"):
     sys.stderr.write(__doc__)
     sys.exit(2)
+
+# Extra args after the concept key. show_concept reads this for bbs-tab
+# entries so `show compose jobs` can thread "jobs" through to chat.html.
+# Smart-folder concepts ignore the extras silently — they don't take payloads.
+SHOW_EXTRA_ARGS = argv[1:] if argv and not argv[0].startswith("--") else []
 
 if argv[0] == "--list":
     list_concepts()

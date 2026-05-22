@@ -1968,6 +1968,7 @@ class BrowserItemButton: NSButton {
     var item: BrowserItem?
     let glyphView: NSImageView
     let bodyField: NSTextField
+    var glyphWidthConstraint: NSLayoutConstraint!
 
     override init(frame frameRect: NSRect) {
         glyphView = NSImageView()
@@ -2006,15 +2007,24 @@ class BrowserItemButton: NSButton {
         bodyField.refusesFirstResponder = true
         addSubview(bodyField)
 
+        glyphWidthConstraint = glyphView.widthAnchor.constraint(equalToConstant: 56)
         NSLayoutConstraint.activate([
             glyphView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
             glyphView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            glyphView.widthAnchor.constraint(equalToConstant: 56),
+            glyphWidthConstraint,
             glyphView.heightAnchor.constraint(equalToConstant: 14),
 
             bodyField.leadingAnchor.constraint(equalTo: glyphView.trailingAnchor, constant: 6),
             bodyField.centerYAnchor.constraint(equalTo: centerYAnchor),
             bodyField.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -6),
+            // Pin bodyField height to a fixed constant so attributed strings
+            // containing emoji (💬 / 🤖 badges on folder rows with session
+            // counts) can't grow the field's intrinsic height past the
+            // monospace baseline. Without this, emoji line metrics expand
+            // the row, the button's .inline bezel re-insets content, and the
+            // glyph + label drift right/down on those rows only — what
+            // shows up visually as misaligned icons on folders with sessions.
+            bodyField.heightAnchor.constraint(equalToConstant: 16),
         ])
     }
 
@@ -4408,8 +4418,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             let isGlobalSessionRow = (browserGlobalMode && isSessionRow)
             if isSessionRow {
                 btn.glyphView.image = nil
+                // Collapse the glyph column so the body field's first tab
+                // stop (where the CLAUDE/COPILOT label lives) sits flush
+                // against the row's leading edge — no 56pt empty gutter.
+                btn.glyphWidthConstraint.constant = 0
             } else {
                 btn.glyphView.image = textGlyphImage(item.glyph)
+                btn.glyphWidthConstraint.constant = 56
             }
 
             let bodyParagraph = NSMutableParagraphStyle()
@@ -4465,11 +4480,18 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             btn.translatesAutoresizingMaskIntoConstraints = false
             (btn.cell as? NSButtonCell)?.imagePosition = .noImage
             browserStack.addArrangedSubview(btn)
-            // Pin a minimum height so a stray autolayout pass can't collapse
-            // the row to zero. Without this the stack occasionally finished a
-            // rebuild with 0-pt rows — visually the list looked empty even
-            // though the count in the header was correct.
-            btn.heightAnchor.constraint(greaterThanOrEqualToConstant: 20).isActive = true
+            // Lock row geometry: every row is exactly the same width (stack
+            // width minus its left+right edge insets) and exactly the same
+            // height. Without these, rows whose body string contains an
+            // emoji-bearing badge (📁 folder + "3💬 + 1🤖") get a taller
+            // intrinsic content size from the textfield, the button frame
+            // grows, the .inline bezel re-insets content, and the leading
+            // edge of glyph + label drifts right relative to its neighbours.
+            // Equal width + equal height = identical layout for every row.
+            let sideInsets = browserStack.edgeInsets.left + browserStack.edgeInsets.right
+            btn.widthAnchor.constraint(equalTo: browserStack.widthAnchor,
+                                        constant: -sideInsets).isActive = true
+            btn.heightAnchor.constraint(equalToConstant: 22).isActive = true
         }
 
         // Force the rebuild to settle before AppKit's next coalesced layout

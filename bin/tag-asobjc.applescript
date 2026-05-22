@@ -5,6 +5,13 @@
 -- Replaces the xattr+plistlib (Python) read/write path with NSURL
 -- resource values via NSURLTagNamesKey — Apple-supported, APFS-safe.
 --
+-- KNOWN LIMITATION (verified 2026-05-22): NSURLTagNamesKey is names-only
+-- on both read and write. Color info ("Name\n<colorInt>") is silently
+-- dropped. For color-preserving I/O, fall back to bin/tag (Python xattr)
+-- or extend this pilot with NSPropertyListSerialization + an xattr-write
+-- helper. See wiki/concepts/asobjc.md for the full finding + migration
+-- path.
+--
 -- Subcommands implemented (the I/O-bound core):
 --   list   <file>...
 --   add    <spec>[,<spec>...] <file>...

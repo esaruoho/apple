@@ -1,4 +1,4 @@
-# CLI Tools Index — 96 tools in bin/
+# CLI Tools Index — 97 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -82,6 +82,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
 `tag` — (no description) — `bin/tag`
+`tag-asobjc.applescript` — tag-asobjc.applescript — `bin/tag-asobjc.applescript`
 `tag-finder-selection` — (no description) — `bin/tag-finder-selection`
 `tag-result-handler` — (no description) — `bin/tag-result-handler`
 `tag-retry-failed` — (no description) — `bin/tag-retry-failed`

@@ -67,8 +67,10 @@ bin/sal-qr
 
 # Per-machine exporter target paths (VAULT_PATH)
 *-exporter/.env
-# Built menu-bar app
+# Built menu-bar app + Finder-toolbar drop-target wrappers
 topbar/AppleToolbox.app/
+topbar/AppleToolboxDrop.app/
+topbar/CloudcityOCRDrop.app/
 
 # Per-machine Claude Code permission allowlist
 .claude/settings.local.json

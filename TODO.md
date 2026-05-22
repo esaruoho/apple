@@ -85,6 +85,16 @@ is a focused next deliverable I can pick up unattended.
 
 Highest-leverage first:
 
+- [ ] **Bash tab-completion for `show compose <speaker>` / `<shortRef>`** —
+  Tier 2 design (recommended in 2026-05-22 chat): cache speakers + their
+  shortRefs to `~/.cache/show-compose.json`, populate lazily from ray-graph's
+  `/api/editor/list_picked_segments?profile=ESA&speakerId=<sp>` per speaker,
+  add `show --refresh-cache` for manual rebuild. Completion function reads
+  the cache as a dict — instant. Tab on `show compose <TAB>` lists speakers
+  (jobs, sal, bucky, bearden, bedini, esa-self + any new); tab after
+  `show compose jobs/<TAB>` lists every Jobs segment ref. Install into
+  `~/.bash_profile` via `complete -F _show show`.
+  Bonus: cache doubles as an offline fallback when ray-graph is down.
 - [ ] **`bin/avs-prefs-write` companion: a test harness** — once you've run the
   plist-write-firing test once, codify the outcome as a regression test so the
   daemon's behaviour is pinned across macOS updates.

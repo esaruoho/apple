@@ -133,6 +133,15 @@ if [ -d "$INSTALL_DIR" ]; then
     rm -rf "$INSTALL_APP"
     cp -R "$APP" "$INSTALL_APP"
 
+    # Force Launch Services to re-read Info.plist — without this, the
+    # Finder-toolbar drop target shows (X) for any newly-declared file
+    # types because LS caches the previous Info.plist aggressively.
+    # Re-register BOTH bundle copies (source build + installed).
+    echo "==> Refreshing Launch Services registration..."
+    LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    "$LSREG" -f "$APP" >/dev/null 2>&1 || true
+    "$LSREG" -f "$INSTALL_APP" >/dev/null 2>&1 || true
+
     echo "==> Relaunching menu-bar..."
     /usr/bin/open "$INSTALL_APP"
     echo "    🧰 menu-bar is up with the new binary."
