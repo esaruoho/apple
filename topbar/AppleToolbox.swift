@@ -70,6 +70,48 @@ func runDetached(_ path: String, _ args: [String] = []) {
     do { try p.run() } catch {}
 }
 
+/// Walk the alpha channel of `cg` and return the tight bounding rect of the
+/// non-transparent pixels (origin is top-left in the bitmap, y grows down —
+/// callers convert to flipped/NSImage coords as needed). Used to crop app
+/// icons that have internal padding so their visible content lines up with
+/// edge-to-edge glyphs (SF Symbols, emoji). Returns nil for fully-transparent
+/// images.
+func alphaBoundingBox(of cg: CGImage) -> CGRect? {
+    let w = cg.width
+    let h = cg.height
+    let bytesPerRow = 4 * w
+    var pixels = [UInt8](repeating: 0, count: bytesPerRow * h)
+    guard let ctx = CGContext(data: &pixels,
+                              width: w, height: h,
+                              bitsPerComponent: 8,
+                              bytesPerRow: bytesPerRow,
+                              space: CGColorSpaceCreateDeviceRGB(),
+                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+        return nil
+    }
+    ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+    var minX = w, minY = h, maxX = -1, maxY = -1
+    let threshold: UInt8 = 16   // ignore near-transparent dust pixels
+    for y in 0..<h {
+        let rowOffset = y * bytesPerRow
+        for x in 0..<w {
+            let a = pixels[rowOffset + x * 4 + 3]
+            if a > threshold {
+                if x < minX { minX = x }
+                if y < minY { minY = y }
+                if x > maxX { maxX = x }
+                if y > maxY { maxY = y }
+            }
+        }
+    }
+    guard maxX >= minX, maxY >= minY else { return nil }
+    // Convert top-left bitmap rect to NSImage's bottom-left coordinate space.
+    let bottomY = h - 1 - maxY
+    return CGRect(x: CGFloat(minX), y: CGFloat(bottomY),
+                  width:  CGFloat(maxX - minX + 1),
+                  height: CGFloat(maxY - minY + 1))
+}
+
 func openFile(_ path: String) {
     runDetached("/usr/bin/open", [path])
 }
@@ -289,6 +331,28 @@ func trashSummary() -> (label: String, isEmpty: Bool) {
 // AppleToolbox Live panel. App path persists at ~/.config/appletoolbox/snap-app.
 
 func snapAppPathFile() -> String { "\(HOME)/.config/appletoolbox/snap-app" }
+func snapDiagPath() -> String { "/tmp/appletoolbox-snap.log" }
+
+/// Append a diagnostic line to /tmp/appletoolbox-snap.log. Used instead of
+/// `notify()` for snap diagnostics — Notification Center can swallow messages
+/// silently if notification permissions aren't granted, but a TextEdit window
+/// opened on the log is impossible to miss.
+func writeSnapDiag(_ msg: String) {
+    let stamp = ISO8601DateFormatter().string(from: Date())
+    let line = "[\(stamp)] \(msg)\n"
+    let path = snapDiagPath()
+    if let data = line.data(using: .utf8) {
+        if FileManager.default.fileExists(atPath: path) {
+            if let fh = try? FileHandle(forWritingTo: URL(fileURLWithPath: path)) {
+                defer { try? fh.close() }
+                _ = try? fh.seekToEnd()
+                try? fh.write(contentsOf: data)
+            }
+        } else {
+            try? data.write(to: URL(fileURLWithPath: path))
+        }
+    }
+}
 
 func currentSnapAppPath() -> String {
     if let s = try? String(contentsOfFile: snapAppPathFile(), encoding: .utf8) {
@@ -600,6 +664,10 @@ func climateDetailString() -> String {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var refreshTimer: Timer?
+    // Carbon hotkey ref retained so the system holds the registration alive
+    // for the lifetime of the menu-bar process (which IS the lifetime — the
+    // LaunchAgent re-spawns the menu-bar if it ever dies).
+    var gotoFinderHotKeyRef: EventHotKeyRef?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -615,6 +683,101 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.rebuildMenu()
         }
+        // Register the global ⌃⌥⌘T hotkey HERE (in the menu-bar process), not
+        // in --live — the menu-bar is always running via LaunchAgent, while
+        // --live is opt-in. Without this, the chord lost its owner whenever
+        // --live wasn't running and macOS gave the "no handler" blink error.
+        registerGotoHotKey()
+    }
+
+    /// Carbon RegisterEventHotKey for ⌃⌥⌘T — "Goto Finder Selection".
+    /// On fire: shells out to `toolbox-goto` which figures out warm-vs-cold
+    /// launch on its own. This way the menu-bar doesn't need to know about
+    /// --live state or AppleScript Finder calls; one Bash entry point.
+    func registerGotoHotKey() {
+        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                      eventKind: UInt32(kEventHotKeyPressed))
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        InstallEventHandler(GetApplicationEventTarget(),
+                            { _, eventRef, userData -> OSStatus in
+            guard let userData = userData, let eventRef = eventRef else { return noErr }
+            var hkID = EventHotKeyID()
+            GetEventParameter(eventRef,
+                              EventParamName(kEventParamDirectObject),
+                              EventParamType(typeEventHotKeyID),
+                              nil,
+                              MemoryLayout<EventHotKeyID>.size,
+                              nil,
+                              &hkID)
+            let me = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
+            DispatchQueue.main.async {
+                if hkID.id == 3 { me.fireGotoFinderSelection() }
+            }
+            return noErr
+        }, 1, &eventType, selfPtr, nil)
+
+        var ref: EventHotKeyRef?
+        let id = EventHotKeyID(signature: OSType(0x41544247), id: 3)  // 'ATBG'
+        let mods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
+        let status = RegisterEventHotKey(UInt32(kVK_ANSI_T), mods, id,
+                                         GetApplicationEventTarget(), 0, &ref)
+        if status != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘T registration failed with OSStatus \(status)")
+        }
+        gotoFinderHotKeyRef = ref
+    }
+
+    /// Get Finder's current selection (or front-window target as fallback)
+    /// and hand the path off to `bin/toolbox-goto`, which warm/cold-launches
+    /// --live and pre-seeds the file-highlight memo.
+    @objc func fireGotoFinderSelection() {
+        let script = """
+        tell application "Finder"
+            if not running then return ""
+            try
+                if (count of selection) > 0 then
+                    return POSIX path of (item 1 of (selection as alias list))
+                end if
+            end try
+            try
+                if (count of windows) > 0 then
+                    return POSIX path of (target of front window as alias)
+                end if
+            end try
+        end tell
+        return ""
+        """
+        let osa = Process()
+        osa.launchPath = "/usr/bin/osascript"
+        osa.arguments = ["-e", script]
+        let pipe = Pipe()
+        osa.standardOutput = pipe
+        do { try osa.run() } catch { return }
+        osa.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let path = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let script2 = "\(HOME)/work/apple/bin/toolbox-goto"
+        if path.isEmpty {
+            // No Finder context — still surface the panel so the chord
+            // surfaces something. toolbox-goto with no arg uses $PWD which
+            // is wherever the menu-bar was launched (root for LaunchAgent).
+            // Skip that path; just bring --live front if it's running.
+            DistributedNotificationCenter.default().postNotificationName(
+                NSNotification.Name("com.esaruoho.appletoolbox.ShowLivePanel"),
+                object: nil, userInfo: nil, deliverImmediately: true)
+            // If --live isn't running, cold-launch it with no --cwd override.
+            let live = Process()
+            live.launchPath = "/bin/bash"
+            live.arguments = ["-c", "/usr/bin/pgrep -f 'AppleToolbox.*--live' >/dev/null 2>&1 || nohup \"$0\" --live >/dev/null 2>&1 &",
+                              "/Applications/Apple-Workflows/AppleToolbox.app/Contents/MacOS/AppleToolbox"]
+            try? live.run()
+            return
+        }
+        let go = Process()
+        go.launchPath = script2
+        go.arguments = [path]
+        try? go.run()
     }
 
     // ─── action dispatch ───────────────────────────────────────────────────
@@ -639,91 +802,172 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func openSnapApp(_ sender: Any?) {
         let path = currentSnapAppPath()
-        // Display name (for `tell application "X" to activate` — resolves via
-        // LaunchServices using CFBundleName) and process name (for System
-        // Events `tell process` — uses CFBundleExecutable). These two often
-        // differ for Tauri/Electron-style apps (BBS.app → "BBS" / "bbs-app").
-        let displayName = snapAppPlistKey("CFBundleName", fromAppPath: path) ?? snapAppDisplayName(path)
-        let processName = snapAppPlistKey("CFBundleExecutable", fromAppPath: path) ?? displayName
+        // Fresh diag log per run.
+        try? FileManager.default.removeItem(atPath: snapDiagPath())
+        writeSnapDiag("--- snap run start, app=\(path)")
 
         // Make sure the Live panel is up so there's something to dock against.
         showLivePanel()
 
-        // Launch the configured app.
-        runDetached("/usr/bin/open", [path])
-
         guard let screen = NSScreen.main else { return }
         let vf = screen.visibleFrame
         let full = screen.frame
+        // 80/20 horizontal split: app (left) gets 80%, AppleToolbox panel
+        // (right) gets 20%, with thin margins around the edges + a gap between.
         let margin: CGFloat = 20
-        let panelW: CGFloat = 380
-        let panelH: CGFloat = min(920, vf.height - margin * 2)
+        let usableW = vf.width - margin * 3   // left margin + gap + right margin
+        let panelW: CGFloat = floor(usableW * 0.20)
+        let appW: CGFloat = floor(usableW * 0.80)
+        let panelH: CGFloat = vf.height - margin * 2
+        let appH: CGFloat = vf.height - margin * 2
 
-        let panelX = vf.maxX - panelW - margin
-        let panelYns = vf.minY + (vf.height - panelH - margin)
         let appX = vf.minX + margin
         let appYns = vf.minY + margin
-        let appW = panelX - margin - appX
-        let appH = vf.height - margin * 2
+        let panelX = vf.maxX - panelW - margin
+        let panelYns = vf.minY + margin
 
         // NSScreen → System Events coords (top-left of main display).
         let panelSEY = Int(full.maxY - (panelYns + panelH))
         let appSEY = Int(full.maxY - (appYns + appH))
 
-        func q(_ s: String) -> String { "\"" + s.replacingOccurrences(of: "\"", with: "\\\"") + "\"" }
+        // Resolve target by bundle ID first — there can be multiple BBS.app
+        // installs (release at /Applications, dev build under ~/work, a live
+        // `tauri dev` instance) all sharing one bundle ID. Passing an explicit
+        // path to openApplication() launches THAT path even if another copy is
+        // already running. Always prefer an already-running instance.
+        let bundleID = snapAppPlistKey("CFBundleIdentifier", fromAppPath: path)
+        writeSnapDiag("bundleID=\(bundleID ?? "nil")")
 
-        // Two-phase script:
-        //  1. Activate the target app and wait (up to 5 s) for its first
-        //     window to materialise — Tauri cold-starts can take ~1.5 s.
-        //  2. Walk every AppleToolbox process and snap whichever window's
-        //     title starts with "AppleToolbox" (i.e. the --live panel; the
-        //     menu-bar instance has no windows).
-        let script = """
-        tell application \(q(displayName)) to activate
-        tell application "System Events"
-            set tries to 0
-            repeat until (exists window 1 of process \(q(processName))) or tries > 50
-                delay 0.1
-                set tries to tries + 1
-            end repeat
-            tell process \(q(processName))
-                set position of window 1 to {\(Int(appX)), \(appSEY)}
-                set size of window 1 to {\(Int(appW)), \(Int(appH))}
-            end tell
-            repeat with p in (every process whose name is "AppleToolbox")
-                tell p
-                    repeat with w in windows
-                        try
-                            if name of w starts with "AppleToolbox" then
-                                set position of w to {\(Int(panelX)), \(panelSEY)}
-                                set size of w to {\(Int(panelW)), \(Int(panelH))}
-                            end if
-                        end try
-                    end repeat
-                end tell
-            end repeat
-        end tell
-        """
+        let snap = { (pid: Int32) in
+            self.snapWindows(targetPID: pid,
+                             appX: Int(appX), appY: appSEY,
+                             appW: Int(appW), appH: Int(appH),
+                             panelX: Int(panelX), panelY: panelSEY,
+                             panelW: Int(panelW), panelH: Int(panelH))
+        }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let task = Process()
-            task.launchPath = "/usr/bin/osascript"
-            task.arguments = ["-e", script]
-            let errPipe = Pipe()
-            task.standardError = errPipe
-            do { try task.run() } catch {
-                DispatchQueue.main.async { notify("Snap failed", error.localizedDescription) }
+        if let bid = bundleID {
+            let all = NSRunningApplication.runningApplications(withBundleIdentifier: bid)
+            // Prefer an instance whose bundleURL matches the configured path
+            // exactly. Quit every OTHER instance (dev builds, build-output
+            // copies) so there's only ever one BBS running.
+            let configured = (path as NSString).standardizingPath
+            let chosen = all.first { ($0.bundleURL?.path ?? "") == configured }
+            for other in all where (other.bundleURL?.path ?? "") != configured {
+                writeSnapDiag("terminating duplicate pid=\(other.processIdentifier) at \(other.bundleURL?.path ?? "?")")
+                other.terminate()
+            }
+            if let existing = chosen {
+                writeSnapDiag("reusing existing pid=\(existing.processIdentifier) at \(existing.bundleURL?.path ?? "?")")
+                existing.activate(options: [])
+                snap(existing.processIdentifier)
                 return
             }
-            task.waitUntilExit()
-            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-            if task.terminationStatus != 0, let msg = String(data: errData, encoding: .utf8) {
-                let trimmed = msg.trimmingCharacters(in: .whitespacesAndNewlines)
-                let hint = trimmed.contains("1002") || trimmed.contains("not allowed assistive access")
-                    ? "Grant AppleToolbox Accessibility in System Settings → Privacy."
-                    : trimmed
-                DispatchQueue.main.async { notify("Snap failed", hint) }
+        }
+
+        // Not running — launch via path.
+        writeSnapDiag("no existing instance, launching from \(path)")
+        let appURL = URL(fileURLWithPath: path)
+        let cfg = NSWorkspace.OpenConfiguration()
+        cfg.activates = true
+        NSWorkspace.shared.openApplication(at: appURL, configuration: cfg) { runningApp, err in
+            if let err = err {
+                DispatchQueue.main.async { notify("Snap failed", err.localizedDescription) }
+                return
             }
+            guard let app = runningApp else { return }
+            snap(app.processIdentifier)
+        }
+    }
+
+    func snapWindows(targetPID: Int32,
+                     appX: Int, appY: Int, appW: Int, appH: Int,
+                     panelX: Int, panelY: Int, panelW: Int, panelH: Int) {
+        // Poll up to 8 s for the target app's first window to materialise
+        // (Tauri cold starts can take ~1.5 s), then drive it via the C-level
+        // Accessibility API. AppleScript's `tell process … set position`
+        // silently no-ops on Tauri/wry webviews; AXUIElementSetAttributeValue
+        // is the API window-managers (Rectangle, Magnet, yabai) use and it
+        // works reliably on every NSWindow-backed app.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let appElem = AXUIElementCreateApplication(targetPID)
+
+            var winRef: CFTypeRef?
+            for _ in 0..<80 {
+                if AXUIElementCopyAttributeValue(appElem, kAXMainWindowAttribute as CFString, &winRef) == .success,
+                   winRef != nil { break }
+                // Fallback: first item of AXWindows list.
+                var listRef: CFTypeRef?
+                if AXUIElementCopyAttributeValue(appElem, kAXWindowsAttribute as CFString, &listRef) == .success,
+                   let arr = listRef as? [AXUIElement], let first = arr.first {
+                    winRef = first as CFTypeRef
+                    break
+                }
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+            guard let win = winRef else {
+                DispatchQueue.main.async { notify("Snap failed", "no AX window on target app (PID \(targetPID))") }
+                return
+            }
+            let window = win as! AXUIElement
+
+            var pos = CGPoint(x: appX, y: appY)
+            var sz  = CGSize(width: appW, height: appH)
+            let posVal = AXValueCreate(.cgPoint, &pos)!
+            let szVal  = AXValueCreate(.cgSize,  &sz)!
+
+            let posErr = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posVal)
+            let szErr  = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, szVal)
+
+            // Sanity-read what AX actually applied so we know whether the
+            // window obeyed us or silently ignored the set.
+            Thread.sleep(forTimeInterval: 0.15)
+            func readRect(_ w: AXUIElement) -> (CGPoint, CGSize) {
+                var pRef: CFTypeRef?, sRef: CFTypeRef?
+                AXUIElementCopyAttributeValue(w, kAXPositionAttribute as CFString, &pRef)
+                AXUIElementCopyAttributeValue(w, kAXSizeAttribute as CFString, &sRef)
+                var p = CGPoint.zero, s = CGSize.zero
+                if let pv = pRef { AXValueGetValue(pv as! AXValue, .cgPoint, &p) }
+                if let sv = sRef { AXValueGetValue(sv as! AXValue, .cgSize, &s) }
+                return (p, s)
+            }
+            let (gotP, gotS) = readRect(window)
+            let bbsMsg = "BBS asked: (\(appX),\(appY)) \(appW)×\(appH) — got: (\(Int(gotP.x)),\(Int(gotP.y))) \(Int(gotS.width))×\(Int(gotS.height)) [posErr=\(posErr.rawValue) szErr=\(szErr.rawValue)]"
+            writeSnapDiag("BBS: " + bbsMsg)
+
+            // Snap the AppleToolbox --live panel via the same AX API. The
+            // panel lives in a separate AppleToolbox process; walk every
+            // process named "AppleToolbox" and re-frame any window whose
+            // title starts with "AppleToolbox".
+            for runApp in NSWorkspace.shared.runningApplications
+                where runApp.bundleIdentifier == "com.esaruoho.appletoolbox" {
+                let panelApp = AXUIElementCreateApplication(runApp.processIdentifier)
+                var wins: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(panelApp, kAXWindowsAttribute as CFString, &wins) == .success,
+                      let arr = wins as? [AXUIElement] else { continue }
+                for w in arr {
+                    var titleRef: CFTypeRef?
+                    AXUIElementCopyAttributeValue(w, kAXTitleAttribute as CFString, &titleRef)
+                    let title = (titleRef as? String) ?? ""
+                    guard title.hasPrefix("AppleToolbox") else { continue }
+                    var pp = CGPoint(x: panelX, y: panelY)
+                    var ps = CGSize(width: panelW, height: panelH)
+                    let pErr = AXUIElementSetAttributeValue(w, kAXPositionAttribute as CFString, AXValueCreate(.cgPoint, &pp)!)
+                    let sErr = AXUIElementSetAttributeValue(w, kAXSizeAttribute as CFString, AXValueCreate(.cgSize, &ps)!)
+                    Thread.sleep(forTimeInterval: 0.1)
+                    let (gp, gs) = readRect(w)
+                    let panMsg = "Panel(pid \(runApp.processIdentifier)) asked: (\(panelX),\(panelY)) \(panelW)×\(panelH) — got: (\(Int(gp.x)),\(Int(gp.y))) \(Int(gs.width))×\(Int(gs.height)) [posErr=\(pErr.rawValue) szErr=\(sErr.rawValue)]"
+                    writeSnapDiag(panMsg)
+                }
+            }
+
+            // Screen geometry sanity check.
+            if let s = NSScreen.main {
+                let vf = s.visibleFrame, fr = s.frame
+                let geoMsg = "Screen frame=\(Int(fr.width))×\(Int(fr.height))@(\(Int(fr.minX)),\(Int(fr.minY)))  vf=\(Int(vf.width))×\(Int(vf.height))@(\(Int(vf.minX)),\(Int(vf.minY)))"
+                writeSnapDiag(geoMsg)
+            }
+            DispatchQueue.main.async { runDetached("/usr/bin/open", ["-e", snapDiagPath()]) }
         }
     }
 
@@ -1086,6 +1330,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                      keyEquivalent: "")
         showLiveTop.target = self
         menu.addItem(showLiveTop)
+        // Stop Voicebox sits at row 2 — the most-pressed kill action, one click
+        // away from menu-open. Glyph rules: every menu-row icon MUST render at
+        // emoji size (use full-color emoji, or append U+FE0F to ambiguous
+        // symbols like ⏹/⚙ to force emoji presentation — never raw
+        // symbol-presentation glyphs, they render visibly smaller).
+        menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
         menu.addItem(.separator())
 
         // Live status — readers that return nil get their row skipped entirely
@@ -1163,9 +1413,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             cmd: "\(APPLE_DIR)/bin/read-aloud", args: ["--grab"]))
         menu.addItem(action("📋 Read Clipboard",
             cmd: "\(APPLE_DIR)/bin/read-aloud"))
-        menu.addItem(action("⏹ Stop Reading",
+        menu.addItem(action("⏹\u{FE0F} Stop Reading",
             cmd: "\(APPLE_DIR)/bin/read-aloud", args: ["--stop"]))
-        menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
         let trash = trashSummary()
         let trashItem = action(trash.label,
             cmd: "/usr/bin/osascript",
@@ -1180,7 +1429,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let snapName = snapAppDisplayName(currentSnapAppPath())
         menu.addItem(customAction("🪟 Open \(snapName) & Snap",
                                   selector: #selector(openSnapApp(_:))))
-        menu.addItem(customAction("   ⚙ Configure Snap App…",
+        menu.addItem(customAction("⚙\u{FE0F} Configure Snap App…",
                                   selector: #selector(configureSnapApp(_:))))
         menu.addItem(.separator())
 
@@ -1365,13 +1614,21 @@ class LiveRowButton: NSButton {
 
 // ─── file browser types ────────────────────────────────────────────────────
 
+enum SessionProvider {
+    case claude    // ~/.claude/projects/<enc>/<uuid>.jsonl  → `claude --resume <uuid>`
+    case copilot   // ~/.copilot/session-store.db row        → `copilot --resume=<uuid>`
+}
+
 struct BrowserItem {
     let name: String
     let path: String
     let isDir: Bool
     let glyph: String
-    let sessionCount: Int   // # of Claude session JSONLs in this folder's project dir (dirs only)
-    let sessionId: String?  // when non-nil, this row is a Claude session — click resumes it
+    let sessionCount: Int          // combined Claude+Copilot count for dir rows
+    let claudeCount: Int           // breakdown — for badge "3💬 + 2🤖"
+    let copilotCount: Int
+    let sessionId: String?         // when non-nil, this row is a session — click resumes it
+    let provider: SessionProvider  // ignored unless sessionId is set
 }
 
 /// Map a filesystem path to the directory Claude Code stores its session
@@ -1402,10 +1659,245 @@ func sessionCountForFolder(_ path: String) -> Int {
     return names.filter { $0.hasSuffix(".jsonl") }.count
 }
 
-/// NSButton carrying its BrowserItem so the click handler can act on it
-/// without looking up by index (which would race with filter changes).
+/// Copilot CLI session info — shape mirrors Claude's `SessionInfo` so both
+/// providers feed the same `BrowserItem` rows. `cwd` is the realpath as
+/// stored in the DB; `summaryOrFirstUserMsg` is whichever ran first.
+struct CopilotSessionInfo {
+    let uuid: String
+    let cwd: String
+    let snippet: String
+    let mtime: Date
+}
+
+/// Path to Copilot CLI's session SQLite store. Returns nil if Copilot CLI
+/// has never been run on this machine (no DB written yet).
+func copilotSessionDB() -> String? {
+    let p = "\(NSHomeDirectory())/.copilot/session-store.db"
+    return FileManager.default.fileExists(atPath: p) ? p : nil
+}
+
+/// Shell out to `/usr/bin/sqlite3 -json -readonly <db> "<sql>"` and return
+/// the parsed array. Empty array on any error — Copilot sessions are an
+/// additive layer, the browser still works fine if the DB is missing or
+/// momentarily locked by a writer.
+func copilotQueryJSON(_ sql: String) -> [[String: Any]] {
+    guard let db = copilotSessionDB() else { return [] }
+    let task = Process()
+    task.launchPath = "/usr/bin/sqlite3"
+    task.arguments = ["-json", "-readonly", db, sql]
+    let out = Pipe(); let err = Pipe()
+    task.standardOutput = out
+    task.standardError = err
+    do { try task.run() } catch { return [] }
+    task.waitUntilExit()
+    if task.terminationStatus != 0 { return [] }
+    let data = out.fileHandleForReading.readDataToEndOfFile()
+    if data.isEmpty { return [] }
+    let parsed = try? JSONSerialization.jsonObject(with: data)
+    return (parsed as? [[String: Any]]) ?? []
+}
+
+/// One round-trip to SQLite returns the count for every cwd. Called once
+/// per `loadBrowserItems()` so we don't fire N queries when listing a dir
+/// with N subfolders. Keyed by the symlink-resolved absolute path.
+func copilotSessionCountsByCwd() -> [String: Int] {
+    let rows = copilotQueryJSON(
+        "SELECT COALESCE(cwd,'') AS cwd, COUNT(*) AS n FROM sessions GROUP BY cwd")
+    var out: [String: Int] = [:]
+    for r in rows {
+        guard let cwd = r["cwd"] as? String, !cwd.isEmpty,
+              let n = r["n"] as? Int else { continue }
+        out[cwd] = n
+    }
+    return out
+}
+
+/// Sessions for a single folder, newest-first. Resolves symlinks on the
+/// query side so `~/work/paketti` matches the iCloud-Drive realpath that
+/// Copilot stored. Falls back to first user_message when summary is null
+/// so the row label isn't blank.
+func listCopilotSessionsForCwd(_ path: String, limit: Int = 50) -> [CopilotSessionInfo] {
+    let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+    // SQLite param binding is awkward via the CLI; cwd is a path the user
+    // typed (or the toolbox computed via resolvingSymlinksInPath) so the
+    // risk surface is internal. We still single-quote-escape defensively.
+    let safe = resolved.replacingOccurrences(of: "'", with: "''")
+    let sql = """
+    SELECT s.id AS uuid, \
+           COALESCE(s.summary, \
+             (SELECT user_message FROM turns WHERE session_id=s.id \
+                ORDER BY turn_index ASC LIMIT 1), '') AS snippet, \
+           s.updated_at AS updated_at \
+    FROM sessions s WHERE s.cwd='\(safe)' \
+    ORDER BY s.updated_at DESC LIMIT \(limit)
+    """
+    let rows = copilotQueryJSON(sql)
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let isoNoFrac = ISO8601DateFormatter()
+    isoNoFrac.formatOptions = [.withInternetDateTime]
+    return rows.compactMap { r -> CopilotSessionInfo? in
+        guard let uuid = r["uuid"] as? String,
+              let updated = r["updated_at"] as? String else { return nil }
+        let snippetRaw = (r["snippet"] as? String) ?? ""
+        let date = iso.date(from: updated)
+                ?? isoNoFrac.date(from: updated)
+                ?? Date(timeIntervalSince1970: 0)
+        // Snippet cap matches the Claude side's trimSnippet behaviour.
+        let oneline = snippetRaw.replacingOccurrences(of: "\n", with: " ")
+                                .trimmingCharacters(in: .whitespaces)
+        let trimmed = oneline.count > 60 ? String(oneline.prefix(60)) + "…" : oneline
+        return CopilotSessionInfo(uuid: uuid, cwd: resolved, snippet: trimmed, mtime: date)
+    }
+}
+
+/// Spawn a new iTerm2 window (or Terminal fallback) running
+/// `cd <cwd> && copilot --resume=<uuid>`. Mirrors bbs-app's
+/// open_copilot_session_in_iterm — same UX across both surfaces.
+func openCopilotSessionInTerminal(uuid: String, cwd: String) {
+    let copilotBin: String = {
+        let candidates = ["/opt/homebrew/bin/copilot", "/usr/local/bin/copilot"]
+        return candidates.first { FileManager.default.fileExists(atPath: $0) } ?? "copilot"
+    }()
+    let cwdEsc = cwd.replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "\"", with: "\\\"")
+    let cmd = "cd \"\(cwdEsc)\" && \(copilotBin) --resume=\(uuid)"
+    let safe = cmd.replacingOccurrences(of: "\\", with: "\\\\")
+                  .replacingOccurrences(of: "\"", with: "\\\"")
+    let itermInstalled = FileManager.default.fileExists(atPath: "/Applications/iTerm.app")
+    let script: String
+    if itermInstalled {
+        script = """
+        tell application "iTerm"
+        \tactivate
+        \tcreate window with default profile
+        \ttell current session of current window to write text "\(safe)"
+        end tell
+        """
+    } else {
+        script = """
+        tell application "Terminal"
+        \tactivate
+        \tdo script "\(safe)"
+        end tell
+        """
+    }
+    runDetached("/usr/bin/osascript", ["-e", script])
+}
+
+/// NSTextAttachmentCell that forces an explicit cellFrame for an attachment,
+/// ignoring the image's intrinsic size. Plain NSTextAttachment + `bounds` is
+/// unreliable when the same paragraph mixes images from different sources
+/// (NSWorkspace.icon for Claude.app, SF Symbol for Copilot, …) — AppKit
+/// consults the image's alignmentRect / per-rep size when computing line
+/// advance, which differs across sources by a few pixels. That made the date
+/// column drift across rows in the file browser. A TextAttachmentCell that
+/// always reports the same cellFrame gives deterministic advance.
+class FixedSizeIconCell: NSTextAttachmentCell {
+    private let canvas: NSSize
+    init(image: NSImage, size: NSSize) {
+        self.canvas = size
+        super.init(imageCell: image)
+    }
+    required init(coder: NSCoder) { fatalError("not supported") }
+
+    override func cellSize() -> NSSize { return canvas }
+
+    override func cellFrame(for textContainer: NSTextContainer,
+                            proposedLineFragment: NSRect,
+                            glyphPosition: NSPoint,
+                            characterIndex: Int) -> NSRect {
+        // y = -2 visually centers a 14-pt icon on a 12-pt monospaced baseline.
+        return NSRect(x: 0, y: -2, width: canvas.width, height: canvas.height)
+    }
+
+    override func draw(withFrame cellFrame: NSRect, in controlView: NSView?) {
+        // Center the image inside the canvas so SF Symbols (narrow/wide) and
+        // app icons (square) all sit in the same gutter — no edge collision,
+        // no row-to-row drift.
+        guard let img = self.image else { return }
+        let imgSize = img.size
+        let scale = min(cellFrame.width / max(imgSize.width, 1),
+                        cellFrame.height / max(imgSize.height, 1))
+        let w = imgSize.width * scale
+        let h = imgSize.height * scale
+        let dx = cellFrame.minX + (cellFrame.width - w) / 2
+        let dy = cellFrame.minY + (cellFrame.height - h) / 2
+        img.draw(in: NSRect(x: dx, y: dy, width: w, height: h),
+                 from: .zero, operation: .sourceOver, fraction: 1.0,
+                 respectFlipped: true, hints: nil)
+    }
+}
+
+/// NSButton carrying its BrowserItem + two pinned subviews (glyph + label).
+/// We stopped using `attributedTitle` because NSButton's cell layout had a
+/// dozen edge cases that drifted the row content (attachment metrics,
+/// short-line alignment, bezel insets, etc.). Now the title is the empty
+/// string and we draw our own content by pinning an NSImageView and an
+/// NSTextField at exact pixel positions inside the button's bounds. The
+/// button still owns mouse tracking → target/action; the subviews are
+/// non-interactive so clicks fall through to the button cell.
 class BrowserItemButton: NSButton {
     var item: BrowserItem?
+    let glyphView: NSImageView
+    let bodyField: NSTextField
+
+    override init(frame frameRect: NSRect) {
+        glyphView = NSImageView()
+        bodyField = NSTextField(labelWithString: "")
+        super.init(frame: frameRect)
+        setupContent()
+    }
+
+    required init?(coder: NSCoder) {
+        glyphView = NSImageView()
+        bodyField = NSTextField(labelWithString: "")
+        super.init(coder: coder)
+        setupContent()
+    }
+
+    private func setupContent() {
+        // Suppress the button's own title — we paint our own content.
+        title = ""
+
+        glyphView.translatesAutoresizingMaskIntoConstraints = false
+        glyphView.imageScaling = .scaleProportionallyDown
+        glyphView.isEditable = false
+        // NSImageView is hit-test-transparent here so the button cell sees
+        // every click — without these the image would swallow mouseDown.
+        glyphView.refusesFirstResponder = true
+        addSubview(glyphView)
+
+        bodyField.translatesAutoresizingMaskIntoConstraints = false
+        bodyField.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        bodyField.lineBreakMode = .byTruncatingTail
+        bodyField.usesSingleLineMode = true
+        bodyField.isBezeled = false
+        bodyField.drawsBackground = false
+        bodyField.isEditable = false
+        bodyField.isSelectable = false
+        bodyField.refusesFirstResponder = true
+        addSubview(bodyField)
+
+        NSLayoutConstraint.activate([
+            glyphView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
+            glyphView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            glyphView.widthAnchor.constraint(equalToConstant: 56),
+            glyphView.heightAnchor.constraint(equalToConstant: 14),
+
+            bodyField.leadingAnchor.constraint(equalTo: glyphView.trailingAnchor, constant: 6),
+            bodyField.centerYAnchor.constraint(equalTo: centerYAnchor),
+            bodyField.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -6),
+        ])
+    }
+
+    // Override hitTest so clicks on the subviews still land on the button —
+    // the button cell handles the click → target/action.
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let local = convert(point, from: superview)
+        return bounds.contains(local) ? self : nil
+    }
+
     // Accept the first click even when the panel isn't yet key — without this,
     // opening one file makes the panel briefly resign key, and the next click
     // on a different row is absorbed by activation instead of firing the row
@@ -1468,7 +1960,7 @@ class KeyablePanel: NSPanel {
     }
 }
 
-class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, NSTextFieldDelegate, NSSplitViewDelegate {
+class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, NSTextFieldDelegate, NSSplitViewDelegate, NSWindowDelegate {
     // Status pane
     var panel: NSPanel!
     var rowsStack: NSStackView!
@@ -1526,6 +2018,9 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     var chatSmartDictateButton: NSButton!
     let smartDictation = SpeechDictationController()
     var globalHotKeyRef: EventHotKeyRef?
+    var stopVoiceboxHotKeyRef: EventHotKeyRef?
+    var gotoFinderHotKeyRef: EventHotKeyRef?
+    var snapFrontmostHotKeyRef: EventHotKeyRef?
     var chatResetButton: NSButton!
     var chatCwdButton: NSButton!
     var chatFileButton: NSButton!
@@ -1557,6 +2052,170 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     var browserStack: NSStackView!
     var browserScroll: NSScrollView!
 
+    // Cached row-glyph icons. Built once, reused for every browser rebuild.
+    // Replaces the variable-width 💬 / 🤖 emojis (which caused horizontal
+    // jitter row-to-row because Apple Color Emoji has per-glyph metric drift
+    // even inside a monospaced font). NSImage attachments have explicit
+    // bounds, so every row's glyph column lands at the exact same pixel.
+    private var _claudeRowIcon: NSImage?
+    private var _copilotRowIcon: NSImage?
+
+    /// Pre-render an arbitrary NSImage into a fixed-size canvas with the
+    /// visible content centered. Eliminates every source of cross-icon
+    /// drift: NSWorkspace.icon's multi-rep padding, SF Symbol natural
+    /// metrics, font-emoji bitmap layout — all flattened into a single
+    /// 14×14 PNG where the visible glyph sits at the canvas center.
+    /// `cropAlpha = true` first crops the source's transparent margins so
+    /// app icons with internal whitespace (Claude.app's orange burst is
+    /// inset inside a rounded gray square) line up with edge-to-edge
+    /// glyphs (emoji, SF Symbol).
+    func renderToRowCanvas(_ source: NSImage, cropAlpha: Bool) -> NSImage {
+        let canvas = LiveViewportDelegate.rowGlyphCanvas
+        let drawn: NSImage
+        var visibleRect: NSRect = NSRect(origin: .zero, size: source.size)
+        if cropAlpha,
+           let cg = source.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            // Walk the alpha channel to find the tight bounding box of the
+            // non-transparent pixels. This is what makes Claude.app's icon
+            // (orange burst inside a rounded gray frame with internal
+            // padding) center on the visible burst, not on the bitmap rect.
+            if let bbox = alphaBoundingBox(of: cg) {
+                visibleRect = NSRect(x: CGFloat(bbox.origin.x),
+                                     y: CGFloat(bbox.origin.y),
+                                     width:  CGFloat(bbox.width),
+                                     height: CGFloat(bbox.height))
+            }
+        }
+        drawn = source
+
+        let img = NSImage(size: canvas)
+        img.lockFocus()
+        // Scale the visible region of `source` to fit `canvas` preserving
+        // aspect ratio, then center.
+        let srcW = max(visibleRect.width,  1)
+        let srcH = max(visibleRect.height, 1)
+        let scale = min(canvas.width / srcW, canvas.height / srcH)
+        let w = srcW * scale
+        let h = srcH * scale
+        let dx = (canvas.width  - w) / 2
+        let dy = (canvas.height - h) / 2
+        drawn.draw(in: NSRect(x: dx, y: dy, width: w, height: h),
+                   from: visibleRect,
+                   operation: .sourceOver, fraction: 1.0,
+                   respectFlipped: true, hints: nil)
+        img.unlockFocus()
+        return img
+    }
+
+    func claudeRowIcon() -> NSImage? {
+        if let i = _claudeRowIcon { return i }
+        // Real Claude desktop app icon (orange asterisk-burst). The icon's
+        // bitmap has a rounded gray frame around the burst with internal
+        // padding; `cropAlpha: true` makes the burst itself sit at the
+        // canvas center so it visually aligns with the folder + Copilot
+        // glyphs in adjacent rows.
+        let claudePath = "/Applications/Claude.app"
+        if FileManager.default.fileExists(atPath: claudePath) {
+            let raw = NSWorkspace.shared.icon(forFile: claudePath)
+            _claudeRowIcon = renderToRowCanvas(raw, cropAlpha: true)
+            return _claudeRowIcon
+        }
+        let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        if let sym = NSImage(systemSymbolName: "sparkles",
+                             accessibilityDescription: "Claude")?.withSymbolConfiguration(cfg) {
+            _claudeRowIcon = renderToRowCanvas(sym, cropAlpha: false)
+        }
+        return _claudeRowIcon
+    }
+
+    func copilotRowIcon() -> NSImage? {
+        if let i = _copilotRowIcon { return i }
+        // Microsoft Copilot brand mark (the swooshy hex), shipped as an SVG
+        // bundled inside the .app at Resources/icons/copilot.svg. NSImage
+        // loads SVG natively on macOS 14+; we pre-render onto the canonical
+        // canvas so its column lines up with the Claude icon and the
+        // folder + file emojis.
+        let bundled = Bundle.main.resourceURL?
+            .appendingPathComponent("icons/copilot.svg").path
+        let repoFallback = "\(APPLE_DIR)/topbar/icons/copilot.svg"
+        let path = (bundled.flatMap { FileManager.default.fileExists(atPath: $0) ? $0 : nil })
+                   ?? (FileManager.default.fileExists(atPath: repoFallback) ? repoFallback : nil)
+        if let path = path, let raw = NSImage(contentsOfFile: path) {
+            _copilotRowIcon = renderToRowCanvas(raw, cropAlpha: true)
+            return _copilotRowIcon
+        }
+        // Last-resort fallback if the SVG is missing.
+        let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        if let sym = NSImage(systemSymbolName: "chevron.left.forwardslash.chevron.right",
+                             accessibilityDescription: "Copilot")?.withSymbolConfiguration(cfg) {
+            _copilotRowIcon = renderToRowCanvas(sym, cropAlpha: false)
+        }
+        return _copilotRowIcon
+    }
+
+    /// Canonical glyph-column size used for every browser row. 14×14 square
+    /// so app icons (Claude.app), SF Symbols (fallbacks), and emoji glyphs
+    /// (folders, file types) all render at the same edge-to-edge footprint
+    /// — no aspect-ratio mismatch can cause one glyph to sit further left
+    /// inside an oversized box than another.
+    static let rowGlyphCanvas = NSSize(width: 14, height: 14)
+
+    /// Cache for text-emoji-to-NSImage conversions (📂 / 📄 / 🖼 / …). Each
+    /// distinct glyph is rendered to the canonical canvas at most once per
+    /// session.
+    private var _textGlyphCache: [String: NSImage] = [:]
+
+    func textGlyphImage(_ glyph: String) -> NSImage {
+        if let img = _textGlyphCache[glyph] { return img }
+        let size = LiveViewportDelegate.rowGlyphCanvas
+        let img = NSImage(size: size)
+        img.lockFocus()
+        let font = NSFont.systemFont(ofSize: 13)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let measured = (glyph as NSString).size(withAttributes: attrs)
+        let x = (size.width  - measured.width)  / 2
+        let y = (size.height - measured.height) / 2
+        (glyph as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: attrs)
+        img.unlockFocus()
+        _textGlyphCache[glyph] = img
+        return img
+    }
+
+    /// Text-label glyph for the browser glyph column. Replaces icon images
+    /// (Claude.app burst, Copilot SVG) with a left-aligned bold monospace
+    /// word so the provider is named in plain text instead of a logo.
+    /// Canvas matches the widened 56×14 glyph column.
+    func labelGlyphImage(_ label: String) -> NSImage {
+        if let img = _textGlyphCache["__label__\(label)"] { return img }
+        let size = NSSize(width: 56, height: 14)
+        let img = NSImage(size: size)
+        img.lockFocus()
+        let font = NSFont.monospacedSystemFont(ofSize: 9, weight: .bold)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.labelColor,
+        ]
+        let measured = (label as NSString).size(withAttributes: attrs)
+        let y = (size.height - measured.height) / 2
+        (label as NSString).draw(at: NSPoint(x: 0, y: y), withAttributes: attrs)
+        img.unlockFocus()
+        _textGlyphCache["__label__\(label)"] = img
+        return img
+    }
+
+    /// Glyph column for any browser row. Always returns an attributed string
+    /// containing one FixedSizeIconCell attachment at the canonical canvas
+    /// size — identical cursor advance for every row, no per-glyph drift.
+    /// Pass `image` for SF-Symbol / app-icon rows, `fallbackGlyph` for
+    /// text-emoji rows (folders, file-type glyphs).
+    func rowGlyphAttachment(image: NSImage?, fallbackGlyph: String) -> NSAttributedString {
+        let img = image ?? textGlyphImage(fallbackGlyph)
+        let attach = NSTextAttachment()
+        attach.attachmentCell = FixedSizeIconCell(image: img,
+                                                  size: LiveViewportDelegate.rowGlyphCanvas)
+        return NSAttributedString(attachment: attach)
+    }
+
     /// Directory where Claude Code stores this project's session JSONLs.
     /// Uses the symlink-resolved + non-alphanumeric-encoded form so iCloud-
     /// linked projects like ~/work/paketti land on Claude's actual storage
@@ -1586,6 +2245,26 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadChatState()
         buildPanel()
+        // `--cwd <path>` override: when given on cold launch, jump the browser
+        // there before the first render. Falls back to the persisted chatCwd
+        // (the LiveViewportDelegate default) when absent. Validation: only
+        // honor the arg if the path actually exists — a stale --cwd from a
+        // deleted folder shouldn't strand the browser. When the path is a
+        // FILE, navigate to its parent and pre-seed the highlight memo so
+        // the row for that file is the selected one after the load.
+        if let p = initialCwd {
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: p, isDirectory: &isDir) {
+                if isDir.boolValue {
+                    switchChatCwd(to: p)
+                } else {
+                    let parent = (p as NSString).deletingLastPathComponent
+                    let basename = (p as NSString).lastPathComponent
+                    browserSelectionMemo[parent] = basename
+                    switchChatCwd(to: parent)
+                }
+            }
+        }
         loadComposerDraft()    // restore any in-progress text from last quit/crash
         sourceMtime = currentMtime()
         renderStatus()
@@ -1597,6 +2276,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             self,
             selector: #selector(showLivePanelRequested(_:)),
             name: NSNotification.Name("com.esaruoho.appletoolbox.ShowLivePanel"),
+            object: nil)
+        // Listen for "Go To Cwd" — a folder path arrives in userInfo["path"],
+        // we switch the browser there and bring the panel front. Used by the
+        // Finder "Open in AppleToolbox" service so already-running --live
+        // doesn't need to be relaunched. Posted by bin/toolbox-goto.
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(goToCwdRequested(_:)),
+            name: NSNotification.Name("com.esaruoho.appletoolbox.GoToCwd"),
             object: nil)
         statusTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             self?.renderStatus()
@@ -1628,11 +2316,20 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         panel.makeKey()
     }
 
-    /// Carbon RegisterEventHotKey — fires `toggleSmartDictation(_:)` even
-    /// when AppleToolbox isn't the focused app. Apple-shipped (no Homebrew),
-    /// no Accessibility / Input Monitoring permission required. Keystroke:
-    /// ⌃⌥⌘D — heavily unused triple-modifier combo that's safe against the
-    /// system-reserved bindings list.
+    /// Carbon RegisterEventHotKey — fires actions even when AppleToolbox
+    /// isn't the focused app. Apple-shipped (no Homebrew), no Accessibility /
+    /// Input Monitoring permission required.
+    ///
+    /// Registered keyboard shortcuts:
+    ///   id=1  ⌃⌥⌘D  → toggleSmartDictation (the dictation toggle)
+    ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + ping /speak/stop)
+    ///   id=3  ⌃⌥⌘T  → gotoFinderSelection (open Finder's selection in browser)
+    ///   id=4  ⌃⌥⌘S  → snapFrontmostApp (tile windows of the focused app)
+    ///
+    /// All use triple-modifier combinations that don't collide with the
+    /// macOS system-reserved bindings list. Rectangle's alternate-shortcuts
+    /// set uses only ⌃⌥, so adding ⌘ avoids the window-snap conflict that
+    /// killed the earlier ⌥T / ⌃⌥T attempts via the Services menu.
     func registerGlobalHotKey() {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
@@ -1649,15 +2346,158 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                               nil,
                               &hkID)
             let me = Unmanaged<LiveViewportDelegate>.fromOpaque(userData).takeUnretainedValue()
-            DispatchQueue.main.async { me.toggleSmartDictation(nil) }
+            NSLog("AppleToolbox hotkey fired: id=\(hkID.id)")
+            DispatchQueue.main.async {
+                switch hkID.id {
+                case 1: me.toggleSmartDictation(nil)
+                case 2: me.stopVoiceboxGlobal()
+                // id=3 (⌃⌥⌘T) handled by AppDelegate in the menu-bar process,
+                // not here. Left out of this switch on purpose so we don't
+                // race with the menu-bar's handler if both processes
+                // happened to register at once.
+                case 4: me.snapFrontmostApp()
+                default: break
+                }
+            }
             return noErr
         }, 1, &eventType, selfPtr, nil)
 
-        // FourCharCode 'ATBD' = "AppleToolbox Dictate"
-        let hkID = EventHotKeyID(signature: OSType(0x41544244), id: 1)
-        let mods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
-        RegisterEventHotKey(UInt32(kVK_ANSI_D), mods, hkID,
+        // id=1 — FourCharCode 'ATBD' = "AppleToolbox Dictate" — ⌃⌥⌘D
+        let dictateID = EventHotKeyID(signature: OSType(0x41544244), id: 1)
+        let dictateMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
+        RegisterEventHotKey(UInt32(kVK_ANSI_D), dictateMods, dictateID,
                             GetApplicationEventTarget(), 0, &globalHotKeyRef)
+
+        // id=2 — FourCharCode 'ATBS' = "AppleToolbox Stop" — ⌃⌥⌘.
+        // Previously ⇧⌥⌘. but that combo never fired — macOS / some other
+        // process was grabbing it before Carbon saw it. ⌃⌥⌘. matches the
+        // same control-option-cmd family as Dictate/Goto/Snap and is free.
+        var stopRef: EventHotKeyRef?
+        let stopID = EventHotKeyID(signature: OSType(0x41544253), id: 2)
+        let stopMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
+        let stopStatus = RegisterEventHotKey(UInt32(kVK_ANSI_Period), stopMods, stopID,
+                            GetApplicationEventTarget(), 0, &stopRef)
+        NSLog("AppleToolbox: RegisterEventHotKey ⌃⌥⌘. → status=\(stopStatus) ref=\(String(describing: stopRef))")
+        stopVoiceboxHotKeyRef = stopRef
+
+        // ⌃⌥⌘T ("Goto Finder Selection") is registered by AppDelegate
+        // (the menu-bar process), NOT here. The menu-bar is always alive via
+        // LaunchAgent, so the chord always has an owner; --live is opt-in
+        // and would orphan the hotkey whenever the panel was closed.
+        // AppDelegate's handler shells out to `bin/toolbox-goto`, which
+        // posts our GoToCwd Distributed Notification — see goToCwdRequested
+        // below for the navigation + highlight code.
+
+        // id=4 — FourCharCode 'ATBN' = "AppleToolbox sNap" — ⌃⌥⌘S.
+        // Captures the frontmost app at fire-time (Carbon hotkeys don't
+        // activate the receiving process, so NSWorkspace.frontmostApplication
+        // is still whoever the user was using) and tiles their windows.
+        var snapRef: EventHotKeyRef?
+        let snapID = EventHotKeyID(signature: OSType(0x4154424E), id: 4)
+        let snapMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
+        RegisterEventHotKey(UInt32(kVK_ANSI_S), snapMods, snapID,
+                            GetApplicationEventTarget(), 0, &snapRef)
+        snapFrontmostHotKeyRef = snapRef
+    }
+
+    /// Tile all windows of whichever app was frontmost when the user hit
+    /// ⌃⌥⌘S. Critical bit: NSWorkspace.frontmostApplication is captured
+    /// BEFORE we touch anything else — Carbon hotkeys don't activate
+    /// AppleToolbox, but defensive read order avoids any future regression
+    /// where some intermediate AppKit call accidentally steals focus.
+    ///
+    /// Performance: instead of shelling out to bin/snap (which runs
+    /// osascript → DockSnap.scpt → System Events with a convergence loop,
+    /// ~5s for 9 windows), this path talks to Accessibility (AXUIElement)
+    /// directly in-process. One AX RPC per `set` instead of one Apple
+    /// Event RPC per System-Events call, no osascript JIT, no Python
+    /// convergence checks. ~10x faster.
+    ///
+    /// The bin/snap CLI is unchanged — it still uses DockSnap.scpt because
+    /// it doesn't have AppleToolbox's Accessibility permission context.
+    @objc func snapFrontmostApp() {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              let name = app.localizedName else { return }
+        if name == "AppleToolbox" { return }   // would tile our own panel
+        let pid = app.processIdentifier
+        DispatchQueue.global(qos: .userInitiated).async {
+            SnapEngine.tileAllWindows(pid: pid, appName: name)
+        }
+    }
+
+    /// Ask Finder for its current selection, fall back to the front
+    /// window's target folder, then jump the browser there and bring the
+    /// panel front. Fires from ⌃⌥⌘T regardless of which app is frontmost
+    /// — but only does useful work when Finder has a window or selection.
+    @objc func gotoFinderSelection() {
+        let script = """
+        tell application "Finder"
+            if not running then return ""
+            try
+                if (count of selection) > 0 then
+                    return POSIX path of (item 1 of (selection as alias list))
+                end if
+            end try
+            try
+                if (count of windows) > 0 then
+                    return POSIX path of (target of front window as alias)
+                end if
+            end try
+        end tell
+        return ""
+        """
+        let task = Process()
+        task.launchPath = "/usr/bin/osascript"
+        task.arguments = ["-e", script]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        do { try task.run() } catch { return }
+        task.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let out = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // Selection was empty AND no Finder windows → just bring the panel
+        // front so the chord at least surfaces the toolbox. Otherwise,
+        // navigate to the target (parent folder if selection is a file).
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if !out.isEmpty {
+                var isDir: ObjCBool = false
+                if FileManager.default.fileExists(atPath: out, isDirectory: &isDir) {
+                    let target: String
+                    let selectName: String?  // basename to highlight after the dir loads
+                    if isDir.boolValue {
+                        target = out
+                        selectName = nil
+                    } else {
+                        target = (out as NSString).deletingLastPathComponent
+                        selectName = (out as NSString).lastPathComponent
+                    }
+                    // Pre-seed the per-cwd selection memo so loadBrowserItems'
+                    // existing "restore previously-highlighted child" pass
+                    // picks our file. Cheaper than racing a manual highlight
+                    // after the row list has been built.
+                    if let name = selectName {
+                        self.browserSelectionMemo[target] = name
+                    }
+                    self.switchChatCwd(to: target)
+                    self.browserFilterField?.stringValue = ""
+                    self.loadBrowserItems()
+                }
+            }
+            self.panel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    /// Runs the same script the menu-bar 🔇 Stop Voicebox row runs:
+    /// kills the afplay PID from the voicebox_speak hook and pings
+    /// /speak/stop. Fire-and-forget — we don't block waiting for output
+    /// because the user just wants the noise to die.
+    func stopVoiceboxGlobal() {
+        let task = Process()
+        task.launchPath = "\(HOME)/bin/voicebox-stop"
+        do { try task.run() } catch { NSLog("stopVoiceboxGlobal: \(error)") }
     }
 
     /// Arrow up/down → move selection; Return/Enter → fire selected row.
@@ -1758,10 +2598,38 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }
     }
 
+    /// Fixed panel width. One source of truth so snapToRight(),
+    /// rightEdgeRect() and buildPanel() all agree.
+    let panelWidth: CGFloat = 380
+
+    /// Recompute the right-edge anchor rect against the screen the panel
+    /// is currently on (or main, on first build). Flush right, full height.
+    func rightEdgeRect() -> NSRect {
+        let screen = (panel?.screen ?? NSScreen.main)?.visibleFrame
+            ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        return NSRect(x: screen.maxX - panelWidth,
+                      y: screen.minY,
+                      width: panelWidth,
+                      height: screen.height)
+    }
+
+    /// Slam the panel back to the right-edge curtain position. Called by
+    /// the Window menu item, the global hotkey, and the windowDidMove
+    /// rescue when the user drags the panel off-screen.
+    @objc func snapToRight(_ sender: Any?) {
+        guard let p = panel else { return }
+        p.setFrame(rightEdgeRect(), display: true, animate: true)
+    }
+
     func buildPanel() {
+        // Dock-to-right-edge: flush to screen.maxX, full visible height. This
+        // is Option A of the "reserved zone" plan — the panel acts as a
+        // right-side curtain that always-on-top covers any app underneath.
+        // DockSnap reads the panel frame and subtracts it from the tileable
+        // area (Option B) so /snap leaves room for the curtain.
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let w: CGFloat = 380, h: CGFloat = 920
-        let rect = NSRect(x: screen.maxX - w - 20, y: screen.maxY - h - 20, width: w, height: h)
+        let rect = NSRect(x: screen.maxX - panelWidth, y: screen.minY,
+                          width: panelWidth, height: screen.height)
 
         // Opaque dark panel (no hudWindow → no translucency / wallpaper bleed).
         panel = KeyablePanel(contentRect: rect,
@@ -1778,6 +2646,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
+        // Window-delegate hookup powers the off-screen rescue in
+        // windowDidMove(_:) — drag the panel beyond any screen's visible
+        // frame and it snaps back to the right-edge curtain on mouse-up.
+        panel.delegate = self
         // false = clicking anywhere on the panel makes it key (so the local
         // NSEvent monitor receives arrow-key/Return for row navigation).
         // The previous `true` meant the panel only became key when a text
@@ -2563,6 +3435,43 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// Posted by bin/toolbox-goto when the Finder "Open in AppleToolbox"
+    /// service fires. userInfo["path"] holds the folder; we switch the
+    /// browser there and bring the panel front so the user lands on the
+    /// folder they right-clicked. No-op when the path doesn't exist.
+    @objc func goToCwdRequested(_ note: Notification) {
+        guard let info = note.userInfo as? [String: Any],
+              let path = info["path"] as? String, !path.isEmpty else { return }
+        // Distributed Notifications deliver on a private queue; UI work must
+        // hop to the main queue or the panel mutations race against AppKit.
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            var isDir: ObjCBool = false
+            // Resolve: if the path is a file, navigate to its parent folder
+            // and remember the basename so we highlight the file after the
+            // row list builds (matches Finder selection semantics).
+            let target: String
+            let selectName: String?
+            if FileManager.default.fileExists(atPath: path, isDirectory: &isDir) {
+                if isDir.boolValue {
+                    target = path
+                    selectName = nil
+                } else {
+                    target = (path as NSString).deletingLastPathComponent
+                    selectName = (path as NSString).lastPathComponent
+                }
+            } else { return }
+            if let name = selectName {
+                self.browserSelectionMemo[target] = name
+            }
+            self.switchChatCwd(to: target)
+            self.browserFilterField?.stringValue = ""
+            self.loadBrowserItems()
+            self.panel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
     /// Dock-icon click → restore the panel. --live runs .regular so it
     /// gets a real Dock icon; clicking it after KeyablePanel.miniaturize
     /// orderOut'd the panel needs to bring it back. Also covers the case
@@ -2571,6 +3480,23 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         return true
+    }
+
+    // ─── NSWindowDelegate: off-screen rescue ──────────────────────────────
+    // If the user drags the panel so far off-screen that no part of its
+    // frame intersects ANY screen's visibleFrame, the panel becomes
+    // unreachable (no titlebar to grab, no Mission Control thumbnail since
+    // it's .stationary). windowDidMove fires continuously during a drag;
+    // we only re-snap once the panel has actually gone non-recoverable.
+    func windowDidMove(_ notification: Notification) {
+        guard let p = panel else { return }
+        let frame = p.frame
+        let recoverable = NSScreen.screens.contains { scr in
+            !frame.intersection(scr.visibleFrame).isEmpty
+        }
+        if !recoverable {
+            snapToRight(nil)
+        }
     }
 
     // ─── chat: state persistence ───────────────────────────────────────────
@@ -2993,6 +3919,9 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     func loadBrowserItems() {
         let dir = chatCwd
         var items: [BrowserItem] = []
+        // One Copilot query per render — keyed by resolved cwd so we can do
+        // an O(1) dict lookup for every subfolder badge instead of N queries.
+        let copilotCounts = copilotSessionCountsByCwd()
         if let names = try? FileManager.default.contentsOfDirectory(atPath: dir) {
             for name in names where !name.hasPrefix(".") {
                 let path = "\(dir)/\(name)"
@@ -3001,11 +3930,21 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 // Only count sessions for dirs — checking every file would
                 // be wasted I/O. The encoded-path lookup for files would
                 // never match anything in ~/.claude/projects/ anyway.
-                let sessions = isDir.boolValue ? sessionCountForFolder(path) : 0
+                let claudeN = isDir.boolValue ? sessionCountForFolder(path) : 0
+                // Copilot stores realpath, so resolve the subfolder before
+                // the dict lookup. Symlink farms in ~/work (paketti, etc.)
+                // would otherwise show 0 sessions while the DB has rows.
+                let copilotN: Int = {
+                    guard isDir.boolValue else { return 0 }
+                    let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+                    return copilotCounts[resolved] ?? 0
+                }()
                 items.append(BrowserItem(
                     name: name, path: path, isDir: isDir.boolValue,
                     glyph: glyphForFile(name: name, isDir: isDir.boolValue),
-                    sessionCount: sessions, sessionId: nil))
+                    sessionCount: claudeN + copilotN,
+                    claudeCount: claudeN, copilotCount: copilotN,
+                    sessionId: nil, provider: .claude))
             }
         }
         items.sort { a, b in
@@ -3020,7 +3959,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // user-message snippet.
         let fmt = DateFormatter()
         fmt.dateFormat = "MM-dd HH:mm"
-        let sessionItems: [BrowserItem] = listSessions(limit: 50).map { s in
+        let claudeItems: [BrowserItem] = listSessions(limit: 50).map { s in
             let label = sessionNames[s.uuid] ?? s.snippet
             // Tab between date and label so renderBrowser's paragraph style
             // can snap both columns to fixed X positions. Plain spaces don't
@@ -3028,8 +3967,27 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // caused the date column to wobble across rows.
             let display = "\(fmt.string(from: s.mtime))\t\(label)"
             return BrowserItem(name: display, path: s.uuid, isDir: false,
-                               glyph: "💬", sessionCount: 0, sessionId: s.uuid)
+                               glyph: "💬", sessionCount: 0,
+                               claudeCount: 0, copilotCount: 0,
+                               sessionId: s.uuid, provider: .claude)
         }
+        // Copilot sessions for the same cwd — same row shape, 🤖 glyph,
+        // routes through openCopilotSessionInTerminal on click instead of
+        // the in-panel chat. Both providers shown together, sorted newest
+        // first by interleaving on the date prefix the row title carries.
+        let copilotItems: [BrowserItem] = listCopilotSessionsForCwd(chatCwd, limit: 50).map { s in
+            let label = s.snippet.isEmpty ? "(no summary)" : s.snippet
+            let display = "\(fmt.string(from: s.mtime))\t\(label)"
+            return BrowserItem(name: display, path: s.uuid, isDir: false,
+                               glyph: "🤖", sessionCount: 0,
+                               claudeCount: 0, copilotCount: 0,
+                               sessionId: s.uuid, provider: .copilot)
+        }
+        // Merge session rows newest-first across providers. The display
+        // string starts with the same "MM-dd HH:mm\t…" prefix, so a string
+        // sort gives us the right chronological order without re-parsing.
+        let sessionItems = (claudeItems + copilotItems)
+            .sorted { $0.name > $1.name }
         browserAllItems = sessionItems + items
         renderBrowser()
 
@@ -3077,52 +4035,71 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // starts at the same X regardless of the emoji's rendered width.
             let body: String
             if item.sessionCount > 0 {
-                let plural = item.sessionCount == 1 ? "session" : "sessions"
-                body = "\(item.name)   ·  \(item.sessionCount) \(plural)"
+                // Show breakdown when both providers have sessions in this
+                // folder, otherwise just the singular "N sessions" line so
+                // single-provider folders stay uncluttered.
+                let badge: String
+                if item.claudeCount > 0 && item.copilotCount > 0 {
+                    badge = "\(item.claudeCount)💬 + \(item.copilotCount)🤖"
+                } else {
+                    let plural = item.sessionCount == 1 ? "session" : "sessions"
+                    badge = "\(item.sessionCount) \(plural)"
+                }
+                body = "\(item.name)   ·  \(badge)"
             } else {
                 body = item.name
             }
-            // Color tiers: session rows = orange (the actionable artefacts —
-            // click resumes the conversation). Folders with sessions = teal
-            // (places to descend into where there's history). Everything
+            // Color tiers: Claude session rows = orange, Copilot session rows
+            // = teal (so the user can tell at a glance which CLI a row will
+            // hand off to). Folders with any sessions = systemBlue. Everything
             // else = white.
             let tint: NSColor
-            if item.sessionId != nil      { tint = NSColor.systemOrange }
-            else if item.sessionCount > 0 { tint = NSColor.systemTeal }
+            if item.sessionId != nil {
+                tint = (item.provider == .copilot) ? NSColor.systemTeal : NSColor.systemOrange
+            }
+            else if item.sessionCount > 0 { tint = NSColor.systemBlue }
             else                          { tint = NSColor.white }
 
-            // Tab stop at 26pt fixes the wobble: emojis are variable-width
-            // even inside a monospaced font, so `"💬  date snippet"` would
-            // jitter. With `"💬\t…"` and a left tab at 26pt, every body
-            // column starts at the same X regardless of glyph width.
-            // Three-column layout snapped to fixed X positions:
-            //   col 0 = glyph (starts at 0)
-            //   col 1 = date  (starts at 26pt — tab after glyph)
-            //   col 2 = body  (starts at 124pt — tab after date)
-            // Session rows always have a date in col 1 (encoded with a tab
-            // separator at construction time). Non-session rows have no
-            // embedded tab so they simply fill col 1 onward.
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.tabStops = [
-                NSTextTab(textAlignment: .left, location: 26, options: [:]),
-                NSTextTab(textAlignment: .left, location: 124, options: [:]),
-            ]
-            paragraph.defaultTabInterval = 26
-            paragraph.lineBreakMode = .byTruncatingTail
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
-                .foregroundColor: tint,
-                .paragraphStyle: paragraph,
-            ]
+            // (Row layout is now pinned subviews on BrowserItemButton —
+            // glyphView at x=6 width=18, bodyField at glyphView.trailing+6.
+            // No more attributedTitle, no more NSButton cell quirks.)
             let btn = BrowserItemButton(title: "",
                                          target: self, action: #selector(browserItemClicked(_:)))
             btn.item = item
             btn.bezelStyle = .inline
             btn.isBordered = false
-            btn.alignment = .left
-            btn.attributedTitle = NSAttributedString(
-                string: "\(item.glyph)\t\(body)",
-                attributes: attrs)
+            // The row is now drawn by pinned subviews, not by attributedTitle.
+            // glyphView gets an 18×14 NSImage (Claude.app icon, Copilot SF
+            // Symbol, or pre-rendered folder/file emoji); bodyField gets the
+            // date+name string with a single tab stop separating the columns.
+            // Every row's glyph/body column lands at the same pixel because
+            // the leading constraints are constants, not text metrics.
+            let glyphImage: NSImage = {
+                if let sid = item.sessionId, !sid.isEmpty {
+                    return labelGlyphImage(item.provider == .copilot ? "COPILOT" : "CLAUDE")
+                }
+                return textGlyphImage(item.glyph)
+            }()
+            btn.glyphView.image = glyphImage
+
+            // Body string: date+\t+label for sessions, plain name for files,
+            // "name · N sessions" for folders. Tab stop inside the body field
+            // (location 98) puts the snippet column at a fixed X within the
+            // text field, so dates and snippets both align across rows.
+            let bodyParagraph = NSMutableParagraphStyle()
+            bodyParagraph.tabStops = [
+                NSTextTab(textAlignment: .left, location: 98, options: [:]),
+            ]
+            bodyParagraph.defaultTabInterval = 98
+            bodyParagraph.lineBreakMode = .byTruncatingTail
+            bodyParagraph.alignment = .left
+            let bodyAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
+                .foregroundColor: tint,
+                .paragraphStyle: bodyParagraph,
+            ]
+            btn.bodyField.attributedStringValue = NSAttributedString(string: body, attributes: bodyAttrs)
+
             btn.contentTintColor = tint
             btn.translatesAutoresizingMaskIntoConstraints = false
             (btn.cell as? NSButtonCell)?.imagePosition = .noImage
@@ -3179,6 +4156,12 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// keyboard inside the panel — typing into the filter or chat composer
     /// resumes without a click back. Sublime/Preview/etc. still get to come
     /// up; we just take the foreground back once they've settled.
+    ///
+    /// After ~1.5s also call `bin/snap <handler-app>` so the newly opened
+    /// window tiles into the visibleFrame-minus-toolbox area (same way
+    /// `/snap bbs` does). Handler app resolved via NSWorkspace; bin/snap
+    /// already runs its own convergence check, so this is cheap when the
+    /// window is already where it needs to be.
     func openFileAndReclaimFocus(_ path: String) {
         runDetached("/usr/bin/open", [path])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
@@ -3186,6 +4169,25 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             NSApp.activate(ignoringOtherApps: true)
             self.panel.makeKeyAndOrderFront(nil)
             self.panel.makeFirstResponder(self.browserFilterField)
+        }
+        snapHandlerAppAfterOpen(path: path)
+    }
+
+    /// Resolve the default app that will handle `path` and call `bin/snap`
+    /// on it ~1.5s later (gives the app time to create its window). No-op
+    /// if the path has no resolvable handler. Errors swallowed — this is a
+    /// nice-to-have polish, not a hard dependency of the open action.
+    func snapHandlerAppAfterOpen(path: String) {
+        let url = URL(fileURLWithPath: path)
+        guard let appURL = NSWorkspace.shared.urlForApplication(toOpen: url) else { return }
+        // Bundle's display name. Some setups return "Sublime Text.app" via
+        // localizedNameKey (extension not stripped) — fall back to filesystem
+        // basename without extension and unconditionally strip ".app".
+        var appName = (try? appURL.resourceValues(forKeys: [.localizedNameKey]).localizedName)
+            ?? appURL.deletingPathExtension().lastPathComponent
+        if appName.hasSuffix(".app") { appName = String(appName.dropLast(4)) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            runDetached("\(APPLE_DIR)/bin/snap", ["--quiet", appName])
         }
     }
 
@@ -3196,8 +4198,16 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
               browserSelectedIndex < browserFilteredItems.count else { return }
         let item = browserFilteredItems[browserSelectedIndex]
         if let sid = item.sessionId {
-            resumeSession(sid)
-            panel.makeFirstResponder(chatInput)
+            switch item.provider {
+            case .claude:
+                resumeSession(sid)
+                panel.makeFirstResponder(chatInput)
+            case .copilot:
+                // Copilot doesn't have an in-panel chat — hand off to iTerm
+                // the same way bbs-app does. cwd is the current chatCwd, not
+                // the row's `path` (which holds the uuid for session rows).
+                openCopilotSessionInTerminal(uuid: sid, cwd: chatCwd)
+            }
             return
         }
         if item.isDir {
@@ -3214,8 +4224,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         if let sid = item.sessionId {
             // Session row → resume that conversation. Same plumbing as
             // Sessions ▾, but reached directly from the browser list.
-            resumeSession(sid)
-            panel.makeFirstResponder(chatInput)
+            switch item.provider {
+            case .claude:
+                resumeSession(sid)
+                panel.makeFirstResponder(chatInput)
+            case .copilot:
+                openCopilotSessionInTerminal(uuid: sid, cwd: chatCwd)
+            }
             return
         }
         if item.isDir {
@@ -4846,6 +5861,17 @@ let argv = CommandLine.arguments
 let liveMode = argv.contains("--live")
 let grantMode = argv.contains("--grant-permissions")
 let activateMode = argv.contains("--activate")
+// Optional `--cwd <path>` — when present in --live mode, the file browser
+// opens at that folder instead of the persisted last-cwd. Used by the Finder
+// "Open in AppleToolbox" service and the `boot up appletoolbox in <folder>`
+// shorthand. Read here, applied by LiveViewportDelegate during launch.
+let initialCwd: String? = {
+    if let i = argv.firstIndex(of: "--cwd"), i + 1 < argv.count {
+        let p = argv[i + 1]
+        return p.hasPrefix("~") ? (p as NSString).expandingTildeInPath : p
+    }
+    return nil
+}()
 
 // `--activate`: one-shot wake. Bring an already-running --live panel front
 // via Distributed Notification; if nothing is running, spawn `--live` and
@@ -4992,5 +6018,242 @@ func installLiveModeMainMenu() {
     editItem.submenu = editMenu
     mainMenu.addItem(editItem)
 
+    // Window menu — single user-facing item: snap-to-right escape hatch
+    // for when the panel has been dragged off-screen or to a position
+    // the user wants to abandon. Target nil so AppKit walks the responder
+    // chain and finds LiveViewportDelegate.snapToRight(_:).
+    let windowItem = NSMenuItem()
+    let windowMenu = NSMenu(title: "Window")
+    let snapItem = NSMenuItem(title: "Snap to Right Edge",
+                              action: Selector(("snapToRight:")),
+                              keyEquivalent: "\u{F703}")  // → arrow
+    snapItem.keyEquivalentModifierMask = [.command, .shift]
+    windowMenu.addItem(snapItem)
+    windowItem.submenu = windowMenu
+    mainMenu.addItem(windowItem)
+
     NSApp.mainMenu = mainMenu
+}
+
+
+// =============================================================================
+// SnapEngine — in-process window tiler via AXUIElement.
+//
+// The bin/snap CLI takes 5s for 9 windows because each pass spawns osascript,
+// loops through System-Events RPCs (one Apple Event per `set position` and
+// one per `set size`), sleeps 0.25s for settle, snapshots via Swift, compares
+// in Python, and repeats until convergent (2-3 passes typical on Sequoia).
+//
+// This engine drops every layer except the actual AX `set` calls:
+//   - No osascript spawn (saves ~250-400ms JIT startup × passes)
+//   - No System-Events proxy hop (AX direct to target app)
+//   - No convergence loop (AX is synchronous; if a set fails, the window
+//     just doesn't move — Sequoia's silent-drop only happened through the
+//     System-Events bridge; direct AX is consistent)
+//   - No Python compare or window-frame snapshot per pass
+//
+// Same grid math (row-based non-uniform, rows = round(sqrt(n))), same target
+// frame (main screen visibleFrame, menubar+Dock subtracted by AppKit).
+//
+// Apps with their own stable-window-ID AppleScript dictionary (Safari, Mail,
+// iTerm) work fine via AX too — the per-app dictionary path in DockSnap.scpt
+// existed to dodge System Events' positional-reference reshuffling, which
+// doesn't affect direct AX since we hold AXUIElement references that don't
+// re-index.
+// =============================================================================
+
+enum SnapEngine {
+
+    /// Toggle entry point — what the ⌃⌥⌘S keyboard shortcut calls.
+    ///
+    /// Decision is based on the FOCUSED window's current frame, not all
+    /// windows:
+    ///   * If the focused window already fills the visibleFrame, TILE
+    ///     every window into a grid (overview mode — see them all).
+    ///   * Otherwise (focused window is tiled, half-screened, free-
+    ///     floating, anything), MAXIMIZE just the focused window to fill
+    ///     the visibleFrame (work mode — focus on the one you clicked).
+    ///
+    /// Typical workflow:
+    ///   Press 1 (working in one big window): tile all → overview
+    ///   Click the tile you want to work in
+    ///   Press 2 (focused window is now small): maximize focused → work
+    ///   Press 3 (focused window full again): tile all → overview
+    ///   …forever
+    ///
+    /// Stateless: each decision reads current AX geometry, no per-app
+    /// flag stored.
+    ///
+    /// Tolerance: ±30 px on each side of the visibleFrame counts as
+    /// "maximized" — handles app-imposed minor inset, drop-shadow margins,
+    /// and the focused window landing slightly off-frame from a prior
+    /// interaction.
+    static func tileAllWindows(pid: pid_t, appName: String) {
+        let started = Date()
+        let appAX = AXUIElementCreateApplication(pid)
+
+        var windowsRef: CFTypeRef?
+        let st = AXUIElementCopyAttributeValue(appAX,
+                                               kAXWindowsAttribute as CFString,
+                                               &windowsRef)
+        guard st == .success, let allWindows = windowsRef as? [AXUIElement] else {
+            NSLog("SnapEngine: \(appName): AXWindows fetch failed (\(st.rawValue))")
+            return
+        }
+
+        let windows = allWindows.filter { !isMinimized($0) }
+        guard !windows.isEmpty else {
+            NSLog("SnapEngine: \(appName): no eligible windows")
+            return
+        }
+
+        guard let screen = NSScreen.main else { return }
+        let maxRect = visibleFrameInAX(screen: screen)
+
+        // Which window is "the one"? Try focused first (the one with
+        // keyboard focus), fall back to main (the document/primary window),
+        // fall back to first non-minimized window. The last is a safety
+        // net — every app has at least one window at this point.
+        let target = focusedWindow(appAX: appAX) ?? mainWindow(appAX: appAX) ?? windows[0]
+        let targetIsMaximized = (currentFrame(target).map {
+            withinTol($0, of: maxRect, tol: 30)
+        }) ?? false
+
+        let mode: String
+        if targetIsMaximized {
+            tileGrid(windows: windows, in: maxRect)
+            mode = "TILED \(windows.count)"
+        } else {
+            setFrame(target, origin: maxRect.origin, size: maxRect.size)
+            mode = "MAXIMIZED focused"
+        }
+
+        let elapsed = Date().timeIntervalSince(started)
+        NSLog("SnapEngine: \(appName) — \(mode) in \(String(format: "%.2f", elapsed))s")
+    }
+
+    /// AXFocusedWindow — the one with current keyboard focus.
+    private static func focusedWindow(appAX: AXUIElement) -> AXUIElement? {
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appAX,
+                                            kAXFocusedWindowAttribute as CFString,
+                                            &ref) == .success else { return nil }
+        return (ref as! AXUIElement)
+    }
+
+    /// AXMainWindow — the document/primary window, even if not focused.
+    /// Falls back when an app has no focused window (background app
+    /// scenario, which can happen mid-launch).
+    private static func mainWindow(appAX: AXUIElement) -> AXUIElement? {
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appAX,
+                                            kAXMainWindowAttribute as CFString,
+                                            &ref) == .success else { return nil }
+        return (ref as! AXUIElement)
+    }
+
+    /// Returns true if `a` matches `b` within `tol` on every side.
+    private static func withinTol(_ a: CGRect, of b: CGRect, tol: CGFloat) -> Bool {
+        return abs(a.origin.x - b.origin.x) <= tol
+            && abs(a.origin.y - b.origin.y) <= tol
+            && abs(a.size.width  - b.size.width)  <= tol
+            && abs(a.size.height - b.size.height) <= tol
+    }
+
+    /// Row-based non-uniform grid into a target rectangle. Reusable from
+    /// the toggle so both branches share the same layout math.
+    private static func tileGrid(windows: [AXUIElement], in target: CGRect) {
+        let n = windows.count
+        let layout = rowLayout(n: n)
+        let rowCount = layout.count
+        let rowH = Int(target.size.height) / rowCount
+
+        var idx = 0
+        for (rowI, cellsInRow) in layout.enumerated() {
+            let cellW = Int(target.size.width) / cellsInRow
+            for colI in 0..<cellsInRow {
+                if idx >= n { break }
+                let tx = Int(target.origin.x) + (colI * cellW)
+                let ty = Int(target.origin.y) + (rowI * rowH)
+                setFrame(windows[idx],
+                         origin: CGPoint(x: tx, y: ty),
+                         size: CGSize(width: cellW, height: rowH))
+                idx += 1
+            }
+        }
+    }
+
+    /// Convert NSScreen.visibleFrame (bottom-left Cocoa coords) to the
+    /// top-left, primary-screen-relative coordinates AX expects.
+    private static func visibleFrameInAX(screen: NSScreen) -> CGRect {
+        let vf = screen.visibleFrame
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
+        let axY = primaryHeight - (vf.origin.y + vf.size.height)
+        return CGRect(x: vf.origin.x, y: axY, width: vf.size.width, height: vf.size.height)
+    }
+
+    /// Read a window's current AXPosition + AXSize. Returns nil if either
+    /// query fails (window died between enumeration and read, etc).
+    private static func currentFrame(_ win: AXUIElement) -> CGRect? {
+        var posRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(win, kAXPositionAttribute as CFString, &posRef) == .success,
+              AXUIElementCopyAttributeValue(win, kAXSizeAttribute as CFString, &sizeRef) == .success else {
+            return nil
+        }
+        var pos = CGPoint.zero
+        var size = CGSize.zero
+        AXValueGetValue(posRef as! AXValue, .cgPoint, &pos)
+        AXValueGetValue(sizeRef as! AXValue, .cgSize, &size)
+        return CGRect(origin: pos, size: size)
+    }
+
+    /// Set size then position then size again — Sequoia occasionally
+    /// clips the first size when an app has a min-content-size constraint
+    /// (Mail does this). Double-setting size around position matches
+    /// DockSnap.scpt's belt-and-suspenders approach.
+    private static func setFrame(_ win: AXUIElement, origin: CGPoint, size: CGSize) {
+        if let sv = axValue(size: size) {
+            AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sv)
+        }
+        if let pv = axValue(origin: origin) {
+            AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, pv)
+        }
+        if let sv = axValue(size: size) {
+            AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sv)
+        }
+    }
+
+    private static func axValue(origin: CGPoint) -> AXValue? {
+        var p = origin
+        return AXValueCreate(.cgPoint, &p)
+    }
+
+    private static func axValue(size: CGSize) -> AXValue? {
+        var s = size
+        return AXValueCreate(.cgSize, &s)
+    }
+
+    private static func isMinimized(_ win: AXUIElement) -> Bool {
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(win,
+                                            kAXMinimizedAttribute as CFString,
+                                            &ref) == .success,
+              let n = ref as? NSNumber else { return false }
+        return n.boolValue
+    }
+
+    /// rowLayout(n) — port of the AppleScript version. rows = round(sqrt(n)),
+    /// each row gets ceil or floor of n/rows so every cell is filled.
+    /// n=5 → [3,2], n=7 → [4,3], n=9 → [3,3,3], n=11 → [4,4,3].
+    static func rowLayout(n: Int) -> [Int] {
+        if n <= 1 { return [1] }
+        if n == 2 { return [2] }
+        if n == 3 { return [3] }
+        if n == 4 { return [2, 2] }
+        let r = max(1, Int((Double(n).squareRoot()).rounded()))
+        let base = n / r
+        let extra = n % r
+        return (0..<r).map { $0 < extra ? base + 1 : base }
+    }
 }

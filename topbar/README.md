@@ -36,19 +36,106 @@ you open it via the 🔄 Refresh item).
 |---|---|
 | 🌡 Climate | latest temp + humidity from `~/work/homepod-watcher/climate-logs/*.jsonl` |
 | 🔋 Battery | % + state + time remaining (`pmset -g batt`) |
+| 💾 Disk | free / total on the boot volume |
+| 📶 Wi-Fi | SSID + signal strength |
+| 📧 Mail | unread count |
+| 🎵 Now Playing | current track from Music / Spotify |
 | 🗂 Sal | recovered / total + missing count (regenerates `current-status.md` on read) |
+| 🎙 Whisp | queue depth on the Mac Mini transcription worker |
 
 **Click-to-run actions (below):**
 
 | Entry | What it does |
 |---|---|
-| 🔇 Stop Voicebox | runs `~/bin/voicebox-stop` (same as `vstop` alias) |
+| 🔇 Stop Voicebox | runs `~/bin/voicebox-stop` |
+| 🔊 Read Clipboard / ⏹ Stop Reading | Kokoro TTS of macOS clipboard via Voicebox |
 | 🗑 Empty Trash | tells Finder to empty trash |
 | 👁 / 👀 Desktop Icons | hide / show desktop icons |
+| 🙈 Hide All Other Apps | classic macOS "hide all others" via System Events |
+| **🪟 Snap Windows ▸** | Side-by-side / Top-Bottom / Thirds / Mosaic / **Dock Snap (every running app, auto-grid)** / **📐 Snap App ▸** (lists every running app — click one to tile *that* app's windows into a grid via `bin/dock snap <appname>`) |
+| System ▸ | Toggle Dark / Light Mode, Lock Screen, Sleep, Screenshot ▸ (full / selection / window / front window), Restart Menu Bar, Grant All Permissions… |
 | Audio ▸ | mute / unmute / volume presets (25/50/75) |
-| Finder ▸ | kill Finder, show/hide hidden files, restart menu bar |
+| Finder ▸ | Send Selection to Media Editor, Conversations for this Folder, Rebuild Conversation Index, Kill Finder, show / hide hidden files |
+| 🏷 Tags ▸ | Tag Finder selection (prompt, trinity-link, list, clear), one-click color tags, Find Files by Tag, Open Tag Smart Folder, Send Selection to OCR (Mac Mini), Run Tag Watcher Now, Retry OCR-failed, Smart Folders ▸, Pin All Smart Folders to Dock |
+| Slashes ▸ | Hey Sal…, Grand Search…, QR…, Wi-Fi QR…, Webcam Photo, Apple Report, Grand Export (--quick) |
 | 🔄 Refresh | re-reads live status + rebuilds menu |
 | Quit | terminate AppleToolbox |
+
+The **Snap App** submenu is rebuilt every time the menu opens (via
+`NSWorkspace.shared.runningApplications` filtered to `.regular`
+activation policy) so newly-launched apps appear automatically.
+
+## Global keyboard shortcuts
+
+Registered via Carbon `RegisterEventHotKey` inside the live-panel
+delegate (`registerGlobalHotKey()`). Apple-shipped API, no Homebrew, no
+Accessibility or Input Monitoring permission needed. Works regardless of
+the frontmost app — Services-menu shortcuts go through the foreground
+app's Services dispatcher and get swallowed by anything that binds the
+same combination internally; Carbon hotkeys don't.
+
+| Keys | Action | Why this combination |
+|---|---|---|
+| ⌃⌥⌘D | Toggle smart dictation | Triple-modifier + D, no system collision |
+| ⌃⌥⌘. | Stop Voicebox (`~/bin/voicebox-stop`) | ⌘. alone is AppKit's universal Cancel and gets swallowed; ⇧⌥⌘. turned out to be grabbed elsewhere; ⌃⌥⌘. fires cleanly |
+| ⌃⌥⌘T | Open Finder's selection in AppleToolbox browser | ⌥T / ⌃⌥T got eaten by Finder type-ahead and Rectangle; adding ⌘ clears both |
+| ⌃⌥⌘S | Toggle: tile all ↔ maximize the focused window | Focused window full → press tiles every window into a grid (overview). Focused window tiled/partial → press maximizes JUST that window (work mode). Stateless. See "SnapEngine" below. |
+
+Adding more: extend the `switch hkID.id` in `registerGlobalHotKey()`,
+register a new `EventHotKeyID` with the next free id, point it at a new
+method. FourCharCode signatures used so far: `ATBD` (dictate), `ATBS`
+(stop), `ATBG` (goto Finder), `ATBN` (snap).
+
+### SnapEngine — in-process window tiler + toggle
+
+The ⌃⌥⌘S keyboard shortcut does NOT call `bin/snap`. Instead, AppleToolbox
+includes `SnapEngine` (Swift enum near the bottom of `AppleToolbox.swift`)
+which talks directly to **AXUIElement** — Apple's Accessibility API — to
+move and resize the frontmost app's windows in-process.
+
+**Toggle behavior:** on each press, `SnapEngine` reads the current frame
+of the **focused window** (the one with keyboard focus; falls back to the
+app's main window, then to any window). If that window matches the
+screen's visibleFrame within ±30 px, every window is tiled into a grid
+(overview). Otherwise, **only the focused window** is resized to fill the
+visibleFrame (work mode — the others stay where they are).
+
+Typical workflow:
+
+- Working in one big maximized window → press 1: tiles every window into
+  a grid; you can see them all at once
+- Click the tile you want to work in next
+- Press 2: that window jumps to full-size, others stay tiled in the
+  background
+- Press 3: tile again; overview returns
+
+The toggle is **stateless** — no flag is stored, no per-app history is
+tracked. The decision is made from current AX geometry each time, so the
+behavior survives manual drag, app restart, or any external resize
+between presses.
+
+Why it's faster than the CLI:
+
+| Layer | `bin/snap` path | `SnapEngine` path |
+|---|---|---|
+| Process spawn | `Process()` → `bin/snap` (~10ms) | none — same process |
+| osascript JIT | ~250-400ms per pass | none |
+| Per-window mutation | System Events Apple Event RPC | AXUIElement direct RPC |
+| Convergence loop | 2-3 passes × snapshot + Python compare + 0.25s sleep | none — AX is synchronous |
+| Total for 9 windows | ~5s | ~0.4s |
+
+Same grid math (`rowLayout(n)` ported line-for-line from
+`DockSnap.applescript`), same target frame (`NSScreen.main.visibleFrame`,
+which already has menubar + Dock subtracted).
+
+Requires Accessibility permission for AppleToolbox.app — already granted
+via `/grant-perms`. If AX writes fail silently, check
+**System Settings → Privacy & Security → Accessibility** and confirm
+AppleToolbox is enabled.
+
+The `bin/snap` CLI remains the way to tile from the terminal, slash
+commands, and the menu — it doesn't share AppleToolbox's permission
+context. Both routes converge on the same grid layout.
 
 ## Adding a new entry
 
