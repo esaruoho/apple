@@ -57,8 +57,13 @@ end run
 
 
 -- Return the visible frame of screen N in TOP-LEFT coordinates as "x y w h".
+-- Delegates to bin/screen-frame-minus-toolbox so the AppleToolbox --live
+-- panel's right-edge curtain (Option B reserved-zone) is subtracted before
+-- tiling. Helper falls back to plain visibleFrame when no panel is on the
+-- queried screen, so this is safe to call even when --live isn't running.
 on screenFrame(idx)
-    return do shell script "/usr/bin/swift -e 'import AppKit; let scrs = NSScreen.screens; let i = " & idx & "; guard i >= 0 && i < scrs.count else { print(\"0 0 1440 900\"); exit(1) }; let s = scrs[i]; let totalH = scrs.map { $0.frame.origin.y + $0.frame.size.height }.max()!; let f = s.frame; let v = s.visibleFrame; let topY = totalH - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"
+    set helper to (POSIX path of (path to home folder)) & "work/apple/bin/screen-frame-minus-toolbox"
+    return do shell script quoted form of helper & " " & idx
 end screenFrame
 
 

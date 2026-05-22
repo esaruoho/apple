@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# screen-frame-minus-toolbox <screen-index>
+#
+# Print the visibleFrame of screen N as "x y w h" in TOP-LEFT coords,
+# with the AppleToolbox --live panel's rectangle subtracted from the
+# right edge if the panel sits on this screen. Used by DockSnap to
+# leave the curtain visible after tiling.
+#
+# Apple-native: AppKit + CoreGraphics window list via /usr/bin/swift.
+# If no AppleToolbox window is on the queried screen, returns the
+# unmodified visibleFrame — safe to call unconditionally.
+
+set -e
+
+idx="${1:-0}"
+
+/usr/bin/swift - "$idx" <<'SWIFT'
+import AppKit
+import CoreGraphics
+
+let args = CommandLine.arguments
+let idx = Int(args[1]) ?? 0
+let scrs = NSScreen.screens
+guard idx >= 0, idx < scrs.count else {
+    print("0 0 1440 900"); exit(1)
+}
+let screen = scrs[idx]
+var v = screen.visibleFrame           // bottom-left coords
+let totalH = scrs.map { $0.frame.origin.y + $0.frame.size.height }.max()!
+
+// CGWindowList — find any visible on-screen window owned by AppleToolbox
+// that intersects this screen's frame and lies along the right edge.
+// CGWindow rects are TOP-LEFT in display-global pixel space.
+let opts: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+let raw = (CGWindowListCopyWindowInfo(opts, kCGNullWindowID) as? [[String: Any]]) ?? []
+
+for info in raw {
+    let owner = (info[kCGWindowOwnerName as String] as? String) ?? ""
+    // CGWindow reports the owner with a space: "Apple Toolbox". Accept both
+    // spellings so this keeps working if the bundle name is ever de-spaced.
+    guard owner == "Apple Toolbox" || owner == "AppleToolbox" else { continue }
+    let layer = (info[kCGWindowLayer as String] as? Int) ?? -1
+    // Skip menu-bar status item (high layer numbers); panel runs at layer 3
+    // (floating window level).
+    guard layer >= 0, layer < 100 else { continue }
+    guard let b = info[kCGWindowBounds as String] as? [String: CGFloat],
+          let bx = b["X"], let by = b["Y"], let bw = b["Width"], let bh = b["Height"],
+          bw > 50, bh > 50 else { continue }
+
+    // Convert window rect from top-left global to bottom-left global so we
+    // can intersect with screen.visibleFrame.
+    let panelBL = NSRect(x: bx, y: totalH - by - bh, width: bw, height: bh)
+    let inter = panelBL.intersection(v)
+    if inter.isEmpty { continue }
+
+    // Only react if the panel hugs the right edge of this screen.
+    if abs(panelBL.maxX - v.maxX) < 4 {
+        v = NSRect(x: v.origin.x,
+                   y: v.origin.y,
+                   width: max(100, v.width - inter.width),
+                   height: v.height)
+    }
+}
+
+let topY = totalH - (v.origin.y + v.size.height)
+print("\(Int(v.origin.x)) \(Int(topY)) \(Int(v.size.width)) \(Int(v.size.height))")
+SWIFT

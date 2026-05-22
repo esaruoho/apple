@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+# window-frame — report on-screen window geometry vs. screen geometry.
+#
+# Apple-native: AppKit (NSScreen) + CoreGraphics (CGWindowList). No
+# AppleScript permission prompts; no Homebrew; no pip deps. The same
+# Swift pattern used by bin/screen-frame-minus-toolbox.
+#
+# Modes
+#   window-frame                       Every visible foreground window
+#   window-frame <appname>             Windows whose owner contains <appname>
+#                                      (case-insensitive substring match)
+#   window-frame --json [<appname>]    JSON output (one object per window)
+#   window-frame --screens             List displays with frame + visibleFrame
+#   window-frame -h | --help           This help
+#
+# Coordinates
+#   All rectangles are reported in TOP-LEFT pixel space (the same space
+#   CGWindowList returns), matching what /snap uses internally. The y
+#   axis grows downward from the top of the primary display.
+#
+# Fields per window (text mode)
+#   pid  layer  owner            title                       screen  x    y    w    h    w%   h%
+#
+# The "w%" / "h%" columns are the window's width / height as a percentage
+# of the parent screen's visibleFrame. Useful for /snap pre-flight: see
+# which windows are already roughly tiled and which need adjusting.
+
+set -euo pipefail
+
+mode="text"
+filter=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        --json)
+            mode="json"
+            shift
+            ;;
+        --screens)
+            mode="screens"
+            shift
+            ;;
+        --*)
+            echo "window-frame: unknown flag $1" >&2
+            exit 2
+            ;;
+        *)
+            filter="$1"
+            shift
+            ;;
+    esac
+done
+
+/usr/bin/swift - "$mode" "$filter" <<'SWIFT'
+import AppKit
+import CoreGraphics
+import Foundation
+
+let args = CommandLine.arguments
+let mode = args.count > 1 ? args[1] : "text"
+let filter = (args.count > 2 ? args[2] : "").lowercased()
+
+let scrs = NSScreen.screens
+// total height across all displays, used to convert NSScreen bottom-left
+// rects to CGWindow top-left rects.
+let totalH = scrs.map { $0.frame.origin.y + $0.frame.size.height }.max() ?? 0
+
+struct ScreenInfo {
+    let idx: Int
+    let name: String
+    let frameTL: NSRect          // entire display, top-left
+    let visibleFrameTL: NSRect   // minus menu bar + dock, top-left
+}
+
+func toTopLeft(_ r: NSRect) -> NSRect {
+    return NSRect(x: r.origin.x,
+                  y: totalH - r.origin.y - r.size.height,
+                  width: r.size.width,
+                  height: r.size.height)
+}
+
+let screens: [ScreenInfo] = scrs.enumerated().map { (i, s) in
+    ScreenInfo(idx: i,
+               name: s.localizedName,
+               frameTL: toTopLeft(s.frame),
+               visibleFrameTL: toTopLeft(s.visibleFrame))
+}
+
+if mode == "screens" {
+    print("idx\tname\tframe (x,y wxh)\tvisibleFrame (x,y wxh)")
+    for s in screens {
+        let f = s.frameTL, v = s.visibleFrameTL
+        print("\(s.idx)\t\(s.name)\t\(Int(f.origin.x)),\(Int(f.origin.y)) \(Int(f.width))x\(Int(f.height))\t\(Int(v.origin.x)),\(Int(v.origin.y)) \(Int(v.width))x\(Int(v.height))")
+    }
+    exit(0)
+}
+
+// Best-effort screen assignment: pick the screen whose visibleFrame has the
+// largest intersection with the window rect.
+func screenFor(_ rect: NSRect) -> ScreenInfo? {
+    var best: ScreenInfo? = nil
+    var bestArea: CGFloat = 0
+    for s in screens {
+        let inter = s.visibleFrameTL.intersection(rect)
+        let area = inter.isEmpty ? 0 : inter.width * inter.height
+        if area > bestArea { bestArea = area; best = s }
+    }
+    return best ?? screens.first
+}
+
+let opts: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+let raw = (CGWindowListCopyWindowInfo(opts, kCGNullWindowID) as? [[String: Any]]) ?? []
+
+struct Win {
+    let pid: Int
+    let layer: Int
+    let owner: String
+    let title: String
+    let x: Int; let y: Int; let w: Int; let h: Int
+    let screenIdx: Int
+    let wpct: Int; let hpct: Int
+}
+
+var wins: [Win] = []
+for info in raw {
+    let owner = (info[kCGWindowOwnerName as String] as? String) ?? ""
+    let title = (info[kCGWindowName as String] as? String) ?? ""
+    let pid   = (info[kCGWindowOwnerPID as String] as? Int) ?? 0
+    let layer = (info[kCGWindowLayer as String] as? Int) ?? -1
+    guard let b = info[kCGWindowBounds as String] as? [String: CGFloat],
+          let bx = b["X"], let by = b["Y"], let bw = b["Width"], let bh = b["Height"] else { continue }
+    // Filter out tiny system surfaces (status items, shadows, etc.)
+    if bw < 40 || bh < 40 { continue }
+    // Filter to user-visible windows: layer 0 (normal) or floating panels up to 8.
+    // Status-bar items live at layer 25; tooltips at 101+; Dock at 20.
+    if layer < 0 || layer > 8 { continue }
+    if !filter.isEmpty && !owner.lowercased().contains(filter) { continue }
+
+    let rect = NSRect(x: bx, y: by, width: bw, height: bh)
+    let s = screenFor(rect)
+    let vw = s?.visibleFrameTL.width ?? 1
+    let vh = s?.visibleFrameTL.height ?? 1
+    let wpct = Int((bw / vw) * 100.0 + 0.5)
+    let hpct = Int((bh / vh) * 100.0 + 0.5)
+
+    wins.append(Win(pid: pid, layer: layer, owner: owner, title: title,
+                    x: Int(bx), y: Int(by), w: Int(bw), h: Int(bh),
+                    screenIdx: s?.idx ?? -1,
+                    wpct: wpct, hpct: hpct))
+}
+
+// Sort: screen, then owner, then top-to-bottom, left-to-right.
+wins.sort {
+    if $0.screenIdx != $1.screenIdx { return $0.screenIdx < $1.screenIdx }
+    if $0.owner.lowercased() != $1.owner.lowercased() { return $0.owner.lowercased() < $1.owner.lowercased() }
+    if $0.y != $1.y { return $0.y < $1.y }
+    return $0.x < $1.x
+}
+
+if mode == "json" {
+    var out: [[String: Any]] = []
+    for w in wins {
+        out.append([
+            "pid": w.pid, "layer": w.layer,
+            "owner": w.owner, "title": w.title,
+            "x": w.x, "y": w.y, "w": w.w, "h": w.h,
+            "screen": w.screenIdx,
+            "w_pct_of_visibleframe": w.wpct,
+            "h_pct_of_visibleframe": w.hpct,
+        ])
+    }
+    var screensOut: [[String: Any]] = []
+    for s in screens {
+        screensOut.append([
+            "idx": s.idx, "name": s.name,
+            "frame":         ["x": Int(s.frameTL.origin.x),        "y": Int(s.frameTL.origin.y),        "w": Int(s.frameTL.width),        "h": Int(s.frameTL.height)],
+            "visibleFrame":  ["x": Int(s.visibleFrameTL.origin.x), "y": Int(s.visibleFrameTL.origin.y), "w": Int(s.visibleFrameTL.width), "h": Int(s.visibleFrameTL.height)],
+        ])
+    }
+    let payload: [String: Any] = ["screens": screensOut, "windows": out]
+    let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+    FileHandle.standardOutput.write(data)
+    print("")
+    exit(0)
+}
+
+// Text mode.
+func pad(_ s: String, _ width: Int) -> String {
+    if s.count >= width { return String(s.prefix(width)) }
+    return s + String(repeating: " ", count: width - s.count)
+}
+func padR(_ s: String, _ width: Int) -> String {
+    if s.count >= width { return s }
+    return String(repeating: " ", count: width - s.count) + s
+}
+
+print("screens:")
+for s in screens {
+    let v = s.visibleFrameTL
+    print("  [\(s.idx)] \(s.name)  visibleFrame \(Int(v.origin.x)),\(Int(v.origin.y)) \(Int(v.width))x\(Int(v.height))")
+}
+print("")
+let cols: [(String, Int)] = [
+    ("pid", 6), ("layer", 5), ("owner", 22), ("title", 40),
+    ("scr", 3), ("x", 5), ("y", 5), ("w", 5), ("h", 5),
+    ("w%", 4), ("h%", 4),
+]
+let hdr = cols.map { pad($0.0, $0.1) }.joined(separator: " ")
+print(hdr)
+print(String(repeating: "-", count: hdr.count))
+for w in wins {
+    let title = w.title.isEmpty ? "—" : (w.title.count > 40 ? String(w.title.prefix(37)) + "…" : w.title)
+    let owner = w.owner.count > 22 ? String(w.owner.prefix(21)) + "…" : w.owner
+    let row = [
+        pad(String(w.pid), 6),
+        pad(String(w.layer), 5),
+        pad(owner, 22),
+        pad(title, 40),
+        pad(String(w.screenIdx), 3),
+        padR(String(w.x), 5),
+        padR(String(w.y), 5),
+        padR(String(w.w), 5),
+        padR(String(w.h), 5),
+        padR("\(w.wpct)%", 4),
+        padR("\(w.hpct)%", 4),
+    ].joined(separator: " ")
+    print(row)
+}
+if wins.isEmpty { print("(no matching windows)") }
+SWIFT

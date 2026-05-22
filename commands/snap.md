@@ -20,6 +20,7 @@ Modes:
 - `/snap iterm2 1` — tile on screen 1 (second display)
 - `/snap subl all` — distribute Sublime windows round-robin across all screens
 - `/snap --screens` — list available displays with index + visible-frame dimensions
+- `/snap --show [<app>]` — report current window geometry without tiling (delegates to `/window-frame`; Goldilocks pre-pass)
 - `/snap --passes 5 mail` — override the default 3-pass convergence loop
 
 Grid is non-uniform row-based: n windows → `rows = round(sqrt(n))`, each row gets ceil/floor of `n/rows` cells. 5 → `3+2`, 7 → `4+3`, 11 → `4+4+3`. Every cell filled, no empty slots.

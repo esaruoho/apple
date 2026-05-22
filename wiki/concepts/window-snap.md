@@ -18,12 +18,18 @@ snap --passes 5 mail        # override default 3-pass convergence loop
 
 | Path | Role |
 |---|---|
-| `bin/snap` | bash wrapper. Parses `--passes`, `--screens`, runs the AppleScript N times |
+| `bin/snap` | bash wrapper. Parses `--passes`, `--screens`, `--show`, runs the AppleScript N times |
+| `bin/window-frame` | Apple-native CGWindowList + NSScreen reporter. Powers `snap --show` and `/window-frame`. Goldilocks pre-pass: "how big is this app right now vs. the screen?" |
 | `scripts/workflows/system-events/DockSnap.applescript` | engine — grid math + per-app dispatch |
 | `scripts/workflows/system-events/compiled/DockSnap.scpt` | compiled engine `bin/snap` calls |
 | `commands/snap.md` | `/snap` slash dispatcher |
+| `commands/window-frame.md` | `/window-frame` slash (pre-pass: report current geometry without mutating) |
 | `bin/dock` `cmd_snap()` | thin shim that delegates `dock snap` to `bin/snap` |
 | `topbar/AppleToolbox.swift` | menu entries that shell out to `bin/snap` |
+
+## Pre-pass: see before you snap
+
+`snap --show [<app>]` (or `/window-frame [<app>]`) dumps each visible window's `pid / layer / owner / title / screen / x / y / w / h / w% / h%` where the percentages are against the parent screen's `visibleFrame`. Coordinates are TOP-LEFT pixel space (same as DockSnap internals). Use this to decide whether a `snap` is needed at all and to verify post-tile geometry. `--json` returns `{screens: [...], windows: [...]}` for programmatic callers (AppleToolbox, future agent loops).
 
 ## Grid algorithm
 

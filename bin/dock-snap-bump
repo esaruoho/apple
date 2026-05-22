@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Increment the snap-history counter for <appname>, then `dock snap <appname> [extra…]`.
+
+Usage:
+  dock-snap-bump <appname> [extra args passed through to `dock snap`]
+
+History file lives at:
+  ~/Library/Application Support/AppleToolbox/snap-history.json
+
+Schema:
+  { "<appname>": {"count": N, "last": "<ISO8601>"}, ... }
+
+The bumper is what makes AppleToolbox's "Frequent Snaps" rows work — every
+click on a Snap-App row goes through here so the counter ticks up.
+"""
+from __future__ import annotations
+
+import datetime as _dt
+import json
+import os
+import sys
+from pathlib import Path
+
+HISTORY = Path.home() / "Library/Application Support/AppleToolbox/snap-history.json"
+DOCK = Path(__file__).resolve().parent / "dock"
+
+
+def bump(name: str) -> None:
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        data = json.loads(HISTORY.read_text())
+        if not isinstance(data, dict):
+            data = {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+    entry = data.get(name) if isinstance(data.get(name), dict) else {}
+    entry["count"] = int(entry.get("count", 0)) + 1
+    entry["last"] = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    data[name] = entry
+    tmp = HISTORY.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
+    tmp.replace(HISTORY)
+
+
+def main() -> None:
+    if len(sys.argv) < 2:
+        sys.stderr.write("usage: dock-snap-bump <appname> [extra args]\n")
+        sys.exit(2)
+    name = sys.argv[1]
+    extra = sys.argv[2:]
+    bump(name)
+    os.execv(str(DOCK), [str(DOCK), "snap", name, *extra])
+
+
+if __name__ == "__main__":
+    main()
