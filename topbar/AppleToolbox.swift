@@ -331,6 +331,21 @@ func trashSummary() -> (label: String, isEmpty: Bool) {
 // AppleToolbox Live panel. App path persists at ~/.config/appletoolbox/snap-app.
 
 func snapAppPathFile() -> String { "\(HOME)/.config/appletoolbox/snap-app" }
+
+/// Set of pids that belong to AppleToolbox itself (this process + every other
+/// running instance — there are two normally: the menu-bar AppDelegate and
+/// `--live`). Used by the SnapEngine guards so we never try to AX-write our
+/// own NSWindow frames from a background queue — that re-enters AppKit and
+/// crashes with "Must only be used from the main thread" because AX writes
+/// on the owning process call -[NSWindow _setFrameCommon:] synchronously.
+func appleToolboxPids() -> Set<pid_t> {
+    var set: Set<pid_t> = [getpid()]
+    for app in NSWorkspace.shared.runningApplications
+        where app.bundleIdentifier == "com.esaruoho.appletoolbox" {
+        set.insert(app.processIdentifier)
+    }
+    return set
+}
 func snapDiagPath() -> String { "/tmp/appletoolbox-snap.log" }
 
 /// Append a diagnostic line to /tmp/appletoolbox-snap.log. Used instead of
@@ -659,6 +674,49 @@ func climateDetailString() -> String {
     return lines.joined(separator: "\n")
 }
 
+// ─── launcher slots ────────────────────────────────────────────────────────
+//
+// Three rebindable chords: ⌃⌥⌘C / V / B. The chords are fixed; the .app each
+// one launches is user-pickable. Persisted as a tiny plist so both the
+// menu-bar process and the --live viewport agree on the current binding.
+
+enum LauncherSlots {
+    static let keys = ["C", "V", "B"]
+    static let chordLabel: [String: String] = ["C": "⌃⌥⌘C", "V": "⌃⌥⌘V", "B": "⌃⌥⌘B"]
+    static let defaults: [String: String] = [
+        "C": "/Applications/Renoise.app",
+        "V": "/Applications/Pd-0.56-0.app",
+        "B": "/Applications/Ableton Live 12 Suite.app",
+    ]
+    static var plistURL: URL {
+        let lib = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0]
+        return lib.appendingPathComponent("Preferences/AppleToolbox-launchers.plist")
+    }
+    static func currentPath(forKey key: String) -> String {
+        if let data = try? Data(contentsOf: plistURL),
+           let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String],
+           let stored = dict[key], !stored.isEmpty {
+            return stored
+        }
+        return defaults[key] ?? ""
+    }
+    static func setPath(_ path: String, forKey key: String) {
+        var dict: [String: String] = [:]
+        if let data = try? Data(contentsOf: plistURL),
+           let existing = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String] {
+            dict = existing
+        }
+        dict[key] = path
+        if let data = try? PropertyListSerialization.data(fromPropertyList: dict, format: .xml, options: 0) {
+            try? data.write(to: plistURL)
+        }
+    }
+    static func displayName(forKey key: String) -> String {
+        let path = currentPath(forKey: key)
+        return (path as NSString).lastPathComponent.replacingOccurrences(of: ".app", with: "")
+    }
+}
+
 // ─── menu plumbing ─────────────────────────────────────────────────────────
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -670,6 +728,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var gotoFinderHotKeyRef: EventHotKeyRef?
     var stopVoiceboxHotKeyRef: EventHotKeyRef?
     var snapFrontmostHotKeyRef: EventHotKeyRef?
+    var renoiseHotKeyRef: EventHotKeyRef?
+    var pdHotKeyRef: EventHotKeyRef?
+    var abletonHotKeyRef: EventHotKeyRef?
 
     // Drop-target bridge: Finder-toolbar icon receives a file (or selection)
     // via application(_:open:) and the path is stashed here so the menu can
@@ -724,10 +785,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         registerMenuBarHotKeys()
     }
 
-    /// Carbon RegisterEventHotKey for the three menu-bar-owned chords:
+    /// Carbon RegisterEventHotKey for the menu-bar-owned chords:
     ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + ping /speak/stop)
     ///   id=3  ⌃⌥⌘T  → fireGotoFinderSelection (shells out to toolbox-goto)
     ///   id=4  ⌃⌥⌘S  → snapFrontmostApp (SnapEngine.tileAllWindows)
+    ///   id=5  ⌃⌥⌘C  → activate Renoise (launch if not running)
+    ///   id=6  ⌃⌥⌘V  → activate Pure Data (launch if not running)
+    ///   id=7  ⌃⌥⌘B  → activate Ableton Live 12 Suite (launch if not running)
     /// Each chord must NOT also be registered by LiveViewportDelegate;
     /// double-registration across two processes races last-writer-wins.
     func registerMenuBarHotKeys() {
@@ -752,6 +816,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 case 2: me.stopVoiceboxGlobal()
                 case 3: me.fireGotoFinderSelection()
                 case 4: me.snapFrontmostApp()
+                case 5: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "C"))
+                case 6: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "V"))
+                case 7: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "B"))
                 default: break
                 }
             }
@@ -789,7 +856,76 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("AppleToolbox: ⌃⌥⌘S registration failed with OSStatus \(snapStatus)")
         }
         snapFrontmostHotKeyRef = snapRef
+
+        // id=5 — ⌃⌥⌘C — 'ATBC' — Renoise
+        var renoiseRef: EventHotKeyRef?
+        let renoiseID = EventHotKeyID(signature: OSType(0x41544243), id: 5)
+        let renoiseStatus = RegisterEventHotKey(UInt32(kVK_ANSI_C), mods, renoiseID,
+                                                GetApplicationEventTarget(), 0, &renoiseRef)
+        if renoiseStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘C registration failed with OSStatus \(renoiseStatus)")
+        }
+        renoiseHotKeyRef = renoiseRef
+
+        // id=6 — ⌃⌥⌘V — 'ATBV' — Pure Data
+        var pdRef: EventHotKeyRef?
+        let pdID = EventHotKeyID(signature: OSType(0x41544256), id: 6)
+        let pdStatus = RegisterEventHotKey(UInt32(kVK_ANSI_V), mods, pdID,
+                                           GetApplicationEventTarget(), 0, &pdRef)
+        if pdStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘V registration failed with OSStatus \(pdStatus)")
+        }
+        pdHotKeyRef = pdRef
+
+        // id=7 — ⌃⌥⌘B — 'ATBB' — Ableton Live 12 Suite
+        var abletonRef: EventHotKeyRef?
+        let abletonID = EventHotKeyID(signature: OSType(0x41544242), id: 7)
+        let abletonStatus = RegisterEventHotKey(UInt32(kVK_ANSI_B), mods, abletonID,
+                                                GetApplicationEventTarget(), 0, &abletonRef)
+        if abletonStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘B registration failed with OSStatus \(abletonStatus)")
+        }
+        abletonHotKeyRef = abletonRef
     }
+
+    /// Bring an .app to the front, launching it if not running.
+    /// NSWorkspace.openApplication handles both cases — launches cold or
+    /// activates a running instance — without us having to scan
+    /// runningApplications by bundleID.
+    @objc func activateOrLaunch(path: String) {
+        let url = URL(fileURLWithPath: path)
+        let cfg = NSWorkspace.OpenConfiguration()
+        cfg.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: cfg) { app, error in
+            if let error = error {
+                NSLog("AppleToolbox: activateOrLaunch('\(path)') failed: \(error)")
+            } else if let app = app {
+                NSLog("AppleToolbox: activateOrLaunch('\(path)') → pid=\(app.processIdentifier)")
+            }
+        }
+    }
+
+    /// Open NSOpenPanel restricted to .app bundles, store the chosen path in
+    /// the launcher plist for the given slot key, and refresh the menu so the
+    /// row's label reflects the new binding. The chord itself doesn't need
+    /// re-registering — case 5/6/7 reads the plist on every fire.
+    func pickLauncherApp(forKey key: String) {
+        let panel = NSOpenPanel()
+        panel.title = "Pick app for \(LauncherSlots.chordLabel[key] ?? key)"
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        LauncherSlots.setPath(url.path, forKey: key)
+        rebuildMenu()
+    }
+
+    @objc func pickLauncherC(_ sender: Any?) { pickLauncherApp(forKey: "C") }
+    @objc func pickLauncherV(_ sender: Any?) { pickLauncherApp(forKey: "V") }
+    @objc func pickLauncherB(_ sender: Any?) { pickLauncherApp(forKey: "B") }
 
     /// Fire-and-forget kill of any in-flight Voicebox audio. Same script
     /// the 🔇 Stop Voicebox menu row runs.
@@ -888,6 +1024,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let p = sender.representedObject as? [String: Any],
               let cmd = p["cmd"] as? String else { return }
         let args = p["args"] as? [String] ?? []
+        NSLog("AppleToolbox: runAction title='\(sender.title)' cmd=\(cmd) args=\(args)")
         runDetached(cmd, args)
     }
 
@@ -1038,28 +1175,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             writeSnapDiag("BBS: " + bbsMsg)
 
             // Snap the AppleToolbox --live panel via the same AX API. The
-            // panel lives in a separate AppleToolbox process; walk every
-            // process named "AppleToolbox" and re-frame any window whose
-            // title starts with "AppleToolbox".
-            for runApp in NSWorkspace.shared.runningApplications
-                where runApp.bundleIdentifier == "com.esaruoho.appletoolbox" {
-                let panelApp = AXUIElementCreateApplication(runApp.processIdentifier)
-                var wins: CFTypeRef?
-                guard AXUIElementCopyAttributeValue(panelApp, kAXWindowsAttribute as CFString, &wins) == .success,
-                      let arr = wins as? [AXUIElement] else { continue }
-                for w in arr {
-                    var titleRef: CFTypeRef?
-                    AXUIElementCopyAttributeValue(w, kAXTitleAttribute as CFString, &titleRef)
-                    let title = (titleRef as? String) ?? ""
-                    guard title.hasPrefix("AppleToolbox") else { continue }
-                    var pp = CGPoint(x: panelX, y: panelY)
-                    var ps = CGSize(width: panelW, height: panelH)
-                    let pErr = AXUIElementSetAttributeValue(w, kAXPositionAttribute as CFString, AXValueCreate(.cgPoint, &pp)!)
-                    let sErr = AXUIElementSetAttributeValue(w, kAXSizeAttribute as CFString, AXValueCreate(.cgSize, &ps)!)
-                    Thread.sleep(forTimeInterval: 0.1)
-                    let (gp, gs) = readRect(w)
-                    let panMsg = "Panel(pid \(runApp.processIdentifier)) asked: (\(panelX),\(panelY)) \(panelW)×\(panelH) — got: (\(Int(gp.x)),\(Int(gp.y))) \(Int(gs.width))×\(Int(gs.height)) [posErr=\(pErr.rawValue) szErr=\(sErr.rawValue)]"
-                    writeSnapDiag(panMsg)
+            // panel may live in this process (the menu-bar one we're running
+            // in) OR in a sibling --live process. Either way, AX writes
+            // that target our OWN process's NSWindow re-enter AppKit on the
+            // calling thread and crash if that thread isn't main. Hop to
+            // the main queue for this block — only the AX-against-foreign
+            // BBS-app writes above are safe to do off main.
+            DispatchQueue.main.sync {
+                for runApp in NSWorkspace.shared.runningApplications
+                    where runApp.bundleIdentifier == "com.esaruoho.appletoolbox" {
+                    let panelApp = AXUIElementCreateApplication(runApp.processIdentifier)
+                    var wins: CFTypeRef?
+                    guard AXUIElementCopyAttributeValue(panelApp, kAXWindowsAttribute as CFString, &wins) == .success,
+                          let arr = wins as? [AXUIElement] else { continue }
+                    for w in arr {
+                        var titleRef: CFTypeRef?
+                        AXUIElementCopyAttributeValue(w, kAXTitleAttribute as CFString, &titleRef)
+                        let title = (titleRef as? String) ?? ""
+                        guard title.hasPrefix("AppleToolbox") else { continue }
+                        var pp = CGPoint(x: panelX, y: panelY)
+                        var ps = CGSize(width: panelW, height: panelH)
+                        let pErr = AXUIElementSetAttributeValue(w, kAXPositionAttribute as CFString, AXValueCreate(.cgPoint, &pp)!)
+                        let sErr = AXUIElementSetAttributeValue(w, kAXSizeAttribute as CFString, AXValueCreate(.cgSize, &ps)!)
+                        let (gp, gs) = readRect(w)
+                        let panMsg = "Panel(pid \(runApp.processIdentifier)) asked: (\(panelX),\(panelY)) \(panelW)×\(panelH) — got: (\(Int(gp.x)),\(Int(gp.y))) \(Int(gs.width))×\(Int(gs.height)) [posErr=\(pErr.rawValue) szErr=\(sErr.rawValue)]"
+                        writeSnapDiag(panMsg)
+                    }
                 }
             }
 
@@ -1679,6 +1820,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 args: ["add", "\(HOME)/Library/Saved Searches/All Smart Folders.savedSearch"]),
         ]))
 
+        // Launchers submenu — three rebindable chord slots. Clicking a row
+        // opens NSOpenPanel restricted to .app bundles; the chord itself
+        // (registered in registerMenuBarHotKeys) reads the plist on fire.
+        let launcherC = NSMenuItem(title: "⌃⌥⌘C — \(LauncherSlots.displayName(forKey: "C"))",
+                                   action: #selector(pickLauncherC(_:)), keyEquivalent: "")
+        launcherC.target = self
+        let launcherV = NSMenuItem(title: "⌃⌥⌘V — \(LauncherSlots.displayName(forKey: "V"))",
+                                   action: #selector(pickLauncherV(_:)), keyEquivalent: "")
+        launcherV.target = self
+        let launcherB = NSMenuItem(title: "⌃⌥⌘B — \(LauncherSlots.displayName(forKey: "B"))",
+                                   action: #selector(pickLauncherB(_:)), keyEquivalent: "")
+        launcherB.target = self
+        let launcherMenu = NSMenu(title: "Launchers")
+        launcherMenu.addItem(launcherC)
+        launcherMenu.addItem(launcherV)
+        launcherMenu.addItem(launcherB)
+        launcherMenu.addItem(.separator())
+        let launcherHint = NSMenuItem(title: "Click a row to rebind…", action: nil, keyEquivalent: "")
+        launcherHint.isEnabled = false
+        launcherMenu.addItem(launcherHint)
+        let launcherRoot = NSMenuItem(title: "🚀 Launchers", action: nil, keyEquivalent: "")
+        launcherRoot.submenu = launcherMenu
+        menu.addItem(launcherRoot)
+
         // Slashes submenu — Apple-skill verbs as menu items with prompts
         menu.addItem(submenu("Slashes", items: [
             promptAction("🔡 Hey Sal…",
@@ -1987,6 +2152,16 @@ class BrowserItemButton: NSButton {
     private func setupContent() {
         // Suppress the button's own title — we paint our own content.
         title = ""
+        // Create the layer NOW, at construction time, not later in
+        // applyBrowserHighlight. Layer-backed AppKit views get their
+        // frames pixel-aligned the first time wantsLayer flips true,
+        // which can nudge an already-positioned button by a sub-pixel.
+        // If that flip happens on the first cursor-down (as it did
+        // before), the whole scroll content visibly jitters by ~1px.
+        // Set it once here so by the time highlight runs the layers
+        // already exist and there's no layout side-effect to trip.
+        wantsLayer = true
+        layer?.cornerRadius = 4
 
         glyphView.translatesAutoresizingMaskIntoConstraints = false
         glyphView.imageScaling = .scaleProportionallyDown
@@ -2134,6 +2309,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     // Single-click a child folder to dive into that project; session counts
     // shown next to each folder mark the ones with ongoing conversations.
     var chatCwd: String = "\(HOME)/work"
+    /// Live FS watcher on chatCwd — fires `loadBrowserItems()` when files
+    /// or folders are created/renamed/deleted in the current folder so the
+    /// browser list reflects Finder changes without manual refresh.
+    /// FSEventStream (not kqueue vnode events) because the latter doesn't
+    /// catch Finder mkdir on Sequoia/APFS reliably. FSEvents is the API
+    /// Finder + Spotlight themselves use, so anything Finder does shows up.
+    var cwdEventStream: FSEventStreamRef?
+    var cwdReloadDebounce: DispatchWorkItem?
     var claudeBin: String = "\(HOME)/.local/bin/claude"
     /// Single source of truth for the flag(s) every claude spawn in this app
     /// must carry. DRY: every `claude` invocation — terminal handoff, in-panel
@@ -2183,6 +2366,12 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// 0 on every renderBrowser so the top match is always pre-armed —
     /// type a few characters, hit Return, the match opens.
     var browserSelectedIndex: Int = 0
+    /// Offset of the first rendered row within `browserFilteredItems`. The
+    /// browser renders at most `renderCap` rows at a time; when a target
+    /// row is past the cap, renderBrowser slides this window so the target
+    /// is inside it. Selection + highlight code subtracts this offset to
+    /// translate "filtered index" into "arrangedSubviews index".
+    var browserRenderWindowStart: Int = 0
     var isRenderingBrowser: Bool = false
     var browserFilterField: NSTextField!
     var browserPathLabel: NSTextField!
@@ -2538,10 +2727,22 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// The bin/snap CLI is unchanged — it still uses DockSnap.scpt because
     /// it doesn't have AppleToolbox's Accessibility permission context.
     @objc func snapFrontmostApp() {
-        guard let app = NSWorkspace.shared.frontmostApplication,
-              let name = app.localizedName else { return }
-        if name == "AppleToolbox" { return }   // would tile our own panel
+        guard let app = NSWorkspace.shared.frontmostApplication else {
+            NSLog("AppleToolbox: snapFrontmostApp aborted — no frontmost app")
+            return
+        }
+        let name = app.localizedName ?? "?"
         let pid = app.processIdentifier
+        let ownPids = appleToolboxPids()
+        NSLog("AppleToolbox: snapFrontmostApp fired — frontmost='\(name)' pid=\(pid) ownPids=\(ownPids)")
+        // pid-based self-guard: localizedName can race, and the menu-bar +
+        // --live processes both report "AppleToolbox" anyway. Bail if the
+        // target pid is any AppleToolbox instance — AX writes against our
+        // own NSWindow must be on main thread (see SnapEngine note).
+        if ownPids.contains(pid) {
+            NSLog("AppleToolbox: snapFrontmostApp skipped — target is AppleToolbox itself")
+            return
+        }
         DispatchQueue.global(qos: .userInitiated).async {
             SnapEngine.tileAllWindows(pid: pid, appName: name)
         }
@@ -2899,6 +3100,19 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         browserCrumbRow.orientation = .horizontal
         browserCrumbRow.spacing = 6
         browserCrumbRow.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        // Keep the buttons at their natural width regardless of how long
+        // the path/count string is — without this, a long footer ("300 of
+        // 3855 (type to filter)") pushes the buttons against the right
+        // edge and they collapse into "…" abbreviations. The label
+        // truncates instead, since lineBreakMode is .byTruncatingMiddle.
+        browserPathLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        browserPathLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let crumbButtons: [NSButton] = [browserGlobalButton, browserVaultButton,
+                                         browserHomeButton, browserUpButton]
+        for btn in crumbButtons {
+            btn.setContentCompressionResistancePriority(.required, for: .horizontal)
+            btn.setContentHuggingPriority(.required, for: .horizontal)
+        }
 
         browserFilterField = NSTextField()
         browserFilterField.placeholderString = "Filter (fuzzy)…"
@@ -3017,6 +3231,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         chatTranscript.drawsBackground = false
         chatTranscript.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
         chatTranscript.textContainerInset = NSSize(width: 6, height: 6)
+        // Own the link clicks so we can reveal-in-Finder instead of the
+        // default NSWorkspace.open (which routes .wav to QuickTime and on
+        // a non-key NSPanel can swallow the click silently on Sequoia).
+        chatTranscript.delegate = self
         chatScroll.documentView = chatTranscript
 
         // Multi-line composer — NSTextView wrapped in NSScrollView so the
@@ -3276,6 +3494,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         panel.contentView = content
         panel.makeKeyAndOrderFront(nil)
         loadBrowserItems()  // populate the file browser with the initial cwd
+        restartCwdWatcher() // arm FS watcher so Finder-side changes refresh the list
         // Initial focus = file browser so cursor keys immediately navigate the
         // project list. Switch to chat composer with Tab / by clicking it.
         panel.makeFirstResponder(browserFilterField)
@@ -3463,6 +3682,17 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 "/usr/bin/open", ["\(HOME)/work/comms/queue/segment-outbox"], symbol: "scissors")
         }
 
+        // Launchers — show the three rebindable chord slots. Click activates
+        // the configured .app (`open -a` launches cold or brings to front).
+        // Rebinding is done from the menu-bar submenu, not here.
+        for key in LauncherSlots.keys {
+            let chord = LauncherSlots.chordLabel[key] ?? key
+            let appName = LauncherSlots.displayName(forKey: key)
+            let appPath = LauncherSlots.currentPath(forKey: key)
+            add(chord, appName,
+                "/usr/bin/open", ["-a", appPath], symbol: "arrow.up.right.square")
+        }
+
         rowsStack.arrangedSubviews.forEach {
             rowsStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -3590,6 +3820,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     }
 
     @objc func rowClicked(_ sender: LiveRowButton) {
+        NSLog("AppleToolbox: rowClicked cmd=\(sender.cmd) args=\(sender.args)")
         runDetached(sender.cmd, sender.args)
     }
 
@@ -4244,8 +4475,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // Skip the per-folder session-count badge work for huge folders
         // (~/Downloads etc.) — it's only meaningful inside ~/work / project
         // trees, and the Copilot dict scan + N Claude lookups dominate load
-        // time once the listing crosses a few hundred entries.
-        let bigFolder = childURLs.count > 200
+        // time once the listing crosses a thousand entries. ~/work itself
+        // crossed 200 in 2026-05 (214 repos) and silently lost its session
+        // badges — the threshold was tuned too low for the project folder
+        // it most needs to work for.
+        let bigFolder = childURLs.count > 1000
         let copilotCounts: [String: Int] = bigFolder ? [:] : copilotSessionCountsByCwd()
         for url in childURLs {
             let name = url.lastPathComponent
@@ -4358,29 +4592,82 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // let the user type to narrow down. Visible row count is shown
         // in the footer as "N shown / M matches / K total".
         let renderCap = 300
-        let visible = Array(filtered.prefix(renderCap))
+        // Slide the render window so a pending selection target (set via
+        // browserSelectionMemo by --cwd, gotoFinderSelection, or "open in
+        // appletoolbox") is always inside it. Without this, dropping into
+        // ~/Downloads with a target at idx=1247 keeps the window at 0..299
+        // — the row never renders, applyBrowserHighlight's guard fails,
+        // and the file silently isn't highlighted. Center the window on
+        // the target instead, then clamp to the list bounds.
+        let memoTarget = browserSelectionMemo[chatCwd]
+        let targetIdx: Int? = memoTarget.flatMap { name in
+            filtered.firstIndex(where: { $0.name == name })
+        }
+        let windowStart: Int
+        if let t = targetIdx, t >= renderCap {
+            windowStart = min(max(0, t - renderCap / 2), max(0, filtered.count - renderCap))
+        } else {
+            windowStart = 0
+        }
+        let windowEnd = min(filtered.count, windowStart + renderCap)
+        let visible = Array(filtered[windowStart..<windowEnd])
+        // Stash the window offset so loadBrowserItems' memo restore (which
+        // indexes into the FULL filtered list) can translate to the
+        // arrangedSubviews index after this render finishes.
+        browserRenderWindowStart = windowStart
 
         browserStack.arrangedSubviews.forEach {
             browserStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
+        if visible.isEmpty {
+            // Empty-state placeholder. Without this, walking into an empty
+            // folder shows a blank scroll view with no cue that the listing
+            // actually finished — the user can't tell "no files" from
+            // "still loading" or "render broken". Centered grey label inside
+            // the same browserStack so it scrolls/lays out like a row.
+            let emptyLabel = NSTextField(labelWithString: filter.isEmpty
+                                         ? "No files"
+                                         : "No matches")
+            emptyLabel.font = NSFont.systemFont(ofSize: 12, weight: .regular)
+            emptyLabel.textColor = NSColor.tertiaryLabelColor
+            emptyLabel.alignment = .center
+            emptyLabel.isBezeled = false
+            emptyLabel.drawsBackground = false
+            emptyLabel.translatesAutoresizingMaskIntoConstraints = false
+            let wrapper = NSView()
+            wrapper.translatesAutoresizingMaskIntoConstraints = false
+            wrapper.addSubview(emptyLabel)
+            NSLayoutConstraint.activate([
+                emptyLabel.centerXAnchor.constraint(equalTo: wrapper.centerXAnchor),
+                emptyLabel.centerYAnchor.constraint(equalTo: wrapper.centerYAnchor),
+                wrapper.heightAnchor.constraint(equalToConstant: 60),
+            ])
+            browserStack.addArrangedSubview(wrapper)
+            let sideInsets = browserStack.edgeInsets.left + browserStack.edgeInsets.right
+            wrapper.widthAnchor.constraint(equalTo: browserStack.widthAnchor,
+                                            constant: -sideInsets).isActive = true
+        }
         for item in visible {
             // Body text after the glyph. The glyph itself lives in its own
             // tab-stop column (see paragraph style below) so the body always
             // starts at the same X regardless of the emoji's rendered width.
+            // body / badge construction. For mixed Claude+Copilot folders we
+            // SKIP the string badge and let the attributed-string assembly
+            // below splice in real app icons (claudeRowIcon / copilotRowIcon)
+            // instead of 💬 / 🤖 emoji. Single-provider folders stay text.
             let body: String
-            if item.sessionCount > 0 {
-                // Show breakdown when both providers have sessions in this
-                // folder, otherwise just the singular "N sessions" line so
-                // single-provider folders stay uncluttered.
-                let badge: String
-                if item.claudeCount > 0 && item.copilotCount > 0 {
-                    badge = "\(item.claudeCount)💬 + \(item.copilotCount)🤖"
-                } else {
-                    let plural = item.sessionCount == 1 ? "session" : "sessions"
-                    badge = "\(item.sessionCount) \(plural)"
-                }
-                body = "\(item.name)   ·  \(badge)"
+            let useIconBadge = (item.sessionCount > 0
+                                && item.claudeCount > 0
+                                && item.copilotCount > 0
+                                && !(item.sessionId != nil))   // session rows aren't badged
+            if item.sessionCount > 0 && !useIconBadge {
+                let plural = item.sessionCount == 1 ? "session" : "sessions"
+                body = "\(item.name)   ·  \(item.sessionCount) \(plural)"
+            } else if useIconBadge {
+                // Text body without the badge — the attributed-string pass
+                // below appends "   ·  N [Claude.app] + M [Copilot]".
+                body = "\(item.name)   ·  "
             } else {
                 body = item.name
             }
@@ -4424,7 +4711,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 btn.glyphWidthConstraint.constant = 0
             } else {
                 btn.glyphView.image = textGlyphImage(item.glyph)
-                btn.glyphWidthConstraint.constant = 56
+                // 64pt column lines bodyField.leading up at x=76 — same X
+                // as the date column on session rows (tab stop 64 inside a
+                // bodyField that itself starts at x=12). Folder name and
+                // session date share one vertical axis.
+                btn.glyphWidthConstraint.constant = 64
             }
 
             let bodyParagraph = NSMutableParagraphStyle()
@@ -4474,7 +4765,32 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 .foregroundColor: tint,
                 .paragraphStyle: bodyParagraph,
             ]
-            btn.bodyField.attributedStringValue = NSAttributedString(string: bodyString, attributes: bodyAttrs)
+            // For folder rows that have BOTH Claude and Copilot sessions,
+            // assemble the badge as an attributed string with real icon
+            // attachments (Claude.app icon + Copilot SVG) instead of 💬/🤖
+            // emoji. Single-provider folders keep their text badge so the
+            // word "session(s)" remains scannable.
+            if useIconBadge {
+                let m = NSMutableAttributedString()
+                m.append(NSAttributedString(string: bodyString, attributes: bodyAttrs))
+                m.append(NSAttributedString(string: "\(item.claudeCount) ", attributes: bodyAttrs))
+                if let cl = claudeRowIcon() {
+                    let att = NSTextAttachment()
+                    att.attachmentCell = FixedSizeIconCell(image: cl,
+                        size: LiveViewportDelegate.rowGlyphCanvas)
+                    m.append(NSAttributedString(attachment: att))
+                }
+                m.append(NSAttributedString(string: " + \(item.copilotCount) ", attributes: bodyAttrs))
+                if let co = copilotRowIcon() {
+                    let att = NSTextAttachment()
+                    att.attachmentCell = FixedSizeIconCell(image: co,
+                        size: LiveViewportDelegate.rowGlyphCanvas)
+                    m.append(NSAttributedString(attachment: att))
+                }
+                btn.bodyField.attributedStringValue = m
+            } else {
+                btn.bodyField.attributedStringValue = NSAttributedString(string: bodyString, attributes: bodyAttrs)
+            }
 
             btn.contentTintColor = tint
             btn.translatesAutoresizingMaskIntoConstraints = false
@@ -4510,15 +4826,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         let total = browserAllItems.count
         let counts: String
         if filter.isEmpty {
-            counts = (shown < total)
-                ? "\(shown) of \(total) (type to filter)"
-                : "\(total) items"
+            counts = (shown < total) ? "\(shown)/\(total)" : "\(total)"
         } else {
             counts = (shown < filtered.count)
-                ? "\(shown) of \(filtered.count) matches · \(total) total"
+                ? "\(shown)/\(filtered.count) of \(total)"
                 : "\(filtered.count)/\(total)"
         }
-        browserPathLabel?.stringValue = "📂 \(cwdAbbr)   ·   \(counts)"
+        browserPathLabel?.stringValue = "📂 \(cwdAbbr)  ·  \(counts)"
     }
 
     /// Paint the row at `browserSelectedIndex` with the standard selection
@@ -4527,18 +4841,22 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         guard let stack = browserStack else { return }
         let accent = NSColor.selectedContentBackgroundColor.withAlphaComponent(0.40).cgColor
         let clear = NSColor.clear.cgColor
+        // browserSelectedIndex is the index into browserFilteredItems (the
+        // full list); arrangedSubviews only contains the rendered window,
+        // so translate via browserRenderWindowStart before comparing.
+        let visualIdx = browserSelectedIndex - browserRenderWindowStart
         for (i, view) in stack.arrangedSubviews.enumerated() {
             guard let btn = view as? BrowserItemButton else { continue }
-            btn.wantsLayer = true
-            btn.layer?.cornerRadius = 4
-            btn.layer?.backgroundColor = (i == browserSelectedIndex) ? accent : clear
+            // Layer + cornerRadius are configured once in setupContent
+            // so flipping wantsLayer on the first highlight can't nudge
+            // the frame. Only the colour changes here.
+            btn.layer?.backgroundColor = (i == visualIdx) ? accent : clear
         }
         // Scroll the highlighted row into the viewport — without this, ↓ past
         // the bottom (or ↑ past the top) leaves selection off-screen and the
         // browser appears to ignore the keys.
-        if browserSelectedIndex >= 0,
-           browserSelectedIndex < stack.arrangedSubviews.count {
-            let row = stack.arrangedSubviews[browserSelectedIndex]
+        if visualIdx >= 0, visualIdx < stack.arrangedSubviews.count {
+            let row = stack.arrangedSubviews[visualIdx]
             row.scrollToVisible(row.bounds)
         }
     }
@@ -4556,13 +4874,35 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// window is already where it needs to be.
     func openFileAndReclaimFocus(_ path: String) {
         runDetached("/usr/bin/open", [path])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
-            guard let self = self else { return }
-            NSApp.activate(ignoringOtherApps: true)
-            self.panel.makeKeyAndOrderFront(nil)
-            self.panel.makeFirstResponder(self.browserFilterField)
+        // Skip the reclaim when the file is handed off to Renoise (a sample
+        // drop) — the user wants focus to stay in Renoise so they can
+        // keyjazz the loaded sample, then come back to AppleToolbox on
+        // their own. Also skip the post-open bin/snap pass in that case so
+        // we don't reshuffle Renoise's window layout under their feet.
+        if !pathOpensInRenoise(path) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+                guard let self = self else { return }
+                NSApp.activate(ignoringOtherApps: true)
+                self.panel.makeKeyAndOrderFront(nil)
+                self.panel.makeFirstResponder(self.browserFilterField)
+            }
+            snapHandlerAppAfterOpen(path: path)
+        } else {
+            NSLog("AppleToolbox: opened \(path) in Renoise — leaving focus there for keyjazz")
         }
-        snapHandlerAppAfterOpen(path: path)
+    }
+
+    /// Returns true when the resolved default handler for `path` is Renoise.
+    /// Used to suppress the post-open focus reclaim + bin/snap pass so the
+    /// user can keyjazz a freshly-loaded sample without having to click back.
+    /// Resolution is via NSWorkspace, so any extension Renoise is set as the
+    /// default app for (.wav, .aif, .flac, .xrns, …) is handled — no
+    /// hardcoded extension list to drift out of sync with the user's prefs.
+    func pathOpensInRenoise(_ path: String) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        guard let appURL = NSWorkspace.shared.urlForApplication(toOpen: url),
+              let bid = Bundle(url: appURL)?.bundleIdentifier else { return false }
+        return bid == "com.renoise.Renoise"
     }
 
     /// Resolve the default app that will handle `path` and call `bin/snap`
@@ -4572,14 +4912,25 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     func snapHandlerAppAfterOpen(path: String) {
         let url = URL(fileURLWithPath: path)
         guard let appURL = NSWorkspace.shared.urlForApplication(toOpen: url) else { return }
-        // Bundle's display name. Some setups return "Sublime Text.app" via
-        // localizedNameKey (extension not stripped) — fall back to filesystem
-        // basename without extension and unconditionally strip ".app".
-        var appName = (try? appURL.resourceValues(forKeys: [.localizedNameKey]).localizedName)
-            ?? appURL.deletingPathExtension().lastPathComponent
-        if appName.hasSuffix(".app") { appName = String(appName.dropLast(4)) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            runDetached("\(APPLE_DIR)/bin/snap", ["--quiet", appName])
+        let bundleID = Bundle(url: appURL)?.bundleIdentifier
+        // Target frame = main screen's visibleFrame minus the AppleToolbox
+        // --live panel's right-edge curtain. Computed on the main thread now;
+        // the AX writes happen later off-thread.
+        let targetFrame = SnapEngine.tileableFrameMinusPanel(panel: panel)
+        // Fire at 1.5s / 3s / 5s. Preview / Sketchbook / etc. cold-launch
+        // on Sequoia can take 2-4s to spawn the first window. Each pass
+        // grabs the app's CURRENT focused window — i.e. the document we
+        // just opened — and resizes ONLY that one. Multi-window apps
+        // (already-open Preview with 5 PDFs) keep their other windows
+        // untouched; this is not a tile-everything grid call.
+        for delay in [1.5, 3.0, 5.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard let pid = SnapEngine.pidForApp(bundleID: bundleID,
+                                                     appURL: appURL) else { return }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    SnapEngine.snapFocusedWindow(pid: pid, target: targetFrame)
+                }
+            }
         }
     }
 
@@ -4620,6 +4971,23 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
     @objc func browserItemClicked(_ sender: BrowserItemButton) {
         guard let item = sender.item else { return }
+        // ⌘-click on a folder → open that folder in Finder instead of
+        // descending into it. Files keep the regular open behaviour
+        // (handler-app routes via openFileAndReclaimFocus). Use ⌘ rather
+        // than ⌥ because ⌥-click is reserved for "open and close window"
+        // semantics elsewhere in Finder muscle memory.
+        let modifiers = NSApp.currentEvent?.modifierFlags ?? []
+        if modifiers.contains(.command), item.isDir, item.sessionId == nil {
+            NSLog("AppleToolbox: ⌘-click folder → reveal in Finder: \(item.path)")
+            runDetached("/usr/bin/open", [item.path])
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                if let finder = NSRunningApplication.runningApplications(
+                        withBundleIdentifier: "com.apple.finder").first {
+                    finder.activate(options: [.activateAllWindows])
+                }
+            }
+            return
+        }
         if let sid = item.sessionId {
             // Session row → resume that conversation. Same plumbing as
             // Sessions ▾, but reached directly from the browser list.
@@ -5161,6 +5529,63 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // the cwd change came from the chat-header 📂 picker rather than an
         // in-browser click.
         if browserStack != nil { loadBrowserItems() }
+        // Point the FS watcher at the new cwd so external changes (Finder
+        // creates a folder, a dictation .wav lands, a script writes a file)
+        // refresh the browser without the user needing to re-navigate.
+        restartCwdWatcher()
+    }
+
+    /// Watch `chatCwd` for FS changes and re-render the browser list.
+    /// Stops any prior FSEventStream, starts a new one for the current cwd,
+    /// debounces the reload by 250 ms so a burst of writes (cp -R, dictation
+    /// .wav save + rename, Finder "new folder" with .DS_Store touch)
+    /// collapses to a single repaint.
+    func restartCwdWatcher() {
+        if let s = cwdEventStream {
+            FSEventStreamStop(s)
+            FSEventStreamInvalidate(s)
+            FSEventStreamRelease(s)
+            cwdEventStream = nil
+        }
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        var ctx = FSEventStreamContext(version: 0,
+                                       info: selfPtr,
+                                       retain: nil,
+                                       release: nil,
+                                       copyDescription: nil)
+        let callback: FSEventStreamCallback = { (_, info, count, _, _, _) in
+            guard let info = info else { return }
+            let me = Unmanaged<LiveViewportDelegate>.fromOpaque(info).takeUnretainedValue()
+            DispatchQueue.main.async {
+                NSLog("AppleToolbox: cwdWatcher FSEvent fired count=\(count) cwd=\(me.chatCwd)")
+                me.cwdReloadDebounce?.cancel()
+                let work = DispatchWorkItem { [weak me] in
+                    guard let me = me else { return }
+                    if me.browserStack != nil { me.loadBrowserItems() }
+                }
+                me.cwdReloadDebounce = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+            }
+        }
+        let paths = [chatCwd] as CFArray
+        let flags = UInt32(kFSEventStreamCreateFlagFileEvents
+                         | kFSEventStreamCreateFlagNoDefer
+                         | kFSEventStreamCreateFlagWatchRoot)
+        guard let stream = FSEventStreamCreate(
+                nil,
+                callback,
+                &ctx,
+                paths,
+                FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
+                0.2,
+                flags) else {
+            NSLog("AppleToolbox: FSEventStreamCreate failed for \(chatCwd)")
+            return
+        }
+        FSEventStreamSetDispatchQueue(stream, .main)
+        FSEventStreamStart(stream)
+        cwdEventStream = stream
+        NSLog("AppleToolbox: cwdWatcher (FSEvents) armed on \(chatCwd)")
     }
 
     // ─── chat: dictation ──────────────────────────────────────────────────
@@ -5220,7 +5645,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // which is hidden Claude metadata; the user couldn't find them.
             // Filename starts as just <stamp>.wav; after stop we rename to
             // <stamp>-<slug-of-what-was-said>.wav.
-            let dir = "\(chatCwd)/dictation"
+            // If chatCwd's basename is already "dictation", land the .wav
+            // directly in chatCwd — otherwise dictating from inside a
+            // dictation/ folder would create dictation/dictation/ (and
+            // again on the next nesting). The audio "lands next to the
+            // work" rule is preserved: the work IS the dictation folder.
+            let cwdLeaf = (chatCwd as NSString).lastPathComponent
+            let dir = (cwdLeaf == "dictation") ? chatCwd : "\(chatCwd)/dictation"
             smartDictation.nextAudioPath = "\(dir)/\(stamp).wav"
         }
         smartDictation.toggle(target: chatInput)
@@ -5404,6 +5835,46 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             out = truncated
         }
         return out
+    }
+
+    /// NSTextViewDelegate hook: reveal clicked file links in Finder
+    /// instead of letting NSWorkspace.open route them to QuickTime / the
+    /// audio handler. The transcript pane embeds .link attributes with
+    /// `URL(fileURLWithPath: …)` for dictation .wav captures, audio
+    /// anchors, and (future) any path the agent surfaces. The user wants
+    /// "click → see where it is in Finder", not "click → start playing".
+    /// Returning true tells NSTextView we handled it; the default opener
+    /// is skipped.
+    func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+        guard textView === chatTranscript else { return false }
+        let url: URL? = {
+            if let u = link as? URL { return u }
+            if let s = link as? String { return URL(string: s) ?? URL(fileURLWithPath: s) }
+            return nil
+        }()
+        guard let u = url else {
+            NSLog("AppleToolbox: chatTranscript link click — unparseable link=\(link)")
+            return false
+        }
+        NSLog("AppleToolbox: chatTranscript link click → \(u.path)")
+        if u.isFileURL {
+            // Reveal in Finder. `open -R` is more reliable than
+            // activateFileViewerSelecting on Sequoia — the latter sometimes
+            // opens Finder *behind* the always-on-top --live panel and the
+            // reveal is invisible. `open -R` consistently brings Finder
+            // forward. Belt-and-suspenders: also explicitly activate Finder
+            // via NSRunningApplication so it lands above the panel.
+            runDetached("/usr/bin/open", ["-R", u.path])
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                if let finder = NSRunningApplication.runningApplications(
+                        withBundleIdentifier: "com.apple.finder").first {
+                    finder.activate(options: [.activateAllWindows])
+                }
+            }
+        } else {
+            NSWorkspace.shared.open(u)
+        }
+        return true
     }
 
     /// NSTextViewDelegate hook: keep the smart-dictation anchor synced
@@ -6501,6 +6972,16 @@ enum SnapEngine {
     /// and the focused window landing slightly off-frame from a prior
     /// interaction.
     static func tileAllWindows(pid: pid_t, appName: String) {
+        // Defense-in-depth: never AX-write our own NSWindow frames from a
+        // background queue. AppKit's accessibility server, when the target
+        // pid is our own, calls -[NSWindow _setFrameCommon:] synchronously
+        // on whatever thread invoked the AX RPC, and NSWindow frame writes
+        // are main-thread-only. Caller (snapFrontmostApp) already guards by
+        // pid, but tileAllWindows is `static` and could grow new callers.
+        if appleToolboxPids().contains(pid) {
+            NSLog("SnapEngine: refusing to tile AppleToolbox (pid=\(pid)) — would crash off main thread")
+            return
+        }
         let started = Date()
         let appAX = AXUIElementCreateApplication(pid)
 
@@ -6646,6 +7127,78 @@ enum SnapEngine {
     private static func axValue(size: CGSize) -> AXValue? {
         var s = size
         return AXValueCreate(.cgSize, &s)
+    }
+
+    /// Snap ONLY the app's focused window (the doc we just opened) to
+    /// `target`. Distinct from tileAllWindows — multi-window apps like a
+    /// Preview already showing 5 PDFs keep the other 4 windows alone.
+    /// Best-effort: silently no-ops if AX can't reach the app or the
+    /// window doesn't exist yet (caller fires this on a retry schedule).
+    static func snapFocusedWindow(pid: pid_t, target: CGRect) {
+        let appAX = AXUIElementCreateApplication(pid)
+        let win: AXUIElement?
+        if let f = focusedWindow(appAX: appAX) {
+            win = f
+        } else if let m = mainWindow(appAX: appAX) {
+            win = m
+        } else {
+            win = nil
+        }
+        guard let w = win else { return }
+        setFrame(w, origin: target.origin, size: target.size)
+    }
+
+    /// Resolve a pid from a bundle ID (preferred) or app URL. Returns nil
+    /// if the app isn't running — the caller's retry schedule covers the
+    /// cold-launch window.
+    static func pidForApp(bundleID: String?, appURL: URL) -> pid_t? {
+        let running = NSWorkspace.shared.runningApplications
+        if let bid = bundleID,
+           let app = running.first(where: { $0.bundleIdentifier == bid }) {
+            return app.processIdentifier
+        }
+        // Fall back to bundle URL match — handles apps without a
+        // bundleIdentifier (rare; mostly dev builds).
+        if let app = running.first(where: { $0.bundleURL == appURL }) {
+            return app.processIdentifier
+        }
+        return nil
+    }
+
+    /// Main screen's visibleFrame in AX (top-left) coords, with the
+    /// AppleToolbox panel's right-edge curtain subtracted. Mirrors what
+    /// `bin/screen-frame-minus-toolbox` produces but stays in-process so
+    /// no shell-out is needed.
+    static func tileableFrameMinusPanel(panel: NSPanel?) -> CGRect {
+        guard let screen = NSScreen.main else {
+            return CGRect(x: 0, y: 0, width: 1440, height: 900)
+        }
+        var v = visibleFrameInAXPublic(screen: screen)
+        // panel.frame is bottom-left Cocoa coords; convert to AX top-left
+        // for the intersection test, then trim the right edge if the
+        // panel hugs it.
+        if let pf = panel?.frame,
+           pf.width > 50, pf.height > 50 {
+            let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
+            let panelAX = CGRect(x: pf.origin.x,
+                                 y: primaryHeight - (pf.origin.y + pf.size.height),
+                                 width: pf.size.width,
+                                 height: pf.size.height)
+            // Right-edge hug check — same 4pt tolerance as the bash helper.
+            if abs(panelAX.maxX - v.maxX) < 4 {
+                v = CGRect(x: v.origin.x, y: v.origin.y,
+                           width: max(100, v.width - panelAX.width),
+                           height: v.height)
+            }
+        }
+        return v
+    }
+
+    /// Public alias of the private visibleFrameInAX so the in-process
+    /// snap helpers above can compute coords without bouncing through
+    /// the tileAll entry point.
+    static func visibleFrameInAXPublic(screen: NSScreen) -> CGRect {
+        return visibleFrameInAX(screen: screen)
     }
 
     private static func isMinimized(_ win: AXUIElement) -> Bool {
