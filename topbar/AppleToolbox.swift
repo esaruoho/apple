@@ -671,6 +671,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var stopVoiceboxHotKeyRef: EventHotKeyRef?
     var snapFrontmostHotKeyRef: EventHotKeyRef?
 
+    // Drop-target bridge: Finder-toolbar icon receives a file (or selection)
+    // via application(_:open:) and the path is stashed here so the menu can
+    // show "📌 <filename>" and downstream slashes can act on it.
+    static let pinnedFileDefaultsKey = "PinnedFile"
+
+    func application(_ sender: NSApplication, open urls: [URL]) {
+        guard let first = urls.first else { return }
+        UserDefaults.standard.set(first.path, forKey: AppDelegate.pinnedFileDefaultsKey)
+        NSLog("AppleToolbox: pinned file → \(first.path)")
+        rebuildMenu()
+        // Open --live and highlight the dropped file (same path used by the
+        // ⌃⌥⌘T Finder-selection chord). toolbox-goto warm-launches --live
+        // if it's already up, cold-launches if not, and seeds the memo so
+        // the file-browser focuses on the dropped path.
+        let go = Process()
+        go.launchPath = "\(HOME)/work/apple/bin/toolbox-goto"
+        go.arguments = [first.path]
+        try? go.run()
+    }
+
+    @objc func revealPinnedInFinder(_ sender: Any?) {
+        guard let p = UserDefaults.standard.string(forKey: AppDelegate.pinnedFileDefaultsKey) else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: p)])
+    }
+
+    @objc func clearPinnedFile(_ sender: Any?) {
+        UserDefaults.standard.removeObject(forKey: AppDelegate.pinnedFileDefaultsKey)
+        rebuildMenu()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
@@ -787,12 +817,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// and hand the path off to `bin/toolbox-goto`, which warm/cold-launches
     /// --live and pre-seeds the file-highlight memo.
     @objc func fireGotoFinderSelection() {
+        // Three-tier resolution: (1) Finder global selection, (2) selection of
+        // the front Finder window explicitly (handles focus quirks where
+        // `selection` returns empty even with a visibly-highlighted row),
+        // (3) front window's target folder as last resort. POSIX paths of
+        // files have no trailing slash; folders do — caller uses that to
+        // decide whether to highlight a row.
         let script = """
         tell application "Finder"
             if not running then return ""
             try
-                if (count of selection) > 0 then
-                    return POSIX path of (item 1 of (selection as alias list))
+                set sel to selection as alias list
+                if (count of sel) > 0 then
+                    return POSIX path of (item 1 of sel)
+                end if
+            end try
+            try
+                if (count of Finder windows) > 0 then
+                    set winSel to selection of Finder window 1
+                    if (count of winSel) > 0 then
+                        return POSIX path of (item 1 of winSel as alias)
+                    end if
                 end if
             end try
             try
@@ -813,6 +858,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let path = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        NSLog("AppleToolbox: fireGotoFinderSelection captured path='\(path)'")
         let script2 = "\(HOME)/work/apple/bin/toolbox-goto"
         if path.isEmpty {
             // No Finder context — still surface the panel so the chord
@@ -1392,6 +1438,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // symbols like ⏹/⚙ to force emoji presentation — never raw
         // symbol-presentation glyphs, they render visibly smaller).
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
+
+        // Pinned-file row — populated when a file is dropped onto the
+        // AppleToolbox icon in the Finder toolbar (via application(_:open:)).
+        if let pinned = UserDefaults.standard.string(forKey: AppDelegate.pinnedFileDefaultsKey),
+           !pinned.isEmpty {
+            let name = (pinned as NSString).lastPathComponent
+            let row = NSMenuItem(title: "📌 \(name)",
+                                 action: #selector(revealPinnedInFinder(_:)),
+                                 keyEquivalent: "")
+            row.target = self
+            row.toolTip = pinned
+            menu.addItem(row)
+            let clear = NSMenuItem(title: "    ✖\u{FE0F} Unpin",
+                                   action: #selector(clearPinnedFile(_:)),
+                                   keyEquivalent: "")
+            clear.target = self
+            menu.addItem(clear)
+        }
+
         menu.addItem(.separator())
 
         // Live status — readers that return nil get their row skipped entirely
@@ -2117,6 +2182,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// session across every cwd on this machine, newest-first. Toggled by the
     /// 🌐 button in the browser crumb row. Persists for the panel lifetime.
     var browserGlobalMode: Bool = false
+    /// uuid → (cwd, mtime-when-cached) memo for the global-sessions scan.
+    /// Reading 8KB from every JSONL on every render was the cold-load cost;
+    /// this dict skips re-reading files whose mtime hasn't moved. Persists
+    /// for the panel lifetime; rebuilt on first 🌐 toggle.
+    var browserGlobalCwdCache: [String: (cwd: String, mtime: Date)] = [:]
     var browserScroll: NSScrollView!
 
     // Cached row-glyph icons. Built once, reused for every browser rebuild.
@@ -2745,14 +2815,23 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         rowsStack.translatesAutoresizingMaskIntoConstraints = false
 
         let statusFlipped = FlippedView(frame: NSRect(x: 0, y: 0, width: rect.width, height: 200))
-        statusFlipped.autoresizingMask = [.width]
+        // Auto-layout drives the documentView's size so the scroll view's
+        // contentSize tracks the real rowsStack height. Width is pinned to
+        // the scroll view's CLIP view (NSScrollView.contentView), NOT to the
+        // scroll view itself — pinning to the scroll view creates a layout
+        // cycle that collapses the whole pane to empty.
+        statusFlipped.translatesAutoresizingMaskIntoConstraints = false
+        statusScroll.documentView = statusFlipped
         statusFlipped.addSubview(rowsStack)
         NSLayoutConstraint.activate([
+            statusFlipped.leadingAnchor.constraint(equalTo: statusScroll.contentView.leadingAnchor),
+            statusFlipped.trailingAnchor.constraint(equalTo: statusScroll.contentView.trailingAnchor),
+            statusFlipped.topAnchor.constraint(equalTo: statusScroll.contentView.topAnchor),
             rowsStack.topAnchor.constraint(equalTo: statusFlipped.topAnchor),
             rowsStack.leadingAnchor.constraint(equalTo: statusFlipped.leadingAnchor),
             rowsStack.trailingAnchor.constraint(equalTo: statusFlipped.trailingAnchor),
+            rowsStack.bottomAnchor.constraint(equalTo: statusFlipped.bottomAnchor),
         ])
-        statusScroll.documentView = statusFlipped
 
         // Inline detail label — updated by applyHighlight() based on which
         // status row is selected. Multi-line, monospaced; renders sparklines,
@@ -3137,6 +3216,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // Pane content stretches full width of its inner stack.
             statusScroll.leadingAnchor.constraint(equalTo: statusInner.leadingAnchor),
             statusScroll.trailingAnchor.constraint(equalTo: statusInner.trailingAnchor),
+            // Without an explicit minimum, statusScroll has no intrinsic
+            // vertical size and the sibling detailLabel (multi-line wrapping)
+            // eats the entire pane height — leaving the live status rows
+            // (Climate / Battery / Wi-Fi / Mail / Music / Whisp / …) invisible
+            // no matter where the split-view divider is dragged. The 120pt
+            // floor is enough for ~5 rows at 12pt mono so the user always
+            // sees the toolbox's "live topbar" content.
+            statusScroll.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
             detailLabel.leadingAnchor.constraint(equalTo: statusInner.leadingAnchor, constant: 6),
             detailLabel.trailingAnchor.constraint(equalTo: statusInner.trailingAnchor, constant: -6),
 
@@ -3442,7 +3529,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 lane.alignment = .centerY
                 lane.spacing = 6
                 lane.translatesAutoresizingMaskIntoConstraints = false
-                lane.edgeInsets = NSEdgeInsets(top: 0, left: 18, bottom: 0, right: 0)
+                // Indent the icon strip to the value-column tab stop (130pt)
+                // so the GrandPerspective / DaisyDisk / composite glyphs sit
+                // under "47,99 GB free of 2 TB" rather than the leading title.
+                lane.edgeInsets = NSEdgeInsets(top: 0, left: 130, bottom: 0, right: 0)
                 for (idx, l) in r.icons.enumerated() {
                     let isComposite = l.iconImage != nil
                     let btnW: CGFloat = isComposite ? 36 : 22
@@ -3511,6 +3601,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     @objc func goToCwdRequested(_ note: Notification) {
         guard let info = note.userInfo as? [String: Any],
               let path = info["path"] as? String, !path.isEmpty else { return }
+        NSLog("AppleToolbox: goToCwdRequested received path='\(path)'")
         // Distributed Notifications deliver on a private queue; UI work must
         // hop to the main queue or the panel mutations race against AppKit.
         DispatchQueue.main.async { [weak self] in
@@ -3537,6 +3628,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             self.switchChatCwd(to: target)
             if let name = selectName {
                 self.browserSelectionMemo[target] = name
+            }
+            // Force out of 🌐 All-sessions mode — that mode shows a global
+            // session list, not folder contents, so the file row wouldn't
+            // exist to be highlighted. A Finder-driven jump always means
+            // the user wants the folder view of `target`.
+            if self.browserGlobalMode {
+                self.browserGlobalMode = false
+                self.browserGlobalButton?.title = "🌐 All"
             }
             self.browserFilterField?.stringValue = ""
             self.loadBrowserItems()
@@ -3723,35 +3822,55 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     func listAllClaudeSessionsGlobal(limit: Int = 200) -> [(uuid: String, cwd: String, snippet: String, mtime: Date)] {
         let projectsRoot = "\(NSHomeDirectory())/.claude/projects"
         guard let projDirs = try? FileManager.default.contentsOfDirectory(atPath: projectsRoot) else { return [] }
-        var rows: [(uuid: String, cwd: String, snippet: String, mtime: Date)] = []
+        // Phase 1: collect (uuid, path, mtime) cheaply via stat-only — no
+        // file reads, no JSON parses. Then sort by mtime, take top `limit`,
+        // and only then resolve cwd/snippet for that prefix. Cold load
+        // drops from "read every JSONL" to "read at most `limit` JSONLs".
+        struct Candidate { let uuid: String; let path: String; let project: String; let mtime: Date }
+        var candidates: [Candidate] = []
         for sub in projDirs {
             let dir = "\(projectsRoot)/\(sub)"
             guard let files = try? FileManager.default.contentsOfDirectory(atPath: dir) else { continue }
             for name in files where name.hasSuffix(".jsonl") {
                 let path = "\(dir)/\(name)"
-                let uuid = (name as NSString).deletingPathExtension
                 guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
                       let mtime = attrs[.modificationDate] as? Date else { continue }
-                // Peek the first line to recover cwd. The encoded project-
-                // dir name lost spaces/punctuation, so we can't invert it.
-                var cwd = sub  // fallback to the encoded name
-                if let fh = FileHandle(forReadingAtPath: path) {
-                    let data = fh.readData(ofLength: 8192)
+                let uuid = (name as NSString).deletingPathExtension
+                candidates.append(Candidate(uuid: uuid, path: path, project: sub, mtime: mtime))
+            }
+        }
+        candidates.sort { $0.mtime > $1.mtime }
+        let head = Array(candidates.prefix(limit))
+        var rows: [(uuid: String, cwd: String, snippet: String, mtime: Date)] = []
+        rows.reserveCapacity(head.count)
+        for c in head {
+            // Cache hit if uuid is known AND its mtime matches the on-disk
+            // mtime (so a re-edited session re-reads).
+            var cwd: String
+            if let cached = browserGlobalCwdCache[c.uuid],
+               cached.mtime == c.mtime, !cached.cwd.isEmpty {
+                cwd = cached.cwd
+            } else {
+                cwd = c.project  // fallback if the read below fails
+                if let fh = FileHandle(forReadingAtPath: c.path) {
+                    let data = fh.readData(ofLength: 2048)
                     try? fh.close()
                     if let s = String(data: data, encoding: .utf8) {
-                        for line in s.split(separator: "\n").prefix(20) {
+                        for line in s.split(separator: "\n").prefix(5) {
                             guard let ld = line.data(using: .utf8),
                                   let obj = try? JSONSerialization.jsonObject(with: ld) as? [String: Any],
-                                  let c = obj["cwd"] as? String, !c.isEmpty else { continue }
-                            cwd = c
+                                  let v = obj["cwd"] as? String, !v.isEmpty else { continue }
+                            cwd = v
                             break
                         }
                     }
                 }
-                rows.append((uuid: uuid, cwd: cwd, snippet: sessionSnippet(path: path), mtime: mtime))
+                browserGlobalCwdCache[c.uuid] = (cwd: cwd, mtime: c.mtime)
             }
+            rows.append((uuid: c.uuid, cwd: cwd,
+                         snippet: sessionSnippet(path: c.path), mtime: c.mtime))
         }
-        return rows.sorted { $0.mtime > $1.mtime }.prefix(limit).map { $0 }
+        return rows
     }
 
     /// Every Copilot session across every cwd on this machine, newest-first.
@@ -4104,33 +4223,40 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
         let dir = chatCwd
         var items: [BrowserItem] = []
-        // One Copilot query per render — keyed by resolved cwd so we can do
-        // an O(1) dict lookup for every subfolder badge instead of N queries.
-        let copilotCounts = copilotSessionCountsByCwd()
-        if let names = try? FileManager.default.contentsOfDirectory(atPath: dir) {
-            for name in names where !name.hasPrefix(".") {
-                let path = "\(dir)/\(name)"
-                var isDir: ObjCBool = false
-                FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
-                // Only count sessions for dirs — checking every file would
-                // be wasted I/O. The encoded-path lookup for files would
-                // never match anything in ~/.claude/projects/ anyway.
-                let claudeN = isDir.boolValue ? sessionCountForFolder(path) : 0
-                // Copilot stores realpath, so resolve the subfolder before
-                // the dict lookup. Symlink farms in ~/work (paketti, etc.)
-                // would otherwise show 0 sessions while the DB has rows.
-                let copilotN: Int = {
-                    guard isDir.boolValue else { return 0 }
-                    let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-                    return copilotCounts[resolved] ?? 0
-                }()
-                items.append(BrowserItem(
-                    name: name, path: path, isDir: isDir.boolValue,
-                    glyph: glyphForFile(name: name, isDir: isDir.boolValue),
-                    sessionCount: claudeN + copilotN,
-                    claudeCount: claudeN, copilotCount: copilotN,
-                    sessionId: nil, provider: .claude))
+        // Batched URL enumeration — one syscall fetches names + isDirectory
+        // for every child instead of N separate fileExists() probes.
+        let dirURL = URL(fileURLWithPath: dir)
+        let resourceKeys: [URLResourceKey] = [.isDirectoryKey]
+        let childURLs = (try? FileManager.default.contentsOfDirectory(
+            at: dirURL,
+            includingPropertiesForKeys: resourceKeys,
+            options: [.skipsHiddenFiles])) ?? []
+        // Skip the per-folder session-count badge work for huge folders
+        // (~/Downloads etc.) — it's only meaningful inside ~/work / project
+        // trees, and the Copilot dict scan + N Claude lookups dominate load
+        // time once the listing crosses a few hundred entries.
+        let bigFolder = childURLs.count > 200
+        let copilotCounts: [String: Int] = bigFolder ? [:] : copilotSessionCountsByCwd()
+        for url in childURLs {
+            let name = url.lastPathComponent
+            let path = url.path
+            let isDir = (try? url.resourceValues(forKeys: Set(resourceKeys)))?.isDirectory ?? false
+            let claudeN: Int
+            let copilotN: Int
+            if bigFolder || !isDir {
+                claudeN = 0
+                copilotN = 0
+            } else {
+                claudeN = sessionCountForFolder(path)
+                let resolved = url.resolvingSymlinksInPath().path
+                copilotN = copilotCounts[resolved] ?? 0
             }
+            items.append(BrowserItem(
+                name: name, path: path, isDir: isDir,
+                glyph: glyphForFile(name: name, isDir: isDir),
+                sessionCount: claudeN + copilotN,
+                claudeCount: claudeN, copilotCount: copilotN,
+                sessionId: nil, provider: .claude))
         }
         items.sort { a, b in
             if a.isDir != b.isDir { return a.isDir }
@@ -4179,10 +4305,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // Restore the previously-selected child for this path (if any). Lets
         // the user step into a folder, come back, and find the same row still
         // highlighted — instead of having to re-scroll from the top.
-        if let memoName = browserSelectionMemo[chatCwd],
+        let memoLookup = browserSelectionMemo[chatCwd]
+        NSLog("AppleToolbox: loadBrowserItems chatCwd=\(chatCwd) memo=\(memoLookup ?? "<nil>") items=\(browserFilteredItems.count) firstFew=\(browserFilteredItems.prefix(3).map { $0.name })")
+        if let memoName = memoLookup,
            let idx = browserFilteredItems.firstIndex(where: { $0.name == memoName }) {
+            NSLog("AppleToolbox: memo hit idx=\(idx) name=\(memoName)")
             browserSelectedIndex = idx
             applyBrowserHighlight()
+        } else if let memoName = memoLookup {
+            NSLog("AppleToolbox: memo MISS — looked for '\(memoName)' (utf8=\(Array(memoName.utf8)))")
         }
     }
 
@@ -4210,11 +4341,20 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // is the one Return opens.
         browserSelectedIndex = 0
 
+        // Cap rendered rows. Folders like ~/Downloads can hold thousands
+        // of items; building an NSButton per row makes AppKit choke on
+        // every keystroke. The fuzzy filter still searches the full
+        // browserAllItems set — we just stop rendering past the cap and
+        // let the user type to narrow down. Visible row count is shown
+        // in the footer as "N shown / M matches / K total".
+        let renderCap = 300
+        let visible = Array(filtered.prefix(renderCap))
+
         browserStack.arrangedSubviews.forEach {
             browserStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
-        for item in filtered {
+        for item in visible {
             // Body text after the glyph. The glyph itself lives in its own
             // tab-stop column (see paragraph style below) so the body always
             // starts at the same X regardless of the emoji's rendered width.
@@ -4259,31 +4399,67 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // date+name string with a single tab stop separating the columns.
             // Every row's glyph/body column lands at the same pixel because
             // the leading constraints are constants, not text metrics.
-            let glyphImage: NSImage = {
-                if let sid = item.sessionId, !sid.isEmpty {
-                    return labelGlyphImage(item.provider == .copilot ? "COPILOT" : "CLAUDE")
-                }
-                return textGlyphImage(item.glyph)
-            }()
-            btn.glyphView.image = glyphImage
+            // Every session row (global OR folder-scoped) draws label + date
+            // + snippet inside bodyField via tab stops. The glyph image is
+            // skipped on session rows so NSImageView's centering quirks
+            // can't push the row left/right by a few pixels. Folder/file
+            // rows keep their emoji glyph in glyphView.
+            let isSessionRow = (item.sessionId != nil)
+            let isGlobalSessionRow = (browserGlobalMode && isSessionRow)
+            if isSessionRow {
+                btn.glyphView.image = nil
+            } else {
+                btn.glyphView.image = textGlyphImage(item.glyph)
+            }
 
-            // Body string: date+\t+label for sessions, plain name for files,
-            // "name · N sessions" for folders. Tab stop inside the body field
-            // (location 98) puts the snippet column at a fixed X within the
-            // text field, so dates and snippets both align across rows.
             let bodyParagraph = NSMutableParagraphStyle()
-            bodyParagraph.tabStops = [
-                NSTextTab(textAlignment: .left, location: 98, options: [:]),
-            ]
-            bodyParagraph.defaultTabInterval = 98
             bodyParagraph.lineBreakMode = .byTruncatingTail
             bodyParagraph.alignment = .left
+            let bodyString: String
+            if isGlobalSessionRow {
+                let label = (item.provider == .copilot) ? "COPILOT" : "CLAUDE"
+                // item.name = "MM-DD HH:MM\t~/path · snippet"
+                let parts = item.name.split(separator: "\t", maxSplits: 1).map(String.init)
+                let date = parts.first ?? ""
+                let rest = parts.count > 1 ? parts[1] : ""
+                let restParts = rest.split(separator: "·", maxSplits: 1).map(String.init)
+                let pathColumn = (restParts.first ?? "").trimmingCharacters(in: .whitespaces)
+                let snippet = (restParts.count > 1 ? restParts[1] : "").trimmingCharacters(in: .whitespaces)
+                let maxPath = 22
+                let pathDisplay = pathColumn.count > maxPath
+                    ? String(pathColumn.prefix(maxPath - 1)) + "…"
+                    : pathColumn.padding(toLength: maxPath, withPad: " ", startingAt: 0)
+                bodyString = "\(label)\t\(date)\t\(pathDisplay)\t\(snippet)"
+                // Tab stops sized for monospaced 12pt (cell width ~7.21pt).
+                bodyParagraph.tabStops = [
+                    NSTextTab(textAlignment: .left, location: 64,  options: [:]),
+                    NSTextTab(textAlignment: .left, location: 154, options: [:]),
+                    NSTextTab(textAlignment: .left, location: 332, options: [:]),
+                ]
+                bodyParagraph.defaultTabInterval = 64
+            } else if isSessionRow {
+                // Folder-scoped session row — item.name = "MM-DD HH:MM\tsnippet".
+                // Prepend label, keep two tab stops (label / date / snippet).
+                let label = (item.provider == .copilot) ? "COPILOT" : "CLAUDE"
+                bodyString = "\(label)\t\(item.name)"
+                bodyParagraph.tabStops = [
+                    NSTextTab(textAlignment: .left, location: 64,  options: [:]),
+                    NSTextTab(textAlignment: .left, location: 154, options: [:]),
+                ]
+                bodyParagraph.defaultTabInterval = 64
+            } else {
+                bodyString = body
+                bodyParagraph.tabStops = [
+                    NSTextTab(textAlignment: .left, location: 98, options: [:]),
+                ]
+                bodyParagraph.defaultTabInterval = 98
+            }
             let bodyAttrs: [NSAttributedString.Key: Any] = [
                 .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
                 .foregroundColor: tint,
                 .paragraphStyle: bodyParagraph,
             ]
-            btn.bodyField.attributedStringValue = NSAttributedString(string: body, attributes: bodyAttrs)
+            btn.bodyField.attributedStringValue = NSAttributedString(string: bodyString, attributes: bodyAttrs)
 
             btn.contentTintColor = tint
             btn.translatesAutoresizingMaskIntoConstraints = false
@@ -4308,9 +4484,18 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         applyBrowserHighlight()
 
         let cwdAbbr = (chatCwd as NSString).abbreviatingWithTildeInPath
-        let counts = filter.isEmpty
-            ? "\(filtered.count) items"
-            : "\(filtered.count)/\(browserAllItems.count)"
+        let shown = visible.count
+        let total = browserAllItems.count
+        let counts: String
+        if filter.isEmpty {
+            counts = (shown < total)
+                ? "\(shown) of \(total) (type to filter)"
+                : "\(total) items"
+        } else {
+            counts = (shown < filtered.count)
+                ? "\(shown) of \(filtered.count) matches · \(total) total"
+                : "\(filtered.count)/\(total)"
+        }
         browserPathLabel?.stringValue = "📂 \(cwdAbbr)   ·   \(counts)"
     }
 

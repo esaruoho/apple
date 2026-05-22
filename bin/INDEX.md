@@ -1,4 +1,4 @@
-# CLI Tools Index — 94 tools in bin/
+# CLI Tools Index — 96 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -12,6 +12,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-report` — (no description) — `bin/apple-report`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `ask` — Voice Dictation + Claude — `bin/ask`
+`asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`
 `avs-prefs-write.py` — (no description) — `bin/avs-prefs-write.py`
 `batch-import.sh` — Import all .shortcut files into Shortcuts.app — `bin/batch-import.sh`
@@ -89,6 +90,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `tag-trinity` — (no description) — `bin/tag-trinity`
 `tag-watcher` — (no description) — `bin/tag-watcher`
 `thought-archive.py` — (no description) — `bin/thought-archive.py`
+`toolbox-goto` — open AppleToolbox --live at a given folder. — `bin/toolbox-goto`
 `vocal-shortcuts-router-verify.py` — (no description) — `bin/vocal-shortcuts-router-verify.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`

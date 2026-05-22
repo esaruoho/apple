@@ -1,12 +1,15 @@
 # macOS Automation Tiers — Full Stack Atlas
 
-> 10 automation layers mapped. From AppleScript to IOKit.
+> 11 automation layers mapped. From AppleScript to IOKit.
+
+> **2026-05-22 patch:** Tier 1.5 (ASObjC) added after Sal pointed out the gap. The original 10-tier model was permission-shaped and missed language-surface tiers. See [asobjc.md](asobjc.md) for the why-we-missed-it postmortem.
 
 ## Tier Model
 
 | Tier | Surface | Tool | Access | Count |
 |------|---------|------|--------|-------|
 | 1 | AppleScript sdef | `sdef-extract.py` | Open (TCC since 2012) | 31 apps |
+| **1.5** | **ASObjC bridge** | **`use framework "Foundation"`** | **Open — runs as osascript** | **All public Cocoa classes** |
 | 2 | App Intents (Shortcuts) | `app-probe.py` | Open | 20 apps |
 | 3 | URL Schemes | `app-probe.py` | Open | 35 apps |
 | 4 | CLI tools | manual | Open | varies |
@@ -16,6 +19,41 @@
 | **8** | **Accessibility API** | **osascript (AX)** | **TCC: Accessibility** | **all GUI apps** |
 | **9** | **Distributed Notifications** | **CFNotificationCenter** | **Open (observe)** | **~50 known** |
 | **10** | **IOKit** | **ioreg / IOKit.framework** | **Open (read) / Entitlement (write)** | **252 classes** |
+
+---
+
+## Tier 1.5 — AppleScriptObjective-C (ASObjC)
+
+The bridge that lets plain AppleScript call any Cocoa class directly. Shipped 10.6 (2009). Sal's team built it. Runs in `osascript` — no Swift, no Xcode, no compile step.
+
+**Shape:**
+
+```applescript
+use framework "Foundation"
+use scripting additions
+
+set theURL to current application's NSURL's fileURLWithPath:"/some/path"
+set {ok, tags, err} to theURL's getResourceValue:(reference) forKey:(current application's NSURLTagNamesKey) |error|:(reference)
+```
+
+**What it unlocks:** every Cocoa class — `NSFileManager`, `NSURL`, `NSMetadataQuery`, `NSSavedSearch`, `NSWorkspace`, `NSPasteboard`, `CIImage`, `NSImage`, every Foundation/AppKit/CoreImage public API — from inside an AppleScript file.
+
+**Skill-specific wins:**
+- Finder tags via `NSURLTagNamesKey` (replaces xattr+plistlib hacks)
+- Smart Folders via `NSSavedSearch` (replaces hand-rolled `.savedSearch` plist)
+- Live Spotlight via `NSMetadataQuery` (replaces `mdfind` shell-out + parse)
+- File enumeration via `NSFileManager` (replaces `find` shell loops)
+
+**Pilot:** [`bin/asobjc-tag-demo.applescript`](../../bin/asobjc-tag-demo.applescript)
+
+**Why this tier was missed for so long:** see the postmortem section in [asobjc.md](asobjc.md). Short version: the tier model was permission-shaped, and ASObjC has no distinct permission — it just runs as osascript — so it had no row in the table until 2026-05-22.
+
+### Limitations
+
+- **Not a permission escape hatch.** ASObjC runs with the calling process's TCC. Calling `NSFileManager` from `osascript` still hits Full Disk Access gates the same way `do shell script "ls"` would.
+- **Public Cocoa only.** Private SPIs require entitlements; ASObjC doesn't change that.
+- **Doesn't fix Mail/Smart-Mailbox.** The lock is in `Mail.app`'s plist-rewrite behavior, not in the scripting language. See [mail-smart-mailboxes-dead.md](mail-smart-mailboxes-dead.md).
+- **Syntax is its own thing.** `current application's NSXxxx`, `(reference)` out-params, colon-separated selectors. Shane Stanley's books and Sal's bootcamp are the canonical learning sources.
 
 ---
 

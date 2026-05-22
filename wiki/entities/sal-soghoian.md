@@ -118,7 +118,7 @@ From his own description: *"At Apple, he advanced a wide range of user automatio
 - **Mastered for iTunes tools** — automation toolchain for the Mastered for iTunes program
 - **Dictation Commands** — hundreds of voice-triggered commands for controlling Keynote, Pages, Numbers, Photos, Finder, and other apps
 - **System Services** — inter-application automation mechanism
-- **AppleScriptObjC, Scripting Bridge** — bridging AppleScript to Cocoa
+- **AppleScriptObjC, Scripting Bridge** — bridging AppleScript to Cocoa. See [asobjc.md](../concepts/asobjc.md) for the concept page covering ASObjC as a first-class tier in this skill. (Added 2026-05-22 after Sal pointed Esa at ASObjC + [macosxautomation.com/bootcamp/](http://macosxautomation.com/bootcamp/) for file management and tags.)
 
 ### His Philosophy
 

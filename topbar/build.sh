@@ -75,6 +75,19 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSDesktopFolderUsageDescription</key><string>AppleToolbox writes screenshots and exports into the Desktop folder when you trigger Screenshot actions.</string>
     <key>NSDocumentsFolderUsageDescription</key><string>AppleToolbox reads and writes Documents for the bulk-exporter vaults under exported/.</string>
     <key>NSDownloadsFolderUsageDescription</key><string>AppleToolbox reads Downloads for the screenshot inversion and Grand Search workflows.</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key><string>Any file</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.item</string>
+                <string>public.folder</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
 PLIST
