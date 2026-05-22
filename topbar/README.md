@@ -67,24 +67,33 @@ activation policy) so newly-launched apps appear automatically.
 
 ## Global keyboard shortcuts
 
-Registered via Carbon `RegisterEventHotKey` inside the live-panel
-delegate (`registerGlobalHotKey()`). Apple-shipped API, no Homebrew, no
-Accessibility or Input Monitoring permission needed. Works regardless of
+Registered via Carbon `RegisterEventHotKey`. Apple-shipped API, no
+Homebrew, no Input Monitoring permission needed. Works regardless of
 the frontmost app — Services-menu shortcuts go through the foreground
 app's Services dispatcher and get swallowed by anything that binds the
 same combination internally; Carbon hotkeys don't.
 
-| Keys | Action | Why this combination |
-|---|---|---|
-| ⌃⌥⌘D | Toggle smart dictation | Triple-modifier + D, no system collision |
-| ⌃⌥⌘. | Stop Voicebox (`~/bin/voicebox-stop`) | ⌘. alone is AppKit's universal Cancel and gets swallowed; ⇧⌥⌘. turned out to be grabbed elsewhere; ⌃⌥⌘. fires cleanly |
-| ⌃⌥⌘T | Open Finder's selection in AppleToolbox browser | ⌥T / ⌃⌥T got eaten by Finder type-ahead and Rectangle; adding ⌘ clears both |
-| ⌃⌥⌘S | Toggle: tile all ↔ maximize the focused window | Focused window full → press tiles every window into a grid (overview). Focused window tiled/partial → press maximizes JUST that window (work mode). Stateless. See "SnapEngine" below. |
+**Two registration sites** depending on whether the handler needs the
+`--live` panel:
 
-Adding more: extend the `switch hkID.id` in `registerGlobalHotKey()`,
-register a new `EventHotKeyID` with the next free id, point it at a new
-method. FourCharCode signatures used so far: `ATBD` (dictate), `ATBS`
-(stop), `ATBG` (goto Finder), `ATBN` (snap).
+- `AppDelegate.registerMenuBarHotKeys()` — owns chords that work whenever
+  🧰 is in the menu bar. UI-independent handlers go here.
+- `LiveViewportDelegate.registerGlobalHotKey()` — owns chords whose
+  handler manipulates the `--live` panel UI. Currently just ⌃⌥⌘D.
+
+| Keys | Action | Owner | Why this combination |
+|---|---|---|---|
+| ⌃⌥⌘D | Toggle smart dictation | `--live` panel | Triple-modifier + D, no system collision. Needs `/topbar-live` running. |
+| ⌃⌥⌘. | Stop Voicebox (`~/bin/voicebox-stop`) | menu-bar (always on) | ⌘. alone is AppKit's universal Cancel; ⇧⌥⌘. is eaten by iTerm2's View menu; ⌃⌥⌘. fires cleanly |
+| ⌃⌥⌘T | Open Finder's selection in AppleToolbox browser | menu-bar (always on) | ⌥T / ⌃⌥T got eaten by Finder type-ahead and Rectangle; adding ⌘ clears both |
+| ⌃⌥⌘S | Toggle: tile all ↔ un-tile all (SnapEngine / AXUIElement) | menu-bar (always on) | Focused window full → press tiles every window into a grid (overview). Focused window tiled/partial → press maximizes *every* window back to full width + height (stacked, ready to Cmd-` between them). Stateless. See "SnapEngine" below. Needs Accessibility permission for `com.esaruoho.appletoolbox`. |
+
+Adding more: pick the right registration site (UI-independent → AppDelegate;
+panel UI → LiveViewportDelegate), extend the `switch hkID.id`, register a
+new `EventHotKeyID` with the next free id, point it at a new method.
+FourCharCode signatures used so far: `ATBD` (dictate), `ATBS` (stop),
+`ATBG` (goto Finder), `ATBN` (snap). Full pattern in
+`wiki/concepts/global-keyboard-shortcuts.md`.
 
 ### SnapEngine — in-process window tiler + toggle
 
@@ -95,18 +104,21 @@ move and resize the frontmost app's windows in-process.
 
 **Toggle behavior:** on each press, `SnapEngine` reads the current frame
 of the **focused window** (the one with keyboard focus; falls back to the
-app's main window, then to any window). If that window matches the
-screen's visibleFrame within ±30 px, every window is tiled into a grid
-(overview). Otherwise, **only the focused window** is resized to fill the
-visibleFrame (work mode — the others stay where they are).
+app's main window, then to any window) to decide the direction of the
+toggle. The action then applies to **every** window of that app:
+
+- Focused window matches the screen's visibleFrame within ±30 px → tile
+  all into a grid (overview)
+- Otherwise → un-tile: every window gets resized to fill the visibleFrame,
+  so they all stack at full width + height (use Cmd-` to flip between
+  them)
 
 Typical workflow:
 
 - Working in one big maximized window → press 1: tiles every window into
   a grid; you can see them all at once
-- Click the tile you want to work in next
-- Press 2: that window jumps to full-size, others stay tiled in the
-  background
+- Press 2: un-tile — every window jumps back to full width + height,
+  stacked, focused one on top
 - Press 3: tile again; overview returns
 
 The toggle is **stateless** — no flag is stored, no per-app history is

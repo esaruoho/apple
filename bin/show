@@ -204,6 +204,38 @@ def show_concept(key: str):
         show_fallback(key)
         return
 
+    # Non-Smart-Folder action types — entry can declare {"type": "bbs-tab",
+    # "tab": "finances"} (or "app", "url") to skip Smart Folder generation
+    # entirely and just surface a BBS tab / app / URL.
+    action = entry.get("type", "smart-folder")
+    if action == "bbs-tab":
+        tab = entry.get("tab", key)
+        name = entry.get("name", tab.title())
+        # Drop tab kind into ~/.bbs-focus-request — BBS polls this file once a
+        # second and focuses (or spawns) the matching tab. File is consumed on
+        # read by BBS's Rust side. Works whether BBS is already running or not.
+        focus_path = Path.home() / ".bbs-focus-request"
+        try:
+            focus_path.write_text(tab + "\n")
+        except Exception:
+            pass
+        subprocess.run(["open", "-a", "BBS"], check=False)
+        speak_via_voicebox(entry.get("caption", f"{name}, opening now."))
+        print(f"show -> BBS tab '{tab}' ({name})")
+        return
+    if action == "app":
+        app = entry.get("app", key.title())
+        subprocess.run(["open", "-a", app], check=False)
+        speak_via_voicebox(entry.get("caption", f"{app}, opening now."))
+        print(f"show -> opened app '{app}'")
+        return
+    if action == "url":
+        url = entry["url"]
+        subprocess.run(["open", url], check=False)
+        speak_via_voicebox(entry.get("caption", f"{key}, opening now."))
+        print(f"show -> {url}")
+        return
+
     scope = Path(os.path.expanduser(entry["scope"])).resolve()
     if not scope.is_dir():
         sys.exit(f"show: concept '{key}' scope missing: {scope}")
@@ -231,9 +263,18 @@ def list_concepts():
     for k, v in data.items():
         if k.startswith("_"):
             continue
-        scope = Path(os.path.expanduser(v["scope"]))
-        present = "✓" if scope.is_dir() else "✗"
-        rows.append((present, k, v.get("name", k), str(scope)))
+        scope_str = v.get("scope") or (
+            f"[bbs-tab: {v.get('tab', k)}]" if v.get("type") == "bbs-tab" else
+            f"[app: {v.get('app', k)}]"     if v.get("type") == "app"     else
+            f"[url: {v.get('url', '')}]"    if v.get("type") == "url"     else
+            "(no scope)"
+        )
+        if v.get("scope"):
+            scope = Path(os.path.expanduser(v["scope"]))
+            present = "✓" if scope.is_dir() else "✗"
+        else:
+            present = "·"
+        rows.append((present, k, v.get("name", k), scope_str))
     width = max(len(r[1]) for r in rows) if rows else 0
     for present, k, name, scope in sorted(rows, key=lambda r: r[1]):
         print(f"  {present}  {k:<{width}}  {name}")

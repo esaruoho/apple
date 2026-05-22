@@ -668,6 +668,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // for the lifetime of the menu-bar process (which IS the lifetime — the
     // LaunchAgent re-spawns the menu-bar if it ever dies).
     var gotoFinderHotKeyRef: EventHotKeyRef?
+    var stopVoiceboxHotKeyRef: EventHotKeyRef?
+    var snapFrontmostHotKeyRef: EventHotKeyRef?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -683,18 +685,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.rebuildMenu()
         }
-        // Register the global ⌃⌥⌘T hotkey HERE (in the menu-bar process), not
-        // in --live — the menu-bar is always running via LaunchAgent, while
-        // --live is opt-in. Without this, the chord lost its owner whenever
-        // --live wasn't running and macOS gave the "no handler" blink error.
-        registerGotoHotKey()
+        // Register every UI-independent global hotkey HERE (in the menu-bar
+        // process), not in --live. The menu-bar is always running via
+        // LaunchAgent, while --live is opt-in. Without this, the chords
+        // lost their owner whenever --live wasn't running and macOS gave
+        // the "no handler" blink error. Only ⌃⌥⌘D (dictate) stays in
+        // LiveViewportDelegate because it needs the panel.
+        registerMenuBarHotKeys()
     }
 
-    /// Carbon RegisterEventHotKey for ⌃⌥⌘T — "Goto Finder Selection".
-    /// On fire: shells out to `toolbox-goto` which figures out warm-vs-cold
-    /// launch on its own. This way the menu-bar doesn't need to know about
-    /// --live state or AppleScript Finder calls; one Bash entry point.
-    func registerGotoHotKey() {
+    /// Carbon RegisterEventHotKey for the three menu-bar-owned chords:
+    ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + ping /speak/stop)
+    ///   id=3  ⌃⌥⌘T  → fireGotoFinderSelection (shells out to toolbox-goto)
+    ///   id=4  ⌃⌥⌘S  → snapFrontmostApp (SnapEngine.tileAllWindows)
+    /// Each chord must NOT also be registered by LiveViewportDelegate;
+    /// double-registration across two processes races last-writer-wins.
+    func registerMenuBarHotKeys() {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
@@ -710,21 +716,71 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                               nil,
                               &hkID)
             let me = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
+            NSLog("AppleToolbox (menu-bar) hotkey fired: id=\(hkID.id)")
             DispatchQueue.main.async {
-                if hkID.id == 3 { me.fireGotoFinderSelection() }
+                switch hkID.id {
+                case 2: me.stopVoiceboxGlobal()
+                case 3: me.fireGotoFinderSelection()
+                case 4: me.snapFrontmostApp()
+                default: break
+                }
             }
             return noErr
         }, 1, &eventType, selfPtr, nil)
 
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: OSType(0x41544247), id: 3)  // 'ATBG'
         let mods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
-        let status = RegisterEventHotKey(UInt32(kVK_ANSI_T), mods, id,
-                                         GetApplicationEventTarget(), 0, &ref)
-        if status != noErr {
-            NSLog("AppleToolbox: ⌃⌥⌘T registration failed with OSStatus \(status)")
+
+        // id=2 — ⌃⌥⌘. — 'ATBS'
+        var stopRef: EventHotKeyRef?
+        let stopID = EventHotKeyID(signature: OSType(0x41544253), id: 2)
+        let stopStatus = RegisterEventHotKey(UInt32(kVK_ANSI_Period), mods, stopID,
+                                             GetApplicationEventTarget(), 0, &stopRef)
+        if stopStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘. registration failed with OSStatus \(stopStatus)")
         }
-        gotoFinderHotKeyRef = ref
+        stopVoiceboxHotKeyRef = stopRef
+
+        // id=3 — ⌃⌥⌘T — 'ATBG'
+        var gotoRef: EventHotKeyRef?
+        let gotoID = EventHotKeyID(signature: OSType(0x41544247), id: 3)
+        let gotoStatus = RegisterEventHotKey(UInt32(kVK_ANSI_T), mods, gotoID,
+                                             GetApplicationEventTarget(), 0, &gotoRef)
+        if gotoStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘T registration failed with OSStatus \(gotoStatus)")
+        }
+        gotoFinderHotKeyRef = gotoRef
+
+        // id=4 — ⌃⌥⌘S — 'ATBN'
+        var snapRef: EventHotKeyRef?
+        let snapID = EventHotKeyID(signature: OSType(0x4154424E), id: 4)
+        let snapStatus = RegisterEventHotKey(UInt32(kVK_ANSI_S), mods, snapID,
+                                             GetApplicationEventTarget(), 0, &snapRef)
+        if snapStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘S registration failed with OSStatus \(snapStatus)")
+        }
+        snapFrontmostHotKeyRef = snapRef
+    }
+
+    /// Fire-and-forget kill of any in-flight Voicebox audio. Same script
+    /// the 🔇 Stop Voicebox menu row runs.
+    @objc func stopVoiceboxGlobal() {
+        let task = Process()
+        task.launchPath = "\(HOME)/bin/voicebox-stop"
+        do { try task.run() } catch { NSLog("stopVoiceboxGlobal: \(error)") }
+    }
+
+    /// Tile the frontmost app's windows via SnapEngine (in-process
+    /// AXUIElement, ~10x faster than shelling out to bin/snap). Captures
+    /// NSWorkspace.frontmostApplication BEFORE dispatching so a focus
+    /// shift in the async block can't redirect us.
+    @objc func snapFrontmostApp() {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              let name = app.localizedName else { return }
+        if name == "AppleToolbox" { return }
+        let pid = app.processIdentifier
+        DispatchQueue.global(qos: .userInitiated).async {
+            SnapEngine.tileAllWindows(pid: pid, appName: name)
+        }
     }
 
     /// Get Finder's current selection (or front-window target as fallback)
@@ -1676,15 +1732,21 @@ func copilotSessionDB() -> String? {
     return FileManager.default.fileExists(atPath: p) ? p : nil
 }
 
-/// Shell out to `/usr/bin/sqlite3 -json -readonly <db> "<sql>"` and return
-/// the parsed array. Empty array on any error — Copilot sessions are an
-/// additive layer, the browser still works fine if the DB is missing or
-/// momentarily locked by a writer.
+/// Shell out to `/usr/bin/sqlite3 -json <db> "<sql>"` and return the parsed
+/// array. Empty array on any error — Copilot sessions are an additive layer,
+/// the browser still works fine if the DB is missing or momentarily locked
+/// by a writer.
+///
+/// No `-readonly` flag: macOS tags Copilot's DB with the com.apple.provenance
+/// xattr (sandboxed-app provenance marker), which makes sqlite3's read-only
+/// mode fail with CANTOPEN (code 14) when WAL journaling metadata needs SHM
+/// access. A plain SELECT mutates nothing — drop the flag and let SQLite
+/// open normally.
 func copilotQueryJSON(_ sql: String) -> [[String: Any]] {
     guard let db = copilotSessionDB() else { return [] }
     let task = Process()
     task.launchPath = "/usr/bin/sqlite3"
-    task.arguments = ["-json", "-readonly", db, sql]
+    task.arguments = ["-json", db, sql]
     let out = Pipe(); let err = Pipe()
     task.standardOutput = out
     task.standardError = err
@@ -2050,6 +2112,11 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     var browserFilterField: NSTextField!
     var browserPathLabel: NSTextField!
     var browserStack: NSStackView!
+    var browserGlobalButton: NSButton!
+    /// When true, the browser ignores chatCwd and shows EVERY Claude + Copilot
+    /// session across every cwd on this machine, newest-first. Toggled by the
+    /// 🌐 button in the browser crumb row. Persists for the panel lifetime.
+    var browserGlobalMode: Bool = false
     var browserScroll: NSScrollView!
 
     // Cached row-glyph icons. Built once, reused for every browser rebuild.
@@ -2260,8 +2327,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 } else {
                     let parent = (p as NSString).deletingLastPathComponent
                     let basename = (p as NSString).lastPathComponent
-                    browserSelectionMemo[parent] = basename
+                    // switchChatCwd first: when the persisted chatCwd is a
+                    // descendant of parent, switchChatCwd's ascend branch
+                    // overwrites browserSelectionMemo[parent] with a folder
+                    // name. Set the filename memo AFTER so the file wins.
                     switchChatCwd(to: parent)
+                    browserSelectionMemo[parent] = basename
+                    loadBrowserItems()   // re-render to consume the memo
                 }
             }
         }
@@ -2346,16 +2418,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                               nil,
                               &hkID)
             let me = Unmanaged<LiveViewportDelegate>.fromOpaque(userData).takeUnretainedValue()
-            NSLog("AppleToolbox hotkey fired: id=\(hkID.id)")
+            NSLog("AppleToolbox (--live) hotkey fired: id=\(hkID.id)")
             DispatchQueue.main.async {
                 switch hkID.id {
                 case 1: me.toggleSmartDictation(nil)
-                case 2: me.stopVoiceboxGlobal()
-                // id=3 (⌃⌥⌘T) handled by AppDelegate in the menu-bar process,
-                // not here. Left out of this switch on purpose so we don't
-                // race with the menu-bar's handler if both processes
-                // happened to register at once.
-                case 4: me.snapFrontmostApp()
+                // ids 2 (⌃⌥⌘.), 3 (⌃⌥⌘T), 4 (⌃⌥⌘S) are all registered by
+                // AppDelegate (the always-on menu-bar process). Leaving
+                // them out here avoids cross-process race when both the
+                // menu-bar and --live are running.
                 default: break
                 }
             }
@@ -2363,41 +2433,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }, 1, &eventType, selfPtr, nil)
 
         // id=1 — FourCharCode 'ATBD' = "AppleToolbox Dictate" — ⌃⌥⌘D
+        // This is the only chord that needs --live: it toggles the
+        // dictation panel UI which only exists in the --live process.
+        // The other three chords (stop, goto, snap) live in AppDelegate.
         let dictateID = EventHotKeyID(signature: OSType(0x41544244), id: 1)
         let dictateMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
         RegisterEventHotKey(UInt32(kVK_ANSI_D), dictateMods, dictateID,
                             GetApplicationEventTarget(), 0, &globalHotKeyRef)
-
-        // id=2 — FourCharCode 'ATBS' = "AppleToolbox Stop" — ⌃⌥⌘.
-        // Previously ⇧⌥⌘. but that combo never fired — macOS / some other
-        // process was grabbing it before Carbon saw it. ⌃⌥⌘. matches the
-        // same control-option-cmd family as Dictate/Goto/Snap and is free.
-        var stopRef: EventHotKeyRef?
-        let stopID = EventHotKeyID(signature: OSType(0x41544253), id: 2)
-        let stopMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
-        let stopStatus = RegisterEventHotKey(UInt32(kVK_ANSI_Period), stopMods, stopID,
-                            GetApplicationEventTarget(), 0, &stopRef)
-        NSLog("AppleToolbox: RegisterEventHotKey ⌃⌥⌘. → status=\(stopStatus) ref=\(String(describing: stopRef))")
-        stopVoiceboxHotKeyRef = stopRef
-
-        // ⌃⌥⌘T ("Goto Finder Selection") is registered by AppDelegate
-        // (the menu-bar process), NOT here. The menu-bar is always alive via
-        // LaunchAgent, so the chord always has an owner; --live is opt-in
-        // and would orphan the hotkey whenever the panel was closed.
-        // AppDelegate's handler shells out to `bin/toolbox-goto`, which
-        // posts our GoToCwd Distributed Notification — see goToCwdRequested
-        // below for the navigation + highlight code.
-
-        // id=4 — FourCharCode 'ATBN' = "AppleToolbox sNap" — ⌃⌥⌘S.
-        // Captures the frontmost app at fire-time (Carbon hotkeys don't
-        // activate the receiving process, so NSWorkspace.frontmostApplication
-        // is still whoever the user was using) and tiles their windows.
-        var snapRef: EventHotKeyRef?
-        let snapID = EventHotKeyID(signature: OSType(0x4154424E), id: 4)
-        let snapMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
-        RegisterEventHotKey(UInt32(kVK_ANSI_S), snapMods, snapID,
-                            GetApplicationEventTarget(), 0, &snapRef)
-        snapFrontmostHotKeyRef = snapRef
     }
 
     /// Tile all windows of whichever app was frontmost when the user hit
@@ -2513,6 +2555,25 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
            event.keyCode == 2 /* D */ {
             toggleSmartDictation(nil)
             return nil
+        }
+
+        // Ctrl-W → ~/work/, Ctrl-D → ~/Downloads/ when focus is in the
+        // browser filter field. doCommandBy isn't fired by default on
+        // macOS for these chords, so intercept the raw events here.
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .control,
+           (event.keyCode == 13 /* W */ || event.keyCode == 2 /* D */) {
+            let fr = panel.firstResponder
+            if let bf = browserFilterField, let fe = bf.currentEditor(),
+               (fr as? NSText) === fe {
+                if event.keyCode == 13 {
+                    browserGoHome(nil)
+                } else {
+                    switchChatCwd(to: "\(HOME)/Downloads")
+                    browserFilterField?.stringValue = ""
+                    loadBrowserItems()
+                }
+                return nil
+            }
         }
 
         // Arrow keys + Return drive status-row navigation. They claim the event
@@ -2735,7 +2796,15 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         browserVaultButton.toolTip = "Show this chat's save folder " +
             "(drafts, conversation log, dictation audio)"
 
+        browserGlobalButton = NSButton(title: "🌐 All",
+                                       target: self,
+                                       action: #selector(browserToggleGlobal(_:)))
+        browserGlobalButton.bezelStyle = .rounded
+        browserGlobalButton.controlSize = .small
+        browserGlobalButton.toolTip = "Show every Claude + Copilot session across all cwds (toggle)"
+
         let browserCrumbRow = NSStackView(views: [browserPathLabel, NSView(),
+                                                   browserGlobalButton,
                                                    browserVaultButton,
                                                    browserHomeButton, browserUpButton])
         browserCrumbRow.orientation = .horizontal
@@ -3461,10 +3530,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                     selectName = (path as NSString).lastPathComponent
                 }
             } else { return }
+            // switchChatCwd first: when the old cwd is a descendant of
+            // target, switchChatCwd overwrites browserSelectionMemo[target]
+            // with the path-back-down child name. Set the filename memo
+            // AFTER, so the file-highlight wins over the ascend-memo.
+            self.switchChatCwd(to: target)
             if let name = selectName {
                 self.browserSelectionMemo[target] = name
             }
-            self.switchChatCwd(to: target)
             self.browserFilterField?.stringValue = ""
             self.loadBrowserItems()
             self.panel?.makeKeyAndOrderFront(nil)
@@ -3641,6 +3714,85 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
     /// `~/.claude/projects/<encoded-cwd>/*.jsonl` and pulls a snippet of the
     /// first user message from each.
+    /// Every Claude-Code session across every project directory on this
+    /// machine, newest-first. Scans `~/.claude/projects/*/*.jsonl`, reads
+    /// each file's first JSON line to recover the original cwd (encoding is
+    /// lossy so the project-dir name can't be inverted directly), and
+    /// pairs (uuid, cwd, snippet, mtime) into the returned tuples. Used by
+    /// the browser's 🌐 All-sessions mode.
+    func listAllClaudeSessionsGlobal(limit: Int = 200) -> [(uuid: String, cwd: String, snippet: String, mtime: Date)] {
+        let projectsRoot = "\(NSHomeDirectory())/.claude/projects"
+        guard let projDirs = try? FileManager.default.contentsOfDirectory(atPath: projectsRoot) else { return [] }
+        var rows: [(uuid: String, cwd: String, snippet: String, mtime: Date)] = []
+        for sub in projDirs {
+            let dir = "\(projectsRoot)/\(sub)"
+            guard let files = try? FileManager.default.contentsOfDirectory(atPath: dir) else { continue }
+            for name in files where name.hasSuffix(".jsonl") {
+                let path = "\(dir)/\(name)"
+                let uuid = (name as NSString).deletingPathExtension
+                guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+                      let mtime = attrs[.modificationDate] as? Date else { continue }
+                // Peek the first line to recover cwd. The encoded project-
+                // dir name lost spaces/punctuation, so we can't invert it.
+                var cwd = sub  // fallback to the encoded name
+                if let fh = FileHandle(forReadingAtPath: path) {
+                    let data = fh.readData(ofLength: 8192)
+                    try? fh.close()
+                    if let s = String(data: data, encoding: .utf8) {
+                        for line in s.split(separator: "\n").prefix(20) {
+                            guard let ld = line.data(using: .utf8),
+                                  let obj = try? JSONSerialization.jsonObject(with: ld) as? [String: Any],
+                                  let c = obj["cwd"] as? String, !c.isEmpty else { continue }
+                            cwd = c
+                            break
+                        }
+                    }
+                }
+                rows.append((uuid: uuid, cwd: cwd, snippet: sessionSnippet(path: path), mtime: mtime))
+            }
+        }
+        return rows.sorted { $0.mtime > $1.mtime }.prefix(limit).map { $0 }
+    }
+
+    /// Every Copilot session across every cwd on this machine, newest-first.
+    /// One SQL query, no folder scoping. Used by the browser's 🌐 All-
+    /// sessions mode.
+    func listAllCopilotSessionsGlobal(limit: Int = 200) -> [CopilotSessionInfo] {
+        let sql = """
+        SELECT s.id AS uuid, COALESCE(s.cwd,'') AS cwd, \
+               COALESCE(s.summary, \
+                 (SELECT user_message FROM turns WHERE session_id=s.id \
+                    ORDER BY turn_index ASC LIMIT 1), '') AS snippet, \
+               s.updated_at AS updated_at \
+        FROM sessions s ORDER BY s.updated_at DESC LIMIT \(limit)
+        """
+        let rows = copilotQueryJSON(sql)
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let isoNoFrac = ISO8601DateFormatter()
+        isoNoFrac.formatOptions = [.withInternetDateTime]
+        return rows.compactMap { r -> CopilotSessionInfo? in
+            guard let uuid = r["uuid"] as? String,
+                  let updated = r["updated_at"] as? String else { return nil }
+            let cwd = (r["cwd"] as? String) ?? ""
+            let snippetRaw = (r["snippet"] as? String) ?? ""
+            let date = iso.date(from: updated)
+                    ?? isoNoFrac.date(from: updated)
+                    ?? Date(timeIntervalSince1970: 0)
+            let oneline = snippetRaw.replacingOccurrences(of: "\n", with: " ")
+                                    .trimmingCharacters(in: .whitespaces)
+            let trimmed = oneline.count > 60 ? String(oneline.prefix(60)) + "…" : oneline
+            return CopilotSessionInfo(uuid: uuid, cwd: cwd, snippet: trimmed, mtime: date)
+        }
+    }
+
+    /// Toggles the browser's 🌐 All-sessions global mode and reloads.
+    @objc func browserToggleGlobal(_ sender: NSButton) {
+        browserGlobalMode.toggle()
+        sender.title = browserGlobalMode ? "🌐 All ✓" : "🌐 All"
+        loadBrowserItems()
+    }
+
     func listSessions(limit: Int = 30) -> [SessionInfo] {
         refreshNamesFromClaudeSessions()
         let dir = projectDir
@@ -3917,6 +4069,39 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// within group), then triggers renderBrowser() to apply the current
     /// filter and rebuild the visible rows.
     func loadBrowserItems() {
+        // 🌐 All-sessions mode: list every Claude + Copilot session on the
+        // machine, newest-first, with the cwd shown after the date so the
+        // user sees where each session lives. Folder rows + chatCwd-scoped
+        // session rows are skipped entirely in this mode.
+        if browserGlobalMode {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "MM-dd HH:mm"
+            let claude = listAllClaudeSessionsGlobal(limit: 200).map { s -> BrowserItem in
+                let label = sessionNames[s.uuid] ?? s.snippet
+                let cwdAbbr = (s.cwd as NSString).abbreviatingWithTildeInPath
+                let display = "\(fmt.string(from: s.mtime))\t\(cwdAbbr) · \(label)"
+                // path = the session's own cwd so click handlers can switch
+                // chatCwd before resuming (otherwise resumeSession looks in
+                // the wrong project dir and the transcript replay misses).
+                return BrowserItem(name: display, path: s.cwd, isDir: false,
+                                   glyph: "💬", sessionCount: 0,
+                                   claudeCount: 0, copilotCount: 0,
+                                   sessionId: s.uuid, provider: .claude)
+            }
+            let copilot = listAllCopilotSessionsGlobal(limit: 200).map { s -> BrowserItem in
+                let label = s.snippet.isEmpty ? "(no summary)" : s.snippet
+                let cwdAbbr = (s.cwd as NSString).abbreviatingWithTildeInPath
+                let display = "\(fmt.string(from: s.mtime))\t\(cwdAbbr) · \(label)"
+                return BrowserItem(name: display, path: s.cwd, isDir: false,
+                                   glyph: "🤖", sessionCount: 0,
+                                   claudeCount: 0, copilotCount: 0,
+                                   sessionId: s.uuid, provider: .copilot)
+            }
+            browserAllItems = (claude + copilot).sorted { $0.name > $1.name }
+            renderBrowser()
+            return
+        }
+
         let dir = chatCwd
         var items: [BrowserItem] = []
         // One Copilot query per render — keyed by resolved cwd so we can do
@@ -4198,15 +4383,22 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
               browserSelectedIndex < browserFilteredItems.count else { return }
         let item = browserFilteredItems[browserSelectedIndex]
         if let sid = item.sessionId {
+            // In 🌐 global mode, item.path holds the session's own cwd (not
+            // the uuid). Switch chatCwd to it before resuming so the
+            // transcript replay reads from the right project dir.
+            if browserGlobalMode, !item.path.isEmpty, item.path != chatCwd, item.path.hasPrefix("/") {
+                switchChatCwd(to: item.path)
+            }
             switch item.provider {
             case .claude:
                 resumeSession(sid)
                 panel.makeFirstResponder(chatInput)
             case .copilot:
                 // Copilot doesn't have an in-panel chat — hand off to iTerm
-                // the same way bbs-app does. cwd is the current chatCwd, not
-                // the row's `path` (which holds the uuid for session rows).
-                openCopilotSessionInTerminal(uuid: sid, cwd: chatCwd)
+                // the same way bbs-app does. In global mode item.path is the
+                // session's stored cwd; otherwise fall back to chatCwd.
+                let cwd = (browserGlobalMode && item.path.hasPrefix("/")) ? item.path : chatCwd
+                openCopilotSessionInTerminal(uuid: sid, cwd: cwd)
             }
             return
         }
@@ -4224,12 +4416,18 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         if let sid = item.sessionId {
             // Session row → resume that conversation. Same plumbing as
             // Sessions ▾, but reached directly from the browser list.
+            // In 🌐 global mode, item.path is the session's cwd — switch to
+            // it before resuming so the project dir matches.
+            if browserGlobalMode, !item.path.isEmpty, item.path != chatCwd, item.path.hasPrefix("/") {
+                switchChatCwd(to: item.path)
+            }
             switch item.provider {
             case .claude:
                 resumeSession(sid)
                 panel.makeFirstResponder(chatInput)
             case .copilot:
-                openCopilotSessionInTerminal(uuid: sid, cwd: chatCwd)
+                let cwd = (browserGlobalMode && item.path.hasPrefix("/")) ? item.path : chatCwd
+                openCopilotSessionInTerminal(uuid: sid, cwd: cwd)
             }
             return
         }
@@ -4408,6 +4606,12 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             // Esc clears the filter without leaving the field.
             browserFilterField?.stringValue = ""
             renderBrowser()
+            return true
+        case #selector(NSResponder.deleteWordBackward(_:)):
+            // Ctrl-W jumps the browser to ~/work/ instead of deleting the
+            // previous filter word — quick way back to the workspace root
+            // while focus stays in the filter field.
+            browserGoHome(nil)
             return true
         default:
             return false
@@ -6066,19 +6270,20 @@ enum SnapEngine {
 
     /// Toggle entry point — what the ⌃⌥⌘S keyboard shortcut calls.
     ///
-    /// Decision is based on the FOCUSED window's current frame, not all
-    /// windows:
+    /// Decision is based on the FOCUSED window's current frame, but the
+    /// action applies to ALL windows:
     ///   * If the focused window already fills the visibleFrame, TILE
     ///     every window into a grid (overview mode — see them all).
-    ///   * Otherwise (focused window is tiled, half-screened, free-
-    ///     floating, anything), MAXIMIZE just the focused window to fill
-    ///     the visibleFrame (work mode — focus on the one you clicked).
+    ///   * Otherwise (focused window is tiled / half-screened / free-
+    ///     floating / anything), MAXIMIZE *every* window to fill the
+    ///     visibleFrame (the inverse — all windows stack back to full
+    ///     width + height).
     ///
     /// Typical workflow:
     ///   Press 1 (working in one big window): tile all → overview
-    ///   Click the tile you want to work in
-    ///   Press 2 (focused window is now small): maximize focused → work
-    ///   Press 3 (focused window full again): tile all → overview
+    ///   Press 2 (focused window is tiled): un-tile all → every window
+    ///       back to full width + height, stacked
+    ///   Press 3: tile all again → overview
     ///   …forever
     ///
     /// Stateless: each decision reads current AX geometry, no per-app
@@ -6124,8 +6329,10 @@ enum SnapEngine {
             tileGrid(windows: windows, in: maxRect)
             mode = "TILED \(windows.count)"
         } else {
-            setFrame(target, origin: maxRect.origin, size: maxRect.size)
-            mode = "MAXIMIZED focused"
+            for w in windows {
+                setFrame(w, origin: maxRect.origin, size: maxRect.size)
+            }
+            mode = "MAXIMIZED all \(windows.count)"
         }
 
         let elapsed = Date().timeIntervalSince(started)
