@@ -783,6 +783,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // the "no handler" blink error. Only ⌃⌥⌘D (dictate) stays in
         // LiveViewportDelegate because it needs the panel.
         registerMenuBarHotKeys()
+        // Stickies → Claude trigger. Runs the bash watcher every 3 sec.
+        // Bash is spawned by AppleToolbox.app, so it inherits AppleToolbox's
+        // TCC identity — meaning when the user grants AppleToolbox Full Disk
+        // Access (System Settings → Privacy & Security → Full Disk Access),
+        // the spawned bash can finally enumerate the Stickies app-container
+        // .rtfd files. A standalone LaunchAgent can't because launchd-spawned
+        // bash has no TCC grants of its own. See
+        // wiki/concepts/stickies-claude-trigger.md.
+        startStickiesClaudeTimer()
+    }
+
+    var stickiesClaudeTimer: Timer?
+
+    func startStickiesClaudeTimer() {
+        let watcher = "\(HOME)/work/apple/bin/stickies-claude-watcher"
+        guard FileManager.default.isExecutableFile(atPath: watcher) else {
+            NSLog("AppleToolbox: stickies-claude-watcher not executable at \(watcher), skipping")
+            return
+        }
+        stickiesClaudeTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+            let p = Process()
+            p.launchPath = "/bin/bash"
+            p.arguments = ["-c", watcher]
+            // Detach stdout/stderr; the watcher writes its own log.
+            p.standardOutput = FileHandle.nullDevice
+            p.standardError = FileHandle.nullDevice
+            do { try p.run() } catch { NSLog("AppleToolbox: stickies watcher spawn failed: \(error)") }
+        }
+        NSLog("AppleToolbox: stickies-claude timer started (3s interval)")
     }
 
     /// Carbon RegisterEventHotKey for the menu-bar-owned chords:
@@ -1336,6 +1365,52 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Thread.sleep(forTimeInterval: 0.4); openFile(out)
     }
 
+    // Screen recording via QuickTime Player. Start just opens the recording
+    // window — Esa clicks Record manually when ready (so he can choose the
+    // mic dropdown first if he wants to narrate, or skip it if he doesn't).
+    // Stop uses three fallbacks: QT's `stop document`, UI-clicking the
+    // menu-bar stop icon, and finally ⌃⌘Esc.
+
+    @objc func startScreenRecording(_ sender: NSMenuItem) {
+        let script = """
+        tell application "QuickTime Player"
+            activate
+            try
+                new screen recording
+            end try
+        end tell
+        """
+        runDetached("/usr/bin/osascript", ["-e", script])
+    }
+
+    @objc func stopScreenRecording(_ sender: NSMenuItem) {
+        let script = """
+        -- Try 1: AppleScript stop on the recording document.
+        tell application "QuickTime Player"
+            try
+                if (count of documents) > 0 then
+                    stop document 1
+                end if
+            end try
+        end tell
+        -- Try 2: Click QT's menu-bar stop icon (visible while recording).
+        tell application "System Events"
+            try
+                tell application process "QuickTime Player"
+                    click menu bar item 1 of menu bar 2
+                end tell
+            end try
+        end tell
+        -- Try 3: macOS global stop-recording shortcut ⌃⌘Esc.
+        tell application "System Events"
+            try
+                key code 53 using {command down, control down}
+            end try
+        end tell
+        """
+        runDetached("/usr/bin/osascript", ["-e", script])
+    }
+
     @objc func refresh() { rebuildMenu() }
     @objc func quit() { NSApp.terminate(nil) }
 
@@ -1579,6 +1654,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // symbols like ⏹/⚙ to force emoji presentation — never raw
         // symbol-presentation glyphs, they render visibly smaller).
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
+        menu.addItem(customAction("🎥 Start Recording Current Screen",
+                                  selector: #selector(startScreenRecording(_:))))
+        menu.addItem(customAction("⏹\u{FE0F} Stop Recording (save dialog)",
+                                  selector: #selector(stopScreenRecording(_:))))
 
         // Pinned-file row — populated when a file is dropped onto the
         // AppleToolbox icon in the Finder toolbar (via application(_:open:)).

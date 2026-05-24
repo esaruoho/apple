@@ -13,11 +13,11 @@ The point isn't Stickies specifically — it's that any persistent text surface 
 | Path | What it is |
 |---|---|
 | `bin/stickies-claude-watcher` | The worker. Scans every `.rtfd` bundle in the Stickies container, extracts text via `textutil`, detects `#claude` + a skill tag, hashes the cleaned body, dispatches on change. |
-| `bin/com.esa.stickies-claude.plist` | LaunchAgent. Uses `WatchPaths` on the Stickies directory — fires within ~1 sec of Stickies flushing a note to disk. `ThrottleInterval: 2` prevents thrash during multi-file saves. |
-| `bin/stickies-claude-install.sh` | Install / uninstall / status / run / tail. Safe to re-run; replaces the loaded plist atomically. |
+| `topbar/AppleToolbox.swift` (`startStickiesClaudeTimer`) | The ticker. `Timer.scheduledTimer` fires the watcher every 3 sec from inside AppleToolbox.app. This is the production path — see "Why AppleToolbox runs it, not launchd" below. |
 | `etc/stickies-claude-tagmap.txt` | Tag → cwd map. `apple=/Users/esaruoho/work/apple` style. Unknown tags fall back to `$HOME`. |
 | `state/stickies-claude/<uuid>.sha` | Per-note content hash. Re-fires only when the cleaned body changes. **Gitignored.** |
 | `~/work/comms/queue/stickies-claude.log` | Activity log: every dispatch, with UUID + skill + cwd. |
+| `bin/com.esa.stickies-claude.plist` + `bin/stickies-claude-install.sh` | Standalone LaunchAgent path. **Does not work without granting Full Disk Access to `/bin/bash`** — see below. Kept for installations that can't ride AppleToolbox. |
 
 ## The sticky format
 
@@ -45,13 +45,15 @@ audit the wiki for broken cross-refs and tell me what's stale"
 
 The natural-language `Use <Skill> skill.` prefix is deliberate — Claude reads it on session start and invokes the skill via the Skill tool. This works for every skill regardless of whether it has a session-start hook (slash-command invocation `/apple <args>` does not always parse `<args>` cleanly across skills).
 
-## Why `WatchPaths` plus a polling backstop
+## Why AppleToolbox runs it, not launchd
 
-`WatchPaths` is the Apple-native fast path: launchd subscribes to FSEvents on the named directory and fires the agent within ~1 sec of Stickies flushing a .rtfd. The remaining lag is Stickies' own save cadence — it doesn't write on keystroke, it writes after idle or on close / quit. That's an app limit, not a watcher limit.
+**TCC (macOS privacy) blocks launchd-spawned bash from enumerating the Stickies app-container directory.** Even though the directory is `-r` readable and the file count is correct from an interactive shell, the same bash glob expanded inside a LaunchAgent-spawned process returns zero matches. The interactive shell sees the files because Terminal/iTerm have Full Disk Access (granted at some point in the past). The launchd-spawned bash inherits nothing — it has no "responsible app" with FDA, so TCC silently filters the directory listing.
 
-In practice WatchPaths on a deep app-container directory is **not 100% reliable** — observed locally that some new-sticky creations didn't fire the agent at all, even though the directory mtime did change. Cause unknown (suspect: launchd's FSEvents subscription doesn't always re-arm after a previous fire). To make the system robust, the plist also carries `StartInterval: 30` as a backstop: every 30 sec the watcher runs unconditionally, catching any sticky that WatchPaths missed. Cost is negligible — each run is ~50ms of `textutil` per note.
+The fix is to put the timer inside a process that DOES have a TCC identity Esa can grant FDA to: **AppleToolbox.app**. Three-second `Timer.scheduledTimer` in `applicationDidFinishLaunching` spawns `/bin/bash -c stickies-claude-watcher`. Because AppleToolbox is the responsible parent process, the spawned bash inherits AppleToolbox's TCC grants — once Esa grants AppleToolbox Full Disk Access (System Settings → Privacy & Security → Full Disk Access → "+" → AppleToolbox.app), the watcher can finally see every .rtfd bundle.
 
-`ThrottleInterval: 2` is the safety net for the fast path: if the directory changes several times in quick succession (rare for Stickies but possible during quit-flush), launchd won't restart the watcher more than once every 2 sec.
+This pattern generalises: **any LaunchAgent script that reads from `~/Library/Containers/*/Data/` will hit the same TCC wall**. If the data has to flow through bash, host the timer in a Swift app you control, not a bare LaunchAgent.
+
+The legacy `bin/com.esa.stickies-claude.plist` LaunchAgent is preserved for non-AppleToolbox installations. It will only work if the user explicitly grants `/bin/bash` Full Disk Access — invasive, and not recommended.
 
 ## State semantics — when does it re-fire
 
