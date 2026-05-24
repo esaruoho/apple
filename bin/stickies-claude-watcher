@@ -22,6 +22,14 @@
 # Loop cadence is set by the LaunchAgent (com.esa.stickies-claude.plist).
 
 set -u
+# Esa's .bash_profile aliases `tr`, `dir`, `del`, `ds`, `DS` to cd targets.
+# Running under `bash -lc` (LaunchAgent) sources that profile, so any
+# coreutils call in the script would resolve to the alias and silently
+# return empty. Wipe inherited aliases at the top so the script behaves
+# the same under launchd as it does in an interactive shell. See memory
+# feedback_tr_alias_shadow.md.
+unalias -a 2>/dev/null || true
+
 APPLE_ROOT="/Users/esaruoho/work/apple"
 STICKIES_DIR="$HOME/Library/Containers/com.apple.Stickies/Data/Library/Stickies"
 STATE_DIR="$APPLE_ROOT/state/stickies-claude"
