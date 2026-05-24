@@ -1,0 +1,132 @@
+#!/bin/bash
+# stickies-claude-watcher — scan Stickies for #claude-tagged notes and
+# launch Claude Code with the matching skill + prompt in a new Terminal
+# window.
+#
+# Sticky format the watcher reacts to:
+#
+#     #claude #apple
+#     do the thing in the apple repo
+#     more lines of prompt body
+#
+# Rules:
+#   - Must contain a "#claude" token (case-insensitive).
+#   - The first OTHER #tag selects:
+#       · the slash command (/<tag>) Claude is launched with
+#       · the working directory, via etc/stickies-claude-tagmap.txt
+#         (falls back to $HOME if the tag isn't mapped)
+#   - All #tags are stripped from the body before it becomes the prompt.
+#   - Each sticky's content is hashed; the watcher only re-fires when the
+#     content changes (state lives in state/stickies-claude/<uuid>.sha).
+#
+# Loop cadence is set by the LaunchAgent (com.esa.stickies-claude.plist).
+
+set -u
+APPLE_ROOT="/Users/esaruoho/work/apple"
+STICKIES_DIR="$HOME/Library/Containers/com.apple.Stickies/Data/Library/Stickies"
+STATE_DIR="$APPLE_ROOT/state/stickies-claude"
+TAGMAP="$APPLE_ROOT/etc/stickies-claude-tagmap.txt"
+LOG="$HOME/work/comms/queue/stickies-claude.log"
+
+mkdir -p "$STATE_DIR" "$(dirname "$LOG")"
+
+log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
+
+lookup_cwd() {
+    local tag="$1"
+    if [[ -f "$TAGMAP" ]]; then
+        local hit
+        hit=$(grep -E "^${tag}=" "$TAGMAP" | head -1 | cut -d= -f2-)
+        if [[ -n "$hit" && -d "$hit" ]]; then
+            printf '%s' "$hit"
+            return 0
+        fi
+    fi
+    printf '%s' "$HOME"
+}
+
+# Shell-quote a string for safe interpolation into a bash -lc argument.
+shquote() {
+    local s="$1"
+    printf "'%s'" "${s//\'/\'\\\'\'}"
+}
+
+# AppleScript-quote: escape \ and " for use inside an AppleScript string.
+asquote() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    printf '%s' "$s"
+}
+
+dispatch() {
+    local uuid="$1" skill="$2" cwd="$3" prompt="$4"
+
+    # Natural-language skill invocation: Claude reads "Use Foo skill." and
+    # calls the Skill tool itself, which works across every skill regardless
+    # of whether it has a session-start hook.
+    local skill_title
+    skill_title="$(printf '%s' "${skill:0:1}" | tr '[:lower:]' '[:upper:]')${skill:1}"
+    local full_prompt="Use ${skill_title} skill.
+
+${prompt}"
+
+    # Build the inner shell command. `claude` lives in ~/.claude/local on Esa's
+    # box but is on PATH for login shells, so wrap in `bash -lc`.
+    local inner_cmd
+    inner_cmd="cd $(shquote "$cwd") && claude $(shquote "$full_prompt")"
+
+    # Pass through Terminal via osascript. `do script` opens a new window and
+    # runs the command in a login shell.
+    local as_cmd
+    as_cmd=$(asquote "$inner_cmd")
+
+    osascript <<APPLESCRIPT >> "$LOG" 2>&1
+tell application "Terminal"
+    activate
+    do script "$as_cmd"
+end tell
+APPLESCRIPT
+    log "dispatched uuid=$uuid skill=$skill cwd=$cwd"
+}
+
+shopt -s nullglob
+for rtfd in "$STICKIES_DIR"/*.rtfd; do
+    uuid=$(basename "$rtfd" .rtfd)
+    body=$(textutil -convert txt -encoding UTF-8 -stdout "$rtfd" 2>/dev/null) || continue
+    [[ -z "$body" ]] && continue
+
+    # Case-insensitive #claude detection.
+    shopt -s nocasematch
+    [[ "$body" =~ \#claude([[:space:]]|$) ]] || { shopt -u nocasematch; continue; }
+    shopt -u nocasematch
+
+    # First non-#claude tag → skill name.
+    skill=""
+    while IFS= read -r tag; do
+        tl=$(printf '%s' "$tag" | tr '[:upper:]' '[:lower:]')
+        if [[ "$tl" != "claude" ]]; then
+            skill="$tl"
+            break
+        fi
+    done < <(printf '%s' "$body" | grep -oE '#[A-Za-z][A-Za-z0-9_-]*' | sed 's/^#//')
+
+    [[ -z "$skill" ]] && continue
+
+    # Strip all #tags from the prompt body.
+    prompt=$(printf '%s' "$body" | sed -E 's/#[A-Za-z][A-Za-z0-9_-]+//g' | awk 'NF{f=1} f' | sed -E 's/[[:space:]]+$//')
+    # Trim leading blanks.
+    prompt=$(printf '%s' "$prompt" | awk 'NF{p=1} p')
+    [[ -z "$prompt" ]] && continue
+
+    # Hash content (skill + prompt) so edits re-fire but reboots don't.
+    hash=$(printf '%s\n%s' "$skill" "$prompt" | shasum -a 256 | awk '{print $1}')
+    state_file="$STATE_DIR/$uuid.sha"
+    if [[ -f "$state_file" ]] && [[ "$(cat "$state_file")" == "$hash" ]]; then
+        continue
+    fi
+
+    cwd=$(lookup_cwd "$skill")
+    printf '%s' "$hash" > "$state_file"
+    dispatch "$uuid" "$skill" "$cwd" "$prompt"
+done

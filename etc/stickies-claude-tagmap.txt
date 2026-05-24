@@ -1,0 +1,14 @@
+# stickies-claude tag → working directory map
+# Lines: <tag-without-hash>=<absolute path>
+# The first matching non-#claude tag in a sticky selects both the cwd
+# (column 2) and the skill name to slash-invoke (column 1).
+# Unknown tags still fire: cwd defaults to $HOME and the slash becomes
+# /<tag> verbatim — drop a tag here only if you want a custom cwd.
+
+apple=/Users/esaruoho/work/apple
+paketti=/Users/esaruoho/work/paketti
+bbs=/Users/esaruoho/work/cc
+ray=/Users/esaruoho/work/ray
+merlib=/Users/esaruoho/work/merlib-dump
+voicebox=/Users/esaruoho/work/voicebox
+whisp=/Users/esaruoho/work/whisp

@@ -1,4 +1,4 @@
-# CLI Tools Index — 100 tools in bin/
+# CLI Tools Index — 102 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -83,6 +83,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `smart` — (no description) — `bin/smart`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
+`stickies-claude-install.sh` — stickies-claude-install — install/uninstall the stickies → claude watcher — `bin/stickies-claude-install.sh`
+`stickies-claude-watcher` — scan Stickies for #claude-tagged notes and — `bin/stickies-claude-watcher`
 `tag` — (no description) — `bin/tag`
 `tag-asobjc-full.applescript` — tag-asobjc-full.applescript — `bin/tag-asobjc-full.applescript`
 `tag-asobjc.applescript` — tag-asobjc.applescript — `bin/tag-asobjc.applescript`
