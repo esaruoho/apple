@@ -62,11 +62,11 @@ asquote() {
 dispatch() {
     local uuid="$1" skill="$2" cwd="$3" prompt="$4"
 
-    # Natural-language skill invocation: Claude reads "Use Foo skill." and
-    # calls the Skill tool itself, which works across every skill regardless
-    # of whether it has a session-start hook.
+    # Natural-language skill invocation: Claude reads "Use Foo Bar skill."
+    # and calls the Skill tool itself. Title-case across hyphens so
+    # "impulse-tracker" becomes "Impulse Tracker", not "Impulse-tracker".
     local skill_title
-    skill_title="$(printf '%s' "${skill:0:1}" | tr '[:lower:]' '[:upper:]')${skill:1}"
+    skill_title=$(printf '%s' "$skill" | awk -F'-' '{ for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print }' OFS=' ')
     local full_prompt="Use ${skill_title} skill.
 
 ${prompt}"

@@ -45,13 +45,13 @@ audit the wiki for broken cross-refs and tell me what's stale"
 
 The natural-language `Use <Skill> skill.` prefix is deliberate — Claude reads it on session start and invokes the skill via the Skill tool. This works for every skill regardless of whether it has a session-start hook (slash-command invocation `/apple <args>` does not always parse `<args>` cleanly across skills).
 
-## Why `WatchPaths` instead of polling
+## Why `WatchPaths` plus a polling backstop
 
-Earlier draft used `StartInterval: 20` — fires the watcher every 20 sec whether or not anything changed. That meant up to 20 sec of latency on a save AND wasted wakeups on every quiet interval.
+`WatchPaths` is the Apple-native fast path: launchd subscribes to FSEvents on the named directory and fires the agent within ~1 sec of Stickies flushing a .rtfd. The remaining lag is Stickies' own save cadence — it doesn't write on keystroke, it writes after idle or on close / quit. That's an app limit, not a watcher limit.
 
-`WatchPaths` is the Apple-native answer: launchd subscribes to FSEvents on the named directory and fires the agent only when something inside changes. Latency drops to ~1 sec from the moment Stickies flushes the .rtfd to disk. The remaining lag is Stickies' own save cadence — it doesn't write on keystroke, it writes after a few seconds of idle or when the sticky closes / Stickies quits. That's an app limit, not a watcher limit.
+In practice WatchPaths on a deep app-container directory is **not 100% reliable** — observed locally that some new-sticky creations didn't fire the agent at all, even though the directory mtime did change. Cause unknown (suspect: launchd's FSEvents subscription doesn't always re-arm after a previous fire). To make the system robust, the plist also carries `StartInterval: 30` as a backstop: every 30 sec the watcher runs unconditionally, catching any sticky that WatchPaths missed. Cost is negligible — each run is ~50ms of `textutil` per note.
 
-`ThrottleInterval: 2` is the documented safety net: if multiple files in the watched directory change in quick succession (rare for Stickies but possible during quit-flush), launchd won't restart the watcher more than once every 2 sec.
+`ThrottleInterval: 2` is the safety net for the fast path: if the directory changes several times in quick succession (rare for Stickies but possible during quit-flush), launchd won't restart the watcher more than once every 2 sec.
 
 ## State semantics — when does it re-fire
 
