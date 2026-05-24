@@ -81,13 +81,32 @@ ${prompt}"
     local as_cmd
     as_cmd=$(asquote "$inner_cmd")
 
-    osascript <<APPLESCRIPT >> "$LOG" 2>&1
+    # Prefer iTerm if installed; fall back to Terminal.app.
+    if [[ -d "/Applications/iTerm.app" ]]; then
+        osascript >> "$LOG" 2>&1 <<APPLESCRIPT
+tell application "iTerm"
+    activate
+    set newWindow to (create window with default profile)
+    tell current session of newWindow
+        write text "$as_cmd"
+    end tell
+end tell
+APPLESCRIPT
+    else
+        osascript >> "$LOG" 2>&1 <<APPLESCRIPT
 tell application "Terminal"
     activate
     do script "$as_cmd"
 end tell
 APPLESCRIPT
+    fi
+    local rc=$?
+    if [[ $rc -ne 0 ]]; then
+        log "dispatch FAILED rc=$rc uuid=$uuid skill=$skill cwd=$cwd"
+        return 1
+    fi
     log "dispatched uuid=$uuid skill=$skill cwd=$cwd"
+    return 0
 }
 
 shopt -s nullglob
@@ -127,6 +146,7 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
     fi
 
     cwd=$(lookup_cwd "$skill")
-    printf '%s' "$hash" > "$state_file"
-    dispatch "$uuid" "$skill" "$cwd" "$prompt"
+    if dispatch "$uuid" "$skill" "$cwd" "$prompt"; then
+        printf '%s' "$hash" > "$state_file"
+    fi
 done

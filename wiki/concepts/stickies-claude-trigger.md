@@ -35,7 +35,7 @@ Rules the watcher applies:
 
 ## What gets executed
 
-The watcher opens a new Terminal window via `osascript` and runs, in a login shell:
+The watcher opens a new terminal window via `osascript` and runs, in a login shell. **iTerm.app is preferred if installed (`/Applications/iTerm.app`); otherwise Terminal.app is used.** Switch is one `[[ -d ... ]]` check in `dispatch()`.
 
 ```bash
 cd /Users/esaruoho/work/apple && claude "Use Apple skill.
