@@ -32,6 +32,8 @@ mkdir -p "$STATE_DIR" "$(dirname "$LOG")"
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
 
+log "watcher fired pid=$$ ppid=$PPID"
+
 lookup_cwd() {
     local tag="$1"
     if [[ -f "$TAGMAP" ]]; then

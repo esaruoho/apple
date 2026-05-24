@@ -802,16 +802,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("AppleToolbox: stickies-claude-watcher not executable at \(watcher), skipping")
             return
         }
-        stickiesClaudeTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+        // Schedule on .common modes so the timer keeps firing while the
+        // status-item menu is open or during other event-tracking. Default
+        // .default mode pauses under those conditions and the watcher then
+        // appears "dead" for minutes at a time.
+        let t = Timer(timeInterval: 3, repeats: true) { _ in
             let p = Process()
             p.launchPath = "/bin/bash"
             p.arguments = ["-c", watcher]
-            // Detach stdout/stderr; the watcher writes its own log.
             p.standardOutput = FileHandle.nullDevice
             p.standardError = FileHandle.nullDevice
             do { try p.run() } catch { NSLog("AppleToolbox: stickies watcher spawn failed: \(error)") }
         }
-        NSLog("AppleToolbox: stickies-claude timer started (3s interval)")
+        RunLoop.main.add(t, forMode: .common)
+        stickiesClaudeTimer = t
+        NSLog("AppleToolbox: stickies-claude timer started (3s, .common mode)")
     }
 
     /// Carbon RegisterEventHotKey for the menu-bar-owned chords:
