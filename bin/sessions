@@ -142,10 +142,7 @@ def list_copilot(folder):
             "FROM sessions s WHERE s.cwd = ? ORDER BY s.updated_at DESC",
             (resolved,))
         for sid, cwd, summary, updated_at, n, first_msg in cur.fetchall():
-            try:
-                mtime = time.mktime(time.strptime(updated_at, "%Y-%m-%d %H:%M:%S"))
-            except Exception:
-                mtime = 0.0
+            mtime = parse_iso(updated_at)
             snip = (summary or first_msg or "(empty)").strip().replace("\n", " ")[:200]
             r = Row("copilot", sid, cwd, COPILOT_DB, mtime, 0, n or 0, snip)
             rows.append(r)
@@ -256,13 +253,37 @@ def list_all(folder):
     return rows
 
 
+def parse_iso(s):
+    """Parse SQLite/ISO-8601 timestamp → epoch seconds (local time). 0.0 on fail."""
+    if not s:
+        return 0.0
+    try:
+        from datetime import datetime, timezone
+        # fromisoformat handles 'Z' on 3.11+. Force UTC if no tz; we want local epoch.
+        s2 = s.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(s2)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    except Exception:
+        try:
+            return time.mktime(time.strptime(s[:19], "%Y-%m-%d %H:%M:%S"))
+        except Exception:
+            return 0.0
+
+
 def human_age(mtime):
+    """Consistent 4-char width: 12s, 45m, 6h, 11d, 13w, 4mo, 2y."""
+    if mtime <= 0:
+        return " --"
     diff = time.time() - mtime
     if diff < 60: return f"{int(diff)}s"
     if diff < 3600: return f"{int(diff/60)}m"
     if diff < 86400: return f"{int(diff/3600)}h"
-    if diff < 86400 * 30: return f"{int(diff/86400)}d"
-    return time.strftime("%Y-%m-%d", time.localtime(mtime))
+    if diff < 86400 * 7: return f"{int(diff/86400)}d"
+    if diff < 86400 * 30: return f"{int(diff/86400/7)}w"
+    if diff < 86400 * 365: return f"{int(diff/86400/30)}mo"
+    return f"{int(diff/86400/365)}y"
 
 
 def human_size(n):
@@ -356,7 +377,8 @@ def run_picker(stdscr, folder):
         cn = sum(1 for r in rows if r.provider == "claude")
         gn = sum(1 for r in rows if r.provider == "copilot")
         xn = sum(1 for r in rows if r.provider == "codex")
-        header = f" sessions · {folder}   C:{cn} G:{gn} X:{xn}"
+        disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
+        header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn}"
         footer = " ↑/↓ select · ⏎ resume · n new claude · c new copilot · x new codex · q quit · auto-refresh"
         try:
             stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
@@ -378,9 +400,9 @@ def run_picker(stdscr, folder):
             for i in range(top, min(len(rows), top + body_h)):
                 ensure_meta(i)
                 r = rows[i]
-                age = human_age(r.mtime).rjust(5)
+                age = human_age(r.mtime).rjust(4)
                 turns = f"{r.turns:>4}t"
-                size = human_size(r.size).rjust(5) if r.size else "    -"
+                size = human_size(r.size).rjust(5) if r.size else "    ·"
                 glyph = PROVIDER_GLYPH[r.provider]
                 short_id = r.uuid[:8]
                 snippet = r.snippet or ""
