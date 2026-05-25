@@ -58,13 +58,28 @@ lookup_cwd() {
     local tag="$1"
     if [[ -f "$TAGMAP" ]]; then
         local hit
-        hit=$(grep -E "^${tag}=" "$TAGMAP" | head -1 | cut -d= -f2-)
+        # Tagmap value is "<cwd>" or "<cwd>|<canonical-skill-name>".
+        # Strip the optional |alias suffix for the cwd lookup.
+        hit=$(grep -E "^${tag}=" "$TAGMAP" | head -1 | cut -d= -f2- | cut -d'|' -f1)
         if [[ -n "$hit" && -d "$hit" ]]; then
             printf '%s' "$hit"
             return 0
         fi
     fi
     printf '%s' "$HOME"
+}
+
+# If the tagmap line is "<tag>=<cwd>|<skill-alias>", return the alias.
+# Lets short tags like #fe → "free-energy" skill instead of "FE skill".
+lookup_skill_alias() {
+    local tag="$1"
+    [[ -f "$TAGMAP" ]] || return 0
+    local line value
+    line=$(grep -E "^${tag}=" "$TAGMAP" | head -1)
+    value="${line#*=}"
+    if [[ "$value" == *"|"* ]]; then
+        printf '%s' "${value#*|}"
+    fi
 }
 
 # Shell-quote a string for safe interpolation into a bash -lc argument.
@@ -168,6 +183,11 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
     fi
 
     cwd=$(lookup_cwd "$skill")
+    # Tag may be a short alias (#fe) — resolve to the canonical skill
+    # name (free-energy) so dispatch says "Use Free Energy skill." not
+    # "Use Fe skill."
+    skill_alias=$(lookup_skill_alias "$skill")
+    [[ -n "$skill_alias" ]] && skill="$skill_alias"
     if dispatch "$uuid" "$skill" "$cwd" "$prompt"; then
         printf '%s' "$hash" > "$state_file"
     fi

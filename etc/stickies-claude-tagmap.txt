@@ -1,7 +1,13 @@
 # stickies-claude tag → working directory map
 # Lines: <tag-without-hash>=<absolute path>
-# The first matching non-#claude tag in a sticky selects both the cwd
-# (column 2) and the skill name to slash-invoke (column 1).
+#    or: <tag-without-hash>=<absolute path>|<canonical-skill-name>
+# The first matching non-#claude tag in a sticky selects:
+#   · the cwd (left of the optional |)
+#   · the skill the dispatcher tells Claude to use:
+#       - default = the tag itself, title-cased ("free-energy" → "Free Energy")
+#       - override = the |<canonical-skill-name> suffix
+#         (use this for short aliases like fe → free-energy so the
+#         prompt reads "Use Free Energy skill." not "Use Fe skill.")
 # Unknown tags still fire: cwd defaults to $HOME and the slash becomes
 # /<tag> verbatim — drop a tag here only if you want a custom cwd.
 
@@ -23,5 +29,5 @@ chromium-ray-poc=/Users/esaruoho/work/chromium-ray-poc
 ray-graph=/Users/esaruoho/work/ray-graph
 lenr-academy=/Users/esaruoho/work/lenr-academy
 free-energy=/Users/esaruoho/work/merlib-dump
-freeenergy=/Users/esaruoho/work/merlib-dump
-fe=/Users/esaruoho/work/merlib-dump
+freeenergy=/Users/esaruoho/work/merlib-dump|free-energy
+fe=/Users/esaruoho/work/merlib-dump|free-energy
