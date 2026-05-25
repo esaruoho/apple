@@ -796,17 +796,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var stickiesClaudeTimer: Timer?
 
+    var stickiesDirSource: DispatchSourceFileSystemObject?
+    var stickiesDirFD: Int32 = -1
+
     func startStickiesClaudeTimer() {
         let watcher = "\(HOME)/work/apple/bin/stickies-claude-watcher"
         guard FileManager.default.isExecutableFile(atPath: watcher) else {
             NSLog("AppleToolbox: stickies-claude-watcher not executable at \(watcher), skipping")
             return
         }
-        // Schedule on .common modes so the timer keeps firing while the
-        // status-item menu is open or during other event-tracking. Default
-        // .default mode pauses under those conditions and the watcher then
-        // appears "dead" for minutes at a time.
-        let t = Timer(timeInterval: 3, repeats: true) { _ in
+
+        // The actual dispatch shell-out, shared by the timer + the FSEvents
+        // source so a save reacts instantly AND the timer catches anything
+        // FSEvents missed.
+        let fire = {
             let p = Process()
             p.launchPath = "/bin/bash"
             p.arguments = ["-c", watcher]
@@ -814,9 +817,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             p.standardError = FileHandle.nullDevice
             do { try p.run() } catch { NSLog("AppleToolbox: stickies watcher spawn failed: \(error)") }
         }
+
+        // 1.5s polling backstop on .common runloop modes so it keeps firing
+        // during menu interaction.
+        let t = Timer(timeInterval: 1.5, repeats: true) { _ in fire() }
         RunLoop.main.add(t, forMode: .common)
         stickiesClaudeTimer = t
-        NSLog("AppleToolbox: stickies-claude timer started (3s, .common mode)")
+
+        // FSEvents directory watch for sub-second reaction on sticky saves.
+        // AppleToolbox holds the FD (granted via its FDA); the dispatch
+        // source fires whenever the Stickies dir changes (write / extend /
+        // rename / attrib). Coalescing happens naturally — a flurry of
+        // writes during quit-flush triggers one event, not N.
+        let dir = "\(HOME)/Library/Containers/com.apple.Stickies/Data/Library/Stickies"
+        let fd = open(dir, O_EVTONLY)
+        if fd >= 0 {
+            stickiesDirFD = fd
+            let src = DispatchSource.makeFileSystemObjectSource(
+                fileDescriptor: fd,
+                eventMask: [.write, .extend, .rename, .attrib],
+                queue: DispatchQueue.main
+            )
+            src.setEventHandler { fire() }
+            src.setCancelHandler { [weak self] in
+                if let f = self?.stickiesDirFD, f >= 0 { close(f) }
+                self?.stickiesDirFD = -1
+            }
+            src.resume()
+            stickiesDirSource = src
+            NSLog("AppleToolbox: stickies-claude armed (1.5s poll + FSEvents on \(dir))")
+        } else {
+            NSLog("AppleToolbox: stickies-claude FSEvents open() failed for \(dir) — falling back to poll only")
+        }
     }
 
     /// Carbon RegisterEventHotKey for the menu-bar-owned chords:
