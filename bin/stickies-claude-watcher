@@ -98,14 +98,24 @@ asquote() {
 }
 
 dispatch() {
+    # Args: uuid, primary_skill, cwd, prompt, [extra_skill ...]
     local uuid="$1" skill="$2" cwd="$3" prompt="$4"
+    shift 4
+    local extras=("$@")
 
     # Natural-language skill invocation: Claude reads "Use Foo Bar skill."
-    # and calls the Skill tool itself. Title-case across hyphens so
-    # "impulse-tracker" becomes "Impulse Tracker", not "Impulse-tracker".
-    local skill_title
-    skill_title=$(printf '%s' "$skill" | awk -F'-' '{ for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print }' OFS=' ')
-    local full_prompt="Use ${skill_title} skill.
+    # for each tag and calls the Skill tool itself. Title-case across
+    # hyphens so "impulse-tracker" becomes "Impulse Tracker".
+    title_case() {
+        printf '%s' "$1" | awk -F'-' '{ for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print }' OFS=' '
+    }
+    local skill_header
+    skill_header="Use $(title_case "$skill") skill."
+    local s
+    for s in "${extras[@]}"; do
+        skill_header+=$'\n'"Use $(title_case "$s") skill."
+    done
+    local full_prompt="${skill_header}
 
 ${prompt}"
 
@@ -182,13 +192,27 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
     [[ "$body" =~ \#claude([[:space:]]|$) ]] || { shopt -u nocasematch; continue; }
     shopt -u nocasematch
 
-    # First non-#claude tag → skill name.
+    # Collect ALL non-#claude tags in source order.
+    #   - First tag → cwd (via lookup_cwd)
+    #   - Every tag → "Use <Title> skill." line prepended to the prompt
+    # So `#fe #apple #rbi #claude` opens ONE window in ~/work/merlib-dump
+    # and tells Claude to load Free Energy + Apple + Rhythmic Balanced
+    # Interchange skills in that order.
     skill=""
+    extra_skills=()
     while IFS= read -r tag; do
         tl=$(printf '%s' "$tag" | tr '[:upper:]' '[:lower:]')
-        if [[ "$tl" != "claude" ]]; then
+        [[ "$tl" == "claude" ]] && continue
+        if [[ -z "$skill" ]]; then
             skill="$tl"
-            break
+        else
+            # Deduplicate — same tag twice in a sticky shouldn't double-Use.
+            local_dup=0
+            for s in "${extra_skills[@]}"; do
+                [[ "$s" == "$tl" ]] && { local_dup=1; break; }
+            done
+            [[ "$tl" == "$skill" ]] && local_dup=1
+            [[ $local_dup -eq 0 ]] && extra_skills+=("$tl")
         fi
     done < <(printf '%s' "$body" | grep -oE '#[A-Za-z][A-Za-z0-9_-]*' | sed 's/^#//')
 
@@ -200,20 +224,26 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
     prompt=$(printf '%s' "$prompt" | awk 'NF{p=1} p')
     [[ -z "$prompt" ]] && continue
 
-    # Hash content (skill + prompt) so edits re-fire but reboots don't.
-    hash=$(printf '%s\n%s' "$skill" "$prompt" | shasum -a 256 | awk '{print $1}')
+    # Hash content (all skills + prompt) so edits re-fire but reboots don't.
+    # Including extra_skills means adding a new skill tag re-fires.
+    hash=$(printf '%s\n%s\n%s' "$skill" "${extra_skills[*]:-}" "$prompt" | shasum -a 256 | awk '{print $1}')
     state_file="$STATE_DIR/$uuid.sha"
     if [[ -f "$state_file" ]] && [[ "$(cat "$state_file")" == "$hash" ]]; then
         continue
     fi
 
     cwd=$(lookup_cwd "$skill")
-    # Tag may be a short alias (#fe) — resolve to the canonical skill
-    # name (free-energy) so dispatch says "Use Free Energy skill." not
-    # "Use Fe skill."
+    # Each tag may be a short alias (#fe → free-energy). Resolve every tag
+    # to its canonical skill name so dispatch builds correct "Use X skill."
+    # lines.
     skill_alias=$(lookup_skill_alias "$skill")
     [[ -n "$skill_alias" ]] && skill="$skill_alias"
-    if dispatch "$uuid" "$skill" "$cwd" "$prompt"; then
+    resolved_extras=()
+    for s in "${extra_skills[@]}"; do
+        a=$(lookup_skill_alias "$s")
+        resolved_extras+=("${a:-$s}")
+    done
+    if dispatch "$uuid" "$skill" "$cwd" "$prompt" "${resolved_extras[@]}"; then
         printf '%s' "$hash" > "$state_file"
     fi
 done
