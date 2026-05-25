@@ -5942,7 +5942,7 @@
   },
   {
     "slug": "slide-overlayruleofthirdsgrid",
-    "title": "Overlay \u201cThe Rule of Thirds\u201d grid",
+    "title": "Overlay \u201cThe Rule of tile-thirds\u201d grid",
     "primary_phrase": "show [the] rule of thirds [grid]",
     "phrases": [
       "show [the] rule of thirds [grid]",
@@ -5950,7 +5950,7 @@
       "display [the] rule of thirds [grid]"
     ],
     "scope": "com.apple.iWork.Keynote",
-    "description": "Overlay a grid of lines for the Rule of Thirds on the selected or solo image on the current slide.",
+    "description": "Overlay a grid of lines for the Rule of tile-thirds on the selected or solo image on the current slide.",
     "source_library": "Keynote",
     "applescript": "use script \"DC-Keynote-Objects\"\ntell script \"DC-Keynote-Objects\" to overlayRuleOfThirdsOnSelectedImage()"
   },

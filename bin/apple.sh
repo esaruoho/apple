@@ -50,9 +50,12 @@ if [ -z "$q" ]; then
     # with type-to-jump, scrolling, and a default "OK" button. Returns
     # "false" on cancel; otherwise the selected name.
     selected=$(osascript <<APPLESCRIPT
+tell me to activate
 set listText to (do shell script "cat " & quoted form of "$CACHE")
 set scriptList to paragraphs of listText
-set chosen to choose from list scriptList with title "Apple Workflows" with prompt "Pick a script (type to filter):" default items {item 1 of scriptList} OK button name "Run" cancel button name "Cancel"
+tell application "System Events"
+    set chosen to choose from list scriptList with title "Apple Workflows" with prompt "Pick a script (type to filter):" default items {item 1 of scriptList} OK button name "Run" cancel button name "Cancel"
+end tell
 if chosen is false then
     return ""
 else

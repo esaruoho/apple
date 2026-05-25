@@ -63,7 +63,7 @@ Non-uniform row-based grid: `rows = round(sqrt(n))`, cells per row = ceil/floor 
 **To add another app's stable-ID path:**
 
 1. Confirm `osascript -e 'tell application "X" to id of every window'` returns integers
-2. In `DockSnap.applescript`, add a branch in `tileOneApp` matching the process name
+2. In `tile-dock-snap.applescript`, add a branch in `tileOneApp` matching the process name
 3. Write a `tileWithX` handler mirroring `tileWithITerm` — compute the grid layout from `winIds`, set bounds via the app's dictionary
 
 Process names worth checking next: Safari, Mail, Finder, Sublime Text. Each likely has stable IDs but needs the per-app handler.

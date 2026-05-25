@@ -4,7 +4,7 @@
 -- Uses NSScreen visibleFrame to respect menu bar and Dock.
 -- Grid auto-selects best layout (closest to 16:10 aspect ratio per cell).
 -- 1 window = maximize. 2 = side by side. 4 = 2x2. 6 = 3x2. etc.
--- Loupedeck: osascript /Users/esaruoho/work/apple/scripts/workflows/system-events/System-Events-MosaicWindows.applescript
+-- Loupedeck: osascript /Users/esaruoho/work/apple/scripts/workflows/system-events/tile-mosaic.applescript
 
 use framework "AppKit"
 

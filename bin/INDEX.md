@@ -1,4 +1,4 @@
-# CLI Tools Index — 102 tools in bin/
+# CLI Tools Index — 104 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -11,6 +11,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-grand-search` — unified search across every exporter vault. — `bin/apple-grand-search`
 `apple-report` — (no description) — `bin/apple-report`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
+`apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`

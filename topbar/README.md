@@ -52,7 +52,7 @@ you open it via the 🔄 Refresh item).
 | 🗑 Empty Trash | tells Finder to empty trash |
 | 👁 / 👀 Desktop Icons | hide / show desktop icons |
 | 🙈 Hide All Other Apps | classic macOS "hide all others" via System Events |
-| **🪟 Snap Windows ▸** | Side-by-side / Top-Bottom / Thirds / Mosaic / **Dock Snap (every running app, auto-grid)** / **📐 Snap App ▸** (lists every running app — click one to tile *that* app's windows into a grid via `bin/dock snap <appname>`) |
+| **🪟 Snap Windows ▸** | Side-by-side / Top-Bottom / tile-thirds / Mosaic / **Dock Snap (every running app, auto-grid)** / **📐 Snap App ▸** (lists every running app — click one to tile *that* app's windows into a grid via `bin/dock snap <appname>`) |
 | System ▸ | Toggle Dark / Light Mode, Lock Screen, Sleep, Screenshot ▸ (full / selection / window / front window), Restart Menu Bar, Grant All Permissions… |
 | Audio ▸ | mute / unmute / volume presets (25/50/75) |
 | Finder ▸ | Send Selection to Media Editor, Conversations for this Folder, Rebuild Conversation Index, Kill Finder, show / hide hidden files |
@@ -137,7 +137,7 @@ Why it's faster than the CLI:
 | Total for 9 windows | ~5s | ~0.4s |
 
 Same grid math (`rowLayout(n)` ported line-for-line from
-`DockSnap.applescript`), same target frame (`NSScreen.main.visibleFrame`,
+`tile-dock-snap.applescript`), same target frame (`NSScreen.main.visibleFrame`,
 which already has menubar + Dock subtracted).
 
 Requires Accessibility permission for AppleToolbox.app — already granted

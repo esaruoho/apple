@@ -426,7 +426,7 @@ property bindings : {¬
 	{phrase:"change [the] theme to showroom", shortcutName:"Change Theme to Showroom"},¬
 	{phrase:"change [the] theme to black", shortcutName:"Change Theme to Black"},¬
 	{phrase:"change [the] theme to gradient", shortcutName:"Change Theme to Gradient"},¬
-	{phrase:"show [the] rule of thirds [grid]", shortcutName:"Overlay “The Rule of Thirds” grid"},¬
+	{phrase:"show [the] rule of thirds [grid]", shortcutName:"Overlay “The Rule of tile-thirds” grid"},¬
 	{phrase:"remove all lines", shortcutName:"Remove all Lines"},¬
 	{phrase:"remove [all] unlocked lines", shortcutName:"Remove all Unlocked Lines"},¬
 	{phrase:"remove [all] locked lines", shortcutName:"Remove all Locked Lines"},¬

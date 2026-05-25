@@ -85,7 +85,7 @@ ships frameworks. Current shape — keep additions in the matching group:
 - **Quick actions** — most-pressed verbs at one click depth: Stop
   Voicebox, Empty Trash, Hide/Show Desktop Icons, Hide-Other-Apps.
 - **System ▸** — Dark mode toggle, Lock, Sleep, Screenshot ▸ (full /
-  selection / window), Snap Windows ▸ (SideBySide / TopBottom / Thirds /
+  selection / window), Snap Windows ▸ (tile-side-by-side / tile-top-bottom / tile-thirds /
   Mosaic), Restart Menu Bar.
 - **Audio ▸** — Mute / Unmute / Volume 25 / 50 / 75.
 - **Finder ▸** — Kill, Show/Hide Hidden Files.

@@ -1,4 +1,4 @@
-# Workflows Index — 303 scripts across 34 apps
+# Workflows Index — 304 scripts across 34 apps
 
 **Grep this file to find the right script without scanning every app.**
 Grep by trigger keyword (`grep airdrop`), by app name (`^## finder`), or by description token.
@@ -130,8 +130,9 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 `imovie-list-projects` — List open iMovie projects — triggers: list, projects, open, imovie — `scripts/workflows/imovie/imovie-list-projects.applescript`
 `imovie-new-project` — Create a new iMovie document — triggers: new, project, create, imovie, document — `scripts/workflows/imovie/imovie-new-project.applescript`
 
-## keynote (10)
+## keynote (11)
 
+`bbs-keynote-build` — Build BBS keynote deck from RBI waterdrop distillation — triggers: bbs, keynote, build, deck, waterdrop — `scripts/workflows/keynote/bbs-keynote-build.applescript`
 `keynote-current-slide` — Show current slide number — triggers: slide, show, number — `scripts/workflows/keynote/keynote-current-slide.applescript`
 `keynote-export-pdf` — Export front presentation as PDF to Desktop — triggers: export, pdf, front, presentation, desktop — `scripts/workflows/keynote/keynote-export-pdf.applescript`
 `keynote-list-slides` — List slide titles in a dialog — triggers: list, slides, slide, titles, dialog — `scripts/workflows/keynote/keynote-list-slides.applescript`
@@ -316,18 +317,12 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 
 ## system-events (40)
 
-`DockSnap` — DockSnap.applescript — `scripts/workflows/system-events/DockSnap.applescript`
-`SideBySide` — SideBySide.applescript — triggers: sidebyside, applescript — `scripts/workflows/system-events/SideBySide.applescript`
 `System-Events-HideAllOthers` — Hide All Others (native, no keystroke simulation) — triggers: hideallothers, hide, others, native, keystroke, simulation — `scripts/workflows/system-events/System-Events-HideAllOthers.applescript`
-`System-Events-MosaicKnob` — Mosaic Knob: single script with two subroutines for Loupedeck knob. — triggers: mosaicknob, mosaic, knob, single, script, two, subroutines, loupedeck — `scripts/workflows/system-events/System-Events-MosaicKnob.applescript`
-`System-Events-MosaicWindows` — Mosaic Windows: tile all windows of the frontmost app into a grid — triggers: mosaicwindows, mosaic, windows, tile, frontmost, app, grid — `scripts/workflows/system-events/System-Events-MosaicWindows.applescript`
 `System-Events-WhiteboardBrowse` — WhiteboardBrowse: Button press — pick project → topic, show first board. — triggers: whiteboardbrowse, button, press, pick, project, topic, show, first — `scripts/workflows/system-events/System-Events-WhiteboardBrowse.applescript`
 `System-Events-WhiteboardKnob` — WhiteboardKnob: Browse ALL whiteboards across ~/work/ and ~/.claude/skills/ with a Loupedeck knob. — triggers: whiteboardknob, browse, whiteboards, across, work, claude, skills, loupedeck — `scripts/workflows/system-events/System-Events-WhiteboardKnob.applescript`
 `System-Events-WhiteboardNext` — WhiteboardNext: Knob turn RIGHT — next board in Quick Look. — triggers: whiteboardnext, knob, turn, right, next, board, quick, look — `scripts/workflows/system-events/System-Events-WhiteboardNext.applescript`
 `System-Events-WhiteboardOpen` — WhiteboardOpen: Knob press — open current board in Preview. — triggers: whiteboardopen, knob, press, open, board, preview — `scripts/workflows/system-events/System-Events-WhiteboardOpen.applescript`
 `System-Events-WhiteboardPrev` — WhiteboardPrev: Knob turn LEFT — previous board in Quick Look. — triggers: whiteboardprev, knob, turn, left, previous, board, quick, look — `scripts/workflows/system-events/System-Events-WhiteboardPrev.applescript`
-`Thirds` — Thirds.applescript — triggers: thirds, applescript — `scripts/workflows/system-events/Thirds.applescript`
-`TopBottom` — TopBottom.applescript — triggers: topbottom, applescript — `scripts/workflows/system-events/TopBottom.applescript`
 `mosaic-less` — Mosaic Less: show one fewer window of the frontmost app, tiled. — triggers: mosaic, less, show, one, fewer, window, frontmost, app — `scripts/workflows/system-events/mosaic-less.sh`
 `mosaic-more` — Mosaic More: show one more window of the frontmost app, tiled. — triggers: mosaic, more, show, one, window, frontmost, app, tiled — `scripts/workflows/system-events/mosaic-more.sh`
 `system-events-battery-status` — Show battery percentage and charging state — triggers: battery, status, show, percentage, charging, state — `scripts/workflows/system-events/system-events-battery-status.applescript`
@@ -356,6 +351,12 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 `system-events-uptime` — Show system uptime — triggers: uptime, show, system — `scripts/workflows/system-events/system-events-uptime.applescript`
 `system-events-volume-set` — Set system volume to a specific level — triggers: volume, set, system, specific, level — `scripts/workflows/system-events/system-events-volume-set.applescript`
 `system-events-wifi-toggle` — Toggle Wi-Fi on/off — triggers: wifi, toggle, off — `scripts/workflows/system-events/system-events-wifi-toggle.applescript`
+`tile-dock-snap` — tile-dock-snap.applescript — `scripts/workflows/system-events/tile-dock-snap.applescript`
+`tile-mosaic-knob` — Mosaic Knob: single script with two subroutines for Loupedeck knob. — triggers: mosaicknob, mosaic, knob, single, script, two, subroutines, loupedeck — `scripts/workflows/system-events/tile-mosaic-knob.applescript`
+`tile-mosaic` — Mosaic Windows: tile all windows of the frontmost app into a grid — triggers: mosaicwindows, mosaic, windows, tile, frontmost, app, grid — `scripts/workflows/system-events/tile-mosaic.applescript`
+`tile-side-by-side` — tile-side-by-side.applescript — triggers: sidebyside, applescript — `scripts/workflows/system-events/tile-side-by-side.applescript`
+`tile-thirds` — tile-thirds.applescript — triggers: thirds, applescript — `scripts/workflows/system-events/tile-thirds.applescript`
+`tile-top-bottom` — tile-top-bottom.applescript — triggers: topbottom, applescript — `scripts/workflows/system-events/tile-top-bottom.applescript`
 
 ## system-information (4)
 

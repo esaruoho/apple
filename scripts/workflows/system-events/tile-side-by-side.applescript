@@ -1,4 +1,4 @@
--- SideBySide.applescript
+-- tile-side-by-side.applescript
 -- Triggers: sidebyside, applescript
 -- Category: System Events
 -- Place the two frontmost apps' main windows side-by-side on the main screen.

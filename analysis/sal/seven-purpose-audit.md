@@ -39,8 +39,8 @@ These earn voice (dictation command), Spotlight (osacompile .app), and Loupedeck
 
 | Score | Workflow | Reasons |
 |-------|----------|---------|
-| 6 | `scripts/workflows/system-events/System-Events-MosaicKnob.applescript` | 1:no-activate, 2:lines=118, 3:geometry, 5:coercion, 6:shell-or-js, 7:system-events |
-| 5 | `scripts/workflows/system-events/System-Events-MosaicWindows.applescript` | 1:no-activate, 2:lines=54, 3:geometry, 5:coercion, 7:system-events |
+| 6 | `scripts/workflows/system-events/tile-mosaic-knob.applescript` | 1:no-activate, 2:lines=118, 3:geometry, 5:coercion, 6:shell-or-js, 7:system-events |
+| 5 | `scripts/workflows/system-events/tile-mosaic.applescript` | 1:no-activate, 2:lines=54, 3:geometry, 5:coercion, 7:system-events |
 | 4 | `scripts/workflows/accessibility/ax-system-settings-battery.applescript` | 2:lines=13, 4:apps=2, 6:shell-or-js, 7:system-events |
 | 4 | `scripts/workflows/accessibility/ax-system-settings-bluetooth.applescript` | 2:lines=13, 4:apps=2, 6:shell-or-js, 7:system-events |
 | 4 | `scripts/workflows/accessibility/ax-system-settings-displays.applescript` | 2:lines=13, 4:apps=2, 6:shell-or-js, 7:system-events |

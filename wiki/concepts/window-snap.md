@@ -20,8 +20,8 @@ snap --passes 5 mail        # override default 3-pass convergence loop
 |---|---|
 | `bin/snap` | bash wrapper. Parses `--passes`, `--screens`, `--show`, runs the AppleScript N times |
 | `bin/window-frame` | Apple-native CGWindowList + NSScreen reporter. Powers `snap --show` and `/window-frame`. Goldilocks pre-pass: "how big is this app right now vs. the screen?" |
-| `scripts/workflows/system-events/DockSnap.applescript` | engine — grid math + per-app dispatch |
-| `scripts/workflows/system-events/compiled/DockSnap.scpt` | compiled engine `bin/snap` calls |
+| `scripts/workflows/system-events/tile-dock-snap.applescript` | engine — grid math + per-app dispatch |
+| `scripts/workflows/system-events/compiled/tile-dock-snap.scpt` | compiled engine `bin/snap` calls |
 | `commands/snap.md` | `/snap` slash dispatcher |
 | `commands/window-frame.md` | `/window-frame` slash (pre-pass: report current geometry without mutating) |
 | `bin/dock` `cmd_snap()` | thin shim that delegates `dock snap` to `bin/snap` |
@@ -29,7 +29,7 @@ snap --passes 5 mail        # override default 3-pass convergence loop
 
 ## Pre-pass: see before you snap
 
-`snap --show [<app>]` (or `/window-frame [<app>]`) dumps each visible window's `pid / layer / owner / title / screen / x / y / w / h / w% / h%` where the percentages are against the parent screen's `visibleFrame`. Coordinates are TOP-LEFT pixel space (same as DockSnap internals). Use this to decide whether a `snap` is needed at all and to verify post-tile geometry. `--json` returns `{screens: [...], windows: [...]}` for programmatic callers (AppleToolbox, future agent loops).
+`snap --show [<app>]` (or `/window-frame [<app>]`) dumps each visible window's `pid / layer / owner / title / screen / x / y / w / h / w% / h%` where the percentages are against the parent screen's `visibleFrame`. Coordinates are TOP-LEFT pixel space (same as tile-dock-snap internals). Use this to decide whether a `snap` is needed at all and to verify post-tile geometry. `--json` returns `{screens: [...], windows: [...]}` for programmatic callers (AppleToolbox, future agent loops).
 
 ## Grid algorithm
 
@@ -90,13 +90,13 @@ The only stable identifier across `set position` calls is the app's own `id of w
    ```
    If it returns integers, it's eligible. If it errors with "Not authorized", grant TCC permission first (System Settings → Privacy & Security → Automation).
 
-2. Add one line to `appNameForProcess` in `DockSnap.applescript`:
+2. Add one line to `appNameForProcess` in `tile-dock-snap.applescript`:
    ```applescript
    if procName is "<ProcessName>" then return "<AppleScriptName>"
    ```
    (Often they match, e.g. `"Safari"`. iTerm is the exception: process name `iTerm2`, AppleScript name `iTerm`.)
 
-3. Recompile: `osacompile -o scripts/workflows/system-events/compiled/DockSnap.scpt scripts/workflows/system-events/DockSnap.applescript`
+3. Recompile: `osacompile -o scripts/workflows/system-events/compiled/tile-dock-snap.scpt scripts/workflows/system-events/tile-dock-snap.applescript`
 
 4. Test: `snap <appname>`.
 

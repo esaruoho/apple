@@ -1,10 +1,10 @@
--- TopBottom.applescript
+-- tile-top-bottom.applescript
 -- Triggers: topbottom, applescript
 -- Category: System Events
 -- Stack the two frontmost apps' main windows top + bottom on the main screen.
 -- Frontmost app goes TOP, second-frontmost goes BOTTOM.
 --
--- Companion to SideBySide.applescript. Same pattern: NSScreen.main visibleFrame
+-- Companion to tile-side-by-side.applescript. Same pattern: NSScreen.main visibleFrame
 -- via /usr/bin/swift, two-pass resize-then-position, background-only filter.
 
 set screenInfo to do shell script "/usr/bin/swift -e 'import AppKit; let s = NSScreen.main!; let f = s.frame; let v = s.visibleFrame; let topY = f.size.height - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"

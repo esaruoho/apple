@@ -5,7 +5,7 @@
 #   1. GrandPerspective opened via `open -a` (folder-aware)
 #   2. DaisyDisk opened via `open -a /` (volume root) OR the
 #      daisydisk-scan-folder.sh UI-scripted helper (folder-aware via Cmd+O)
-#   3. SideBySide.scpt — the existing Snap Windows action that tiles the
+#   3. tile-side-by-side.scpt — the existing Snap Windows action that tiles the
 #      two frontmost apps
 #
 # Usage: disk-dual-scan.sh [absolute-path]   (default: /)
@@ -40,4 +40,4 @@ fi
 sleep 2.5
 
 # Tile the two frontmost apps side-by-side.
-osascript "$SNAP_SCRIPTS/SideBySide.scpt"
+osascript "$SNAP_SCRIPTS/tile-side-by-side.scpt"

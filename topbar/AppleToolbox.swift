@@ -13,7 +13,7 @@
 // Sections:
 //   Live status   — HomePod climate, battery, disk, WiFi, Mail, Now Playing, Whisp queue
 //   Quick actions — Stop Voicebox, Empty Trash, Hide/Show Desktop, Hide-Others
-//   Snap Windows ▸ — Side-by-side / Thirds / Mosaic / Dock Snap / Snap App ▸
+//   Snap Windows ▸ — Side-by-side / tile-thirds / Mosaic / Dock Snap / Snap App ▸
 //   System ▸      — Dark mode toggle, Lock screen, Sleep, Screenshot ▸
 //   Audio ▸       — Mute / Unmute / Volume presets
 //   Finder ▸      — Kill / Show-Hidden / Hide-Hidden / Restart Menu Bar
@@ -1829,11 +1829,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         snapItems.append(contentsOf: [
             action("◧◨ Side by Side (front 2 apps)",
-                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/SideBySide.scpt"]),
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/tile-side-by-side.scpt"]),
             action("⬒⬓ Top / Bottom (front 2 apps)",
-                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/TopBottom.scpt"]),
-            action("⬛⬛⬛ Thirds (front 3 apps)",
-                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/Thirds.scpt"]),
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/tile-top-bottom.scpt"]),
+            action("⬛⬛⬛ tile-thirds (front 3 apps)",
+                cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/tile-thirds.scpt"]),
             NSMenuItem.separator(),
             action("Mosaic (all of front app)",
                 cmd: "/usr/bin/osascript", args: ["\(SCRIPTS)/MosaicWindows.scpt"]),
@@ -2834,13 +2834,13 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
     /// where some intermediate AppKit call accidentally steals focus.
     ///
     /// Performance: instead of shelling out to bin/snap (which runs
-    /// osascript → DockSnap.scpt → System Events with a convergence loop,
+    /// osascript → tile-dock-snap.scpt → System Events with a convergence loop,
     /// ~5s for 9 windows), this path talks to Accessibility (AXUIElement)
     /// directly in-process. One AX RPC per `set` instead of one Apple
     /// Event RPC per System-Events call, no osascript JIT, no Python
     /// convergence checks. ~10x faster.
     ///
-    /// The bin/snap CLI is unchanged — it still uses DockSnap.scpt because
+    /// The bin/snap CLI is unchanged — it still uses tile-dock-snap.scpt because
     /// it doesn't have AppleToolbox's Accessibility permission context.
     @objc func snapFrontmostApp() {
         guard let app = NSWorkspace.shared.frontmostApplication else {
@@ -3083,7 +3083,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         // Dock-to-right-edge: flush to screen.maxX, full visible height. This
         // is Option A of the "reserved zone" plan — the panel acts as a
         // right-side curtain that always-on-top covers any app underneath.
-        // DockSnap reads the panel frame and subtracts it from the tileable
+        // tile-dock-snap reads the panel frame and subtracts it from the tileable
         // area (Option B) so /snap leaves room for the curtain.
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let rect = NSRect(x: screen.maxX - panelWidth, y: screen.minY,
@@ -7054,7 +7054,7 @@ func installLiveModeMainMenu() {
 // frame (main screen visibleFrame, menubar+Dock subtracted by AppKit).
 //
 // Apps with their own stable-window-ID AppleScript dictionary (Safari, Mail,
-// iTerm) work fine via AX too — the per-app dictionary path in DockSnap.scpt
+// iTerm) work fine via AX too — the per-app dictionary path in tile-dock-snap.scpt
 // existed to dodge System Events' positional-reference reshuffling, which
 // doesn't affect direct AX since we hold AXUIElement references that don't
 // re-index.
@@ -7222,7 +7222,7 @@ enum SnapEngine {
     /// Set size then position then size again — Sequoia occasionally
     /// clips the first size when an app has a min-content-size constraint
     /// (Mail does this). Double-setting size around position matches
-    /// DockSnap.scpt's belt-and-suspenders approach.
+    /// tile-dock-snap.scpt's belt-and-suspenders approach.
     private static func setFrame(_ win: AXUIElement, origin: CGPoint, size: CGSize) {
         if let sv = axValue(size: size) {
             AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sv)

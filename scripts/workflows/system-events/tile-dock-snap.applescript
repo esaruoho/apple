@@ -1,4 +1,4 @@
--- DockSnap.applescript
+-- tile-dock-snap.applescript
 -- Tile windows into an auto-sized non-uniform grid.
 --
 -- Modes:

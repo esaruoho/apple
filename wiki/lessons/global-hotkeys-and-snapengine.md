@@ -112,6 +112,6 @@ The cost of `git add -p` hunk splitting is real but the readable diff is worth i
 ## See also
 
 - [global-keyboard-shortcuts](../concepts/global-keyboard-shortcuts.md) — the dispatch patterns + gotchas reference
-- [window-snap](../concepts/window-snap.md) — DockSnap dispatcher + per-app dictionary path
+- [window-snap](../concepts/window-snap.md) — tile-dock-snap dispatcher + per-app dictionary path
 - `topbar/AppleToolbox.swift` — `registerGlobalHotKey()` + `SnapEngine` enum are the canonical implementations
 - `topbar/README.md` — Global keyboard shortcuts section with the registered-list table

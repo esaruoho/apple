@@ -1,10 +1,10 @@
--- Thirds.applescript
+-- tile-thirds.applescript
 -- Triggers: thirds, applescript
 -- Category: System Events
 -- Place the three frontmost apps' main windows in three vertical columns on
 -- the main screen. Order: frontmost LEFT, second MIDDLE, third RIGHT.
 --
--- Companion to SideBySide / TopBottom. Same NSScreen.main visibleFrame +
+-- Companion to tile-side-by-side / tile-top-bottom. Same NSScreen.main visibleFrame +
 -- two-pass resize-then-position + background-only filter pattern.
 
 set screenInfo to do shell script "/usr/bin/swift -e 'import AppKit; let s = NSScreen.main!; let f = s.frame; let v = s.visibleFrame; let topY = f.size.height - (v.origin.y + v.size.height); print(\"\\(Int(v.origin.x)) \\(Int(topY)) \\(Int(v.size.width)) \\(Int(v.size.height))\")'"
@@ -33,7 +33,7 @@ tell application "System Events"
     end repeat
 
     if (count of targetApps) < 3 then
-        do shell script "/usr/bin/osascript -e 'display notification \"Need 3 apps with windows open\" with title \"Thirds\"'"
+        do shell script "/usr/bin/osascript -e 'display notification \"Need 3 apps with windows open\" with title \"tile-thirds\"'"
         return
     end if
 
