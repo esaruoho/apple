@@ -112,7 +112,7 @@ dispatch() {
     local skill_header
     skill_header="Use $(title_case "$skill") skill."
     local s
-    for s in "${extras[@]}"; do
+    for s in "${extras[@]+"${extras[@]}"}"; do
         skill_header+=$'\n'"Use $(title_case "$s") skill."
     done
     local full_prompt="${skill_header}
@@ -143,7 +143,7 @@ ${prompt}"
         # rm -- "$0" before exec so a successful launch leaves no breadcrumb;
         # if exec fails the file stays, the >24h sweep picks it up later.
         printf 'rm -f -- "$0"\n'
-        printf 'exec claude %s\n' "$(shquote "$full_prompt")"
+        printf 'exec claude --dangerously-skip-permissions %s\n' "$(shquote "$full_prompt")"
     } > "$launcher"
     chmod 700 "$launcher"
 
@@ -208,7 +208,7 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
         else
             # Deduplicate — same tag twice in a sticky shouldn't double-Use.
             local_dup=0
-            for s in "${extra_skills[@]}"; do
+            for s in "${extra_skills[@]+"${extra_skills[@]}"}"; do
                 [[ "$s" == "$tl" ]] && { local_dup=1; break; }
             done
             [[ "$tl" == "$skill" ]] && local_dup=1
@@ -239,11 +239,11 @@ for rtfd in "$STICKIES_DIR"/*.rtfd; do
     skill_alias=$(lookup_skill_alias "$skill")
     [[ -n "$skill_alias" ]] && skill="$skill_alias"
     resolved_extras=()
-    for s in "${extra_skills[@]}"; do
+    for s in "${extra_skills[@]+"${extra_skills[@]}"}"; do
         a=$(lookup_skill_alias "$s")
         resolved_extras+=("${a:-$s}")
     done
-    if dispatch "$uuid" "$skill" "$cwd" "$prompt" "${resolved_extras[@]}"; then
+    if dispatch "$uuid" "$skill" "$cwd" "$prompt" "${resolved_extras[@]+"${resolved_extras[@]}"}"; then
         printf '%s' "$hash" > "$state_file"
     fi
 done
