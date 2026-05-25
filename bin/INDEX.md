@@ -1,4 +1,4 @@
-# CLI Tools Index — 104 tools in bin/
+# CLI Tools Index — 105 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -79,6 +79,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
+`sessions` — (no description) — `bin/sessions`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`

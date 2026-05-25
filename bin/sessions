@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+"""
+sessions — TUI session picker for Claude Code.
+
+Usage:
+    sessions [folder]
+
+Run inside (or pass) a project folder. Lists Claude Code sessions for that
+folder newest-first, with first-user-message snippets. Cursor up/down to
+select, Enter to resume that session with --dangerously-skip-permissions,
+n for a new session, q to quit.
+
+The folder→storage mapping mirrors AppleToolbox.swift's claudeProjectDir():
+resolve symlinks, then replace every non-alphanumeric char with '-'. iCloud-
+symlinked projects like ~/work/paketti hit the same storage Claude itself
+uses, so --resume actually finds the JSONL.
+
+Apple-native: stdlib only. No Homebrew, no pip.
+"""
+import curses
+import json
+import os
+import shutil
+import sys
+import time
+from pathlib import Path
+
+
+HOME = os.path.expanduser("~")
+
+
+def encode_cwd(path: str) -> str:
+    resolved = os.path.realpath(path)
+    out = []
+    for ch in resolved:
+        c = ord(ch)
+        if (48 <= c <= 57) or (65 <= c <= 90) or (97 <= c <= 122):
+            out.append(ch)
+        else:
+            out.append("-")
+    return "".join(out)
+
+
+def first_user_snippet(jsonl_path: str, limit: int = 120) -> str:
+    try:
+        with open(jsonl_path, "r", encoding="utf-8", errors="replace") as f:
+            summary = None
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                t = d.get("type")
+                if t == "summary" and not summary:
+                    summary = d.get("summary") or d.get("text")
+                if t == "user":
+                    m = d.get("message", {})
+                    c = m.get("content", "")
+                    if isinstance(c, list):
+                        parts = []
+                        for x in c:
+                            if isinstance(x, dict) and x.get("type") == "text":
+                                parts.append(x.get("text", ""))
+                            elif isinstance(x, str):
+                                parts.append(x)
+                        c = " ".join(parts)
+                    if not isinstance(c, str):
+                        c = str(c)
+                    c = c.strip().replace("\n", " ")
+                    # Skip tool-result echoes and command-stderr boilerplate.
+                    if c.startswith("<") or not c:
+                        continue
+                    return c[:limit]
+            if summary:
+                return ("≪ " + summary)[:limit]
+    except FileNotFoundError:
+        pass
+    return "(empty)"
+
+
+def list_sessions(folder: str):
+    proj_dir = f"{HOME}/.claude/projects/{encode_cwd(folder)}"
+    if not os.path.isdir(proj_dir):
+        return [], proj_dir
+    rows = []
+    for name in os.listdir(proj_dir):
+        if not name.endswith(".jsonl"):
+            continue
+        full = os.path.join(proj_dir, name)
+        try:
+            mtime = os.path.getmtime(full)
+        except OSError:
+            continue
+        uuid = name[:-6]
+        rows.append({"uuid": uuid, "path": full, "mtime": mtime, "snippet": None})
+    rows.sort(key=lambda r: r["mtime"], reverse=True)
+    return rows, proj_dir
+
+
+def human_age(mtime: float) -> str:
+    diff = time.time() - mtime
+    if diff < 60: return f"{int(diff)}s"
+    if diff < 3600: return f"{int(diff/60)}m"
+    if diff < 86400: return f"{int(diff/3600)}h"
+    if diff < 86400 * 30: return f"{int(diff/86400)}d"
+    return time.strftime("%Y-%m-%d", time.localtime(mtime))
+
+
+def find_claude() -> str:
+    for c in [
+        f"{HOME}/.claude/local/claude",
+        "/opt/homebrew/bin/claude",
+        "/usr/local/bin/claude",
+    ]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    found = shutil.which("claude")
+    return found or "claude"
+
+
+def run_picker(stdscr, folder: str, rows: list, proj_dir: str):
+    curses.curs_set(0)
+    stdscr.keypad(True)
+    try:
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_CYAN)
+        curses.init_pair(2, curses.COLOR_CYAN, -1)
+        curses.init_pair(3, 8, -1)
+    except Exception:
+        pass
+
+    sel = 0
+    top = 0
+
+    # Lazy-load snippets so a folder with 200 sessions paints instantly.
+    def ensure_snippet(i: int):
+        if rows[i]["snippet"] is None:
+            rows[i]["snippet"] = first_user_snippet(rows[i]["path"])
+
+    while True:
+        stdscr.erase()
+        h, w = stdscr.getmaxyx()
+        header = f" sessions · {folder}    [{len(rows)}]"
+        footer = " ↑/↓ select   ⏎ resume   n new   q quit"
+        try:
+            stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
+            stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
+        except curses.error:
+            pass
+
+        if not rows:
+            msg = "No sessions for this folder yet. Press 'n' to start one."
+            try:
+                stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, w)
+            except curses.error:
+                pass
+        else:
+            body_h = h - 2
+            if sel < top: top = sel
+            if sel >= top + body_h: top = sel - body_h + 1
+
+            for i in range(top, min(len(rows), top + body_h)):
+                ensure_snippet(i)
+                r = rows[i]
+                age = human_age(r["mtime"]).rjust(5)
+                short_id = r["uuid"][:8]
+                snippet = r["snippet"] or ""
+                line = f" {age}  {short_id}  {snippet}"
+                attr = curses.color_pair(1) | curses.A_BOLD if i == sel else curses.A_NORMAL
+                try:
+                    stdscr.addnstr(1 + i - top, 0, line.ljust(w), w, attr)
+                except curses.error:
+                    pass
+
+        stdscr.refresh()
+        try:
+            k = stdscr.getch()
+        except KeyboardInterrupt:
+            return ("quit", None)
+        if k in (curses.KEY_UP, ord('k')):
+            if rows: sel = (sel - 1) % len(rows)
+        elif k in (curses.KEY_DOWN, ord('j')):
+            if rows: sel = (sel + 1) % len(rows)
+        elif k in (curses.KEY_HOME, ord('g')):
+            sel = 0
+        elif k in (curses.KEY_END, ord('G')):
+            if rows: sel = len(rows) - 1
+        elif k in (curses.KEY_PPAGE,):
+            sel = max(0, sel - (h - 3))
+        elif k in (curses.KEY_NPAGE,):
+            if rows: sel = min(len(rows) - 1, sel + (h - 3))
+        elif k in (10, 13, curses.KEY_ENTER):
+            if rows:
+                return ("resume", rows[sel]["uuid"])
+        elif k in (ord('n'), ord('N')):
+            return ("new", None)
+        elif k in (ord('q'), ord('Q'), 27):
+            return ("quit", None)
+
+
+def main():
+    folder = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
+    if not os.path.isdir(folder):
+        print(f"sessions: not a directory: {folder}", file=sys.stderr)
+        sys.exit(2)
+
+    rows, proj_dir = list_sessions(folder)
+    try:
+        action, uuid = curses.wrapper(run_picker, folder, rows, proj_dir)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    if action == "quit":
+        sys.exit(0)
+
+    claude = find_claude()
+    os.chdir(folder)
+    args = [claude, "--dangerously-skip-permissions"]
+    if action == "resume" and uuid:
+        args += ["--resume", uuid]
+    os.execvp(args[0], args)
+
+
+if __name__ == "__main__":
+    main()
