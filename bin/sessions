@@ -294,9 +294,6 @@ def human_when(mtime):
     now = time.localtime()
     if lt.tm_year == now.tm_year and lt.tm_yday == now.tm_yday:
         return time.strftime("today %H:%M", lt)
-    diff_days = (time.time() - mtime) / 86400
-    if 0 < diff_days < 7 and lt.tm_year == now.tm_year:
-        return time.strftime("%a   %H:%M", lt)
     if lt.tm_year == now.tm_year:
         return time.strftime("%m-%d %H:%M", lt)
     return time.strftime("%Y-%m-%d ", lt)
