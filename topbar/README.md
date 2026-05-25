@@ -76,9 +76,9 @@ same combination internally; Carbon hotkeys don't.
 **Two registration sites** depending on whether the handler needs the
 `--live` panel:
 
-- `AppDelegate.registerMenuBarHotKeys()` — owns chords that work whenever
+- `AppDelegate.registerMenuBarHotKeys()` — owns keyboard shortcuts that work whenever
   🧰 is in the menu bar. UI-independent handlers go here.
-- `LiveViewportDelegate.registerGlobalHotKey()` — owns chords whose
+- `LiveViewportDelegate.registerGlobalHotKey()` — owns keyboard shortcuts whose
   handler manipulates the `--live` panel UI. Currently just ⌃⌥⌘D.
 
 | Keys | Action | Owner | Why this combination |

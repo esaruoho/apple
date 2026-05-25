@@ -74,7 +74,7 @@ Plain English: **keyboard shortcut**, **key combination**, **keystroke**. Same w
 
 Esa, direct quote: *"if SAL never spoke about CHORDS then why the hell are we talking about CHORDS."* The Apple skill's voice should mirror Sal's — clear, plain, no math/CS jargon as a flex.
 
-Codebase grep confirmed: every remaining "chord" in the repo is a musical Renoise tracker chord — those are legitimate musical usage.
+Codebase grep confirmed: every remaining "chord" in the repo is a musical Renoise tracker chord — those are legitimate musical usage. (Apple repo itself was swept clean 2026-05-25: all keyboard-shortcut usages rewritten.)
 
 ### 9. Don't guess; diagnose
 

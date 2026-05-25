@@ -8,9 +8,9 @@ Press **⌃⌥⌘.** anywhere — Renoise, full-screen Safari, login window-adja
 
 This is the real macOS power move — bigger than Services-menu shortcuts, bigger than Spotlight, on par with Raycast/Alfred but built from one Apple framework.
 
-## Currently registered chords
+## Currently registered keyboard shortcuts
 
-| Chord | Action | Registered in | FourCharCode | Notes |
+| Shortcut | Action | Registered in | FourCharCode | Notes |
 |---|---|---|---|---|
 | ⌃⌥⌘D | Toggle smart dictation | `LiveViewportDelegate` | `ATBD` (id=1) | Needs `--live` panel — handler manipulates dictation UI |
 | ⌃⌥⌘. | Stop Voicebox (`~/bin/voicebox-stop`) | `AppDelegate` (menu-bar) | `ATBS` (id=2) | UI-independent; always live |
@@ -22,7 +22,7 @@ This is the real macOS power move — bigger than Services-menu shortcuts, bigge
 - **Menu-bar process** — always running via LaunchAgent (`~/Library/LaunchAgents/com.esaruoho.appletoolbox.plist`). Uses `AppDelegate`. Owns ⌃⌥⌘. / ⌃⌥⌘T / ⌃⌥⌘S.
 - **`--live` process** — opt-in floating panel, launched by `/topbar-live`. Uses `LiveViewportDelegate`. Owns ⌃⌥⌘D only.
 
-Any chord whose handler doesn't touch panel state belongs in `AppDelegate.registerMenuBarHotKeys()` so it works even when `--live` is closed. Only put it in `LiveViewportDelegate.registerGlobalHotKey()` if the handler genuinely needs the panel UI (the dictation toggle is the only current example). **Never register the same chord in both** — that's two separate processes racing the Carbon registration last-writer-wins, and it bites you randomly.
+Any keyboard shortcut whose handler doesn't touch panel state belongs in `AppDelegate.registerMenuBarHotKeys()` so it works even when `--live` is closed. Only put it in `LiveViewportDelegate.registerGlobalHotKey()` if the handler genuinely needs the panel UI (the dictation toggle is the only current example). **Never register the same keyboard shortcut in both** — that's two separate processes racing the Carbon registration last-writer-wins, and it bites you randomly.
 
 ## Why it works when Services keyboard shortcuts don't
 
@@ -138,9 +138,9 @@ Add new ones here when you wire them.
 
 **The process must be running.** Carbon hotkeys live in the AppleToolbox process. If AppleToolbox is killed, hotkeys go with it. The LaunchAgent at `~/Library/LaunchAgents/com.esaruoho.appletoolbox.plist` brings it back on login. Verify with `pgrep -lf AppleToolbox` — the menu-bar instance has no `--live` in its argv.
 
-**Menu-bar vs `--live` ownership matters.** AppleToolbox is two separate processes when `--live` is open. Each process registers its own Carbon hotkeys (see "Currently registered chords" above). If a chord was historically only registered by `LiveViewportDelegate` (the `--live` instance), it silently stops working the moment you close the panel — Carbon de-registers when the owning process exits. The fix is always to move UI-independent chords to `AppDelegate.registerMenuBarHotKeys()`. This bit me on 2026-05-22: `⌃⌥⌘S` and `⌃⌥⌘.` only worked when `/topbar-live` was running, because both were inside `LiveViewportDelegate`. Moved both to `AppDelegate`; they now work whenever 🧰 is in the menu bar.
+**Menu-bar vs `--live` ownership matters.** AppleToolbox is two separate processes when `--live` is open. Each process registers its own Carbon hotkeys (see "Currently registered keyboard shortcuts" above). If a keyboard shortcut was historically only registered by `LiveViewportDelegate` (the `--live` instance), it silently stops working the moment you close the panel — Carbon de-registers when the owning process exits. The fix is always to move UI-independent keyboard shortcuts to `AppDelegate.registerMenuBarHotKeys()`. This bit me on 2026-05-22: `⌃⌥⌘S` and `⌃⌥⌘.` only worked when `/topbar-live` was running, because both were inside `LiveViewportDelegate`. Moved both to `AppDelegate`; they now work whenever 🧰 is in the menu bar.
 
-**Frontmost-app menu accelerators win over Carbon hotkeys for that app.** Carbon `RegisterEventHotKey` is process-global from AppleToolbox's perspective, but a Cocoa main-menu key equivalent in the *frontmost* app gets first crack at the event before HIToolbox dispatches to Carbon hotkey handlers in other processes. On 2026-05-22 we discovered iTerm2 swallows `⇧⌥⌘.` (its View menu binds it) — you'd see iTerm2's View menu flash but AppleToolbox never fired. Switching to `⌃⌥⌘.` avoided the iTerm2 binding. Lesson: if a chord "doesn't work" in one specific app, that app probably has a menu accelerator on the same combination. Test in Finder (sparse menu) first.
+**Frontmost-app menu accelerators win over Carbon hotkeys for that app.** Carbon `RegisterEventHotKey` is process-global from AppleToolbox's perspective, but a Cocoa main-menu key equivalent in the *frontmost* app gets first crack at the event before HIToolbox dispatches to Carbon hotkey handlers in other processes. On 2026-05-22 we discovered iTerm2 swallows `⇧⌥⌘.` (its View menu binds it) — you'd see iTerm2's View menu flash but AppleToolbox never fired. Switching to `⌃⌥⌘.` avoided the iTerm2 binding. Lesson: if a keyboard shortcut "doesn't work" in one specific app, that app probably has a menu accelerator on the same combination. Test in Finder (sparse menu) first.
 
 **AX-driven handlers need Accessibility permission for the AppleToolbox.app bundle id.** SnapEngine, AppleScript that talks to System Events, anything driving AXUIElement — Carbon registration succeeds without it, but the handler fails with `AXError -25211 = kAXErrorAPIDisabled` at fire time. Check current bundle id with `defaults read /Applications/Apple-Workflows/AppleToolbox.app/Contents/Info.plist CFBundleIdentifier` and confirm that string is in System Settings → Privacy & Security → Accessibility. If the bundle id was ever renamed (we did, from `com.esaruoho.apple-workflows` → `com.esaruoho.appletoolbox`), the old TCC entry is stale; add the new one and remove the old. `/grant-perms` queues all the privacy prompts in one go.
 
@@ -156,7 +156,7 @@ Add new ones here when you wire them.
 
 **`Process()` is fire-and-forget by default.** No completion callback, no return value. If you need to know whether the script succeeded, wire stdout/stderr pipes — but for "press hotkey, thing happens", `try? task.run()` is enough.
 
-**Modifier-only hotkeys don't exist via this API.** You can't bind "tap left-⌘ twice" or "hold ⌥ for 200ms" with `RegisterEventHotKey` — that's `NSEvent.addGlobalMonitorForEvents` territory and requires Accessibility permission. Stick to chord-style key+modifier combinations here.
+**Modifier-only hotkeys don't exist via this API.** You can't bind "tap left-⌘ twice" or "hold ⌥ for 200ms" with `RegisterEventHotKey` — that's `NSEvent.addGlobalMonitorForEvents` territory and requires Accessibility permission. Stick to shortcut-style key+modifier combinations here.
 
 **Hotkeys don't fire in the login window, screen lock, or recovery mode.** AppleToolbox isn't running in those contexts.
 
@@ -177,7 +177,7 @@ Every macOS automation surface eventually converges on the same `~/bin/<verb>` b
 
 ## See also
 
-- `topbar/AppleToolbox.swift` — `AppDelegate.registerMenuBarHotKeys()` (UI-independent chords) and `LiveViewportDelegate.registerGlobalHotKey()` (panel-dependent chords) are the two registration sites
+- `topbar/AppleToolbox.swift` — `AppDelegate.registerMenuBarHotKeys()` (UI-independent keyboard shortcuts) and `LiveViewportDelegate.registerGlobalHotKey()` (panel-dependent keyboard shortcuts) are the two registration sites
 - `topbar/README.md` — "Global keyboard shortcuts" section, registered list
 - `appletoolbox_third_channel.md` (memory) — the architectural roof this slots into
 - `zero_roundtrip_pattern.md` (memory) — the broader principle

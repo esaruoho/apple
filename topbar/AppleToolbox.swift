@@ -676,13 +676,13 @@ func climateDetailString() -> String {
 
 // ─── launcher slots ────────────────────────────────────────────────────────
 //
-// Three rebindable chords: ⌃⌥⌘C / V / B. The chords are fixed; the .app each
+// Three rebindable keyboard shortcuts: ⌃⌥⌘C / V / B. The keyboard shortcuts are fixed; the .app each
 // one launches is user-pickable. Persisted as a tiny plist so both the
 // menu-bar process and the --live viewport agree on the current binding.
 
 enum LauncherSlots {
     static let keys = ["C", "V", "B"]
-    static let chordLabel: [String: String] = ["C": "⌃⌥⌘C", "V": "⌃⌥⌘V", "B": "⌃⌥⌘B"]
+    static let shortcutLabel: [String: String] = ["C": "⌃⌥⌘C", "V": "⌃⌥⌘V", "B": "⌃⌥⌘B"]
     static let defaults: [String: String] = [
         "C": "/Applications/Renoise.app",
         "V": "/Applications/Pd-0.56-0.app",
@@ -743,7 +743,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSLog("AppleToolbox: pinned file → \(first.path)")
         rebuildMenu()
         // Open --live and highlight the dropped file (same path used by the
-        // ⌃⌥⌘T Finder-selection chord). toolbox-goto warm-launches --live
+        // ⌃⌥⌘T Finder-selection keyboard shortcut). toolbox-goto warm-launches --live
         // if it's already up, cold-launches if not, and seeds the memo so
         // the file-browser focuses on the dropped path.
         let go = Process()
@@ -778,7 +778,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Register every UI-independent global hotkey HERE (in the menu-bar
         // process), not in --live. The menu-bar is always running via
-        // LaunchAgent, while --live is opt-in. Without this, the chords
+        // LaunchAgent, while --live is opt-in. Without this, the keyboard shortcuts
         // lost their owner whenever --live wasn't running and macOS gave
         // the "no handler" blink error. Only ⌃⌥⌘D (dictate) stays in
         // LiveViewportDelegate because it needs the panel.
@@ -851,14 +851,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Carbon RegisterEventHotKey for the menu-bar-owned chords:
+    /// Carbon RegisterEventHotKey for the menu-bar-owned keyboard shortcuts:
     ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + ping /speak/stop)
     ///   id=3  ⌃⌥⌘T  → fireGotoFinderSelection (shells out to toolbox-goto)
     ///   id=4  ⌃⌥⌘S  → snapFrontmostApp (SnapEngine.tileAllWindows)
     ///   id=5  ⌃⌥⌘C  → activate Renoise (launch if not running)
     ///   id=6  ⌃⌥⌘V  → activate Pure Data (launch if not running)
     ///   id=7  ⌃⌥⌘B  → activate Ableton Live 12 Suite (launch if not running)
-    /// Each chord must NOT also be registered by LiveViewportDelegate;
+    /// Each keyboard shortcut must NOT also be registered by LiveViewportDelegate;
     /// double-registration across two processes races last-writer-wins.
     func registerMenuBarHotKeys() {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
@@ -973,11 +973,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Open NSOpenPanel restricted to .app bundles, store the chosen path in
     /// the launcher plist for the given slot key, and refresh the menu so the
-    /// row's label reflects the new binding. The chord itself doesn't need
+    /// row's label reflects the new binding. The keyboard shortcut itself doesn't need
     /// re-registering — case 5/6/7 reads the plist on every fire.
     func pickLauncherApp(forKey key: String) {
         let panel = NSOpenPanel()
-        panel.title = "Pick app for \(LauncherSlots.chordLabel[key] ?? key)"
+        panel.title = "Pick app for \(LauncherSlots.shortcutLabel[key] ?? key)"
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -1063,7 +1063,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSLog("AppleToolbox: fireGotoFinderSelection captured path='\(path)'")
         let script2 = "\(HOME)/work/apple/bin/toolbox-goto"
         if path.isEmpty {
-            // No Finder context — still surface the panel so the chord
+            // No Finder context — still surface the panel so the keyboard shortcut
             // surfaces something. toolbox-goto with no arg uses $PWD which
             // is wherever the menu-bar was launched (root for LaunchAgent).
             // Skip that path; just bring --live front if it's running.
@@ -1936,8 +1936,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 args: ["add", "\(HOME)/Library/Saved Searches/All Smart Folders.savedSearch"]),
         ]))
 
-        // Launchers submenu — three rebindable chord slots. Clicking a row
-        // opens NSOpenPanel restricted to .app bundles; the chord itself
+        // Launchers submenu — three rebindable keyboard shortcut slots. Clicking a row
+        // opens NSOpenPanel restricted to .app bundles; the keyboard shortcut itself
         // (registered in registerMenuBarHotKeys) reads the plist on fire.
         let launcherC = NSMenuItem(title: "⌃⌥⌘C — \(LauncherSlots.displayName(forKey: "C"))",
                                    action: #selector(pickLauncherC(_:)), keyEquivalent: "")
@@ -2818,9 +2818,9 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         }, 1, &eventType, selfPtr, nil)
 
         // id=1 — FourCharCode 'ATBD' = "AppleToolbox Dictate" — ⌃⌥⌘D
-        // This is the only chord that needs --live: it toggles the
+        // This is the only keyboard shortcut that needs --live: it toggles the
         // dictation panel UI which only exists in the --live process.
-        // The other three chords (stop, goto, snap) live in AppDelegate.
+        // The other three keyboard shortcuts (stop, goto, snap) live in AppDelegate.
         let dictateID = EventHotKeyID(signature: OSType(0x41544244), id: 1)
         let dictateMods: UInt32 = UInt32(controlKey | optionKey | cmdKey)
         RegisterEventHotKey(UInt32(kVK_ANSI_D), dictateMods, dictateID,
@@ -2896,7 +2896,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         let out = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         // Selection was empty AND no Finder windows → just bring the panel
-        // front so the chord at least surfaces the toolbox. Otherwise,
+        // front so the keyboard shortcut at least surfaces the toolbox. Otherwise,
         // navigate to the target (parent folder if selection is a file).
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -2956,7 +2956,7 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
 
         // Ctrl-W → ~/work/, Ctrl-D → ~/Downloads/ when focus is in the
         // browser filter field. doCommandBy isn't fired by default on
-        // macOS for these chords, so intercept the raw events here.
+        // macOS for these keyboard shortcuts, so intercept the raw events here.
         if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .control,
            (event.keyCode == 13 /* W */ || event.keyCode == 2 /* D */) {
             let fr = panel.firstResponder
@@ -3798,14 +3798,14 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
                 "/usr/bin/open", ["\(HOME)/work/comms/queue/segment-outbox"], symbol: "scissors")
         }
 
-        // Launchers — show the three rebindable chord slots. Click activates
+        // Launchers — show the three rebindable keyboard shortcut slots. Click activates
         // the configured .app (`open -a` launches cold or brings to front).
         // Rebinding is done from the menu-bar submenu, not here.
         for key in LauncherSlots.keys {
-            let chord = LauncherSlots.chordLabel[key] ?? key
+            let shortcut = LauncherSlots.shortcutLabel[key] ?? key
             let appName = LauncherSlots.displayName(forKey: key)
             let appPath = LauncherSlots.currentPath(forKey: key)
-            add(chord, appName,
+            add(shortcut, appName,
                 "/usr/bin/open", ["-a", appPath], symbol: "arrow.up.right.square")
         }
 
