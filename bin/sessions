@@ -286,6 +286,22 @@ def human_age(mtime):
     return f"{int(diff/86400/365)}y"
 
 
+def human_when(mtime):
+    """Calendar timestamp, 11 chars: 'today 14:32' / 'Mon  09:18' / '05-21 14:32' / '2025-11-04'."""
+    if mtime <= 0:
+        return "       --  "
+    lt = time.localtime(mtime)
+    now = time.localtime()
+    if lt.tm_year == now.tm_year and lt.tm_yday == now.tm_yday:
+        return time.strftime("today %H:%M", lt)
+    diff_days = (time.time() - mtime) / 86400
+    if 0 < diff_days < 7 and lt.tm_year == now.tm_year:
+        return time.strftime("%a   %H:%M", lt)
+    if lt.tm_year == now.tm_year:
+        return time.strftime("%m-%d %H:%M", lt)
+    return time.strftime("%Y-%m-%d ", lt)
+
+
 def human_size(n):
     if n < 1024: return f"{n}B"
     if n < 1024 * 1024: return f"{n/1024:.0f}K"
@@ -400,16 +416,32 @@ def run_picker(stdscr, folder):
             for i in range(top, min(len(rows), top + body_h)):
                 ensure_meta(i)
                 r = rows[i]
+                when = human_when(r.mtime)
                 age = human_age(r.mtime).rjust(4)
                 turns = f"{r.turns:>4}t"
                 size = human_size(r.size).rjust(5) if r.size else "    ·"
                 glyph = PROVIDER_GLYPH[r.provider]
-                short_id = r.uuid[:8]
                 snippet = r.snippet or ""
-                line = f" {glyph} {age}  {turns}  {size}  {short_id}  {snippet}"
-                base = curses.color_pair(1) | curses.A_BOLD if i == sel else curses.A_NORMAL
+                short_id = r.uuid[:6]
+                selected = (i == sel)
+                base = curses.color_pair(1) | curses.A_BOLD if selected else curses.A_NORMAL
+                dim = base if selected else curses.color_pair(3)
+                # Single-line, mixed attrs: prominent timestamp, dimmed hash trailer.
+                row_y = 1 + i - top
                 try:
-                    stdscr.addnstr(1 + i - top, 0, line.ljust(w), w, base)
+                    stdscr.move(row_y, 0)
+                    stdscr.addnstr(f" {glyph} {when}  {age}  {turns}  {size}  ", w, base)
+                    remaining = w - stdscr.getyx()[1]
+                    if remaining > 10:
+                        snip_w = remaining - 8  # leave 6 for hash + 2 spaces
+                        stdscr.addnstr(snippet.ljust(snip_w), snip_w, base)
+                        stdscr.addnstr("  " + short_id, 8, dim)
+                    elif remaining > 0:
+                        stdscr.addnstr(snippet, remaining, base)
+                    # Pad rest of line so selection highlight fills the row.
+                    cur_x = stdscr.getyx()[1]
+                    if cur_x < w:
+                        stdscr.addnstr(" " * (w - cur_x), w - cur_x, base)
                 except curses.error:
                     pass
 
