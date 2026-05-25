@@ -32,6 +32,26 @@ mkdir -p "$STATE_DIR" "$(dirname "$LOG")"
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
 
+# Single-instance lock. AppleToolbox fires the watcher from BOTH a 1.5s
+# poll AND an FSEvents source on the Stickies dir; the FSEvents source can
+# fire several times for a single sticky save (one event per file inside
+# the .rtfd bundle). Without this lock, two concurrent watcher processes
+# both see "hash != state_file" and both dispatch → two iTerm windows.
+# mkdir is the atomic primitive bash 3.2 has on macOS (no flock).
+LOCK_DIR="$STATE_DIR/.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    # Stale-lock guard: if the lock is older than 60s, the previous
+    # watcher crashed before cleanup — steal it.
+    if [[ -d "$LOCK_DIR" ]] && [[ -n "$(find "$LOCK_DIR" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then
+        log "stealing stale lock (>60s old) pid=$$"
+        rm -rf "$LOCK_DIR" && mkdir "$LOCK_DIR" 2>/dev/null || exit 0
+    else
+        log "watcher already running; skipping pid=$$"
+        exit 0
+    fi
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+
 log "watcher fired pid=$$ ppid=$PPID"
 
 lookup_cwd() {
