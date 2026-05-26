@@ -43,9 +43,9 @@ REFRESH_MS = 1500
 # ─────────────────────────── shared types ────────────────────────────
 
 class Row:
-    __slots__ = ("provider", "uuid", "cwd", "path", "mtime", "size", "turns", "snippet")
+    __slots__ = ("provider", "uuid", "cwd", "path", "mtime", "size", "turns", "snippet", "title")
 
-    def __init__(self, provider, uuid, cwd, path, mtime, size=0, turns=0, snippet=None):
+    def __init__(self, provider, uuid, cwd, path, mtime, size=0, turns=0, snippet=None, title=None):
         self.provider = provider   # "claude" | "copilot" | "codex"
         self.uuid = uuid
         self.cwd = cwd
@@ -53,7 +53,8 @@ class Row:
         self.mtime = mtime
         self.size = size
         self.turns = turns
-        self.snippet = snippet     # lazy; None means not yet loaded
+        self.snippet = snippet     # lazy; None means not yet loaded — first user prompt
+        self.title = title         # user-set rename / summary, if any
 
 
 # ─────────────────────────── Claude ──────────────────────────────────
@@ -92,6 +93,7 @@ def list_claude(folder):
 def load_claude_meta(row):
     snippet = None
     summary = None
+    custom_title = None
     turns = 0
     try:
         with open(row.path, "r", encoding="utf-8", errors="replace") as f:
@@ -101,6 +103,11 @@ def load_claude_meta(row):
                 except Exception:
                     continue
                 t = d.get("type")
+                if t == "custom-title":
+                    ct = d.get("customTitle")
+                    if ct:
+                        custom_title = ct  # last-write-wins; later renames override
+                    continue
                 if t == "summary" and not summary:
                     summary = d.get("summary") or d.get("text")
                 if t == "user":
@@ -123,6 +130,8 @@ def load_claude_meta(row):
         pass
     row.turns = turns
     row.snippet = (snippet or (("≪ " + summary) if summary else "(empty)"))[:200]
+    if custom_title:
+        row.title = custom_title[:80]
 
 
 # ─────────────────────────── Copilot ─────────────────────────────────
@@ -147,8 +156,9 @@ def list_copilot(folder):
             (resolved,))
         for sid, cwd, summary, updated_at, n, first_msg in cur.fetchall():
             mtime = parse_iso(updated_at)
-            snip = (summary or first_msg or "(empty)").strip().replace("\n", " ")[:200]
-            r = Row("copilot", sid, cwd, COPILOT_DB, mtime, 0, n or 0, snip)
+            snip = (first_msg or summary or "(empty)").strip().replace("\n", " ")[:200]
+            title = (summary or "").strip().replace("\n", " ")[:80] or None
+            r = Row("copilot", sid, cwd, COPILOT_DB, mtime, 0, n or 0, snip, title)
             rows.append(r)
         con.close()
     except sqlite3.Error:
@@ -200,9 +210,11 @@ def list_codex(folder):
                 source = p.get("source") or {}
                 if "subagent" in source:
                     continue
+                nickname = p.get("agent_nickname")
+                title = nickname[:80] if nickname else None
             except Exception:
                 continue
-            rows.append(Row("codex", sid, cwd, full, st.st_mtime, st.st_size))
+            rows.append(Row("codex", sid, cwd, full, st.st_mtime, st.st_size, title=title))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
@@ -427,6 +439,7 @@ def run_picker(stdscr, folder):
                 selected = (i == sel)
                 base = curses.color_pair(1) | curses.A_BOLD if selected else curses.A_NORMAL
                 dim = base if selected else curses.color_pair(3)
+                title_attr = base if selected else (curses.color_pair(4) | curses.A_BOLD)
                 # Single-line, mixed attrs: prominent timestamp, dimmed hash trailer.
                 row_y = 1 + i - top
                 try:
@@ -435,7 +448,14 @@ def run_picker(stdscr, folder):
                     remaining = w - stdscr.getyx()[1]
                     if remaining > 10:
                         snip_w = remaining - 8  # leave 6 for hash + 2 spaces
-                        stdscr.addnstr(snippet.ljust(snip_w), snip_w, base)
+                        if r.title:
+                            tag = f"[{r.title}] "
+                            tag = tag[:max(0, snip_w - 4)]
+                            stdscr.addnstr(tag, len(tag), title_attr)
+                            used = len(tag)
+                            stdscr.addnstr(snippet.ljust(snip_w - used), snip_w - used, base)
+                        else:
+                            stdscr.addnstr(snippet.ljust(snip_w), snip_w, base)
                         stdscr.addnstr("  " + short_id, 8, dim)
                     elif remaining > 0:
                         stdscr.addnstr(snippet, remaining, base)
@@ -465,6 +485,8 @@ def run_picker(stdscr, folder):
                     if old and old.mtime == r.mtime and old.snippet is not None:
                         r.snippet = old.snippet
                         r.turns = old.turns
+                        if r.title is None:
+                            r.title = old.title
                 rows = fresh
                 re_select()
                 last_refresh = time.time()
