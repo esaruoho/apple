@@ -1,16 +1,19 @@
 ---
 layout: default
-title: Apple Automation Workflow Suite
+title: Automation for the Rest of Us
 ---
 
-# Apple Automation Workflow Suite
+# Automation for the Rest of Us
+
+> *"The power of the computer should reside in the hands of the one using it."*
+> — [Sal Soghoian](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md)
 
 > *"It's very empowering to give somebody that ability to suddenly change the way they work and enable them to do great, complex things to grow their business."*
-> — Sal Soghoian, Apple Product Manager of Automation Technologies (1997–2016)
+> — Sal Soghoian
 
-This site is the public face of [esaruoho/apple](https://github.com/esaruoho/apple) — the open-source continuation of the role Apple eliminated in November 2016, when it dissolved the Product Manager of Automation Technologies position that [Sal Soghoian](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md) held for nearly twenty years.
+Apple ships an extraordinary automation stack — AppleScript, Automator, Shortcuts, App Intents, JXA, ASObjC, sdef, NSUserScriptTask, Vocal Shortcuts, Apple Foundation Models — and almost no one outside the power-user circle knows how to wire it together. This site (and the [esaruoho/apple](https://github.com/esaruoho/apple) repo behind it) is the working pattern book: every layer, every trigger surface, every recipe, in one place, runnable today.
 
-Apple did not preserve this material institutionally. **This repo does.**
+One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch the time.
 
 ---
 
@@ -65,7 +68,7 @@ All four are the same chassis: filesystem-or-OS event → debounce + lock → wo
 
 ### How the Sal corpus is kept alive
 
-Apple's `bottom-of-the-page` for the cmddconf.com automation site was deleted in 2018. This repo:
+Sal's automation site (cmddconf.com) went offline in 2018. The material is too valuable to lose, so this repo keeps it alive:
 
 - Mirrors every reachable URL (235 of 359 download/media targets recovered, 3 dead).
 - Discovers new interview/article sources across 17 platforms (159 hits in pass 2).
