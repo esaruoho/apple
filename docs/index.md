@@ -15,6 +15,8 @@ Apple ships an extraordinary automation stack — AppleScript, Automator, Shortc
 
 One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch the time.
 
+Ask a HomePod Mini *"what time is it?"* and watch the query travel to Apple's servers, get transcribed, get processed, and come back — sometimes as the time, sometimes as *"I don't know what you mean."* The HomePod has a clock. The room knows what time it is. The roundtrip is pure structural waste, paid in latency, electricity, and CO₂ on a query that should resolve in nanoseconds. Siri on the Mac does the same thing. Meanwhile, Sal Soghoian's [WWDC 2016 Session 717 — *Beyond Dictation: Enhanced Voice Control for macOS Apps*](https://archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4) (33 minutes, recovered from archive.org after Apple pulled it a week after he gave it — four months before his position was eliminated) demonstrated **on-stage**, in 2016, voice-controlled Mac automation that resolved entirely on-device, zero roundtrip, with user-author Shortcuts as the dispatch layer. That was ten years ago. The architecture worked. The Mac was ready. What's up, Apple? ([Full 524-line transcript](https://github.com/esaruoho/apple/blob/main/sources/sal/wwdc2016-session-717/717-transcript.txt) and [line-by-line analysis](https://github.com/esaruoho/apple/blob/main/analysis/sal/wwdc2016-session-717-transcript-analysis.md) in the repo. Vocal Shortcuts on Sequoia 2024 — eight years late — is the user-author re-implementation of what Session 717 already showed working.)
+
 ---
 
 ## What's in the repo right now
