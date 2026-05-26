@@ -68,7 +68,18 @@ ENV_INDEX = MAIL_ROOT / "MailData" / "Envelope Index"
 # ─── safety constants ───────────────────────────────────────────────────────
 MAX_PER_TICK = 20
 OSASCRIPT_MOVE_TIMEOUT = 15  # seconds — if Mail is unresponsive, skip
+OSASCRIPT_FETCH_TIMEOUT = 30  # seconds — force-download attempt budget
 SUBMIT_SCRIPT_TIMEOUT = 300  # seconds per attachment-submit
+
+# Mailbox URL patterns that indicate Mail's server-side virtual folders.
+# These are MUCH slower to query via AppleScript (the message-id search
+# walks the entire server-side mirror) and risk hanging Mail. We do NOT
+# force-download for messages living in these mailboxes.
+VIRTUAL_MAILBOX_MARKERS = (
+    "/%5BGmail%5D/All%20Mail",     # Gmail "All Mail"
+    "/%5BGoogle%20Mail%5D/",       # Google Workspace
+    "/%5BGmail%5D/All",
+)
 
 URL_RE = re.compile(r"https?://[^\s<>'\")]+")
 
@@ -386,6 +397,105 @@ def mailbox_path_from_url(mailbox_url: str) -> str | None:
     return "/".join(urllib.parse.unquote(p) for p in m.group(1).split("/") if p)
 
 
+def try_force_download(account_uuid: str | None, source_mailbox_url: str,
+                       partial_path: Path, mailbox_dir: Path, rowid: int) -> Path | None:
+    """Ask Mail to download the full body of a .partial.emlx message AND
+    write the resulting RFC822 to a temp file we control.
+
+    Verified 2026-05-26: `source of m` triggers Mail to fetch from IMAP and
+    return the bytes via AppleScript, BUT Mail does NOT persist them to its
+    own on-disk .emlx cache. So we have AppleScript write the source to our
+    own temp file using NSString:writeToFile (binary-safe, handles 10+ MB).
+
+    Returns Path to a temp file containing the full RFC822, or None on
+    failure. Caller can pass it to read_emlx-equivalent logic (it's NOT in
+    .emlx wrapper format — it's raw RFC822, so caller should NOT strip the
+    first byte-count line; we mark the file with ".rfc822" suffix to make
+    that explicit).
+
+    Bounded by OSASCRIPT_FETCH_TIMEOUT (30s).
+    """
+    if not account_uuid:
+        log(f"force-download ROWID={rowid}: no account UUID")
+        return None
+    mbox_path = mailbox_path_from_url(source_mailbox_url)
+    if not mbox_path:
+        log(f"force-download ROWID={rowid}: cannot parse mailbox path from {source_mailbox_url!r}")
+        return None
+    # Read Message-ID from the partial (headers are present even when body isn't)
+    try:
+        rfc = read_emlx(partial_path)
+        msg = email.message_from_bytes(rfc, policy=email.policy.default)
+        msg_id_header = msg.get("Message-ID", "")
+    except Exception as e:
+        log(f"force-download ROWID={rowid}: cannot read partial header: {e}")
+        return None
+    msg_id = strip_msgid_brackets(msg_id_header)
+    if not msg_id:
+        log(f"force-download ROWID={rowid}: partial has no Message-ID")
+        return None
+
+    tmp_path = Path(tempfile.gettempdir()) / f"mailflag-fetch-{rowid}.rfc822"
+    # If a previous attempt left a stale file, remove it
+    try:
+        tmp_path.unlink()
+    except FileNotFoundError:
+        pass
+
+    script = f'''
+use framework "Foundation"
+use scripting additions
+
+tell application "Mail"
+    try
+        set acct to first account whose id is {applescript_str(account_uuid)}
+    on error
+        return "ERROR:account-not-found"
+    end try
+    try
+        set mb to mailbox {applescript_str(mbox_path)} of acct
+    on error errMsg
+        return "ERROR:mailbox-not-found:" & errMsg
+    end try
+    try
+        set m to first message of mb whose message id is {applescript_str(msg_id)}
+    on error
+        return "ERROR:message-not-found"
+    end try
+    -- This call forces Mail to fetch the full RFC822 from IMAP.
+    set _src to source of m
+end tell
+
+-- Write the source to a temp file via NSString (binary-safe, no shell quoting).
+set nsStr to current application's NSString's stringWithString:_src
+set nsData to nsStr's dataUsingEncoding:4   -- NSUTF8StringEncoding
+set wroteOK to nsData's writeToFile:{applescript_str(str(tmp_path))} atomically:true
+if wroteOK then
+    return "OK:" & (count of _src) as string
+else
+    return "ERROR:write-failed"
+end if
+'''
+    log(f"force-download ROWID={rowid}: requesting full body (mbox={mbox_path}, "
+        f"{OSASCRIPT_FETCH_TIMEOUT}s budget)")
+    try:
+        r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                           capture_output=True, text=True,
+                           timeout=OSASCRIPT_FETCH_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        log(f"force-download ROWID={rowid}: TIMEOUT after {OSASCRIPT_FETCH_TIMEOUT}s")
+        return None
+    out = r.stdout.strip()
+    if r.returncode != 0 or out.startswith("ERROR:"):
+        log(f"force-download ROWID={rowid}: rc={r.returncode} out={out[:200]}")
+        return None
+    if not tmp_path.exists() or tmp_path.stat().st_size < 100:
+        log(f"force-download ROWID={rowid}: osascript OK ({out[:60]}) but tmp file missing/empty")
+        return None
+    log(f"force-download ROWID={rowid}: SUCCESS — wrote {tmp_path.stat().st_size} bytes to {tmp_path}")
+    return tmp_path
+
+
 def force_download_via_mail(account_uuid: str | None, mailbox_dir: Path,
                             rowid: int, source_mailbox_url: str = "",
                             wait_seconds: int = 180) -> Path | None:
@@ -666,7 +776,8 @@ def read_thread_message(sibling: dict) -> dict | None:
     attachments: list[tuple[str, bytes]] = []
     for part in msg.walk():
         ctype = part.get_content_type()
-        if part.get_filename() and part.is_attachment():
+        # See process_one — route inline files too, not just is_attachment.
+        if part.get_filename():
             payload = part.get_payload(decode=True) or b""
             if payload:
                 attachments.append((part.get_filename(), payload))
@@ -732,19 +843,59 @@ def process_one(row: dict, contract: dict, dry_run: bool = False,
         return audit
     audit["emlx_path"] = str(emlx)
 
-    # .partial.emlx = IMAP hasn't pulled full body+attachments yet.
-    # The naïve fix would be to call `source of m` via osascript to force
-    # the download — but for Gmail's [Gmail]/All Mail virtual folder that
-    # blocks Mail.app for minutes (2026-05-26 incident: force-download
-    # made Mail unresponsive). So: just skip and retry on future ticks.
-    # When Mail eventually downloads (user opens the message, or background
-    # sync pulls it), the next tick sees a full .emlx and routes properly.
-    if emlx.name.endswith(".partial.emlx"):
-        audit["status"] = "skipped_temp"
-        audit["reason"] = (".partial.emlx — body not downloaded. Open the message in Mail.app "
-                          "to trigger download, or wait for Mail's background sync. "
-                          "Will retry on next tick.")
+    # EARLY Message-ID dedup. Even .partial.emlx has headers — read them,
+    # extract Message-ID, check if we've already routed this message under
+    # a previous ROWID (Mail renumbers on mailbox move). This must happen
+    # BEFORE any force-download attempt — otherwise we burn 25s downloading
+    # a message we already routed.
+    try:
+        early_rfc = read_emlx(emlx)
+        early_msg = email.message_from_bytes(early_rfc, policy=email.policy.default)
+        early_msg_id = strip_msgid_brackets(early_msg.get("Message-ID", ""))
+    except Exception:
+        early_msg_id = ""
+    if early_msg_id and processed_message_ids is not None and early_msg_id in processed_message_ids:
+        audit["status"] = "duplicate"
+        audit["message_id"] = "<" + early_msg_id + ">" if early_msg_id else ""
+        audit["reason"] = ("Message-ID already routed under a previous ROWID "
+                          "(early-dedup, before any download attempt)")
         return audit
+
+    # .partial.emlx = IMAP hasn't pulled full body+attachments yet.
+    # Strategy: try ONE bounded force-download via Mail (asking for `source
+    # of m` makes Mail fetch the full RFC822 from IMAP), BUT only for
+    # non-virtual mailboxes. Gmail's [Gmail]/All Mail virtual folder
+    # hangs Mail for minutes per query (2026-05-26 incident). For iCloud
+    # INBOX and similar real mailboxes, the message-id lookup is fast and
+    # the download completes within 30s.
+    if emlx.name.endswith(".partial.emlx"):
+        is_virtual = any(marker in row["url"] for marker in VIRTUAL_MAILBOX_MARKERS)
+        if is_virtual:
+            audit["status"] = "skipped_temp"
+            audit["reason"] = (".partial.emlx in virtual mailbox (e.g. [Gmail]/All Mail) — "
+                              "force-download would hang Mail. Open the message in Mail.app "
+                              "or wait for natural download. Will retry on next tick.")
+            return audit
+        # try force-download once for this ROWID
+        full_emlx = try_force_download(
+            account_uuid=account_uuid_from_url(row["url"]),
+            source_mailbox_url=row["url"],
+            partial_path=emlx,
+            mailbox_dir=mbox_dir,
+            rowid=rowid,
+        )
+        if not full_emlx:
+            audit["status"] = "skipped_temp"
+            audit["reason"] = ("force-download timed out or message not found — "
+                              "open the message in Mail.app to force download, "
+                              "or wait for Mail's background sync. Will retry next tick.")
+            audit["force_download_attempted"] = True
+            return audit
+        # success — switch to the full .emlx and continue processing this tick.
+        # The single read_emlx() call below will read the new full file.
+        emlx = full_emlx
+        audit["emlx_path"] = str(emlx)
+        audit["force_downloaded"] = True
 
     try:
         rfc = read_emlx(emlx)
@@ -802,7 +953,11 @@ def process_one(row: dict, contract: dict, dry_run: bool = False,
     attachments: list[tuple[str, bytes]] = []
     for part in msg.walk():
         ctype = part.get_content_type()
-        if part.get_filename() and part.is_attachment():
+        # ANY part with a filename counts as something to route — including
+        # Content-Disposition: inline files (Python's is_attachment() only
+        # checks for 'attachment', missing inline images/drawings that often
+        # contain the actual archival content for Free Energy etc.).
+        if part.get_filename():
             payload = part.get_payload(decode=True) or b""
             attachments.append((part.get_filename(), payload))
         elif ctype == "text/html" and html_body is None:
