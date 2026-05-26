@@ -73,9 +73,9 @@ is a focused next deliverable I can pick up unattended.
   experiment determines whether plist-only writes produce fireable triggers
   or just orphaned metadata. The biggest single unknown in the Vocal Shortcuts
   stack.
-- [ ] **Send the Sal email** — draft at
-  `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`. Trim to
-  ~300 words; subject line options included. Same Gmail thread as the April exchange.
+- [x] **Sal email SENT (2026-05-26)** — was draft at
+  `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`.
+  Same Gmail thread as the April exchange. Drop from the action queue.
 - [ ] **Fire Track A from Discord** — `!pk cloudcity bash /Users/esaruoho/work/apple/bin/sal-transcribe-youtube.sh`
   (16 Sal YouTube interviews via whisp).
 - [ ] **Fire Track B from Discord** — `!pk cloudcity bash /Users/esaruoho/work/apple/bin/sal-transcribe-podcasts.sh`
@@ -242,7 +242,7 @@ Highest-leverage first:
 
 ### Open from this session — finish next
 
-- [ ] **Send the Sal email** — draft is ready in `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`. Trim to ~300 words before sending. Subject line options included. Same Gmail thread as the April exchange.
+- [x] **Sal email sent (2026-05-26).** Was at `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`. Same Gmail thread as the April exchange.
 - [x] **Backported the .sfl3 NSKeyedArchiver UID resolver to `finder-exporter`** (2026-05-11). Extracted the resolver to `bin/lib/sfl3_resolver.py` + `bin/lib/resolve_bookmark.swift` for future exporters. `finder-exporter` now returns **50 recent docs** + populated favorites list (was zero). Markdown export enriched to surface resolved paths. iwork-exporter still uses its local copy; consolidating is low-priority maintenance.
 - [ ] **`voice-memos-exporter transcribe`** — `whisp` wrapper for bulk Whisper. Apple's tsrp transcripts are English-only and poor on Finnish; Whisper with `--fi` is the practical path. Flags: `--lang fi/en`, `--chunked` for >30 min recordings.
 - [ ] **`voice-memos-exporter watch`** — fswatch on Recordings/, auto-transcribe new .m4a, Discord ping via pakettibot inbox.
