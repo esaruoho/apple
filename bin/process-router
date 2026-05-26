@@ -1,0 +1,83 @@
+#!/bin/bash
+# process-router — Dispatch a 'process'-tagged file to the right worker.
+#
+# Called by tag-watcher when a file picks up the Finder `process` tag (or
+# by `process` CLI / AppleToolbox VoiceMemoPipeline for arbitrary files).
+# Routes by file extension to the matching Cloudcity Mac Mini worker:
+#
+#   .pdf                               → bbs-ocr-submit (PDFWorkshop OCR)
+#   .mp3 .m4a .wav .flac .aiff .aac
+#   .opus .ogg .wma
+#   .mp4 .m4v .mov .mkv .avi .wmv
+#   .webm                              → whisp-submit (Whisper transcription)
+#
+# Everything else: skipped with a log line. Future extensions are easy —
+# add a new extension class and target submit script.
+#
+# The router is the single seam: tag-watcher only knows about this one
+# script, and the dispatch decision lives here. Adding a new worker means
+# editing ONE function, not changing tag-watcher.
+
+set -euo pipefail
+
+OCR_SUBMIT="$HOME/.claude/skills/bbs/bin/bbs-ocr-submit.sh"
+WHISP_SUBMIT="$HOME/work/whisp-transcripts/whisp-submit"
+LOG="$HOME/work/comms/queue/process-router.log"
+
+log() {
+    mkdir -p "$(dirname "$LOG")"
+    printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG"
+}
+
+if [[ $# -eq 0 ]]; then
+    cat <<'EOF' >&2
+process-router — dispatch by file extension
+
+Usage:
+  process-router <file>   # one file at a time (tag-watcher contract)
+
+PDFs go to bbs-ocr-submit; audio/video go to whisp-submit. Everything
+else is logged and skipped.
+EOF
+    exit 2
+fi
+
+FILE="$1"
+
+if [[ ! -e "$FILE" ]]; then
+    log "skip (not found): $FILE"
+    exit 1
+fi
+
+# Resolve symlinks so the worker sees the real path.
+FILE="$(/usr/bin/python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FILE")"
+
+# Extension, lowercased.
+ext="${FILE##*.}"
+ext="$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')"
+
+case "$ext" in
+    pdf)
+        if [[ ! -x "$OCR_SUBMIT" ]]; then
+            log "ERROR: OCR submit script not executable: $OCR_SUBMIT"
+            echo "process-router: OCR submit missing: $OCR_SUBMIT" >&2
+            exit 1
+        fi
+        log "→ OCR: $FILE"
+        exec "$OCR_SUBMIT" "$FILE"
+        ;;
+    mp3|m4a|wav|flac|aiff|aac|opus|ogg|wma|mp4|m4v|mov|mkv|avi|wmv|webm)
+        if [[ ! -x "$WHISP_SUBMIT" ]]; then
+            log "ERROR: whisp-submit not executable: $WHISP_SUBMIT"
+            echo "process-router: whisp-submit missing: $WHISP_SUBMIT" >&2
+            exit 1
+        fi
+        log "→ WHISP: $FILE"
+        exec "$WHISP_SUBMIT" "$FILE"
+        ;;
+    *)
+        log "skip (no router for .$ext): $FILE"
+        echo "process-router: no route for .$ext — skipping $FILE" >&2
+        exit 0   # Not an error — just nothing to do.
+        ;;
+esac

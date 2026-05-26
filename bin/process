@@ -1,0 +1,54 @@
+#!/bin/bash
+# process — Send a local media file (or URL) to the Cloudcity whisp pipeline.
+#
+# One-liner front door for the same loop the Voice Memos #process tag and the
+# Finder 'process' tag use:
+#   - Local files (mp3/m4a/wav/flac/mp4/mov/mkv/avi/wmv/webm/…) are copied
+#     into ~/work/comms/queue/whisp-inbox/ with a kind: local_audio sidecar.
+#   - YouTube and direct-audio URLs are passed straight through.
+# The Mac Mini's whisp-worker picks the job up via Syncthing, runs Whisper
+# turbo, and mirrors the transcript back into ~/work/comms/queue/whisp-results/.
+# AppleToolbox fires a "Sent to whisp" notification on dispatch and a clickable
+# "Voice memo transcribed" / "Whisp transcript ready" notification on arrival.
+#
+# Usage:
+#   process <file-or-url> [<file-or-url> …]
+#   process *.mp3
+#   process https://www.youtube.com/watch?v=…
+#
+# All arguments are forwarded to whisp-submit; mixing local files and URLs in
+# a single invocation is fine.
+
+set -euo pipefail
+
+ROUTER="$HOME/work/apple/bin/process-router"
+WHISP_SUBMIT="$HOME/work/whisp-transcripts/whisp-submit"
+
+if [[ $# -eq 0 ]]; then
+    sed -n '2,18p' "$0"
+    exit 0
+fi
+
+# Two dispatch paths:
+#   - URLs (YouTube, audio URLs) → straight to whisp-submit (it handles URLs).
+#   - Local files → process-router (picks OCR vs Whisp by extension).
+# Resolving relative paths to absolute up front means downstream scripts
+# always see an unambiguous path regardless of working directory.
+exit_code=0
+for arg in "$@"; do
+    if [[ -e "$arg" ]]; then
+        abs="$(/usr/bin/python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$arg")"
+        if [[ ! -x "$ROUTER" ]]; then
+            echo "process: router missing or not executable: $ROUTER" >&2
+            exit 1
+        fi
+        "$ROUTER" "$abs" || exit_code=$?
+    else
+        if [[ ! -x "$WHISP_SUBMIT" ]]; then
+            echo "process: whisp-submit not found at $WHISP_SUBMIT" >&2
+            exit 1
+        fi
+        "$WHISP_SUBMIT" "$arg" || exit_code=$?
+    fi
+done
+exit "$exit_code"
