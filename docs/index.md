@@ -78,7 +78,7 @@ Sal's automation site (cmddconf.com) went offline in 2018. The material is too v
 
 ### Philosophy
 
-- **The Roundtrip Rule (WWSD #54):** *"If you did a roundtrip for something that could be done locally, you have wasted everyone's time."*
+- [**The Roundtrip Rule (WWSD #54)**](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md#L632): *"If you did a roundtrip for something that could be done locally, you have wasted everyone's time."* Articulated 2026-05-11 by Esa Ruoho while reviewing the post-Apple Sal corpus, as the operational synthesis of Sal's WWSD #2 (local-over-cloud) + #41 (time as the meta-why) + #49 (AI as intern, not director). [Full derivation + acid test in the Sal entity page.](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md#L632)
 - **Local first.** Cloud only when truly remote. HomePod Mini asking Apple servers what time it is = structural waste.
 - **One verb, one result.** Sal's design constraint, applied to every tool in `bin/`.
 - **Apple-native only.** No Homebrew, no pip, no npm. Every tool ships with macOS.
