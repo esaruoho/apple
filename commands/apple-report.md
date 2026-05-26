@@ -1,7 +1,7 @@
 ---
-description: Full Mac capability report (CPU/GPU/RAM/SSD/security/power) + AI-workload assessment ("can I run this model?"). Apple-native. Usage `/apple-report`, `/apple-report --ai`, `/apple-report --can-run "70b q4"`, `/apple-report --json`.
+description: Full Mac capability report (CPU/GPU/RAM/SSD/security/power) + AI-workload assessment ("can I run this model?"). Leads with a one-line full-stack summary. Apple-native. Usage `/apple-report`, `/apple-report --stack`, `/apple-report --save`, `/apple-report --ai`, `/apple-report --can-run "70b q4"`, `/apple-report --json`.
 allowed-tools: Bash
-argument-hint: [--ai] [--json] [--md] [--can-run "<spec>"]
+argument-hint: [--stack] [--save [PATH]] [--ai] [--json] [--md] [--can-run "<spec>"]
 ---
 
 Produce a complete capability report for this Mac. Deterministic — no LLM analysis after the run.

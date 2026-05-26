@@ -21,9 +21,10 @@ import re, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WIKI = ROOT / "wiki"
 
-CATEGORY_ORDER = ["entities", "concepts", "lessons", "operations", "compiled"]
+CATEGORY_ORDER = ["devices", "entities", "concepts", "lessons", "operations", "compiled"]
 CATEGORY_TAGLINE = {
-    "entities":   "one page per thing — person, app, device, package",
+    "devices":    "one page per device family — Mac, iPhone, iPad, Watch, AirPods, TV, Vision, HomePod",
+    "entities":   "one page per thing — person, app, package",
     "concepts":   "how X works — atlases, principles, patterns",
     "lessons":    "didactic / narrative — runbooks and curriculum",
     "operations": "active project state — current work, status, plans",
@@ -49,13 +50,28 @@ def yaml_lite(block: str) -> dict:
 
 
 def first_paragraph(body: str) -> str:
-    """First non-heading, non-blank paragraph; collapse to one line; ~120 chars."""
+    """First tagline-blockquote (`> ...`) OR first non-heading paragraph; ~120 chars."""
     paras = re.split(r"\n\s*\n", body.strip())
+    # First pass: prefer a leading blockquote tagline (`> Foo bar.`)
+    for p in paras:
+        p = p.strip()
+        if p.startswith(">"):
+            line = re.sub(r"^>\s?", "", p, flags=re.M)
+            line = re.sub(r"\s+", " ", line).strip()
+            line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)
+            line = re.sub(r"\*([^*]+)\*", r"\1", line)
+            line = re.sub(r"`([^`]+)`", r"\1", line)
+            line = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)
+            if len(line) > 120:
+                line = line[:117].rstrip() + "..."
+            return line
+        if not p.startswith("#") and p:
+            break  # stop scanning for blockquote once we hit real content
+    # Second pass: first real paragraph
     for p in paras:
         p = p.strip()
         if not p or p.startswith("#") or p.startswith(">") or p.startswith("|") or p.startswith("- "):
             continue
-        # Single-line, strip markdown
         line = re.sub(r"\s+", " ", p)
         line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)
         line = re.sub(r"\*([^*]+)\*", r"\1", line)
