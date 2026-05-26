@@ -1834,59 +1834,160 @@ final class TagWatcherRunner: NSObject {
     }
 }
 
-// ─── mail-flag-worker runner ───────────────────────────────────────────────
+// ─── mail-flag-worker runner (v2 — FSEvents-driven, no polling) ──────────
 //
-// Counterpart to TagWatcherRunner for the Mail flag → routing pipeline.
-// Every 120s: runs `mail-flag-worker --poll` (scan Mail for newly-flagged
-// messages, queue jobs) then `mail-flag-worker` (process jobs: extract .eml,
-// attachments, body→md, route per contract, move to Processed/<Color>).
+// Watches ~/Library/Mail/V10/MailData/ via FSEventStream. When Mail writes
+// to the SQLite Envelope Index (because the user flagged something, or
+// Mail synced, or anything else), debounce 3s then run mail-flag-worker
+// --tick. The worker reads SQLite + .emlx directly (zero Mail.app load
+// for detection) and routes new flagged messages.
 //
-// Status JSON at ~/work/comms/queue/mail-flag-worker.status.json is read by
-// the menu to show "Mail flags: pending/processing" row.
+// Safety:
+//   - SINGLE-IN-FLIGHT: if a previous tick is still running, queue at most
+//     one pending follow-up tick. No stacking.
+//   - 5-MINUTE SAFETY TIMER: if FSEvents misses something (rare), a
+//     periodic tick catches up. Mail.app load per tick: at most the
+//     20-message-cap single move AppleEvent, 15s timeout.
+//   - DEBOUNCE: rapid-fire FSEvents during a sync collapse into one tick.
+//
+// Status JSON at ~/work/comms/queue/mail-flag-worker.status.json is read
+// by the menu to show "📧 Mail flags" row.
+
+import CoreServices  // FSEventStreamCreate, FSEventStreamRef, ...
 
 final class MailFlagWatcherRunner: NSObject {
 
-    private let interval: TimeInterval = 30
-    private var timer: Timer?
     private let bin: String
     private let logFile: String
+    private let watchDir: String
+
+    // FSEvents
+    private var fsStream: FSEventStreamRef?
+
+    // safety / single-in-flight (all accessed on runQueue)
+    private let runQueue = DispatchQueue(label: "esa.mailflag.run", qos: .utility)
+    private var isRunning = false
+    private var pendingTick = false
+    private var debounceWorkItem: DispatchWorkItem?
+
+    // 5-min safety net in case FSEvents misses
+    private var safetyTimer: Timer?
+    private let safetyInterval: TimeInterval = 300  // 5 min
+    private let debounceSeconds: TimeInterval = 3
 
     override init() {
         let home = NSHomeDirectory()
         self.bin = "\(home)/work/apple/bin/mail-flag-worker"
         self.logFile = "\(home)/work/comms/queue/mail-flag-runner.log"
+        self.watchDir = "\(home)/Library/Mail/V10/MailData"
         super.init()
         let dir = (logFile as NSString).deletingLastPathComponent
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
     }
 
     func start() {
-        log("MailFlagWatcherRunner starting (bin=\(bin), interval=\(Int(interval))s)")
         guard FileManager.default.isExecutableFile(atPath: bin) else {
             log("WARN: mail-flag-worker not executable: \(bin) — skipping")
             return
         }
-        DispatchQueue.main.async { [weak self] in self?.tick() }
-        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in self?.tick() }
+        guard FileManager.default.fileExists(atPath: watchDir) else {
+            log("WARN: watch dir missing: \(watchDir) — skipping (is Mail.app set up?)")
+            return
+        }
+        log("MailFlagWatcherRunner v2 starting (FSEvents on \(watchDir))")
+        startFSEvents()
+
+        // 5-minute safety tick. Catches anything FSEvents drops AND covers
+        // the case where Mail itself isn't running yet.
+        let t = Timer(timeInterval: safetyInterval, repeats: true) { [weak self] _ in
+            self?.runQueue.async { self?.scheduleDebouncedTick(reason: "safety-timer") }
+        }
         RunLoop.main.add(t, forMode: .common)
-        timer = t
+        safetyTimer = t
+
+        // Initial tick at startup — picks up anything flagged before AppleToolbox launched.
+        runQueue.async { [weak self] in self?.scheduleDebouncedTick(reason: "startup") }
     }
 
-    private func tick() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in self?.runOnce() }
+    private func startFSEvents() {
+        let paths = [watchDir] as CFArray
+        var context = FSEventStreamContext(
+            version: 0,
+            info: Unmanaged.passUnretained(self).toOpaque(),
+            retain: nil, release: nil, copyDescription: nil
+        )
+
+        let callback: FSEventStreamCallback = { _, contextInfo, numEvents, eventPathsRaw, _, _ in
+            guard let info = contextInfo else { return }
+            let runner = Unmanaged<MailFlagWatcherRunner>.fromOpaque(info).takeUnretainedValue()
+            // eventPathsRaw is CFArrayRef of CFString (when flag NoDefer + FileEvents).
+            // Decode safely:
+            let paths = Unmanaged<CFArray>.fromOpaque(eventPathsRaw).takeUnretainedValue() as! [String]
+            for p in paths {
+                let name = (p as NSString).lastPathComponent
+                if name.hasPrefix("Envelope Index") {
+                    runner.scheduleDebouncedTick(reason: "fsevent:\(name)")
+                    return
+                }
+            }
+        }
+
+        guard let stream = FSEventStreamCreate(
+            kCFAllocatorDefault,
+            callback,
+            &context,
+            paths,
+            FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
+            1.0,  // latency seconds — Mail typically flushes WAL within 1s
+            FSEventStreamCreateFlags(
+                kFSEventStreamCreateFlagFileEvents |
+                kFSEventStreamCreateFlagNoDefer
+            )
+        ) else {
+            log("ERROR: FSEventStreamCreate failed")
+            return
+        }
+        FSEventStreamSetDispatchQueue(stream, runQueue)
+        FSEventStreamStart(stream)
+        fsStream = stream
     }
 
-    private func runOnce() {
-        // First: poll Mail for newly-flagged messages
-        runSubcommand(args: ["--poll"])
-        // Then: process the inbox (dispatch attachments, extract bodies, etc.)
-        let out = runSubcommand(args: [])
+    /// Schedule a debounced tick — called from FSEvents callback (already on
+    /// runQueue) or from main thread via runQueue.async. Coalesces rapid
+    /// fire-fire-fire bursts during Mail sync into a single tick.
+    fileprivate func scheduleDebouncedTick(reason: String) {
+        // assumes already on runQueue
+        debounceWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            self?.runOnceUnderLock(reason: reason)
+        }
+        debounceWorkItem = item
+        runQueue.asyncAfter(deadline: .now() + debounceSeconds, execute: item)
+    }
+
+    private func runOnceUnderLock(reason: String) {
+        // Single-in-flight: if a tick is already running, just remember we
+        // want one more later. Never stack.
+        if isRunning {
+            pendingTick = true
+            return
+        }
+        isRunning = true
+
+        let out = runSubcommand(args: ["--tick"])
         let n = parseProcessed(from: out)
         if n > 0 {
-            log("tick: processed=\(n)")
+            log("tick (\(reason)): processed=\(n)")
             DispatchQueue.main.async { [weak self] in
                 self?.fireBanner(processed: n, fullOutput: out)
             }
+        }
+
+        isRunning = false
+        if pendingTick {
+            pendingTick = false
+            // One follow-up tick to catch anything that arrived during runOnce.
+            scheduleDebouncedTick(reason: "follow-up")
         }
     }
 
@@ -1911,11 +2012,14 @@ final class MailFlagWatcherRunner: NSObject {
     }
 
     private func parseProcessed(from text: String) -> Int {
+        // Worker prints "done: ok=N failed=N skipped=N  (remaining=N)"
         for line in text.split(separator: "\n") {
-            if line.hasPrefix("processed: "),
-               let slash = line.firstIndex(of: "/"),
-               let n = Int(line[line.index(line.startIndex, offsetBy: "processed: ".count)..<slash]) {
-                return n
+            if line.hasPrefix("done: ok=") {
+                if let r = line.range(of: "ok="),
+                   let space = line[r.upperBound...].firstIndex(of: " "),
+                   let n = Int(line[r.upperBound..<space]) {
+                    return n
+                }
             }
         }
         return 0
@@ -1925,7 +2029,7 @@ final class MailFlagWatcherRunner: NSObject {
         let content = UNMutableNotificationContent()
         content.title = "📧 \(processed) mail flag\(processed == 1 ? "" : "s") routed"
         content.subtitle = "mail-flag-worker"
-        content.body = "Check ~/work/comms/queue/mailflag-done/ for the job logs."
+        content.body = "Check ~/work/comms/queue/mailflag-done/ for the audit JSON."
         content.categoryIdentifier = "MAILFLAG_DISPATCHED"
         content.userInfo = ["queue_dir": "\(NSHomeDirectory())/work/comms/queue"]
         content.sound = .default
@@ -1935,6 +2039,14 @@ final class MailFlagWatcherRunner: NSObject {
             if let err = err {
                 self.log("ERROR delivering banner: \(err.localizedDescription)")
             }
+        }
+    }
+
+    deinit {
+        if let stream = fsStream {
+            FSEventStreamStop(stream)
+            FSEventStreamInvalidate(stream)
+            FSEventStreamRelease(stream)
         }
     }
 
@@ -2083,15 +2195,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tagWatcherRunner = twr
         twr.start()
 
-        // Mail-flag-worker: DISABLED 2026-05-26 after the original polling
-        // design was found to clobber Mail.app — stacked osascript processes
-        // scanning every mailbox of every account, no overlap protection, made
-        // Mail.app unresponsive and likely crash. Redesign in progress: scope
-        // to INBOX only, lockfile so only one poll at a time, longer interval,
-        // skip if previous tick still running. Disabled until that's shipped.
-        // let mfw = MailFlagWatcherRunner()
-        // mailFlagWatcherRunner = mfw
-        // mfw.start()
+        // Mail-flag-worker v2: FSEvents-driven (Envelope Index-wal watcher).
+        // ZERO osascript polling. Detection happens off-line via SQLite +
+        // .emlx disk reads. ONE bounded AppleEvent per processed message
+        // (move to Processed/<Color>, 15s timeout, 20-msg/tick cap).
+        // Re-enabled 2026-05-26 after the v1 polling design was replaced.
+        let mfw = MailFlagWatcherRunner()
+        mailFlagWatcherRunner = mfw
+        mfw.start()
     }
 
     var stickiesClaudeTimer: Timer?
