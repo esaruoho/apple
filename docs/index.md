@@ -13,9 +13,11 @@ title: Automation for the Rest of Us
 
 Apple ships an extraordinary automation stack — AppleScript, Automator, Shortcuts, App Intents, JXA, ASObjC, sdef, NSUserScriptTask, Vocal Shortcuts, Apple Foundation Models — and almost no one outside the power-user circle knows how to wire it together. This site (and the [esaruoho/apple](https://github.com/esaruoho/apple) repo behind it) is the working pattern book: every layer, every trigger surface, every recipe, in one place, runnable today.
 
-One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch the time.
+**Start here:** [Trigger surfaces](./triggers) · [Eleven-tier atlas](./tiers) · [Sal corpus](./sal-corpus) · [Trigger→worker chassis](./chassis)
 
-Ask a HomePod Mini *"what time is it?"* and watch the query travel to Apple's servers, get transcribed, get processed, and come back — sometimes as the time, sometimes as *"I don't know what you mean."* The HomePod has a clock. The room knows what time it is. The roundtrip is pure structural waste, paid in latency, electricity, and CO₂ on a query that should resolve in nanoseconds. Siri on the Mac does the same thing. Meanwhile, Sal Soghoian's [WWDC 2016 Session 717 — *Beyond Dictation: Enhanced Voice Control for macOS Apps*](https://archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4) (33 minutes, recovered from archive.org after Apple pulled it a week after he gave it — four months before his position was eliminated) demonstrated **on-stage**, in 2016, voice-controlled Mac automation that resolved entirely on-device, zero roundtrip, with user-author Shortcuts as the dispatch layer. That was ten years ago. The architecture worked. The Mac was ready. What's up, Apple? ([Full 524-line transcript](https://github.com/esaruoho/apple/blob/main/sources/sal/wwdc2016-session-717/717-transcript.txt) and [line-by-line analysis](https://github.com/esaruoho/apple/blob/main/analysis/sal/wwdc2016-session-717-transcript-analysis.md) in the repo. Vocal Shortcuts on Sequoia 2024 — eight years late — is the user-author re-implementation of what Session 717 already showed working.)
+One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch a value it already holds.
+
+Ask Siri on a HomePod Mini *"what's the temperature in this room?"* or *"how humid is it in here?"* and watch the query travel to Apple's servers, get transcribed, get processed, and come back as **outside weather** from your nearest WeatherKit-tracked city — sometimes wrong, sometimes *"I don't know what you mean,"* always a cloud roundtrip. **The HomePod Mini has a built-in thermo-hygrometer.** The sensor is in the same room as you. Siri won't surface its reading by voice; Apple routes the query to the cloud instead. So this repo built [the HomePod climate-sensor pipeline](https://github.com/esaruoho/apple/blob/main/wiki/entities/homepod.md) — a 15-minute HomeKit-Shortcut poll (`shortcuts run "HomePod Sensors"`) calibrated against a professional olosuhdemittaus instrument (HomePod reads 0.45 °C and 4.5 % low — both deltas now corrected), writing JSONL into Syncthing-mirrored storage so any Mac on the share reads identical live numbers. Zero cloud roundtrip. The data was already there. Siri on the Mac does the same outside-weather thing for the same query. Meanwhile, Sal Soghoian's [WWDC 2016 Session 717 — *Beyond Dictation: Enhanced Voice Control for macOS Apps*](https://archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4) (33 minutes, recovered from archive.org after Apple pulled it a week after he gave it — four months before his position was eliminated) demonstrated **on-stage**, in 2016, voice-controlled Mac automation that resolved entirely on-device, zero roundtrip, with user-author Shortcuts as the dispatch layer. That was ten years ago. The architecture worked. The Mac was ready. What's up, Apple? ([Full 524-line transcript](https://github.com/esaruoho/apple/blob/main/sources/sal/wwdc2016-session-717/717-transcript.txt) and [line-by-line analysis](https://github.com/esaruoho/apple/blob/main/analysis/sal/wwdc2016-session-717-transcript-analysis.md) in the repo. Vocal Shortcuts on Sequoia 2024 — eight years late — is the user-author re-implementation of what Session 717 already showed working.) Meanwhile, Sal Soghoian's [WWDC 2016 Session 717 — *Beyond Dictation: Enhanced Voice Control for macOS Apps*](https://archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4) (33 minutes, recovered from archive.org after Apple pulled it a week after he gave it — four months before his position was eliminated) demonstrated **on-stage**, in 2016, voice-controlled Mac automation that resolved entirely on-device, zero roundtrip, with user-author Shortcuts as the dispatch layer. That was ten years ago. The architecture worked. The Mac was ready. What's up, Apple? ([Full 524-line transcript](https://github.com/esaruoho/apple/blob/main/sources/sal/wwdc2016-session-717/717-transcript.txt) and [line-by-line analysis](https://github.com/esaruoho/apple/blob/main/analysis/sal/wwdc2016-session-717-transcript-analysis.md) in the repo. Vocal Shortcuts on Sequoia 2024 — eight years late — is the user-author re-implementation of what Session 717 already showed working.)
 
 ---
 
@@ -39,49 +41,30 @@ Full catalogs (auto-generated, always in sync):
 
 ---
 
-## What this site will become
+## What this site walks (in progress)
 
-This is a **placeholder**. The full public wiki is on the roadmap (tracked in [`TODO.md`](https://github.com/esaruoho/apple/blob/main/TODO.md)). When built out, it will walk:
+The full public wiki is being built incrementally. Tracked in [`TODO.md`](https://github.com/esaruoho/apple/blob/main/TODO.md). What's already drafted:
 
-### Seven trigger surfaces
+### [Seven trigger surfaces](./triggers)
 
-Every automation needs a trigger. This repo treats trigger choice as a first-class design decision.
+Every automation needs a trigger. Slash command / Spotlight .app / AppleToolbox menu / global Carbon hotkey / Vocal Shortcuts / hardware controller / passive watcher. The [triggers page](./triggers) compares latency, hands-free property, and use case for each, with links into the in-repo implementation of every one.
 
-1. **Slash command** in Claude Code (`/tag-app`, `/spotlight-export`) — fastest path, zero roundtrip after the first invocation.
-2. **Spotlight-reachable `.app` bundle** — `bin/spotlight-export.sh` compiles every workflow script to a `.app` in `/Applications/AppleToolbox/Apple-Workflows/`. ⌘-Space, type, ⏎.
-3. **AppleToolbox menu-bar item** — Swift `NSStatusItem` + `NSMenu`, click to fire.
-4. **Global keyboard shortcut** — Carbon `RegisterEventHotKey` in AppleToolbox, dispatches to any script / Shortcut / Automator / URL scheme. ⇧⌥⌘. → Stop Voicebox is proof.
-5. **Vocal Shortcuts** — the only Mac surface that is simultaneously hands-free + offline + latency-free + UUID-stable across renames. 588 phrases in the Hey Sal router.
-6. **Loupedeck Live / Stream Deck / Contour ShuttlePro** — hardware-physical buttons.
-7. **Stickies + tag-watcher + mail-flag + voice-memo `#process`** — passive triggers; the OS notices a file/note/tag/flag and dispatches a worker.
+### [Eleven-tier automation atlas](./tiers)
 
-### Eleven-tier automation atlas
+From Shortcuts.app down to IOKit, every layer macOS exposes for user-author automation. The atlas was 10-tier until 2026-05-22, when Sal pointed out the missing **ASObjC** tier — a plain `.applescript` file calling any public Cocoa class. Invisible for 17 years because single-axis taxonomies hide entire tiers. [Tiers page](./tiers) has the full coverage matrix.
 
-From plain AppleScript through ASObjC to IOKit — every layer macOS exposes for user-author automation, with permission-shape and language-surface mapped per cell. The atlas was 10-tier until 2026-05-22, when Sal pointed out the missing **ASObjC** tier (a plain `.applescript` file calling any public Cocoa class). It had been invisible for 17 years because single-axis taxonomies hide entire tiers.
+### [Trigger → worker chassis (four instances of the same pattern)](./chassis)
 
-### Trigger → worker chassis (four instances of the same pattern)
+Finder tag → action · Voice Memo `#process` → whisp · Stickies → Claude · Mail flag → routing. All four are the same chassis: *(filesystem-or-OS event) → debounce + lock → worker*. The [chassis page](./chassis) walks the five rules that make the pattern reusable (lock before dispatch, belt + suspenders triggers, run inside AppleToolbox not a bare LaunchAgent, calibrate the sensor, separate the noticer from the doer).
 
-- **Finder tag** (`tag-watcher`) — file gets a tag → script fires.
-- **Voice Memo `#process`** — recording with `#process` in title → whisp pipeline + summary.
-- **Stickies** — note edited → worker reads it.
-- **Mail flag** — message flagged with a color → `.eml` + attachments + body-md fan out per per-color contract.
+### [How the Sal corpus is kept alive](./sal-corpus)
 
-All four are the same chassis: filesystem-or-OS event → debounce + lock → worker. Documented as a reusable pattern.
-
-### How the Sal corpus is kept alive
-
-Sal's automation site (cmddconf.com) went offline in 2018. The material is too valuable to lose, so this repo keeps it alive:
-
-- Mirrors every reachable URL (235 of 359 download/media targets recovered, 3 dead).
-- Discovers new interview/article sources across 17 platforms (159 hits in pass 2).
-- Transcribes via two pipelines: YouTube (`whisp-submit`) and Apple Podcasts (`sal-resolve-podcast-mp3s.py` → `sal-transcribe-podcasts.sh`).
-- Extracts WWSD voice-signature lines from every transcript into the [`what-would-sal-say`](https://github.com/esaruoho/apple/tree/main/sources/sal) skill grounding.
-- Synthesizes SPOKEN-Sal output via ray-graph's voicebox endpoints, assembled from Sal's actual interview recordings.
+Five pipelines: download recovery (WWDC 2016 Session 717 recovered from archive.org), interview / article discovery across 17 sources, two-track transcription (YouTube + Apple Podcasts), WWSD voice-signature extraction (54+ principles catalogued), and voicebox synthesis (SPOKEN-Sal from his actual interview recordings). [Sal corpus page](./sal-corpus) has each pipeline + the philosophy.
 
 ### Philosophy
 
 - [**The Roundtrip Rule (WWSD #54)**](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md#L632): *"If you did a roundtrip for something that could be done locally, you have wasted everyone's time."* Articulated 2026-05-11 by Esa Ruoho while reviewing the post-Apple Sal corpus, as the operational synthesis of Sal's WWSD #2 (local-over-cloud) + #41 (time as the meta-why) + #49 (AI as intern, not director). [Full derivation + acid test in the Sal entity page.](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md#L632)
-- **Local first.** Cloud only when truly remote. HomePod Mini asking Apple servers what time it is = structural waste.
+- **Local first.** Cloud only when truly remote. Asking Siri for the temperature in a room with a built-in thermo-hygrometer = structural waste.
 - **One verb, one result.** Sal's design constraint, applied to every tool in `bin/`.
 - **Apple-native only.** No Homebrew, no pip, no npm. Every tool ships with macOS.
 
@@ -89,9 +72,9 @@ Sal's automation site (cmddconf.com) went offline in 2018. The material is too v
 
 ## Status
 
-This placeholder went live **2026-05-26**. The full wiki will be built incrementally as in-repo READMEs feel comprehensive enough to lift from. See [`TODO.md`](https://github.com/esaruoho/apple/blob/main/TODO.md) for the active work front.
+Site went live **2026-05-26** with the landing page + four topic pages ([triggers](./triggers), [tiers](./tiers), [sal-corpus](./sal-corpus), [chassis](./chassis)). Each topic page links to the canonical in-repo source under `wiki/`. The wiki keeps growing as features land; see [`TODO.md`](https://github.com/esaruoho/apple/blob/main/TODO.md) for active work fronts.
 
-For now, the README at [github.com/esaruoho/apple](https://github.com/esaruoho/apple) is the most-complete narrative.
+The README at [github.com/esaruoho/apple](https://github.com/esaruoho/apple) is the most-complete narrative; everything here lifts from it and from the in-repo wiki under [`wiki/`](https://github.com/esaruoho/apple/tree/main/wiki).
 
 ---
 

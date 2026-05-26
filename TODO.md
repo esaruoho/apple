@@ -85,20 +85,26 @@ is a focused next deliverable I can pick up unattended.
 
 Highest-leverage first:
 
-- [ ] **Apple Automation Workflow Suite — public wiki at `esaruoho.github.io/apple`.**
-  GitHub Pages site, single landing page that walks the whole stack: 7 trigger surfaces
-  (slash / Spotlight .app / AppleToolbox menu / global hotkey / Vocal Shortcuts /
-  Loupedeck / Stickies+tag-watcher), the 11-tier automation atlas, the trigger→worker
-  chassis (Finder tag / Voice Memo `#process` / Stickies / Mail flag — four instances of
-  the same pattern), how the Sal corpus is kept alive (download recovery → transcription
-  pipelines → WWSD voice-signature extraction → voicebox synthesis), and the philosophy
-  (Sal's 2016 elimination, why this repo exists, local-first / no-roundtrip rule). Depth:
-  philosophy + operations both. Pulls from existing wiki pages — most of the raw material
-  is already in `wiki/concepts/`, `wiki/entities/`, `analysis/sal/`. README.md and
-  `wiki/README.md` should stay solid enough that the public-site copy can lift from them
-  directly. Output: jekyll/just-the-docs or hugo on `gh-pages` branch. Defer until the
-  in-repo READMEs feel comprehensive (currently at "tag-app bootstrap + AppleToolbox
-  consolidation, 2026-05-26"; add more as features land).
+- [x] **Apple Automation Workflow Suite — public wiki at `esaruoho.github.io/apple`** — **LIVE 2026-05-26.**
+  GitHub Pages from `docs/` on `main`, Cayman remote theme via Jekyll. Title: *Automation
+  for the Rest of Us*. Five pages: landing + [triggers](https://esaruoho.github.io/apple/triggers)
+  + [tiers](https://esaruoho.github.io/apple/tiers) + [sal-corpus](https://esaruoho.github.io/apple/sal-corpus)
+  + [chassis](https://esaruoho.github.io/apple/chassis). Landing leads with Sal's "power of
+  the computer in the hands of the one using it" quote, then the HomePod-thermo-hygrometer
+  vs Siri-roundtrip critique (WeatherKit cloud query instead of the in-room sensor) tied
+  to the [HomePod climate-sensor pipeline](https://github.com/esaruoho/apple/blob/main/wiki/entities/homepod.md)
+  we built as the local-first replacement, and the [WWDC 2016 Session 717](https://archive.org/details/wwdc2016videos/717_hd_beyond_dictation__enhanced_voicecontrol_for_macos_apps.mp4)
+  evidence that on-device voice-controlled Mac automation was demonstrated in 2016.
+  Each topic page links to the canonical in-repo source under `wiki/`. Source-of-truth
+  stays in `wiki/`, `docs/` is the public face that lifts from it. Iterate as features land.
+
+- [ ] **Wiki pages still to draft for docs/.** Next additions, each lifting from existing
+  `wiki/` pages:
+  - `docs/asobjc.md` — the missing tier postmortem, expanded
+  - `docs/finder-tag-pipeline.md` — full tag-watcher walkthrough including the .app generator
+  - `docs/spotlight.md` — the 5 paths + APFS bug + TCC fix
+  - `docs/wwsd.md` — browseable 54+ principles catalog
+  - `docs/automator-vs-shortcuts.md` — the gap analysis as a public reference
 
 - [ ] **Bash tab-completion for `show compose <speaker>` / `<shortRef>`** —
   Tier 2 design (recommended in 2026-05-22 chat): cache speakers + their
