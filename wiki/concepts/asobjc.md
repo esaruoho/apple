@@ -1,5 +1,7 @@
 # AppleScriptObjective-C (ASObjC) — The Missing Tier
 
+> 📖 **Public:** [ASObjC](https://esaruoho.github.io/apple/asobjc)
+
 > Sal Soghoian, 2026-05-22 (reply to Esa): *"AppleScriptObjective-C can be used for File Management. It has access to tags as well."* — pointer to [macosxautomation.com/bootcamp/](http://macosxautomation.com/bootcamp/)
 
 ## What it is

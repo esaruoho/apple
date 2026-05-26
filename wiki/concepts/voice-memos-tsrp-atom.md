@@ -2,6 +2,8 @@
 description: Apple's auto-generated Voice Memo transcripts ARE persisted to disk — appended to the m4a file as a `tsrp` JSON atom; ZFLAGS bit 3 (mask 0x08) on ZCLOUDRECORDING marks presence. Discovered 2026-05-08.
 ---
 
+> 📖 **Public:** [Trigger→worker chassis (public)](https://esaruoho.github.io/apple/chassis)
+
 # Voice Memos tsrp atom + ZFLAGS bit 3 = transcript marker
 
 ## Where Apple stores Voice Memos auto-transcripts

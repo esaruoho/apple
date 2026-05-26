@@ -1,5 +1,7 @@
 # macOS Automation Tiers — Full Stack Atlas
 
+> 📖 **Public:** [Eleven-tier atlas](https://esaruoho.github.io/apple/tiers)
+
 > 11 automation layers mapped. From AppleScript to IOKit.
 
 > **2026-05-22 patch:** Tier 1.5 (ASObjC) added after Sal pointed out the gap. The original 10-tier model was permission-shaped and missed language-surface tiers. See [asobjc.md](asobjc.md) for the why-we-missed-it postmortem.

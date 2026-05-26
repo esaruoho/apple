@@ -1,5 +1,7 @@
 # Finder Toolbar — Shortcuts.app Quick Actions DO NOT Appear in Customize Toolbar
 
+> 📖 **Public:** [Finder-tag pipeline (public)](https://esaruoho.github.io/apple/finder-tag-pipeline)
+
 Tested 2026-05-26 on macOS Sequoia.
 
 **Finder's `View → Customize Toolbar…` palette only lists Apple's built-in items:** Back/Forward, Path, Group, View, Action (⋯), Eject, Burn, Space, Flexible Space, New Folder, Delete, Connect, Get Info, Search, Quick Look, Share, Edit Tags, Preview, AirDrop, iCloud. **Nothing else.** No Shortcuts.app shortcuts, no Quick Actions, no Services, no Automator workflows.

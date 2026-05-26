@@ -1,5 +1,7 @@
 # Finder Tag Pipeline — Tag a File, Mac Mini Processes It
 
+> 📖 **Public:** [Finder-tag pipeline](https://esaruoho.github.io/apple/finder-tag-pipeline)
+
 Built 2026-05-21 in conversation `09-46-57-i-have-an-apple-question-for-you-what-do-you-know-about-tags-claude-code.md`.
 
 ## The principle

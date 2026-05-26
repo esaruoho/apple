@@ -1,5 +1,7 @@
 # Spotlight + Automation — The Final Sal Mile
 
+> 📖 **Public:** [Spotlight](https://esaruoho.github.io/apple/spotlight)
+
 > "The final Sal mile: should eventually work from Spotlight."
 > Every script in this repo should be one Cmd+Space away.
 

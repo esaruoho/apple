@@ -1,5 +1,7 @@
 # Global Keyboard Shortcuts — Carbon RegisterEventHotKey via AppleToolbox
 
+> 📖 **Public:** [Trigger surfaces (public)](https://esaruoho.github.io/apple/triggers)
+
 > True system-wide keyboard shortcuts that don't get swallowed by the foreground app. Apple-shipped Carbon API, no Homebrew, no Karabiner, no Hammerspoon. (Some *handlers* may need Accessibility permission — e.g. SnapEngine driving AXUIElement — but the hotkey *registration* itself doesn't.)
 
 ## The breakthrough

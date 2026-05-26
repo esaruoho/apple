@@ -1,5 +1,7 @@
 # Automator vs Shortcuts — The Gap Analysis
 
+> 📖 **Public:** [Automator vs Shortcuts](https://esaruoho.github.io/apple/automator-vs-shortcuts)
+
 What Automator can do that Shortcuts can't. What Shortcuts can do that Automator can't. And what neither can do that someone at Apple should be thinking about.
 
 ---

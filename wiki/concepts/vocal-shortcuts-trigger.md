@@ -1,5 +1,7 @@
 # Vocal Shortcuts — trigger surface position
 
+> 📖 **Public:** [Trigger surfaces (public)](https://esaruoho.github.io/apple/triggers)
+
 Vocal Shortcuts (macOS 15 Sequoia, **Apple Silicon only**) is the **only** Mac trigger surface that is simultaneously:
 
 - hands-free (no button, no wake-word, just speak)

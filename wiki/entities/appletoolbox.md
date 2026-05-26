@@ -1,5 +1,7 @@
 # AppleToolbox — Apple Automation Workflow Toolbox (rayOS-style launcher)
 
+> 📖 **Public:** [Trigger surfaces (public)](https://esaruoho.github.io/apple/triggers)
+
 **Single source of truth:** `topbar/AppleToolbox.swift`. One Swift file,
 ~700 lines, no third-party dependencies. Built with `xcrun swiftc`,
 bundled as `AppleToolbox.app` (LSUIElement=true → no Dock icon),

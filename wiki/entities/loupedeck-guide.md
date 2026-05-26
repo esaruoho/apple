@@ -1,5 +1,7 @@
 # Loupedeck Live Setup Guide for Apple Workflows
 
+> 📖 **Public:** [Trigger surfaces (public)](https://esaruoho.github.io/apple/triggers)
+
 Use your Loupedeck Live to trigger any of the 288 workflow scripts and 64 launcher scripts in this repo via shell commands.
 
 ---

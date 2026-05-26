@@ -1,5 +1,7 @@
 # Sal Soghoian — The Automation Oracle
 
+> 📖 **Public:** [WWSD principles (public)](https://esaruoho.github.io/apple/wwsd) · [Sal corpus (public)](https://esaruoho.github.io/apple/sal-corpus)
+
 > **Trigger words**: "what would sal do", "sal", "wwsd"
 
 ## Who Is Sal

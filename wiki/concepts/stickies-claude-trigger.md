@@ -1,5 +1,7 @@
 # Stickies → Claude Trigger — Notes as a Launch Surface
 
+> 📖 **Public:** [Trigger→worker chassis (public)](https://esaruoho.github.io/apple/chassis)
+
 Built 2026-05-24. Companion to the `finder-tag-pipeline.md` pattern: same shape (LaunchAgent watcher → dispatcher), different trigger surface (Stickies notes instead of Finder tags).
 
 ## The principle
