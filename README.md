@@ -698,6 +698,8 @@ Flag a message in Mail any color → the worker extracts it (`.eml` + body→mar
 
 **Full architecture:** [`wiki/concepts/mail-flag-pipeline.md`](wiki/concepts/mail-flag-pipeline.md). Source: [`bin/mail-flag-worker`](bin/mail-flag-worker), config at [`bin/mail-flag-config.json`](bin/mail-flag-config.json).
 
+**Apple Mail.app gotchas atlas:** [`wiki/concepts/mail-app-internal-behaviors.md`](wiki/concepts/mail-app-internal-behaviors.md) — 12 non-obvious behaviors discovered during this build. ROWID flips on move, `source of m` doesn't persist, Gmail virtual folders hang, inline attachments need special routing, FSEventStream needs `kFSEventStreamCreateFlagUseCFTypes`, etc. **Read before writing any Mail-data automation.**
+
 ### Two lessons baked into v2 (the hard way)
 
 **Lesson 1: Polling Mail via osascript is catastrophic.** The v1 design (lived 4 hours) ran `tell application "Mail" / repeat with mb in mailboxes of acc / messages of mb whose flag index is N` every 30s with no overlap protection. Mail received an ever-growing queue of "scan every mailbox of every account" AppleEvents, became unresponsive, eventually crashed. **v2 fix:** read Mail's own SQLite Envelope Index (read-only) + read `.emlx` files directly from disk — Mail.app sees ZERO AppleEvents for detection. The single move-to-Processed AppleEvent is account-scoped (`account whose id is "<UUID>"`) with a 15-second hard timeout. Hard cap: 20 messages per tick.

@@ -62,7 +62,18 @@ Fourth instance of the trigger→worker chassis (Finder tag, Voice Memo `#proces
 
 **.emlx format:** first line = byte length of RFC822 body; then RFC822 bytes; then optional plist trailer. Stdlib `email` module parses the RFC822 part cleanly.
 
-**`.partial.emlx`** = IMAP hasn't pulled the full body+attachments from the server yet. We **skip** these (mark `skipped_temp`) and retry on future ticks. Trying to force-download via `tell Mail to set _ to source of m` clobbered Mail on Gmail's `[Gmail]/All Mail` virtual folder (see v1 postmortem) — so we just wait.
+**`.partial.emlx`** = IMAP hasn't pulled the full body+attachments yet. Two-tier handling:
+
+- **Virtual mailboxes** (Gmail `[Gmail]/All Mail` and friends — identified by URL marker, see [mail-app-internal-behaviors.md §3](mail-app-internal-behaviors.md)) → SKIP. Force-downloading hangs Mail for minutes per query. Park in `skipped_temp`, retry every tick. Thread bundling usually rescues attachments via iCloud Sent Messages siblings.
+- **Real mailboxes** (iCloud INBOX, plain IMAP, custom folders) → FORCE-DOWNLOAD via a bounded `tell Mail to set _src to source of m` + `NSString:writeToFile` to our own tmp file. 30s timeout, single attempt per tick, captures the bytes ourselves because Mail does NOT persist them to its .emlx cache. Implementation: `try_force_download()` in `bin/mail-flag-worker`. See [mail-app-internal-behaviors.md §2](mail-app-internal-behaviors.md) for the why.
+
+Early Message-ID dedup runs BEFORE any force-download attempt — `.partial.emlx` has headers (just no body), we read those, check `processed_message_ids`, skip the 30 s download if we've already routed this message under a previous ROWID.
+
+## Attachment routing — inline files count too
+
+The worker routes ANY MIME part with a non-empty `Content-Disposition` filename, not just parts marked `Content-Disposition: attachment`. **Inline images** (hand-drawn diagrams, photos, screenshots embedded in email body) are the actual archival content for many Free Energy / research / how-to mails. Python's `email.message.Message.is_attachment()` would skip them — we deliberately don't use it.
+
+Validated 2026-05-26: a 154 KB iCloud message with subject `"C"` from Merja Valve had a single `Content-Disposition: inline; filename="Note of C.jpeg"` part. The worker correctly routed it to `~/work/mediabank/inbox/images/Note_of_C.jpeg`. See [mail-app-internal-behaviors.md §5](mail-app-internal-behaviors.md).
 
 ## Thread bundling (the real archival win)
 
@@ -91,6 +102,8 @@ So user-flagging requires the FSEvents/SQLite path. Mail Rules are useful for th
 **iCloud INBOX flagging works end-to-end.** Validated 2026-05-26 with a real message — .eml + body.md + 7 thread attachments + thread.md + move to Processed/FreeEnergy, all in under 3 seconds.
 
 **Gmail `[Gmail]/All Mail` virtual folder is fragile.** Mail's IMAP queries against this folder are slow because it's a server-side virtual mirror of every labeled message. `osascript` calls block Mail for minutes. **We do not force-download Gmail partials.** They sit in `skipped_temp` until Mail eventually pulls them (via user opening the message, or background sync). Thread bundling rescues most cases: even with a partial Gmail incoming, the full Sent Messages siblings on iCloud provide the attachments.
+
+**iCloud INBOX and plain IMAP are safe.** `.partial.emlx` in these mailboxes IS force-downloaded automatically — the worker fires one bounded `source of m` osascript with 30s timeout, captures the RFC822 bytes via `NSString:writeToFile` to a temp file, then proceeds with normal routing. End-to-end latency for a 150 KB message with inline image: ~13 seconds.
 
 ## The contract file
 
@@ -227,7 +240,8 @@ Net effect: Mail.app received an ever-growing queue of "scan every mailbox of ev
 
 ## Related
 
-- [mail-rowid-flip-on-move.md](mail-rowid-flip-on-move.md) — why we dedup by RFC822 Message-ID, not ROWID
+- [mail-app-internal-behaviors.md](mail-app-internal-behaviors.md) — every Mail.app gotcha discovered during this build, consolidated (ROWID flip, source-of-m doesn't persist, virtual-folder hangs, FSEvents CFTypes flag, inline-attachment routing, etc.)
+- [mail-rowid-flip-on-move.md](mail-rowid-flip-on-move.md) — gotcha #1 in standalone detail
 - [finder-tag-pipeline.md](finder-tag-pipeline.md) — sibling pipeline (tag-watcher)
 - [voice-memos-process-tag-pipeline.md](voice-memos-process-tag-pipeline.md) — sibling pipeline (Voice Memos `#process`)
 - [stickies-claude-trigger.md](stickies-claude-trigger.md) — sibling pipeline (Stickies)
