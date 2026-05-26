@@ -224,6 +224,22 @@ def collect_storage() -> list[dict[str, Any]]:
     return out
 
 
+def collect_nvme() -> dict[str, int]:
+    """Map drive name → raw bytes from SPNVMeDataType (the spec-sticker size).
+
+    Returns e.g. {"APPLE SSD AP2048Z": 2000000000000}. Used by the stack line
+    so we report the vendor-spec capacity, not the boot APFS container size."""
+    data = sp_json("SPNVMeDataType").get("SPNVMeDataType", [])
+    out: dict[str, int] = {}
+    for ctrl in data:
+        for item in ctrl.get("_items", []):
+            name = item.get("_name") or item.get("device_name")
+            size = item.get("size_in_bytes")
+            if name and isinstance(size, int):
+                out[name] = size
+    return out
+
+
 def collect_power() -> dict[str, Any]:
     batt = sp_json("SPPowerDataType").get("SPPowerDataType", [])
     info: dict[str, Any] = {"raw": batt}
@@ -379,6 +395,7 @@ def gather_all() -> dict[str, Any]:
         "network": collect_network(),
         "security": collect_security(),
         "time_machine": collect_timemachine(),
+        "nvme": collect_nvme(),
         "ai": build_ai_assessment(hw),
     }
 
@@ -424,11 +441,14 @@ def build_stack_line(rep: dict[str, Any]) -> str:
     # RAM
     parts.append(f"{hw['ram_gb']} GB RAM")
 
-    # Storage — primary internal drive. Use decimal units (vendor spec).
+    # Storage — primary internal drive. Prefer raw NVMe spec size over APFS
+    # container size so the line matches the sticker on the box.
     drive = primary_internal_storage(rep.get("storage") or [])
     if drive and drive.get("size_bytes"):
         drive_model = drive.get("physical") or "internal SSD"
-        parts.append(f"{short_bytes(drive['size_bytes'], decimal=True)} {drive_model}")
+        nvme = rep.get("nvme") or {}
+        raw_size = nvme.get(drive_model) or drive["size_bytes"]
+        parts.append(f"{short_bytes(raw_size, decimal=True)} {drive_model}")
 
     # macOS
     if sw.get("macos_version"):

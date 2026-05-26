@@ -1,15 +1,18 @@
 ---
 layout: default
-title: Automator vs Shortcuts — the gap analysis
+title: "Automator vs Shortcuts — The Gap Analysis"
 ---
 
-# Automator vs Shortcuts — the gap analysis
+# Automator vs Shortcuts — The Gap Analysis
+
+
 
 [← Back to home](./)
-
 What Automator can do that Shortcuts can't. What Shortcuts can do that Automator can't. And what neither can do that someone at Apple should be thinking about.
 
-## By the numbers
+---
+
+## By the Numbers
 
 | | Automator | Shortcuts |
 |--|:---------:|:---------:|
@@ -31,9 +34,11 @@ What Automator can do that Shortcuts can't. What Shortcuts can do that Automator
 | UI recording | **Yes** (`Watch Me Do`) | No |
 | Status | **Deprecated** (still ships, no updates) | Active development |
 
-## What Automator has that Shortcuts doesn't
+---
 
-### 1. Scripting escape hatches
+## What Automator Has That Shortcuts Doesn't
+
+### 1. Scripting Escape Hatches
 
 Automator's killer feature: when the built-in actions aren't enough, drop to code.
 
@@ -48,7 +53,7 @@ Shortcuts has none of these. If a Shortcuts action doesn't exist for what you wa
 Automator workflows can become:
 
 | Output | What it means |
-|---|---|
+|--------|--------------|
 | **Application** (`.app`) | Double-click to run. Drag files onto it. Put it in the Dock. |
 | **Quick Action / Service** | Right-click context menu, Services menu, Touch Bar |
 | **Folder Action** | Triggers automatically when files are added to a folder |
@@ -57,49 +62,254 @@ Automator workflows can become:
 | **Dictation Command** | Triggers by voice (Sal's addition) |
 | **Image Capture Plugin** | Triggers when importing from scanner/camera |
 
-A Shortcut can be: a Shortcut. That's it.
+Shortcuts can be: a Shortcut. That's it. You can add it to the menu bar or dock, but it's always a Shortcut.
 
 ### 3. Watch Me Do
 
-Automator records UI actions and plays them back. Crude but unmatched for apps with no scripting interface. Shortcuts has no equivalent.
+Record mouse clicks and keystrokes and replay them. Fragile, yes — but it works for automating apps with zero scripting support. Shortcuts has no equivalent.
 
-## What Shortcuts has that Automator doesn't
+### 4. Variables and Flow Control
 
-### 1. Cross-device
+Automator has explicit variables (`Set Value of Variable`, `Get Value of Variable`), loops (`Loop`), and user interaction (`Ask for Confirmation`, `Choose from List`, `Wait for User Action`).
 
-Shortcuts run on Mac + iPhone + iPad + Watch. Automator is Mac-only.
+Shortcuts has its own flow control (If/Otherwise, Repeat, Choose from Menu) — but no persistent variables across runs without workarounds.
 
-### 2. Siri integration
+### 5. Deep App Actions (Legacy)
 
-Shortcuts can be voice-triggered via Siri or [Vocal Shortcuts](./triggers#5-vocal-shortcuts) (the only Mac surface that is hands-free + offline + latency-free + UUID-stable). Automator workflows cannot.
+227 built-in actions covering apps Shortcuts ignores:
 
-### 3. URL scheme + CLI
-
-`shortcuts://run-shortcut?name=Foo` works from any app or browser. `shortcuts run Foo` works from any shell. Automator workflows have no URL scheme and no CLI shipping with macOS.
-
-### 4. App Intents (the modern bridge)
-
-App Intents is the framework Apple has actually invested in. Any modern app exposing automation does it through App Intents → Shortcuts → Siri. Automator's path is dormant.
-
-## Status
-
-**Automator is deprecated.** Still ships on every Mac, still works, but receives no updates. Shortcuts is the actively-developed path.
-
-**That doesn't mean Automator is obsolete.** For Mac-only workflows that need scripting escape hatches OR need to live as a Quick Action / Folder Action / Calendar Alarm — Automator is still the right tool. For cross-device, Siri-callable, App-Intents-leveraging work, Shortcuts is the right tool.
-
-## What neither can do (Apple, take note)
-
-- **AppleScript / shell-script escape hatch *inside* Shortcuts.** Removed circa Shortcuts-for-Mac launch. Apple's reasoning was sandboxing; the user-author cost has been enormous. The closest workaround is a Run Shortcut action that wraps an Automator workflow that calls AppleScript — three levels deep.
-- **CLI to compile Automator workflows.** `osacompile` does it for AppleScript. There's no `automatorcompile`. You have to launch Automator.app.
-- **A unified action library.** Automator's 227 actions and Shortcuts' 246 actions are separate catalogs. The user has to know which app to launch before they can see what's possible.
-- **First-class CLI invocation of Automator outputs.** `open -a` works but you can't pass arguments cleanly.
-
-## Read more
-
-- Source-of-truth: [`wiki/concepts/automator-vs-shortcuts.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/automator-vs-shortcuts.md) — full gap analysis with action-by-action coverage table.
-- The decision tree: [`wiki/concepts/wwsd-decision-tree.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/wwsd-decision-tree.md) — when to reach for which.
-- Pattern-reusability principle: [`wiki/concepts/pattern-reusability.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/pattern-reusability.md) — why neither tool alone is sufficient.
+| Category | Actions Shortcuts doesn't have |
+|----------|-------------------------------|
+| **PDF** | Combine, split, encrypt, watermark, extract annotations, render pages as images, search, set metadata, extract text, create contact sheets |
+| **iDVD** | Full disc authoring pipeline (dead app, but the actions existed) |
+| **iPod** | Direct iPod management (obsolete) |
+| **Finder deep** | Label items, set Spotlight comments, set folder views, create aliases, sort items, set application for files |
+| **Web** | Download URLs, get webpage contents/links/images, run web service, save images from web content, website popup |
+| **Text processing** | Extract data from text (dates, URLs, addresses), filter paragraphs, combine text files, text to EPUB, text to audio |
+| **Image processing** | Crop, flip, rotate, pad, scale, watermark, change type, apply Quartz filters, create thumbnails, create banner from text |
+| **Developer** | Build Xcode Project, CVS operations, Apply SQL, Convert CSV to SQL, Create Package |
+| **System** | Change system appearance, set computer volume, eject disk, mount disk image, start screen saver, system profile, take screenshot |
 
 ---
 
-[← Back to home](./) | [Triggers ←](./triggers) | [Tiers ←](./tiers) | [Sal corpus ←](./sal-corpus) | [Chassis ←](./chassis) | [ASObjC ←](./asobjc) | [Finder-tag ←](./finder-tag-pipeline) | [Spotlight ←](./spotlight) | [WWSD ←](./wwsd)
+## What Shortcuts Has That Automator Doesn't
+
+### 1. Cross-Device
+
+Shortcuts runs on Mac, iPhone, iPad, and Apple Watch. Automator is Mac-only. This is the width Sal talked about.
+
+### 2. App Intents (Modern API)
+
+20 apps expose 246 Shortcuts actions via the App Intents framework:
+
+| App | Actions | Siri Phrases |
+|-----|:-------:|:------------:|
+| Notes | 50 | 318 |
+| Books | 27 | 125 |
+| Mail | 26 | 164 |
+| Music | 23 | 123 |
+| Freeform | 23 | 144 |
+| Preview | 17 | 35 |
+| Maps | 16 | 17 |
+| Finder | 16 | 67 |
+| Voice Memos | 14 | 45 |
+| Shortcuts | 13 | 49 |
+| Weather | 6 | 149 |
+| Home | 4 | — |
+| Pages | 2 | — |
+| Numbers | 2 | — |
+| Keynote | 2 | — |
+| Tips | 1 | 8 |
+| Reminders | 1 | — |
+| News | 1 | — |
+| Calculator | 1 | — |
+| App Store | 1 | 27 |
+
+Automator has zero App Intents awareness.
+
+### 3. Siri Voice Triggering
+
+"Hey Siri, run my shortcut" — no equivalent in Automator. (Sal added Dictation Commands to macOS, but those were OS-level, not Automator-level.)
+
+### 4. The `shortcuts` CLI
+
+```bash
+shortcuts list                    # Show all shortcuts
+shortcuts run "My Shortcut"       # Run by name
+shortcuts run "My Shortcut" -i input.txt  # With file input
+shortcuts view "My Shortcut"      # Open in editor
+shortcuts sign -i in.shortcut -o out.shortcut  # Code sign
+```
+
+Automator has no CLI. You can `open workflow.app` or `automator workflow.workflow` but there's no `automator run`.
+
+### 5. Automation Triggers
+
+Shortcuts can trigger automatically on:
+- Time of day
+- Arriving at / leaving a location
+- Connecting to Wi-Fi / Bluetooth
+- Opening an app
+- NFC tag
+- Email/message received (limited)
+
+Automator only triggers via folder actions or calendar alarms.
+
+### 6. Share Sheet Integration
+
+Shortcuts appear in the Share Sheet across iOS and macOS. Automator Quick Actions appear in Services menus on Mac only.
+
+---
+
+## What NEITHER Can Do
+
+This is the real gap — the things someone at Apple should be building.
+
+| Gap | Why it matters |
+|-----|---------------|
+| **Record audio in one action** | [NOTES-001](../../painpoints/NOTES-001-record-audio.md) — Notes has 318 Siri phrases but "start recording" isn't one |
+| **Chain AppleScript into Shortcuts** | No `Run AppleScript` action in Shortcuts. The depth layer is severed from the width layer. This is the AND Sal asked for. |
+| **Access scripting dictionaries from Shortcuts** | Shortcuts can't send Apple Events. 30 apps with rich sdef dictionaries are invisible to Shortcuts. |
+| **UI recording/playback** | Automator's Watch Me Do is frozen in time. Shortcuts has nothing. No modern macro recorder. |
+| **Read message content** | Messages has 3 sdef commands (send, login, logout). Neither tool can read or search messages. |
+| **Automate System Settings** | 3 sdef commands, no App Intents. The entire preferences system is dark. `defaults` CLI is the only way. |
+| **Deep PDF workflows in Shortcuts** | Automator has 12 PDF actions. Shortcuts has zero. |
+| **Deep image processing in Shortcuts** | Automator has 10+ image actions. Shortcuts has basic resize/convert only. |
+| **Automate Disk Utility** | Zero sdef, zero Intents. `diskutil` CLI only. |
+| **Automate Activity Monitor** | Zero sdef, zero Intents. `top`/`ps` CLI only. |
+| **Save Shortcuts as standalone apps** | Automator can. Shortcuts can't. |
+| **Folder actions in Shortcuts** | Automator can trigger on folder changes. Shortcuts can't watch folders. |
+
+---
+
+## The 36 Apps With Zero sdef
+
+These apps have **no scripting dictionary at all** — AppleScript can only activate them, nothing more.
+
+| App | Has App Intents? | Has URL Schemes? | The only way in |
+|-----|:----------------:|:----------------:|-----------------|
+| Activity Monitor | No | No | `top`, `ps`, `vm_stat` CLI |
+| AirPort Utility | No | Yes (`apconfig:`) | URL scheme only |
+| App Store | Yes (1 action) | Yes (`itms-apps:`) | URL + 1 Intent |
+| Audio MIDI Setup | No | No | `system_profiler SPAudioDataType` |
+| Books | Yes (27 actions) | Yes (`ibooks:`) | Intents + URL (no depth) |
+| Calculator | Yes (1 action) | No | 1 Intent. `bc` CLI. |
+| Chess | No | No | PGN files only |
+| Clock | No | No | Widget. `date` CLI. |
+| ColorSync Utility | No | No | `colorsync` CLI |
+| Dictionary | No | Yes (`dict:`) | URL scheme + Services menu |
+| Digital Color Meter | No | No | System Events UI only |
+| Disk Utility | No | No | `diskutil`, `hdiutil` CLI |
+| FaceTime | No | Yes (`facetime:`) | URL scheme to call contacts |
+| Find My | No | Yes (`findmy:`) | URL scheme only |
+| Font Book | No | Yes (`fontbook:`) | URL + `atsutil` CLI |
+| Freeform | Yes (23 actions) | Yes (`freeform:`) | Rich Intents, no sdef depth |
+| Grapher | No | No | GCX files only |
+| Home | Yes (4 actions) | No | HomeKit Intents |
+| Image Capture | No | No | `sips`, `system_profiler` |
+| Launchpad | No | No | `open -a` CLI |
+| Maps | Yes (16 actions) | Yes (`maps:`) | Rich Intents + URL |
+| Migration Assistant | No | No | Not meaningfully automatable |
+| Mission Control | No | No | `defaults write com.apple.dock` |
+| News | Yes (1 action) | Yes (`applenews:`) | URL + 1 Intent |
+| Passwords | No | Yes (`otpauth:`) | `security` CLI |
+| Photo Booth | No | No | System Events UI only |
+| Podcasts | No | Yes (`pcast:`) | URL scheme only |
+| Preview | Yes (17 actions) | No | Intents but no sdef |
+| Screenshot | No | No | `screencapture` CLI |
+| Stickies | No | No | 1 Service ("Make Sticky") |
+| Stocks | No | Yes (`stocks:`) | URL scheme only |
+| Time Machine | No | No | `tmutil` CLI |
+| Tips | Yes (1 action) | Yes (`help:`) | URL + 1 Intent |
+| Voice Memos | Yes (14 actions) | No | Intents only |
+| VoiceOver Utility | No | No | `VoiceOver` CLI |
+| Weather | Yes (6 actions) | Yes (`weather:`) | Intents + URL |
+
+**20 of these 36 have NO automation surface at all** — no sdef, no Intents, no URL schemes. The only way to control them is System Events UI scripting or CLI tools.
+
+---
+
+## The Bridge That Doesn't Exist
+
+Sal's "AND not OR" — the bridge between AppleScript depth and Shortcuts width — would look like this:
+
+```
+┌─────────────────────────────────┐
+│         Shortcuts               │  ← WIDTH: every app, every device
+│  ┌───────────────────────────┐  │
+│  │   Run AppleScript Action  │  │  ← THE MISSING BRIDGE
+│  │   (like Automator has)    │  │
+│  └───────────────────────────┘  │
+│              ↓                  │
+│     Apple Events / sdef         │  ← DEPTH: 30 apps, every property
+└─────────────────────────────────┘
+```
+
+If Shortcuts had a `Run AppleScript` action, every scripting dictionary in the system would instantly become a Shortcuts action. 30 apps. Hundreds of commands. Thousands of properties. That's the AND.
+
+Instead, each app must individually implement App Intents in Swift. 20 have. 46 haven't. And the 30 apps with rich scripting dictionaries — the depth layer Sal spent 20 years building — are invisible to Shortcuts entirely.
+
+---
+
+---
+
+## The 20 Apps With Zero Automation Surface
+
+No scripting dictionary. No App Intents. No URL schemes. The only way in is System Events UI scripting or CLI tools.
+
+1. **Activity Monitor** → `top`, `ps`, `vm_stat`
+2. **Audio MIDI Setup** → `system_profiler SPAudioDataType`
+3. **Chess** → PGN files only
+4. **Clock** → `date` CLI
+5. **ColorSync Utility** → `colorsync` CLI
+6. **Digital Color Meter** → nothing
+7. **Disk Utility** → `diskutil`, `hdiutil`
+8. **Grapher** → GCX files only
+9. **Image Capture** → `sips`, `system_profiler`
+10. **Launchpad** → `open -a`
+11. **Migration Assistant** → not meaningfully automatable
+12. **Mission Control** → `defaults write com.apple.dock`
+13. **Photo Booth** → nothing
+14. **Screenshot** → `screencapture`
+15. **Stickies** → 1 Service only ("Make Sticky")
+16. **Time Machine** → `tmutil`
+17. **VoiceOver Utility** → `VoiceOver` CLI
+18. **Passwords** → `security` CLI (has URL schemes but no sdef/Intents)
+
+Every one of these has a CLI tool that does more than the GUI. The pattern holds.
+
+---
+
+## The Actual Bridge (What Works Today)
+
+Automator and Shortcuts aren't fully isolated — there are seams:
+
+```
+Automator "Run Shell Script" → shortcuts run "Name" → App Intents
+```
+
+This chain works today. An Automator workflow can call a Shortcut via CLI, which triggers App Intents actions. That's depth (Automator's scripting) reaching width (Shortcuts' cross-app Intents).
+
+Going the other direction:
+
+```
+Shortcuts → open workflow.app → Automator runs (but can't pass data back)
+```
+
+**What the AND future looks like:**
+
+| Feature | Today | AND |
+|---------|-------|-----|
+| Shortcuts runs AppleScript | No | `Run AppleScript` action in Shortcuts |
+| Shortcuts runs shell scripts | No | `Run Shell Script` action in Shortcuts |
+| Automator actions in Shortcuts | No | Auto-import 227 actions as Shortcuts actions |
+| Shortcuts saves as `.app` | No | Save to Dock, drag files onto it |
+| Folder Actions from Shortcuts | No | Trigger Shortcut when file added to folder |
+| Shortcuts reads sdef | No | Bridge to 30 apps' scripting dictionaries |
+| Shared variable space | No | Automator variables ↔ Shortcuts input/output |
+
+The technology exists for all of this. The `shortcuts` CLI already bridges Layer 1 (AppleScript) to Layer 4 (App Intents). What's missing is Apple making that bridge official — inside Shortcuts itself, not just from the Terminal.
+
+---
+
+*The whole sausage. The whole widget. The whole service. Someone at Apple needs to think about this.*
