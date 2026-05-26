@@ -13,7 +13,7 @@ title: Automation for the Rest of Us
 
 Apple ships an extraordinary automation stack — AppleScript, Automator, Shortcuts, App Intents, JXA, ASObjC, sdef, NSUserScriptTask, Vocal Shortcuts, Apple Foundation Models — and almost no one outside the power-user circle knows how to wire it together. This site (and the [esaruoho/apple](https://github.com/esaruoho/apple) repo behind it) is the working pattern book: every layer, every trigger surface, every recipe, in one place, runnable today.
 
-**Start here:** [Trigger surfaces](./triggers) · [Eleven-tier atlas](./tiers) · [Sal corpus](./sal-corpus) · [Trigger→worker chassis](./chassis)
+**Start here:** [Trigger surfaces](./triggers) · [Eleven-tier atlas](./tiers) · [Sal corpus](./sal-corpus) · [Trigger→worker chassis](./chassis) · [ASObjC](./asobjc) · [Finder-tag pipeline](./finder-tag-pipeline) · [Spotlight](./spotlight) · [WWSD](./wwsd) · [Automator vs Shortcuts](./automator-vs-shortcuts)
 
 One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch a value it already holds.
 

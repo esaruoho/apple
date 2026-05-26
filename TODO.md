@@ -98,13 +98,15 @@ Highest-leverage first:
   Each topic page links to the canonical in-repo source under `wiki/`. Source-of-truth
   stays in `wiki/`, `docs/` is the public face that lifts from it. Iterate as features land.
 
-- [ ] **Wiki pages still to draft for docs/.** Next additions, each lifting from existing
-  `wiki/` pages:
-  - `docs/asobjc.md` — the missing tier postmortem, expanded
-  - `docs/finder-tag-pipeline.md` — full tag-watcher walkthrough including the .app generator
-  - `docs/spotlight.md` — the 5 paths + APFS bug + TCC fix
-  - `docs/wwsd.md` — browseable 54+ principles catalog
-  - `docs/automator-vs-shortcuts.md` — the gap analysis as a public reference
+- [x] **Wiki pages drafted for docs/ (2026-05-26).** Five public pages, each lifted from
+  the canonical in-repo `wiki/` source:
+  - [x] [`docs/asobjc.md`](https://esaruoho.github.io/apple/asobjc) — the missing-tier postmortem
+  - [x] [`docs/finder-tag-pipeline.md`](https://esaruoho.github.io/apple/finder-tag-pipeline) — full tag-watcher walkthrough + .app generator + Smart Folder layer
+  - [x] [`docs/spotlight.md`](https://esaruoho.github.io/apple/spotlight) — the 5 paths + APFS bug + TCC fix
+  - [x] [`docs/wwsd.md`](https://esaruoho.github.io/apple/wwsd) — browseable 54+ principles catalog with the Roundtrip Rule (WWSD #54)
+  - [x] [`docs/automator-vs-shortcuts.md`](https://esaruoho.github.io/apple/automator-vs-shortcuts) — the gap analysis as a public reference
+  Public wiki now at 10 pages. Next iteration: cross-link from in-repo `wiki/` source pages
+  back to the docs equivalents so contributors see both.
 
 - [ ] **Bash tab-completion for `show compose <speaker>` / `<shortRef>`** —
   Tier 2 design (recommended in 2026-05-22 chat): cache speakers + their
