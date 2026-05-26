@@ -1,0 +1,117 @@
+{
+  "_comment": [
+    "Mail flag → routing contracts. Spine for the Mail-flag pipeline.",
+    "Keyed by Mail's `flag index` (integer 0..6). Apple Mail's default",
+    "color order is rainbow-style — typical mapping is:",
+    "  0=red 1=orange 2=yellow 3=green 4=blue 5=purple 6=gray",
+    "BUT this varies; verify with `mail-flag-worker --probe` after flagging",
+    "one test message per color.",
+    "",
+    "Each color slot has:",
+    "  name             — human label, becomes the Processed/<Name> mailbox",
+    "  enabled          — bool; false = ignore this color",
+    "  eml_dest         — where to drop the full .eml",
+    "  body_md_dest     — where to drop the converted body markdown",
+    "  url_action       — script to call per URL in body (omit/null = skip)",
+    "  attachments      — map of extension (or space-sep list, or '*' fallback)",
+    "                     → destination dir OR submit-script path",
+    "  processed_mailbox — Mail mailbox name to move msg to on success",
+    "",
+    "Add a color = fill in a slot. The worker reads this file on every run."
+  ],
+
+  "0": {
+    "name": "Red",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/red/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/red/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/red/attachments/"
+    },
+    "processed_mailbox": "Processed/Red"
+  },
+
+  "1": {
+    "name": "FreeEnergy",
+    "_comment": "VERIFIED 2026-05-26: Esa flagged a test message 'purple' in Mail UI and SQLite recorded flag_color=1. So slot 1 IS purple = Free Energy on this machine.",
+    "enabled": true,
+    "eml_dest": "~/work/mediabank/inbox/mail/eml/",
+    "body_md_dest": "~/work/merlib-dump/articles/_inbox/",
+    "url_action": null,
+    "attachments": {
+      ".pdf": "~/.claude/skills/bbs/bin/bbs-ocr-submit.sh",
+      ".md .txt .markdown": "~/work/merlib-dump/articles/_inbox/",
+      ".mp3 .m4a .wav .flac .aiff .aac .opus .ogg": "~/work/whisp-transcripts/whisp-submit",
+      ".mp4 .m4v .mov .mkv .avi .webm": "~/work/whisp-transcripts/whisp-submit",
+      ".jpg .jpeg .png .heic .tif .tiff .gif .webp": "~/work/mediabank/inbox/images/",
+      ".epub .mobi .azw .azw3": "~/work/mediabank/inbox/books/",
+      ".zip .tar .tar.gz .tgz .7z .rar": "~/work/mediabank/inbox/archives/",
+      "*": "~/work/mediabank/inbox/misc/"
+    },
+    "processed_mailbox": "Processed/FreeEnergy",
+    "clear_flag_after_move": false,
+    "_clear_flag_comment": "Default false: keep the Purple flag as category metadata even in Processed/FreeEnergy. The folder location is the routing-state signal. Set true if you prefer 'flagged=pending, unflagged=done' semantics."
+  },
+
+  "2": {
+    "name": "Yellow",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/yellow/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/yellow/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/yellow/attachments/"
+    },
+    "processed_mailbox": "Processed/Yellow"
+  },
+
+  "3": {
+    "name": "Green",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/green/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/green/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/green/attachments/"
+    },
+    "processed_mailbox": "Processed/Green"
+  },
+
+  "4": {
+    "name": "Blue",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/blue/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/blue/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/blue/attachments/"
+    },
+    "processed_mailbox": "Processed/Blue"
+  },
+
+  "5": {
+    "name": "Unknown-5",
+    "_comment": "Color identity unknown. 566 existing messages have flag_color=5; not yet mapped to a UI color. Run mail-flag-worker --probe after flagging one message of each remaining UI color.",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/unknown-5/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/unknown-5/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/unknown-5/attachments/"
+    },
+    "processed_mailbox": "Processed/Unknown-5"
+  },
+
+  "6": {
+    "name": "Gray",
+    "enabled": false,
+    "eml_dest": "~/Mail-FlagRoute/gray/eml/",
+    "body_md_dest": "~/Mail-FlagRoute/gray/body/",
+    "url_action": null,
+    "attachments": {
+      "*": "~/Mail-FlagRoute/gray/attachments/"
+    },
+    "processed_mailbox": "Processed/Gray"
+  }
+}

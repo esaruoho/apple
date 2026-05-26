@@ -692,6 +692,53 @@ All three are zero-roundtrip from a terminal slash. All three are Apple-native. 
 
 ---
 
+## Mail flag → routing pipeline (2026-05-26)
+
+Flag a message in Mail any color → the worker extracts it (`.eml` + body→markdown + attachments routed per extension + **full conversation thread bundle**), routes per-color contracts to existing pipelines (`bbs-ocr-submit` for PDFs, `whisp-submit` for audio/video, mediabank/merlib-dump for archives/docs), then moves the message to a `Processed/<Color>` mailbox. Fourth instance of the trigger→worker chassis (Finder tag, Voice Memo `#process`, Stickies, now Mail flag).
+
+**Full architecture:** [`wiki/concepts/mail-flag-pipeline.md`](wiki/concepts/mail-flag-pipeline.md). Source: [`bin/mail-flag-worker`](bin/mail-flag-worker), config at [`bin/mail-flag-config.json`](bin/mail-flag-config.json).
+
+### Two lessons baked into v2 (the hard way)
+
+**Lesson 1: Polling Mail via osascript is catastrophic.** The v1 design (lived 4 hours) ran `tell application "Mail" / repeat with mb in mailboxes of acc / messages of mb whose flag index is N` every 30s with no overlap protection. Mail received an ever-growing queue of "scan every mailbox of every account" AppleEvents, became unresponsive, eventually crashed. **v2 fix:** read Mail's own SQLite Envelope Index (read-only) + read `.emlx` files directly from disk — Mail.app sees ZERO AppleEvents for detection. The single move-to-Processed AppleEvent is account-scoped (`account whose id is "<UUID>"`) with a 15-second hard timeout. Hard cap: 20 messages per tick.
+
+**Lesson 2: Mail SQLite ROWID flips when a message is moved.** When Mail moves a message (manually, by rule, or via our worker), SQLite implements it as delete-old-row + insert-new-row in destination. Same message, new ROWID. Tracking "already processed" by ROWID re-processes the same message infinitely after our move. **v2 fix:** dedup by RFC822 `Message-ID` header (stable across moves). Full detail: [`wiki/concepts/mail-rowid-flip-on-move.md`](wiki/concepts/mail-rowid-flip-on-move.md).
+
+### What survives ROWID flips and what doesn't
+
+| Identifier | Stable across moves? | Use for |
+|---|---|---|
+| SQLite `ROWID` | ❌ — flips every move | the current detection query only; never persist |
+| SQLite `messages.message_id` (int64 hash) | ✅ | alternative dedup key (we don't use, prefer RFC822) |
+| RFC822 `Message-ID` header (in .emlx) | ✅ | **the correct dedup key** — what we use |
+| `conversation_id` | ✅ | thread bundling — survives moves of any thread member |
+
+### Thread bundling — the archival win
+
+Per flagged message, the worker also pulls every conversation_id sibling (via SQLite) and saves them as a chronological thread:
+
+```
+~/work/mediabank/inbox/mail/eml/
+   <date>-<subj>-<rowid>.eml       (flagged message)
+   <date>-<subj>-<rowid>.eml       (each sibling, separately)
+
+~/work/merlib-dump/articles/_inbox/
+   mail-<date>-<subj>.md           (flagged message body)
+   mail-<date>-<subj>-THREAD.md    (all messages chronologically with full headers)
+```
+
+Bonus side-effect: when an incoming Gmail reply is `.partial.emlx` (IMAP hasn't pulled attachments), the **Sent Messages** copies on iCloud are full `.emlx` files with the attachments locally available. Thread bundling routes attachments from any thread member, so the archive captures them even when the incoming-mail copy is incomplete.
+
+### Gmail caveat (working around the Gmail-virtual-folder problem)
+
+Mail's IMAP queries against `[Gmail]/All Mail` block Mail for minutes (it's a server-side virtual mirror of every label). Forcing a download via `tell Mail to set _ to source of m` was tried and clobbered Mail. **v2 policy:** never force-download Gmail partials. Park them in `skipped_temp`, retry every tick. When Mail eventually downloads (user opens message, or background sync), the next tick processes it. Thread bundling usually rescues the attachments via the Sent Messages siblings.
+
+### Validated end-to-end
+
+2026-05-26 iCloud INBOX message ("Re: Artikkelin kommentteja"): 4-message thread captured, 7 paper attachments routed (`.md` to merlib-dump, `.docx/.html/.tex` to mediabank misc, `.zip` to mediabank archives, SHA-256 deduped), move to Processed/FreeEnergy succeeded, total time 2.8 seconds, Mail.app stress: 1 short AppleEvent.
+
+---
+
 ## Roadmap to the Full Apple Experience
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.

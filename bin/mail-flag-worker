@@ -1,0 +1,1179 @@
+#!/usr/bin/env python3
+"""
+mail-flag-worker — Mail flag → typed-routing pipeline (v2, SQLite + .emlx).
+
+═══════════════════════════════════════════════════════════════════════════
+v2 redesign 2026-05-26 — REPLACES the v1 polling design that clobbered Mail.
+
+v1 sin: ran `tell application "Mail" / repeat with mb in mailboxes of acc /
+messages of mb whose flag index is N` every 30s with NO overlap protection.
+That forced Mail to scan every mailbox of every account; ticks stacked; six
+concurrent osascript scans queued at Mail at any time → Mail.app
+unresponsive → eventual crash.
+
+v2 design: ZERO osascript for DETECTION. Read Mail's own SQLite Envelope
+Index (read-only) + read .emlx files directly from disk. Mail.app is
+touched at MOST once per processed message — a single short "move to
+Processed/<Color>" AppleEvent, sequential, 15-second timeout, hard cap of
+20 messages per tick. Triggered by FSEvents on Envelope Index-wal, not a
+polling timer.
+═══════════════════════════════════════════════════════════════════════════
+
+Modes:
+  mail-flag-worker --tick                   one safe pass (FSEvents calls this)
+  mail-flag-worker --status                 queue + contract status
+  mail-flag-worker --probe                  list flagged msgs by SQLite color
+  mail-flag-worker --backfill [--dry-run]   process EXISTING flagged messages
+                                            (always run --dry-run first!)
+  mail-flag-worker --reset <rowid>          re-queue one processed ROWID
+"""
+
+from __future__ import annotations
+
+import argparse
+import email
+import email.policy
+import fcntl
+import html
+import json
+import os
+import re
+import shutil
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.parse
+from html.parser import HTMLParser
+from pathlib import Path
+
+# ─── paths ───────────────────────────────────────────────────────────────────
+HOME = Path.home()
+APPLE = HOME / "work" / "apple"
+BIN = APPLE / "bin"
+CONFIG_PATH = BIN / "mail-flag-config.json"
+
+COMMS = HOME / "work" / "comms" / "queue"
+DONE_DIR = COMMS / "mailflag-done"          # per-message audit record (.json)
+FAILED_DIR = COMMS / "mailflag-failed"      # failed routing (.json + .error)
+STATE_PATH = COMMS / "mail-flag-state.json" # processed ROWID set + skipped_temp
+LOG_PATH = COMMS / "mail-flag-worker.log"
+STATUS_PATH = COMMS / "mail-flag-worker.status.json"
+LOCK_PATH = COMMS / "mail-flag-worker.lock"
+
+MAIL_ROOT = HOME / "Library" / "Mail" / "V10"
+ENV_INDEX = MAIL_ROOT / "MailData" / "Envelope Index"
+
+# ─── safety constants ───────────────────────────────────────────────────────
+MAX_PER_TICK = 20
+OSASCRIPT_MOVE_TIMEOUT = 15  # seconds — if Mail is unresponsive, skip
+SUBMIT_SCRIPT_TIMEOUT = 300  # seconds per attachment-submit
+
+URL_RE = re.compile(r"https?://[^\s<>'\")]+")
+
+
+# ─── utilities ───────────────────────────────────────────────────────────────
+
+def log(msg: str) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a") as f:
+        f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}  {msg}\n")
+
+
+def expand(p: str) -> Path:
+    return Path(os.path.expanduser(p))
+
+
+def load_config() -> dict[int, dict]:
+    raw = json.loads(CONFIG_PATH.read_text())
+    out: dict[int, dict] = {}
+    for k, v in raw.items():
+        if k.startswith("_"):
+            continue
+        try:
+            out[int(k)] = v
+        except ValueError:
+            continue
+    return out
+
+
+def load_state() -> dict:
+    """state schema:
+      processed              → list[int] ROWIDs (legacy; stable WITHIN a Mail
+                                session but breaks after the message is
+                                moved between mailboxes — Mail re-numbers).
+                                Kept as a fast pre-filter only.
+      processed_message_ids  → list[str] RFC822 Message-IDs (without angle
+                                brackets). STABLE across mailbox moves.
+                                The authoritative dedup key.
+      skipped_temp           → list[int] ROWIDs of .partial.emlx we're
+                                waiting on (retry every tick).
+      processed_threads      → list[int] conversation_ids we've thread-bundled.
+    """
+    default = {"processed": [], "processed_message_ids": [],
+               "skipped_temp": [], "processed_threads": [], "ts": ""}
+    if not STATE_PATH.exists():
+        return default
+    try:
+        s = json.loads(STATE_PATH.read_text())
+        for k, v in default.items():
+            s.setdefault(k, v)
+        return s
+    except Exception:
+        return default
+
+
+def save_state(state: dict) -> None:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    state["ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    tmp = STATE_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2, sort_keys=True))
+    tmp.replace(STATE_PATH)
+
+
+def open_db_readonly() -> sqlite3.Connection:
+    if not ENV_INDEX.exists():
+        raise FileNotFoundError(f"Envelope Index not found at {ENV_INDEX}")
+    return sqlite3.connect(f"file:{ENV_INDEX}?mode=ro", uri=True, timeout=5)
+
+
+def acquire_lock():
+    """flock-based exclusive lock. Returns the file handle; release by closing.
+    If another worker holds it, raise BlockingIOError immediately."""
+    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(LOCK_PATH, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.close()
+        raise
+    fh.write(f"pid={os.getpid()}  started={time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+    fh.flush()
+    return fh
+
+
+# ─── HTML → Markdown (stdlib only) ──────────────────────────────────────────
+
+class HTMLToMarkdown(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out: list[str] = []
+        self.skip_depth = 0
+        self.link_href: list[str | None] = []
+        self.list_stack: list[tuple[str, int]] = []
+        self.in_pre = 0
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag in ("script", "style", "head"):
+            self.skip_depth += 1
+            return
+        if self.skip_depth:
+            return
+        if tag == "br": self.out.append("\n")
+        elif tag == "p": self.out.append("\n\n")
+        elif tag in ("strong", "b"): self.out.append("**")
+        elif tag in ("em", "i"): self.out.append("*")
+        elif tag == "code" and not self.in_pre: self.out.append("`")
+        elif tag == "pre":
+            self.in_pre += 1
+            self.out.append("\n\n```\n")
+        elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            self.out.append("\n\n" + "#" * int(tag[1]) + " ")
+        elif tag == "blockquote": self.out.append("\n\n> ")
+        elif tag == "hr": self.out.append("\n\n---\n\n")
+        elif tag == "ul":
+            self.list_stack.append(("ul", 0)); self.out.append("\n")
+        elif tag == "ol":
+            self.list_stack.append(("ol", 0)); self.out.append("\n")
+        elif tag == "li":
+            if self.list_stack:
+                kind, idx = self.list_stack[-1]
+                idx += 1
+                self.list_stack[-1] = (kind, idx)
+                indent = "  " * (len(self.list_stack) - 1)
+                marker = f"{idx}." if kind == "ol" else "-"
+                self.out.append(f"\n{indent}{marker} ")
+        elif tag == "a":
+            self.link_href.append(a.get("href")); self.out.append("[")
+        elif tag == "img":
+            self.out.append(f"![{a.get('alt','')}]({a.get('src','')})")
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "head"):
+            if self.skip_depth: self.skip_depth -= 1
+            return
+        if self.skip_depth: return
+        if tag in ("strong", "b"): self.out.append("**")
+        elif tag in ("em", "i"): self.out.append("*")
+        elif tag == "code" and not self.in_pre: self.out.append("`")
+        elif tag == "pre":
+            self.in_pre = max(0, self.in_pre - 1); self.out.append("\n```\n\n")
+        elif tag in ("h1","h2","h3","h4","h5","h6"): self.out.append("\n\n")
+        elif tag == "blockquote": self.out.append("\n\n")
+        elif tag in ("ul", "ol"):
+            if self.list_stack: self.list_stack.pop()
+            self.out.append("\n")
+        elif tag == "a":
+            href = self.link_href.pop() if self.link_href else None
+            self.out.append("]")
+            if href: self.out.append(f"({href})")
+
+    def handle_data(self, data):
+        if not self.skip_depth:
+            self.out.append(data)
+
+    def text(self) -> str:
+        s = "".join(self.out)
+        s = re.sub(r"[ \t]+\n", "\n", s)
+        s = re.sub(r"\n{3,}", "\n\n", s)
+        return s.strip() + "\n"
+
+
+def html_to_markdown(html_str: str) -> str:
+    try:
+        p = HTMLToMarkdown(); p.feed(html_str)
+        return p.text()
+    except Exception:
+        # textutil fallback (Apple-native)
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as h:
+            h.write(html_str.encode("utf-8", errors="replace")); hp = h.name
+        tp = hp + ".txt"
+        try:
+            subprocess.run(["/usr/bin/textutil", "-convert", "txt",
+                            "-output", tp, hp], check=False, capture_output=True)
+            if Path(tp).exists():
+                return Path(tp).read_text(errors="replace")
+        finally:
+            for x in (hp, tp):
+                try: os.unlink(x)
+                except OSError: pass
+        return html.unescape(re.sub(r"<[^>]+>", "", html_str))
+
+
+# ─── SQLite + filesystem (NO Mail.app interaction) ──────────────────────────
+
+def resolve_mbox_dir(mbox_url: str) -> Path | None:
+    """imap://<acct-uuid>/<mailbox/path> → on-disk .mbox dir."""
+    m = re.match(r"^[a-z]+://([0-9A-Fa-f-]+)/(.+)$", mbox_url)
+    if not m:
+        return None
+    parts = [urllib.parse.unquote(p) for p in m.group(2).split("/") if p]
+    base = MAIL_ROOT / m.group(1)
+    for part in parts:
+        base = base / f"{part}.mbox"
+    return base if base.is_dir() else None
+
+
+def find_emlx(mbox_dir: Path, rowid: int) -> Path | None:
+    """Apple shards messages into <UUID>/Data/<digit>/.../Messages/<rowid>.emlx.
+    Glob is fast (the index makes it nearly O(1) on macOS APFS)."""
+    for name in (f"{rowid}.emlx", f"{rowid}.partial.emlx"):
+        hits = list(mbox_dir.rglob(name))
+        if hits:
+            return hits[0]
+    return None
+
+
+def read_emlx(path: Path) -> bytes:
+    """Apple .emlx: first line = body byte length, then RFC822, then optional
+    plist trailer. We just need the RFC822 part."""
+    data = path.read_bytes()
+    nl = data.find(b"\n")
+    if nl < 0:
+        return data
+    try:
+        body_len = int(data[:nl].strip())
+    except ValueError:
+        return data
+    return data[nl + 1 : nl + 1 + body_len]
+
+
+def fetch_flagged(con: sqlite3.Connection, enabled_colors: list[int]) -> list[dict]:
+    if not enabled_colors:
+        return []
+    placeholders = ",".join("?" * len(enabled_colors))
+    cur = con.execute(
+        f"""SELECT m.ROWID, m.flag_color, m.message_id, mb.url, m.date_received
+              FROM messages m
+              JOIN mailboxes mb ON m.mailbox = mb.ROWID
+              WHERE m.flagged = 1 AND m.flag_color IN ({placeholders})
+              ORDER BY m.date_received DESC""",
+        enabled_colors,
+    )
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+# ─── routing (per-attachment dispatch — unchanged contract semantics) ──────
+
+def ext_match(ext: str, ext_spec: str) -> bool:
+    if ext_spec == "*":
+        return False
+    tokens = [t.strip().lower() for t in ext_spec.split() if t.strip()]
+    return ext.lower() in tokens
+
+
+def lookup_attachment_dest(attachments_map: dict, ext: str) -> str | None:
+    for spec, dest in attachments_map.items():
+        if spec == "*":
+            continue
+        if ext_match(ext, spec):
+            return dest
+    return attachments_map.get("*")
+
+
+def is_submit_script(dest: str) -> bool:
+    p = expand(dest)
+    if dest.endswith("/"):
+        return False
+    if p.exists() and p.is_file() and os.access(p, os.X_OK):
+        return True
+    return p.suffix in (".sh", ".py", ".pl", ".rb")
+
+
+def dispatch_part(src: Path, dest_spec: str) -> tuple[bool, str]:
+    p = expand(dest_spec)
+    if is_submit_script(dest_spec):
+        try:
+            r = subprocess.run([str(p), str(src)],
+                               capture_output=True, text=True,
+                               timeout=SUBMIT_SCRIPT_TIMEOUT)
+            if r.returncode != 0:
+                return False, f"submit rc={r.returncode}: {r.stderr.strip()[:200]}"
+            return True, f"submitted → {p}"
+        except Exception as e:
+            return False, f"submit exception: {e}"
+    p.mkdir(parents=True, exist_ok=True)
+    target = p / src.name
+    if target.exists():
+        target = p / f"{src.stem}-{int(time.time())}{src.suffix}"
+    shutil.copy2(src, target)
+    return True, f"copied → {target}"
+
+
+def slugify(s: str, maxlen: int = 80) -> str:
+    out = re.sub(r"[^A-Za-z0-9._-]", "_", s or "")[:maxlen]
+    return out or "no-subject"
+
+
+def applescript_str(s: str) -> str:
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def strip_msgid_brackets(msg_id: str) -> str:
+    """Mail's AppleScript stores message id WITHOUT the RFC822 angle brackets.
+    e.g. RFC822 header: '<X@host>' → Mail AppleScript sees: 'X@host'."""
+    s = (msg_id or "").strip()
+    if s.startswith("<") and s.endswith(">"):
+        return s[1:-1]
+    return s
+
+
+def account_uuid_from_url(mailbox_url: str) -> str | None:
+    """Extract the account UUID from a mailbox URL like
+    'imap://<UUID>/INBOX' or 'imap://<UUID>/[Gmail]/All Mail'."""
+    m = re.match(r"^[a-z]+://([0-9A-Fa-f-]+)/", mailbox_url)
+    return m.group(1) if m else None
+
+
+def mailbox_path_from_url(mailbox_url: str) -> str | None:
+    """imap://<UUID>/[Gmail]/All Mail  →  '[Gmail]/All Mail'  (URL-decoded)."""
+    m = re.match(r"^[a-z]+://[0-9A-Fa-f-]+/(.+)$", mailbox_url)
+    if not m:
+        return None
+    return "/".join(urllib.parse.unquote(p) for p in m.group(1).split("/") if p)
+
+
+def force_download_via_mail(account_uuid: str | None, mailbox_dir: Path,
+                            rowid: int, source_mailbox_url: str = "",
+                            wait_seconds: int = 180) -> Path | None:
+    """Force Mail to fetch the full body+attachments of a .partial.emlx
+    message from IMAP. The trick: asking for `source of m` requires Mail
+    to download the complete RFC822 from the server. We don't need the
+    return value — we just need the side-effect of the download.
+
+    Then poll the .mbox dir for up to wait_seconds, waiting for the
+    .partial.emlx file to be replaced by a full <rowid>.emlx file.
+
+    Returns the path to the full .emlx, or None if the download didn't
+    complete within the budget."""
+    if not account_uuid:
+        log(f"force-download ROWID={rowid}: no account UUID — cannot scope")
+        return None
+    acct_clause = f'set acct to first account whose id is {applescript_str(account_uuid)}'
+    # find the message by ROWID's well-known on-disk filename → message-id?
+    # No — we look it up by iterating mailboxes of THIS account whose message-id
+    # we read from the .partial.emlx header. So first, read the partial's headers
+    # to get the Message-ID.
+    partial = mailbox_dir.rglob(f"{rowid}.partial.emlx")
+    partial_path = next(iter(partial), None)
+    if not partial_path:
+        log(f"force-download ROWID={rowid}: .partial.emlx not found")
+        return None
+    try:
+        rfc = read_emlx(partial_path)
+        msg = email.message_from_bytes(rfc, policy=email.policy.default)
+        msg_id = msg.get("Message-ID", "")
+    except Exception as e:
+        log(f"force-download ROWID={rowid}: cannot read partial header: {e}")
+        return None
+    if not msg_id:
+        log(f"force-download ROWID={rowid}: partial has no Message-ID header")
+        return None
+
+    # Scope directly to the SPECIFIC mailbox the message lives in (per SQLite).
+    # Avoids iterating Gmail's [Gmail]/All Mail which is a virtual folder
+    # containing every message ever — slow to enumerate.
+    mbox_path = mailbox_path_from_url(source_mailbox_url) if source_mailbox_url else None
+    if not mbox_path:
+        log(f"force-download ROWID={rowid}: no mailbox path — skipping")
+        return None
+    script = f'''
+tell application "Mail"
+    try
+        {acct_clause}
+    on error
+        return "ERROR:account-not-found"
+    end try
+    try
+        set mb to mailbox {applescript_str(mbox_path)} of acct
+    on error errMsg
+        return "ERROR:mailbox-not-found:" & errMsg
+    end try
+    try
+        set m to first message of mb whose message id is {applescript_str(strip_msgid_brackets(msg_id))}
+    on error
+        return "ERROR:message-not-found"
+    end try
+    -- Asking for the source forces a full IMAP body fetch.
+    set _src to source of m
+    return "OK:" & (count of _src) as string
+end tell
+'''
+    log(f"force-download ROWID={rowid}: msg_id={msg_id!r} (60s budget)")
+    try:
+        r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                           capture_output=True, text=True, timeout=wait_seconds)
+        log(f"force-download ROWID={rowid}: osascript rc={r.returncode} out={r.stdout.strip()[:120]}")
+    except subprocess.TimeoutExpired:
+        log(f"force-download ROWID={rowid}: TIMEOUT after {wait_seconds}s")
+        return None
+
+    # Poll for the full .emlx to appear (Mail may write it slightly after
+    # the osascript returns). Up to 10 quick checks across 5 seconds.
+    for _ in range(10):
+        full = list(mailbox_dir.rglob(f"{rowid}.emlx"))
+        # filter out .partial.emlx — rglob matches both because suffix is .emlx
+        full = [p for p in full if not p.name.endswith(".partial.emlx")]
+        if full:
+            log(f"force-download ROWID={rowid}: SUCCESS — {full[0]}")
+            return full[0]
+        time.sleep(0.5)
+    log(f"force-download ROWID={rowid}: osascript OK but .emlx never materialised")
+    return None
+
+
+def move_message_in_mail(message_id_header: str, dest_mailbox: str,
+                         source_mailbox_url: str = "") -> bool:
+    """The ONE AppleEvent we send per processed message. Bounded 15s timeout.
+    Uses the SOURCE message's account UUID (Mail's `account id` property is
+    the UUID) to scope the search — avoids iterating thousands of mailboxes
+    in the wrong account."""
+    if not message_id_header:
+        return False
+    acct_uuid = account_uuid_from_url(source_mailbox_url) if source_mailbox_url else None
+    # If we know the UUID, target it; else fall back to scanning all accounts
+    # (slower; bounded by 15s timeout).
+    acct_uuid_clause = (
+        f'set acct to first account whose id is {applescript_str(acct_uuid)}'
+        if acct_uuid else
+        'set acct to account 1'
+    )
+    script = f'''
+tell application "Mail"
+    try
+        {acct_uuid_clause}
+    on error
+        return "ERROR:account-not-found"
+    end try
+    try
+        set mb to mailbox {applescript_str(dest_mailbox)} of acct
+    on error
+        try
+            make new mailbox with properties {{name:{applescript_str(dest_mailbox)}}} at acct
+            set mb to mailbox {applescript_str(dest_mailbox)} of acct
+        on error errMsg
+            return "ERROR:" & errMsg
+        end try
+    end try
+    repeat with src in mailboxes of acct
+        try
+            set m to first message of src whose message id is {applescript_str(strip_msgid_brackets(message_id_header))}
+            move m to mb
+            return "OK"
+        end try
+    end repeat
+    return "ERROR:not-found-in-account"
+end tell
+'''
+    try:
+        r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                           capture_output=True, text=True,
+                           timeout=OSASCRIPT_MOVE_TIMEOUT)
+        if r.returncode != 0:
+            log(f"move FAILED rc={r.returncode}: {r.stderr.strip()[:200]}")
+            return False
+        ok = r.stdout.strip() == "OK"
+        if not ok:
+            log(f"move not-ok: {r.stdout.strip()}")
+        return ok
+    except subprocess.TimeoutExpired:
+        log(f"move TIMEOUT after {OSASCRIPT_MOVE_TIMEOUT}s — leaving message in place")
+        return False
+
+
+def clear_flag_in_mail(message_id_header: str, current_mailbox: str,
+                       source_mailbox_url: str = "") -> bool:
+    """After a successful move-to-Processed, optionally clear the flag.
+    Note: the message lives in the destination mailbox now (Processed/<Color>),
+    not the source mailbox. ONE bounded AppleEvent, 15s timeout."""
+    if not message_id_header:
+        return False
+    acct_uuid = account_uuid_from_url(source_mailbox_url) if source_mailbox_url else None
+    acct_clause = (
+        f'set acct to first account whose id is {applescript_str(acct_uuid)}'
+        if acct_uuid else 'set acct to account 1'
+    )
+    script = f'''
+tell application "Mail"
+    try
+        {acct_clause}
+    on error
+        return "ERROR:account-not-found"
+    end try
+    try
+        set mb to mailbox {applescript_str(current_mailbox)} of acct
+    on error
+        return "ERROR:mailbox-not-found"
+    end try
+    try
+        set m to first message of mb whose message id is {applescript_str(strip_msgid_brackets(message_id_header))}
+    on error
+        return "ERROR:message-not-found"
+    end try
+    set flag index of m to -1
+    return "OK"
+end tell
+'''
+    try:
+        r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                           capture_output=True, text=True,
+                           timeout=OSASCRIPT_MOVE_TIMEOUT)
+        return r.returncode == 0 and r.stdout.strip() == "OK"
+    except subprocess.TimeoutExpired:
+        log(f"clear_flag TIMEOUT after {OSASCRIPT_MOVE_TIMEOUT}s")
+        return False
+
+
+# ─── thread bundling ────────────────────────────────────────────────────────
+
+def fetch_thread_siblings(con: sqlite3.Connection, conversation_id: int) -> list[dict]:
+    """All messages in a given conversation_id. Ordered by date_received."""
+    cur = con.execute(
+        """SELECT m.ROWID, m.flag_color, m.flagged, m.message_id, m.date_received,
+                  mb.url
+              FROM messages m
+              JOIN mailboxes mb ON m.mailbox = mb.ROWID
+              WHERE m.conversation_id = ?
+              ORDER BY m.date_received ASC""",
+        (conversation_id,),
+    )
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+def get_conversation_id(con: sqlite3.Connection, rowid: int) -> int | None:
+    r = con.execute("SELECT conversation_id FROM messages WHERE ROWID=?", (rowid,)).fetchone()
+    return r[0] if r else None
+
+
+def write_thread_markdown(out_path: Path, frontmatter: str, flagged_msg, flagged_body_md: str,
+                          thread_msgs: list[dict]) -> None:
+    """Combine the flagged message + its sibling thread messages into one
+    chronological .md file. Messages dated, sender-attributed, separated."""
+    # The flagged message we already have parsed
+    flagged_entry = {
+        "rowid": "(flagged)",
+        "date": flagged_msg.get("Date", "") or "",
+        "sender": flagged_msg.get("From", "") or "",
+        "to": flagged_msg.get("To", "") or "",
+        "cc": flagged_msg.get("Cc", "") or "",
+        "subject": flagged_msg.get("Subject", "") or "",
+        "body_md": flagged_body_md,
+        "attachments": [(p.get_filename(), len(p.get_payload(decode=True) or b""))
+                        for p in flagged_msg.walk() if p.get_filename() and p.is_attachment()],
+    }
+    all_entries = thread_msgs + [flagged_entry]
+
+    # chronological — use date string sort. Imperfect but good enough; the
+    # SQLite query already returned siblings ASC by date_received.
+    def date_key(e):
+        return e.get("date") or ""
+    all_entries.sort(key=date_key)
+
+    lines = [frontmatter,
+             "# Thread\n",
+             f"{len(all_entries)} messages in conversation, chronological.\n\n",
+             "---\n\n"]
+    for i, e in enumerate(all_entries, 1):
+        lines.append(f"## {i}. {e['date']}\n\n")
+        lines.append(f"**From:** {e['sender']}  \n")
+        if e.get("to"):    lines.append(f"**To:** {e['to']}  \n")
+        if e.get("cc"):    lines.append(f"**Cc:** {e['cc']}  \n")
+        lines.append(f"**Subject:** {e['subject']}  \n")
+        if e.get("attachments"):
+            # attachments are either (name, length_int) [from flagged] or
+            # (name, payload_bytes) [from siblings]. Coerce to int length.
+            def _att_size(s):
+                return len(s) if isinstance(s, (bytes, bytearray)) else int(s or 0)
+            atts = ", ".join(f"{n} ({_att_size(s):,} B)" for n, s in e["attachments"])
+            lines.append(f"**Attachments:** {atts}  \n")
+        lines.append(f"**ROWID:** {e['rowid']}\n\n")
+        lines.append(e.get("body_md", "").strip() + "\n\n")
+        lines.append("---\n\n")
+    out_path.write_text("".join(lines))
+
+
+def read_thread_message(sibling: dict) -> dict | None:
+    """Resolve sibling's mailbox URL → on-disk .emlx, read RFC822, parse.
+    Returns dict with parsed metadata + body + attachments, or None if
+    the sibling's .emlx is missing/partial."""
+    mbox_dir = resolve_mbox_dir(sibling["url"])
+    if not mbox_dir:
+        return None
+    emlx = find_emlx(mbox_dir, sibling["ROWID"])
+    if not emlx or emlx.name.endswith(".partial.emlx"):
+        return None
+    try:
+        rfc = read_emlx(emlx)
+        msg = email.message_from_bytes(rfc, policy=email.policy.default)
+    except Exception:
+        return None
+    # extract body + attachments
+    html_body, text_body = None, None
+    attachments: list[tuple[str, bytes]] = []
+    for part in msg.walk():
+        ctype = part.get_content_type()
+        if part.get_filename() and part.is_attachment():
+            payload = part.get_payload(decode=True) or b""
+            if payload:
+                attachments.append((part.get_filename(), payload))
+        elif ctype == "text/html" and html_body is None:
+            try: html_body = part.get_content()
+            except Exception:
+                html_body = (part.get_payload(decode=True) or b"").decode("utf-8", errors="replace")
+        elif ctype == "text/plain" and text_body is None:
+            try: text_body = part.get_content()
+            except Exception:
+                text_body = (part.get_payload(decode=True) or b"").decode("utf-8", errors="replace")
+    body_md = html_to_markdown(html_body) if html_body else (text_body or "")
+    return {
+        "rowid": sibling["ROWID"],
+        "flag_color": sibling["flag_color"],
+        "flagged": sibling["flagged"],
+        "mailbox_url": sibling["url"],
+        "emlx_path": str(emlx),
+        "rfc822": rfc,
+        "subject": (msg.get("Subject") or "")[:300],
+        "sender": (msg.get("From") or "")[:300],
+        "to": (msg.get("To") or "")[:300],
+        "cc": (msg.get("Cc") or "")[:300],
+        "date": (msg.get("Date") or ""),
+        "message_id": msg.get("Message-ID", ""),
+        "in_reply_to": msg.get("In-Reply-To", ""),
+        "body_md": body_md,
+        "attachments": attachments,
+    }
+
+
+# ─── per-message processing ──────────────────────────────────────────────────
+
+def process_one(row: dict, contract: dict, dry_run: bool = False,
+                processed_message_ids: set | None = None) -> dict:
+    """Process one flagged message. Returns audit record.
+
+    processed_message_ids — set of already-routed RFC822 Message-IDs (without
+    angle brackets). Used to skip duplicates that appear with new ROWIDs
+    after a move-between-mailboxes (Mail re-numbers ROWIDs on move).
+    """
+    rowid = row["ROWID"]
+    audit = {
+        "rowid": rowid,
+        "flag_color": row["flag_color"],
+        "contract": contract.get("name"),
+        "mailbox_url": row["url"],
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "dispatched": [],
+        "status": "pending",
+    }
+
+    mbox_dir = resolve_mbox_dir(row["url"])
+    if not mbox_dir:
+        audit["status"] = "skipped"
+        audit["reason"] = f"mailbox dir not resolvable: {row['url']}"
+        return audit
+
+    emlx = find_emlx(mbox_dir, rowid)
+    if not emlx:
+        audit["status"] = "skipped_temp"
+        audit["reason"] = "emlx not found on disk yet"
+        return audit
+    audit["emlx_path"] = str(emlx)
+
+    # .partial.emlx = IMAP hasn't pulled full body+attachments yet.
+    # The naïve fix would be to call `source of m` via osascript to force
+    # the download — but for Gmail's [Gmail]/All Mail virtual folder that
+    # blocks Mail.app for minutes (2026-05-26 incident: force-download
+    # made Mail unresponsive). So: just skip and retry on future ticks.
+    # When Mail eventually downloads (user opens the message, or background
+    # sync pulls it), the next tick sees a full .emlx and routes properly.
+    if emlx.name.endswith(".partial.emlx"):
+        audit["status"] = "skipped_temp"
+        audit["reason"] = (".partial.emlx — body not downloaded. Open the message in Mail.app "
+                          "to trigger download, or wait for Mail's background sync. "
+                          "Will retry on next tick.")
+        return audit
+
+    try:
+        rfc = read_emlx(emlx)
+        msg = email.message_from_bytes(rfc, policy=email.policy.default)
+    except Exception as e:
+        audit["status"] = "failed"
+        audit["reason"] = f"parse: {e}"
+        return audit
+
+    msg_id_header = msg.get("Message-ID", "")
+    msg_id_bare = strip_msgid_brackets(msg_id_header)
+    subject = msg.get("Subject", "") or ""
+    sender = msg.get("From", "") or ""
+    date_str = msg.get("Date", "") or ""
+    audit["message_id"] = msg_id_header
+    audit["subject"] = subject[:200]
+    audit["sender"] = sender[:200]
+
+    # Dedup by RFC822 Message-ID (stable across mailbox moves, unlike ROWID).
+    # If we've already routed this message under a different ROWID, skip the
+    # whole pipeline — just mark this ROWID processed so we don't keep looking
+    # at it. See wiki/concepts/mail-rowid-flip-on-move.md for full retrospective.
+    if processed_message_ids is not None and msg_id_bare and msg_id_bare in processed_message_ids:
+        audit["status"] = "duplicate"
+        audit["reason"] = (f"Message-ID already routed (likely under a previous "
+                          f"ROWID before the message was moved between mailboxes)")
+        return audit
+
+    if dry_run:
+        audit["status"] = "would-process"
+        # also project the attachments that would be dispatched
+        atts = []
+        for part in msg.walk():
+            fn = part.get_filename()
+            if fn and part.is_attachment():
+                ext = "." + fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+                dest = lookup_attachment_dest(contract.get("attachments", {}), ext)
+                atts.append({"name": fn, "ext": ext, "dest": dest})
+        audit["would_dispatch_attachments"] = atts
+        return audit
+
+    # 1. save .eml
+    eml_dir = expand(contract["eml_dest"])
+    eml_dir.mkdir(parents=True, exist_ok=True)
+    date_prefix = date_str[:10] if date_str else time.strftime("%Y-%m-%d")
+    eml_name = f"{date_prefix}-{slugify(subject, 60)}.eml"
+    eml_path = eml_dir / eml_name
+    if eml_path.exists():
+        eml_path = eml_dir / f"{eml_path.stem}-{rowid}{eml_path.suffix}"
+    eml_path.write_bytes(rfc)
+    audit["dispatched"].append({"type": "eml", "path": str(eml_path), "ok": True})
+
+    # 2. body → markdown
+    html_body, text_body = None, None
+    attachments: list[tuple[str, bytes]] = []
+    for part in msg.walk():
+        ctype = part.get_content_type()
+        if part.get_filename() and part.is_attachment():
+            payload = part.get_payload(decode=True) or b""
+            attachments.append((part.get_filename(), payload))
+        elif ctype == "text/html" and html_body is None:
+            try: html_body = part.get_content()
+            except Exception: html_body = (part.get_payload(decode=True) or b"").decode("utf-8", errors="replace")
+        elif ctype == "text/plain" and text_body is None:
+            try: text_body = part.get_content()
+            except Exception: text_body = (part.get_payload(decode=True) or b"").decode("utf-8", errors="replace")
+
+    body_md = ""
+    if html_body:
+        body_md = html_to_markdown(html_body)
+    elif text_body:
+        body_md = text_body
+
+    frontmatter = (
+        "---\n"
+        f"source: mail\n"
+        f"rowid: {rowid}\n"
+        f"message_id: {json.dumps(msg_id_header)}\n"
+        f"flag_color: {row['flag_color']}\n"
+        f"flag_name: {contract.get('name','')}\n"
+        f"subject: {json.dumps(subject)}\n"
+        f"sender: {json.dumps(sender)}\n"
+        f"date: {json.dumps(date_str)}\n"
+        f"mailbox_url: {json.dumps(row['url'])}\n"
+        "---\n\n"
+    )
+    md_dir = expand(contract["body_md_dest"])
+    md_dir.mkdir(parents=True, exist_ok=True)
+    md_path = md_dir / f"mail-{eml_path.stem}.md"
+    md_path.write_text(frontmatter + body_md)
+    audit["dispatched"].append({"type": "body_md", "path": str(md_path), "ok": True})
+
+    # 3. attachments → contracts
+    if attachments:
+        with tempfile.TemporaryDirectory(prefix="mailflag-") as td:
+            tdp = Path(td)
+            for fname, payload in attachments:
+                if not payload:
+                    audit["dispatched"].append({"type": "attachment", "name": fname,
+                                                "ok": False, "reason": "zero-byte payload (incomplete .emlx?)"})
+                    continue
+                safe = slugify(fname, 200)
+                tmp = tdp / safe
+                tmp.write_bytes(payload)
+                ext = "." + safe.rsplit(".", 1)[-1].lower() if "." in safe else ""
+                dest = lookup_attachment_dest(contract.get("attachments", {}), ext)
+                if not dest:
+                    audit["dispatched"].append({"type": "attachment", "name": fname,
+                                                "ok": False, "reason": "no destination for ext"})
+                    continue
+                ok, note = dispatch_part(tmp, dest)
+                audit["dispatched"].append({"type": "attachment", "name": fname,
+                                            "ext": ext, "dest": dest, "ok": ok, "note": note})
+
+    # 4. URLs → optional action
+    url_action = contract.get("url_action")
+    if url_action and body_md:
+        for u in sorted(set(URL_RE.findall(body_md))):
+            try:
+                r = subprocess.run([os.path.expanduser(url_action), u],
+                                   capture_output=True, text=True, timeout=60)
+                ok = r.returncode == 0
+            except Exception:
+                ok = False
+            audit["dispatched"].append({"type": "url", "url": u, "ok": ok, "action": url_action})
+
+    # 5. thread bundling — find all conversation_id siblings and save them
+    #    as a thread.md + route any attachments from sibling messages too.
+    #    This catches attachments in your Sent Messages that the incoming
+    #    reply doesn't re-include.
+    try:
+        con_tb = open_db_readonly()
+        conv_id = get_conversation_id(con_tb, rowid)
+        if conv_id and contract.get("thread_bundle", True):
+            siblings = fetch_thread_siblings(con_tb, conv_id)
+            audit["conversation_id"] = conv_id
+            audit["thread_siblings"] = len(siblings)
+            thread_msgs = []
+            for sib in siblings:
+                if sib["ROWID"] == rowid:
+                    continue  # already processed as the flagged message
+                tm = read_thread_message(sib)
+                if tm:
+                    thread_msgs.append(tm)
+            # write the THREAD markdown (all messages chronologically, including the flagged one)
+            thread_md_path = md_path.with_name(md_path.stem + "-THREAD.md")
+            write_thread_markdown(thread_md_path, frontmatter, msg, body_md, thread_msgs)
+            audit["dispatched"].append({"type": "thread_md", "path": str(thread_md_path),
+                                        "ok": True, "messages": 1 + len(thread_msgs)})
+            # save sibling .emls alongside the main one
+            for tm in thread_msgs:
+                sib_name = f"{(tm['date'] or '')[:16]}-{slugify(tm['subject'], 40)}-{tm['rowid']}.eml"
+                sib_path = eml_dir / sib_name
+                if not sib_path.exists():
+                    sib_path.write_bytes(tm["rfc822"])
+                    audit["dispatched"].append({"type": "thread_eml", "rowid": tm["rowid"],
+                                                "path": str(sib_path), "ok": True})
+            # route attachments from sibling messages (your Sent Messages PDFs etc.)
+            with tempfile.TemporaryDirectory(prefix="mailflag-thread-") as td:
+                tdp = Path(td)
+                seen_hashes = set()
+                import hashlib
+                for tm in thread_msgs:
+                    for fname, payload in tm["attachments"]:
+                        if not payload:
+                            continue
+                        h = hashlib.sha256(payload).hexdigest()
+                        if h in seen_hashes:
+                            continue
+                        seen_hashes.add(h)
+                        safe = slugify(fname, 200)
+                        tmp = tdp / safe
+                        tmp.write_bytes(payload)
+                        ext = "." + safe.rsplit(".", 1)[-1].lower() if "." in safe else ""
+                        dest = lookup_attachment_dest(contract.get("attachments", {}), ext)
+                        if not dest:
+                            continue
+                        ok, note = dispatch_part(tmp, dest)
+                        audit["dispatched"].append({"type": "thread_attachment",
+                                                    "from_rowid": tm["rowid"],
+                                                    "name": fname, "ext": ext,
+                                                    "dest": dest, "ok": ok, "note": note})
+        con_tb.close()
+    except Exception as e:
+        audit["dispatched"].append({"type": "thread_bundle", "ok": False,
+                                    "reason": f"exception: {e}"})
+
+    # 6. move in Mail (ONE AppleEvent, 15s timeout — best-effort)
+    processed_mbox = contract.get("processed_mailbox")
+    moved = False
+    if processed_mbox:
+        moved = move_message_in_mail(msg_id_header, processed_mbox,
+                                     source_mailbox_url=row["url"])
+        audit["dispatched"].append({"type": "move", "to": processed_mbox, "ok": moved})
+
+    # 7. optional flag-clear (per-contract). Default: keep flag (it's category
+    #    metadata; the folder location is the routing state). Set
+    #    "clear_flag_after_move": true in the contract to drop the flag after
+    #    a successful move — useful if you prefer "flagged = pending, unflagged
+    #    = done" semantics.
+    if contract.get("clear_flag_after_move") and moved:
+        cleared = clear_flag_in_mail(msg_id_header, processed_mbox,
+                                     source_mailbox_url=row["url"])
+        audit["dispatched"].append({"type": "clear_flag", "ok": cleared})
+
+    audit["status"] = "done"
+    return audit
+
+
+# ─── modes ───────────────────────────────────────────────────────────────────
+
+def cmd_tick(dry_run: bool = False, backfill: bool = False) -> None:
+    """One safe pass: read SQLite, filter to enabled colors, process up to
+    MAX_PER_TICK new messages. Under flock to guarantee single-runner."""
+    try:
+        lock_fh = acquire_lock()
+    except BlockingIOError:
+        log("tick: another worker has the lock — skipping (this is good)")
+        print("another worker is running; skipping (lock held)")
+        return
+
+    try:
+        config = load_config()
+        enabled = [int(k) for k, v in config.items() if v.get("enabled")]
+        if not enabled:
+            print("no contracts enabled")
+            write_status(config, 0, 0, 0)
+            return
+
+        state = load_state()
+        processed_set = set(state["processed"])
+        processed_msgid_set = set(state["processed_message_ids"])
+        skipped_set = set(state["skipped_temp"])
+
+        con = open_db_readonly()
+        rows = fetch_flagged(con, enabled)
+        con.close()
+
+        if backfill:
+            # backfill: ignore skipped_temp (we'll retry those too)
+            new = [r for r in rows if r["ROWID"] not in processed_set]
+        else:
+            new = [r for r in rows
+                   if r["ROWID"] not in processed_set
+                   and r["ROWID"] not in skipped_set]
+
+        if not new:
+            print(f"no new flagged messages (total enabled-color flagged in Mail: {len(rows)}, "
+                  f"already processed: {len([r for r in rows if r['ROWID'] in processed_set])})")
+            write_status(config, len(rows), len(processed_set), 0)
+            return
+
+        # hard cap per tick — Mail-protection
+        batch = new[:MAX_PER_TICK]
+        print(f"{'[DRY-RUN] ' if dry_run else ''}processing {len(batch)} of {len(new)} new flagged message(s) "
+              f"(cap={MAX_PER_TICK}/tick)")
+
+        DONE_DIR.mkdir(parents=True, exist_ok=True)
+        FAILED_DIR.mkdir(parents=True, exist_ok=True)
+        ok_count, fail_count, skip_count = 0, 0, 0
+
+        for row in batch:
+            contract = config.get(row["flag_color"])
+            if not contract:
+                continue
+            try:
+                audit = process_one(row, contract, dry_run=dry_run,
+                                    processed_message_ids=processed_msgid_set)
+            except Exception as e:
+                log(f"EXCEPTION rowid={row['ROWID']}: {e!r}")
+                audit = {"rowid": row["ROWID"], "status": "failed",
+                         "reason": f"exception: {e}"}
+
+            audit_name = f"{row['ROWID']}-{int(time.time())}.json"
+            if audit["status"] == "done":
+                (DONE_DIR / audit_name).write_text(json.dumps(audit, indent=2))
+                processed_set.add(row["ROWID"])
+                skipped_set.discard(row["ROWID"])
+                mid = strip_msgid_brackets(audit.get("message_id", ""))
+                if mid:
+                    processed_msgid_set.add(mid)
+                ok_count += 1
+                print(f"  ✓ ROWID={row['ROWID']} color={row['flag_color']} "
+                      f"subj={audit.get('subject','')[:50]!r}")
+            elif audit["status"] == "duplicate":
+                # Same message already routed under a previous ROWID before
+                # mailbox-move re-numbering. Mark this ROWID processed too so
+                # we stop seeing it as "new".
+                processed_set.add(row["ROWID"])
+                skipped_set.discard(row["ROWID"])
+                ok_count += 1
+                print(f"  ↻ ROWID={row['ROWID']} duplicate of already-routed Message-ID "
+                      f"(ROWID-flip on move)")
+            elif audit["status"] == "would-process":
+                ok_count += 1
+                print(f"  [dry] ROWID={row['ROWID']} color={row['flag_color']} "
+                      f"subj={audit.get('subject','')[:50]!r}  "
+                      f"attachments={len(audit.get('would_dispatch_attachments', []))}")
+            elif audit["status"] == "skipped_temp":
+                skipped_set.add(row["ROWID"])
+                skip_count += 1
+                print(f"  ⏸ ROWID={row['ROWID']}  {audit.get('reason','')}")
+            else:
+                (FAILED_DIR / audit_name).write_text(json.dumps(audit, indent=2))
+                fail_count += 1
+                print(f"  ✗ ROWID={row['ROWID']}  {audit.get('reason','')}")
+
+        if not dry_run:
+            state["processed"] = sorted(processed_set)
+            state["processed_message_ids"] = sorted(processed_msgid_set)
+            state["skipped_temp"] = sorted(skipped_set)
+            save_state(state)
+
+        write_status(config, len(rows), len(processed_set), len(new) - len(batch))
+        print(f"done: ok={ok_count} failed={fail_count} skipped={skip_count}  "
+              f"(remaining={len(new) - len(batch)})")
+    finally:
+        try: lock_fh.close()
+        except Exception: pass
+
+
+def write_status(config: dict, total_flagged: int, processed: int, remaining: int) -> None:
+    enabled = [c.get("name", f"slot-{i}") for i, c in config.items() if c.get("enabled")]
+    s = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "enabled_flags": enabled,
+        "total_flagged_enabled_colors": total_flagged,
+        "processed_lifetime": processed,
+        "remaining_in_backlog": remaining,
+        "max_per_tick": MAX_PER_TICK,
+    }
+    STATUS_PATH.write_text(json.dumps(s, indent=2))
+
+
+def cmd_status() -> None:
+    config = load_config()
+    state = load_state()
+    print(f"mail-flag-worker v2 — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    print(f"  state: processed={len(state['processed'])}  "
+          f"skipped_temp={len(state['skipped_temp'])}")
+    print()
+    print("  contracts:")
+    for idx, c in sorted(config.items()):
+        flag = "[on] " if c.get("enabled") else "[off]"
+        print(f"    {idx} {flag} {c.get('name','?'):<16}  → {c.get('processed_mailbox','-')}")
+    print()
+    try:
+        con = open_db_readonly()
+        cur = con.execute("SELECT flag_color, COUNT(*) FROM messages WHERE flagged=1 GROUP BY flag_color ORDER BY flag_color;")
+        print("  live counts (Mail SQLite):")
+        for fc, n in cur.fetchall():
+            print(f"    flag_color={fc}: {n} message(s)")
+        con.close()
+    except Exception as e:
+        print(f"  (could not query Mail SQLite: {e})")
+    print()
+    print(f"  log:    {LOG_PATH}")
+    print(f"  config: {CONFIG_PATH}")
+    print(f"  state:  {STATE_PATH}")
+    print(f"  lock:   {LOCK_PATH}")
+
+
+def cmd_probe() -> None:
+    """List flagged messages by color — pure SQLite read, NO Mail.app contact."""
+    con = open_db_readonly()
+    cur = con.execute(
+        """SELECT m.ROWID, m.flag_color, mb.url
+             FROM messages m JOIN mailboxes mb ON m.mailbox=mb.ROWID
+             WHERE m.flagged=1
+             ORDER BY m.flag_color, m.date_received DESC"""
+    )
+    rows = cur.fetchall()
+    con.close()
+    by_color: dict[int, list] = {}
+    for rowid, fc, url in rows:
+        by_color.setdefault(fc, []).append((rowid, url))
+    print(f"probe: {len(rows)} flagged message(s) across {len(by_color)} color(s)")
+    print()
+    for fc in sorted(by_color):
+        items = by_color[fc]
+        print(f"flag_color={fc}  ({len(items)} message(s))")
+        for rowid, url in items[:3]:
+            print(f"   ROWID={rowid}  {url}")
+        if len(items) > 3:
+            print(f"   ... and {len(items) - 3} more")
+        print()
+
+
+def cmd_reset(rowid_str: str) -> None:
+    try:
+        rowid = int(rowid_str)
+    except ValueError:
+        sys.exit(f"--reset expects an integer ROWID, got {rowid_str!r}")
+    state = load_state()
+    state["processed"] = [r for r in state["processed"] if r != rowid]
+    state["skipped_temp"] = [r for r in state["skipped_temp"] if r != rowid]
+    save_state(state)
+    print(f"reset ROWID={rowid} (removed from processed + skipped_temp)")
+
+
+# ─── main ────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--tick", action="store_true",
+                    help="one safe pass — what FSEvents calls")
+    ap.add_argument("--status", action="store_true")
+    ap.add_argument("--probe", action="store_true")
+    ap.add_argument("--backfill", action="store_true",
+                    help="process EVERY enabled-color flagged message, including those previously skipped_temp")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="show what would happen; write nothing")
+    ap.add_argument("--reset", metavar="ROWID")
+    args = ap.parse_args()
+
+    if args.status:
+        cmd_status(); return
+    if args.probe:
+        cmd_probe(); return
+    if args.reset:
+        cmd_reset(args.reset); return
+    if args.tick or args.backfill:
+        cmd_tick(dry_run=args.dry_run, backfill=args.backfill)
+        return
+    # default: --status when called with no args
+    cmd_status()
+
+
+if __name__ == "__main__":
+    main()

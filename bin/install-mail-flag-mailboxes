@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""
+install-mail-flag-mailboxes — create Processed/<Color> mailboxes in Mail
+for every enabled contract in mail-flag-config.json. Safe to re-run.
+
+Note on Mail Rules: Mail's rule system cannot trigger on "user later
+flagged this message" — rule conditions only apply to incoming-mail
+attributes (sender, subject, headers). So the actual trigger for the
+flag pipeline is mail-flag-worker --poll (run periodically). Mail Rules
+are only useful when you want an incoming-mail pattern to BOTH set a
+flag color AND run mail-flag-dispatch.scpt in one shot. For that case,
+build the rule manually in Mail → Settings → Rules → Run AppleScript →
+~/work/apple/bin/mail-flag-dispatch.scpt.
+"""
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+CONFIG = Path.home() / "work" / "apple" / "bin" / "mail-flag-config.json"
+
+def applescript_str(s):
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+def ensure_mailbox(name):
+    """Create mailbox `name` (e.g. 'Processed/FreeEnergy') in account 1.
+    Idempotent — does nothing if it already exists."""
+    script = f'''
+tell application "Mail"
+    try
+        set acct to account 1
+    on error
+        return "ERROR: no accounts"
+    end try
+    try
+        set mb to mailbox {applescript_str(name)} of acct
+        return "exists"
+    on error
+        try
+            make new mailbox with properties {{name:{applescript_str(name)}}} at acct
+            return "created"
+        on error errMsg
+            return "ERROR: " & errMsg
+        end try
+    end try
+end tell
+'''
+    r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                       capture_output=True, text=True, timeout=60)
+    return r.stdout.strip()
+
+def main():
+    raw = json.loads(CONFIG.read_text())
+    enabled = [(k, v) for k, v in raw.items()
+               if not k.startswith("_") and v.get("enabled")
+               and v.get("processed_mailbox")]
+    if not enabled:
+        print("no enabled contracts have a processed_mailbox; nothing to do")
+        return 0
+    print(f"installing {len(enabled)} processed mailbox(es)...")
+    for k, v in enabled:
+        name = v["processed_mailbox"]
+        result = ensure_mailbox(name)
+        print(f"  flag={k} ({v.get('name')})  →  {name}  [{result}]")
+    print()
+    print("Done. Now run `mail-flag-worker --poll` (or wait for the LaunchAgent)")
+    print("to ingest any messages already flagged in Mail.")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

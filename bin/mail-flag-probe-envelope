@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""
+mail-flag-probe-envelope — research probe for the redesigned Mail-flag pipeline.
+
+ZERO Mail.app interaction. ZERO background processes. ZERO writes to anything.
+
+Purpose: validate that we can detect & extract flagged messages by reading
+Mail's own SQLite + on-disk .emlx files, without ever poking Mail.app via
+osascript. If this works reliably, the redesigned pipeline becomes:
+  FSEvents on Envelope Index-wal  →  SQLite query  →  read .emlx  →  process
+with Mail.app touched at most once per processed message (to move it to
+Processed/<Color>) instead of 6× per minute.
+
+What this probe does:
+  1. Open ~/Library/Mail/V10/MailData/Envelope Index in read-only mode
+  2. Count flagged messages by color
+  3. Pick a few flagged messages, resolve their on-disk .emlx file path
+  4. Read one .emlx, verify it parses as RFC822
+  5. With --watch <seconds>: take a baseline snapshot, wait, re-query, and
+     report whether SQLite reflects flag changes you made during the wait
+
+Run modes:
+  mail-flag-probe-envelope                       one-shot probe report
+  mail-flag-probe-envelope --watch 30            real-time-update test
+  mail-flag-probe-envelope --color 5 --limit 5   inspect specific color
+"""
+
+from __future__ import annotations
+
+import argparse
+import email
+import email.policy
+import os
+import re
+import sqlite3
+import sys
+import time
+import urllib.parse
+from pathlib import Path
+
+MAIL_ROOT = Path.home() / "Library" / "Mail" / "V10"
+ENV_INDEX = MAIL_ROOT / "MailData" / "Envelope Index"
+
+
+def open_db_readonly() -> sqlite3.Connection:
+    """Open Mail's SQLite read-only via URI. ?mode=ro means SQLite refuses
+    to write under any circumstance; safe to run while Mail has it open."""
+    if not ENV_INDEX.exists():
+        sys.exit(f"Envelope Index not found at {ENV_INDEX}")
+    uri = f"file:{ENV_INDEX}?mode=ro&immutable=0"
+    return sqlite3.connect(uri, uri=True, timeout=5)
+
+
+def color_name(c: int | None) -> str:
+    # Apple Mail's flag colors. Index 0 is "default flag" (the first one
+    # you click — typically orange). 1=red, etc. Verify on this machine.
+    return {
+        0: "default(orange?)",
+        1: "red",
+        2: "yellow",
+        3: "green",
+        4: "blue",
+        5: "purple(FreeEnergy?)",
+        6: "gray",
+    }.get(c, f"unknown({c})")
+
+
+def count_by_color(con: sqlite3.Connection) -> list[tuple[int, int]]:
+    cur = con.execute(
+        "SELECT flag_color, COUNT(*) FROM messages WHERE flagged=1 "
+        "GROUP BY flag_color ORDER BY flag_color"
+    )
+    return list(cur.fetchall())
+
+
+def list_flagged(con: sqlite3.Connection, color: int | None, limit: int) -> list[dict]:
+    where = "m.flagged=1"
+    args: list = []
+    if color is not None:
+        where += " AND m.flag_color=?"
+        args.append(color)
+    cur = con.execute(
+        f"""SELECT m.ROWID, m.message_id, m.flag_color, m.remote_id,
+                  mb.url, m.date_received
+              FROM messages m
+              JOIN mailboxes mb ON m.mailbox=mb.ROWID
+              WHERE {where}
+              ORDER BY m.date_received DESC
+              LIMIT ?""",
+        args + [limit],
+    )
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def resolve_mbox_path(mbox_url: str) -> Path | None:
+    """imap://<acct-uuid>/<mailbox/path>  →  on-disk .mbox directory."""
+    m = re.match(r"^[a-z]+://([0-9A-Fa-f-]+)/(.+)$", mbox_url)
+    if not m:
+        return None
+    acct_uuid, mbox_path = m.group(1), m.group(2)
+    # URL-decode each path component (Gmail labels like "[Gmail]/All Mail"
+    # show up as %5BGmail%5D/All%20Mail in the URL form).
+    parts = [urllib.parse.unquote(p) for p in mbox_path.split("/") if p]
+    # Apple Mail: mailbox subfolders are nested as <name>.mbox/<sub>.mbox/...
+    base = MAIL_ROOT / acct_uuid
+    for part in parts:
+        base = base / f"{part}.mbox"
+    return base if base.is_dir() else None
+
+
+def find_emlx(mbox_dir: Path, candidate_ids: list[int]) -> Path | None:
+    """Apple shards messages into subdirs <UUID>/Data/<digit>/<digit>/.../Messages/<id>.emlx.
+    Easiest: glob recursively for any of the candidate ids."""
+    for cid in candidate_ids:
+        if cid is None:
+            continue
+        # try direct + .partial variants
+        for name in (f"{cid}.emlx", f"{cid}.partial.emlx"):
+            hits = list(mbox_dir.rglob(name))
+            if hits:
+                return hits[0]
+    return None
+
+
+def read_emlx(path: Path) -> tuple[bytes, dict | None]:
+    """Apple .emlx format: first line = byte length of the RFC822 body,
+    then the RFC822 bytes, then an optional plist trailer."""
+    data = path.read_bytes()
+    nl = data.find(b"\n")
+    if nl < 0:
+        return data, None
+    try:
+        body_len = int(data[:nl].strip())
+    except ValueError:
+        return data, None
+    rfc822 = data[nl + 1 : nl + 1 + body_len]
+    trailer = data[nl + 1 + body_len :]
+    return rfc822, {"trailer_bytes": len(trailer)}
+
+
+def report_one_shot(con: sqlite3.Connection, color: int | None, limit: int) -> None:
+    print(f"== Mail Envelope Index probe — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"   DB:  {ENV_INDEX}  ({ENV_INDEX.stat().st_size//1024} KB)")
+    wal = ENV_INDEX.with_name(ENV_INDEX.name + "-wal")
+    shm = ENV_INDEX.with_name(ENV_INDEX.name + "-shm")
+    if wal.exists():
+        print(f"   wal: {wal.name}  ({wal.stat().st_size} bytes, mtime "
+              f"{time.strftime('%H:%M:%S', time.localtime(wal.stat().st_mtime))})")
+    if shm.exists():
+        print(f"   shm: {shm.name}  ({shm.stat().st_size} bytes)")
+    print()
+
+    print("== Flagged message counts by color (live read) ==")
+    for c, n in count_by_color(con):
+        print(f"   {c}  ({color_name(c):<22})  {n:>6} messages")
+    print()
+
+    print(f"== Sample flagged messages (color={color if color is not None else 'any'}, limit={limit}) ==")
+    rows = list_flagged(con, color, limit)
+    if not rows:
+        print("   (none)")
+        return
+
+    accounts_seen: dict[str, Path] = {}
+    for r in rows:
+        mbox_url = r["url"]
+        mbox_dir = resolve_mbox_path(mbox_url)
+        # .emlx is named by SQLite ROWID (verified empirically).
+        # Keep remote_id + message_id as fallbacks in case that varies by mailbox type.
+        candidates = [r["ROWID"], r["remote_id"], r["message_id"]]
+        emlx = None
+        if mbox_dir:
+            emlx = find_emlx(mbox_dir, candidates)
+            accounts_seen[mbox_url] = mbox_dir
+        print(f"   ROWID={r['ROWID']:<5} color={r['flag_color']} "
+              f"remote_id={r['remote_id']!s:<8} msg_id={r['message_id']}")
+        print(f"     mailbox-url: {mbox_url}")
+        print(f"     mbox-dir:    {mbox_dir if mbox_dir else '✗ not resolved'}")
+        print(f"     emlx-file:   {emlx if emlx else '✗ not found'}")
+        if emlx:
+            try:
+                rfc, meta = read_emlx(emlx)
+                msg = email.message_from_bytes(rfc, policy=email.policy.default)
+                subj = (msg.get("Subject") or "")[:60]
+                frm = (msg.get("From") or "")[:60]
+                rfc_id = (msg.get("Message-ID") or "")[:80]
+                has_html = any(p.get_content_type() == "text/html" for p in msg.walk())
+                has_attach = any(p.get_filename() for p in msg.walk())
+                print(f"     parsed:      subj={subj!r}")
+                print(f"                  from={frm!r}")
+                print(f"                  Message-ID={rfc_id!r}")
+                print(f"                  has_html={has_html}  has_attachment={has_attach}  trailer_bytes={meta and meta['trailer_bytes']}")
+            except Exception as e:
+                print(f"     parse error: {e!r}")
+        print()
+
+
+def watch_mode(con: sqlite3.Connection, seconds: int, color: int | None) -> None:
+    print(f"== WATCH mode — baseline now, re-query in {seconds}s ==")
+    print(f"   Flag/unflag a test message in Mail during the wait,")
+    print(f"   then this tool will report whether the change is visible.")
+    print()
+
+    def snap():
+        rows = con.execute(
+            "SELECT ROWID, flag_color FROM messages WHERE flagged=1"
+            + (" AND flag_color=?" if color is not None else ""),
+            ([color] if color is not None else []),
+        ).fetchall()
+        return {r[0]: r[1] for r in rows}
+
+    before = snap()
+    print(f"   baseline: {len(before)} flagged message(s)" +
+          (f" with color={color}" if color is not None else ""))
+    print(f"   waiting {seconds}s... (flag something in Mail now)")
+
+    # Re-snapshot every 5s and report any deltas seen in real time
+    elapsed = 0
+    last = before
+    while elapsed < seconds:
+        time.sleep(5)
+        elapsed += 5
+        # IMPORTANT: re-open the connection each tick to avoid stale snapshot
+        # behavior (SQLite read transactions don't see writes from other
+        # processes until the transaction ends).
+        con2 = open_db_readonly()
+        now = snap_with(con2, color)
+        con2.close()
+        added = set(now) - set(last)
+        removed = set(last) - set(now)
+        changed = {k for k in set(now) & set(last) if now[k] != last[k]}
+        if added or removed or changed:
+            print(f"   [+{elapsed:>2}s]  +{len(added)} added  -{len(removed)} removed  "
+                  f"~{len(changed)} color-changed")
+            for r in sorted(added):
+                print(f"            ADDED   ROWID={r} flag_color={now[r]}")
+            for r in sorted(removed):
+                print(f"            REMOVED ROWID={r}")
+            for r in sorted(changed):
+                print(f"            CHANGED ROWID={r}  {last[r]} → {now[r]}")
+        else:
+            print(f"   [+{elapsed:>2}s]  no change")
+        last = now
+
+    print()
+    print(f"== verdict ==")
+    after = last
+    total_delta = len(set(after).symmetric_difference(set(before)))
+    if total_delta > 0:
+        print(f"   ✓ SQLite DID reflect {total_delta} change(s) during the watch.")
+        print(f"   ✓ FSEvents-on-WAL approach is viable.")
+    else:
+        print(f"   ✗ No changes detected. Either:")
+        print(f"     - you didn't flag anything during the wait")
+        print(f"     - SQLite updates are batched / deferred")
+        print(f"     - flag changes go to a different table")
+        print(f"   Re-run with a longer --watch and confirm you flagged something.")
+
+
+def snap_with(con: sqlite3.Connection, color: int | None) -> dict[int, int]:
+    rows = con.execute(
+        "SELECT ROWID, flag_color FROM messages WHERE flagged=1"
+        + (" AND flag_color=?" if color is not None else ""),
+        ([color] if color is not None else []),
+    ).fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--color", type=int, help="filter to a specific flag color (0..6)")
+    ap.add_argument("--limit", type=int, default=3, help="how many sample messages to inspect")
+    ap.add_argument("--watch", type=int, metavar="SECONDS",
+                    help="watch for real-time SQLite updates over N seconds")
+    args = ap.parse_args()
+
+    con = open_db_readonly()
+    try:
+        if args.watch:
+            watch_mode(con, args.watch, args.color)
+        else:
+            report_one_shot(con, args.color, args.limit)
+    finally:
+        con.close()
+
+
+if __name__ == "__main__":
+    main()
