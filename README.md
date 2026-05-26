@@ -27,6 +27,8 @@ Apple did not preserve this material institutionally. This repo does: the script
 
 **288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](wiki/concepts/automation-tiers.md) mapping every layer from AppleScript to IOKit.
 
+**Finder-tag bootstrap.** Fresh-Mac install? `/tag-app` walks every Spotlight-tagged file under `~`, reads each `_kMDItemUserTags` xattr for its name + color, and generates one colored `Tag <Name>.app` per tag into `/Applications/AppleToolbox/Apple-Tag-Apps/`. ⌘-drag any of them onto a Finder window's toolbar for true one-click tagging of the current selection. The .app route is the only thing Finder's Customize Toolbar palette accepts — see [`wiki/concepts/finder-toolbar-locked.md`](wiki/concepts/finder-toolbar-locked.md).
+
 ## Sal Archive Layout
 
 Sal source preservation now has a dedicated structure:
@@ -251,7 +253,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 | 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
 | 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 288 curated workflow recipes → `.applescript` files with teaching comments |
 | 2b. Auto-gen | [`bin/auto-gen.py`](bin/auto-gen.py) | 121 additional scripts auto-generated from YAML dictionaries |
-| 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/Apple-Workflows/` for Spotlight |
+| 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/AppleToolbox/Apple-Workflows/` for Spotlight |
 | 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
 | 5. Import | [`bin/batch-import.sh`](bin/batch-import.sh) | Batch-import all shortcuts into Shortcuts.app with folder organization |
 

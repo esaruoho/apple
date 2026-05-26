@@ -20,7 +20,7 @@
 set -e
 
 cd "$(dirname "$0")"
-INSTALL_DIR="/Applications/Apple-Workflows"
+INSTALL_DIR="/Applications/AppleToolbox/Apple-Workflows"
 LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
 build_wrapper() {

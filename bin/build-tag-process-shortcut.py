@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 """
-Build a signed "Pin in AppleToolbox" Finder Quick Action Shortcut.
+Build a signed "Tag: Process" Finder Quick Action Shortcut.
 
 After import:
-  Shortcuts.app → "Pin in AppleToolbox" → ⓘ → Use as Quick Action → ✅ Finder
-  Also ✅ "Show in Finder toolbar" so it surfaces as a toolbar button you can
-  drop files onto.
+  Shortcuts.app → "Tag: Process" → ⓘ → Use as Quick Action → ✅ Finder
+Then either:
+  - right-click selection → Quick Actions → Tag: Process, or
+  - View → Customize Toolbar… in any Finder window and drag the
+    "Tag: Process" shortcut button into the toolbar for one-click tagging.
 
-What it does: for each selected file/folder in Finder, runs
-  open -a /Applications/AppleToolbox/AppleToolbox.app <path>
-which dispatches an Apple Event to the already-running AppleToolbox.app —
-its NSApplicationDelegate.application(_:open:) handler stores the path under
-UserDefaults["PinnedFile"] and refreshes the menu so a "📌 <filename>" row
-appears at the top of the 🧰 dropdown.
+The Shortcut takes the selected Finder items and adds the tag "process"
+to each, preserving any tags already on the file. Re-runnable; calling
+it on a file that already has "process" is a no-op.
 
-This is the lightweight, in-process Apple-native replacement for a drop-target
-wrapper .app — no cold-start, no Dock-icon flash.
-
-Output: shortcuts/finder/Pin in AppleToolbox.shortcut  (signed)
+Re-run safely. Output goes to shortcuts/finder/Tag Process.shortcut.
 """
 import plistlib
 import subprocess
@@ -28,23 +24,27 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "shortcuts/finder"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-NAME = "Pin in AppleToolbox"
-TARGET_APP = "/Applications/AppleToolbox/AppleToolbox.app"
+NAME = "Tag Process"
+TAG_BIN = ROOT / "bin" / "tag"
 
-APPLESCRIPT = r'''on run {input, parameters}
+APPLESCRIPT = f'''on run {{input, parameters}}
 	if input is missing value or (count of input) = 0 then return input
-	set targetApp to "''' + TARGET_APP + r'''"
-	set lastPath to ""
+	set tagBin to "{TAG_BIN.as_posix()}"
+	set failed to {{}}
 	repeat with f in input
 		try
 			set p to POSIX path of (f as alias)
-			set lastPath to p
-			do shell script "/usr/bin/open -a " & quoted form of targetApp & " " & quoted form of p
+			do shell script tagBin & " add process " & quoted form of p
+		on error errMsg
+			set end of failed to (p & " — " & errMsg)
 		end try
 	end repeat
-	if lastPath is not "" then
-		set nameOnly to do shell script "basename " & quoted form of lastPath
-		display notification ("📌 " & nameOnly) with title "AppleToolbox" subtitle "Pinned — click 🧰 menu to see it"
+	if (count of failed) > 0 then
+		set summary to ""
+		repeat with line in failed
+			set summary to summary & (line as text) & linefeed
+		end repeat
+		display alert "Tag: Process — some items failed" message summary as warning
 	end if
 	return input
 end run'''
@@ -60,12 +60,13 @@ plist = {
     'WFWorkflowHasOutputFallback': False,
     'WFWorkflowHasShortcutInputVariables': True,
     'WFWorkflowIcon': {
-        'WFWorkflowIconGlyphNumber': 61440,         # pin glyph
-        'WFWorkflowIconStartColor': 4292311551,     # orange
+        'WFWorkflowIconGlyphNumber': 61722,           # tag glyph
+        'WFWorkflowIconStartColor': 4292311040,       # red
     },
     'WFWorkflowImportQuestions': [],
     'WFWorkflowInputContentItemClasses': [
         'WFGenericFileContentItem',
+        'WFFolderContentItem',
     ],
     'WFWorkflowMinimumClientVersion': 900,
     'WFWorkflowMinimumClientVersionString': '900',
@@ -93,3 +94,10 @@ print(f"Built: {signed}")
 print()
 print("Install:")
 print(f"  open '{signed}'")
+print()
+print("Then in Shortcuts.app:")
+print(f"  Search 'Tag: Process' → ⓘ → Use as Quick Action → ✅ Finder")
+print()
+print("Then in Finder:")
+print(f"  View → Customize Toolbar… → drag 'Tag: Process' into the toolbar")
+print(f"  (or right-click selection → Quick Actions → Tag: Process)")

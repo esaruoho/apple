@@ -7,7 +7,7 @@ Use your Loupedeck Live to trigger any of the 288 workflow scripts and 64 launch
 ## Prerequisites
 
 1. Clone this repo
-2. Run `bin/spotlight-export.sh` to compile all workflow scripts to `.app` bundles in `/Applications/Apple-Workflows/`
+2. Run `bin/spotlight-export.sh` to compile all workflow scripts to `.app` bundles in `/Applications/AppleToolbox/Apple-Workflows/`
 3. Run `bin/shortcut-gen.py` to generate `.shortcut` files, then `bin/batch-import.sh` to import them into Shortcuts.app
 4. In Shortcuts.app, go to Settings > Advanced > enable "Allow Running Scripts"
 
@@ -114,7 +114,7 @@ To use in Loupedeck: click the button icon area and select the PNG from the `ico
 
 - **Compiled .app bundles:** Instead of `osascript`, you can also launch the compiled apps directly:
   ```
-  open /Applications/Apple-Workflows/Music-PlayPause.app
+  open /Applications/AppleToolbox/Apple-Workflows/Music-PlayPause.app
   ```
   These are the same scripts compiled by `bin/spotlight-export.sh`.
 

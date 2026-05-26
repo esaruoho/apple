@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""
+build-tag-apps — Bulk-generate Tag <Name>.app bundles, one per Finder tag.
+
+Usage:
+  bin/build-tag-apps                                   # default: --discover
+  bin/build-tag-apps --discover                        # scan every tagged file
+  bin/build-tag-apps --discover --colors               # include the 7 generic colors too
+  bin/build-tag-apps --discover --dry-run              # print plan, build nothing
+  bin/build-tag-apps <name>[:<color>] [<name>...]      # explicit list
+
+--discover walks every file Spotlight has tagged anywhere under $HOME, reads
+each file's `_kMDItemUserTags` xattr, and harvests BOTH the tag name AND the
+color the user assigned (encoded as "name\\nN" in the xattr, where N is
+0-7 = none|gray|green|purple|blue|yellow|red|orange).
+
+The most-common color seen for each tag wins. Result: one Tag <Name>.app
+per tag, with a purple-or-actual-color SF Symbol icon, dropped into
+/Applications/AppleToolbox/Apple-Tag-Apps/ ready to ⌘-drag onto a Finder toolbar.
+
+This is the "fresh-Mac bootstrap": run it once, get an .app for every tag
+you've ever used, then pick which ones earn a toolbar slot.
+"""
+import plistlib
+import subprocess
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+BUILD_ONE = REPO / "bin" / "build-tag-app"
+
+# Color code → name (matches Finder's swatch palette and bin/tag).
+COLOR_CODE = {
+    0: "none", 1: "gray", 2: "green", 3: "purple",
+    4: "blue", 5: "yellow", 6: "red", 7: "orange",
+}
+
+GENERIC_COLORS = {"Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Gray", "Grey"}
+
+
+def discover_tags_with_colors() -> dict[str, str]:
+    """Walk every Spotlight-tagged file in HOME, return {tag_name: color_name}.
+
+    The color picked for each tag is the most-common color observed across
+    every file carrying that tag (Counter.most_common). A tie breaks on the
+    color seen first (Counter preserves insertion order).
+    """
+    home = str(Path.home())
+    result = subprocess.run(
+        ["/usr/bin/mdfind", "-onlyin", home, 'kMDItemUserTags == "*"'],
+        capture_output=True, text=True,
+    )
+    files = [line for line in result.stdout.splitlines() if line]
+    print(f"discover: {len(files)} tagged files found via Spotlight", file=sys.stderr)
+
+    counters: dict[str, Counter[str]] = defaultdict(Counter)
+    for fp in files:
+        try:
+            raw = subprocess.check_output(
+                ["/usr/bin/xattr", "-px", "com.apple.metadata:_kMDItemUserTags", fp],
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
+            continue
+        try:
+            blob = bytes.fromhex(raw.decode().replace(" ", "").replace("\n", ""))
+            parsed = plistlib.loads(blob)
+        except Exception:
+            continue
+        if not isinstance(parsed, list):
+            continue
+        for entry in parsed:
+            if not isinstance(entry, str):
+                continue
+            # Each entry is "name" OR "name\nN" where N is the color code 0-7.
+            if "\n" in entry:
+                name, _, code_str = entry.partition("\n")
+                try:
+                    color = COLOR_CODE.get(int(code_str.strip()), "none")
+                except ValueError:
+                    color = "none"
+            else:
+                name, color = entry, "none"
+            name = name.strip()
+            if name:
+                counters[name][color] += 1
+
+    return {
+        name: ctr.most_common(1)[0][0]
+        for name, ctr in counters.items()
+    }
+
+
+def main():
+    args = sys.argv[1:]
+    if args and args[0] in ("-h", "--help"):
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+
+    include_colors = "--colors" in args
+    dry_run = "--dry-run" in args
+    args = [a for a in args if a not in ("--colors", "--dry-run")]
+
+    # Default behaviour: discover. So a fresh install just runs the tool
+    # and gets every tag wired up.
+    if not args or args == ["--discover"]:
+        catalog = discover_tags_with_colors()
+        if not catalog:
+            sys.stderr.write("no tags discovered — nothing to build\n")
+            sys.exit(1)
+        if not include_colors:
+            catalog = {n: c for n, c in catalog.items() if n not in GENERIC_COLORS}
+        entries = [(name, color) for name, color in sorted(catalog.items())]
+        print(f"discover: {len(entries)} unique tag(s) → planning .apps")
+        for name, color in entries:
+            print(f"  • {name:30s}  → color: {color}")
+    else:
+        entries = []
+        for spec in args:
+            if ":" in spec:
+                name, color = spec.split(":", 1)
+            else:
+                name, color = spec, None
+            entries.append((name, color))
+
+    if dry_run:
+        print()
+        print("--dry-run: nothing built. Re-run without --dry-run to build.")
+        sys.exit(0)
+
+    print()
+    ok = 0
+    fail = 0
+    for name, color in entries:
+        cmd = [str(BUILD_ONE), name] + ([color] if color else [])
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            ok += 1
+            first = result.stdout.splitlines()[0] if result.stdout else f"Built: Tag {name}.app"
+            print(f"{first}    [{color or 'auto'}]")
+        else:
+            fail += 1
+            sys.stderr.write(f"FAIL {name}: {result.stderr.strip()}\n")
+
+    print()
+    print(f"built {ok}, failed {fail}")
+    out_dir = Path("/Applications/AppleToolbox/Apple-Tag-Apps")
+    print(f"location: {out_dir}")
+    print()
+    print("Next: ⌘-drag the .apps you want from there onto a Finder window's toolbar.")
+
+
+if __name__ == "__main__":
+    main()

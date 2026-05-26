@@ -9,7 +9,7 @@
 #   ./bin/spotlight-export.sh --clean           # Remove all exported apps
 #   ./bin/spotlight-export.sh --list            # List currently exported apps
 #
-# Output: ~/Applications/Apple-Workflows/<App-Action>.app
+# Output: /Applications/AppleToolbox/Apple-Workflows/<App-Action>.app
 # Each .app is Spotlight-indexed automatically — Cmd+Space to find and run.
 #
 # Sal's rule: one button = one action = one result.
@@ -19,7 +19,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORKFLOWS_DIR="$REPO_DIR/scripts/workflows"
-EXPORT_DIR="/Applications/Apple-Workflows"
+EXPORT_DIR="/Applications/AppleToolbox/Apple-Workflows"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 

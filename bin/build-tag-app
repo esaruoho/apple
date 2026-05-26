@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""
+build-tag-app — Generate a Tag <Name>.app bundle that tags the current
+Finder selection (or any files dropped onto it) with one specific tag.
+
+Usage:
+  bin/build-tag-app <tag-name> [color]
+  bin/build-tag-app Process
+  bin/build-tag-app "Send To OCR" purple
+
+Output:
+  /Applications/AppleToolbox/Apple-Tag-Apps/Tag <Name>.app
+
+The .app is built via /usr/bin/osacompile (Apple-native, no deps).
+It is droppable (drag files onto it = tag those files) AND clickable
+(launch with no input = tag current Finder selection). When ⌘-dragged
+onto Finder's window toolbar, gives a true one-click tag button.
+
+Why .app and not a Shortcut: Finder's Customize Toolbar palette does
+NOT list Shortcuts/Quick Actions/Services — only Apple's 19 built-in
+items. The ONLY way to get a custom one-click button in Finder's toolbar
+is to ⌘-drag a .app bundle onto it. See
+  wiki/concepts/finder-toolbar-locked.md
+"""
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+TAG_BIN = REPO / "bin" / "tag"
+ICON_RENDERER = REPO / "bin" / "render-tag-icon.swift"
+OUT_DIR = Path("/Applications/AppleToolbox/Apple-Tag-Apps")
+
+# If user gives no color, look up Finder's default color for the tag name
+# (matches the swatch they see in Finder → Tags). For unknown tags, default
+# to "purple" so the icon is at least visually distinct from the AppleScript
+# script-icon default.
+DEFAULT_TAG_COLORS = {
+    "red": "red", "orange": "orange", "yellow": "yellow",
+    "green": "green", "blue": "blue", "purple": "purple", "gray": "gray",
+}
+
+VALID_COLORS = {"none", "gray", "grey", "green", "purple", "blue", "yellow", "red", "orange"}
+
+
+def die(msg, code=1):
+    sys.stderr.write(f"build-tag-app: {msg}\n")
+    sys.exit(code)
+
+
+def build(tag_name: str, color: str | None) -> Path:
+    if not tag_name.strip():
+        die("tag name cannot be empty")
+    if color and color.lower() not in VALID_COLORS:
+        die(f"unknown color {color!r}; valid: {', '.join(sorted(VALID_COLORS))}")
+
+    spec = f"{tag_name}:{color}" if color else tag_name
+    # AppleScript string-escape: backslash and double-quote.
+    spec_lit = spec.replace("\\", "\\\\").replace('"', '\\"')
+    tag_bin_lit = str(TAG_BIN).replace("\\", "\\\\").replace('"', '\\"')
+
+    script = f'''-- Tag {tag_name}.app — adds the "{spec}" Finder tag to its input.
+-- on open: tags every dropped file/folder.
+-- on run : tags the current Finder selection (one-click toolbar use).
+
+on tagItems(theItems)
+	set tagBin to "{tag_bin_lit}"
+	set tagSpec to "{spec_lit}"
+	set failedItems to {{}}
+	repeat with f in theItems
+		try
+			set p to POSIX path of (f as alias)
+			do shell script (quoted form of tagBin) & " add " & (quoted form of tagSpec) & " " & quoted form of p
+		on error errMsg
+			set end of failedItems to (p & " — " & errMsg)
+		end try
+	end repeat
+	if (count of failedItems) > 0 then
+		set summary to ""
+		repeat with errLine in failedItems
+			set summary to summary & (errLine as text) & linefeed
+		end repeat
+		display alert "Tag {tag_name} — some items failed" message summary as warning
+	end if
+end tagItems
+
+on open theItems
+	tagItems(theItems)
+end open
+
+on run
+	-- Launched with no input (e.g. clicked from Finder toolbar).
+	-- Grab the current Finder selection.
+	set selAliases to {{}}
+	tell application "Finder"
+		set theSel to (get selection)
+		if theSel is {{}} then return
+		repeat with f in theSel
+			set end of selAliases to (f as alias)
+		end repeat
+	end tell
+	tagItems(selAliases)
+end run
+'''
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    app_name = f"Tag {tag_name}.app"
+    app_path = OUT_DIR / app_name
+
+    if app_path.exists():
+        shutil.rmtree(app_path)
+
+    # osacompile -o <path>.app -e <script> creates a stay-open .app with
+    # the script as both on-open (drop) and on-run (bare-launch) handler.
+    result = subprocess.run(
+        ["/usr/bin/osacompile", "-o", str(app_path), "-e", script],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        die(f"osacompile failed: {result.stderr}")
+
+    # Render a colored SF-Symbol tag icon and overwrite the default
+    # applet.icns inside the .app bundle. Color = explicit arg, or
+    # the matching Finder swatch if the tag name IS a color, else purple.
+    icon_color = (color or DEFAULT_TAG_COLORS.get(tag_name.lower(), "purple")).lower()
+    res_dir = app_path / "Contents" / "Resources"
+    icns_tmp = res_dir / "_tag-icon.icns"
+    result = subprocess.run(
+        ["/usr/bin/swift", str(ICON_RENDERER), icon_color, str(icns_tmp)],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        sys.stderr.write(f"warn: icon render failed ({result.stderr.strip()}); "
+                         f"keeping default applet.icns\n")
+    else:
+        # osacompile produces both applet.icns (when no on-open) and
+        # droplet.icns (when on-open is defined). Finder picks droplet.icns
+        # for droplet apps. Overwrite BOTH so whichever Finder uses, it's
+        # the colored tag.
+        for name in ("applet.icns", "droplet.icns"):
+            target = res_dir / name
+            if target.exists() or name == "applet.icns":
+                shutil.copyfile(icns_tmp, target)
+        icns_tmp.unlink(missing_ok=True)
+
+    # Bump CFBundleIconFile (osacompile sets it to 'applet' already) and
+    # touch the bundle so Launch Services + Finder pick up the new icon.
+    info_plist = app_path / "Contents" / "Info.plist"
+    subprocess.run(["/usr/bin/touch", str(info_plist)])
+    subprocess.run(["/usr/bin/touch", str(app_path)])
+
+    # Refresh Launch Services so Finder sees the .app immediately
+    # (see wiki: lsregister after .app bundle changes).
+    subprocess.run(
+        ["/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+         "LaunchServices.framework/Support/lsregister", "-f", str(app_path)],
+        capture_output=True,
+    )
+
+    return app_path
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+    tag_name = sys.argv[1]
+    color = sys.argv[2] if len(sys.argv) > 2 else None
+    app = build(tag_name, color)
+    print(f"Built: {app}")
+    print()
+    print("Pin to Finder toolbar:")
+    print(f"  1. Open Finder, ⌘-drag '{app}' onto the toolbar.")
+    print(f"  2. Release. The icon stays as a clickable button.")
+    print()
+    print("Use it:")
+    print(f"  - Select files in Finder → click the toolbar icon → tagged.")
+    print(f"  - OR drag files onto the icon → tagged.")
+    print(f"  - OR Spotlight: type 'Tag {tag_name}' → ⏎ (tags current Finder selection).")
+
+
+if __name__ == "__main__":
+    main()

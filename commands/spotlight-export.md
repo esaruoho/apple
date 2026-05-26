@@ -1,5 +1,5 @@
 ---
-description: Compile workflow scripts to Spotlight-reachable .app bundles in ~/Applications/Apple-Workflows/. Usage `/spotlight-export` (all) or `/spotlight-export finder music` (subset).
+description: Compile workflow scripts to Spotlight-reachable .app bundles in ~/Applications/AppleToolbox/Apple-Workflows/. Usage `/spotlight-export` (all) or `/spotlight-export finder music` (subset).
 allowed-tools: Bash
 argument-hint: [app-names...] [--dry-run] [--clean] [--list]
 ---

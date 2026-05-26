@@ -3,7 +3,7 @@
 #
 # This is THE rebuild command. Single shot:
 #   1. Compile AppleToolbox.swift to a fresh .app bundle
-#   2. Sync to /Applications/Apple-Workflows/ (the installed/running location)
+#   2. Sync to /Applications/AppleToolbox/Apple-Workflows/ (the installed/running location)
 #   3. Restart the menu-bar process so the new binary is what you see
 #   4. (The --live floating panel auto-rebuilds via its own mtime watcher,
 #       triggered by the source edit you just made — no extra step needed.)
@@ -17,7 +17,7 @@ set -e
 cd "$(dirname "$0")"
 APP="AppleToolbox.app"
 NAME="AppleToolbox"
-INSTALL_DIR="/Applications/Apple-Workflows"
+INSTALL_DIR="/Applications/AppleToolbox/Apple-Workflows"
 INSTALL_APP="$INSTALL_DIR/$APP"
 
 echo "==> Cleaning previous build..."
@@ -32,7 +32,9 @@ xcrun swiftc -O AppleToolbox.swift -o "$APP/Contents/MacOS/$NAME" \
     -framework Carbon \
     -framework EventKit \
     -framework Contacts \
-    -framework Photos
+    -framework Photos \
+    -framework UserNotifications \
+    -lsqlite3
 
 echo "==> Generating icon if missing..."
 if [ ! -f "AppleToolbox.icns" ]; then
@@ -114,7 +116,7 @@ echo "    Binary: $(du -h "$APP/Contents/MacOS/$NAME" | cut -f1)"
 chmod +x scripts/*.sh 2>/dev/null || true
 
 # ─── Sync to installed location + restart menu-bar ─────────────────────────
-# The menu-bar process runs from /Applications/Apple-Workflows/AppleToolbox.app
+# The menu-bar process runs from /Applications/AppleToolbox/AppleToolbox.app
 # (installed by install.sh, kept alive by the LaunchAgent). Without this step
 # the source change is built but invisible — that was the historical footgun.
 # Skip silently if the install location doesn't exist yet (first-time setup

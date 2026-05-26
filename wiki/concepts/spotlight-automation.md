@@ -13,10 +13,10 @@ Compile any `.applescript` to a standalone `.app` bundle. Spotlight indexes all 
 
 ```bash
 # Compile to app
-osacompile -o /Applications/Apple-Workflows/Music-PlayPause.app scripts/workflows/music/music-playpause.applescript
+osacompile -o /Applications/AppleToolbox/Apple-Workflows/Music-PlayPause.app scripts/workflows/music/music-playpause.applescript
 
 # Verify Spotlight sees it
-mdls -name kMDItemContentType /Applications/Apple-Workflows/Music-PlayPause.app
+mdls -name kMDItemContentType /Applications/AppleToolbox/Apple-Workflows/Music-PlayPause.app
 # -> "com.apple.application-bundle"
 
 # Now Cmd+Space -> "Music PlayPause" -> Enter -> plays/pauses
@@ -112,7 +112,7 @@ This wraps any CLI tool (`ghc`, `ask`, `app-probe`, etc.) in a Spotlight-reachab
 ./bin/spotlight-export.sh --clean
 ```
 
-**Output:** `/Applications/Apple-Workflows/` -- one `.app` per workflow script, all Spotlight-indexed.
+**Output:** `/Applications/AppleToolbox/Apple-Workflows/` -- one `.app` per workflow script, all Spotlight-indexed.
 
 **What spotlight-export.sh does for each script:**
 1. `osacompile` -- compile `.applescript` to `.app` bundle

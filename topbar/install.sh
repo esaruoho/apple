@@ -7,7 +7,7 @@
 # relaunches it. There is no "did you also run install.sh" footgun.
 #
 # What this script does that build.sh doesn't:
-#   - Creates /Applications/Apple-Workflows/
+#   - Creates /Applications/AppleToolbox/Apple-Workflows/
 #   - Installs the LaunchAgent so AppleToolbox auto-starts at login
 #
 # Then it calls build.sh to do the actual build + deploy + launch.
@@ -15,7 +15,7 @@
 set -e
 
 TOPBAR_DIR="$HOME/work/apple/topbar"
-INSTALL_DIR="/Applications/Apple-Workflows"
+INSTALL_DIR="/Applications/AppleToolbox/Apple-Workflows"
 LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
 LAUNCH_AGENT_PLIST="$LAUNCH_AGENT_DIR/com.esaruoho.appletoolbox.plist"
 

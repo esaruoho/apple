@@ -17,7 +17,7 @@ Or use the slash: `/topbar`.
 
 This compiles `AppleToolbox.swift` into a `.app` bundle with
 `LSUIElement=true` (menu bar only, no Dock icon), ad-hoc codesigns it,
-installs into `/Applications/Apple-Workflows/AppleToolbox.app`, launches it.
+installs into `/Applications/AppleToolbox/AppleToolbox.app`, launches it.
 
 ## What's in the toolbox
 
@@ -190,7 +190,7 @@ call it from `rebuildMenu()` via `menu.addItem(header("Title", body: reader()))`
 topbar/
 ├── AppleToolbox.swift      # the entire app — NSStatusItem + NSMenu + data readers
 ├── build.sh                # compile + bundle into AppleToolbox.app
-├── install.sh              # build, move to /Applications/Apple-Workflows/, launch
+├── install.sh              # build, move to /Applications/AppleToolbox/Apple-Workflows/, launch
 ├── scripts/                # multi-line helper scripts (called by menu actions)
 │   ├── hide-desktop.sh
 │   ├── show-desktop.sh

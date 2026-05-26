@@ -33,7 +33,7 @@ panel runs `build.sh` and `execv`'s itself in place within 1–2 sec.
 topbar/
 ├── AppleToolbox.swift         ← THE file. Readers + delegates + menu.
 ├── build.sh                   ← xcrun swiftc + PlistBuddy + codesign
-├── install.sh                 ← copies .app into ~/Applications/Apple-Workflows + LaunchAgent
+├── install.sh                 ← copies .app into ~/Applications/AppleToolbox/Apple-Workflows + LaunchAgent
 ├── launchagent.plist          ← com.esaruoho.appletoolbox  (login + KeepAlive)
 ├── AppleToolbox.app/          ← built artifact (gitignored)
 └── scripts/
@@ -125,12 +125,12 @@ to consume the event.
 
 After **any** edit to keys Launch Services reads (`CFBundleDocumentTypes`, `CFBundleURLTypes`, `UTExportedTypeDeclarations`, `LSItemContentTypes`, `LSHandlerRank`), the .app bundle MUST be re-registered with `lsregister -f`, or Finder will refuse drops (showing the (X) cursor), URL schemes won't resolve, and "Open With" will omit AppleToolbox. Launch Services caches Info.plist contents per-bundle-path and never re-reads them on its own.
 
-`build.sh` already does this automatically: after the `cp -R` install step it runs `lsregister -f` on **both** the source build (`topbar/AppleToolbox.app`) and the installed bundle (`/Applications/Apple-Workflows/AppleToolbox.app`). Any future build script that produces an .app MUST do the same — copy that pattern.
+`build.sh` already does this automatically: after the `cp -R` install step it runs `lsregister -f` on **both** the source build (`topbar/AppleToolbox.app`) and the installed bundle (`/Applications/AppleToolbox/AppleToolbox.app`). Any future build script that produces an .app MUST do the same — copy that pattern.
 
 Manual one-liner when debugging:
 
 ```bash
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Apple-Workflows/AppleToolbox.app
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/AppleToolbox/AppleToolbox.app
 ```
 
 If `lsregister -f` doesn't fix the symptom, nuke and rebuild the entire LS database (~30s, rarely needed):

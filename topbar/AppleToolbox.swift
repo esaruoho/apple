@@ -32,6 +32,8 @@ import Contacts              // Contacts pre-auth
 import Photos                // Photos pre-auth
 import ApplicationServices   // AXIsProcessTrustedWithOptions — accessibility prompt
 import UniformTypeIdentifiers // UTType — classify files for type-aware clipboard copy
+import SQLite3                // CloudRecordings.db read for the voice-memo → whisp pipeline
+import UserNotifications      // clickable notifications when a transcript lands
 
 let HOME = NSHomeDirectory()
 let TOPBAR = "\(HOME)/work/apple/topbar"
@@ -130,6 +132,51 @@ func appPath(_ name: String) -> String? {
 func notify(_ title: String, _ body: String) {
     runDetached("/usr/bin/osascript", ["-e",
         "display notification \"\(body.replacingOccurrences(of: "\"", with: "\\\""))\" with title \"\(title)\""])
+}
+
+// ─── iPhone notification via iCloud Drive ──────────────────────────────────
+//
+// Drops a JSON into ~/Library/Mobile Documents/com~apple~CloudDocs/notify-iphone/
+// where a Shortcuts Personal Automation on the iPhone ("When file is added to
+// folder notify-iphone → Show Notification") picks it up and banners the phone.
+// Same JSON contract as NotifyInboxWatcher so worker code can fan out to both
+// laptop and phone with one payload. Setup doc: wiki/concepts/iphone-notify-pipeline.md.
+@discardableResult
+func notifyPhone(title: String,
+                 body: String = "",
+                 subtitle: String = "",
+                 url: String? = nil,
+                 sender: String = "appletoolbox") -> Bool {
+    let icloud = NSString(string: "~/Library/Mobile Documents/com~apple~CloudDocs/notify-iphone").expandingTildeInPath
+    var isDir: ObjCBool = false
+    if !FileManager.default.fileExists(atPath: icloud, isDirectory: &isDir) {
+        do {
+            try FileManager.default.createDirectory(atPath: icloud,
+                withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            NSLog("notifyPhone: cannot create drop dir \(icloud): \(error)")
+            return false
+        }
+    }
+    let id = "\(Int(Date().timeIntervalSince1970))-\(UUID().uuidString.prefix(8))"
+    var payload: [String: Any] = ["title": title, "id": id, "sender": sender]
+    if !body.isEmpty     { payload["body"]     = body }
+    if !subtitle.isEmpty { payload["subtitle"] = subtitle }
+    if let u = url       { payload["url"]      = u }
+    guard let data = try? JSONSerialization.data(withJSONObject: payload,
+                                                 options: [.prettyPrinted]) else {
+        return false
+    }
+    let tmp   = "\(icloud)/.\(id).json.tmp"
+    let final = "\(icloud)/\(id).json"
+    do {
+        try data.write(to: URL(fileURLWithPath: tmp), options: .atomic)
+        try FileManager.default.moveItem(atPath: tmp, toPath: final)
+        return true
+    } catch {
+        NSLog("notifyPhone: write failed: \(error)")
+        return false
+    }
 }
 
 // ─── permissions: one-shot grant flow ──────────────────────────────────────
@@ -463,6 +510,22 @@ func nowPlayingRead() -> String? {
     return out.isEmpty ? nil : out
 }
 
+func mailFlagStatusRead() -> String {
+    // Read the worker's status JSON. "P/W/D/F · flags: X,Y" or "—".
+    guard let s = MailFlagStatus.read() else { return "—" }
+    if s.pending == 0 && s.processing == 0 && s.done == 0 && s.failed == 0 {
+        let flags = s.enabledFlags.isEmpty ? "no flags enabled"
+                                           : "ready: \(s.enabledFlags.joined(separator: ","))"
+        return flags
+    }
+    var parts: [String] = []
+    if s.pending > 0    { parts.append("\(s.pending) pending") }
+    if s.processing > 0 { parts.append("\(s.processing) processing") }
+    if s.done > 0       { parts.append("\(s.done) done") }
+    if s.failed > 0     { parts.append("\(s.failed) failed") }
+    return parts.joined(separator: " · ")
+}
+
 func whispQueueRead() -> String {
     // Read live heartbeat written by the Mini's whisp-worker via Syncthing.
     // Shape mirrors ocr-heartbeat.json — status + queue counts + current job.
@@ -512,6 +575,40 @@ func whispQueueRead() -> String {
     default:
         return "\(status) · \(pending) queued\(staleHint)"
     }
+}
+
+func voiceMemoQueueRead() -> String? {
+    // Reads voicememo-pipeline.state.json — the same dict the pipeline owns.
+    // Returns nil to suppress the row when there's nothing relevant to show
+    // (no in-flight memos AND no recent done ones).
+    let path = "\(NSHomeDirectory())/work/mediabank/state/voicememo-pipeline.state.json"
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]]
+    else {
+        return nil
+    }
+    var inFlight: [String] = []
+    var doneToday: Int = 0
+    let todayPrefix = ISO8601DateFormatter().string(from: Date()).prefix(10)
+    for (_, sub) in dict {
+        let title = sub["title"] as? String ?? "(untitled)"
+        if sub["notifiedDoneAt"] is NSNull || sub["notifiedDoneAt"] == nil {
+            inFlight.append(title)
+        } else if let ts = sub["notifiedDoneAt"] as? String, ts.hasPrefix(todayPrefix) {
+            doneToday += 1
+        }
+    }
+    if inFlight.isEmpty && doneToday == 0 {
+        return nil
+    }
+    if !inFlight.isEmpty {
+        let first = inFlight.first.map { String($0.prefix(40)) } ?? ""
+        if inFlight.count == 1 {
+            return "▶ \(first) · \(doneToday) done today"
+        }
+        return "▶ \(first) +\(inFlight.count - 1) more · \(doneToday) done today"
+    }
+    return "💤 idle · \(doneToday) done today"
 }
 
 func vaultStatusRead() -> String? {
@@ -717,6 +814,1169 @@ enum LauncherSlots {
     }
 }
 
+// ─── voice memo → whisp pipeline ───────────────────────────────────────────
+//
+// Polls Apple Voice Memos' CloudRecordings.db every 30 s for recordings whose
+// custom label contains `#process` (case-insensitive). For each new match,
+// copies the .m4a into ~/work/comms/queue/whisp-inbox/ and writes a sibling
+// .url file with `kind: local_audio` so whisp-worker on the Mac Mini picks it
+// up via Syncthing.
+//
+// FDA: this code runs inside AppleToolbox which already holds Full Disk
+// Access — no separate TCC grant required. A standalone launchd-spawned
+// process would be blocked from reading the group-container DB.
+//
+// Notifications: when whisp-results/<slug>/transcript.txt appears for an
+// in-flight submission, a UNMutableNotificationContent is delivered. Tapping
+// the notification opens the transcript file in its default app; the userInfo
+// payload carries the transcript path so the delegate can route the click.
+
+final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
+
+    // ── config ─────────────────────────────────────────────────────────────
+    private let triggerTag    = "#process"
+    private let pollSeconds   = 30.0
+    private let dbPath: String
+    private let inboxDir: String
+    private let resultsDir: String
+    private let stateFile: String
+    private let logFile: String
+    private let hostname: String
+
+    // ── state (uniqueid -> Submission) ─────────────────────────────────────
+    private struct Submission: Codable {
+        var jobID:            String
+        var title:            String
+        var label:            String
+        var audioInboxPath:   String
+        var urlInboxPath:     String
+        var submittedAt:      String
+        var tags:             [String]
+        var notifiedDoneAt:   String?
+        var resultDir:        String?
+    }
+    private var submissions: [String: Submission] = [:]   // ZUNIQUEID → Submission
+
+    // ── lifecycle handles ──────────────────────────────────────────────────
+    private var pollTimer: Timer?
+    private var resultsSource: DispatchSourceFileSystemObject?
+    private var resultsFD: Int32 = -1
+
+    // ── menu-bar telemetry (read by rebuildMenu) ──────────────────────────
+    private(set) var inFlightCount: Int = 0
+    private(set) var doneCount:     Int = 0
+
+    // ── init ───────────────────────────────────────────────────────────────
+    override init() {
+        let home = NSHomeDirectory()
+        self.dbPath     = "\(home)/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/CloudRecordings.db"
+        self.inboxDir   = "\(home)/work/comms/queue/whisp-inbox"
+        self.resultsDir = "\(home)/work/comms/queue/whisp-results"
+        self.stateFile  = "\(home)/work/mediabank/state/voicememo-pipeline.state.json"
+        self.logFile    = "\(home)/work/mediabank/var/log/voicememo-pipeline.log"
+        self.hostname   = ProcessInfo.processInfo.hostName
+        super.init()
+        ensureDirs()
+        loadState()
+    }
+
+    // ── public entry point — call from applicationDidFinishLaunching ──────
+    func start() {
+        log("VoiceMemoPipeline starting (db=\(dbPath))")
+        setupNotifications()
+        // Initial poll, then every pollSeconds.
+        scheduleTick()
+        startResultsWatcher()
+    }
+
+    // ── notifications ──────────────────────────────────────────────────────
+    private func setupNotifications() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        let openAction = UNNotificationAction(
+            identifier: "VOICEMEMO_OPEN",
+            title: "Open transcript",
+            options: [.foreground]
+        )
+        let revealAction = UNNotificationAction(
+            identifier: "VOICEMEMO_REVEAL",
+            title: "Reveal in Finder",
+            options: []
+        )
+        let category = UNNotificationCategory(
+            identifier: "VOICEMEMO_TRANSCRIBED",
+            actions: [openAction, revealAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        center.setNotificationCategories([category])
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, err in
+            if let err = err {
+                self.log("notification auth error: \(err.localizedDescription)")
+            } else {
+                self.log("notification auth granted=\(granted)")
+            }
+        }
+    }
+
+    // UNUserNotificationCenterDelegate — show notifications even when app is foreground.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        if #available(macOS 11.0, *) {
+            completionHandler([.banner, .sound])
+        } else {
+            completionHandler([.alert, .sound])
+        }
+    }
+
+    // Click / action handler.
+    // Default click → open the CONTAINING FOLDER (so you see every format —
+    // .txt / .md / .srt / .vtt / .json / .tsv — at once and can pick one).
+    // "Open transcript" action → open the .txt in its default app.
+    // "Reveal in Finder" action → activate Finder with the .txt selected.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        defer { completionHandler() }
+        let info = response.notification.request.content.userInfo
+        guard let path = info["transcript_path"] as? String else { return }
+        let fileURL = URL(fileURLWithPath: path)
+        let folderURL = fileURL.deletingLastPathComponent()
+        switch response.actionIdentifier {
+        case "VOICEMEMO_REVEAL":
+            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+        case "VOICEMEMO_OPEN":
+            NSWorkspace.shared.open(fileURL)
+        case UNNotificationDefaultActionIdentifier:
+            // Default click → open the folder. Esa: "the objective is to open
+            // the path, not the file."
+            NSWorkspace.shared.open(folderURL)
+        default:
+            break
+        }
+    }
+
+    // ── tick loop ─────────────────────────────────────────────────────────
+    private func scheduleTick() {
+        // Run once immediately on the main runloop so startup logs come out.
+        DispatchQueue.main.async { [weak self] in self?.tick() }
+        let t = Timer(timeInterval: pollSeconds, repeats: true) { [weak self] _ in self?.tick() }
+        RunLoop.main.add(t, forMode: .common)
+        pollTimer = t
+    }
+
+    private func tick() {
+        pollDatabase()
+        reconcileResults()
+        recomputeCounts()
+    }
+
+    // ── results watcher (FSEvents-style dir watch on whisp-results) ───────
+    private func startResultsWatcher() {
+        try? FileManager.default.createDirectory(atPath: resultsDir, withIntermediateDirectories: true)
+        let fd = open(resultsDir, O_EVTONLY)
+        guard fd >= 0 else {
+            log("WARN: cannot open results dir for FSEvents: \(resultsDir)")
+            return
+        }
+        resultsFD = fd
+        let src = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .extend, .rename, .attrib],
+            queue: DispatchQueue.main
+        )
+        src.setEventHandler { [weak self] in self?.reconcileResults() }
+        src.setCancelHandler { [weak self] in
+            if let fd = self?.resultsFD, fd >= 0 { close(fd) }
+            self?.resultsFD = -1
+        }
+        src.resume()
+        resultsSource = src
+    }
+
+    // ── SQLite poll ───────────────────────────────────────────────────────
+    private func pollDatabase() {
+        guard FileManager.default.fileExists(atPath: dbPath) else {
+            log("ERROR: Voice Memos DB not found at \(dbPath)")
+            return
+        }
+        // Open read-only. We deliberately do NOT use SQLITE_OPEN_URI here
+        // because the database path contains a literal space ("Group
+        // Containers/") which the URI parser would treat as a separator —
+        // silently opening an empty DB and returning zero rows.
+        var dbHandle: OpaquePointer?
+        let rc = sqlite3_open_v2(dbPath, &dbHandle, SQLITE_OPEN_READONLY, nil)
+        guard rc == SQLITE_OK, let db = dbHandle else {
+            let msg = dbHandle.flatMap { String(cString: sqlite3_errmsg($0)) } ?? "rc=\(rc)"
+            log("ERROR: cannot open Voice Memos DB: \(msg)")
+            if let d = dbHandle { sqlite3_close(d) }
+            return
+        }
+        defer { sqlite3_close(db) }
+
+        // One-shot diagnostic on first poll: count rows in ZCLOUDRECORDING
+        // total + non-null label, so we can see whether the table is even
+        // visible from this SQLite handle.
+        if !loggedDiagOnce {
+            var diagStmt: OpaquePointer?
+            if sqlite3_prepare_v2(db,
+                "SELECT COUNT(*), SUM(CASE WHEN ZCUSTOMLABEL IS NOT NULL THEN 1 ELSE 0 END) FROM ZCLOUDRECORDING",
+                -1, &diagStmt, nil) == SQLITE_OK {
+                if sqlite3_step(diagStmt) == SQLITE_ROW {
+                    let total = sqlite3_column_int(diagStmt, 0)
+                    let labeled = sqlite3_column_int(diagStmt, 1)
+                    log("diag: ZCLOUDRECORDING rows total=\(total) labeled=\(labeled)")
+                }
+            } else {
+                log("diag: prepare of ZCLOUDRECORDING count failed: \(String(cString: sqlite3_errmsg(db)))")
+            }
+            sqlite3_finalize(diagStmt)
+            // Show 3 recent labels so we can confirm the data is what we expect.
+            var labelStmt: OpaquePointer?
+            if sqlite3_prepare_v2(db,
+                "SELECT ZCUSTOMLABEL FROM ZCLOUDRECORDING WHERE ZCUSTOMLABEL IS NOT NULL ORDER BY ZDATE DESC LIMIT 3",
+                -1, &labelStmt, nil) == SQLITE_OK {
+                var i = 0
+                while sqlite3_step(labelStmt) == SQLITE_ROW {
+                    let lbl = sqlite3_column_text(labelStmt, 0).flatMap { String(cString: $0) } ?? "<null>"
+                    log("diag: recent label[\(i)]=\(lbl)")
+                    i += 1
+                }
+            }
+            sqlite3_finalize(labelStmt)
+            loggedDiagOnce = true
+        }
+
+        // The user-visible renamed title lives in ZENCRYPTEDTITLE (plaintext
+        // despite the name) and ZCUSTOMLABELFORSORTING — NOT in ZCUSTOMLABEL,
+        // which Voice Memos uses internally for an ISO timestamp. Empirically
+        // verified 2026-05-25 with a memo titled "Ruoho-Gasik-Kortela talk 1
+        // #process": ZCUSTOMLABEL = "2026-05-25T06:03:19Z" but ZENCRYPTEDTITLE
+        // = "Ruoho-Gasik-Kortela talk 1 #process". Searching ZCUSTOMLABEL
+        // returned zero rows for ~30 minutes of confusion.
+        let needle = triggerTag.lowercased()
+            .replacingOccurrences(of: "'", with: "''")  // belt + braces
+        let titleExpr = "COALESCE(ZENCRYPTEDTITLE, ZCUSTOMLABELFORSORTING, ZCUSTOMLABEL, '')"
+        let sql = """
+        SELECT Z_PK, ZUNIQUEID, ZPATH, \(titleExpr), ZDATE, ZDURATION
+          FROM ZCLOUDRECORDING
+         WHERE lower(\(titleExpr)) LIKE '%\(needle)%'
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            log("ERROR: prepare failed: \(String(cString: sqlite3_errmsg(db)))")
+            return
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        var newCount = 0
+        var seenCount = 0
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            seenCount += 1
+            let uniqueid = stmt.flatMap { sqlite3_column_text($0, 1) }.flatMap { String(cString: $0) } ?? ""
+            guard !uniqueid.isEmpty else { continue }
+            if submissions[uniqueid] != nil { continue }   // already submitted
+            let zpath = stmt.flatMap { sqlite3_column_text($0, 2) }.flatMap { String(cString: $0) } ?? ""
+            let label = stmt.flatMap { sqlite3_column_text($0, 3) }.flatMap { String(cString: $0) } ?? ""
+            let duration = stmt.flatMap { sqlite3_column_double($0, 5) } ?? 0
+            if submit(uniqueid: uniqueid, zpath: zpath, label: label, durationSeconds: duration) {
+                newCount += 1
+            }
+        }
+        if newCount > 0 {
+            saveState()
+            log("poll: matched=\(seenCount) submitted=\(newCount) (new)")
+        } else if seenCount > 0 {
+            // Visibility: rows match the tag but none new. Log once per
+            // process start to confirm the SQL is actually finding them.
+            if !loggedPollOnce {
+                log("poll: matched=\(seenCount) submitted=0 (all already known)")
+                loggedPollOnce = true
+            }
+        } else if !loggedPollOnce {
+            log("poll: matched=0 (nothing tagged \(triggerTag) yet)")
+            loggedPollOnce = true
+        }
+    }
+    private var loggedPollOnce = false
+    private var loggedDiagOnce = false
+
+    // ── submit (copy m4a + write .url sidecar) ────────────────────────────
+    private func submit(uniqueid: String, zpath: String, label: String, durationSeconds: Double) -> Bool {
+        let dbDir = (dbPath as NSString).deletingLastPathComponent
+        let audioSrc = "\(dbDir)/\(zpath)"
+        guard FileManager.default.fileExists(atPath: audioSrc) else {
+            log("WARN: audio missing on disk for uniqueid=\(uniqueid) zpath=\(zpath)")
+            return false
+        }
+
+        let jobID = makeJobID(from: uniqueid)
+        let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let titleNoTrigger = trimmedLabel.replacingOccurrences(
+            of: triggerTag, with: "", options: .caseInsensitive
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = titleNoTrigger.isEmpty
+            ? (zpath as NSString).deletingPathExtension
+            : titleNoTrigger
+        let slug = slugify(title)
+
+        try? FileManager.default.createDirectory(atPath: inboxDir, withIntermediateDirectories: true)
+
+        let audioDst = "\(inboxDir)/\(jobID)__\(slug).m4a"
+        let urlDst   = "\(inboxDir)/\(jobID)__\(slug).url"
+        let partial  = "\(audioDst).partial"
+
+        // Atomic-ish copy so whisp-worker never sees a half-copied file.
+        do {
+            if FileManager.default.fileExists(atPath: partial) {
+                try FileManager.default.removeItem(atPath: partial)
+            }
+            try FileManager.default.copyItem(atPath: audioSrc, toPath: partial)
+            try FileManager.default.moveItem(atPath: partial, toPath: audioDst)
+        } catch {
+            log("ERROR: copy failed for uniqueid=\(uniqueid): \(error.localizedDescription)")
+            try? FileManager.default.removeItem(atPath: partial)
+            return false
+        }
+
+        let submittedAt = isoNow()
+        let tags = extractHashtags(label)
+        let urlContent = """
+        kind: local_audio
+        path: \(audioDst)
+        title: \(title)
+        source_id: \(jobID)
+        voice_memo_uniqueid: \(uniqueid)
+        voice_memo_label: \(label)
+        voice_memo_tags: \(tags.joined(separator: " "))
+        voice_memo_duration_seconds: \(String(format: "%.1f", durationSeconds))
+        submitted: \(submittedAt)
+        submitted_from: \(hostname)
+        submitted_via: AppleToolbox/VoiceMemoPipeline
+        """
+        do {
+            try urlContent.write(toFile: urlDst, atomically: true, encoding: .utf8)
+        } catch {
+            log("ERROR: writing .url sidecar failed: \(error.localizedDescription)")
+            try? FileManager.default.removeItem(atPath: audioDst)
+            return false
+        }
+
+        submissions[uniqueid] = Submission(
+            jobID:          jobID,
+            title:          title,
+            label:          label,
+            audioInboxPath: audioDst,
+            urlInboxPath:   urlDst,
+            submittedAt:    submittedAt,
+            tags:           tags,
+            notifiedDoneAt: nil,
+            resultDir:      nil
+        )
+        log("SUBMITTED \(jobID) title=\(title) tags=\(tags)")
+        // "Sent" notification — lightweight, no actions; reassures the user.
+        deliver(
+            id: "vm-sent-\(jobID)",
+            title: "🎙 Sent to whisp",
+            subtitle: title,
+            body: "Mac Mini will transcribe and notify when ready.",
+            categoryID: nil,
+            userInfo: [:]
+        )
+        return true
+    }
+
+    // ── reconcile: find transcripts for in-flight submissions ─────────────
+    private func reconcileResults() {
+        guard FileManager.default.fileExists(atPath: resultsDir) else { return }
+        var changed = false
+        for (uniqueid, sub) in submissions {
+            if sub.notifiedDoneAt != nil { continue }
+            guard let dir = findResultDir(forTitle: sub.title) else { continue }
+            let transcript = friendlyTranscriptPath(in: dir)
+            guard FileManager.default.fileExists(atPath: transcript) else { continue }
+
+            var updated = sub
+            updated.resultDir      = dir
+            updated.notifiedDoneAt = isoNow()
+            submissions[uniqueid]  = updated
+            changed = true
+
+            deliver(
+                id: "vm-done-\(sub.jobID)",
+                title: "✓ Voice memo transcribed",
+                subtitle: sub.title,
+                body: (dir as NSString).lastPathComponent,
+                categoryID: "VOICEMEMO_TRANSCRIBED",
+                userInfo: ["transcript_path": transcript, "job_id": sub.jobID]
+            )
+            log("DONE \(sub.jobID) title=\(sub.title) dir=\(dir)")
+        }
+        if changed { saveState() }
+    }
+
+    private func findResultDir(forTitle title: String) -> String? {
+        let slug = slugify(title)
+        guard !slug.isEmpty else { return nil }
+        guard let kids = try? FileManager.default.contentsOfDirectory(atPath: resultsDir) else { return nil }
+        // Whisp-worker names the output folder "<YYYY-MM-DD>_<slug>" (date
+        // PREFIX, slug suffix) via its mirror_results_to_comms helper. It can
+        // also append "_<video_id>" on slug collision. So match any of:
+        //   <slug>
+        //   <slug>_<video_id>           (legacy collision suffix)
+        //   <date>_<slug>               (mirror output — the common case)
+        //   <date>_<slug>_<video_id>    (rare: date prefix + collision suffix)
+        // Acceptance: a file named either "transcript.txt" (legacy) or
+        // "<date>_<slug>.txt" (new naming after worker patch) must exist.
+        for name in kids {
+            let matches = (name == slug)
+                || name.hasPrefix(slug + "_")
+                || name.hasSuffix("_" + slug)
+                || name.range(of: "_" + slug + "_") != nil
+            guard matches else { continue }
+            let candidate = "\(resultsDir)/\(name)"
+            // Prefer the renamed file if present, fall back to transcript.txt.
+            let renamed = "\(candidate)/\(name).txt"
+            if FileManager.default.fileExists(atPath: renamed) { return candidate }
+            if FileManager.default.fileExists(atPath: "\(candidate)/transcript.txt") { return candidate }
+        }
+        return nil
+    }
+
+    /// Filename of the human-friendly transcript inside the result dir.
+    /// Worker may write either "<dir_name>.txt" (new) or "transcript.txt" (legacy).
+    private func friendlyTranscriptPath(in resultDir: String) -> String {
+        let name = (resultDir as NSString).lastPathComponent
+        let renamed = "\(resultDir)/\(name).txt"
+        if FileManager.default.fileExists(atPath: renamed) { return renamed }
+        return "\(resultDir)/transcript.txt"
+    }
+
+    private func recomputeCounts() {
+        var inFlight = 0
+        var done = 0
+        for (_, sub) in submissions {
+            if sub.notifiedDoneAt == nil { inFlight += 1 } else { done += 1 }
+        }
+        inFlightCount = inFlight
+        doneCount = done
+    }
+
+    // ── deliver: UNUserNotificationCenter wrapper ─────────────────────────
+    private func deliver(id: String, title: String, subtitle: String, body: String,
+                         categoryID: String?, userInfo: [String: Any]) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        if !subtitle.isEmpty { content.subtitle = subtitle }
+        content.body = body
+        if let cid = categoryID { content.categoryIdentifier = cid }
+        content.userInfo = userInfo
+        content.sound = .default
+        let req = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { err in
+            if let err = err {
+                self.log("notification add error: \(err.localizedDescription)")
+            }
+        }
+    }
+
+    // ── state persistence ─────────────────────────────────────────────────
+    private func loadState() {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: stateFile)) else { return }
+        if let decoded = try? JSONDecoder().decode([String: Submission].self, from: data) {
+            self.submissions = decoded
+        }
+    }
+    private func saveState() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(submissions) else { return }
+        try? FileManager.default.createDirectory(atPath: (stateFile as NSString).deletingLastPathComponent,
+                                                 withIntermediateDirectories: true)
+        let tmp = stateFile + ".tmp"
+        do {
+            try data.write(to: URL(fileURLWithPath: tmp), options: .atomic)
+            try? FileManager.default.removeItem(atPath: stateFile)
+            try FileManager.default.moveItem(atPath: tmp, toPath: stateFile)
+        } catch {
+            log("ERROR: saveState failed: \(error.localizedDescription)")
+        }
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────
+    private func ensureDirs() {
+        let fm = FileManager.default
+        try? fm.createDirectory(atPath: (stateFile as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        try? fm.createDirectory(atPath: (logFile as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        try? fm.createDirectory(atPath: inboxDir, withIntermediateDirectories: true)
+    }
+
+    private func makeJobID(from uniqueid: String) -> String {
+        // Stable 16-char hex from sha1("voicememo:" + uniqueid) using CC_SHA1
+        // would need CommonCrypto; a simpler stable identifier is sufficient
+        // here — the input ZUNIQUEID is already globally unique.
+        let cleaned = uniqueid
+            .replacingOccurrences(of: "-", with: "")
+            .lowercased()
+        let trimmed = String(cleaned.prefix(16))
+        return "vm_" + trimmed
+    }
+
+    private func slugify(_ s: String) -> String {
+        let lowered = s.lowercased()
+        var out = ""
+        var prevDash = false
+        for ch in lowered {
+            if (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") {
+                out.append(ch); prevDash = false
+            } else if !prevDash {
+                out.append("-"); prevDash = true
+            }
+        }
+        while out.hasPrefix("-") { out.removeFirst() }
+        while out.hasSuffix("-") { out.removeLast() }
+        if out.count > 60 { out = String(out.prefix(60)) }
+        return out.isEmpty ? "voicememo" : out
+    }
+
+    private func extractHashtags(_ s: String) -> [String] {
+        var tags: [String] = []
+        var current = ""
+        var inTag = false
+        for ch in s {
+            if ch == "#" {
+                if !current.isEmpty { tags.append(current); current = "" }
+                inTag = true
+                current = "#"
+            } else if inTag {
+                if ch.isLetter || ch.isNumber || ch == "_" || ch == "-" {
+                    current.append(ch)
+                } else {
+                    if current.count > 1 { tags.append(current) }
+                    current = ""
+                    inTag = false
+                }
+            }
+        }
+        if inTag, current.count > 1 { tags.append(current) }
+        return tags
+    }
+
+    private func isoNow() -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.string(from: Date())
+    }
+
+    private func log(_ msg: String) {
+        let line = "[\(isoNow())] [voicememo] \(msg)\n"
+        if let data = line.data(using: .utf8) {
+            if let fh = FileHandle(forWritingAtPath: logFile) {
+                fh.seekToEndOfFile()
+                fh.write(data)
+                try? fh.close()
+            } else {
+                FileManager.default.createFile(atPath: logFile, contents: data)
+            }
+        }
+        fputs(line, stderr)
+    }
+}
+
+// ─── Cloudcity notification inbox ──────────────────────────────────────────
+//
+// Generic "any peer can notify me" channel via Syncthing. Watches
+// ~/work/comms/queue/notify-inbox/ for *.json drops. Each JSON is rendered as
+// a native macOS notification on this Mac. Processed files move to
+// notify-processed/ so they don't re-fire.
+//
+// JSON schema (all fields except `title` optional):
+//   {
+//     "id":          "any-unique-string",        // optional; filename used if missing
+//     "title":       "Hello",                    // required
+//     "subtitle":    "from CloudcityMacMini",    // optional
+//     "body":        "Test message",             // optional
+//     "sender":      "CloudcityMacMini",         // optional, for logging
+//     "open_path":   "/path/to/file.txt",        // optional — click opens this
+//     "reveal_path": "/path/to/file.txt",        // optional — "Reveal" action
+//     "sound":       "default"                   // optional — "default" or omit for silent
+//   }
+//
+// Any peer with Syncthing access to ~/work/comms/queue/ can drop a JSON file
+// and trigger a banner on this laptop. The `cloudcity-notify` helper CLI
+// (~/work/mediabank/bin/cloudcity-notify) wraps the JSON-drop in a one-liner.
+
+final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
+
+    private let inboxDir: String
+    private let processedDir: String
+    private let failedDir: String
+    private let logFile: String
+
+    private var dirSource: DispatchSourceFileSystemObject?
+    private var dirFD: Int32 = -1
+    private var coalesceTimer: Timer?
+
+    override init() {
+        let home = NSHomeDirectory()
+        self.inboxDir     = "\(home)/work/comms/queue/notify-inbox"
+        self.processedDir = "\(home)/work/comms/queue/notify-processed"
+        self.failedDir    = "\(home)/work/comms/queue/notify-failed"
+        self.logFile      = "\(home)/work/mediabank/var/log/notify-inbox.log"
+        super.init()
+        ensureDirs()
+    }
+
+    func start() {
+        log("NotifyInboxWatcher starting (inbox=\(inboxDir))")
+        // Register a generic category so notifications with open_path can offer
+        // an "Open" action. Reveal-in-Finder is a second action.
+        let openAction = UNNotificationAction(
+            identifier: "CLOUDCITY_OPEN",
+            title: "Open",
+            options: [.foreground]
+        )
+        let revealAction = UNNotificationAction(
+            identifier: "CLOUDCITY_REVEAL",
+            title: "Reveal in Finder",
+            options: []
+        )
+        let category = UNNotificationCategory(
+            identifier: "CLOUDCITY_NOTIFY",
+            actions: [openAction, revealAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        // Merge with existing categories (VoiceMemoPipeline registered one too).
+        UNUserNotificationCenter.current().getNotificationCategories { existing in
+            var merged = existing
+            merged.insert(category)
+            UNUserNotificationCenter.current().setNotificationCategories(merged)
+        }
+        startDirWatcher()
+        // Initial scan in case Syncthing delivered files while we were down.
+        DispatchQueue.main.async { [weak self] in self?.drain() }
+    }
+
+    // UNUserNotificationCenterDelegate handlers — note VoiceMemoPipeline is
+    // also a delegate, but UNUserNotificationCenter only holds ONE delegate.
+    // To avoid stealing, the AppDelegate owns a router that dispatches by
+    // category. See setupRoutedDelegate() in AppDelegate startup. Methods
+    // here are still required for direct testing.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        if #available(macOS 11.0, *) {
+            completionHandler([.banner, .sound])
+        } else {
+            completionHandler([.alert, .sound])
+        }
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        handle(response: response)
+        completionHandler()
+    }
+
+    func handle(response: UNNotificationResponse) {
+        let info = response.notification.request.content.userInfo
+        switch response.actionIdentifier {
+        case "CLOUDCITY_REVEAL":
+            if let p = info["reveal_path"] as? String ?? info["open_path"] as? String {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: p)])
+            }
+        case "CLOUDCITY_OPEN", UNNotificationDefaultActionIdentifier:
+            if let p = info["open_path"] as? String {
+                NSWorkspace.shared.open(URL(fileURLWithPath: p))
+            }
+        default:
+            break
+        }
+    }
+
+    private func startDirWatcher() {
+        let fd = open(inboxDir, O_EVTONLY)
+        guard fd >= 0 else {
+            log("WARN: cannot open inbox for FSEvents: \(inboxDir)")
+            return
+        }
+        dirFD = fd
+        let src = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .extend, .rename, .attrib],
+            queue: DispatchQueue.main
+        )
+        src.setEventHandler { [weak self] in self?.scheduleDrain() }
+        src.setCancelHandler { [weak self] in
+            if let fd = self?.dirFD, fd >= 0 { close(fd) }
+            self?.dirFD = -1
+        }
+        src.resume()
+        dirSource = src
+        // Backstop poll every 60 s — catches anything FSEvents missed and
+        // covers the cold-start race after AppleToolbox relaunches.
+        let t = Timer(timeInterval: 60.0, repeats: true) { [weak self] _ in self?.drain() }
+        RunLoop.main.add(t, forMode: .common)
+        coalesceTimer = t
+    }
+
+    // Coalesce a flurry of writes into a single drain ~250 ms later.
+    private var pendingDrain: DispatchWorkItem?
+    private func scheduleDrain() {
+        pendingDrain?.cancel()
+        let item = DispatchWorkItem { [weak self] in self?.drain() }
+        pendingDrain = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: item)
+    }
+
+    private func drain() {
+        guard let files = try? FileManager.default.contentsOfDirectory(atPath: inboxDir) else { return }
+        let jsonFiles = files.filter { $0.hasSuffix(".json") && !$0.hasPrefix(".") }
+        for name in jsonFiles.sorted() {
+            let path = "\(inboxDir)/\(name)"
+            // Skip partial / .syncthing-tmp files.
+            if name.contains(".syncthing.") || name.contains(".tmp") { continue }
+            process(file: path, originalName: name)
+        }
+    }
+
+    private func process(file path: String, originalName: String) {
+        let url = URL(fileURLWithPath: path)
+        guard let data = try? Data(contentsOf: url) else { return }
+        guard let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            log("ERROR: not valid JSON: \(originalName)")
+            move(path, toDir: failedDir)
+            return
+        }
+        guard let title = raw["title"] as? String, !title.isEmpty else {
+            log("ERROR: missing 'title': \(originalName)")
+            move(path, toDir: failedDir)
+            return
+        }
+        let subtitle = (raw["subtitle"] as? String) ?? ""
+        let body     = (raw["body"]     as? String) ?? ""
+        let sender   = (raw["sender"]   as? String) ?? "unknown"
+        let id       = (raw["id"]       as? String) ?? (originalName as NSString).deletingPathExtension
+        let openPath   = raw["open_path"]   as? String
+        let revealPath = raw["reveal_path"] as? String
+        let soundName  = raw["sound"] as? String
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        if !subtitle.isEmpty { content.subtitle = subtitle }
+        if !body.isEmpty     { content.body = body }
+        content.categoryIdentifier = "CLOUDCITY_NOTIFY"
+        var userInfo: [String: Any] = ["sender": sender, "source_file": originalName]
+        if let p = openPath   { userInfo["open_path"]   = p }
+        if let p = revealPath { userInfo["reveal_path"] = p }
+        content.userInfo = userInfo
+        if soundName == nil || soundName == "default" {
+            content.sound = .default
+        }
+
+        let req = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { err in
+            if let err = err {
+                self.log("ERROR delivering \(originalName): \(err.localizedDescription)")
+                self.move(path, toDir: self.failedDir)
+            } else {
+                self.log("DELIVERED \(originalName) from \(sender): \(title)")
+                self.move(path, toDir: self.processedDir)
+            }
+        }
+    }
+
+    private func move(_ path: String, toDir: String) {
+        try? FileManager.default.createDirectory(atPath: toDir, withIntermediateDirectories: true)
+        let name = (path as NSString).lastPathComponent
+        let stamped = "\(Int(Date().timeIntervalSince1970))-\(name)"
+        let dst = "\(toDir)/\(stamped)"
+        do { try FileManager.default.moveItem(atPath: path, toPath: dst) }
+        catch { log("ERROR moving \(name): \(error.localizedDescription)") }
+    }
+
+    private func ensureDirs() {
+        let fm = FileManager.default
+        try? fm.createDirectory(atPath: inboxDir,     withIntermediateDirectories: true)
+        try? fm.createDirectory(atPath: processedDir, withIntermediateDirectories: true)
+        try? fm.createDirectory(atPath: failedDir,    withIntermediateDirectories: true)
+        try? fm.createDirectory(atPath: (logFile as NSString).deletingLastPathComponent,
+                                withIntermediateDirectories: true)
+    }
+
+    private func log(_ msg: String) {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        let line = "[\(f.string(from: Date()))] [notify] \(msg)\n"
+        if let data = line.data(using: .utf8) {
+            if let fh = FileHandle(forWritingAtPath: logFile) {
+                fh.seekToEndOfFile()
+                fh.write(data)
+                try? fh.close()
+            } else {
+                FileManager.default.createFile(atPath: logFile, contents: data)
+            }
+        }
+        fputs(line, stderr)
+    }
+}
+
+// Notification-center router. UNUserNotificationCenter holds exactly one
+// delegate; AppDelegate is that delegate and dispatches based on the
+// notification's categoryIdentifier.
+final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
+    weak var voicememo: VoiceMemoPipeline?
+    weak var notifyInbox: NotifyInboxWatcher?
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        if #available(macOS 11.0, *) {
+            completionHandler([.banner, .sound])
+        } else {
+            completionHandler([.alert, .sound])
+        }
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let cat = response.notification.request.content.categoryIdentifier
+        if cat == "VOICEMEMO_TRANSCRIBED" {
+            voicememo?.userNotificationCenter(center, didReceive: response) { completionHandler() }
+        } else if cat == "CLOUDCITY_NOTIFY" {
+            notifyInbox?.handle(response: response)
+            completionHandler()
+        } else if cat == "TAG_DISPATCHED" {
+            let info = response.notification.request.content.userInfo
+            if let dir = info["queue_dir"] as? String {
+                NSWorkspace.shared.open(URL(fileURLWithPath: dir))
+            }
+            completionHandler()
+        } else {
+            completionHandler()
+        }
+    }
+}
+
+// ─── tag-watcher runner ────────────────────────────────────────────────────
+//
+// Runs ~/work/apple/bin/tag-watcher every 60 s as a child process. AppleToolbox
+// is the single LaunchAgent surface — there is no separate com.esa.tag-watcher
+// plist any more. Benefits:
+//   - inherits AppleToolbox's FDA token (mdfind on protected dirs Just Works)
+//   - one process to look at when something's stuck
+//   - dispatch events surface as NATIVE clickable notifications, not silent
+//     log lines that you discover the next day
+//
+// The watcher's stdout has a stable "dispatched: N" terminator line per trigger.
+// We parse it (plus the "OK <path> → <submit>" log lines tag-watcher emits) to
+// build a one-banner-per-batch notification listing exactly what got sent
+// where. Click the banner → opens ~/work/comms/queue/ so you can watch the
+// pipeline pick them up.
+
+final class TagWatcherRunner: NSObject {
+
+    private let interval: TimeInterval = 60
+    private var timer: Timer?
+    private let bin: String
+    private let logFile: String
+
+    override init() {
+        let home = NSHomeDirectory()
+        self.bin = "\(home)/work/apple/bin/tag-watcher"
+        self.logFile = "\(home)/work/mediabank/var/log/tag-watcher-runner.log"
+        super.init()
+        ensureLogDir()
+    }
+
+    func start() {
+        log("TagWatcherRunner starting (bin=\(bin), interval=\(Int(interval))s)")
+        guard FileManager.default.isExecutableFile(atPath: bin) else {
+            log("WARN: tag-watcher not executable: \(bin) — skipping")
+            return
+        }
+        // Initial tick on the runloop, then every interval.
+        DispatchQueue.main.async { [weak self] in self?.tick() }
+        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in self?.tick() }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    private func tick() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in self?.runOnce() }
+    }
+
+    private func runOnce() {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: bin)
+        let stdout = Pipe()
+        let stderr = Pipe()
+        proc.standardOutput = stdout
+        proc.standardError = stderr
+        do {
+            try proc.run()
+        } catch {
+            log("ERROR: failed to launch \(bin): \(error.localizedDescription)")
+            return
+        }
+        proc.waitUntilExit()
+        let outData = stdout.fileHandleForReading.readDataToEndOfFile()
+        let outStr = String(data: outData, encoding: .utf8) ?? ""
+        let totalDispatched = parseDispatched(from: outStr)
+        if totalDispatched > 0 {
+            let perTrigger = parsePerTrigger(from: outStr)
+            log("tick: dispatched=\(totalDispatched) breakdown=\(perTrigger)")
+            DispatchQueue.main.async { [weak self] in
+                self?.fireDispatchBanner(total: totalDispatched, perTrigger: perTrigger, fullOutput: outStr)
+            }
+        }
+    }
+
+    private func parseDispatched(from text: String) -> Int {
+        var total = 0
+        for line in text.split(separator: "\n") {
+            if let r = line.range(of: "dispatched: "),
+               let n = Int(line[r.upperBound...].trimmingCharacters(in: .whitespaces)) {
+                total += n
+            }
+        }
+        return total
+    }
+
+    /// Per-trigger summary: "process" → 5, "needs-ocr" → 1, etc.
+    private func parsePerTrigger(from text: String) -> [(String, Int)] {
+        // tag-watcher prints "<trigger>: N file(s) to dispatch" before the items,
+        // then "dispatched: N" after. We pair them up by order.
+        var triggers: [String] = []
+        var dispatched: [Int] = []
+        for raw in text.split(separator: "\n") {
+            let line = String(raw)
+            if let r = line.range(of: ": "), line.hasSuffix("file(s) to dispatch")
+                || line.contains("file(s) to dispatch") {
+                let trig = String(line[..<r.lowerBound])
+                triggers.append(trig.trimmingCharacters(in: .whitespaces))
+            } else if line.hasPrefix("dispatched: "),
+                      let n = Int(line.dropFirst("dispatched: ".count).trimmingCharacters(in: .whitespaces)) {
+                dispatched.append(n)
+            }
+        }
+        var out: [(String, Int)] = []
+        for (i, t) in triggers.enumerated() {
+            let n = i < dispatched.count ? dispatched[i] : 0
+            if n > 0 { out.append((t, n)) }
+        }
+        return out
+    }
+
+    private func fireDispatchBanner(total: Int, perTrigger: [(String, Int)], fullOutput: String) {
+        // Build a human title + body.
+        let title: String
+        let subtitle: String
+        if perTrigger.count == 1 {
+            let (trig, n) = perTrigger[0]
+            let noun = (trig == "needs-ocr") ? "OCR job" : (trig == "process" ? "file" : trig)
+            title = "📋 \(n) \(noun)\(n == 1 ? "" : "s") dispatched"
+            subtitle = "tag: \(trig)"
+        } else {
+            title = "📋 \(total) files dispatched"
+            subtitle = perTrigger.map { "\($0.0)×\($0.1)" }.joined(separator: " · ")
+        }
+        // Extract the bullet lines tag-watcher emitted ("  ✓ /path/...").
+        var bullets: [String] = []
+        for raw in fullOutput.split(separator: "\n") {
+            let s = String(raw)
+            if s.hasPrefix("  ✓ ") {
+                let p = String(s.dropFirst(4))
+                bullets.append((p as NSString).lastPathComponent)
+            }
+        }
+        let body = bullets.isEmpty ? "Check ~/work/comms/queue/ for progress."
+                                   : bullets.prefix(5).joined(separator: " · ")
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.subtitle = subtitle
+        content.body = body
+        content.categoryIdentifier = "TAG_DISPATCHED"
+        content.userInfo = ["queue_dir": "\(NSHomeDirectory())/work/comms/queue"]
+        content.sound = .default
+        let id = "tag-dispatch-\(Int(Date().timeIntervalSince1970))"
+        let req = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { err in
+            if let err = err {
+                self.log("ERROR delivering dispatch banner: \(err.localizedDescription)")
+            }
+        }
+    }
+
+    private func ensureLogDir() {
+        let dir = (logFile as NSString).deletingLastPathComponent
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+    }
+    private func log(_ msg: String) {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        let line = "[\(f.string(from: Date()))] [tagwatcher] \(msg)\n"
+        if let data = line.data(using: .utf8) {
+            if let fh = FileHandle(forWritingAtPath: logFile) {
+                fh.seekToEndOfFile()
+                fh.write(data)
+                try? fh.close()
+            } else {
+                FileManager.default.createFile(atPath: logFile, contents: data)
+            }
+        }
+        fputs(line, stderr)
+    }
+}
+
+// ─── mail-flag-worker runner ───────────────────────────────────────────────
+//
+// Counterpart to TagWatcherRunner for the Mail flag → routing pipeline.
+// Every 120s: runs `mail-flag-worker --poll` (scan Mail for newly-flagged
+// messages, queue jobs) then `mail-flag-worker` (process jobs: extract .eml,
+// attachments, body→md, route per contract, move to Processed/<Color>).
+//
+// Status JSON at ~/work/comms/queue/mail-flag-worker.status.json is read by
+// the menu to show "Mail flags: pending/processing" row.
+
+final class MailFlagWatcherRunner: NSObject {
+
+    private let interval: TimeInterval = 30
+    private var timer: Timer?
+    private let bin: String
+    private let logFile: String
+
+    override init() {
+        let home = NSHomeDirectory()
+        self.bin = "\(home)/work/apple/bin/mail-flag-worker"
+        self.logFile = "\(home)/work/comms/queue/mail-flag-runner.log"
+        super.init()
+        let dir = (logFile as NSString).deletingLastPathComponent
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+    }
+
+    func start() {
+        log("MailFlagWatcherRunner starting (bin=\(bin), interval=\(Int(interval))s)")
+        guard FileManager.default.isExecutableFile(atPath: bin) else {
+            log("WARN: mail-flag-worker not executable: \(bin) — skipping")
+            return
+        }
+        DispatchQueue.main.async { [weak self] in self?.tick() }
+        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in self?.tick() }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    private func tick() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in self?.runOnce() }
+    }
+
+    private func runOnce() {
+        // First: poll Mail for newly-flagged messages
+        runSubcommand(args: ["--poll"])
+        // Then: process the inbox (dispatch attachments, extract bodies, etc.)
+        let out = runSubcommand(args: [])
+        let n = parseProcessed(from: out)
+        if n > 0 {
+            log("tick: processed=\(n)")
+            DispatchQueue.main.async { [weak self] in
+                self?.fireBanner(processed: n, fullOutput: out)
+            }
+        }
+    }
+
+    @discardableResult
+    private func runSubcommand(args: [String]) -> String {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: bin)
+        proc.arguments = args
+        let stdout = Pipe()
+        let stderr = Pipe()
+        proc.standardOutput = stdout
+        proc.standardError = stderr
+        do {
+            try proc.run()
+        } catch {
+            log("ERROR: failed to launch \(bin) \(args): \(error.localizedDescription)")
+            return ""
+        }
+        proc.waitUntilExit()
+        let data = stdout.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+
+    private func parseProcessed(from text: String) -> Int {
+        for line in text.split(separator: "\n") {
+            if line.hasPrefix("processed: "),
+               let slash = line.firstIndex(of: "/"),
+               let n = Int(line[line.index(line.startIndex, offsetBy: "processed: ".count)..<slash]) {
+                return n
+            }
+        }
+        return 0
+    }
+
+    private func fireBanner(processed: Int, fullOutput: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "📧 \(processed) mail flag\(processed == 1 ? "" : "s") routed"
+        content.subtitle = "mail-flag-worker"
+        content.body = "Check ~/work/comms/queue/mailflag-done/ for the job logs."
+        content.categoryIdentifier = "MAILFLAG_DISPATCHED"
+        content.userInfo = ["queue_dir": "\(NSHomeDirectory())/work/comms/queue"]
+        content.sound = .default
+        let id = "mailflag-\(Int(Date().timeIntervalSince1970))"
+        let req = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { err in
+            if let err = err {
+                self.log("ERROR delivering banner: \(err.localizedDescription)")
+            }
+        }
+    }
+
+    private func log(_ msg: String) {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        let line = "[\(f.string(from: Date()))] [mailflag] \(msg)\n"
+        if let data = line.data(using: .utf8) {
+            if let fh = FileHandle(forWritingAtPath: logFile) {
+                fh.seekToEndOfFile()
+                fh.write(data)
+                try? fh.close()
+            } else {
+                FileManager.default.createFile(atPath: logFile, contents: data)
+            }
+        }
+        fputs(line, stderr)
+    }
+}
+
+/// Read the worker's status JSON. Returns nil if missing/unreadable.
+struct MailFlagStatus {
+    let pending: Int
+    let processing: Int
+    let done: Int
+    let failed: Int
+    let enabledFlags: [String]
+
+    static func read() -> MailFlagStatus? {
+        let path = "\(NSHomeDirectory())/work/comms/queue/mail-flag-worker.status.json"
+        guard let data = FileManager.default.contents(atPath: path),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        let p  = (obj["pending"]    as? Int) ?? 0
+        let pr = (obj["processing"] as? Int) ?? 0
+        let d  = (obj["done"]       as? Int) ?? 0
+        let fa = (obj["failed"]     as? Int) ?? 0
+        let ef = (obj["enabled_flags"] as? [String]) ?? []
+        return MailFlagStatus(pending: p, processing: pr, done: d, failed: fa, enabledFlags: ef)
+    }
+}
+
 // ─── menu plumbing ─────────────────────────────────────────────────────────
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -792,12 +2052,76 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // bash has no TCC grants of its own. See
         // wiki/concepts/stickies-claude-trigger.md.
         startStickiesClaudeTimer()
+
+        // Voice memo → whisp pipeline. Uses AppleToolbox's FDA to read
+        // CloudRecordings.db; submits #process-tagged memos to whisp-inbox/
+        // and fires clickable notifications when transcripts arrive in
+        // whisp-results/.
+        let vmp = VoiceMemoPipeline()
+        voiceMemoPipeline = vmp
+
+        // Cloudcity notification inbox — peers drop JSON, we render banners.
+        let nib = NotifyInboxWatcher()
+        notifyInboxWatcher = nib
+
+        // Single UN delegate dispatches by category.
+        let router = NotificationRouter()
+        router.voicememo   = vmp
+        router.notifyInbox = nib
+        notificationRouter = router
+        UNUserNotificationCenter.current().delegate = router
+
+        // Start the pipelines after the delegate is wired so click actions
+        // route correctly from the very first notification.
+        vmp.start()
+        nib.start()
+
+        // Tag-watcher: poll-and-dispatch every 60 s in the same process. Was
+        // a separate LaunchAgent; consolidated here so dispatch fires a
+        // proper native banner.
+        let twr = TagWatcherRunner()
+        tagWatcherRunner = twr
+        twr.start()
+
+        // Mail-flag-worker: DISABLED 2026-05-26 after the original polling
+        // design was found to clobber Mail.app — stacked osascript processes
+        // scanning every mailbox of every account, no overlap protection, made
+        // Mail.app unresponsive and likely crash. Redesign in progress: scope
+        // to INBOX only, lockfile so only one poll at a time, longer interval,
+        // skip if previous tick still running. Disabled until that's shipped.
+        // let mfw = MailFlagWatcherRunner()
+        // mailFlagWatcherRunner = mfw
+        // mfw.start()
     }
 
     var stickiesClaudeTimer: Timer?
 
     var stickiesDirSource: DispatchSourceFileSystemObject?
     var stickiesDirFD: Int32 = -1
+
+    // Voice memo → whisp pipeline (poll CloudRecordings.db for #process,
+    // submit to whisp-inbox, fire clickable notifications when transcripts
+    // land). Lives here so it inherits AppleToolbox's FDA grant.
+    var voiceMemoPipeline: VoiceMemoPipeline?
+
+    // Cloudcity notification inbox — any peer with Syncthing access to
+    // ~/work/comms/queue/notify-inbox/ can drop a JSON file and get a
+    // native macOS notification on this Mac.
+    var notifyInboxWatcher: NotifyInboxWatcher?
+
+    // Router that dispatches UN delegate callbacks by category (only one
+    // delegate allowed by UNUserNotificationCenter).
+    var notificationRouter: NotificationRouter?
+
+    // tag-watcher runner — was a separate LaunchAgent (com.esa.tag-watcher),
+    // now lives here so AppleToolbox is the single monitoring/dispatch
+    // surface and tagged-file dispatch produces native banners.
+    var tagWatcherRunner: TagWatcherRunner?
+
+    // mail-flag-worker runner — polls Mail every 120s for flagged messages
+    // and routes their .eml + attachments + body-md per the contracts in
+    // ~/work/apple/bin/mail-flag-config.json. Lives here for FDA grant.
+    var mailFlagWatcherRunner: MailFlagWatcherRunner?
 
     func startStickiesClaudeTimer() {
         let watcher = "\(HOME)/work/apple/bin/stickies-claude-watcher"
@@ -1074,7 +2398,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let live = Process()
             live.launchPath = "/bin/bash"
             live.arguments = ["-c", "/usr/bin/pgrep -f 'AppleToolbox.*--live' >/dev/null 2>&1 || nohup \"$0\" --live >/dev/null 2>&1 &",
-                              "/Applications/Apple-Workflows/AppleToolbox.app/Contents/MacOS/AppleToolbox"]
+                              "/Applications/AppleToolbox/AppleToolbox.app/Contents/MacOS/AppleToolbox"]
             try? live.run()
             return
         }
@@ -1779,6 +3103,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         addIf("🎵 Music",   nowPlayingRead(),
               open: "/usr/bin/open", args: ["-a", "Music"])
         addIf("🎙 Whisp",   whispQueueRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
+        addIf("📧 Mail flags", mailFlagStatusRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/mailflag-done"])
+        addIf("🗣 Voice Memos", voiceMemoQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
         addIf("📚 Vault",   vaultStatusRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/cc/vault/_index/transcripts-by-date.md"])
@@ -3789,6 +5117,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             "/usr/bin/open", ["-a", "Music"], symbol: "music.note")
         add("Whisp",   whispQueueRead(),
             "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "mic.fill")
+        if let vm = voiceMemoQueueRead() {
+            add("Voice Memos", vm,
+                "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "waveform")
+        }
         if let v = vaultStatusRead() {
             add("Vault", v,
                 "/usr/bin/open", ["\(HOME)/work/cc/vault/_index/transcripts-by-date.md"], symbol: "books.vertical.fill")

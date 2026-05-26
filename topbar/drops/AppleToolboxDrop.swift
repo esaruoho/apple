@@ -16,7 +16,7 @@
 import Cocoa
 
 class DropDelegate: NSObject, NSApplicationDelegate {
-    let targetApp = "/Applications/Apple-Workflows/AppleToolbox.app"
+    let targetApp = "/Applications/AppleToolbox/AppleToolbox.app"
     var handledFiles = false
 
     func application(_ sender: NSApplication, open urls: [URL]) {

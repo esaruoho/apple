@@ -51,7 +51,7 @@ else
     # menu-bar instance is already running, `open -a App --args …` re-activates
     # that existing process and silently drops the args — the new --live never
     # spawns. Direct exec forces a separate process with our flags honored.
-    APP="/Applications/Apple-Workflows/AppleToolbox.app"
+    APP="/Applications/AppleToolbox/AppleToolbox.app"
     DEV="$(cd "$(dirname "$0")/.." && pwd)/topbar/AppleToolbox.app"
     if [ -x "$APP/Contents/MacOS/AppleToolbox" ]; then
         BIN="$APP/Contents/MacOS/AppleToolbox"

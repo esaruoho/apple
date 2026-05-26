@@ -34,6 +34,7 @@ Knowledge layer for the Apple skill — entity pages, concept atlases, lessons, 
 - [quicktime-pro-cliff.md](concepts/quicktime-pro-cliff.md) — QT 7 Pro vs QT Player X
 - [vocal-shortcuts-trigger.md](concepts/vocal-shortcuts-trigger.md) — Vocal Shortcuts as trigger surface
 - [clipboard-rich-text.md](concepts/clipboard-rich-text.md) — Apple-native rich-text clipboard recipe
+- [finder-toolbar-locked.md](concepts/finder-toolbar-locked.md) — Finder's Customize Toolbar palette only lists Apple's 19 built-in items; **the .app-bundle tag-button generator** (`bin/build-tag-apps --discover`) is the Apple-way bootstrap: walks every tagged file, picks each tag's most-common color, builds a colored `Tag <Name>.app` per tag
 - [pattern-reusability.md](concepts/pattern-reusability.md) — the core design principle
 - [sal-cross-decade-lineages.md](concepts/sal-cross-decade-lineages.md) — 8 patterns from WWDC 2003–2015
 - [steve-jobs-rbi.md](concepts/steve-jobs-rbi.md) — Steve Jobs as RBI practitioner
