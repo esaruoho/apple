@@ -1,4 +1,4 @@
-# CLI Tools Index — 122 tools in bin/
+# CLI Tools Index — 121 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -47,7 +47,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `dock` — (no description) — `bin/dock`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
-`gen-docs.py` — (no description) — `bin/gen-docs.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
 `hey-sal` — (no description) — `bin/hey-sal`

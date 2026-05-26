@@ -1,119 +1,79 @@
 ---
 layout: default
-title: "Finder Tag Pipeline — Tag a File, Mac Mini Processes It"
+title: Finder tag pipeline
 ---
 
-# Finder Tag Pipeline — Tag a File, Mac Mini Processes It
-
-
+# Finder tag pipeline
 
 [← Back to home](./)
-Built 2026-05-21 in conversation `09-46-57-i-have-an-apple-question-for-you-what-do-you-know-about-tags-claude-code.md`.
 
-## The principle
+> **A Finder tag is a routing signal.** You tag a file with `needs-ocr` and the file goes through Syncthing to the Mac Mini's OCR worker, the worker writes status back, and a local watcher reads it and updates the file's tags in real time. **You tag it. Nothing else.**
 
-A Finder tag is a routing signal. Tag a file with `needs-ocr` and the file goes through Syncthing to CloudcityMacMini's PDFWorkshop OCR worker, the worker writes status back into `~/work/comms/queue/worker-status/`, Syncthing carries that status home, and a local LaunchAgent reads it and updates the file's tags in real time. **You tag it. Nothing else.**
-
-This generalises: the same dispatch shape (tag → Syncthing inbox → Mac Mini worker → `.job` status sidecars → tag mutation) is wired for `needs-transcription` (audio/video → Whisp). New triggers go into `TRIGGERS` dict in `bin/tag-watcher`.
+This page walks the first and best-developed instance of the [trigger → worker chassis](./chassis).
 
 ## What lives where
 
 | Path | What it is |
 |---|---|
-| `bin/tag` | xattr CRUD on `_kMDItemUserTags`. Subcommands: list, add, set, remove, clear, find, find-all/any, link, rename, colors. |
-| `bin/tag-smart` | Writes `.savedSearch` plists to `~/Library/Saved Searches/` (or `/tmp` with `--tmp`). |
-| `bin/tag-finder-selection` | osascript-driven Finder-selection wrapper around bin/tag. Modes: prompt / list / clear / trinity / `--tag <spec>`. |
-| `bin/tag-trinity` | Stamp a shared `trinity-<slug>` link-tag across N files (binds conversation md ↔ app ↔ skill). |
-| `bin/tag-send-to-ocr` | Tag Finder selection `needs-ocr:red` + fire watcher immediately. |
-| `bin/tag-watcher` | Dispatcher. mdfind for each TRIGGER, filter, copy to queue inbox, stamp queued tag. |
-| `bin/tag-result-handler` | Closes the loop. Reads heartbeat + worker-status/. Stamps processing/complete/failed. Replaces image-only PDF with OCR'd version when result returns. |
-| `bin/tag-retry-failed` | Re-submits download_failed Mac Mini jobs; distinguishes `ocr-engine-failed` (real engine choke → manual triage). |
-| `bin/com.esa.tag-watcher.plist` | LaunchAgent — fires watcher + result-handler every 60 sec. |
-| `bin/build-send-to-ocr-shortcut.py` | Builds the Finder Quick Action so right-click → Quick Actions → Send to OCR works. |
-| `commands/tag.md` | `/tag` slash dispatcher (forwards to bin/tag or bin/tag-smart). |
+| [`bin/tag`](https://github.com/esaruoho/apple/blob/main/bin/tag) | xattr CRUD on `_kMDItemUserTags`. Subcommands: list, add, set, remove, clear, find, find-all/any, link, rename, colors. |
+| [`bin/tag-smart`](https://github.com/esaruoho/apple/blob/main/bin/tag-smart) | Writes `.savedSearch` plists to `~/Library/Saved Searches/`. |
+| [`bin/tag-finder-selection`](https://github.com/esaruoho/apple/blob/main/bin/tag-finder-selection) | osascript wrapper around `bin/tag` that operates on the current Finder selection. |
+| [`bin/tag-trinity`](https://github.com/esaruoho/apple/blob/main/bin/tag-trinity) | Stamp a shared `trinity-<slug>` link-tag across N files (binds conversation md ↔ app ↔ skill). |
+| [`bin/tag-send-to-ocr`](https://github.com/esaruoho/apple/blob/main/bin/tag-send-to-ocr) | Tag Finder selection `needs-ocr:red` and fire watcher immediately. |
+| [`bin/tag-watcher`](https://github.com/esaruoho/apple/blob/main/bin/tag-watcher) | Dispatcher. `mdfind` per TRIGGER, filter, copy to queue inbox, stamp queued tag. |
+| [`bin/tag-result-handler`](https://github.com/esaruoho/apple/blob/main/bin/tag-result-handler) | Closes the loop. Reads heartbeat + `worker-status/`. Stamps processing/complete/failed. Replaces image-only PDF with OCR'd version when result returns. |
+| [`bin/tag-retry-failed`](https://github.com/esaruoho/apple/blob/main/bin/tag-retry-failed) | Re-submits `download_failed` Mac Mini jobs; distinguishes `ocr-engine-failed` (real engine choke → manual triage). |
+| [`bin/build-tag-app`](https://github.com/esaruoho/apple/blob/main/bin/build-tag-app) + [`build-tag-apps`](https://github.com/esaruoho/apple/blob/main/bin/build-tag-apps) | Generates one colored `Tag <Name>.app` per tag for Finder toolbar pinning. See [the Apple-way bootstrap](https://github.com/esaruoho/apple/blob/main/wiki/concepts/finder-toolbar-locked.md). |
+| `~/Library/LaunchAgents/com.esa.tag-watcher.plist` | LaunchAgent — fires watcher + result-handler every 60s. |
 
 ## The four-tag OCR state machine
 
 | Tags carried | Meaning | Stamped by |
 |---|---|---|
-| `needs-ocr:red` | Tagged, not yet dispatched | User (Cmd-I / right-click / 🧰 menu / `/tag add`) |
-| `needs-ocr` + `ocr-queued:yellow` | In our local inbox, awaiting Mac Mini, OR Mac Mini has the `.job` in `worker-status/pending/` | `tag-watcher` (on dispatch) AND `tag-result-handler` (when worker-status/pending/ shows a job for it) |
-| `needs-ocr` + `ocr-processing:blue` | Mac Mini actively OCRing this file right now | `tag-result-handler` (heartbeat current_job match OR worker-status/processing/) |
-| `ocr-complete:green` | OCR'd version replaced the original; `.txt` sidecar dropped next to it | `tag-result-handler` (when `<basename>_ocr.pdf` appears in `ocr-results/`) |
-| `ocr-failed:orange` | Mac Mini gave up (download_failed) — retryable | `tag-result-handler` (worker-status/failed/ or done/ with error:) |
+| `needs-ocr:red` | Tagged, not yet dispatched | User (Cmd-I / right-click / 🧰 menu / `/tag add` / toolbar button) |
+| `needs-ocr` + `ocr-queued:yellow` | In local inbox, awaiting Mac Mini | `tag-watcher` on dispatch |
+| `needs-ocr` + `ocr-processing:blue` | Mac Mini actively OCRing this file | `tag-result-handler` (heartbeat current_job match) |
+| `ocr-complete:green` | OCR'd version replaced the original; `.txt` sidecar dropped next to it | `tag-result-handler` when `<basename>_ocr.pdf` appears in `ocr-results/` |
+| `ocr-failed:orange` | Mac Mini gave up (download_failed) — retryable | `tag-result-handler` (worker-status/failed/) |
 | `ocr-engine-failed:red` | GLM-OCR choked on content — same engine = same fail | `tag-retry-failed` (replaces ocr-failed for non-retryable engine errors) |
 
 Watcher's `find_pending` correctly excludes anything carrying `ocr-queued` / `ocr-processing` / `ocr-complete`, so the same file never re-dispatches.
 
 ## The talkback channel
 
-Mac Mini's PDFWorkshop worker writes per-job YAML-ish text files into `~/work/comms/queue/worker-status/{pending,priority,processing,done,failed}/`. Filename pattern: `<jobnum>_<basename>.job`. Syncthing carries those `.job` files back to this Mac.
+The Mac Mini doesn't touch tags. It can't — the archive isn't Syncthing-shared with it. Only the queue folders are. So the Mini writes per-job YAML-ish text files into `~/work/comms/queue/worker-status/{pending,priority,processing,done,failed}/`. Syncthing carries those `.job` files back to this Mac. `tag-result-handler.worker_status_sync()` reads them every 60s and reflects the state onto archive originals (resolved via `tag-watcher-map.json` first, then fallback `rglob` of `~/work/merlib-dump/*.pdf`).
 
-`tag-result-handler.worker_status_sync()` reads them every 60 sec and reflects the state onto archive originals (resolved via `tag-watcher-map.json` first, then fallback `rglob` of `~/work/merlib-dump/*.pdf`).
-
-Mac Mini doesn't touch tags. It can't — the archive isn't Syncthing-shared with it. Only the queue folders are. Local-side tagging based on Mac Mini's signals is functionally equivalent.
+**Local-side tagging based on Mac Mini's signals is functionally equivalent to the Mac Mini doing it. No SSH. No port-forward. No remote tag mutation.**
 
 ## The Smart-Folder layer
 
 Every status / subject / state has a `.savedSearch` under `~/Library/Saved Searches/`. The directory is itself a Smart Folder ("All Smart Folders.savedSearch", scope = that directory, filter = `kMDItemFSName == "*.savedSearch"`) so the discovery layer is bootstrapped.
 
-Current Smart Folders (2026-05-21):
+Live folders (as of 2026-05-26):
 
-- **Pipeline state**: PDFs needing OCR · PDFs needing analysis · OCR failed (needs triage) · OCR engine failed (different OCR needed)
-- **Subject corpora**: Bearden corpus · Tesla corpus · Schauberger corpus · Russell corpus · Moray corpus · Dollard corpus · Bedini corpus · Hilarion corpus
-- **Conversation trinity**: Trinity — tagging-tool-2026-05-21 (binds the conversation md ↔ bin/tag* scripts ↔ MEMORY.md)
+- **Pipeline state**: PDFs needing OCR · PDFs needing analysis · OCR failed (needs triage) · OCR engine failed
+- **Subject corpora**: Bearden · Tesla · Schauberger · Russell · Moray · Dollard · Bedini · Hilarion
+- **Conversation trinity**: Trinity — `tagging-tool-2026-05-21` (binds conversation md ↔ `bin/tag*` scripts ↔ MEMORY.md)
 - **Meta**: All Smart Folders
 
-`bin/tag-smart "<Title>" <tag>[,<tag>] [--scope <dir>] [--any]` creates them. `--tmp` writes to /tmp + opens for throwaway browsing.
+`bin/tag-smart "<Title>" <tag>[,<tag>] [--scope <dir>] [--any]` creates them. `--tmp` writes to `/tmp` and opens for throwaway browsing.
 
-AppleToolbox menu-bar (`🧰 → 🏷 Tags → 🗂 Smart Folders ▸`) enumerates the directory at menu-open time — newly-created Smart Folders show up automatically without rebuilding the app.
+## Generalising the pattern
 
-## The recursion-guard footnote
+The same dispatch shape (tag → Syncthing inbox → Mac Mini worker → `.job` status sidecars → tag mutation) is wired for `needs-transcription` (audio/video → Whisp). New triggers go into the `TRIGGERS` dict in [`bin/tag-watcher`](https://github.com/esaruoho/apple/blob/main/bin/tag-watcher). Adding a fifth subject corpus or a sixth state takes one Smart Folder + a colour assignment.
 
-`bbs-ocr-submit.sh` uses `cp -p`, which preserves xattrs. That means the inbox copy inherits the `needs-ocr` tag from the original — and Spotlight indexes it as a needs-ocr-tagged file. Without a guard, the watcher would keep dispatching the inbox copy into itself, producing `20260521-152544-20260521-152439-20260521-150112-<file>.pdf` triply-prefixed names.
+## The Finder-toolbar layer
 
-`tag-watcher.find_pending` now refuses any path under `~/work/comms/queue/` (`is_under_queue()`). Same applies to anything else under that Syncthing-shared tree — never dispatch from inside the transport.
+`/tag-app` walks every Spotlight-tagged file under `~`, picks each tag's most-common color from xattrs, and generates one `Tag <Name>.app` per tag in `/Applications/AppleToolbox/Apple-Tag-Apps/`. ⌘-drag any of them onto a Finder window's toolbar for true one-click tagging of the current selection.
 
-## Discoverability for future Claude sessions
+**Why .app and not a Shortcut:** Finder's Customize Toolbar palette only lists 19 built-in items — no Shortcuts, no Quick Actions, no Services. The .app route is the only Apple-blessed one-click toolbar button. Full gotcha + bootstrap: [`wiki/concepts/finder-toolbar-locked.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/finder-toolbar-locked.md).
 
-When the user says any of:
+## Read more
 
-- "tag this file" / "OCR this" / "send to Mac Mini"
-- "how do tags work here"
-- "what's the OCR pipeline"
-- "send for OCR"
-- "needs-ocr" / "ocr-failed" / "ocr-complete"
-- "Smart Folder" / "saved search"
-- "talkback" / "tag sync" / "Mac Mini status"
+- Source-of-truth: [`wiki/concepts/finder-tag-pipeline.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/finder-tag-pipeline.md)
+- Finder-toolbar gotcha + bootstrap: [`wiki/concepts/finder-toolbar-locked.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/finder-toolbar-locked.md)
+- The chassis pattern: [chassis page](./chassis)
 
-→ this page is the entry point. Don't reinvent.
+---
 
-## Operational commands
-
-```bash
-# Status: shows Mac Mini's queue depths + local tag counts
-~/work/apple/bin/tag-watcher --status
-
-# Fire dispatch now (LaunchAgent does this every 60s anyway)
-~/work/apple/bin/tag-watcher
-
-# Reconcile results, sync worker-status
-~/work/apple/bin/tag-result-handler
-
-# Reset a stuck file (strip queued/processing/complete so it's re-eligible)
-~/work/apple/bin/tag-watcher --reset /path/to/file.pdf
-
-# Retry Mac Mini failures (download_failed only by default)
-~/work/apple/bin/tag-retry-failed --kick
-~/work/apple/bin/tag-retry-failed --force   # also retry ocr_failed
-~/work/apple/bin/tag-retry-failed --dry-run
-
-# Build a Smart Folder for any tag
-~/work/apple/bin/tag-smart "<Title>" <tag>[,<tag>] [--scope <dir>] [--any]
-```
-
-## Why three places stamp the same tag
-
-`ocr-queued:yellow` is stamped by both `tag-watcher` (when we dispatch) AND `tag-result-handler.worker_status_sync()` (when Mac Mini's pending/ shows a `.job` for it). That's intentional: the watcher catches files we just dispatched; the worker-status sync catches files from yesterday's submissions that pre-date our map.json. Together they cover the whole archive, not just files this session touched.
-
-`ocr-complete:green` strips `needs-ocr`, `ocr-queued`, AND `ocr-processing` before stamping. Three-state transition, one place.
+[← Back to home](./) | [Triggers ←](./triggers) | [Tiers ←](./tiers) | [Sal corpus ←](./sal-corpus) | [Chassis ←](./chassis) | [ASObjC ←](./asobjc)
