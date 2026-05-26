@@ -1920,15 +1920,26 @@ final class MailFlagWatcherRunner: NSObject {
         let callback: FSEventStreamCallback = { _, contextInfo, numEvents, eventPathsRaw, _, _ in
             guard let info = contextInfo else { return }
             let runner = Unmanaged<MailFlagWatcherRunner>.fromOpaque(info).takeUnretainedValue()
-            // eventPathsRaw is CFArrayRef of CFString (when flag NoDefer + FileEvents).
-            // Decode safely:
-            let paths = Unmanaged<CFArray>.fromOpaque(eventPathsRaw).takeUnretainedValue() as! [String]
-            for p in paths {
+            // With kFSEventStreamCreateFlagUseCFTypes set, eventPaths is a
+            // CFArrayRef of CFStringRef. Decode safely:
+            let cfArray = Unmanaged<CFArray>.fromOpaque(eventPathsRaw).takeUnretainedValue()
+            let count = CFArrayGetCount(cfArray)
+            var anyMatched = false
+            for i in 0..<count {
+                let cfStr = unsafeBitCast(CFArrayGetValueAtIndex(cfArray, i), to: CFString.self)
+                let p = cfStr as String
                 let name = (p as NSString).lastPathComponent
                 if name.hasPrefix("Envelope Index") {
-                    runner.scheduleDebouncedTick(reason: "fsevent:\(name)")
-                    return
+                    runner.logFromCallback("fsevent fired: \(name)")
+                    anyMatched = true
                 }
+            }
+            if anyMatched {
+                runner.scheduleDebouncedTick(reason: "fsevent")
+            } else if count > 0 {
+                // helpful debug — what's happening in MailData/ if not Envelope Index?
+                let first = unsafeBitCast(CFArrayGetValueAtIndex(cfArray, 0), to: CFString.self) as String
+                runner.logFromCallback("fsevent (ignored): first=\((first as NSString).lastPathComponent) total=\(count)")
             }
         }
 
@@ -1941,7 +1952,8 @@ final class MailFlagWatcherRunner: NSObject {
             1.0,  // latency seconds — Mail typically flushes WAL within 1s
             FSEventStreamCreateFlags(
                 kFSEventStreamCreateFlagFileEvents |
-                kFSEventStreamCreateFlagNoDefer
+                kFSEventStreamCreateFlagNoDefer |
+                kFSEventStreamCreateFlagUseCFTypes
             )
         ) else {
             log("ERROR: FSEventStreamCreate failed")
@@ -1976,8 +1988,11 @@ final class MailFlagWatcherRunner: NSObject {
 
         let out = runSubcommand(args: ["--tick"])
         let n = parseProcessed(from: out)
+        // Always log tick completion (even when no work was done) — helps
+        // verify FSEvents → debounce → tick wiring is firing as expected.
+        let summary = oneLineSummary(from: out)
+        log("tick (\(reason)): \(summary)")
         if n > 0 {
-            log("tick (\(reason)): processed=\(n)")
             DispatchQueue.main.async { [weak self] in
                 self?.fireBanner(processed: n, fullOutput: out)
             }
@@ -2009,6 +2024,22 @@ final class MailFlagWatcherRunner: NSObject {
         proc.waitUntilExit()
         let data = stdout.fileHandleForReading.readDataToEndOfFile()
         return String(data: data, encoding: .utf8) ?? ""
+    }
+
+    /// Pull a one-line summary from the worker's output. Looks for the
+    /// "done: ok=… failed=… skipped=…" line, or "no new flagged messages",
+    /// or "another worker is running". Returns the first match or "(empty)".
+    private func oneLineSummary(from text: String) -> String {
+        for line in text.split(separator: "\n") {
+            let s = String(line).trimmingCharacters(in: .whitespaces)
+            if s.hasPrefix("done: ")
+                || s.hasPrefix("no new flagged")
+                || s.hasPrefix("another worker")
+                || s.hasPrefix("no contracts") {
+                return s
+            }
+        }
+        return text.isEmpty ? "(empty)" : String(text.prefix(80))
     }
 
     private func parseProcessed(from text: String) -> Int {
@@ -2051,6 +2082,16 @@ final class MailFlagWatcherRunner: NSObject {
     }
 
     private func log(_ msg: String) {
+        writeLogLine(msg)
+    }
+
+    /// Internal-facing entry point for the FSEvents C-callback bridge.
+    /// (Swift doesn't let the C callback close over private methods cleanly.)
+    fileprivate func logFromCallback(_ msg: String) {
+        writeLogLine(msg)
+    }
+
+    private func writeLogLine(_ msg: String) {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         let line = "[\(f.string(from: Date()))] [mailflag] \(msg)\n"

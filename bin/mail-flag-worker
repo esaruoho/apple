@@ -983,13 +983,11 @@ def cmd_tick(dry_run: bool = False, backfill: bool = False) -> None:
         rows = fetch_flagged(con, enabled)
         con.close()
 
-        if backfill:
-            # backfill: ignore skipped_temp (we'll retry those too)
-            new = [r for r in rows if r["ROWID"] not in processed_set]
-        else:
-            new = [r for r in rows
-                   if r["ROWID"] not in processed_set
-                   and r["ROWID"] not in skipped_set]
+        # Always retry skipped_temp ROWIDs — they're partial .emlx files that
+        # Mail hasn't fully downloaded yet. Each retry is cheap (just a disk
+        # read to check the .emlx isn't .partial anymore). No Mail.app load
+        # until we have a full message to actually route.
+        new = [r for r in rows if r["ROWID"] not in processed_set]
 
         if not new:
             print(f"no new flagged messages (total enabled-color flagged in Mail: {len(rows)}, "
