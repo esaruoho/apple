@@ -77,6 +77,27 @@ TRIGGERS = {
         "result_dir": str(HOME / "work" / "whisp-transcripts"),
         "extensions": [".mp3", ".m4a", ".wav", ".flac", ".mp4", ".m4v", ".mov", ".aiff"],
     },
+    # 'process' — the universal tag. Routes by file extension:
+    #   .pdf                                → OCR worker
+    #   .mp3/.m4a/.wav/.mp4/.mov/.mkv/etc.  → Whisp transcription worker
+    # The dispatch is done by bin/process-router (NOT directly by a single
+    # submit script), so adding a new file class only touches the router.
+    #
+    # Companion paths that funnel into the same router:
+    #   - AppleToolbox VoiceMemoPipeline reads #process in Voice Memos titles
+    #   - bin/process CLI is the terminal entry point (`process file.mp3`)
+    #   - any other peer that calls process-router with a file path
+    "process": {
+        "submit": str(HOME / "work" / "apple" / "bin" / "process-router"),
+        "queued_tag": "process-queued:yellow",
+        "complete_tag": "process-complete:green",
+        "result_dir": str(HOME / "work" / "comms" / "queue"),
+        "extensions": [
+            ".pdf",
+            ".mp3", ".m4a", ".wav", ".flac", ".aiff", ".aac", ".opus", ".ogg",
+            ".mp4", ".m4v", ".mov", ".mkv", ".avi", ".wmv", ".webm",
+        ],
+    },
 }
 
 
