@@ -602,6 +602,96 @@ Sal would have shipped this as an Automator action ("New mailbox from folder of 
 
 ---
 
+## Auto-regen: repo changes, wiki reorganizes (2026-05-26)
+
+The auto-generated indexes (`wiki/INDEX.md`, `bin/INDEX.md`, `scripts/workflows/INDEX.md`, `dictionaries/INDEX.md`, `wiki/compiled/EXPORTERS.md`) rebuild themselves on every `git commit` via a tracked pre-commit hook at [`hooks/pre-commit`](hooks/pre-commit). **True zero-roundtrip** — no Claude tokens, no LLM, no API call. Pure Python stdlib + git + bash 3.2, deterministic, re-run-safe.
+
+```bash
+# One-time setup per clone (symlinks hooks/pre-commit → .git/hooks/pre-commit):
+bin/install-git-hooks
+```
+
+What the hook does on every commit:
+
+1. Runs `bin/wiki-index.py` → regenerates `wiki/INDEX.md` from current wiki/ pages
+2. Runs `bin/gen-skill-indexes.py` → regenerates `bin/INDEX.md`, `scripts/workflows/INDEX.md`, `dictionaries/INDEX.md`, `wiki/compiled/EXPORTERS.md`
+3. `git add`s any updated indexes so they go into the same commit (atomic — the commit contains both the source change AND the index update)
+4. Runs `bin/wiki-lint.py` for warnings (does **not** block commit) — orphan pages, oversized pages, broken refs surface to stderr
+
+The Sal-shaped principle: "the wiki reorganizes when the repo changes" is a mechanical regeneration, not an LLM judgment call. Tokens spent regenerating something deterministic are tokens wasted. Hook out.
+
+To bypass (rare — mid-rebase, hotfix): `git commit --no-verify`. To wire up additional hooks (post-commit, post-merge, etc.): drop them in `hooks/`, re-run `bin/install-git-hooks`.
+
+### Server-side safety net: GitHub Action
+
+[`.github/workflows/auto-regen.yml`](.github/workflows/auto-regen.yml) runs the same regenerators on every push to `main`. Microsoft's CI executes the Python; the Action commits any updated indexes back to `main` with `[skip ci]`. This catches edits made via the GitHub web UI, commits from fresh clones that skipped `bin/install-git-hooks`, anyone else collaborating. Triggers on changes under `wiki/`, `bin/`, `scripts/workflows/`, `dictionaries/`. **Durability without Claude:** even with no AI involvement ever again, every push triggers the regen and keeps the indexes correct in perpetuity.
+
+### What auto-publishes to esaruoho.github.io/apple
+
+The public website at <https://esaruoho.github.io/apple/> is served by **GitHub Pages from the `main` branch's `/docs` folder** (Jekyll cayman theme, configured in [`docs/_config.yml`](docs/_config.yml)). GitHub's built-in Pages builder rebuilds on every push — no Action needed for that part. The 10 pages in `docs/` are **curated rewrites** of the most important wiki pages (not mechanical mirrors), so they don't auto-regenerate from `wiki/`. Editing `docs/<page>.md` directly is the way to update the site for now. If full wiki→docs mechanical mirroring is wanted later (98 wiki pages → site), that's a separate generator to write.
+
+---
+
+## iMessage text-to-self + iCloud-Drive file delivery (2026-05-26)
+
+Mac → iPhone push from the terminal, in two flavors. Both Apple-native, both honor the [no-UI-hijack rule](.claude/projects/-Users-esaruoho-work-apple/memory/feedback_never_ui_hijack_active_session.md) (no `System Events` keystrokes that would land in whatever app is frontmost — usually iTerm2 mid-typing).
+
+### `imessage` — text to self (or anyone), one liner
+
+```bash
+imessage "yo yo yo hi hi hi"                       # text to self (default)
+imessage --to +358401234567 "build green"          # different recipient
+imessage --to other@apple.id "ping"                # Apple ID
+IMESSAGE_TO=other@apple.id imessage "ping"         # default via env
+```
+
+Default recipient: `esaruoho@gmail.com` (configurable via `--to` or `$IMESSAGE_TO`). Blue iMessage bubble, lossless, instant push to every device signed into the Apple ID.
+
+Source: [`bin/imessage`](bin/imessage). Slash: `/imessage`. Wiki: [`wiki/concepts/imessage-from-terminal.md`](wiki/concepts/imessage-from-terminal.md).
+
+**Pure AppleScript, no UI script.** Uses `tell application "Messages" to send "..." to buddy` — Messages's own AppleScript dictionary handles it. No keystroke goes anywhere.
+
+**File attachments via this CLI are intentionally disabled.** The only AppleScript-driven file-attach path on Sequoia uses System Events keystrokes (Cmd-V + Return) which would land in whatever app is frontmost — your editor mid-typing, your terminal, your browser. That's keyboard hijacking. The CLI errors with a pointer to `icloud-drop` (below) for files.
+
+### `icloud-drop` — files to self via iCloud Drive
+
+```bash
+icloud-drop file.pdf                               # drop into iCloud Drive + banner
+icloud-drop ~/Pictures/shot.png --imessage         # drop + iMessage the URL as text
+icloud-drop *.png                                  # multiple
+icloud-drop --status                               # show recent files
+```
+
+Drops the file into `~/Library/Mobile Documents/com~apple~CloudDocs/inbox-from-mac/` (your iCloud Drive). With `--imessage`, also sends a text iMessage bubble containing a `shareddocuments://` URL — tap it on iPhone, Files app opens the file directly. Text bubbles always deliver reliably; attachment bubbles can show a transient "Not Delivered" red ! that may or may not clear.
+
+Source: [`bin/icloud-drop`](bin/icloud-drop). Composes [`bin/notify-iphone`](bin/notify-iphone) (banner) + [`bin/imessage`](bin/imessage) (URL bubble).
+
+### `notify-iphone` — banner-only push (no file)
+
+```bash
+notify-iphone --title "Build green" --body "ray-browser nightly succeeded"
+notify-iphone --title "OCR done" --url "https://..."
+notify-iphone --status                             # log of banners sent
+```
+
+Thin wrapper around `bin/imessage`. The banner IS an iMessage to your Apple ID — iOS shows it natively (banner, sound, lock-screen, Notification Center) via APNs. No iCloud Drive folder, no iPhone Shortcut, no Personal Automation. Zero iPhone-side setup.
+
+(Earlier 2026-05-26 design dropped JSON into iCloud Drive and relied on an iPhone Shortcuts Personal Automation to parse + show. That design was **structurally impossible** on iOS — confirmed by enumerating every Personal Automation trigger on Esa's iPhone: iOS Shortcuts has no file/folder/iCloud Drive trigger. Mac Shortcuts does. Full painpoint: [`painpoints/SHORTCUTS-001-ios-no-file-folder-trigger.md`](painpoints/SHORTCUTS-001-ios-no-file-folder-trigger.md). Full iOS trigger inventory: [`wiki/concepts/ios-personal-automation-triggers.md`](wiki/concepts/ios-personal-automation-triggers.md). Recognized in-session that `imessage` was already in the toolbox doing the job. See project memory `feedback_imessage_is_the_iphone_banner.md`.)
+
+### Why three tools
+
+The Mac → iPhone surface has three distinct needs and one tool each:
+
+| Need | Tool | Channel |
+|---|---|---|
+| "Send myself text" — quick note, URL, ping | `imessage "..."` | iMessage text bubble (blue, instant) |
+| "Send myself a file" — screenshot, PDF, .shortcut | `icloud-drop file --imessage` | iCloud Drive + iMessage URL bubble |
+| "Fire a banner from a background worker" | `notify-iphone --title X --body Y` | iCloud Drive + iPhone Shortcuts automation |
+
+All three are zero-roundtrip from a terminal slash. All three are Apple-native. None of them touch System Events keystrokes.
+
+---
+
 ## Roadmap to the Full Apple Experience
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.
@@ -1157,6 +1247,7 @@ UX evaluations by **[@esaruoho](https://github.com/esaruoho)** (Esa Juhani Ruoho
 | [ACTIVITY-MONITOR-001](painpoints/ACTIVITY-MONITOR-001-no-scripting-for-process-management.md) | Activity Monitor | Zero scripting for process monitoring and management | Open |
 | [TIME-MACHINE-001](painpoints/TIME-MACHINE-001-no-scripting-for-backups.md) | Time Machine | Zero scripting for the most critical data protection app | Open |
 | [SCREENSHOT-001](painpoints/SCREENSHOT-001-no-scripting-for-screen-capture.md) | Screenshot | CLI is more powerful than the GUI, neither connects to Shortcuts | Open |
+| [SHORTCUTS-001](painpoints/SHORTCUTS-001-ios-no-file-folder-trigger.md) | Shortcuts (iOS) | No "follow a file on iCloud Drive and do something" — Mac has the trigger, iPhone doesn't, file syncs but iPhone can't react | Open |
 
 ---
 

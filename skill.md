@@ -49,6 +49,18 @@ For everything else, treat this file as a routing table: identify the topic, gre
 
 **Tag pipeline + Dock manager (added 2026-05-21):** Two Apple-native control surfaces wired into the skill. When the user says "tag this", "needs-ocr", "send to OCR", "ocr-failed", "Smart Folder", "talkback" → see [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md). When the user says "add to Dock", "pin to Dock", "Dock tile" → see [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md). Sidebar Favorites is dead on Sequoia — [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md) for why.
 
+**Mail flag → routing pipeline (added 2026-05-26):** Fourth instance of the trigger→worker chassis (Finder tag, Voice Memo `#process`, Stickies, now Mail flag). When the user says "mail flag", "flag color", "purple is Free Energy", "tag email to X", "auto-route email", "AppleToolbox mail row" → see [`wiki/concepts/mail-flag-pipeline.md`](wiki/concepts/mail-flag-pipeline.md). Edit `bin/mail-flag-config.json` to add/edit a contract; no rebuild needed. **Critical: Mail Rules cannot trigger on user-flagging (Apple limitation — rule conditions only see incoming-mail attrs), so the polling watcher in AppleToolbox (`MailFlagWatcherRunner`, 30s tick) is the primary path for manual flagging. Manual flag → automation fires within ≤30s. Mail Rules remain useful for "incoming pattern → auto-flag + dispatch" combos.**
+
+**Mac → iPhone push triad (added 2026-05-26):** Three Apple-native, no-UI-hijack CLIs for getting things from terminal to phone. When the user says "send myself", "iMessage me", "imessageme", "push to my phone", "notify iPhone", "send file to phone" → pick by need:
+
+| Need | Tool | Channel |
+|---|---|---|
+| Text to self (or anyone) | `imessage "text"` | iMessage text bubble — pure AppleScript verb, no UI hijack |
+| File to self (screenshot, PDF, .shortcut) | `icloud-drop file --imessage` | iCloud Drive + iMessage URL bubble |
+| Background-worker banner | `notify-iphone --title X --body Y` | iMessage-to-self (wraps `imessage` — banner is the iMessage itself, no Shortcut/Automation needed) |
+
+Source: `bin/imessage`, `bin/icloud-drop`, `bin/notify-iphone`. Wiki: [`wiki/concepts/imessage-from-terminal.md`](wiki/concepts/imessage-from-terminal.md), [`wiki/concepts/iphone-notify-pipeline.md`](wiki/concepts/iphone-notify-pipeline.md). **Hard rule:** `bin/imessage` does NOT accept files — System Events keystrokes would hijack Esa's keyboard. Use `icloud-drop --imessage` for any file delivery. See project memory `feedback_never_ui_hijack_active_session.md`.
+
 ## Repo layout
 
 `/Users/esaruoho/work/apple/`:
@@ -78,3 +90,5 @@ For everything else, treat this file as a routing table: identify the topic, gre
 Each page: one H1, optional `description:` frontmatter, ≤250 lines, cross-link to related pages. After adding or editing, run `/wiki-index` then `/wiki-lint` to refresh the index and catch orphans / oversized pages / broken refs.
 
 When you learn something new and durable, write it to the right subdir, then `/wiki-index`. The catalog is the source of truth for the LLM — keep it fresh.
+
+**Auto-regen on commit (added 2026-05-26):** the indexes (`wiki/INDEX.md`, `bin/INDEX.md`, `scripts/workflows/INDEX.md`, `dictionaries/INDEX.md`, `wiki/compiled/EXPORTERS.md`) rebuild themselves on every `git commit` via `hooks/pre-commit` (installed via `bin/install-git-hooks` after clone). Zero Claude tokens. If you add a wiki page or bin script and forget to run `/wiki-index`, the commit will regen + restage the index automatically — atomic with the source change. Don't fight it; trust the hook.

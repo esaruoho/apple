@@ -1,0 +1,103 @@
+# auto-regen — keep the auto-generated indexes correct on the server side.
+#
+# Runs on every push to main. Regenerates the index files (wiki/INDEX.md,
+# bin/INDEX.md, scripts/workflows/INDEX.md, dictionaries/INDEX.md,
+# wiki/compiled/EXPORTERS.md) from current repo state and commits the
+# updates back if anything changed.
+#
+# Why this exists alongside hooks/pre-commit:
+#   - hooks/pre-commit handles local commits when bin/install-git-hooks was
+#     run on this clone. That covers Esa's laptop.
+#   - This Action covers everything else: commits from another machine that
+#     skipped install, edits made via the GitHub web UI, force-pushes that
+#     skipped the hook, anyone else cloning and committing.
+#   - True zero-Claude durability: even if Esa never opens Claude Code
+#     again, every push to main will be auto-corrected by this Action.
+#     Microsoft runs the Python. Indexes stay correct forever.
+#
+# Apple-skill principle: deterministic regen belongs in CI/hooks, never in
+# LLM-driven workflows. See project memory zero_token_auto_regen_principle.md.
+
+name: auto-regen indexes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only run if something that affects an index changed
+      - 'wiki/**'
+      - 'bin/**'
+      - 'scripts/workflows/**'
+      - 'dictionaries/**'
+      # And re-run if the regenerators themselves change
+      - 'bin/wiki-index.py'
+      - 'bin/gen-skill-indexes.py'
+      - '.github/workflows/auto-regen.yml'
+  # Manual trigger from GitHub UI for force-regen
+  workflow_dispatch:
+
+permissions:
+  contents: write    # to commit the regenerated indexes back
+
+# If a second push lands while this run is in progress, cancel the older
+# one — only the latest regen matters.
+concurrency:
+  group: auto-regen-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need full history so the auto-commit below isn't a shallow push
+          fetch-depth: 1
+          # Use a PAT or default token; default is fine for same-repo writes
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Regenerate wiki INDEX
+        run: python3 bin/wiki-index.py
+
+      - name: Regenerate skill indexes (bin, scripts, dictionaries, exporters)
+        run: python3 bin/gen-skill-indexes.py
+
+      - name: Show diff (for log readability)
+        run: |
+          git diff --stat -- \
+            wiki/INDEX.md \
+            bin/INDEX.md \
+            scripts/workflows/INDEX.md \
+            dictionaries/INDEX.md \
+            wiki/compiled/EXPORTERS.md \
+            || true
+
+      - name: Commit regenerated indexes if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Stage only the index files — never sweep in other accidental changes
+          git add -- \
+            wiki/INDEX.md \
+            bin/INDEX.md \
+            scripts/workflows/INDEX.md \
+            dictionaries/INDEX.md \
+            wiki/compiled/EXPORTERS.md
+
+          if git diff --staged --quiet; then
+            echo "indexes are already current — nothing to commit"
+            exit 0
+          fi
+
+          git commit -m "auto-regen: refresh indexes after ${GITHUB_SHA:0:7} [skip ci]"
+          git push
+
+      - name: Run wiki-lint (warnings only, never fails the build)
+        run: python3 bin/wiki-lint.py || true

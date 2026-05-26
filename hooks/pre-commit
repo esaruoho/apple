@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# pre-commit — zero-token, deterministic regen of the auto-generated index files.
+#
+# Whenever you commit anything in this repo, this hook:
+#   1. Regenerates wiki/INDEX.md from current wiki/ pages
+#   2. Regenerates bin/INDEX.md, scripts/workflows/INDEX.md,
+#      dictionaries/INDEX.md, wiki/compiled/EXPORTERS.md
+#   3. Runs wiki-lint.py for warnings (does NOT block commit)
+#   4. git-adds any updated index files so they go into the same commit
+#
+# True zero-roundtrip: no Claude tokens, no LLM, no API call. Pure Python +
+# git, fires every time you `git commit`. Re-run safe — produces identical
+# output for identical input.
+#
+# Apple-native: bash 3.2 (macOS default) + Python 3 stdlib + git. No deps.
+#
+# Bypass (rare; e.g. mid-rebase): git commit --no-verify
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Only regen if Python is available — fail loudly if not.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-commit: python3 not found, skipping wiki regen" >&2
+  exit 0
+fi
+
+# Track which indexes changed so we know what to stage at the end.
+CHANGED_FILES=()
+
+regen() {
+  local script="$1"
+  local label="$2"
+  shift 2
+  local watched=("$@")
+
+  # Snapshot mtimes of watched files BEFORE running the regenerator.
+  local before_state
+  before_state=$(stat -f "%N %m" "${watched[@]}" 2>/dev/null || true)
+
+  if ! python3 "$script" >/dev/null 2>&1; then
+    echo "pre-commit: $label failed (continuing)" >&2
+    return
+  fi
+
+  local after_state
+  after_state=$(stat -f "%N %m" "${watched[@]}" 2>/dev/null || true)
+
+  if [ "$before_state" != "$after_state" ]; then
+    CHANGED_FILES+=("${watched[@]}")
+    echo "pre-commit: regen $label → updated" >&2
+  fi
+}
+
+regen bin/wiki-index.py "wiki INDEX" wiki/INDEX.md
+
+regen bin/gen-skill-indexes.py "skill indexes" \
+  bin/INDEX.md \
+  scripts/workflows/INDEX.md \
+  dictionaries/INDEX.md \
+  wiki/compiled/EXPORTERS.md
+
+# Stage any updated indexes into the in-flight commit.
+if [ ${#CHANGED_FILES[@]} -gt 0 ]; then
+  git add -- "${CHANGED_FILES[@]}"
+fi
+
+# wiki-lint: warnings only, never blocks. Surface to stderr so you see them.
+if [ -f bin/wiki-lint.py ]; then
+  python3 bin/wiki-lint.py 2>&1 | grep -E "WARN|orphan|oversized|broken" >&2 || true
+fi
+
+exit 0

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# install-git-hooks — symlink every hook from hooks/ into .git/hooks/
+#
+# Run once per repo clone. Safe to re-run; replaces existing symlinks but
+# refuses to overwrite real hook files (so a custom hook you wrote by hand
+# in .git/hooks/ won't be silently clobbered).
+#
+# The hooks themselves live in repo-tracked hooks/, so they propagate via
+# git clone. .git/hooks/ is per-clone untracked, so this installer is what
+# bridges them.
+
+set -e
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SRC_DIR="$REPO_ROOT/hooks"
+DST_DIR="$REPO_ROOT/.git/hooks"
+
+if [ ! -d "$SRC_DIR" ]; then
+  echo "install-git-hooks: $SRC_DIR not found" >&2
+  exit 1
+fi
+
+if [ ! -d "$DST_DIR" ]; then
+  echo "install-git-hooks: $DST_DIR not found (is this a git repo?)" >&2
+  exit 1
+fi
+
+installed=0
+skipped=0
+
+for src in "$SRC_DIR"/*; do
+  [ -f "$src" ] || continue
+  name="$(basename -- "$src")"
+  dst="$DST_DIR/$name"
+
+  if [ -L "$dst" ]; then
+    rm -- "$dst"
+  elif [ -e "$dst" ]; then
+    echo "skip: $dst exists and is not a symlink — leaving it alone" >&2
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  ln -s -- "$src" "$dst"
+  chmod +x "$src"
+  echo "linked $name → hooks/$name"
+  installed=$((installed + 1))
+done
+
+echo
+echo "installed $installed, skipped $skipped"
+echo "auto-regen on every commit is now active"
