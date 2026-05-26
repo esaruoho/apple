@@ -25,7 +25,7 @@ This repo picks up where that role left off.
 
 Apple did not preserve this material institutionally. This repo does: the scripts, the site corpus, the lesson structure, the downloads, the demo media, and the philosophy behind them.
 
-**288 workflow scripts** across 31 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, a HomePod climate sensor bridge, and the full [10-tier automation atlas](wiki/concepts/automation-tiers.md) mapping every layer from AppleScript to IOKit.
+**304 workflow scripts** across 34 apps. A four-stage pipeline that extracts what apps can do, writes scripts, makes them Spotlight-searchable, and creates Siri-speakable Shortcuts — all from a single Python run. Plus 121 auto-generated scripts from YAML dictionaries, **105 CLI tools** in `bin/`, **35 slash commands** under `commands/`, **20 bulk exporters** (Mail, Notes, Safari, Voice Memos, iMessage, etc.), **68 scripting dictionaries** probed, a HomePod climate sensor bridge, the full [11-tier automation atlas](wiki/concepts/automation-tiers.md) mapping every layer from AppleScript through ASObjC to IOKit, and the [AppleToolbox menu-bar app](topbar/) as the unified LaunchAgent surface.
 
 **Finder-tag bootstrap.** Fresh-Mac install? `/tag-app` walks every Spotlight-tagged file under `~`, reads each `_kMDItemUserTags` xattr for its name + color, and generates one colored `Tag <Name>.app` per tag into `/Applications/AppleToolbox/Apple-Tag-Apps/`. ⌘-drag any of them onto a Finder window's toolbar for true one-click tagging of the current selection. The .app route is the only thing Finder's Customize Toolbar palette accepts — see [`wiki/concepts/finder-toolbar-locked.md`](wiki/concepts/finder-toolbar-locked.md).
 
@@ -251,7 +251,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 | Stage | Tool | What it does |
 |-------|------|-------------|
 | 1. Extract | [`bin/sdef-extract.py`](bin/sdef-extract.py) | Parse AppleScript dictionaries (sdef) into structured YAML |
-| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 288 curated workflow recipes → `.applescript` files with teaching comments |
+| 2. Generate | [`bin/workflow-gen.py`](bin/workflow-gen.py) | 304 curated workflow recipes → `.applescript` files with teaching comments |
 | 2b. Auto-gen | [`bin/auto-gen.py`](bin/auto-gen.py) | 121 additional scripts auto-generated from YAML dictionaries |
 | 3. Export | [`bin/spotlight-export.sh`](bin/spotlight-export.sh) | Compile to `.app` bundles in `/Applications/AppleToolbox/Apple-Workflows/` for Spotlight |
 | 4. Shortcut | [`bin/shortcut-gen.py`](bin/shortcut-gen.py) | Generate signed `.shortcut` files for Siri and Shortcuts app |
@@ -259,7 +259,7 @@ Each tool's output feeds the next. Add a recipe, run the chain, and it appears i
 
 ---
 
-## 288 Workflow Scripts
+## 304 Workflow Scripts
 
 Every script in [`scripts/workflows/`](scripts/workflows/) is a real automation — not just an app launcher. Skip a song, empty the trash, toggle dark mode, copy the current Safari URL, create a calendar event, check battery status, open System Settings panes.
 
@@ -287,7 +287,7 @@ osascript scripts/workflows/music/music-playpause.applescript
 osascript scripts/workflows/finder/finder-empty-trash.applescript
 osascript scripts/workflows/system-events/system-events-dark-mode-toggle.applescript
 
-# Generate all 288 scripts from recipes
+# Generate all 304 scripts from recipes
 python3 bin/workflow-gen.py
 
 # Compile to Spotlight-searchable .app bundles
@@ -299,7 +299,7 @@ python3 bin/shortcut-gen.py
 
 ### Auto-Generated Scripts (121 additional)
 
-[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 288 hand-curated scripts.
+[`bin/auto-gen.py`](bin/auto-gen.py) reads the YAML scripting dictionaries and auto-generates workflow scripts for every safe no-arg command and readable property. It skips anything already covered by the 304 hand-curated scripts.
 
 ```bash
 python3 bin/auto-gen.py              # Generate all 121 auto-workflows
@@ -486,7 +486,7 @@ On 2026-05-22, after Esa wrote Sal about file management + tags + "breaking into
 
 ASObjC has shipped since macOS 10.6 (2009). It's the bridge that lets a plain AppleScript file call **any public Cocoa class** — `NSFileManager`, `NSURL`, `NSMetadataQuery`, `NSWorkspace`, `NSPasteboard`, `NSImage`, `NSPropertyListSerialization`, `NSDistributedNotificationCenter`, every Foundation/AppKit/CoreImage class — directly. No Swift, no Xcode, no compile step. Runs in `osascript` like any other AppleScript.
 
-**This repo had no concept page for it.** The wiki diagnosed why: the existing 10-tier atlas was permission-shaped, and ASObjC has no distinct permission (runs as `osascript`), so it had no row in the table. Single-axis taxonomies hide entire tiers. Full postmortem in [`wiki/concepts/asobjc.md`](wiki/concepts/asobjc.md).
+**This repo had no concept page for it.** The wiki diagnosed why: the existing 11-tier atlas was permission-shaped, and ASObjC has no distinct permission (runs as `osascript`), so it had no row in the table. Single-axis taxonomies hide entire tiers. Full postmortem in [`wiki/concepts/asobjc.md`](wiki/concepts/asobjc.md).
 
 ### What got built that day
 
@@ -1056,7 +1056,7 @@ Tools in this repo that follow [Sal Soghoian's automation philosophy](wiki/entit
 | [`ghc`](bin/ghc) | `ghc owner/repo` | Clone a GitHub repo + launch Claude Code + generate a permanent project skill. 7 steps -> 1. |
 | [`ask`](bin/ask) | `ask` | Launch Claude Code + trigger macOS dictation simultaneously. AppleScript + CLI fusion. |
 | [`app-probe`](bin/app-probe.py) | `python3 bin/app-probe.py` | Extract 13 automation layers from 66 apps in 60 seconds. The census Sal never had. |
-| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 288 workflow scripts from curated recipes with teaching comments. |
+| [`workflow-gen`](bin/workflow-gen.py) | `python3 bin/workflow-gen.py` | Generate 304 workflow scripts from curated recipes with teaching comments. |
 | [`spotlight-export`](bin/spotlight-export.sh) | `bin/spotlight-export.sh` | Compile all workflows to Spotlight-searchable `.app` bundles. |
 | [`shortcut-gen`](bin/shortcut-gen.py) | `python3 bin/shortcut-gen.py` | Generate signed Siri Shortcuts from AppleScript workflows. |
 | [`auto-gen`](bin/auto-gen.py) | `python3 bin/auto-gen.py` | Auto-generate 121 scripts from YAML dictionaries. Fill the gaps. |
@@ -1122,11 +1122,11 @@ Seed Capture → The Fork → 5 parallel branches → Rebound Dashboard
 
 | Document | What it covers |
 |----------|---------------|
-| [**Automation Tiers**](wiki/concepts/automation-tiers.md) | Full 10-tier stack: AppleScript → XPC → Accessibility → IOKit. Coverage matrix. |
+| [**Automation Tiers**](wiki/concepts/automation-tiers.md) | Full 11-tier stack: AppleScript → XPC → Accessibility → IOKit. Coverage matrix. |
 | [**XPC Atlas**](wiki/concepts/xpc-atlas.md) | 2,359 XPC services mapped across 18 app categories. The hidden 87%. |
 | [**Data Type Chaining**](wiki/concepts/data-type-chaining.md) | How apps pass data between each other. The Automator patent vision. |
 | [**WWSD Decision Tree**](wiki/concepts/wwsd-decision-tree.md) | "What Would Sal Do?" — choosing the right automation approach. |
-| [**Siri Phrases**](wiki/compiled/siri-phrases.md) | All 288 voice commands for generated shortcuts in a browsable table. |
+| [**Siri Phrases**](wiki/compiled/siri-phrases.md) | All 304 voice commands for generated shortcuts in a browsable table. |
 | [**Compatibility**](wiki/concepts/compatibility.md) | Apple Silicon vs Intel, macOS version requirements. |
 | [**Automator vs Shortcuts**](wiki/concepts/automator-vs-shortcuts.md) | 227 vs 246 actions. The gap analysis. |
 | [**Spotlight Automation**](wiki/concepts/spotlight-automation.md) | 5 paths to make scripts Cmd+Space searchable. TCC fix for Sequoia. |
@@ -1135,7 +1135,7 @@ Seed Capture → The Fork → 5 parallel branches → Rebound Dashboard
 | [**Thought Multiplier**](thought-multiplier/architecture.md) | BBS meets Ray Browser: type once, radiate to 5 destinations, catch every rebound. |
 | [**How It Was Built**](wiki/lessons/how-it-was-built.md) | One conversation, 167 files — the build story. |
 | [**App Probe Pitch**](wiki/lessons/app-probe-sal-pitch.md) | Why app-probe.py is the tool Sal would have killed for in 1997. |
-| [**Video Script**](wiki/lessons/video-script.md) | Demo script for the "288 Workflows, One Pipeline" walkthrough. |
+| [**Video Script**](wiki/lessons/video-script.md) | Demo script for the "304 Workflows, One Pipeline" walkthrough. |
 | [**iCloud URL Shortcuts**](https://esaruoho.medium.com/apples-icloud-services-quick-urls-and-future-improvements-67256b841809) | 12 working `x.icloud.com` direct-access subdomains mapped (2016, updated 2023). |
 
 ---
@@ -1180,7 +1180,7 @@ Claude: runs `defaults write com.apple.finder CreateDesktop -bool true && killal
 → Desktop icons reappear.
 ```
 
-This works because the skill knows the `defaults` commands, `osascript` patterns, and CLI equivalents for dark apps. Every recipe in this repo — the 288 workflow scripts, the bash aliases, the CLI equivalents table — becomes something Claude can execute on demand, in natural language.
+This works because the skill knows the `defaults` commands, `osascript` patterns, and CLI equivalents for dark apps. Every recipe in this repo — the 304 workflow scripts, the bash aliases, the CLI equivalents table — becomes something Claude can execute on demand, in natural language.
 
 **What this unlocks:**
 - No need to remember command syntax — just describe what you want
@@ -1210,7 +1210,7 @@ I've also been cataloguing your websites — [macosxautomation.com](http://macos
 
 - Your 10 automation principles ([WWSD](wiki/entities/sal-soghoian.md#what-would-sal-do--the-10-principles)) guide every script we write
 - Your Automator patent's data-type-chaining concept is realized as a [lookup table](wiki/concepts/data-type-chaining.md) across 31 apps
-- Your iWork scripting dictionaries (which you wrote at Apple) are extracted, structured, and paired with 288 runnable workflow scripts
+- Your iWork scripting dictionaries (which you wrote at Apple) are extracted, structured, and paired with 304 runnable workflow scripts
 - Your "everyone can automate" philosophy drives the pipeline: one command generates scripts, compiles them for Spotlight, and creates Siri Shortcuts — so the barrier to automation keeps dropping
 - Your iWorkAutomation.com examples are being cross-referenced with our machine-readable dictionaries to create the complete picture you always intended: human-readable pedagogy on top of structured data
 

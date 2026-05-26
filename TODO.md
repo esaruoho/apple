@@ -85,6 +85,21 @@ is a focused next deliverable I can pick up unattended.
 
 Highest-leverage first:
 
+- [ ] **Apple Automation Workflow Suite — public wiki at `esaruoho.github.io/apple`.**
+  GitHub Pages site, single landing page that walks the whole stack: 7 trigger surfaces
+  (slash / Spotlight .app / AppleToolbox menu / global hotkey / Vocal Shortcuts /
+  Loupedeck / Stickies+tag-watcher), the 11-tier automation atlas, the trigger→worker
+  chassis (Finder tag / Voice Memo `#process` / Stickies / Mail flag — four instances of
+  the same pattern), how the Sal corpus is kept alive (download recovery → transcription
+  pipelines → WWSD voice-signature extraction → voicebox synthesis), and the philosophy
+  (Sal's 2016 elimination, why this repo exists, local-first / no-roundtrip rule). Depth:
+  philosophy + operations both. Pulls from existing wiki pages — most of the raw material
+  is already in `wiki/concepts/`, `wiki/entities/`, `analysis/sal/`. README.md and
+  `wiki/README.md` should stay solid enough that the public-site copy can lift from them
+  directly. Output: jekyll/just-the-docs or hugo on `gh-pages` branch. Defer until the
+  in-repo READMEs feel comprehensive (currently at "tag-app bootstrap + AppleToolbox
+  consolidation, 2026-05-26"; add more as features land).
+
 - [ ] **Bash tab-completion for `show compose <speaker>` / `<shortRef>`** —
   Tier 2 design (recommended in 2026-05-22 chat): cache speakers + their
   shortRefs to `~/.cache/show-compose.json`, populate lazily from ray-graph's
