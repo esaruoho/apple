@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+"""
+apple-folder-to-mbox — turn any folder of email-shaped text files into a proper
+Apple-Mail-importable mailbox bundle hierarchy.
+
+The Sal/WWSD-ethos pattern: someone archived years of communications as text
+files. They want to read it in Mail.app. They shouldn't have to write Python.
+One command in, importable mailbox out.
+
+Pedigree: Python stdlib only. No Homebrew, no pip-installed third-party
+packages. Apple-native pipeline.
+
+Supported input formats (auto-detected per file):
+  - *.eml                    RFC 5322 email files
+  - *.mbox                   classic Unix mbox (concatenated messages
+                             separated by `From ` lines at start of line)
+  - *.txt, *.md (BBS-style)  KeelyNet-style dumps with:
+                                Message NNNNN  DATE/TIME: ...
+                                From   : ...
+                                To     : ...
+                                Subject: ...
+                                Folder : ...
+                                <body>
+                                ====
+  - *.txt, *.md (email-style) RFC 5322 headers at top
+                                (From:, Date:, Subject:, etc.)
+  - *.txt, *.md (plain)      one-message-per-file with filename → subject,
+                             mtime → date, content → body
+
+Output: an Apple-Mail `.mbox` bundle hierarchy:
+
+    <output>/<mailbox-name>/                    (plain parent folder)
+    ├── <Group1>.mbox/                          (Apple Mail bundle)
+    │   ├── Info.plist
+    │   └── mbox
+    ├── <Group2>.mbox/
+    ...
+
+To import: open Mail.app → File → Import Mailboxes → Files in mbox format →
+select the parent folder → Continue. Mail discovers all sub-mboxes and offers
+each as a separate mailbox. Or double-click any individual .mbox bundle to
+import just that group.
+
+Usage:
+    apple-folder-to-mbox <input-dir> [<output-dir>] [options]
+
+Examples:
+    # auto-detect everything, single mailbox
+    apple-folder-to-mbox ~/archives/keelynet
+
+    # BBS dump, grouped by BBS Folder field, with custom mailbox name
+    apple-folder-to-mbox ~/archives/keelynet ~/output \\
+        --format bbs --group-by folder \\
+        --mailbox-name "KeelyNET Message Archive"
+
+    # folder of .eml files, grouped by year-month
+    apple-folder-to-mbox ~/exported-mail --group-by year-month
+
+Built 2026-05-26 for the apple skill catalog. WWSD: "the power of the computer
+should reside in the hands of the one using it." This is one such tool.
+"""
+
+import argparse
+import email
+import email.policy
+import email.utils
+import os
+import re
+import shutil
+import sys
+import unicodedata
+from collections import defaultdict
+from datetime import datetime, timezone
+from email.message import EmailMessage
+from pathlib import Path
+
+
+# -----------------------------------------------------------------------------
+# Apple Mail bundle format
+# -----------------------------------------------------------------------------
+
+INFO_PLIST_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>MailboxName</key>
+    <string>{name}</string>
+</dict>
+</plist>
+"""
+
+
+def write_apple_mailbox_bundle(parent_dir, mailbox_name, messages, domain="archived.local"):
+    """
+    Write an Apple-Mail-compatible .mbox bundle:
+        <parent_dir>/<mailbox_name>.mbox/
+        ├── Info.plist
+        └── mbox        (flat mbox file with all messages)
+
+    Apple Mail recognizes this as a single mailbox. Double-clicking the
+    bundle opens Mail's import flow.
+    """
+    safe = filesystem_safe_name(mailbox_name)
+    bundle = parent_dir / f"{safe}.mbox"
+    bundle.mkdir(parents=True, exist_ok=True)
+    (bundle / "Info.plist").write_text(
+        INFO_PLIST_TEMPLATE.format(name=mailbox_name), encoding="utf-8"
+    )
+    mbox_file = bundle / "mbox"
+    if mbox_file.exists():
+        mbox_file.unlink()
+    for msg in messages:
+        append_to_mbox_file(msg, mbox_file, domain=domain)
+    return bundle
+
+
+def append_to_mbox_file(msg, mbox_path, domain="archived.local"):
+    """Append a single message dict to an Apple-Mail mbox file."""
+    sender_name = msg.get("sender") or "unknown-sender"
+    sender_local = filesystem_safe_name(sender_name, max_len=30) or "unknown"
+    from_addr = f"{sender_local}@{domain}"
+    parsed_dt = msg.get("parsed_dt")
+    if parsed_dt:
+        mbox_date = parsed_dt.strftime("%a %b %d %H:%M:%S %Y")
+    else:
+        mbox_date = "Thu Jan  1 00:00:00 1970"
+    body = msg.get("body", "")
+    body = re.sub(r"^From ", ">From ", body, flags=re.MULTILINE)
+
+    em = EmailMessage(policy=email.policy.default)
+    recipient_name = msg.get("recipient") or "unknown-recipient"
+    recipient_local = filesystem_safe_name(recipient_name, max_len=30) or "unknown"
+    em["From"] = f"{sender_name} <{sender_local}@{domain}>"
+    em["To"] = f"{recipient_name} <{recipient_local}@{domain}>"
+    em["Subject"] = msg.get("subject") or "(no subject)"
+    msg_id = msg.get("msg_id") or _stable_msgid(msg)
+    em["Message-ID"] = f"<{msg_id}@{domain}>"
+    if parsed_dt:
+        em["Date"] = email.utils.format_datetime(parsed_dt)
+    if msg.get("folder"):
+        em["X-Archive-Folder"] = msg["folder"]
+    if msg.get("source_file"):
+        em["X-Archive-Source-File"] = msg["source_file"]
+    if msg.get("orig_msg_id"):
+        em["X-Archive-Original-Message-ID"] = msg["orig_msg_id"]
+    if msg.get("datetime_str"):
+        em["X-Archive-Datetime-Raw"] = msg["datetime_str"]
+    em.set_content(body or "(empty body)")
+
+    with mbox_path.open("ab") as f:
+        f.write(f"From {from_addr} {mbox_date}\n".encode("utf-8"))
+        f.write(bytes(em))
+        f.write(b"\n")
+
+
+# -----------------------------------------------------------------------------
+# Filesystem-safe name slug
+# -----------------------------------------------------------------------------
+
+
+def filesystem_safe_name(text, max_len=80):
+    """ASCII-safe, lowercase, hyphenated, filesystem-friendly. Deterministic."""
+    if not text:
+        return ""
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^a-zA-Z0-9 ._()-]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:max_len] or ""
+
+
+def _stable_msgid(msg):
+    """Stable Message-ID for messages that don't have one."""
+    import hashlib
+    key = f"{msg.get('sender','')}-{msg.get('parsed_dt','')}-{msg.get('subject','')}-{msg.get('body','')[:200]}"
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
+
+
+# -----------------------------------------------------------------------------
+# Format auto-detection + per-format parsers
+# -----------------------------------------------------------------------------
+
+BBS_HEADER_RE = re.compile(
+    r"^Message\s+(\d+)\s+.*?DATE/TIME:\s*(\S+)\s+(\S+)\s*$",
+    re.MULTILINE,
+)
+BBS_SEP_RE = re.compile(r"^=+\s*$", re.MULTILINE)
+BBS_FROM_RE = re.compile(r"^From\s*:\s*(.+?)(?:\s+--.*)?$", re.MULTILINE)
+BBS_TO_RE = re.compile(r"^To\s*:\s*(.+?)(?:\s+--.*)?$", re.MULTILINE)
+BBS_SUBJECT_RE = re.compile(r"^Subject\s*:\s*(.+?)$", re.MULTILINE)
+BBS_FOLDER_RE = re.compile(r"^Folder\s*:\s*(.+?)$", re.MULTILINE)
+
+EMAIL_HEADER_HINT_RE = re.compile(
+    r"^(From|To|Subject|Date|Message-ID):\s",
+    re.MULTILINE | re.IGNORECASE,
+)
+MBOX_SEP_RE = re.compile(r"^From\s+\S+@?\S*\s+\w{3}\s+\w{3}\s+", re.MULTILINE)
+YAML_FRONTMATTER_RE = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
+
+
+def detect_format(path, text):
+    """Return one of: 'eml', 'mbox', 'bbs', 'email-headers', 'plain'."""
+    suffix = path.suffix.lower()
+    if suffix == ".eml":
+        return "eml"
+    if suffix == ".mbox":
+        return "mbox"
+    head = text[:4000]
+    # BBS pattern: long line of `=` separator + `Message NNNNN ... DATE/TIME:`
+    if BBS_HEADER_RE.search(text) and BBS_SEP_RE.search(text):
+        return "bbs"
+    # mbox-as-text: starts with `From <addr> <weekday>` lines
+    if MBOX_SEP_RE.search(head):
+        return "mbox"
+    # email headers at top
+    if EMAIL_HEADER_HINT_RE.search(head[:500]):
+        return "email-headers"
+    return "plain"
+
+
+def parse_bbs_dump(text, source_file=""):
+    """Parse BBS-style text into list of message dicts."""
+    text = YAML_FRONTMATTER_RE.sub("", text, count=1)
+    messages = []
+    blocks = BBS_SEP_RE.split(text)
+    for block in blocks:
+        m = BBS_HEADER_RE.search(block)
+        if not m:
+            continue
+        msg_id = m.group(1)
+        date_str, time_str = m.group(2), m.group(3)
+        sender_m = BBS_FROM_RE.search(block)
+        recipient_m = BBS_TO_RE.search(block)
+        subject_m = BBS_SUBJECT_RE.search(block)
+        folder_m = BBS_FOLDER_RE.search(block)
+        header_end = max(
+            (mo.end() for mo in [sender_m, recipient_m, subject_m, folder_m] if mo),
+            default=m.end(),
+        )
+        body = block[header_end:].strip()
+        messages.append({
+            "msg_id": f"bbs-{msg_id}",
+            "orig_msg_id": msg_id,
+            "datetime_str": f"{date_str} {time_str}",
+            "parsed_dt": parse_bbs_datetime(date_str, time_str),
+            "sender": (sender_m.group(1).strip() if sender_m else ""),
+            "recipient": (recipient_m.group(1).strip() if recipient_m else ""),
+            "subject": (subject_m.group(1).strip() if subject_m else ""),
+            "folder": (folder_m.group(1).strip() if folder_m else ""),
+            "body": body,
+            "source_file": source_file,
+            "_format": "bbs",
+        })
+    return messages
+
+
+def parse_bbs_datetime(date_str, time_str, pivot=70):
+    try:
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", date_str.strip())
+        if not m:
+            return None
+        month, day, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if year < 100:
+            year += 1900 if year >= pivot else 2000
+        tm = re.match(r"^(\d{1,2}):(\d{2})$", time_str.strip())
+        if not tm:
+            return None
+        return datetime(year, month, day, int(tm.group(1)), int(tm.group(2)))
+    except (ValueError, AttributeError):
+        return None
+
+
+def parse_eml_file(text, source_file=""):
+    """Parse a single .eml file into one message dict."""
+    em = email.message_from_string(text, policy=email.policy.default)
+    return [eml_to_msg(em, source_file)]
+
+
+def parse_mbox_text(text, source_file=""):
+    """Split classic mbox text on `^From ` separators, parse each as RFC 5322."""
+    messages = []
+    parts = re.split(r"(?m)^From\s+\S+.*$\n", text)
+    for part in parts:
+        if not part.strip():
+            continue
+        try:
+            em = email.message_from_string(part, policy=email.policy.default)
+            messages.append(eml_to_msg(em, source_file))
+        except Exception:
+            continue
+    return messages
+
+
+def parse_email_headers_text(text, source_file=""):
+    """Parse a text file with RFC-5322-style headers at top + body."""
+    try:
+        em = email.message_from_string(text, policy=email.policy.default)
+    except Exception:
+        return []
+    return [eml_to_msg(em, source_file)]
+
+
+def parse_plain_file(path, text, source_file=""):
+    """Treat file as a single message with filename as subject + mtime as date."""
+    mtime = datetime.fromtimestamp(path.stat().st_mtime)
+    return [{
+        "msg_id": _stable_msgid({"sender": "", "parsed_dt": mtime, "subject": path.name, "body": text[:500]}),
+        "datetime_str": mtime.strftime("%Y-%m-%d %H:%M"),
+        "parsed_dt": mtime,
+        "sender": "(file)",
+        "recipient": "",
+        "subject": path.stem,
+        "folder": str(path.parent.name) if path.parent else "",
+        "body": text,
+        "source_file": source_file,
+        "_format": "plain",
+    }]
+
+
+def eml_to_msg(em, source_file=""):
+    """Convert an EmailMessage object to our msg dict."""
+    sender = em.get("From", "")
+    recipient = em.get("To", "")
+    subject = em.get("Subject", "")
+    date_str = em.get("Date", "")
+    parsed_dt = None
+    if date_str:
+        try:
+            parsed_dt = email.utils.parsedate_to_datetime(date_str)
+            if parsed_dt and parsed_dt.tzinfo:
+                parsed_dt = parsed_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except Exception:
+            pass
+    body = ""
+    if em.is_multipart():
+        for part in em.walk():
+            if part.get_content_type() == "text/plain":
+                try:
+                    body = part.get_content()
+                    break
+                except Exception:
+                    continue
+    else:
+        try:
+            body = em.get_content()
+        except Exception:
+            body = em.get_payload(decode=False) or ""
+    msg_id = em.get("Message-ID", "")
+    if msg_id:
+        msg_id = msg_id.strip("<>").split("@")[0]
+    return {
+        "msg_id": msg_id or _stable_msgid({"sender": sender, "subject": subject, "body": body[:200]}),
+        "orig_msg_id": em.get("Message-ID", ""),
+        "datetime_str": date_str,
+        "parsed_dt": parsed_dt,
+        "sender": str(sender),
+        "recipient": str(recipient),
+        "subject": str(subject),
+        "folder": em.get("X-Archive-Folder", "") or em.get("X-BBS-Folder", ""),
+        "body": body,
+        "source_file": source_file,
+        "_format": "eml",
+    }
+
+
+# -----------------------------------------------------------------------------
+# Group-by strategies
+# -----------------------------------------------------------------------------
+
+
+def normalize_bbs_folder_label(folder_str):
+    if not folder_str or not folder_str.strip():
+        return "Uncategorized"
+    s = folder_str.strip()
+    m = re.match(r'^([A-Z])\s*,?\s*"([^"]+)"\s*$', s)
+    if m:
+        letter, desc = m.group(1), m.group(2)
+        desc = re.sub(r"[/\\:]+", " ", desc).strip()
+        desc = re.sub(r"\s+", " ", desc)
+        return f"{letter} - {desc}"
+    s = re.sub(r'["]', "", s)
+    s = re.sub(r"[/\\:,]+", " ", s).strip()
+    s = re.sub(r"\s+", " ", s)
+    return s or "Uncategorized"
+
+
+def group_messages(messages, strategy):
+    """Returns dict[str, list[msg]] keyed by group-name."""
+    groups = defaultdict(list)
+    for m in messages:
+        if strategy == "none":
+            key = "All messages"
+        elif strategy == "folder":
+            if m.get("folder"):
+                key = normalize_bbs_folder_label(m["folder"])
+            else:
+                src = Path(m.get("source_file", "")).parent
+                key = str(src) if str(src) and str(src) != "." else "Uncategorized"
+        elif strategy == "sender":
+            sender = (m.get("sender") or "Unknown sender").strip()
+            sender = re.sub(r"\s*<.*?>", "", sender).strip()
+            key = sender or "Unknown sender"
+        elif strategy == "year":
+            dt = m.get("parsed_dt")
+            key = str(dt.year) if dt else "Unknown date"
+        elif strategy == "year-month":
+            dt = m.get("parsed_dt")
+            key = dt.strftime("%Y-%m") if dt else "Unknown date"
+        elif strategy == "source":
+            key = m.get("source_file", "Unknown") or "Unknown"
+        else:
+            key = "All messages"
+        groups[key].append(m)
+    return groups
+
+
+# -----------------------------------------------------------------------------
+# Main pipeline
+# -----------------------------------------------------------------------------
+
+
+def ingest(input_dir, output_dir, mailbox_name, group_by="none",
+           explicit_format="auto", domain="archived.local", verbose=True):
+    input_dir = Path(input_dir).expanduser().resolve()
+    output_dir = Path(output_dir).expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    files = []
+    for ext in ("*.eml", "*.mbox", "*.txt", "*.md", "*.msg"):
+        files.extend(input_dir.rglob(ext))
+    files = sorted(set(files), key=str)
+
+    if verbose:
+        print(f"Scanning {len(files)} files under {input_dir}")
+        print(f"Format hint:   {explicit_format}")
+        print(f"Group-by:      {group_by}")
+        print(f"Mailbox name:  {mailbox_name}")
+        print()
+
+    all_messages = []
+    format_counts = defaultdict(int)
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            if verbose:
+                print(f"  WARN: could not read {path}: {e}", file=sys.stderr)
+            continue
+        fmt = explicit_format if explicit_format != "auto" else detect_format(path, text)
+        rel = str(path.relative_to(input_dir))
+        try:
+            if fmt == "bbs":
+                msgs = parse_bbs_dump(text, source_file=rel)
+            elif fmt == "eml":
+                msgs = parse_eml_file(text, source_file=rel)
+            elif fmt == "mbox":
+                msgs = parse_mbox_text(text, source_file=rel)
+            elif fmt == "email-headers":
+                msgs = parse_email_headers_text(text, source_file=rel)
+            else:
+                msgs = parse_plain_file(path, text, source_file=rel)
+        except Exception as e:
+            if verbose:
+                print(f"  WARN: {path}: parse failed ({e})", file=sys.stderr)
+            continue
+        if msgs:
+            format_counts[fmt] += 1
+            all_messages.extend(msgs)
+
+    if verbose:
+        print(f"Parsed {len(all_messages):,} total messages from {len(files):,} files.")
+        print(f"Formats detected: " + ", ".join(f"{k}={v}" for k, v in format_counts.items()))
+        print()
+
+    if not all_messages:
+        print("No messages parsed. Exiting.")
+        return 1
+
+    # Build mailbox hierarchy.
+    parent = output_dir / filesystem_safe_name(mailbox_name)
+    if parent.exists():
+        shutil.rmtree(parent)
+    parent.mkdir(parents=True, exist_ok=True)
+
+    groups = group_messages(all_messages, group_by)
+    bundles_written = []
+    for group_name in sorted(groups.keys()):
+        msgs_in_group = sorted(
+            groups[group_name],
+            key=lambda m: (m.get("parsed_dt") or datetime.max, m.get("msg_id", "")),
+        )
+        bundle = write_apple_mailbox_bundle(parent, group_name, msgs_in_group, domain=domain)
+        bundles_written.append((group_name, len(msgs_in_group), bundle))
+
+    if verbose:
+        print(f"Wrote {len(bundles_written)} mailbox bundle(s) under:")
+        print(f"  {parent}/")
+        for name, count, bundle in bundles_written:
+            print(f"    {count:6,d} msgs  →  {bundle.name}/")
+        print()
+        print("Apple Mail import:")
+        print(f"  Mail.app → File → Import Mailboxes → Files in mbox format → {parent}")
+        print("  Mail discovers all sub-bundles and offers each as a separate mailbox.")
+        print()
+        print("Or double-click any individual .mbox bundle inside that folder")
+        print("to import just that group.")
+    return 0
+
+
+# -----------------------------------------------------------------------------
+# CLI
+# -----------------------------------------------------------------------------
+
+
+def main():
+    p = argparse.ArgumentParser(
+        description="Turn any folder of email-shaped text/eml/mbox files into an Apple-Mail-importable mailbox bundle.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    p.add_argument("input_dir", help="Input directory to scan recursively.")
+    p.add_argument("output_dir", nargs="?", default=".",
+                   help="Output directory (default: current directory).")
+    p.add_argument("--mailbox-name", "-n", default=None,
+                   help="Name for the top-level mailbox folder. Default = basename of input dir.")
+    p.add_argument("--group-by", "-g", default="none",
+                   choices=["none", "folder", "sender", "year", "year-month", "source"],
+                   help="How to split into sub-mailboxes. Default: none (single mailbox).")
+    p.add_argument("--format", "-f", default="auto",
+                   choices=["auto", "bbs", "eml", "mbox", "email-headers", "plain"],
+                   help="Force a specific format instead of auto-detecting per file.")
+    p.add_argument("--domain", default="archived.local",
+                   help="Synthetic email domain for messages lacking one. Default: archived.local")
+    p.add_argument("--quiet", "-q", action="store_true", help="Suppress progress output.")
+    args = p.parse_args()
+
+    mailbox_name = args.mailbox_name or Path(args.input_dir).resolve().name
+    return ingest(
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
+        mailbox_name=mailbox_name,
+        group_by=args.group_by,
+        explicit_format=args.format,
+        domain=args.domain,
+        verbose=not args.quiet,
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

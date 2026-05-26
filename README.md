@@ -541,6 +541,67 @@ The skill's three dispatch channels — Loupedeck/Stream Deck hardware buttons, 
 
 ---
 
+## Folder of text files → Apple Mail mailbox bundle (2026-05-26)
+
+You came across an archive. Years of communications saved as text. Maybe BBS dumps from 1994. Maybe `.eml` files exported from a dead client. Maybe a folder of `.txt` files where each file is one message. You want to read it in Mail.app — searchable, threadable, filterable. You shouldn't have to write Python.
+
+The Mac-user pain is real: Mail.app's official import (`File → Import Mailboxes…`) accepts a small fixed list of formats — Apple Mail / mbox / Outlook / Eudora / Entourage / Thunderbird. Anything outside that list sits unread on disk forever, or gets opened in TextEdit one file at a time. Apple eliminated the role that would have shipped a "Folder of email files → mailbox" import option. The gap remains.
+
+[`bin/apple-folder-to-mbox`](bin/apple-folder-to-mbox) does what Apple should have shipped. Slash: [`/folder-to-mbox`](commands/folder-to-mbox.md). Wiki: [`wiki/concepts/text-to-mailbox-bundle.md`](wiki/concepts/text-to-mailbox-bundle.md). Painpoint: [`painpoints/MAIL-002-no-bulk-ingest-for-saved-text-archives.md`](painpoints/MAIL-002-no-bulk-ingest-for-saved-text-archives.md).
+
+```bash
+# auto-detect everything, single mailbox
+apple-folder-to-mbox ~/archives/keelynet
+
+# BBS dump, grouped by BBS Folder field, custom mailbox name
+apple-folder-to-mbox ~/archives/keelynet ~/output \
+    --format bbs --group-by folder \
+    --mailbox-name "KeelyNET Message Archive"
+
+# folder of .eml files, grouped by year-month
+apple-folder-to-mbox ~/exported-mail --group-by year-month
+
+# group by sender — one mailbox per person
+apple-folder-to-mbox ~/archive --group-by sender
+```
+
+### Auto-detected formats
+
+- `*.eml` — RFC 5322 email files
+- `*.mbox` — classic Unix mbox (concatenated, `From ` separators)
+- `*.txt` / `*.md` — BBS-style dumps (`Message NNNNN ... DATE/TIME:` headers)
+- `*.txt` / `*.md` — RFC 5322 headers at top + body
+- `*.txt` / `*.md` — plain text (one message per file, filename → subject, mtime → date)
+
+### Output: Apple Mail bundle hierarchy
+
+```
+<output>/<Mailbox-Name>/                       (plain parent folder)
+├── <Group1>.mbox/                             (Apple Mail bundle)
+│   ├── Info.plist
+│   └── mbox
+├── <Group2>.mbox/
+│   ├── Info.plist
+│   └── mbox
+...
+```
+
+`Mail.app → File → Import Mailboxes → Files in mbox format → select parent folder → Continue.` Mail discovers all sub-bundles and offers each as a separate importable mailbox. Or double-click any individual `.mbox` bundle to import just that one group.
+
+### First case: KeelyNET BBS archive 1994-95
+
+Norman Wootan's KeelyNet BBS message archive — 2,509 messages spread across 6 BBS folders (Public Mail, Special Associates Area Alpha/Omega, Comments to Sysop, Advertisements, Insights), originally captured as flat text dumps with the classic BBS `Message NNNNN  DATE/TIME: ...` headers. One `/folder-to-mbox` invocation produced 6 ready-to-import Apple Mail bundles in seconds. Synthetic email addresses (e.g. `norman-wootan@archived.local`) preserve threading and sender-grouping inside Mail. `X-Archive-Folder`, `X-Archive-Source-File`, `X-Archive-Original-Message-ID`, `X-Archive-Datetime-Raw` headers preserve every piece of original BBS metadata — searchable via Mail's "Entire Message" search.
+
+### Pedigree
+
+**Python stdlib only.** `email`, `email.policy`, `email.utils`, `email.message.EmailMessage`, `unicodedata`, `re`, `pathlib`, `argparse`, `hashlib`, `datetime`. No Homebrew, no pip, no third-party. Apple-native rule satisfied. Zero round-trip — `/folder-to-mbox` is a Bash exec of a single Python file via the slash-command framework.
+
+### What this is in WWSD terms
+
+Sal would have shipped this as an Automator action ("New mailbox from folder of messages…") and a Folder Action (drop a folder of `.eml` files in a watch-folder → Mail.app inbox populated automatically). Apple eliminated the role; the gap remained; we filled it with apple-native Python stdlib. Now it's available not just to a single user, but to any Claude Code session in any project — one slash-command and one PATH-resolvable binary away.
+
+---
+
 ## Roadmap to the Full Apple Experience
 
 What's left to make this repo a **complete** unlock of every Apple-shipped app for any user. Ordered by impact × clarity-of-path. Each entry below is a future package or extension.
