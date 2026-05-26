@@ -105,8 +105,10 @@ Highest-leverage first:
   - [x] [`docs/spotlight.md`](https://esaruoho.github.io/apple/spotlight) — the 5 paths + APFS bug + TCC fix
   - [x] [`docs/wwsd.md`](https://esaruoho.github.io/apple/wwsd) — browseable 54+ principles catalog with the Roundtrip Rule (WWSD #54)
   - [x] [`docs/automator-vs-shortcuts.md`](https://esaruoho.github.io/apple/automator-vs-shortcuts) — the gap analysis as a public reference
-  Public wiki now at 10 pages. Next iteration: cross-link from in-repo `wiki/` source pages
-  back to the docs equivalents so contributors see both.
+  Public wiki now at 10 pages. **Backlink pass complete (2026-05-26, commit `31b2dd0`):**
+  14 in-repo `wiki/concepts/*` and `wiki/entities/*` source pages now carry a "📖 Public:"
+  callout near the top linking to their public counterpart on `esaruoho.github.io/apple`,
+  so contributors editing the source see the public version they're feeding.
 
 - [ ] **Bash tab-completion for `show compose <speaker>` / `<shortRef>`** —
   Tier 2 design (recommended in 2026-05-22 chat): cache speakers + their
