@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""
+imessage — send iMessage text or file attachments from the terminal.
+
+Default buddy is esaruoho@gmail.com → blue iMessage bubbles, lossless
+attachments. Override with --to or $IMESSAGE_TO.
+
+ABOUT THE RED "NOT DELIVERED" !
+    Right after sending an attachment to yourself you may briefly see a red
+    "Not Delivered" ! in Messages. It typically clears within a few seconds
+    and the attachment lands properly as iMessage on the other devices. Do
+    NOT panic-switch to the phone number — that downgrades to SMS/MMS
+    (green bubble, ~1 MB cap, lossy media) which is exactly what you don't
+    want for screenshots.
+
+Usage:
+    imessage "yo yo yo hi hi hi"                        # text
+    imessage file.pdf                                   # attachment
+    imessage --text "see attached" file.pdf             # text + file
+    imessage --to +358401234567 "hello"                 # different buddy
+    imessage --to other@apple.id file.shortcut          # buddy + file
+
+Detection rule:
+    If the arg is an existing path → treat as file (attachment).
+    Otherwise → treat as text.
+    Pass --text or --file explicitly to override.
+
+Why it's split:
+    Text send via Messages AppleScript works reliably on every macOS.
+    File send via Messages AppleScript silently no-ops on Sequoia (the
+    `send` returns success but no attachment renders in the conversation).
+    For files we use the only path that actually works:
+        1. Put the file on the macOS pasteboard as a file reference
+           (NOT as text) via Finder's clipboard scripting.
+        2. Open imessage://<buddy> to bring up that conversation.
+        3. UI-script Messages with System Events: Cmd-V, then Return.
+
+Apple-native: osascript + System Events + open(1). Stdlib Python only.
+
+Requires:
+    - Messages.app signed in to iMessage (Settings → Messages → iMessage on)
+    - Accessibility permission for the terminal app (one-time TCC prompt
+      the first time UI-scripting runs — accept it)
+"""
+from __future__ import annotations
+import argparse
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+# Default to Esa's Apple-ID email → blue iMessage bubble, lossless attachments.
+# Note: a red "Not Delivered" ! can show transiently right after sending — it
+# typically clears within seconds and the attachment lands as iMessage. Do NOT
+# switch to the phone number default; that downgrades to SMS/MMS (green bubble,
+# lossy, ~1 MB cap) — wrong for screenshots and most files.
+DEFAULT_TO = os.environ.get("IMESSAGE_TO", "esaruoho@gmail.com")
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(f"imessage: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def osa(script: str) -> tuple[int, str, str]:
+    r = subprocess.run(["osascript", "-e", script],
+                       capture_output=True, text=True)
+    return r.returncode, r.stdout.strip(), r.stderr.strip()
+
+
+def send_text(text: str, buddy: str) -> None:
+    """Text send via the Messages AppleScript dictionary. Reliable on Sequoia."""
+    esc = text.replace("\\", "\\\\").replace('"', '\\"')
+    script = f'''
+tell application "Messages"
+  set theService to missing value
+  try
+    set theService to 1st service whose service type = iMessage
+  end try
+  if theService is missing value then set theService to 1st service
+  set theBuddy to buddy "{buddy}" of theService
+  send "{esc}" to theBuddy
+end tell
+'''
+    rc, _, err = osa(script)
+    if rc != 0:
+        die(f"text send failed: {err}")
+    print(f"sent text → {buddy}")
+
+
+def send_file(path: Path, buddy: str, also_text: str | None = None) -> None:
+    """
+    File send is intentionally REFUSED. The only AppleScript-driven file
+    attachment path that works on Sequoia uses System Events keystrokes
+    (Cmd-V + Return), and those keystrokes land in WHATEVER IS FRONTMOST —
+    which during a normal workday is iTerm2, Safari, Mail, etc. That means
+    we'd be hijacking the user's keyboard and pasting/sending into the
+    wrong window. Apple's design intentionally does not expose a clean
+    "attach file to Messages bubble" verb; we honor that intent.
+
+    The correct Apple-native path for "send me this file" is:
+
+        icloud-drop <file> --imessage
+
+    That drops the file into iCloud Drive (no UI hijack) and iMessages
+    a TEXT bubble (no UI hijack) with the shareddocuments:// URL. Tap the
+    URL on the iPhone → Files app opens the file. Lossless, reliable,
+    no keystroke-stealing.
+    """
+    die(
+        f"file send via this CLI is disabled by design — it would UI-hijack\n"
+        f"  your keyboard (System Events keystrokes go to the frontmost app,\n"
+        f"  not Messages). Use the proper Apple-native path instead:\n"
+        f"\n"
+        f"    icloud-drop {path} --imessage\n"
+        f"\n"
+        f"  That drops the file in iCloud Drive and iMessages you the URL\n"
+        f"  as text. Tap on iPhone, opens in Files, no keyboard hijack."
+    )
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        description="Send iMessage text or files from the terminal.")
+    ap.add_argument("payload", nargs="?",
+                    help="text to send, OR path to a file to attach")
+    ap.add_argument("--to", default=DEFAULT_TO,
+                    help=f"buddy (default: {DEFAULT_TO}, "
+                         f"or $IMESSAGE_TO)")
+    ap.add_argument("--text", default=None,
+                    help="explicit text (use with --file or to force text mode)")
+    ap.add_argument("--file", default=None,
+                    help="explicit file path (force file mode)")
+    args = ap.parse_args(argv[1:])
+
+    explicit_file = args.file
+    explicit_text = args.text
+
+    # Resolve what the positional means if no explicit flag was given.
+    if args.payload and not explicit_file and explicit_text is None:
+        candidate = Path(os.path.expanduser(args.payload))
+        if candidate.exists() and candidate.is_file():
+            explicit_file = str(candidate)
+        else:
+            explicit_text = args.payload
+
+    if not explicit_file and explicit_text is None:
+        die("nothing to send. usage: imessage <text|file> [--to <buddy>]")
+
+    if explicit_file:
+        p = Path(os.path.expanduser(explicit_file))
+        if not p.exists():
+            die(f"file not found: {p}")
+        send_file(p, args.to, also_text=explicit_text)
+    else:
+        send_text(explicit_text, args.to)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

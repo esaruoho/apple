@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""
+imessage-send-file — send a file as an iMessage attachment to a buddy.
+
+Apple-native: drives Messages.app via osascript. Buddy is matched by Apple
+ID (email) or phone number. Works for sending things to yourself
+(esaruoho@gmail.com).
+
+Usage:
+    imessage-send-file <file> <buddy>
+    imessage-send-file <file> <buddy> --text "optional accompanying message"
+
+Examples:
+    imessage-send-file ~/Downloads/foo.shortcut esaruoho@gmail.com
+    imessage-send-file ./build.log "+358401234567" --text "ray-browser CI failed"
+"""
+from __future__ import annotations
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(f"imessage-send-file: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def send_file(path: Path, buddy: str, text: str | None) -> None:
+    abs_path = str(path.resolve())
+    # AppleScript handles file URLs via POSIX file specifier. Buddy lookup
+    # tries iMessage service first; falls back to any service if not found.
+    script = f'''
+on run
+  set targetFile to POSIX file "{abs_path}"
+  set buddyId to "{buddy}"
+  tell application "Messages"
+    -- Prefer iMessage service; fall back to first available service.
+    set theService to missing value
+    try
+      set theService to 1st service whose service type = iMessage
+    end try
+    if theService is missing value then
+      set theService to 1st service
+    end if
+    set theBuddy to buddy buddyId of theService
+    send targetFile to theBuddy
+    {('send "' + text.replace('"', '\\"') + '" to theBuddy') if text else ""}
+  end tell
+end run
+'''
+    r = subprocess.run(["osascript", "-e", script],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"osascript failed: {r.stderr.strip()}")
+    print(f"sent: {abs_path} → {buddy}")
+    if text:
+        print(f"      with text: {text}")
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("file")
+    ap.add_argument("buddy", help="Apple ID email or phone number")
+    ap.add_argument("--text", default=None,
+                    help="optional accompanying text message")
+    args = ap.parse_args(argv[1:])
+
+    p = Path(os.path.expanduser(args.file))
+    if not p.exists():
+        die(f"file not found: {p}")
+
+    send_file(p, args.buddy, args.text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

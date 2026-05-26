@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""
+icloud-drop — copy a file into iCloud Drive so the iPhone can grab it.
+
+The honest Apple-native answer for "send me this file from Mac to iPhone":
+put it in iCloud Drive. The Files app on iPhone sees it within seconds.
+No iMessage attachment loopback nonsense, no SMS/MMS downgrade, no AirDrop
+proximity requirement, no third-party.
+
+Default drop location:
+    ~/Library/Mobile Documents/com~apple~CloudDocs/inbox-from-mac/
+
+The file appears in Files → iCloud Drive → "inbox-from-mac" on every device
+signed into the same Apple ID. By default this CLI also fires a notify-iphone
+banner with the filename, so the iPhone tells you the file arrived.
+
+Usage:
+    icloud-drop file.pdf                      # drop + banner
+    icloud-drop ~/Pictures/shot.png           # drop + banner
+    icloud-drop *.png                         # multiple
+    icloud-drop file.pdf --no-notify          # silent (no banner)
+    icloud-drop file.pdf --folder vault       # custom subfolder
+    icloud-drop --status                      # show drop folder + recent files
+    icloud-drop --imessage file.pdf           # also iMessage the URL as text
+
+The --imessage form is the "send me a URL" variant: drops the file, then
+iMessages a text bubble with the shareddocuments:// deep link that opens the
+file directly in the iPhone's Files app. Text bubbles deliver reliably
+(unlike attachment bubbles which can show transient red !).
+
+Apple-native: stdlib Python + iCloud Drive + (optionally) bin/notify-iphone
++ (optionally) bin/imessage.
+"""
+from __future__ import annotations
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+from urllib.parse import quote
+
+ICLOUD_ROOT = Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs"
+DEFAULT_FOLDER = "inbox-from-mac"
+APPLE_BIN = Path("/Users/esaruoho/work/apple/bin")
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(f"icloud-drop: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def ensure_drop_dir(folder: str) -> Path:
+    if not ICLOUD_ROOT.exists():
+        die(f"iCloud Drive root not found: {ICLOUD_ROOT}\n"
+            f"  (enable iCloud Drive in System Settings → Apple ID → iCloud)")
+    drop = ICLOUD_ROOT / folder
+    drop.mkdir(parents=True, exist_ok=True)
+    return drop
+
+
+def shareddocs_url(folder: str, filename: str) -> str:
+    """
+    shareddocuments:// deep link that opens the Files app on iOS straight
+    to this file in iCloud Drive. The path encodes the iCloud Drive
+    container ID then the folder + file path.
+    """
+    relpath = f"{folder}/{filename}"
+    return f"shareddocuments://ucloud/com~apple~CloudDocs/{quote(relpath)}"
+
+
+def copy_in(src: Path, drop: Path) -> Path:
+    """Copy file into iCloud Drive folder, preserving name. Returns final path."""
+    dst = drop / src.name
+    # Atomic-ish: copy to tmp then rename so iCloud doesn't see a half file.
+    tmp = drop / f".{src.name}.{int(time.time())}.tmp"
+    shutil.copy2(src, tmp)
+    tmp.replace(dst)
+    return dst
+
+
+def fire_notify(filename: str, folder: str, url: str) -> None:
+    """Fire a phone banner via bin/notify-iphone if available."""
+    notify_bin = APPLE_BIN / "notify-iphone"
+    if not notify_bin.exists():
+        return
+    subprocess.run(
+        [str(notify_bin),
+         "--title", "iCloud Drop",
+         "--body", f"{filename}",
+         "--url", url,
+         "--sender", "icloud-drop"],
+        check=False, capture_output=True,
+    )
+
+
+def fire_imessage(filename: str, url: str) -> None:
+    """iMessage the URL as a text bubble via bin/imessage if available."""
+    imsg_bin = APPLE_BIN / "imessage"
+    if not imsg_bin.exists():
+        die("bin/imessage not found — can't --imessage")
+    body = f"📂 {filename}\n{url}"
+    subprocess.run([str(imsg_bin), "--text", body], check=False)
+
+
+def cmd_status(folder: str) -> int:
+    drop = ensure_drop_dir(folder)
+    files = sorted(p for p in drop.iterdir() if not p.name.startswith("."))
+    print(f"drop dir: {drop}")
+    print(f"files: {len(files)}")
+    for p in files[-15:]:
+        print(f"  {p.name} ({p.stat().st_size:,} bytes)")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        description="Copy a file into iCloud Drive so the iPhone can grab it.")
+    ap.add_argument("paths", nargs="*", help="file(s) to drop into iCloud")
+    ap.add_argument("--folder", default=DEFAULT_FOLDER,
+                    help=f"subfolder inside iCloud Drive (default: {DEFAULT_FOLDER})")
+    ap.add_argument("--no-notify", action="store_true",
+                    help="skip the iPhone banner notification")
+    ap.add_argument("--imessage", action="store_true",
+                    help="also iMessage the file's URL as a text bubble")
+    ap.add_argument("--status", action="store_true",
+                    help="show drop folder + recent files, then exit")
+    args = ap.parse_args(argv[1:])
+
+    if args.status:
+        return cmd_status(args.folder)
+
+    if not args.paths:
+        die("nothing to drop. usage: icloud-drop <file> [...]")
+
+    drop = ensure_drop_dir(args.folder)
+    print(f"drop dir: {drop}")
+
+    for raw in args.paths:
+        src = Path(os.path.expanduser(raw))
+        if not src.exists():
+            print(f"  SKIP (missing): {raw}", file=sys.stderr)
+            continue
+        if not src.is_file():
+            print(f"  SKIP (not a file): {raw}", file=sys.stderr)
+            continue
+        dst = copy_in(src, drop)
+        url = shareddocs_url(args.folder, dst.name)
+        print(f"  dropped: {dst.name} ({dst.stat().st_size:,} bytes)")
+        print(f"           {url}")
+        if not args.no_notify:
+            fire_notify(dst.name, args.folder, url)
+        if args.imessage:
+            fire_imessage(dst.name, url)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

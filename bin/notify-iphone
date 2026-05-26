@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""
+notify-iphone — fire a banner on Esa's iPhone via iMessage-to-self.
+
+The honest realization (2026-05-26): iMessage to yourself IS already a
+native iOS push notification. It banners on the lock screen, plays a sound,
+appears in Notification Center, and crosses Wi-Fi/cellular boundaries
+sub-second. We do not need a Shortcut, a Personal Automation, or an iCloud
+Drive folder to get a banner on the phone.
+
+This file used to drop JSON into iCloud Drive and rely on a (Mac-only)
+"When File Added to Folder" Personal Automation trigger on iPhone. iOS
+Shortcuts doesn't have that trigger, so the whole architecture was broken
+from the start. Now it's a thin wrapper around bin/imessage. Same CLI
+surface; entirely different transport.
+
+Usage (unchanged from before):
+    notify-iphone --title "Build green"
+    notify-iphone --title "OCR done" --body "foo.pdf is searchable"
+    notify-iphone --title "Sentry alert" --body "..." --url "https://..."
+    echo '{"title":"…","body":"…"}' | notify-iphone --stdin
+    notify-iphone --status                # show recent banners sent
+
+The banner text becomes "<title>" on line 1 and "<body>" on line 2 inside
+the iMessage bubble. The URL (if present) is appended on its own line —
+iMessage auto-links it so a tap opens it on the phone.
+
+Apple-native: composes bin/imessage. No third-party deps.
+"""
+from __future__ import annotations
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+APPLE_BIN = Path("/Users/esaruoho/work/apple/bin")
+IMESSAGE = APPLE_BIN / "imessage"
+LOG_FILE = Path.home() / "work" / "apple" / "var" / "log" / "notify-iphone.log"
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(f"notify-iphone: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def log_event(payload: dict) -> None:
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    line = json.dumps({"ts": ts, **payload}, ensure_ascii=False)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def format_body(payload: dict) -> str:
+    title = payload.get("title", "").strip()
+    body = payload.get("body", "").strip()
+    subtitle = payload.get("subtitle", "").strip()
+    url = payload.get("url", "").strip()
+    sender = payload.get("sender", "").strip()
+
+    lines = []
+    if title:
+        # Prefix with the sender in brackets when set, so banners are
+        # self-identifying (e.g. "[ocr-worker] OCR done").
+        if sender and sender != os.environ.get("USER", ""):
+            lines.append(f"[{sender}] {title}")
+        else:
+            lines.append(title)
+    if subtitle:
+        lines.append(subtitle)
+    if body:
+        lines.append(body)
+    if url:
+        lines.append(url)  # iMessage auto-links it
+    return "\n".join(lines) if lines else "(empty notification)"
+
+
+def send(payload: dict) -> int:
+    if not IMESSAGE.exists():
+        die(f"bin/imessage not found at {IMESSAGE}")
+    text = format_body(payload)
+    proc = subprocess.run(
+        [str(IMESSAGE), "--text", text],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        die(f"imessage failed: {proc.stderr.strip()}")
+    log_event({"sent": payload, "text": text})
+    print(f"banner sent → iPhone via iMessage")
+    print(f"  {text.splitlines()[0]}" if text.splitlines() else "")
+    return 0
+
+
+def cmd_status() -> int:
+    print(f"transport: iMessage-to-self via bin/imessage")
+    print(f"log: {LOG_FILE}")
+    if not LOG_FILE.exists():
+        print("no banners sent yet")
+        return 0
+    lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
+    print(f"banners sent: {len(lines)}")
+    for line in lines[-10:]:
+        try:
+            row = json.loads(line)
+            print(f"  {row.get('ts','?')}  {row.get('sent', {}).get('title','(no title)')}")
+        except json.JSONDecodeError:
+            pass
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        description="Banner Esa's iPhone via iMessage-to-self.")
+    ap.add_argument("--title")
+    ap.add_argument("--subtitle", default=None)
+    ap.add_argument("--body", default=None)
+    ap.add_argument("--url", default=None,
+                    help="URL appended on its own line — iMessage auto-links it")
+    ap.add_argument("--sender", default=None,
+                    help="prefixed as [sender] in the banner title")
+    ap.add_argument("--stdin", action="store_true",
+                    help="read a JSON payload from stdin (overrides flags)")
+    ap.add_argument("--status", action="store_true")
+    # Deprecated, accepted for back-compat — no longer used (no JSON-id needed)
+    ap.add_argument("--id", dest="nid", default=None, help=argparse.SUPPRESS)
+    ap.add_argument("--sound", default=None, help=argparse.SUPPRESS)
+    args = ap.parse_args(argv[1:])
+
+    if args.status:
+        return cmd_status()
+
+    if args.stdin:
+        try:
+            payload = json.loads(sys.stdin.read())
+        except json.JSONDecodeError as e:
+            die(f"stdin is not valid JSON: {e}")
+        if not isinstance(payload, dict):
+            die("stdin JSON must be an object")
+    else:
+        if not args.title:
+            die("--title is required (or use --stdin)")
+        payload = {"title": args.title}
+        for k, v in [("subtitle", args.subtitle), ("body", args.body),
+                     ("url", args.url), ("sender", args.sender)]:
+            if v is not None:
+                payload[k] = v
+
+    return send(payload)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
