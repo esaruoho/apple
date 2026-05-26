@@ -32,7 +32,7 @@
 set -euo pipefail
 
 APPLE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCPT="$APPLE_DIR/scripts/workflows/system-events/compiled/DockSnap.scpt"
+SCPT="$APPLE_DIR/scripts/workflows/system-events/compiled/tile-dock-snap.scpt"
 
 if [[ ! -f "$SCPT" ]]; then
     echo "snap: compiled script missing: $SCPT" >&2
