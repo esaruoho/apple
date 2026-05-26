@@ -13,7 +13,7 @@
 set -uo pipefail
 
 TMP="${TMPDIR:-/tmp}/md-clipboard-$$"
-trap 'rm -f "$TMP".html "$TMP".rtf' EXIT
+trap 'rm -f "$TMP".html "$TMP".rtf "$TMP".md' EXIT
 
 SOURCE_IS_HTML=0
 INPUT="-"
@@ -36,9 +36,13 @@ fi
 if [ $SOURCE_IS_HTML -eq 1 ]; then
     echo "$SRC" > "$TMP.html"
 else
-    echo "$SRC" | python3 - <<'PY' > "$TMP.html"
-import re, sys
-src = sys.stdin.read()
+    # Write source to a temp file so the python heredoc-script can read it via env var.
+    # (Don't pipe into `python3 - <<'PY'` — the heredoc wins stdin and the pipe is discarded,
+    # producing an empty HTML output and a 144-byte RTF stub.)
+    printf '%s' "$SRC" > "$TMP.md"
+    MD_INPUT="$TMP.md" python3 - <<'PY' > "$TMP.html"
+import re, os, sys
+src = open(os.environ['MD_INPUT']).read()
 out_lines = []
 buf = []
 in_list = False
