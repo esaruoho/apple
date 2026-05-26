@@ -78,3 +78,10 @@ topbar/CloudcityOCRDrop.app/
 # stickies-claude watcher runtime state (per-note content hashes)
 state/stickies-claude/
 bin/.apple-names.cache
+
+# Generated artifacts from bin/apple-report (one-off machine stack reports)
+analysis/apple-report-*.stack.txt
+analysis/apple-report-*.json
+
+# Runtime log dir (worker stdout, etc.)
+var/
