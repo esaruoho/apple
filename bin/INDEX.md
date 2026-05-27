@@ -1,4 +1,4 @@
-# CLI Tools Index — 121 tools in bin/
+# CLI Tools Index — 122 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -73,6 +73,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
+`rtfc` — Rich Text For Clipboard. Take a markdown file (or stdin), strip — `bin/rtfc`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`
 `sal-archive-status.py` — (no description) — `bin/sal-archive-status.py`
 `sal-discover-interviews.py` — (no description) — `bin/sal-discover-interviews.py`

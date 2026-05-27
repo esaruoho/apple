@@ -577,6 +577,44 @@ func whispQueueRead() -> String {
     }
 }
 
+func spineStatusRead() -> String? {
+    // Read live heartbeat written by `spine watch` on the laptop.
+    // Heartbeat path is local — spine runs on RayMac, not synced from Mini.
+    let path = "\(HOME)/work/comms/queue/spine-heartbeat.json"
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { return nil }
+    let status = obj["status"] as? String ?? "?"
+    let tick = obj["tick"] as? Int ?? 0
+    var staleHint = ""
+    if let ts = obj["ts"] as? String {
+        let f = ISO8601DateFormatter()
+        if let d = f.date(from: ts) {
+            let age = Int(Date().timeIntervalSince(d))
+            let interval = obj["interval_sec"] as? Int ?? 60
+            if age > interval * 3 { staleHint = " (stale \(age)s)" }
+        }
+    }
+    // Also surface assets count if SQLite exists (cheap query)
+    var summary = "tick=\(tick)"
+    let db = "\(HOME)/work/mediabank/indexes/spine.sqlite"
+    if FileManager.default.fileExists(atPath: db) {
+        let out = run("/usr/bin/sqlite3", [db,
+            "SELECT (SELECT COUNT(*) FROM assets) || ' assets, ' || (SELECT COUNT(*) FROM fingerprints) || ' DOIs, ' || (SELECT COUNT(*) FROM citations) || ' cites'"],
+            timeout: 1).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !out.isEmpty {
+            summary = out
+        }
+    }
+    switch status {
+    case "ok":    return "✓ \(summary)\(staleHint)"
+    case "error":
+        let err = obj["error"] as? String ?? "?"
+        return "⚠️ \(summary) — \(err)\(staleHint)"
+    default:      return "\(status) \(summary)\(staleHint)"
+    }
+}
+
 func voiceMemoQueueRead() -> String? {
     // Reads voicememo-pipeline.state.json — the same dict the pipeline owns.
     // Returns nil to suppress the row when there's nothing relevant to show
@@ -3256,6 +3294,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["-a", "Music"])
         addIf("🎙 Whisp",   whispQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
+        addIf("🧬 Spine",   spineStatusRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/mediabank/projections/RECONCILE-SUMMARY.md"])
         addIf("📧 Mail flags", mailFlagStatusRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/mailflag-done"])
         addIf("🗣 Voice Memos", voiceMemoQueueRead(),
@@ -5269,6 +5309,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             "/usr/bin/open", ["-a", "Music"], symbol: "music.note")
         add("Whisp",   whispQueueRead(),
             "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "mic.fill")
+        if let s = spineStatusRead() {
+            add("Spine", s,
+                "/usr/bin/open", ["\(HOME)/work/mediabank/projections/RECONCILE-SUMMARY.md"], symbol: "dna")
+        }
         if let vm = voiceMemoQueueRead() {
             add("Voice Memos", vm,
                 "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "waveform")
