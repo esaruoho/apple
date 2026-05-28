@@ -68,8 +68,9 @@ jobs:
       - name: Regenerate skill indexes (bin, scripts, dictionaries, exporters)
         run: python3 bin/gen-skill-indexes.py
 
-      - name: Regenerate docs/ from wiki/ (Jekyll site mirror)
-        run: python3 bin/gen-docs.py
+      # docs/ is hand-curated, NOT auto-generated from wiki/. Do not add a
+      # regen step for it. The Jekyll site under docs/ is edited by hand and
+      # must never be overwritten by a generator.
 
       - name: Show diff (for log readability)
         run: |
@@ -79,29 +80,28 @@ jobs:
             scripts/workflows/INDEX.md \
             dictionaries/INDEX.md \
             wiki/compiled/EXPORTERS.md \
-            docs/ \
             || true
 
-      - name: Commit regenerated indexes + docs if changed
+      - name: Commit regenerated indexes if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Stage indexes + docs site. Nothing else — never sweep in accidents.
+          # Stage only the index files — never sweep in other accidental
+          # changes. docs/ deliberately excluded (hand-curated).
           git add -- \
             wiki/INDEX.md \
             bin/INDEX.md \
             scripts/workflows/INDEX.md \
             dictionaries/INDEX.md \
-            wiki/compiled/EXPORTERS.md \
-            docs/
+            wiki/compiled/EXPORTERS.md
 
           if git diff --staged --quiet; then
-            echo "indexes + docs are already current — nothing to commit"
+            echo "indexes are already current — nothing to commit"
             exit 0
           fi
 
-          git commit -m "auto-regen: refresh indexes + site after ${GITHUB_SHA:0:7} [skip ci]"
+          git commit -m "auto-regen: refresh indexes after ${GITHUB_SHA:0:7} [skip ci]"
           git push
 
       - name: Run wiki-lint (warnings only, never fails the build)
