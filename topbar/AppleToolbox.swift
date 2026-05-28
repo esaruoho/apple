@@ -1528,10 +1528,31 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
             }
         case "CLOUDCITY_OPEN", UNNotificationDefaultActionIdentifier:
             if let p = info["open_path"] as? String {
-                NSWorkspace.shared.open(URL(fileURLWithPath: p))
+                openPathForUser(p)
             }
         default:
             break
+        }
+    }
+
+    // Banner-tap / Open action handler. The naive NSWorkspace.shared.open(URL)
+    // for a folder is unreliable: the system foregrounds AppleToolbox (the
+    // responding app) before our handler runs, and Finder either opens behind
+    // it or doesn't activate at all — the user sees "AppleToolbox opened,
+    // not the folder". Force the right backend per path type:
+    //   - directory → open that folder as the Finder window root
+    //   - file      → open with the default app
+    // In both cases, activate the destination app so it foregrounds over us.
+    private func openPathForUser(_ p: String) {
+        var isDir: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: p, isDirectory: &isDir)
+        if exists && isDir.boolValue {
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: p)
+        } else {
+            let url = URL(fileURLWithPath: p)
+            let config = NSWorkspace.OpenConfiguration()
+            config.activates = true
+            NSWorkspace.shared.open(url, configuration: config) { _, _ in }
         }
     }
 
@@ -3479,6 +3500,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let launcherRoot = NSMenuItem(title: "🚀 Launchers", action: nil, keyEquivalent: "")
         launcherRoot.submenu = launcherMenu
         menu.addItem(launcherRoot)
+
+        // Apps submenu — launch local Apple-native apps that pair with this toolbox
+        menu.addItem(submenu("🚀 Apps", items: [
+            action("💬 Converse — live transcription editor",
+                cmd: "/usr/bin/open", args: ["-a", "/Applications/Converse.app"]),
+        ]))
 
         // Slashes submenu — Apple-skill verbs as menu items with prompts
         menu.addItem(submenu("Slashes", items: [
@@ -8656,19 +8683,151 @@ enum SnapEngine {
             withinTol($0, of: maxRect, tol: 30)
         }) ?? false
 
+        // Apps that ignore AX position writes (iTerm2 collapses every
+        // window to visibleFrame.origin; Finder/Mail/Safari similarly run
+        // their own placement logic AFTER our kAXPosition write lands).
+        // For these, send one atomic `set bounds` per window via the app's
+        // own AppleScript dictionary — same approach tile-dock-snap.scpt
+        // uses for known-scriptable apps. The dictionary verb sets x1/y1/
+        // x2/y2 in a single Apple Event, so the app commits the geometry
+        // as a whole and its smart-placement code doesn't get a chance to
+        // interject between size-set and position-set.
+        let scriptName = appleScriptName(for: appName)
         let mode: String
         if targetIsMaximized {
-            tileGrid(windows: windows, in: maxRect)
-            mode = "TILED \(windows.count)"
-        } else {
-            for w in windows {
-                setFrame(w, origin: maxRect.origin, size: maxRect.size)
+            if let sn = scriptName,
+               tileViaAppleScript(appScriptName: sn, count: windows.count, target: maxRect) {
+                mode = "TILED \(windows.count) (AS:\(sn))"
+            } else {
+                tileGrid(windows: windows, in: maxRect)
+                mode = "TILED \(windows.count) (AX)"
             }
-            mode = "MAXIMIZED all \(windows.count)"
+        } else {
+            if let sn = scriptName,
+               maximizeViaAppleScript(appScriptName: sn, target: maxRect) {
+                mode = "MAXIMIZED all (AS:\(sn))"
+            } else {
+                for w in windows {
+                    setFrame(w, origin: maxRect.origin, size: maxRect.size)
+                }
+                mode = "MAXIMIZED all \(windows.count) (AX)"
+            }
         }
 
         let elapsed = Date().timeIntervalSince(started)
         NSLog("SnapEngine: \(appName) — \(mode) in \(String(format: "%.2f", elapsed))s")
+    }
+
+    /// Map an NSRunningApplication.localizedName to the app's AppleScript
+    /// dictionary name. Returns nil for apps we don't have a known dict
+    /// for — caller falls back to the in-process AX path.
+    private static func appleScriptName(for appName: String) -> String? {
+        switch appName {
+        case "iTerm2", "iTerm":            return "iTerm"
+        case "Safari":                     return "Safari"
+        case "Mail":                       return "Mail"
+        case "Terminal":                   return "Terminal"
+        case "Finder":                     return "Finder"
+        case "TextEdit":                   return "TextEdit"
+        case "Music":                      return "Music"
+        case "Notes":                      return "Notes"
+        case "Preview":                    return "Preview"
+        case "Sublime Text":               return "Sublime Text"
+        case "Google Chrome":              return "Google Chrome"
+        default:                           return nil
+        }
+    }
+
+    /// Tile via the app's AppleScript `set bounds of window id N` verb.
+    /// Returns true on success, false if the script errors so the caller
+    /// can fall back to the AX path. `target` is in top-left coords
+    /// (same space as visibleFrameInAX); AppleScript's bounds property
+    /// also uses top-left, so no conversion needed.
+    private static func tileViaAppleScript(appScriptName: String,
+                                           count n: Int,
+                                           target: CGRect) -> Bool {
+        guard n > 0 else { return false }
+        let layout = rowLayout(n: n)
+        let rowCount = layout.count
+        let rowH = Int(target.size.height) / rowCount
+        var calls: [String] = []
+        var idx = 0
+        for (rowI, cellsInRow) in layout.enumerated() {
+            let cellW = Int(target.size.width) / cellsInRow
+            for colI in 0..<cellsInRow {
+                if idx >= n { break }
+                let x1 = Int(target.origin.x) + (colI * cellW)
+                let y1 = Int(target.origin.y) + (rowI * rowH)
+                let x2 = x1 + cellW
+                let y2 = y1 + rowH
+                // The script uses `item N of winIds` so window identity
+                // stays stable across the tell-block — AppleScript's
+                // `whose id is X` lookup doesn't depend on positional
+                // ordering inside the app's window list.
+                calls.append("  try\n" +
+                             "    set bounds of (first window whose id is (item \(idx+1) of winIds)) to {\(x1), \(y1), \(x2), \(y2)}\n" +
+                             "  end try")
+                idx += 1
+            }
+        }
+        let script = """
+        tell application "\(appScriptName)"
+          set winIds to id of every window
+        end tell
+        tell application "\(appScriptName)"
+        \(calls.joined(separator: "\n"))
+        end tell
+        """
+        return runOsascript(script: script, label: "tile \(appScriptName)")
+    }
+
+    /// MAXIMIZE all windows via AppleScript `set bounds`. Same atomic
+    /// dispatch as tileViaAppleScript but every window gets the full
+    /// `target` rect.
+    private static func maximizeViaAppleScript(appScriptName: String,
+                                               target: CGRect) -> Bool {
+        let x1 = Int(target.origin.x)
+        let y1 = Int(target.origin.y)
+        let x2 = x1 + Int(target.size.width)
+        let y2 = y1 + Int(target.size.height)
+        let script = """
+        tell application "\(appScriptName)"
+          set winIds to id of every window
+          repeat with wid in winIds
+            try
+              set bounds of (first window whose id is wid) to {\(x1), \(y1), \(x2), \(y2)}
+            end try
+          end repeat
+        end tell
+        """
+        return runOsascript(script: script, label: "maximize \(appScriptName)")
+    }
+
+    /// Shell out to osascript. Returns true if exit code 0 AND stderr
+    /// doesn't carry an "execution error" — AppleScript can swallow
+    /// errors inside `try` blocks but a syntax / dictionary-missing
+    /// failure surfaces here so caller falls back to AX.
+    private static func runOsascript(script: String, label: String) -> Bool {
+        let task = Process()
+        task.launchPath = "/usr/bin/osascript"
+        task.arguments = ["-e", script]
+        let errPipe = Pipe()
+        task.standardError = errPipe
+        task.standardOutput = Pipe()
+        do {
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            NSLog("SnapEngine: osascript spawn failed for \(label): \(error)")
+            return false
+        }
+        if task.terminationStatus != 0 {
+            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            let errStr = String(data: errData, encoding: .utf8) ?? ""
+            NSLog("SnapEngine: \(label) osascript exit=\(task.terminationStatus) stderr=\(errStr.prefix(200))")
+            return false
+        }
+        return true
     }
 
     /// AXFocusedWindow — the one with current keyboard focus.
