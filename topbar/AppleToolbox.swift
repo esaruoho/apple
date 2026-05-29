@@ -2517,7 +2517,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // The actual dispatch shell-out, shared by the timer + the FSEvents
         // source so a save reacts instantly AND the timer catches anything
         // FSEvents missed.
+        //
+        // Stickies-closed gate: a sticky's content can only change while
+        // Stickies.app is running, so when it isn't we skip the spawn
+        // entirely. This is an in-process check (NSWorkspace, zero
+        // subprocesses) — the single most important guard here, because
+        // each spawned run otherwise reads + textutil-converts + hashes
+        // every note (~10× textutil). With Stickies closed (its normal
+        // state) the backstop timer now costs nothing. The watcher script
+        // has the same guard via pgrep as a second line of defence.
         let fire = {
+            let stickiesRunning = NSWorkspace.shared.runningApplications.contains {
+                $0.bundleIdentifier == "com.apple.Stickies"
+            }
+            guard stickiesRunning else { return }
             let p = Process()
             p.launchPath = "/bin/bash"
             p.arguments = ["-c", watcher]
@@ -2526,9 +2539,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             do { try p.run() } catch { NSLog("AppleToolbox: stickies watcher spawn failed: \(error)") }
         }
 
-        // 1.5s polling backstop on .common runloop modes so it keeps firing
-        // during menu interaction.
-        let t = Timer(timeInterval: 1.5, repeats: true) { _ in fire() }
+        // 30s polling backstop. FSEvents (below) is the real-time path —
+        // it fires within milliseconds of an actual sticky save — so this
+        // timer only exists to cover a missed FSEvents event or the
+        // cold-start race after AppleToolbox relaunches. It used to run at
+        // 1.5s, which spawned the heavy scan ~40×/min around the clock and
+        // made AppleToolbox the top energy consumer. .common mode keeps it
+        // firing during menu interaction.
+        let t = Timer(timeInterval: 30.0, repeats: true) { _ in fire() }
         RunLoop.main.add(t, forMode: .common)
         stickiesClaudeTimer = t
 

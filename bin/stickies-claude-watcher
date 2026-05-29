@@ -32,6 +32,17 @@ mkdir -p "$STATE_DIR" "$(dirname "$LOG")"
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
 
+# Stickies-closed fast path. A sticky's content can only change while
+# Stickies.app is running, so when it isn't we have nothing to scan and
+# can bail before the expensive per-note textutil/shasum loop. This is the
+# single cheapest guard in the watcher (one pgrep vs ~10× textutil), and it
+# is what keeps AppleToolbox idle: the menu-bar app fires this script on a
+# short poll, and with Stickies closed every fire now costs one pgrep and
+# exits in milliseconds instead of spawning ~65 subprocesses.
+if ! /usr/bin/pgrep -qx Stickies; then
+    exit 0
+fi
+
 # Single-instance lock. AppleToolbox fires the watcher from BOTH a 1.5s
 # poll AND an FSEvents source on the Stickies dir; the FSEvents source can
 # fire several times for a single sticky save (one event per file inside
