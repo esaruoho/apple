@@ -2482,6 +2482,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var stickiesDirSource: DispatchSourceFileSystemObject?
     var stickiesDirFD: Int32 = -1
+    /// NSWorkspace launch/quit observers that arm/disarm the watcher apparatus.
+    var stickiesWorkspaceObservers: [NSObjectProtocol] = []
+
+    private var stickiesWatcherPath: String { "\(HOME)/work/apple/bin/stickies-claude-watcher" }
+    private var stickiesDir: String { "\(HOME)/Library/Containers/com.apple.Stickies/Data/Library/Stickies" }
+    private func stickiesIsRunning() -> Bool {
+        NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.apple.Stickies" }
+    }
 
     // Voice memo → whisp pipeline (poll CloudRecordings.db for #process,
     // submit to whisp-inbox, fire clickable notifications when transcripts
@@ -2507,30 +2515,57 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // ~/work/apple/bin/mail-flag-config.json. Lives here for FDA grant.
     var mailFlagWatcherRunner: MailFlagWatcherRunner?
 
+    /// Entry point, called once at launch. The watcher apparatus — a 30s
+    /// backstop timer + an FSEvents source on the Stickies folder — only
+    /// exists while Stickies.app is running. A sticky's content cannot change
+    /// while the app is closed, so when it isn't there is literally nothing to
+    /// watch: no timer ticking, no open file descriptor, no work of any kind.
+    /// We observe NSWorkspace launch/quit, arm on Stickies launching (and on
+    /// our own launch if it's already up), and tear everything down when
+    /// Stickies quits. This is what keeps AppleToolbox a benign background app.
     func startStickiesClaudeTimer() {
-        let watcher = "\(HOME)/work/apple/bin/stickies-claude-watcher"
-        guard FileManager.default.isExecutableFile(atPath: watcher) else {
-            NSLog("AppleToolbox: stickies-claude-watcher not executable at \(watcher), skipping")
+        guard FileManager.default.isExecutableFile(atPath: stickiesWatcherPath) else {
+            NSLog("AppleToolbox: stickies-claude-watcher not executable at \(stickiesWatcherPath), skipping")
             return
         }
 
-        // The actual dispatch shell-out, shared by the timer + the FSEvents
-        // source so a save reacts instantly AND the timer catches anything
-        // FSEvents missed.
-        //
-        // Stickies-closed gate: a sticky's content can only change while
-        // Stickies.app is running, so when it isn't we skip the spawn
-        // entirely. This is an in-process check (NSWorkspace, zero
-        // subprocesses) — the single most important guard here, because
-        // each spawned run otherwise reads + textutil-converts + hashes
-        // every note (~10× textutil). With Stickies closed (its normal
-        // state) the backstop timer now costs nothing. The watcher script
-        // has the same guard via pgrep as a second line of defence.
+        let wsCenter = NSWorkspace.shared.notificationCenter
+        let launchObs = wsCenter.addObserver(
+            forName: NSWorkspace.didLaunchApplicationNotification,
+            object: nil, queue: .main) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier == "com.apple.Stickies" else { return }
+            self?.armStickiesWatch()
+        }
+        let quitObs = wsCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification,
+            object: nil, queue: .main) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier == "com.apple.Stickies" else { return }
+            self?.disarmStickiesWatch()
+        }
+        stickiesWorkspaceObservers = [launchObs, quitObs]
+
+        if stickiesIsRunning() {
+            armStickiesWatch()
+        } else {
+            NSLog("AppleToolbox: stickies-claude dormant — Stickies not running; will arm when it launches")
+        }
+    }
+
+    /// Create the 30s backstop timer + FSEvents source. No-op if already armed
+    /// (the launch notification can arrive while we're already watching).
+    func armStickiesWatch() {
+        guard stickiesClaudeTimer == nil else { return }
+        let watcher = stickiesWatcherPath
+
+        // Dispatch shell-out, shared by the timer + the FSEvents source so a
+        // save reacts instantly AND the timer catches anything FSEvents
+        // missed. The apparatus only exists while Stickies is up, but the
+        // re-check is microseconds and closes the launch/quit-race window.
         let fire = {
-            let stickiesRunning = NSWorkspace.shared.runningApplications.contains {
-                $0.bundleIdentifier == "com.apple.Stickies"
-            }
-            guard stickiesRunning else { return }
+            guard NSWorkspace.shared.runningApplications.contains(where: {
+                $0.bundleIdentifier == "com.apple.Stickies" }) else { return }
             let p = Process()
             p.launchPath = "/bin/bash"
             p.arguments = ["-c", watcher]
@@ -2539,13 +2574,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             do { try p.run() } catch { NSLog("AppleToolbox: stickies watcher spawn failed: \(error)") }
         }
 
-        // 30s polling backstop. FSEvents (below) is the real-time path —
-        // it fires within milliseconds of an actual sticky save — so this
-        // timer only exists to cover a missed FSEvents event or the
-        // cold-start race after AppleToolbox relaunches. It used to run at
-        // 1.5s, which spawned the heavy scan ~40×/min around the clock and
-        // made AppleToolbox the top energy consumer. .common mode keeps it
-        // firing during menu interaction.
+        // 30s polling backstop. FSEvents (below) is the real-time path — it
+        // fires within milliseconds of an actual sticky save — so this timer
+        // only covers a missed FSEvents event or the arm-time race. .common
+        // mode keeps it firing during menu interaction.
         let t = Timer(timeInterval: 30.0, repeats: true) { _ in fire() }
         RunLoop.main.add(t, forMode: .common)
         stickiesClaudeTimer = t
@@ -2555,7 +2587,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // source fires whenever the Stickies dir changes (write / extend /
         // rename / attrib). Coalescing happens naturally — a flurry of
         // writes during quit-flush triggers one event, not N.
-        let dir = "\(HOME)/Library/Containers/com.apple.Stickies/Data/Library/Stickies"
+        let dir = stickiesDir
         let fd = open(dir, O_EVTONLY)
         if fd >= 0 {
             stickiesDirFD = fd
@@ -2571,10 +2603,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             src.resume()
             stickiesDirSource = src
-            NSLog("AppleToolbox: stickies-claude armed (1.5s poll + FSEvents on \(dir))")
+            NSLog("AppleToolbox: stickies-claude armed — Stickies running; 30s poll + FSEvents on \(dir)")
         } else {
-            NSLog("AppleToolbox: stickies-claude FSEvents open() failed for \(dir) — falling back to poll only")
+            NSLog("AppleToolbox: stickies-claude FSEvents open() failed for \(dir) — poll only")
         }
+    }
+
+    /// Tear the watcher apparatus down when Stickies quits — invalidate the
+    /// timer and cancel the FSEvents source (its cancel handler closes the
+    /// fd). After this, nothing ticks and no descriptor is held until Stickies
+    /// launches again.
+    func disarmStickiesWatch() {
+        guard stickiesClaudeTimer != nil || stickiesDirSource != nil else { return }
+        stickiesClaudeTimer?.invalidate()
+        stickiesClaudeTimer = nil
+        stickiesDirSource?.cancel()   // cancel handler closes stickiesDirFD
+        stickiesDirSource = nil
+        NSLog("AppleToolbox: stickies-claude disarmed — Stickies quit; nothing watching")
     }
 
     /// Carbon RegisterEventHotKey for the menu-bar-owned keyboard shortcuts:
