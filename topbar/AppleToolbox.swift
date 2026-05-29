@@ -1456,6 +1456,21 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
     private var dirFD: Int32 = -1
     private var coalesceTimer: Timer?
 
+    // Pending click-target: the most recently delivered notification that has
+    // an open_path. When AppleToolbox is activated by a notification click
+    // (clicking the banner body always foregrounds the source app, even on
+    // LSUIElement menu-bar apps where the UN delegate didReceive doesn't
+    // fire), we observe NSApplication.didBecomeActiveNotification and open
+    // this path. Cleared after a window (CLICK_WINDOW_S) or once opened.
+    private var pendingOpenPath: String?
+    private var pendingOpenAt: Date?
+    // 5-minute window — long enough for the user to glance at a banner,
+    // finish what they were doing, then click. Trade-off: if they click the
+    // menu-bar 🧰 icon within this window for unrelated reasons, Finder
+    // will also open the pending path. The pendingOpenPath is cleared after
+    // each fire so it's at most one false open per notification.
+    private let CLICK_WINDOW_S: TimeInterval = 300
+
     override init() {
         let home = NSHomeDirectory()
         self.inboxDir     = "\(home)/work/comms/queue/notify-inbox"
@@ -1493,8 +1508,36 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
             UNUserNotificationCenter.current().setNotificationCategories(merged)
         }
         startDirWatcher()
+        // Observe app activation. Clicking a notification banner foregrounds
+        // AppleToolbox even when the UN delegate's didReceive never fires.
+        // Use that activation as the click signal.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
         // Initial scan in case Syncthing delivered files while we were down.
         DispatchQueue.main.async { [weak self] in self?.drain() }
+    }
+
+    @objc private func handleAppDidBecomeActive() {
+        guard let path = pendingOpenPath, let at = pendingOpenAt else { return }
+        let age = Date().timeIntervalSince(at)
+        // Clear the pending state before opening so a double-activation
+        // doesn't double-fire the open.
+        pendingOpenPath = nil
+        pendingOpenAt = nil
+        // Discard stale clicks — if the activation is more than CLICK_WINDOW_S
+        // after delivery, treat it as the user activating AppleToolbox for
+        // unrelated reasons (clicked menu-bar icon, etc.), not a click on
+        // this notification.
+        guard age <= CLICK_WINDOW_S else {
+            log("ACTIVATE-IGNORED stale pending click age=\(Int(age))s path=\(path)")
+            return
+        }
+        log("ACTIVATE-CLICK age=\(Int(age))s → opening \(path)")
+        openPathForUser(path)
     }
 
     // UNUserNotificationCenterDelegate handlers — note VoiceMemoPipeline is
@@ -1521,38 +1564,65 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
 
     func handle(response: UNNotificationResponse) {
         let info = response.notification.request.content.userInfo
-        switch response.actionIdentifier {
+        let act = response.actionIdentifier
+        log("CLICK actionIdentifier=\(act) keys=\(Array(info.keys))")
+        switch act {
         case "CLOUDCITY_REVEAL":
             if let p = info["reveal_path"] as? String ?? info["open_path"] as? String {
+                log("CLICK → REVEAL path=\(p)")
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: p)])
+            } else {
+                log("CLICK REVEAL but no reveal_path/open_path in userInfo")
             }
         case "CLOUDCITY_OPEN", UNNotificationDefaultActionIdentifier:
             if let p = info["open_path"] as? String {
+                log("CLICK → OPEN path=\(p)")
                 openPathForUser(p)
+            } else {
+                log("CLICK OPEN but no open_path in userInfo")
             }
         default:
-            break
+            log("CLICK ignored (unknown action \(act))")
         }
     }
 
-    // Banner-tap / Open action handler. The naive NSWorkspace.shared.open(URL)
-    // for a folder is unreliable: the system foregrounds AppleToolbox (the
-    // responding app) before our handler runs, and Finder either opens behind
-    // it or doesn't activate at all — the user sees "AppleToolbox opened,
-    // not the folder". Force the right backend per path type:
-    //   - directory → open that folder as the Finder window root
-    //   - file      → open with the default app
-    // In both cases, activate the destination app so it foregrounds over us.
+    // Banner-tap / Open action handler. NSWorkspace.shared.open(URL) and
+    // even selectFile(nil, inFileViewerRootedAtPath:) reliably FAIL to bring
+    // Finder forward when AppleToolbox (an LSUIElement menu-bar app) is the
+    // responding app — Finder opens the window behind us. Solution: explicitly
+    // launch Finder with the URL via the modern open(_:withApplicationAt:
+    // configuration:) API with activates=true, and as a belt-and-braces
+    // measure, deactivate AppleToolbox right after.
     private func openPathForUser(_ p: String) {
+        // Every in-process NSWorkspace call (open(URL), open(_:withApplicationAt:),
+        // selectFile(nil, inFileViewerRootedAtPath:)) loses the race against the
+        // UN-response delivery, which foregrounds AppleToolbox (LSUIElement
+        // menu-bar app) as part of handling the response. The target app's
+        // window opens behind AppleToolbox or never gets activation focus.
+        //
+        // Fork /usr/bin/open as a separate process. It runs OUTSIDE this app's
+        // activation context, asks LaunchServices to open the path with the
+        // default app (Finder for directories, default-handler for files), and
+        // -a Finder forces Finder for directories explicitly. open's own
+        // activation logic wins because it's a fresh process, not chained off
+        // the response delivery.
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         var isDir: ObjCBool = false
         let exists = FileManager.default.fileExists(atPath: p, isDirectory: &isDir)
         if exists && isDir.boolValue {
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: p)
+            task.arguments = ["-a", "Finder", p]
         } else {
-            let url = URL(fileURLWithPath: p)
-            let config = NSWorkspace.OpenConfiguration()
-            config.activates = true
-            NSWorkspace.shared.open(url, configuration: config) { _, _ in }
+            task.arguments = [p]
+        }
+        do { try task.run() } catch {
+            // Fallback path if the binary can't be exec'd for any reason.
+            NSWorkspace.shared.open(URL(fileURLWithPath: p))
+        }
+        // Hide ourselves so the just-launched Finder window isn't suppressed
+        // by our activation. 50ms is enough for /usr/bin/open to call AppKit.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            NSApp.hide(nil)
         }
     }
 
@@ -1622,6 +1692,7 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
         let openPath   = raw["open_path"]   as? String
         let revealPath = raw["reveal_path"] as? String
         let soundName  = raw["sound"] as? String
+        let autoOpen   = (raw["auto_open"] as? Bool) ?? false
 
         let content = UNMutableNotificationContent()
         content.title = title
@@ -1644,6 +1715,22 @@ final class NotifyInboxWatcher: NSObject, UNUserNotificationCenterDelegate {
             } else {
                 self.log("DELIVERED \(originalName) from \(sender): \(title)")
                 self.move(path, toDir: self.processedDir)
+                // Arm the click-target. If the user clicks this banner,
+                // AppleToolbox foregrounds (the only reliably-observable
+                // signal for an LSUIElement menu-bar app — UN delegate's
+                // didReceive doesn't fire here), handleAppDidBecomeActive
+                // sees this pending state and opens the path.
+                if let p = openPath {
+                    self.pendingOpenPath = p
+                    self.pendingOpenAt = Date()
+                }
+                // auto_open=true → also open immediately on delivery without
+                // waiting for the click. Used for results the sender wants
+                // in front of the user no matter what (e.g. gdrive done).
+                if autoOpen, let p = openPath {
+                    self.log("AUTO-OPEN \(originalName) → \(p)")
+                    DispatchQueue.main.async { self.openPathForUser(p) }
+                }
             }
         }
     }
@@ -1704,6 +1791,16 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let cat = response.notification.request.content.categoryIdentifier
+        let act = response.actionIdentifier
+        let id  = response.notification.request.identifier
+        // Mirror to the notify-inbox log so we can confirm clicks are reaching us.
+        if let log = try? FileHandle(forWritingTo: URL(fileURLWithPath:
+            "\(NSHomeDirectory())/work/mediabank/var/log/notify-inbox.log")) {
+            try? log.seekToEnd()
+            let line = "[\(ISO8601DateFormatter().string(from: Date()))] [router] didReceive cat=\(cat) act=\(act) id=\(id)\n"
+            try? log.write(contentsOf: Data(line.utf8))
+            try? log.close()
+        }
         if cat == "VOICEMEMO_TRANSCRIBED" {
             voicememo?.userNotificationCenter(center, didReceive: response) { completionHandler() }
         } else if cat == "CLOUDCITY_NOTIFY" {
@@ -2282,6 +2379,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         router.notifyInbox = nib
         notificationRouter = router
         UNUserNotificationCenter.current().delegate = router
+
+        // Register ALL notification categories synchronously, in one call,
+        // BEFORE any pipeline starts. Each pipeline used to call
+        // setNotificationCategories itself (some sync, some via async
+        // getNotificationCategories merge), which raced — last writer wins,
+        // any category not in the final set silently loses its action buttons
+        // AND its click-routing to the delegate (macOS falls back to "activate
+        // source app" instead of calling didReceive). That is the
+        // "click does nothing but bring AppleToolbox forward" bug.
+        // Register ALL notification categories synchronously, in one call.
+        // Each pipeline used to call setNotificationCategories itself (some
+        // sync, some via async getNotificationCategories merge), which raced
+        // — last writer wins, any category not in the final set silently
+        // loses its action buttons AND its click-routing.
+        do {
+            let vmOpen = UNNotificationAction(identifier: "VOICEMEMO_OPEN_TRANSCRIPT", title: "Open transcript", options: [.foreground])
+            let vmReveal = UNNotificationAction(identifier: "VOICEMEMO_REVEAL", title: "Reveal in Finder", options: [])
+            let vmCat = UNNotificationCategory(identifier: "VOICEMEMO_TRANSCRIBED", actions: [vmOpen, vmReveal], intentIdentifiers: [], options: [])
+            let ccOpen = UNNotificationAction(identifier: "CLOUDCITY_OPEN", title: "Open", options: [.foreground])
+            let ccReveal = UNNotificationAction(identifier: "CLOUDCITY_REVEAL", title: "Reveal in Finder", options: [])
+            let ccCat = UNNotificationCategory(identifier: "CLOUDCITY_NOTIFY", actions: [ccOpen, ccReveal], intentIdentifiers: [], options: [])
+            let tagCat = UNNotificationCategory(identifier: "TAG_DISPATCHED", actions: [], intentIdentifiers: [], options: [])
+            let mailCat = UNNotificationCategory(identifier: "MAILFLAG_DISPATCHED", actions: [], intentIdentifiers: [], options: [])
+            UNUserNotificationCenter.current().setNotificationCategories([vmCat, ccCat, tagCat, mailCat])
+        }
 
         // Start the pipelines after the delegate is wired so click actions
         // route correctly from the very first notification.
