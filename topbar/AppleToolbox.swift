@@ -577,6 +577,57 @@ func whispQueueRead() -> String {
     }
 }
 
+func mirrorQueueRead() -> String? {
+    // MERLib mirror-worker heartbeat (written every loop tick on the Mini,
+    // Syncthing-mirrored to the laptop). Shape:
+    //   { ts, ts_iso, status, worker_pid,
+    //     queue: {pending, processing, done, failed},
+    //     current: {target, domain, mode, path_filter, started_at} }
+    // Returns nil → row hidden. Returns "..." → row shown.
+    let path = "\(HOME)/work/comms/queue/merlib-mirror-heartbeat.json"
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { return nil }
+
+    let status = obj["status"] as? String ?? "?"
+    let queue = obj["queue"] as? [String: Any] ?? [:]
+    let pending = queue["pending"] as? Int ?? 0
+    let processing = queue["processing"] as? Int ?? 0
+    let failed = queue["failed"] as? Int ?? 0
+
+    // Staleness: idle worker writes every 5 min (POLL_IDLE=300s). Anything
+    // older than ~10 min and the guardian should have noticed; surface it.
+    var staleHint = ""
+    if let ts = obj["ts"] as? Double {
+        let age = Date().timeIntervalSince1970 - ts
+        if age > 600 { staleHint = " (stale \(Int(age))s)" }
+    }
+
+    let failedSuffix = failed > 0 ? " · \(failed) failed" : ""
+
+    switch status {
+    case "processing":
+        if let cur = obj["current"] as? [String: Any],
+           let dom = cur["domain"] as? String, !dom.isEmpty {
+            let mode = cur["mode"] as? String ?? "?"
+            let short = dom.count > 32 ? String(dom.prefix(29)) + "…" : dom
+            return "▶ \(short) (\(mode)) · \(pending) queued\(failedSuffix)\(staleHint)"
+        }
+        return "▶ processing · \(pending) queued\(failedSuffix)\(staleHint)"
+    case "idle":
+        if pending == 0 && processing == 0 {
+            return "💤 idle\(failedSuffix)\(staleHint)"
+        }
+        return "💤 idle · \(pending) queued\(failedSuffix)\(staleHint)"
+    case "between_jobs":
+        return "⏳ between jobs · \(pending) queued\(failedSuffix)\(staleHint)"
+    case "starting":
+        return "🚀 starting\(staleHint)"
+    default:
+        return "\(status) · \(pending) queued\(failedSuffix)\(staleHint)"
+    }
+}
+
 func spineStatusRead() -> String? {
     // Read live heartbeat written by `spine watch` on the laptop.
     // Heartbeat path is local — spine runs on RayMac, not synced from Mini.
@@ -3447,6 +3498,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["\(HOME)/work/cc/vault/_index/transcripts-by-date.md"])
         addIf("✂️ Fileerata", fileerataQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/segment-outbox"])
+        addIf("🌐 Mirror",   mirrorQueueRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/gdrive-results"])
         menu.addItem(.separator())
 
         // Quick actions
@@ -5473,6 +5526,10 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         if let f = fileerataQueueRead() {
             add("Fileerata", f,
                 "/usr/bin/open", ["\(HOME)/work/comms/queue/segment-outbox"], symbol: "scissors")
+        }
+        if let m = mirrorQueueRead() {
+            add("Mirror", m,
+                "/usr/bin/open", ["\(HOME)/work/comms/queue/gdrive-results"], symbol: "globe")
         }
 
         // Launchers — show the three rebindable keyboard shortcut slots. Click activates
