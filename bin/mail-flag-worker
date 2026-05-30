@@ -58,6 +58,9 @@ COMMS = HOME / "work" / "comms" / "queue"
 DONE_DIR = COMMS / "mailflag-done"          # per-message audit record (.json)
 FAILED_DIR = COMMS / "mailflag-failed"      # failed routing (.json + .error)
 STATE_PATH = COMMS / "mail-flag-state.json" # processed ROWID set + skipped_temp
+PAUSE_PATH = COMMS / "mail-flag-worker.PAUSE"  # if present, every tick no-ops
+# instantly (just a file stat). Lets you stop the worker dead without killing
+# AppleToolbox or rebuilding it. Remove the file to resume. (2026-05-30.)
 LOG_PATH = COMMS / "mail-flag-worker.log"
 STATUS_PATH = COMMS / "mail-flag-worker.status.json"
 LOCK_PATH = COMMS / "mail-flag-worker.lock"
@@ -1114,6 +1117,9 @@ def process_one(row: dict, contract: dict, dry_run: bool = False,
 def cmd_tick(dry_run: bool = False, backfill: bool = False) -> None:
     """One safe pass: read SQLite, filter to enabled colors, process up to
     MAX_PER_TICK new messages. Under flock to guarantee single-runner."""
+    if PAUSE_PATH.exists():
+        print(f"paused: {PAUSE_PATH} present — remove it to resume")
+        return
     try:
         lock_fh = acquire_lock()
     except BlockingIOError:
@@ -1138,21 +1144,40 @@ def cmd_tick(dry_run: bool = False, backfill: bool = False) -> None:
         rows = fetch_flagged(con, enabled)
         con.close()
 
-        # Always retry skipped_temp ROWIDs — they're partial .emlx files that
-        # Mail hasn't fully downloaded yet. Each retry is cheap (just a disk
-        # read to check the .emlx isn't .partial anymore). No Mail.app load
-        # until we have a full message to actually route.
-        new = [r for r in rows if r["ROWID"] not in processed_set]
+        # Fresh = never-seen ROWIDs (not yet routed, not currently stuck as a
+        # partial). Drain these EVERY tick — they're the live backlog.
+        fresh = [r for r in rows
+                 if r["ROWID"] not in processed_set
+                 and r["ROWID"] not in skipped_set]
 
-        if not new:
+        # skipped_temp = .partial.emlx we couldn't route last time (Mail hasn't
+        # downloaded the body, or it's a Gmail virtual-mailbox partial that
+        # can't be force-downloaded). Retry these on a throttle ONLY, and only
+        # when there's no fresh work. Retrying them every tick is what pinned a
+        # CPU core 24/7 routing nothing (2026-05-30 energy-hog incident) — the
+        # same stuck partials filled the batch window forever and the live
+        # backlog was never reached.
+        now = time.time()
+        retry = []
+        if not fresh and skipped_set:
+            if (now - float(state.get("last_skip_retry_ts", 0))) >= SKIP_RETRY_INTERVAL:
+                retry = [r for r in rows if r["ROWID"] in skipped_set]
+                state["last_skip_retry_ts"] = now
+
+        if not fresh and not retry:
+            # Cheap path: nothing to do. No .emlx parsing, no Mail load.
+            stuck = len(skipped_set)
             print(f"no new flagged messages (total enabled-color flagged in Mail: {len(rows)}, "
-                  f"already processed: {len([r for r in rows if r['ROWID'] in processed_set])})")
+                  f"already processed: {len([r for r in rows if r['ROWID'] in processed_set])}, "
+                  f"awaiting download: {stuck})")
             write_status(config, len(rows), len(processed_set), 0)
             return
 
-        # hard cap per tick — Mail-protection
-        batch = new[:MAX_PER_TICK]
-        print(f"{'[DRY-RUN] ' if dry_run else ''}processing {len(batch)} of {len(new)} new flagged message(s) "
+        # hard cap per tick — Mail-protection. Fresh work takes priority.
+        source = fresh if fresh else retry
+        batch = source[:MAX_PER_TICK]
+        kind = "new" if fresh else "skipped-retry"
+        print(f"{'[DRY-RUN] ' if dry_run else ''}processing {len(batch)} of {len(source)} {kind} flagged message(s) "
               f"(cap={MAX_PER_TICK}/tick)")
 
         DONE_DIR.mkdir(parents=True, exist_ok=True)
@@ -1211,9 +1236,9 @@ def cmd_tick(dry_run: bool = False, backfill: bool = False) -> None:
             state["skipped_temp"] = sorted(skipped_set)
             save_state(state)
 
-        write_status(config, len(rows), len(processed_set), len(new) - len(batch))
+        write_status(config, len(rows), len(processed_set), len(source) - len(batch))
         print(f"done: ok={ok_count} failed={fail_count} skipped={skip_count}  "
-              f"(remaining={len(new) - len(batch)})")
+              f"(remaining={len(source) - len(batch)})")
     finally:
         try: lock_fh.close()
         except Exception: pass
