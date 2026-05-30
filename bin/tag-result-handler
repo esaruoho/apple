@@ -199,9 +199,22 @@ def gather_sidecars(result_pdf):
 
 def handle_ocr_result(result_pdf, mapping, dry_run=False):
     """Reconcile one *_ocr.pdf result with its original. Return True on success."""
+    # Results carrying an ast_<id> prefix were submitted by the spine pipeline
+    # (mediabank/bin/spine.py ocr-submit) and are filed by `spine ocr-harvest`
+    # into mediabank/assets/<id>/. They are NOT this pipeline's to handle —
+    # touching them would double-file and needlessly mutate merlib-dump. Skip.
+    if re.search(r"ast_[0-9a-f]{16}", result_pdf.name):
+        return None  # sentinel: spine-owned, not orphaned, not handled
+
     original, map_key = find_original(result_pdf.name, mapping)
     if original is None:
-        log(f"ORPHAN {result_pdf.name}: no mapping entry — leaving in results/")
+        # Map missing/empty — fall back to a filesystem search of the archive
+        # by basename (resolve_basename has its own ambiguity guard). This is
+        # the path that fires when tag-watcher-map.json was never written.
+        original = resolve_basename(result_pdf.name)
+        map_key = None
+    if original is None:
+        log(f"ORPHAN {result_pdf.name}: no map entry and not found in archive — leaving in results/")
         return False
     if not original.parent.exists():
         log(f"SKIP {result_pdf.name}: original folder gone: {original.parent}")
@@ -403,10 +416,14 @@ def cmd_run(dry_run=False):
     pdfs = sorted(p for p in OCR_RESULTS.iterdir()
                   if p.is_file() and p.name.endswith(OCR_PDF_SUFFIX))
     handled = 0
+    spine_owned = 0
     if pdfs:
         print(f"{len(pdfs)} OCR result(s) to reconcile")
         for p in pdfs:
-            if handle_ocr_result(p, mapping, dry_run=dry_run):
+            r = handle_ocr_result(p, mapping, dry_run=dry_run)
+            if r is None:
+                spine_owned += 1  # ast_<id> result — spine files these, skip
+            elif r:
                 handled += 1
     elif proc == 0:
         print("nothing to reconcile (no heartbeat match, no _ocr.pdf results)")
@@ -414,7 +431,8 @@ def cmd_run(dry_run=False):
     if not dry_run and (handled or proc):
         save_map(mapping)
     if pdfs:
-        print(f"reconciled: {handled}/{len(pdfs)}")
+        ours = len(pdfs) - spine_owned
+        print(f"reconciled: {handled}/{ours}  (skipped {spine_owned} spine-owned ast_ results)")
 
 
 def cmd_status():
