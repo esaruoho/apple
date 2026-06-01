@@ -1,0 +1,82 @@
+#!/usr/bin/env swift
+// apple-image-similar — find visually similar / duplicate images on-device, no deps.
+//
+// The image analogue of apple-semantic-match. Apple's Vision framework embeds each
+// image into a feature-print vector (VNFeaturePrintObservation) on the Neural Engine;
+// computeDistance ranks by visual content. Built into macOS, no Homebrew/pip/network.
+//
+// Modes:
+//   apple-image-similar --dir <folder> [--top N] [--threshold D] [--json]
+//        most visually-similar image PAIRS in a folder (low distance = near-duplicate).
+//   apple-image-similar --query <image> --dir <folder> [--top N] [--json]
+//        images in <folder> most similar to <image>.
+//
+// Distance: VNFeaturePrint L2, 0 = identical, larger = more different.
+// Rough guide: <10 near-duplicate · 10–20 similar · >25 unrelated (content-dependent).
+import Foundation
+import Vision
+
+func die(_ s: String) -> Never { FileHandle.standardError.write((s+"\n").data(using:.utf8)!); exit(1) }
+var args = Array(CommandLine.arguments.dropFirst())
+func opt(_ n: String) -> String? { guard let i = args.firstIndex(of:n), i+1 < args.count else {return nil}; return args[i+1] }
+let flagJSON = args.contains("--json")
+let top = Int(opt("--top") ?? "20") ?? 20
+let threshold = Float(opt("--threshold") ?? "1e9") ?? 1e9
+let dir = opt("--dir"); let query = opt("--query")
+
+let IMG: Set<String> = ["png","jpg","jpeg","heic","heif","gif","tiff","tif","bmp","webp"]
+func images(_ folder: String) -> [URL] {
+    ((try? FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: folder),
+        includingPropertiesForKeys: nil)) ?? [])
+        .filter { IMG.contains($0.pathExtension.lowercased()) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+}
+func featurePrint(_ url: URL) -> VNFeaturePrintObservation? {
+    let req = VNGenerateImageFeaturePrintRequest()
+    let h = VNImageRequestHandler(url: url, options: [:])
+    do { try h.perform([req]) } catch { return nil }
+    return req.results?.first as? VNFeaturePrintObservation
+}
+func dist(_ a: VNFeaturePrintObservation, _ b: VNFeaturePrintObservation) -> Float {
+    var d: Float = 0; do { try a.computeDistance(&d, to: b) } catch { return .greatestFiniteMagnitude }; return d
+}
+
+struct Hit: Codable { let a: String; let b: String; let distance: Double }
+var hits: [Hit] = []
+
+guard let dir = dir else {
+    die("usage:\n  apple-image-similar --dir <folder> [--top N] [--threshold D] [--json]\n  apple-image-similar --query <image> --dir <folder> [--top N] [--json]")
+}
+let urls = images(dir)
+if urls.isEmpty { die("no images in \(dir)") }
+
+if let query = query {
+    // query image → nearest in folder
+    guard let qp = featurePrint(URL(fileURLWithPath: query)) else { die("can't read query image \(query)") }
+    FileHandle.standardError.write("scanning \(urls.count) images…\n".data(using:.utf8)!)
+    var scored: [Hit] = []
+    for u in urls {
+        guard let p = featurePrint(u) else { continue }
+        let d = dist(qp, p)
+        if d <= threshold { scored.append(Hit(a: (query as NSString).lastPathComponent, b: u.lastPathComponent, distance: Double((d*1000).rounded()/1000))) }
+    }
+    hits = scored.sorted { $0.distance < $1.distance }.prefix(top).map { $0 }
+} else {
+    // folder mode → most-similar pairs
+    FileHandle.standardError.write("embedding \(urls.count) images…\n".data(using:.utf8)!)
+    var prints: [(name: String, obs: VNFeaturePrintObservation)] = []
+    for u in urls { if let p = featurePrint(u) { prints.append((u.lastPathComponent, p)) } }
+    var pairs: [Hit] = []
+    for i in 0..<prints.count { for j in (i+1)..<prints.count {
+        let d = dist(prints[i].obs, prints[j].obs)
+        if d <= threshold { pairs.append(Hit(a: prints[i].name, b: prints[j].name, distance: Double((d*1000).rounded()/1000))) }
+    }}
+    hits = pairs.sorted { $0.distance < $1.distance }.prefix(top).map { $0 }
+}
+
+if flagJSON {
+    let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted]
+    print(String(data: try! enc.encode(hits), encoding: .utf8)!)
+} else {
+    for h in hits { print(String(format: "%8.3f  %@  ~  %@", h.distance, h.a, h.b)) }
+    if hits.isEmpty { print("(no pairs under threshold \(threshold))") }
+}

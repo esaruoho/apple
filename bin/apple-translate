@@ -1,0 +1,209 @@
+#!/usr/bin/env swift
+// apple-translate — Apple Translation framework via a hidden SwiftUI host.
+//
+// Translation framework on macOS 15+ requires SwiftUI view context
+// (.translationTask), so we boot a hidden NSApp + hidden SwiftUI window,
+// run the translation, print the result on stdout, and exit. No third-party
+// deps, no UI flash, no Translate.app dialog.
+//
+// Usage:
+//   echo "Tämä on suomenkielinen lause."     | apple-translate --to en
+//   echo "the active vacuum is the source."  | apple-translate --to fi
+//   apple-translate --to en --from auto < file.md
+//   apple-translate --to en --json < file.md       # JSON output
+//
+// FIRST-RUN PREREQUISITE — language pack download.
+// The Translation framework needs a per-language-pair data pack installed
+// before it can translate. On a fresh machine, calls return "Unable to
+// Translate" until you do this ONCE per language pair:
+//
+//   1. Open Translate.app (in /System/Applications)
+//   2. System Settings ▸ General ▸ Language & Region ▸ "Translation Languages"
+//   3. Tap "Add Language" and install the languages you need
+//   4. Wait for the download to finish (visible progress in Settings)
+//
+// After that, apple-translate works silently on-device — no further prompts.
+//
+// Apple supports ~19 languages: English, Spanish, French, German, Italian,
+// Portuguese, Russian, Chinese-Simplified, Japanese, Korean, Arabic, Hindi,
+// Thai, Polish, Vietnamese, Indonesian, Turkish, Dutch, Ukrainian.
+// **Finnish is NOT supported** by Apple Translation today.
+//
+// Apple-native, no third-party deps. Hidden 1×1 SwiftUI window so no Dock
+// icon appears.
+
+import Foundation
+import AppKit
+import SwiftUI
+import NaturalLanguage
+import Translation
+
+
+// ── arg parsing ────────────────────────────────────────────────────
+
+func usage() -> Never {
+    FileHandle.standardError.write("""
+    apple-translate — on-device translation via Apple Translation framework.
+
+    Usage:
+      apple-translate --to <lang>  [--from <lang|auto>] [--json] < input
+      cat file.md | apple-translate --to en
+
+    --to <lang>       target language code (en, fi, sv, de, fr, es, it, ja, ko, zh, ru, ar, …)
+    --from <lang>     source language code, or "auto" to detect via NLLanguageRecognizer
+                      (default: auto)
+    --json            output one JSON line {input,detected,output}
+                      (default: just the translated text, plain)
+
+    """.data(using: .utf8)!)
+    exit(2)
+}
+
+var toLang: String?      = nil
+var fromLang: String?    = "auto"
+var jsonMode: Bool       = false
+
+var argv = Array(CommandLine.arguments.dropFirst())
+var i = 0
+while i < argv.count {
+    let a = argv[i]
+    switch a {
+    case "--to":
+        guard i + 1 < argv.count else { usage() }
+        toLang = argv[i+1]; i += 2
+    case "--from":
+        guard i + 1 < argv.count else { usage() }
+        fromLang = argv[i+1]; i += 2
+    case "--json":
+        jsonMode = true; i += 1
+    case "-h", "--help":
+        usage()
+    default:
+        FileHandle.standardError.write("unknown arg: \(a)\n".data(using:.utf8)!)
+        usage()
+    }
+}
+
+guard let targetLangStr = toLang else { usage() }
+let targetLocale = Locale.Language(identifier: targetLangStr)
+
+// Read stdin (the text to translate)
+let stdin = FileHandle.standardInput
+let inputData = stdin.readDataToEndOfFile()
+guard let inputText = String(data: inputData, encoding: .utf8),
+      !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    FileHandle.standardError.write("apple-translate: empty input\n".data(using:.utf8)!)
+    exit(1)
+}
+
+// Detect source language if requested
+let detectedSource: Locale.Language? = {
+    if let f = fromLang, f != "auto" {
+        return Locale.Language(identifier: f)
+    }
+    let recognizer = NLLanguageRecognizer()
+    recognizer.processString(inputText)
+    if let lang = recognizer.dominantLanguage {
+        return Locale.Language(identifier: lang.rawValue)
+    }
+    return nil
+}()
+
+
+// ── SwiftUI host ───────────────────────────────────────────────────
+
+final class Worker: ObservableObject {
+    @Published var configuration: TranslationSession.Configuration?
+    func arm(source: Locale.Language?, target: Locale.Language) {
+        configuration = TranslationSession.Configuration(source: source, target: target)
+    }
+}
+
+let worker = Worker()
+
+struct HostView: View {
+    @ObservedObject var worker: Worker
+    let input: String
+    let onResult: @MainActor (String, Error?) -> Void
+    var body: some View {
+        Text(" ")
+            .frame(width: 1, height: 1)
+            .translationTask(worker.configuration) { session in
+                do {
+                    // Preflight: ensure the language pack is downloaded. If
+                    // this is the first time for this language pair, the
+                    // system displays its standard download prompt.
+                    try await session.prepareTranslation()
+                    let resp = try await session.translate(input)
+                    onResult(resp.targetText, nil)
+                } catch {
+                    onResult("", error)
+                }
+            }
+    }
+}
+
+// ── boot NSApp, install hidden window, run, exit ───────────────────
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let input: String
+    let sourceLang: Locale.Language?
+    let targetLang: Locale.Language
+    let targetCode: String
+    let useJSON: Bool
+
+    init(input: String, source: Locale.Language?, target: Locale.Language,
+         targetCode: String, useJSON: Bool) {
+        self.input = input
+        self.sourceLang = source
+        self.targetLang = target
+        self.targetCode = targetCode
+        self.useJSON = useJSON
+        super.init()
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let src = self.sourceLang
+        let tc = self.targetCode
+        let json = self.useJSON
+        let inText = self.input
+        let host = HostView(worker: worker, input: inText) { result, err in
+            if let err = err {
+                FileHandle.standardError.write("apple-translate: \(err.localizedDescription)\n".data(using:.utf8)!)
+                NSApp.terminate(nil)
+                exit(1)
+            }
+            if json {
+                let obj: [String: Any] = [
+                    "input": inText,
+                    "detected": src?.maximalIdentifier ?? "",
+                    "target": tc,
+                    "output": result,
+                ]
+                if let data = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys]),
+                   let s = String(data: data, encoding: .utf8) {
+                    print(s)
+                }
+            } else {
+                print(result)
+            }
+            NSApp.terminate(nil)
+        }
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1, height: 1),
+            styleMask: [.borderless],
+            backing: .buffered, defer: false)
+        win.alphaValue = 0.0
+        win.contentView = NSHostingView(rootView: host)
+        win.orderFrontRegardless()
+        worker.arm(source: src, target: targetLang)
+    }
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate(input: inputText, source: detectedSource,
+                            target: targetLocale, targetCode: targetLangStr,
+                            useJSON: jsonMode)
+app.delegate = delegate
+app.setActivationPolicy(.accessory)   // no Dock icon, no menu-bar item
+app.run()
