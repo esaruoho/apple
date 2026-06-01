@@ -1,0 +1,453 @@
+#!/usr/bin/env python3
+"""machine-card — emit this computer's Machine Card as JSON.
+
+The Machine Card is the fleet's self-descriptor: a small, same-shaped record
+every Mac publishes so any machine can introduce itself and advertise what it
+can do — with zero LLM tokens. Four faces:
+
+    identity  who am I            (hostname, computer name, user)
+    shape     what kind of Mac    (chip, cores, RAM, GPU, SSD, macOS, AI fit)
+    ports     how do I reach you  (reachability channels: queue, ssh, panel...)
+    running   what's alive now    (load, mem, battery, thermal, queue depths)
+    skills    what can I do        (~/.claude/skills + warm service heartbeats)
+
+shape/ports/skills are SLOW to compute (system_profiler) but change rarely, so
+they are cached to ~/.cache/apple/machine-card-shape.json. `running` is cheap
+and always recomputed. That split is the whole efficiency win over apple-report,
+which recomputes its 679-line dump on every call.
+
+Public/private split (the repo's .gitignore doctrine applied to live machine
+data): `--public` emits only the stable+public quadrant — safe to write to the
+Syncthing queue for peers to read. Default (local) keeps serial, MACs, IPs,
+security posture and exact load for this machine's own panel.
+
+Usage:
+    machine-card                 full card (local-only), JSON to stdout
+    machine-card --public        green-quadrant subset (safe to publish)
+    machine-card --cache         force-refresh the cached shape/ports/skills
+    machine-card --publish       write --public card to the Syncthing queue
+                                 as machine-card-<host>.json (for peers)
+    machine-card --pretty        pretty-print
+
+Apple-native: wraps `apple-report --json`, plus `pmset`, `ps`, `sysctl`,
+`sw_vers`, `scutil`. Python stdlib only.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+APPLE_REPORT = HERE / "apple-report"
+QUEUE = Path.home() / "work" / "comms" / "queue"
+SKILLS_DIR = Path.home() / ".claude" / "skills"
+CACHE = Path.home() / ".cache" / "apple" / "machine-card-shape.json"
+CACHE_TTL = 6 * 3600  # shape/ports/skills are stable; refresh at most every 6h
+
+# Services whose presence is advertised as a routable skill. A warm heartbeat
+# means "running and reachable right now"; an inbox means work can be routed
+# to this machine by dropping a file into the Syncthing-mirrored queue dir.
+SERVICES = {
+    "ocr":           {"heartbeat": "ocr-heartbeat.json",          "inbox": "ocr-inbox",        "verb": "OCR a PDF or image"},
+    "voicebox":      {"heartbeat": "voicebox-heartbeat.json",     "inbox": "voicebox-inbox",   "verb": "Text-to-speech"},
+    "whisp":         {"heartbeat": "whisp-heartbeat.json",        "inbox": "pakettibot-inbox", "verb": "Transcribe audio / YouTube"},
+    "pakettibot":    {"heartbeat": "pakettibot-heartbeat.json",   "inbox": "pakettibot-inbox", "verb": "Run a !pk command"},
+    "merlib-mirror": {"heartbeat": "merlib-mirror-heartbeat.json", "inbox": None,              "verb": "Mirror a website"},
+    "spine":         {"heartbeat": "spine-heartbeat.json",        "inbox": None,               "verb": "Spine orchestrator"},
+    "repo-puller":   {"heartbeat": "repo-puller-heartbeat.json",  "inbox": None,               "verb": "Auto-pull tracked repos"},
+}
+HEARTBEAT_WARM_SECS = 180  # a heartbeat older than this is "cold"
+
+
+def sh(cmd: list[str], timeout: float = 8.0) -> str:
+    try:
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout
+        ).stdout.strip()
+    except Exception:
+        return ""
+
+
+# ───────────────────────── identity ─────────────────────────
+
+def identity() -> dict:
+    return {
+        "hostname": socket.gethostname().split(".")[0],
+        "computer_name": sh(["scutil", "--get", "ComputerName"]) or socket.gethostname(),
+        "local_hostname": sh(["scutil", "--get", "LocalHostName"]),
+        "user": os.environ.get("USER", ""),
+        "platform": "macOS",
+    }
+
+
+# ───────────────────────── shape (cached) ─────────────────────────
+
+def _apple_report() -> dict:
+    """Optional enrichment — only used for the AI fit block, only if present.
+    The base shape is computed natively so this tool is portable to any Mac
+    (the Mini) that doesn't have the apple repo cloned."""
+    if not APPLE_REPORT.exists():
+        return {}
+    try:
+        out = subprocess.run(
+            [str(APPLE_REPORT), "--json"], capture_output=True, text=True, timeout=30
+        ).stdout
+        return json.loads(out)
+    except Exception:
+        return {}
+
+
+def _sp(*datatypes: str) -> dict:
+    """One system_profiler -json call for several datatypes."""
+    try:
+        out = subprocess.run(
+            ["system_profiler", "-json", *datatypes],
+            capture_output=True, text=True, timeout=30,
+        ).stdout
+        return json.loads(out)
+    except Exception:
+        return {}
+
+
+def compute_shape() -> dict:
+    # ── Native, portable shape via system_profiler -json ──
+    sp = _sp("SPHardwareDataType", "SPDisplaysDataType", "SPStorageDataType")
+    hw = (sp.get("SPHardwareDataType") or [{}])[0]
+
+    # number_processors looks like "proc 11:5:6" (total:perf:eff) or just "8".
+    total = perf = eff = None
+    np = str(hw.get("number_processors", "")).replace("proc", "").strip()
+    if ":" in np:
+        parts = [int(x) for x in np.split(":") if x.strip().isdigit()]
+        if len(parts) == 3:
+            total, perf, eff = parts
+    elif np.isdigit():
+        total = int(np)
+
+    ram_gb = None
+    pm = str(hw.get("physical_memory", "")).split()
+    if pm and pm[0].replace(".", "").isdigit():
+        ram_gb = int(float(pm[0]))
+
+    # GPU + displays from SPDisplaysDataType.
+    gpus = sp.get("SPDisplaysDataType") or []
+    gpu0 = gpus[0] if gpus else {}
+    displays = []
+    for g in gpus:
+        for d in g.get("spdisplays_ndrvs", []):
+            displays.append({
+                "name": d.get("_name"),
+                "pixels": d.get("_spdisplays_pixels"),
+                "resolution": d.get("_spdisplays_resolution") or d.get("spdisplays_resolution"),
+            })
+
+    # SSD: largest internal volume.
+    ssd_gb = 0
+    for v in sp.get("SPStorageDataType") or []:
+        pd = v.get("physical_drive") or {}
+        if pd.get("is_internal_disk") == "yes":
+            ssd_gb = max(ssd_gb, round(v.get("size_in_bytes", 0) / 1e9))
+
+    # macOS version/build from sw_vers (cheap, portable).
+    macos_version = sh(["sw_vers", "-productVersion"])
+    macos_build = sh(["sw_vers", "-buildVersion"])
+
+    # ── Optional AI enrichment from apple-report (this Mac only) ──
+    ai_src = _apple_report().get("ai", {})
+    fit = {f"{c['params_billions']}b_{c['quant']}": c["fits"]
+           for c in ai_src.get("headline_fit_checks", [])}
+
+    return {
+        # ── stable + public (green quadrant) ──
+        "chip": hw.get("chip_type"),
+        "model_name": hw.get("machine_name"),
+        "model_identifier": hw.get("machine_model"),
+        "cores_total": total,
+        "cores_perf": perf,
+        "cores_efficiency": eff,
+        "ram_gb": ram_gb,
+        "gpu_name": gpu0.get("sppci_model"),
+        "gpu_cores": gpu0.get("sppci_cores"),
+        "ssd_gb": ssd_gb,
+        "displays": displays,
+        "macos_version": macos_version or None,
+        "macos_build": macos_build or None,
+        "ai": {
+            "neural_engine_tops": ai_src.get("neural_engine_tops"),
+            "memory_bandwidth_gbs": ai_src.get("memory_bandwidth_gbs"),
+            "max_model_b_q4": ai_src.get("max_model_b_q4"),
+            "max_model_b_q8": ai_src.get("max_model_b_q8"),
+            "tokens_per_sec": ai_src.get("estimated_tokens_per_sec", {}),
+            "fits": fit,
+        },
+        # ── stable + private (stripped by --public) ──
+        "_private": {
+            "serial": hw.get("serial_number"),
+            "model_number": hw.get("model_number"),
+            "boot_rom": hw.get("boot_rom_version"),
+        },
+    }
+
+
+# ───────────────────────── ports ─────────────────────────
+
+def compute_ports() -> dict:
+    """Reachability channels — how a peer can reach this machine.
+
+    The practical, routable part of the 'ports' face. Physical I/O (Thunderbolt
+    bus count etc.) is intentionally omitted to keep the card snappy; the chip
+    + model identifier imply the physical layout, and routing only ever uses
+    the channels below.
+    """
+    channels = []
+
+    def add(name, kind, target, available, private=False):
+        channels.append({"name": name, "kind": kind, "target": target,
+                         "available": bool(available), "_private": private})
+
+    add("syncthing-queue", "file-drop", str(QUEUE), QUEUE.is_dir())
+    add("file-drop-bridge", "command", str(QUEUE / "pakettibot-inbox"),
+        (QUEUE / "pakettibot-inbox").is_dir())
+    add("panel", "http", "http://127.0.0.1", (HERE / "apple-panel").exists())
+    add("imessage", "imessage", "self", (HERE / "imessage").exists())
+    # Tailscale SSH — coarse availability (config alias or tailscale present).
+    ts = bool(sh(["which", "tailscale"])) or (Path.home() / ".ssh" / "config").exists()
+    add("tailscale-ssh", "ssh", identity()["hostname"], ts, private=True)
+
+    return {"channels": channels}
+
+
+# ───────────────────────── skills ─────────────────────────
+
+def ts_to_epoch(ts) -> float | None:
+    """Heartbeat `ts` fields come in three flavours across the fleet: integer
+    seconds, integer milliseconds (the Node services), and ISO-8601 strings.
+    Normalise all three to epoch seconds, or None if unparseable."""
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float)):
+        return float(ts) / 1000.0 if ts > 1e12 else float(ts)
+    if isinstance(ts, str):
+        from datetime import datetime
+        try:
+            return datetime.fromisoformat(ts.strip().replace("Z", "+00:00")).timestamp()
+        except Exception:
+            return None
+    return None
+
+
+def heartbeat_age(name: str) -> float | None:
+    """Seconds since this heartbeat's ts, or None if absent/unreadable."""
+    p = QUEUE / name
+    if not p.exists():
+        return None
+    try:
+        epoch = ts_to_epoch(json.loads(p.read_text()).get("ts"))
+        if epoch is not None:
+            return max(0.0, time.time() - epoch)
+    except Exception:
+        pass
+    # Fall back to file mtime.
+    try:
+        return max(0.0, time.time() - p.stat().st_mtime)
+    except Exception:
+        return None
+
+
+def compute_skills() -> list[dict]:
+    skills: dict[str, dict] = {}
+
+    # 1. Installed skills — capability is present (not necessarily running).
+    if SKILLS_DIR.is_dir():
+        for d in sorted(SKILLS_DIR.iterdir()):
+            if not d.is_dir():
+                continue
+            if not any((d / n).exists() for n in ("SKILL.md", "skill.md")):
+                continue
+            skills[d.name] = {"name": d.name, "source": "skill", "warm": False,
+                              "inbox": None, "verb": None, "age_s": None}
+
+    # 2. Services — a warm heartbeat means running + reachable now. These carry
+    #    the routable inbox ports.
+    for name, meta in SERVICES.items():
+        age = heartbeat_age(meta["heartbeat"])
+        warm = age is not None and age <= HEARTBEAT_WARM_SECS
+        entry = skills.get(name, {"name": name, "source": "service"})
+        entry.update({
+            "source": "service" if entry.get("source") != "skill" else "skill+service",
+            "warm": warm,
+            "inbox": meta["inbox"],
+            "verb": meta["verb"],
+            "age_s": round(age) if age is not None else None,
+        })
+        skills[name] = entry
+
+    return sorted(skills.values(), key=lambda s: (not s["warm"], s["name"]))
+
+
+# ───────────────────────── running (cheap, always fresh) ─────────────────────────
+
+def compute_running() -> dict:
+    out: dict = {}
+
+    # Load averages + uptime from `uptime`.
+    up = sh(["uptime"])
+    m = re.search(r"load averages?:\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)", up)
+    if m:
+        out["load_avg"] = [float(m.group(i)) for i in (1, 2, 3)]
+    m = re.search(r"up\s+(.+?),\s+\d+ user", up)
+    if m:
+        out["uptime"] = m.group(1).strip()
+
+    # Physical cores for load%-per-core context.
+    ncpu = sh(["sysctl", "-n", "hw.ncpu"])
+    if ncpu.isdigit():
+        out["ncpu"] = int(ncpu)
+        if out.get("load_avg"):
+            out["load_pct"] = round(100 * out["load_avg"][0] / int(ncpu))
+
+    # Memory used (page stats → GB).
+    vm = sh(["vm_stat"])
+    pages = {}
+    for line in vm.splitlines():
+        mm = re.match(r'"?([\w ]+?)"?:\s+(\d+)', line.strip())
+        if mm:
+            pages[mm.group(1).strip().lower()] = int(mm.group(2))
+    psize = 16384
+    pm = re.search(r"page size of (\d+)", vm)
+    if pm:
+        psize = int(pm.group(1))
+    used_pages = sum(pages.get(k, 0) for k in ("pages active", "pages wired down",
+                                               "pages occupied by compressor"))
+    if used_pages:
+        out["mem_used_gb"] = round(used_pages * psize / 1e9, 1)
+
+    # Battery.
+    bat = sh(["pmset", "-g", "batt"])
+    bm = re.search(r"(\d+)%", bat)
+    if bm:
+        out["battery_pct"] = int(bm.group(1))
+    out["power_source"] = "AC" if "AC Power" in bat else ("battery" if bat else None)
+
+    # Thermal pressure.
+    therm = sh(["pmset", "-g", "therm"])
+    tm = re.search(r"CPU_Speed_Limit\s*=\s*(\d+)", therm)
+    if tm:
+        out["cpu_speed_limit_pct"] = int(tm.group(1))
+
+    # Top 3 processes by CPU.
+    ps = sh(["ps", "-Ao", "pcpu,comm", "-r"])
+    top = []
+    for line in ps.splitlines()[1:4]:
+        parts = line.strip().split(None, 1)
+        if len(parts) == 2:
+            top.append({"cpu": float(parts[0]), "cmd": os.path.basename(parts[1])})
+    if top:
+        out["top"] = top
+
+    # Queue depths from warm service heartbeats.
+    queues = {}
+    for name, meta in SERVICES.items():
+        p = QUEUE / meta["heartbeat"]
+        if p.exists():
+            try:
+                q = json.loads(p.read_text()).get("queue")
+                if isinstance(q, dict):
+                    queues[name] = q
+            except Exception:
+                pass
+    if queues:
+        out["queues"] = queues
+
+    return out
+
+
+# ───────────────────────── assembly + caching ─────────────────────────
+
+def load_or_build_shape(force: bool) -> dict:
+    if not force and CACHE.exists():
+        try:
+            cached = json.loads(CACHE.read_text())
+            if time.time() - cached.get("_cached_at", 0) < CACHE_TTL:
+                return cached["data"]
+        except Exception:
+            pass
+    data = {"shape": compute_shape(), "ports": compute_ports(), "skills": compute_skills()}
+    try:
+        CACHE.parent.mkdir(parents=True, exist_ok=True)
+        CACHE.write_text(json.dumps({"_cached_at": time.time(), "data": data}))
+    except Exception:
+        pass
+    return data
+
+
+def build_card(force_cache: bool = False) -> dict:
+    stable = load_or_build_shape(force_cache)
+    now = time.time()
+    return {
+        "schema": "machine-card/1",
+        "id": identity()["hostname"],
+        "ts": int(now),
+        "ts_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+        "identity": identity(),
+        "shape": stable["shape"],
+        "ports": stable["ports"],
+        "skills": stable["skills"],
+        "running": compute_running(),
+    }
+
+
+def strip_private(obj):
+    """Recursively drop the private quadrant for the publishable card."""
+    if isinstance(obj, dict):
+        if obj.get("_private") is True:  # a channel flagged private
+            return None
+        return {k: strip_private(v) for k, v in obj.items()
+                if k != "_private"}
+    if isinstance(obj, list):
+        return [x for x in (strip_private(v) for v in obj) if x is not None]
+    return obj
+
+
+def public_card(card: dict) -> dict:
+    pub = strip_private(card)
+    # Coarse liveness only — drop exact load/mem/process detail.
+    run = pub.get("running", {})
+    pub["running"] = {
+        "up": True,
+        "battery_pct": run.get("battery_pct"),
+        "power_source": run.get("power_source"),
+        "queues": run.get("queues", {}),
+    }
+    return pub
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    card = build_card(force_cache="--cache" in args)
+
+    if "--public" in args or "--publish" in args:
+        card = public_card(card)
+
+    if "--publish" in args:
+        if not QUEUE.is_dir():
+            print(f"queue dir not found: {QUEUE}", file=sys.stderr)
+            return 1
+        dest = QUEUE / f"machine-card-{card['id']}.json"
+        dest.write_text(json.dumps(card))
+        print(f"published → {dest}")
+        return 0
+
+    indent = 2 if ("--pretty" in args or sys.stdout.isatty()) else None
+    print(json.dumps(card, indent=indent))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
