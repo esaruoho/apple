@@ -177,7 +177,7 @@ def discover_targets():
             targets.append({"label": name, "kind": "ssh", "ssh": ssh})
 
     # Extra LAN hosts the user named that aren't on the tailnet (best-effort).
-    for extra in ("esaRMBP.local",):
+    for extra in ("esaRMBP.local", "HertsiMacPro.local"):
         base = extra.split(".")[0].lower()
         if base not in seen:
             seen.add(base)
