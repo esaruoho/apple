@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""
+Build the "Word Cloud" Finder Quick Action.
+
+Right-click a folder (or a selection of .md/.txt files) in Finder →
+Quick Actions → Word Cloud. Runs bin/apple-keywords (Apple NaturalLanguage
+NLTagger, on-device, no deps) over the folder's text and writes a persistent
+`_WORDCLOUD.md` into the folder, then opens it. Function words are dropped and
+terms are lemmatized automatically — a real topical fingerprint, zero tokens.
+
+Clones the known-good Run-Shell-Script structure from an existing installed
+Quick Action so we never hand-roll a fragile document.wflow.
+
+Install: bin/build-wordcloud-quickaction   (writes to ~/Library/Services/)
+"""
+import plistlib
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WORDCLOUD = str(ROOT / "bin/folder-wordcloud")
+SERVICES = Path.home() / "Library/Services"
+NAME = "Word Cloud"
+DEST = SERVICES / f"{NAME}.workflow"
+
+# A known-good Run-Shell-Script Quick Action to clone the bundle skeleton from.
+TEMPLATES = ["OCR with Cloudcity.workflow", "Ingest to Cloudcity.workflow",
+             "Send to Cloudcity.workflow"]
+
+# The script the Quick Action runs. All the real work — bounded sampling, single
+# pass, nice'd, detached — lives in bin/folder-wordcloud so the Quick Action is a
+# one-liner and a giant archive can never turn a right-click into a CPU grind.
+COMMAND = f'''export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+exec "{WORDCLOUD}" "$@"
+'''
+
+
+def find_template() -> Path:
+    for t in TEMPLATES:
+        p = SERVICES / t
+        if p.is_dir():
+            return p
+    sys.exit(f"No template Quick Action found in {SERVICES}. "
+             f"Expected one of: {', '.join(TEMPLATES)}")
+
+
+def main() -> None:
+    tmpl = find_template()
+    if DEST.exists():
+        shutil.rmtree(DEST)
+    shutil.copytree(tmpl, DEST)
+
+    # 1) Info.plist — rename the menu item.
+    info_path = DEST / "Contents/Info.plist"
+    info = plistlib.loads(info_path.read_bytes())
+    svc = info["NSServices"][0]
+    svc["NSMenuItem"] = {"default": NAME}
+    svc["NSSendFileTypes"] = ["public.item"]  # folders conform to public.item
+    info_path.write_bytes(plistlib.dumps(info))
+
+    # 2) document.wflow — swap the shell command into the first Run Shell Script.
+    wflow_path = DEST / "Contents/document.wflow"
+    wflow = plistlib.loads(wflow_path.read_bytes())
+    patched = False
+    for entry in wflow.get("actions", []):
+        action = entry.get("action", {})
+        params = action.get("ActionParameters", {})
+        if "COMMAND_STRING" in params:
+            params["COMMAND_STRING"] = COMMAND
+            params["shell"] = "/bin/bash"
+            params["inputMethod"] = 1  # pass items as "$@"
+            patched = True
+            break
+    if not patched:
+        sys.exit("Template had no Run Shell Script action to patch.")
+    wflow_path.write_bytes(plistlib.dumps(wflow))
+
+    # 3) Refresh the Services registry so it shows up without re-login.
+    subprocess.run(["/System/Library/CoreServices/pbs", "-flush"],
+                   capture_output=True)
+
+    print(f"Installed: {DEST}")
+    print("Right-click a folder in Finder → Quick Actions → Word Cloud")
+    print("(If it doesn't appear: System Settings ▸ Keyboard ▸ Keyboard "
+          "Shortcuts ▸ Services ▸ enable 'Word Cloud', or re-open Finder.)")
+
+
+if __name__ == "__main__":
+    main()

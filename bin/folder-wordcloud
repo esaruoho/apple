@@ -1,0 +1,76 @@
+#!/bin/bash
+# folder-wordcloud — bounded word-cloud for a folder, backing the "Word Cloud"
+# Finder Quick Action. Apple-native (NLTagger, on-device) via bin/apple-keywords.
+#
+# Why bounded: apple-keywords --dir recurses the WHOLE tree with no cap, and a
+# huge archive (e.g. merlib-dump = 31,876 text files incl. multi-MB OCR dumps)
+# turns a right-click into an 11-minute, double-pass CPU grind. So this:
+#   - samples up to CAP files (default 800), skipping files > MAX_KB (default 400)
+#   - runs apple-keywords exactly ONCE (--cloud)
+#   - nice'd so it never fights foreground work
+#   - detaches (nohup) so Finder's Quick Action returns immediately
+#   - writes a persistent _WORDCLOUD.md, opens it, posts a notification
+#
+# Usage: folder-wordcloud <folder> [<folder> ...]
+#        WORDCLOUD_MAX_FILES / WORDCLOUD_MAX_KB override the caps.
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+KW="$HERE/apple-keywords"
+CAP="${WORDCLOUD_MAX_FILES:-800}"
+MAX_KB="${WORDCLOUD_MAX_KB:-400}"
+
+run_one() {
+    local f="$1"
+    local out="$f/_WORDCLOUD.md"
+    local tmp; tmp="$(mktemp -t wordcloud)"
+    local n=0 capped=0 total=0 sz
+    while IFS= read -r -d '' file; do
+        total=$((total + 1))
+        [ "$n" -ge "$CAP" ] && { capped=1; continue; }
+        sz=$(stat -f%z "$file" 2>/dev/null || echo 0)
+        [ "$sz" -gt $((MAX_KB * 1024)) ] && continue
+        cat "$file" >> "$tmp" 2>/dev/null
+        printf '\n' >> "$tmp"
+        n=$((n + 1))
+    done < <(find "$f" -type f \( -iname '*.md' -o -iname '*.txt' \) \
+             ! -name '_WORDCLOUD.md' -print0 2>/dev/null)
+
+    {
+        echo "# Word Cloud — $(basename "$f")"
+        echo
+        echo "_$(date '+%Y-%m-%d %H:%M') · Apple NLTagger (on-device) · ${n} of ${total} text files_"
+        if [ "$capped" = 1 ]; then
+            echo
+            echo "> ⚠️ Large folder — sampled the first ${CAP} files (≤ ${MAX_KB}KB each)."
+            echo "> Re-run with a higher cap: \`WORDCLOUD_MAX_FILES=5000 folder-wordcloud '$f'\`"
+        fi
+        echo
+        echo '## Cloud'
+        echo
+        echo '```'
+        nice -n 10 "$KW" --cloud --top 60 < "$tmp" 2>&1
+        echo '```'
+        echo
+        echo '## Ranked (top 40)'
+        echo
+        echo '```'
+        nice -n 10 "$KW" --top 40 < "$tmp" 2>&1
+        echo '```'
+    } > "$out"
+    rm -f "$tmp"
+    open "$out" 2>/dev/null || true
+    osascript -e "display notification \"${n} files → _WORDCLOUD.md\" with title \"Word Cloud\" subtitle \"$(basename "$f")\"" >/dev/null 2>&1 || true
+}
+
+# Worker mode: do the work synchronously (invoked detached, below).
+if [ "$1" = "--worker" ]; then
+    shift
+    run_one "$1"
+    exit 0
+fi
+
+# Front mode: detach a worker per folder so Finder returns immediately.
+for f in "$@"; do
+    [ -d "$f" ] || continue
+    nohup "$0" --worker "$f" >/dev/null 2>&1 &
+done
