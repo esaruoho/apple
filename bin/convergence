@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+"""
+convergence — cross-source consilience query, one command from any terminal.
+
+Usage:
+  convergence "phrase or claim, in plain English"
+  convergence "..." --top 3       # show top N per source (default 1)
+  convergence "..." --threshold 0.5
+  convergence "..." --roots ~/dirA,~/dirB
+  convergence "..." --raw         # skip the suggested-next-moves footer
+
+If you're cd'd into ~/work/merlib-dump (or below), the default roots are the
+canonical free-energy set:
+  Bearden · Russell · Hilarion · Tesla · Bedini · Dollard · Diary · KeelyNet · Articles
+
+If you're somewhere else, the default is just the current directory.
+
+What happens after you get the results
+──────────────────────────────────────
+Below the results table you'll see a NEXT MOVES block with the exact commands
+you can copy-paste to act on the top hits — read them, distill them via
+Claude, promote the distill into the cc-vault, or open the source file.
+
+Apple-native: uses the embed cache at ~/.vault-embeds/, populated by
+`vault-grep` / `apple-embed`. If a source has no cached lines, it shows "—".
+Run `vault-grep "test" --root <that-dir>` once to seed it.
+"""
+import json
+import os
+import sys
+import time
+
+# Import vault-grep helpers (cosine, load_caches_under, embed_query, CACHE_DIR)
+import importlib.machinery, importlib.util
+HERE = os.path.dirname(os.path.abspath(__file__))
+loader = importlib.machinery.SourceFileLoader("vg", os.path.join(HERE, "vault-grep"))
+spec = importlib.util.spec_from_loader("vg", loader)
+vg = importlib.util.module_from_spec(spec); loader.exec_module(vg)
+
+HOME = os.path.expanduser("~")
+
+CANONICAL_FREE_ENERGY_ROOTS = [
+    ("Bearden",  f"{HOME}/work/merlib-dump/Cheniere.org"),
+    ("Russell",  f"{HOME}/work/merlib-dump/sources/walter-russell"),
+    ("Hilarion", f"{HOME}/work/merlib-dump/sources/hilarion"),
+    ("Tesla",    f"{HOME}/work/merlib-dump/sources/tesla-colorado-springs"),
+    ("Bedini",   f"{HOME}/work/merlib-dump/sources/bedini"),
+    ("Dollard",  f"{HOME}/work/merlib-dump/sources/dollard"),
+    ("Diary",    f"{HOME}/work/merlib-dump/diary"),
+    ("KeelyNet", f"{HOME}/work/merlib-dump/keelynet"),
+    ("Articles", f"{HOME}/work/merlib-dump/articles"),
+]
+
+MERLIB_ROOT = f"{HOME}/work/merlib-dump"
+
+
+def detect_default_roots():
+    """If cwd is inside ~/work/merlib-dump, return the canonical set.
+    Otherwise return [(basename, cwd)] so the tool works in any folder."""
+    cwd = os.path.abspath(os.getcwd())
+    if cwd == MERLIB_ROOT or cwd.startswith(MERLIB_ROOT + os.sep):
+        return CANONICAL_FREE_ENERGY_ROOTS
+    return [(os.path.basename(cwd) or "current", cwd)]
+
+
+def load_all_buckets(roots):
+    """One pass over the cache → per-source buckets."""
+    buckets = {name: {"texts": [], "vectors": [], "files": [], "lines": []}
+               for name, _ in roots}
+    src_prefixes = [(n, os.path.abspath(p) + os.sep) for n, p in roots]
+    cache_dir = os.path.expanduser(vg.CACHE_DIR)
+    if not os.path.isdir(cache_dir):
+        return buckets
+    for cn in os.listdir(cache_dir):
+        if not cn.endswith(".jsonl"):
+            continue
+        try:
+            with open(os.path.join(cache_dir, cn), "r",
+                     encoding="utf-8", errors="replace") as f:
+                for ln in f:
+                    try: d = json.loads(ln)
+                    except Exception: continue
+                    fp = d.get("f", ""); v = d.get("v"); t = d.get("t", "")
+                    if not v:
+                        continue
+                    for name, pref in src_prefixes:
+                        if fp.startswith(pref):
+                            buckets[name]["texts"].append(t)
+                            buckets[name]["vectors"].append(v)
+                            buckets[name]["files"].append(fp)
+                            buckets[name]["lines"].append(d.get("l", 0))
+                            break
+        except OSError:
+            continue
+    return buckets
+
+
+def search_bucket(qv, bucket, threshold, top):
+    """Return [(score, text, file, line)] up to `top` distinct files, sorted."""
+    scored = []
+    for k, v in enumerate(bucket["vectors"]):
+        if len(v) != len(qv):
+            continue
+        sc = vg.cosine(qv, v)
+        if sc < threshold:
+            continue
+        scored.append((sc, k))
+    scored.sort(reverse=True)
+    seen_files = set()
+    out = []
+    for sc, k in scored:
+        fp = bucket["files"][k]
+        if fp in seen_files:
+            continue
+        seen_files.add(fp)
+        out.append((sc, bucket["texts"][k], fp, bucket["lines"][k]))
+        if len(out) >= top:
+            break
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+
+    top = 1
+    threshold = 0.45
+    roots_override = None
+    raw = False
+    query_parts = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--top" and i + 1 < len(args):
+            top = int(args[i+1]); i += 2; continue
+        if a == "--threshold" and i + 1 < len(args):
+            threshold = float(args[i+1]); i += 2; continue
+        if a == "--roots" and i + 1 < len(args):
+            roots_override = [(os.path.basename(p.strip().rstrip("/")) or "root",
+                                os.path.abspath(os.path.expanduser(p.strip())))
+                               for p in args[i+1].split(",")]
+            i += 2; continue
+        if a == "--raw":
+            raw = True; i += 1; continue
+        query_parts.append(a); i += 1
+
+    if not query_parts:
+        vg.die("usage: convergence \"phrase or claim\"  [--top N] [--threshold X] [--roots a,b,c] [--raw]")
+    query = " ".join(query_parts)
+
+    roots = roots_override or detect_default_roots()
+
+    # Embed the query
+    print(f"\n  CONVERGENCE QUERY", file=sys.stderr)
+    print(f"  \"{query}\"\n", file=sys.stderr)
+    try:
+        qv = vg.embed_query(query)
+    except Exception as e:
+        vg.die(f"embed_query failed: {e}")
+
+    # Load all caches once
+    t0 = time.time()
+    buckets = load_all_buckets(roots)
+    n_lines = sum(len(b["texts"]) for b in buckets.values())
+    n_with_data = sum(1 for b in buckets.values() if b["texts"])
+    if n_lines == 0:
+        vg.die(f"No cached lines under any of these roots. Run `vault-grep \"x\" --root <dir>` once to seed the cache.\n  roots: {[p for _,p in roots]}")
+    print(f"  Searching {n_lines} cached lines across {n_with_data} source(s) …\n", file=sys.stderr)
+
+    # Search each bucket
+    by_source = {}
+    for name, _ in roots:
+        hits = search_bucket(qv, buckets[name], threshold, top)
+        by_source[name] = hits
+
+    # Display
+    print(f"  {'SCORE':>6}  {'SOURCE / FILE:LINE':<70}  TEXT")
+    print(f"  {'─'*6}  {'─'*70}  {'─'*40}")
+    all_hits = []   # ordered list of (source_name, sc, text, file, line)
+    for name, root in roots:
+        hits = by_source[name]
+        if not hits:
+            print(f"  {'─':>6}  {('['+name+'] (no cached match above threshold)')[:70]:<70}  —")
+            continue
+        for j, (sc, text, fp, line) in enumerate(hits):
+            rel = fp[len(root)+1:] if fp.startswith(root + "/") else fp
+            tag = f"[{name}] {rel}:{line}"
+            star = " " if j == 0 else "·"
+            print(f"  {sc:.3f}{star} {tag[:70]:<70}  {text[:90]}")
+            all_hits.append((name, sc, text, fp, line))
+    print()
+    print(f"  ({time.time()-t0:.2f}s · {n_lines} lines · {n_with_data}/{len(roots)} sources with hits)\n",
+          file=sys.stderr)
+
+    if raw:
+        sys.exit(0)
+
+    if not all_hits:
+        print(f"  No hits above threshold {threshold}.")
+        print(f"  Try:  convergence \"{query}\" --threshold 0.35")
+        sys.exit(0)
+
+    # If stdin isn't a TTY, fall back to printing the action commands the way
+    # we used to. Scripts piping into convergence get the same useful list.
+    if not sys.stdin.isatty():
+        print("  NEXT MOVES (non-interactive):")
+        print()
+        for n, (name, sc, text, fp, line) in enumerate(all_hits, 1):
+            src_root = next(p for nm, p in roots if nm == name)
+            print(f"  [{n}] {name}: {os.path.basename(fp)}:{line}")
+            print(f"      open '{fp}'")
+            print(f"      vault-distill '{fp}'")
+            print(f"      vault-promote '{fp}'")
+            print(f"      vault-grep \"{query}\" --root {src_root} --cached-only --top 10")
+            print()
+        sys.exit(0)
+
+    # Interactive menu — pick a hit, pick an action, execute, loop.
+    interactive_loop(query, all_hits, roots, threshold)
+
+
+def interactive_loop(query, hits, roots, threshold):
+    import subprocess
+
+    while True:
+        print()
+        print("┌" + "─"*78 + "┐")
+        print("│  NEXT MOVE  —  pick a hit (1-{}) or [q]uit, [t]ighten the query           │".format(len(hits)))
+        print("└" + "─"*78 + "┘")
+        for n, (name, sc, text, fp, line) in enumerate(hits, 1):
+            short = (text[:64] + "…") if len(text) > 64 else text
+            print(f"  [{n}]  {sc:.3f}  {name:9}  {short}")
+        try:
+            choice = input("\n  hit # / t / q : ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print(); return
+
+        if choice in ("q", "quit", "exit", ""):
+            return
+        if choice == "t":
+            try:
+                new_th = float(input(f"  new threshold (current {threshold:.2f}): ").strip())
+            except (ValueError, EOFError, KeyboardInterrupt):
+                continue
+            print()
+            # Recursive re-run via subprocess so we use the fresh threshold
+            here = os.path.abspath(__file__)
+            os.execvp(sys.executable, [sys.executable, here, query,
+                                        "--threshold", str(new_th)])
+            return  # not reached
+
+        if not choice.isdigit():
+            print(f"  ?  use 1-{len(hits)}, t, or q"); continue
+        idx = int(choice) - 1
+        if idx < 0 or idx >= len(hits):
+            print(f"  ?  pick 1-{len(hits)}"); continue
+
+        name, sc, text, fp, line = hits[idx]
+        src_root = next(p for nm, p in roots if nm == name)
+        print()
+        print(f"  selected: [{idx+1}] {name} / {os.path.relpath(fp, src_root)}:{line}")
+        print(f"  matched text: \"{text[:100]}\"")
+        print()
+        print("    [r] read in editor (open)")
+        print("    [l] view at the matched line (less)")
+        print("    [d] distill (Claude digest, ~15s)")
+        print("    [p] promote (distill + push to cc-vault)")
+        print("    [e] explore — vault-grep this source for more on the claim")
+        print("    [c] copy path to clipboard")
+        print("    [b] back to hit list")
+        try:
+            act = input("\n  action : ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print(); return
+        if act == "" or act == "b":
+            continue
+        if act == "r":
+            subprocess.run(["open", fp])
+        elif act == "l":
+            subprocess.run(["less", f"+{line}", fp])
+        elif act == "d":
+            home = os.path.expanduser("~")
+            subprocess.run([f"{home}/work/apple/bin/vault-distill", fp])
+        elif act == "p":
+            home = os.path.expanduser("~")
+            subprocess.run([f"{home}/work/apple/bin/vault-promote", fp])
+        elif act == "e":
+            home = os.path.expanduser("~")
+            subprocess.run([f"{home}/work/apple/bin/vault-grep", query,
+                             "--root", src_root, "--cached-only", "--top", "10"])
+        elif act == "c":
+            p = subprocess.run(["pbcopy"], input=fp, text=True)
+            if p.returncode == 0:
+                print(f"  ✓ copied: {fp}")
+            else:
+                print(f"  pbcopy failed")
+        else:
+            print(f"  ?  unknown action '{act}'")
+
+
+if __name__ == "__main__":
+    main()

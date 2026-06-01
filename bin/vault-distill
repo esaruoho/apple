@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""
+vault-distill — produce a compact digest of any markdown/text file via the
+local `claude` CLI. Cached at ~/.vault-distill/<sha1>.md.
+
+Doctrine: digests are EVIDENCE, not authority (per ENVOY agent-protocol).
+The original file stays canonical. Digest is a cheap context-friendly
+summary you can read first; pull the raw only when you need more.
+
+Usage:
+  vault-distill <file>                   # digest one file
+  vault-distill <file> --force           # re-run (overwrite cache)
+  vault-distill <file> --raw             # print only the body (no frontmatter)
+  vault-distill <file> --print-path      # only print the cache path, don't render
+
+Companion to vault-grep / vault-consilience — when a hit looks promising,
+distill it to get the gist without reading the whole file.
+"""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+CACHE_DIR = f"{HOME}/.vault-distill"
+
+DISTILL_PROMPT = """Read this archive file and produce a compact digest with these exact markdown headings (in this order):
+
+## Topic
+(one sentence — what is this document actually about?)
+
+## Key claims and conclusions
+(bullet list — the substantive ones only)
+
+## Decisions / actions taken
+(bullet list — only what was decided or done; "none" if applicable)
+
+## Open questions / unresolved threads
+(bullet list — what is unresolved or carries forward)
+
+## Notable artifacts referenced
+(bullet list — files / URLs / named devices / cited papers / people; "none" if applicable)
+
+Be terse. Quote phrases verbatim only when they capture something important. Skip pleasantries and tool-result echo. Aim for ~250 words total.
+
+--- FILE ---
+"""
+
+
+def die(msg, code=1):
+    print(msg, file=sys.stderr); sys.exit(code)
+
+
+def find_claude_bin():
+    for c in [f"{HOME}/.claude/local/claude", f"{HOME}/bin/claude",
+              "/usr/local/bin/claude", "/opt/homebrew/bin/claude"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("claude")
+
+
+def cache_path_for(abs_path):
+    sha = hashlib.sha1(abs_path.encode("utf-8")).hexdigest()
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    return os.path.join(CACHE_DIR, sha + ".md")
+
+
+def call_claude(prompt, cwd=None, timeout=180):
+    bin_claude = find_claude_bin()
+    if not bin_claude:
+        die("claude CLI not found on PATH")
+    env = os.environ.copy()
+    env["PATH"] = (env.get("PATH", "") +
+                   f":{HOME}/.claude/local:{HOME}/bin:/usr/local/bin:/opt/homebrew/bin")
+    proc = subprocess.run(
+        [bin_claude, "-p", "--output-format", "json", prompt],
+        cwd=cwd or HOME, env=env,
+        capture_output=True, text=True, timeout=timeout,
+    )
+    if proc.returncode != 0:
+        die(f"claude exited {proc.returncode}: {proc.stderr.strip()[:400]}")
+    try:
+        obj = json.loads(proc.stdout)
+        return (obj.get("result") or "").strip(), obj.get("session_id")
+    except Exception:
+        return proc.stdout.strip(), None
+
+
+def distill_file(file_path, force=False, verbose=True):
+    abs_path = os.path.abspath(file_path)
+    if not os.path.isfile(abs_path):
+        die(f"not a file: {abs_path}")
+    out_path = cache_path_for(abs_path)
+    if os.path.exists(out_path) and not force:
+        return out_path, "(cached)"
+    if verbose:
+        print(f"distilling {abs_path[-80:]} …", file=sys.stderr)
+    try:
+        with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+    except OSError as e:
+        die(f"read failed: {e}")
+    # Cap input size — claude has context limits and big files distill poorly.
+    if len(content) > 80_000:
+        content = content[:80_000] + f"\n\n[…truncated for distill — {len(content)} chars total]"
+    prompt = DISTILL_PROMPT + content
+    cwd = os.path.expanduser("~/work/cc/vault")
+    if not os.path.isdir(cwd):
+        cwd = HOME
+    t0 = time.time()
+    digest, sid = call_claude(prompt, cwd=cwd)
+    elapsed = time.time() - t0
+    when = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+    frontmatter = [
+        "---",
+        f"source_file: {abs_path}",
+        f"source_mtime: {time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(os.path.getmtime(abs_path)))}",
+        f"distilled_at: {when}",
+        f"distilled_by: claude",
+        f"distilled_session_id: {sid or ''}",
+        f"distill_elapsed_s: {elapsed:.1f}",
+        "---",
+        "",
+    ]
+    body = "\n".join(frontmatter) + digest + "\n"
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(body)
+    return out_path, f"(freshly distilled in {elapsed:.1f}s)"
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    force = "--force" in args
+    raw = "--raw" in args
+    print_path = "--print-path" in args
+    files = [a for a in args if not a.startswith("--")]
+    if not files:
+        die("missing file argument")
+    for fp in files:
+        path, note = distill_file(fp, force=force)
+        if print_path:
+            print(path); continue
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        if raw and content.startswith("---\n"):
+            end = content.find("\n---\n", 4)
+            if end > 0:
+                content = content[end + 5:].lstrip()
+        print(content)
+        print(f"\n  {note}  ·  {path}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""
+vault-cluster — find the strongest semantically-similar line pairs WITHIN
+an archive. Pairwise cosine across the cached corpus, returns top N pairs
+that aren't from the same file.
+
+Use cases:
+  • surface internal echoes ("Bearden in 1980 says exactly what he said
+    again in 1995 in different words")
+  • find paraphrase chains across decades within one inventor's corpus
+  • discover unsuspected linkages across topics
+
+Cost: O(N²) cosine. 10k lines → 50M comparisons → ~30s in pure Python.
+Practical to ~30k lines; above that, sample first.
+
+Usage:
+  vault-cluster --root <dir>
+                [--top N]            default 20
+                [--threshold X]      default 0.7   (NLEmbedding cutoff for "strong")
+                [--max-lines N]      cap corpus size by random subsample
+                [--cross-file-only]  default ON; same-file pairs are usually noise
+
+Companion to vault-grep — uses the same per-file embedding cache.
+"""
+import os
+import sys
+import time
+import random
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("vg", os.path.join(HERE, "vault-grep"))
+spec = importlib.util.spec_from_loader("vg", loader)
+vg = importlib.util.module_from_spec(spec)
+loader.exec_module(vg)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+
+    root = None
+    top = 20
+    threshold = 0.7
+    max_lines = 5000
+    cross_file_only = True
+    rebuild = False
+    cached_only = False
+    exts = vg.DEFAULT_EXTS
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--root" and i + 1 < len(args):
+            root = os.path.abspath(os.path.expanduser(args[i+1])); i += 2; continue
+        if a == "--top" and i + 1 < len(args):
+            top = int(args[i+1]); i += 2; continue
+        if a == "--threshold" and i + 1 < len(args):
+            threshold = float(args[i+1]); i += 2; continue
+        if a == "--max-lines" and i + 1 < len(args):
+            max_lines = int(args[i+1]); i += 2; continue
+        if a == "--include-same-file":
+            cross_file_only = False; i += 1; continue
+        if a == "--rebuild":
+            rebuild = True; i += 1; continue
+        if a == "--cached-only":
+            cached_only = True; i += 1; continue
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i+1].split(","))
+            i += 2; continue
+        i += 1
+
+    if not root or not os.path.isdir(root):
+        vg.die("usage: vault-cluster --root <dir> [--top N] [--threshold X] [--max-lines N]")
+
+    # 1) Ensure cache is built (skip in --cached-only mode)
+    if not cached_only:
+        files = vg.walk_root(root, exts)
+        needs = [p for p in files if rebuild or not os.path.exists(vg.cache_path_for(p))]
+        if needs:
+            print(f"embedding {len(needs)} files …", file=sys.stderr)
+            t0 = time.time()
+            for k, p in enumerate(needs):
+                try:
+                    vg.ensure_file_embedded(p, force=rebuild, verbose=False)
+                except Exception as e:
+                    print(f"  skip: {e}", file=sys.stderr)
+            print(f"  done in {time.time()-t0:.1f}s", file=sys.stderr)
+
+    # 2) Load cache
+    texts, vectors, files_v, lines = vg.load_caches_under(root)
+    if not texts:
+        vg.die("corpus is empty")
+
+    # Filter out YAML-frontmatter key lines (e.g. `source_pages: "..."`).
+    # These pass looks_like_prose because they're sentence-shaped, but they
+    # cluster trivially because every chapter repeats the same keys.
+    import re
+    YAML_KEY = re.compile(r"^[a-z_][a-z0-9_]{2,30}:\s")
+    keep = [i for i, t in enumerate(texts) if not YAML_KEY.match(t)]
+    if len(keep) < len(texts):
+        skipped = len(texts) - len(keep)
+        print(f"  (skipped {skipped} yaml-key lines)", file=sys.stderr)
+        texts   = [texts[i] for i in keep]
+        vectors = [vectors[i] for i in keep]
+        files_v = [files_v[i] for i in keep]
+        lines   = [lines[i] for i in keep]
+    n = len(texts)
+    if n > max_lines:
+        print(f"corpus has {n} lines; subsampling to {max_lines}", file=sys.stderr)
+        idx = sorted(random.sample(range(n), max_lines))
+        texts   = [texts[i] for i in idx]
+        vectors = [vectors[i] for i in idx]
+        files_v = [files_v[i] for i in idx]
+        lines   = [lines[i] for i in idx]
+        n = max_lines
+    print(f"computing pairwise cosine over {n} lines ({n*(n-1)//2} pairs) …", file=sys.stderr)
+
+    # 3) Pairwise cosine. Pre-normalize vectors so we can use dot product.
+    t0 = time.time()
+    norms = []
+    for v in vectors:
+        s = 0.0
+        for x in v: s += x * x
+        norms.append(s ** 0.5 or 1.0)
+    # Heap of top-N pairs
+    import heapq
+    heap = []   # min-heap of (score, i, j)
+    for i in range(n):
+        vi = vectors[i]; ni = norms[i]; fi = files_v[i]; ti = texts[i]
+        # Inner loop kept tight; for cross-file-only, skip same file.
+        for j in range(i + 1, n):
+            if cross_file_only and files_v[j] == fi:
+                continue
+            # Skip byte-identical text — those are usually frontmatter or
+            # template boilerplate (e.g. "channel: X" repeated per chapter).
+            # We want PARAPHRASES, not literal duplicates.
+            if texts[j] == ti:
+                continue
+            # dot
+            vj = vectors[j]
+            s = 0.0
+            for k in range(len(vi)):
+                s += vi[k] * vj[k]
+            sc = s / (ni * norms[j])
+            if sc < threshold:
+                continue
+            if len(heap) < top:
+                heapq.heappush(heap, (sc, i, j))
+            elif sc > heap[0][0]:
+                heapq.heapreplace(heap, (sc, i, j))
+        if (i + 1) % 200 == 0:
+            elapsed = time.time() - t0
+            done = (2*n - i - 1) * i / 2
+            total = n * (n - 1) / 2
+            print(f"  [{i+1}/{n}]  {elapsed:.0f}s  pairs:{done/total*100:.1f}%  best:{(max(heap)[0] if heap else 0):.3f}",
+                  file=sys.stderr)
+    elapsed = time.time() - t0
+
+    pairs = sorted(heap, reverse=True)
+    if not pairs:
+        print(f"(no pairs above threshold {threshold} in {elapsed:.1f}s)", file=sys.stderr)
+        sys.exit(0)
+
+    rel_root = root.rstrip("/")
+    def rel(p):
+        return p[len(rel_root)+1:] if p.startswith(rel_root + "/") else p
+
+    print()
+    print(f"  top {len(pairs)} cross-file pairs, threshold {threshold}, {elapsed:.1f}s")
+    print()
+    for sc, i, j in pairs:
+        print(f"  {sc:.3f}  [{rel(files_v[i])}:{lines[i]}]")
+        print(f"          ↪ {texts[i][:140]}")
+        print(f"         [{rel(files_v[j])}:{lines[j]}]")
+        print(f"          ↪ {texts[j][:140]}")
+        print()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""
+embed — warm the on-device embedding cache for a folder, visibly.
+
+This is the corpus-warmer you run BEFORE searching. vault-grep / vault-cluster /
+vault-consilience all embed-on-demand silently the first time you query a folder;
+`embed` does that same work up front, with live progress, so you can watch it and
+know exactly when a corpus is warm.
+
+It shares vault-grep's exact cache (one JSONL per source file under
+~/.vault-embeds/, keyed by sha1 of the absolute path) by importing vault-grep's
+own helpers — so warming with `embed` makes every vault-* tool fast, and they
+never diverge.
+
+Apple-native pedigree: Python stdlib only. The actual embedding is the local
+`apple-embed` Swift CLI (NaturalLanguage NLEmbedding, on-device, Neural-Engine
+accelerated, 512-dim, no third-party deps).
+
+Usage:
+  embed <dir>                    warm every .md/.txt under <dir>, show progress
+        [--ext .md,.txt]         which extensions to walk   (default .md,.txt)
+        [--rebuild]              re-embed even already-cached files
+        [--limit N]              cap files walked (quick sample)
+        [--quiet]                only the final summary, no per-file lines
+
+  embed <dir> --status           how warm is this corpus? (cached vs total,
+                                 lines, cache size) — embeds nothing
+  embed --stat                   global cache stats (~/.vault-embeds)
+
+Examples:
+  embed ~/work/merlib-dump/keelynet/ENERGY
+  embed ~/work/merlib-dump/diary --status
+  embed ~/work/merlib-dump/articles --limit 50
+"""
+import importlib.util
+import os
+import sys
+import time
+
+# ── load vault-grep as a module so we share its EXACT cache scheme ──────────
+_HERE = os.path.dirname(os.path.realpath(__file__))
+_VG_PATH = os.path.join(_HERE, "vault-grep")
+
+
+def _load_vaultgrep():
+    # vault-grep has no .py extension, so hand importlib an explicit source loader.
+    from importlib.machinery import SourceFileLoader
+    loader = SourceFileLoader("vaultgrep", _VG_PATH)
+    spec = importlib.util.spec_from_loader("vaultgrep", loader)
+    if spec is None:
+        die(f"can't load vault-grep helpers from {_VG_PATH}")
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)               # safe: vault-grep guards main() behind __main__
+    return mod
+
+
+def die(msg, code=1):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def human_bytes(n):
+    for unit in ("B", "K", "M", "G"):
+        if n < 1024 or unit == "G":
+            return f"{n:.0f}{unit}" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024.0
+
+
+def dir_size(path):
+    total = 0
+    if not os.path.isdir(path):
+        return 0
+    for base, _dirs, files in os.walk(path):
+        for fn in files:
+            try:
+                total += os.path.getsize(os.path.join(base, fn))
+            except OSError:
+                pass
+    return total
+
+
+# ── global cache stats ──────────────────────────────────────────────────────
+
+def cmd_stat(vg):
+    cache = vg.CACHE_DIR
+    if not os.path.isdir(cache):
+        die(f"no cache yet at {cache}")
+    files = [f for f in os.listdir(cache) if f.endswith(".jsonl")]
+    lines = 0
+    for cn in files:
+        try:
+            with open(os.path.join(cache, cn), "r", encoding="utf-8",
+                      errors="replace") as f:
+                lines += sum(1 for ln in f if ln.strip())
+        except OSError:
+            pass
+    print(f"cache dir : {cache}")
+    print(f"files     : {len(files)} embedded source files")
+    print(f"lines     : {lines} cached embedding vectors")
+    print(f"size      : {human_bytes(dir_size(cache))}")
+
+
+# ── per-corpus status ─────────────────────────────────────────────────────--
+
+def cmd_status(vg, root, exts, limit):
+    files = vg.walk_root(root, exts, limit=limit)
+    if not files:
+        die(f"no {exts} files under {root}")
+    cached = [p for p in files if os.path.exists(vg.cache_path_for(p))]
+    # count cached lines for this root
+    texts, _vec, files_v, _ln = vg.load_caches_under(root)
+    pct = 100.0 * len(cached) / len(files) if files else 0.0
+    print(f"corpus    : {root}")
+    print(f"files     : {len(files)} walkable ({','.join(exts)})")
+    print(f"warm      : {len(cached)}/{len(files)} embedded  ({pct:.0f}%)")
+    print(f"cold      : {len(files) - len(cached)} still need embedding")
+    print(f"lines     : {len(texts)} cached prose lines across {len(set(files_v))} files")
+    if len(cached) < len(files):
+        print(f"→ run:  embed {root}")
+
+
+# ── the warm-up ───────────────────────────────────────────────────────────--
+
+def cmd_warm(vg, root, exts, limit, rebuild, quiet):
+    files = vg.walk_root(root, exts, limit=limit)
+    if not files:
+        die(f"no {exts} files under {root}")
+    needs = [p for p in files
+             if rebuild or not os.path.exists(vg.cache_path_for(p))]
+    already = len(files) - len(needs)
+
+    print(f"corpus : {root}")
+    print(f"files  : {len(files)} walkable · {already} already warm · "
+          f"{len(needs)} to embed", file=sys.stderr)
+    if not needs:
+        print("✓ already fully warm — every file is embedded.", file=sys.stderr)
+        _peek(vg, root)
+        return
+
+    size_before = dir_size(vg.CACHE_DIR)
+    t0 = time.time()
+    embedded_lines = 0
+    failed = 0
+    for k, p in enumerate(needs, start=1):
+        rows = vg.render_file(p)
+        try:
+            vg.ensure_file_embedded(p, force=rebuild, verbose=False)
+            embedded_lines += len(rows)
+            ok = True
+        except Exception as e:
+            failed += 1
+            ok = False
+            err = str(e)[:60]
+        if not quiet:
+            base = os.path.basename(p)
+            if len(base) > 44:
+                base = base[:41] + "…"
+            el = time.time() - t0
+            rate = el / k
+            eta = rate * (len(needs) - k)
+            mark = f"{len(rows):4d} lines" if ok else f"FAIL {err}"
+            print(f"  [{k:>4}/{len(needs)}] {base:44} {mark:>14}  "
+                  f"· {el:4.0f}s elapsed · eta {eta:4.0f}s", file=sys.stderr)
+    dt = time.time() - t0
+    size_after = dir_size(vg.CACHE_DIR)
+
+    print(f"\n✓ warmed {len(needs)} files in {dt:.1f}s "
+          f"({len(needs)/dt:.1f} files/s)", file=sys.stderr)
+    print(f"  {embedded_lines} new prose lines embedded"
+          + (f" · {failed} failed" if failed else ""), file=sys.stderr)
+    print(f"  cache grew {human_bytes(size_before)} → "
+          f"{human_bytes(size_after)} "
+          f"(+{human_bytes(size_after - size_before)})", file=sys.stderr)
+    _peek(vg, root)
+
+
+def _peek(vg, root):
+    """Show what the warmed corpus looks like: biggest files + a sample line."""
+    texts, _vec, files_v, lines = vg.load_caches_under(root)
+    if not texts:
+        return
+    from collections import Counter
+    per_file = Counter(files_v)
+    print(f"\nwarmed corpus: {len(texts)} prose lines across "
+          f"{len(per_file)} files", file=sys.stderr)
+    print("top files by embedded lines:", file=sys.stderr)
+    rel_root = os.path.abspath(root).rstrip("/") + "/"
+    for fp, n in per_file.most_common(8):
+        rel = fp[len(rel_root):] if fp.startswith(rel_root) else fp
+        if len(rel) > 52:
+            rel = "…" + rel[-51:]
+        print(f"  {n:5d}  {rel}", file=sys.stderr)
+    print(f"\nnow fast:  vault-grep \"<query>\" --root {root}", file=sys.stderr)
+
+
+# ── main ──────────────────────────────────────────────────────────────────--
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__)
+        sys.exit(0)
+
+    vg = _load_vaultgrep()
+
+    if args[0] == "--stat":
+        cmd_stat(vg)
+        return
+
+    root = None
+    exts = vg.DEFAULT_EXTS
+    limit = None
+    rebuild = False
+    quiet = False
+    status = False
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i + 1].split(","))
+            i += 2; continue
+        if a == "--limit" and i + 1 < len(args):
+            limit = int(args[i + 1]); i += 2; continue
+        if a == "--rebuild":
+            rebuild = True; i += 1; continue
+        if a == "--quiet":
+            quiet = True; i += 1; continue
+        if a == "--status":
+            status = True; i += 1; continue
+        if root is None:
+            root = os.path.abspath(os.path.expanduser(a)); i += 1; continue
+        i += 1
+
+    if not root:
+        die("usage: embed <dir> [--status] [--ext .md,.txt] [--rebuild] [--limit N] [--quiet]")
+    if not os.path.isdir(root):
+        die(f"not a directory: {root}")
+
+    if status:
+        cmd_status(vg, root, exts, limit)
+    else:
+        cmd_warm(vg, root, exts, limit, rebuild, quiet)
+
+
+if __name__ == "__main__":
+    main()

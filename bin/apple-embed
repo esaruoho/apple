@@ -1,0 +1,35 @@
+#!/usr/bin/env swift
+// apple-embed — Apple-native sentence-embedding pipe.
+//
+// Reads UTF-8 text on stdin (one sentence per line) and writes one JSON
+// object per line on stdout:  {"t":"the sentence","v":[0.123, ...]}
+//
+// Uses NLEmbedding.sentenceEmbedding (built into macOS 10.15+), Neural-
+// Engine accelerated. 512-dim float vectors. No third-party deps.
+//
+// Companion to ~/.sessions/embeddings — sessions.py caches the per-session
+// output of this tool so `sgrep` does the embed work once per session and
+// then runs in pure-Python cosine for every subsequent query.
+//
+// Usage:
+//   cat corpus.txt | apple-embed > corpus.embed.jsonl
+//   echo "query"   | apple-embed                  # one-shot for a query
+
+import Foundation
+import NaturalLanguage
+
+guard let emb = NLEmbedding.sentenceEmbedding(for: .english) else {
+    FileHandle.standardError.write("apple-embed: no English NLEmbedding model\n".data(using: .utf8)!)
+    exit(1)
+}
+
+while let raw = readLine() {
+    let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    if line.isEmpty { continue }
+    guard let v = emb.vector(for: line) else { continue }
+    let obj: [String: Any] = ["t": line, "v": v]
+    if let data = try? JSONSerialization.data(withJSONObject: obj, options: []),
+       let s = String(data: data, encoding: .utf8) {
+        print(s)
+    }
+}

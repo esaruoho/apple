@@ -1,0 +1,175 @@
+#!/usr/bin/env swift
+// apple-embed-pro — sharper sentence-embedding pipe, CoreML edition.
+//
+// Drop-in companion to apple-embed. Reads UTF-8 text on stdin (one sentence
+// per line), writes one JSON object per line on stdout:
+//   {"t":"the sentence","v":[0.123, ...384 floats...]}
+//
+// Uses CoreML to run the converted all-MiniLM-L6-v2 model on the Neural
+// Engine. 384-dim float vectors, sharper sentence-similarity ranking than
+// NLEmbedding (especially in the 0.5–0.7 band where NLEmbedding is murky).
+//
+// Same JSON shape as apple-embed → vault-grep / sgrep can switch backends
+// by setting `APPLE_EMBED=apple-embed-pro` in the environment (or by ranked
+// PATH order).
+//
+// Prerequisites — built once via /tmp/convert-minilm.py:
+//   ~/work/apple/models/MiniLM/MiniLM.mlpackage
+//   ~/work/apple/models/MiniLM/MiniLM.vocab.txt
+//
+// Apple-native runtime: CoreML + stdlib. No third-party deps at runtime.
+
+import Foundation
+import CoreML
+
+// ─── locate model + vocab ────────────────────────────────────────
+
+let HOME = NSHomeDirectory()
+let modelDir = "\(HOME)/work/apple/models/MiniLM"
+let modelPath = "\(modelDir)/MiniLM.mlpackage"
+let vocabPath = "\(modelDir)/MiniLM.vocab.txt"
+
+guard FileManager.default.fileExists(atPath: modelPath) else {
+    FileHandle.standardError.write("""
+    apple-embed-pro: model not found at \(modelPath)
+
+    Build it once with:
+        source /tmp/coreml-venv/bin/activate   # set up venv from on-device-ml.md
+        python3 /tmp/convert-minilm.py
+
+    Or fall back to apple-embed (NLEmbedding, 512-dim, less sharp).
+    """.data(using:.utf8)!)
+    exit(1)
+}
+
+guard let vocabData = try? String(contentsOfFile: vocabPath, encoding: .utf8) else {
+    FileHandle.standardError.write("apple-embed-pro: vocab not found at \(vocabPath)\n".data(using:.utf8)!)
+    exit(1)
+}
+
+let vocabLines = vocabData.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+var vocabMap: [String: Int] = [:]
+for (i, tok) in vocabLines.enumerated() { vocabMap[tok] = i }
+
+let PAD_ID = vocabMap["[PAD]"] ?? 0
+let CLS_ID = vocabMap["[CLS]"] ?? 101
+let SEP_ID = vocabMap["[SEP]"] ?? 102
+let UNK_ID = vocabMap["[UNK]"] ?? 100
+let MAX_LEN = 128
+
+// ─── WordPiece tokenizer (stdlib only) ───────────────────────────
+// Standard BERT-style: lowercase, split on whitespace + punctuation, then
+// each whitespace-token → greedy longest-match in vocab with `##` continuation.
+
+func basicTokenize(_ s: String) -> [String] {
+    let lowered = s.lowercased()
+    var out: [String] = []
+    var buf = ""
+    func flush() { if !buf.isEmpty { out.append(buf); buf = "" } }
+    for ch in lowered {
+        if ch.isWhitespace { flush(); continue }
+        if ch.isPunctuation {
+            flush(); out.append(String(ch)); continue
+        }
+        buf.append(ch)
+    }
+    flush()
+    return out
+}
+
+func wordPiece(_ word: String) -> [Int] {
+    if let id = vocabMap[word] { return [id] }
+    let chars = Array(word)
+    var out: [Int] = []
+    var start = 0
+    while start < chars.count {
+        var end = chars.count
+        var found: Int? = nil
+        while end > start {
+            var sub = String(chars[start..<end])
+            if start > 0 { sub = "##" + sub }
+            if let id = vocabMap[sub] { found = id; break }
+            end -= 1
+        }
+        if let id = found { out.append(id); start = end }
+        else { return [UNK_ID] }
+    }
+    return out
+}
+
+func tokenize(_ s: String) -> (ids: [Int], mask: [Int]) {
+    var ids: [Int] = [CLS_ID]
+    for word in basicTokenize(s) {
+        ids.append(contentsOf: wordPiece(word))
+        if ids.count >= MAX_LEN - 1 { break }
+    }
+    ids.append(SEP_ID)
+    while ids.count < MAX_LEN { ids.append(PAD_ID) }
+    if ids.count > MAX_LEN { ids = Array(ids.prefix(MAX_LEN)) }
+    let mask = ids.map { $0 == PAD_ID ? 0 : 1 }
+    return (ids, mask)
+}
+
+// ─── load CoreML model ───────────────────────────────────────────
+
+let config = MLModelConfiguration()
+config.computeUnits = .all
+let url = URL(fileURLWithPath: modelPath)
+let compiledURL: URL
+do {
+    compiledURL = try MLModel.compileModel(at: url)
+} catch {
+    FileHandle.standardError.write("apple-embed-pro: model compile failed: \(error)\n".data(using:.utf8)!)
+    exit(1)
+}
+let model: MLModel
+do {
+    model = try MLModel(contentsOf: compiledURL, configuration: config)
+} catch {
+    FileHandle.standardError.write("apple-embed-pro: model load failed: \(error)\n".data(using:.utf8)!)
+    exit(1)
+}
+
+// ─── helper: build MLFeatureProvider for one sentence ────────────
+
+func embed(_ text: String) -> [Double]? {
+    let (ids, mask) = tokenize(text)
+    guard
+        let inIds = try? MLMultiArray(shape: [1, NSNumber(value: MAX_LEN)], dataType: .int32),
+        let inMask = try? MLMultiArray(shape: [1, NSNumber(value: MAX_LEN)], dataType: .int32)
+    else { return nil }
+    for i in 0..<MAX_LEN {
+        inIds[i] = NSNumber(value: ids[i])
+        inMask[i] = NSNumber(value: mask[i])
+    }
+    do {
+        let prov = try MLDictionaryFeatureProvider(dictionary: [
+            "input_ids":      MLFeatureValue(multiArray: inIds),
+            "attention_mask": MLFeatureValue(multiArray: inMask),
+        ])
+        let out = try model.prediction(from: prov)
+        guard let arr = out.featureValue(for: "embedding")?.multiArrayValue else { return nil }
+        var vec: [Double] = []
+        let n = arr.count
+        for i in 0..<n {
+            vec.append(arr[i].doubleValue)
+        }
+        return vec
+    } catch {
+        FileHandle.standardError.write("apple-embed-pro: predict error: \(error)\n".data(using:.utf8)!)
+        return nil
+    }
+}
+
+// ─── stdin loop ─────────────────────────────────────────────────
+
+while let raw = readLine() {
+    let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    if line.isEmpty { continue }
+    guard let v = embed(line) else { continue }
+    let obj: [String: Any] = ["t": line, "v": v]
+    if let data = try? JSONSerialization.data(withJSONObject: obj, options: []),
+       let s = String(data: data, encoding: .utf8) {
+        print(s)
+    }
+}

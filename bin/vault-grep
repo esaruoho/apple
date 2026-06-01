@@ -1,0 +1,601 @@
+#!/usr/bin/env python3
+"""
+vault-grep — semantic search across any directory of .md/.txt files,
+Apple-native, on-device, no third-party deps.
+
+Pipeline:
+  walk <root> → filter to prose lines → embed via `apple-embed` (one cache
+  JSONL per source file, keyed by sha1 of the absolute path) → embed the
+  query → cosine across the whole cache → print best lines.
+
+First call on a big archive is slow (one `apple-embed` subprocess per file,
+~3-10s per file depending on size). Every subsequent query against the same
+archive is sub-second.
+
+Usage:
+  vault-grep <query>            --root <dir>
+                                [--ext .md,.txt]       default: .md,.txt
+                                [--top N]              default: 10
+                                [--threshold X]        default: 0.0
+                                [--rebuild]            re-embed everything
+                                [--limit N]            cap files walked
+
+Apple-native pedigree: Python stdlib only. The embedder is the local
+`apple-embed` Swift CLI that ships with the apple skill (~/work/apple/bin/).
+"""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+HOME = os.path.expanduser("~")
+CACHE_DIR = f"{HOME}/.vault-embeds"
+
+# Consolidated matrix cache. The per-file JSONL above is the source of truth;
+# these are a derived, fast-loading mirror of ALL of it: one float32 matrix
+# (np.load via mmap, ~instant) + parallel metadata, so a query skips the 34s
+# of re-reading and JSON-parsing 287k vectors out of ~3,800 files every time.
+# Rebuilt only when the JSONL set changes (fingerprint mismatch).
+MATRIX_NPY      = f"{CACHE_DIR}/_matrix.npy"        # (N, dim) float32, L2-normalized rows
+MATRIX_ROWS     = f"{CACHE_DIR}/_matrix_rows.npz"   # file_idx (int32 N), line (int32 N)
+MATRIX_FILES    = f"{CACHE_DIR}/_matrix_files.json" # unique file paths (file_idx indexes this)
+MATRIX_TEXTS    = f"{CACHE_DIR}/_matrix_texts.txt"  # N lines, the prose snippet per row
+MATRIX_MANIFEST = f"{CACHE_DIR}/_matrix_manifest.json"
+
+DEFAULT_EXTS = (".md", ".txt")
+MAX_FILE_BYTES = 2_000_000          # skip multi-MB OCR dumps, they overrun
+MIN_FILE_BYTES = 100                # skip near-empty stubs
+
+
+def die(msg, code=1):
+    print(msg, file=sys.stderr); sys.exit(code)
+
+
+def find_apple_embed():
+    for c in [f"{HOME}/work/apple/bin/apple-embed",
+              f"{HOME}/bin/apple-embed",
+              "/usr/local/bin/apple-embed"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("apple-embed")
+
+
+# ─────────────────────────── filter ────────────────────────────
+# Same rules as sessions sgrep — keeps prose, drops code/JSON/paths/tables.
+
+def looks_like_prose(ln):
+    if len(ln) < 20 or len(ln) > 260:
+        return False
+    if ln.startswith(("#", "{", "[", "<", "$", ">", "│", "|", "```",
+                       "    ", "\t")):
+        return False
+    if ln.count("/") > 3 or ln.count(":") > 3 or ln.count("=") > 2:
+        return False
+    letters_and_space = sum(1 for c in ln if c.isalpha() or c == " ")
+    if letters_and_space / len(ln) < 0.55:
+        return False
+    if len(ln.split()) < 4:
+        return False
+    return True
+
+
+def render_file(path):
+    """Read a file → list of (line_no, prose_line). 1-indexed line numbers."""
+    rows = []
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for i, raw in enumerate(f, start=1):
+                ln = raw.strip().lstrip("-* •").strip()
+                if looks_like_prose(ln):
+                    rows.append((i, ln))
+    except OSError:
+        pass
+    return rows
+
+
+# ─────────────────────────── cache ─────────────────────────────
+
+def cache_path_for(abs_path):
+    sha = hashlib.sha1(abs_path.encode("utf-8")).hexdigest()
+    return os.path.join(CACHE_DIR, sha + ".jsonl")
+
+
+def ensure_file_embedded(abs_path, force=False, verbose=False):
+    """Embed one source file into the cache. Returns the cache path."""
+    out = cache_path_for(abs_path)
+    if os.path.exists(out) and not force:
+        return out
+    rows = render_file(abs_path)
+    if not rows:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        open(out, "w").close()
+        return out
+    if verbose:
+        print(f"  embed {abs_path[-72:]:72}  {len(rows)} lines",
+              file=sys.stderr)
+    bin_embed = find_apple_embed()
+    if not bin_embed:
+        die("apple-embed not found at ~/work/apple/bin/apple-embed")
+    stdin = "\n".join(r[1] for r in rows)
+    proc = subprocess.run([bin_embed], input=stdin, text=True,
+                           capture_output=True, timeout=600)
+    if proc.returncode != 0:
+        raise RuntimeError(f"apple-embed: {proc.stderr.strip()[:200]}")
+    # Each output line is {"t":"...","v":[...]}; we add f (file) and l (line-no).
+    enriched = []
+    out_lines = [l for l in proc.stdout.split("\n") if l]
+    # apple-embed may emit fewer lines than rows if some failed to embed —
+    # match by line content order.
+    j = 0
+    for line_no, text in rows:
+        if j >= len(out_lines): break
+        try:
+            obj = json.loads(out_lines[j])
+        except Exception:
+            j += 1; continue
+        # The embedder may have skipped an unsuitable line; resync by text.
+        if obj.get("t") != text:
+            # try to skip forward
+            while j < len(out_lines):
+                try:
+                    obj = json.loads(out_lines[j])
+                except Exception:
+                    j += 1; continue
+                if obj.get("t") == text: break
+                j += 1
+            if j >= len(out_lines): break
+        obj["f"] = abs_path
+        obj["l"] = line_no
+        enriched.append(json.dumps(obj, ensure_ascii=False))
+        j += 1
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False,
+                                       dir=CACHE_DIR) as f:
+        f.write("\n".join(enriched) + "\n")
+        tmp = f.name
+    os.replace(tmp, out)
+    return out
+
+
+def walk_root(root, exts, limit=None):
+    out = []
+    for base, dirs, files in os.walk(root):
+        # Skip hidden + common noise dirs
+        dirs[:] = [d for d in dirs if not d.startswith(".") and d not in
+                   ("node_modules", "build", "__pycache__", "venv", ".venv")]
+        for fn in files:
+            if not fn.lower().endswith(exts):
+                continue
+            p = os.path.join(base, fn)
+            try:
+                sz = os.path.getsize(p)
+            except OSError:
+                continue
+            if sz < MIN_FILE_BYTES or sz > MAX_FILE_BYTES:
+                continue
+            out.append(p)
+            if limit and len(out) >= limit:
+                return out
+    return out
+
+
+# ─────────────────────────── search ────────────────────────────
+
+def embed_query(q):
+    bin_embed = find_apple_embed()
+    if not bin_embed:
+        die("apple-embed not found")
+    proc = subprocess.run([bin_embed], input=q, text=True,
+                           capture_output=True, timeout=30)
+    if proc.returncode != 0:
+        die(f"apple-embed failed on query: {proc.stderr.strip()}")
+    first = proc.stdout.strip().split("\n")[0]
+    return json.loads(first)["v"]
+
+
+def cosine(a, b):
+    s = 0.0; na = 0.0; nb = 0.0
+    for i in range(len(a)):
+        ai = a[i]; bi = b[i]
+        s  += ai * bi
+        na += ai * ai
+        nb += bi * bi
+    if na == 0 or nb == 0: return 0.0
+    return s / ((na ** 0.5) * (nb ** 0.5))
+
+
+def rank_against(qv, vectors):
+    """Cosine of qv against every corpus vector. Returns [(score, idx), ...]
+    sorted high→low. Uses numpy when available (one matmul over the whole
+    corpus); falls back to the pure-Python cosine otherwise."""
+    try:
+        import numpy as np
+    except ImportError:
+        scored = []
+        for k, v in enumerate(vectors):
+            if len(v) != len(qv):
+                continue
+            scored.append((cosine(qv, v), k))
+        scored.sort(reverse=True)
+        return scored
+    dim = len(qv)
+    # keep only correctly-sized rows; remember their original indices
+    idx = [k for k, v in enumerate(vectors) if len(v) == dim]
+    if not idx:
+        return []
+    M = np.array([vectors[k] for k in idx], dtype=np.float32)   # (N, dim)
+    q = np.asarray(qv, dtype=np.float32)                        # (dim,)
+    Mn = np.linalg.norm(M, axis=1)
+    qn = np.linalg.norm(q)
+    denom = Mn * qn
+    denom[denom == 0] = 1.0
+    sims = (M @ q) / denom                                      # (N,)
+    order = np.argsort(-sims)
+    return [(float(sims[j]), idx[j]) for j in order]
+
+
+def load_caches_under(root):
+    """Load every cache line whose `f` is inside <root>."""
+    root_abs = os.path.abspath(root) + os.sep
+    texts, vectors, files, lines = [], [], [], []
+    if not os.path.isdir(CACHE_DIR):
+        return texts, vectors, files, lines
+    for cn in os.listdir(CACHE_DIR):
+        if not cn.endswith(".jsonl"):
+            continue
+        try:
+            with open(os.path.join(CACHE_DIR, cn), "r",
+                     encoding="utf-8", errors="replace") as f:
+                for ln in f:
+                    try: d = json.loads(ln)
+                    except Exception: continue
+                    fp = d.get("f", "")
+                    if not fp.startswith(root_abs):
+                        continue
+                    texts.append(d.get("t", ""))
+                    vectors.append(d.get("v", []))
+                    files.append(fp)
+                    lines.append(d.get("l", 0))
+        except OSError:
+            continue
+    return texts, vectors, files, lines
+
+
+# ──────────────────── consolidated matrix cache ────────────────────
+# Source of truth stays the per-file JSONL. This is a derived mirror: one
+# float32 matrix (mmap, ~instant) + parallel metadata, so a query skips
+# re-reading and JSON-parsing ~600k vectors out of thousands of files.
+#
+# The catch: the JSONL cache is SHARED and grows under us (other tools embed
+# new corpora). A whole-cache fingerprint would mark the matrix stale and force
+# a 4-minute rebuild on the next query. Instead we MERGE A DELTA: rank the base
+# matrix (fast) AND the handful of new/changed JSONL files read live, exclude
+# any base rows whose file was re-embedded, and combine. The base is rebuilt
+# only when it's truly absent or on explicit `--rebuild-matrix`.
+
+def _scan_jsonl():
+    """name → rounded mtime for every .jsonl in the cache (one cheap scandir)."""
+    out = {}
+    try:
+        with os.scandir(CACHE_DIR) as it:
+            for e in it:
+                if e.name.endswith(".jsonl"):
+                    try:
+                        out[e.name] = round(e.stat().st_mtime, 3)
+                    except OSError:
+                        pass
+    except OSError:
+        pass
+    return out
+
+
+def read_jsonl_rows(paths, dim):
+    """Read specific JSONL files → (vecs, files, lines, texts) for rows of `dim`."""
+    vecs, files, lines, texts = [], [], [], []
+    for cp in paths:
+        try:
+            with open(cp, "r", encoding="utf-8", errors="replace") as f:
+                for ln in f:
+                    try: d = json.loads(ln)
+                    except Exception: continue
+                    v = d.get("v")
+                    if not (isinstance(v, list) and len(v) == dim):
+                        continue
+                    vecs.append(v)
+                    files.append(d.get("f", ""))
+                    lines.append(int(d.get("l", 0)))
+                    texts.append(str(d.get("t", "")).replace("\n", " ").replace("\r", " "))
+        except OSError:
+            continue
+    return vecs, files, lines, texts
+
+
+def build_matrix_cache(verbose=True):
+    """Read every JSONL once, write the consolidated matrix + sidecars.
+    Rows are L2-normalized at build time so a query is a single matmul."""
+    import numpy as np
+    if verbose:
+        print("building matrix cache (one-time, after embedding changes) …",
+              file=sys.stderr)
+    t0 = time.time()
+    # First pass: find the modal vector dimension (NLEmbedding=512, pro=384).
+    dim_counts = {}
+    cache_files = [os.path.join(CACHE_DIR, cn) for cn in os.listdir(CACHE_DIR)
+                   if cn.endswith(".jsonl")]
+    for cp in cache_files:
+        try:
+            with open(cp, "r", encoding="utf-8", errors="replace") as f:
+                for ln in f:
+                    try: d = json.loads(ln)
+                    except Exception: continue
+                    v = d.get("v")
+                    if isinstance(v, list) and v:
+                        dim_counts[len(v)] = dim_counts.get(len(v), 0) + 1
+        except OSError:
+            continue
+    if not dim_counts:
+        die("no vectors in cache to build a matrix from")
+    dim = max(dim_counts, key=dim_counts.get)
+
+    # Second pass: collect rows of the modal dim.
+    file_index = {}            # path -> int
+    files_list = []
+    file_idx, lines, texts = [], [], []
+    vecs = []
+    for cp in cache_files:
+        try:
+            with open(cp, "r", encoding="utf-8", errors="replace") as f:
+                for ln in f:
+                    try: d = json.loads(ln)
+                    except Exception: continue
+                    v = d.get("v")
+                    if not (isinstance(v, list) and len(v) == dim):
+                        continue
+                    fp = d.get("f", "")
+                    fi = file_index.get(fp)
+                    if fi is None:
+                        fi = len(files_list)
+                        file_index[fp] = fi
+                        files_list.append(fp)
+                    file_idx.append(fi)
+                    lines.append(int(d.get("l", 0)))
+                    texts.append(str(d.get("t", "")).replace("\n", " ").replace("\r", " "))
+                    vecs.append(v)
+        except OSError:
+            continue
+
+    M = np.asarray(vecs, dtype=np.float32)               # (N, dim)
+    norms = np.linalg.norm(M, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    M /= norms                                           # pre-normalize rows
+    np.save(MATRIX_NPY, M)
+    np.savez(MATRIX_ROWS,
+             file_idx=np.asarray(file_idx, dtype=np.int32),
+             line=np.asarray(lines, dtype=np.int32))
+    with open(MATRIX_FILES, "w", encoding="utf-8") as f:
+        json.dump(files_list, f)
+    with open(MATRIX_TEXTS, "w", encoding="utf-8") as f:
+        f.write("\n".join(texts))
+    with open(MATRIX_MANIFEST, "w", encoding="utf-8") as f:
+        json.dump({"baked": _scan_jsonl(),          # which JSONL files are in the matrix
+                   "dim": dim, "count": int(M.shape[0])}, f)
+    if verbose:
+        print(f"  matrix: {M.shape[0]} rows × {dim} dim in {time.time()-t0:.1f}s",
+              file=sys.stderr)
+
+
+def load_matrix_cache():
+    """mmap the matrix + load sidecars. Returns (M, files_list, file_idx, line, texts, baked, dim)."""
+    import numpy as np
+    M = np.load(MATRIX_NPY, mmap_mode="r")
+    rows = np.load(MATRIX_ROWS)
+    file_idx = rows["file_idx"]; line = rows["line"]
+    with open(MATRIX_FILES, encoding="utf-8") as f:
+        files_list = json.load(f)
+    with open(MATRIX_TEXTS, encoding="utf-8", errors="replace") as f:
+        texts = f.read().split("\n")
+    with open(MATRIX_MANIFEST, encoding="utf-8") as f:
+        man = json.load(f)
+    return (M, files_list, file_idx, line, texts,
+            man.get("baked", {}), int(man.get("dim", M.shape[1])))
+
+
+def fast_query(qv, root, top, threshold):
+    """Base matrix (mmap matmul) + live delta-merge of new/changed JSONL, masked
+    to <root>. Returns hit dicts sorted high→low, or None if numpy/matrix absent."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    # Full build ONLY when the matrix is genuinely absent (first run / --rebuild).
+    if not (os.path.exists(MATRIX_NPY) and os.path.exists(MATRIX_MANIFEST)):
+        build_matrix_cache()
+    try:
+        M, files_list, file_idx, line, texts, baked, dim = load_matrix_cache()
+    except (OSError, ValueError, KeyError):
+        return None
+    if dim != len(qv):
+        return None                                      # dim mismatch → caller falls back
+
+    q = np.asarray(qv, dtype=np.float32)
+    qn = np.linalg.norm(q)
+    if qn == 0:
+        return []
+    q = q / qn
+    root_abs = os.path.abspath(root) + os.sep
+
+    # Delta = JSONL files new or changed since the matrix was baked.
+    current = _scan_jsonl()
+    delta_names = [n for n, mt in current.items()
+                   if n not in baked or mt > baked.get(n, 0.0) + 1e-6]
+    d_vecs, d_files, d_lines, d_texts = read_jsonl_rows(
+        [os.path.join(CACHE_DIR, n) for n in delta_names], dim)
+
+    seen = {}   # file path -> best hit dict
+
+    # ── base matrix ranking ──
+    base_idx = {p: i for i, p in enumerate(files_list)}
+    keep_file = np.fromiter((p.startswith(root_abs) for p in files_list),
+                            dtype=bool, count=len(files_list))
+    if keep_file.any():
+        sims = M @ q                                     # (N,) cosine (rows pre-normalized)
+        sims = np.where(keep_file[file_idx], sims, -2.0) # mask outside <root>
+        # Drop base rows whose source file was re-embedded in the delta (stale).
+        changed = [base_idx[p] for p in {f for f in d_files if f in base_idx}]
+        if changed:
+            sims = np.where(np.isin(file_idx, np.asarray(changed, dtype=np.int32)),
+                            -2.0, sims)
+        order = np.argsort(-sims)[:max(top * 50, 500)]   # plenty to dedup `top` files
+        for j in order:
+            sc = float(sims[j])
+            if sc < threshold or sc <= -2.0:
+                break
+            fp = files_list[int(file_idx[j])]
+            if fp not in seen:
+                seen[fp] = {"score": sc, "file": fp, "line": int(line[j]),
+                            "text": texts[j] if j < len(texts) else ""}
+
+    # ── delta ranking (small, read live) ──
+    if d_vecs:
+        D = np.asarray(d_vecs, dtype=np.float32)
+        dn = np.linalg.norm(D, axis=1); dn[dn == 0] = 1.0
+        dsims = (D @ q) / dn
+        for k in range(len(d_files)):
+            fp = d_files[k]
+            if not fp.startswith(root_abs):
+                continue
+            sc = float(dsims[k])
+            if sc < threshold:
+                continue
+            if fp not in seen or seen[fp]["score"] < sc:
+                seen[fp] = {"score": sc, "file": fp, "line": int(d_lines[k]),
+                            "text": d_texts[k]}
+
+    if len(delta_names) > 200:
+        print(f"  (note: {len(delta_names)} files not yet folded into the matrix — "
+              f"`vault-grep --rebuild-matrix --root <dir> <q>` to refold)",
+              file=sys.stderr)
+    return sorted(seen.values(), key=lambda x: -x["score"])[:top]
+
+
+# ─────────────────────────── main ──────────────────────────────
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    root = None
+    top = 10
+    threshold = 0.0
+    rebuild = False
+    rebuild_matrix = False
+    cached_only = False
+    limit = None
+    exts = DEFAULT_EXTS
+    query_parts = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--root" and i + 1 < len(args):
+            root = os.path.abspath(os.path.expanduser(args[i+1])); i += 2; continue
+        if a == "--top" and i + 1 < len(args):
+            top = int(args[i+1]); i += 2; continue
+        if a == "--threshold" and i + 1 < len(args):
+            threshold = float(args[i+1]); i += 2; continue
+        if a == "--limit" and i + 1 < len(args):
+            limit = int(args[i+1]); i += 2; continue
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i+1].split(","))
+            i += 2; continue
+        if a == "--rebuild":
+            rebuild = True; i += 1; continue
+        if a == "--rebuild-matrix":
+            rebuild_matrix = True; i += 1; continue
+        if a == "--cached-only":
+            cached_only = True; i += 1; continue
+        query_parts.append(a); i += 1
+
+    if not root:
+        die("usage: vault-grep <query> --root <dir> [--top N] [--threshold X] [--ext .md,.txt] [--rebuild] [--limit N]")
+    if not os.path.isdir(root):
+        die(f"not a directory: {root}")
+    if not query_parts:
+        die("missing query")
+    query = " ".join(query_parts)
+
+    # 1) Walk + embed any missing files (skip in --cached-only mode)
+    if cached_only:
+        files = []
+        needs = []
+    else:
+        files = walk_root(root, exts, limit=limit)
+        if not files:
+            die(f"no {exts} files under {root}")
+        needs = [p for p in files if rebuild or not os.path.exists(cache_path_for(p))]
+    if needs:
+        print(f"embedding {len(needs)}/{len(files)} files into {CACHE_DIR}/ …",
+              file=sys.stderr)
+        t0 = time.time()
+        for k, p in enumerate(needs):
+            try:
+                ensure_file_embedded(p, force=rebuild, verbose=True)
+            except Exception as e:
+                print(f"  skip: {e}", file=sys.stderr)
+            if (k + 1) % 10 == 0:
+                el = time.time() - t0
+                rate = el / (k + 1)
+                eta = rate * (len(needs) - k - 1)
+                print(f"  [{k+1}/{len(needs)}]  {el:.0f}s elapsed  eta {eta:.0f}s",
+                      file=sys.stderr)
+        print(f"  done in {time.time()-t0:.1f}s", file=sys.stderr)
+
+    # Optionally refold the matrix (the only place a full rebuild happens
+    # besides first-ever run) so future queries carry a small/empty delta.
+    if rebuild_matrix:
+        try:
+            build_matrix_cache()
+        except Exception as e:
+            print(f"  matrix rebuild skipped: {e}", file=sys.stderr)
+
+    # 2) Embed query, then rank.
+    t0 = time.time()
+    qv = embed_query(query)
+
+    # Fast path: one matmul over the persisted, mmap'd, pre-normalized matrix
+    # (~2s incl. query embed). Falls back to the per-root JSONL loader if numpy
+    # is missing, the matrix can't load, or its dim doesn't match the query.
+    out = fast_query(qv, root, top, threshold)
+    n_lines = n_files = None
+    if out is None:
+        texts, vectors, files_v, lines = load_caches_under(root)
+        if not texts:
+            die("corpus is empty (every walked file had no prose lines)")
+        scored = rank_against(qv, vectors)
+        seen = {}
+        for sc, k in scored:
+            if sc < threshold: break
+            if files_v[k] not in seen or seen[files_v[k]]["score"] < sc:
+                seen[files_v[k]] = {"score": sc, "file": files_v[k],
+                                     "line": lines[k], "text": texts[k]}
+            if len(seen) >= top: break
+        out = sorted(seen.values(), key=lambda x: -x["score"])[:top]
+        n_lines, n_files = len(texts), len(set(files_v))
+    if not out:
+        die("(no hits above threshold)", code=0)
+
+    rel_root = root.rstrip("/")
+    for hit in out:
+        rel = hit["file"][len(rel_root)+1:] if hit["file"].startswith(rel_root + "/") else hit["file"]
+        loc = f"{rel}:{hit['line']}"
+        snip = hit["text"][:120]
+        print(f"{hit['score']:.3f}  {loc:60}  {snip}")
+    extra = f" · {n_lines} cached lines · {n_files} files" if n_lines is not None else " · matrix"
+    print(f"  ({time.time()-t0:.2f}s{extra})", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

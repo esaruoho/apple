@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""
+apple-cluster-docs — group documents by semantic similarity.
+
+For each file under <root>, compute its centroid embedding (mean of its
+cached prose-line vectors). Then cluster the documents via pairwise cosine
+of those centroids. Output: N clusters, each with member files and a
+"representative line" (the line closest to that cluster's centroid).
+
+Apple-native: uses the existing apple-embed cache. Pure-Python clustering
+(no sklearn). Reveals the natural topic structure of any archive subset
+without manual reading.
+
+Usage:
+  apple-cluster-docs --root <dir> [--k N]   default k = 8
+                                  [--min-lines N]   skip docs with fewer prose lines (default 5)
+                                  [--ext .md,.txt]
+                                  [--out path.md]   write report
+                                  [--quiet]
+"""
+import json
+import os
+import sys
+import math
+import random
+import time
+import collections
+
+# Pull vault-grep helpers
+HERE = os.path.dirname(os.path.abspath(__file__))
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("vg", os.path.join(HERE, "vault-grep"))
+spec = importlib.util.spec_from_loader("vg", loader)
+vg = importlib.util.module_from_spec(spec); loader.exec_module(vg)
+
+
+def parse_args():
+    a = sys.argv[1:]
+    if not a or a[0] in ("-h","--help"):
+        print(__doc__); sys.exit(0)
+    root = None; k = 8; min_lines = 5; out = None
+    exts = vg.DEFAULT_EXTS; quiet = False
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if x == "--root" and i+1 < len(a):
+            root = os.path.abspath(os.path.expanduser(a[i+1])); i += 2; continue
+        if x == "--k" and i+1 < len(a): k = int(a[i+1]); i += 2; continue
+        if x == "--min-lines" and i+1 < len(a): min_lines = int(a[i+1]); i += 2; continue
+        if x == "--out" and i+1 < len(a): out = a[i+1]; i += 2; continue
+        if x == "--ext" and i+1 < len(a):
+            exts = tuple("."+e.strip().lstrip(".") for e in a[i+1].split(","))
+            i += 2; continue
+        if x == "--quiet": quiet = True; i += 1; continue
+        i += 1
+    if not root: vg.die("usage: apple-cluster-docs --root <dir> [--k N]")
+    return root, k, min_lines, exts, out, quiet
+
+
+def vec_add(a, b): return [x+y for x,y in zip(a,b)]
+def vec_scale(a, s): return [x*s for x in a]
+
+
+def main():
+    root, k, min_lines, exts, out_path, quiet = parse_args()
+    if not os.path.isdir(root):
+        vg.die(f"not a dir: {root}")
+
+    # 1) Load cached vectors, group by file
+    texts, vectors, files, lines = vg.load_caches_under(root)
+    if not texts:
+        vg.die(f"no cached lines under {root} — run `vault-grep \"x\" --root {root}` first to seed the cache")
+    by_file = collections.defaultdict(list)   # file → list of (text, vec, line)
+    for k_, t in enumerate(texts):
+        by_file[files[k_]].append((texts[k_], vectors[k_], lines[k_]))
+
+    # Filter docs with enough lines
+    docs = []
+    centroids = []
+    for fp, items in by_file.items():
+        if len(items) < min_lines: continue
+        dim = len(items[0][1])
+        if dim == 0: continue
+        c = [0.0]*dim
+        for _, v, _ in items:
+            if len(v) != dim: continue
+            for j in range(dim): c[j] += v[j]
+        n = len(items)
+        c = [x/n for x in c]
+        docs.append({"file": fp, "items": items, "n": n})
+        centroids.append(c)
+    n_docs = len(docs)
+    if n_docs == 0:
+        vg.die(f"no documents with ≥{min_lines} prose lines")
+    if not quiet:
+        print(f"▸ {n_docs} documents with ≥{min_lines} cached prose lines", file=sys.stderr)
+
+    # Normalize centroids (so dot product == cosine)
+    def norm(v):
+        s = math.sqrt(sum(x*x for x in v)) or 1.0
+        return [x/s for x in v]
+    centroids = [norm(c) for c in centroids]
+
+    # 2) k-medoids (simple PAM-style)
+    k = min(k, n_docs)
+    random.seed(42)
+    medoid_idx = random.sample(range(n_docs), k)
+    assign = [0]*n_docs
+    def cosine(a, b):
+        return sum(x*y for x,y in zip(a,b))
+    for it in range(20):
+        # Assign each doc to nearest medoid
+        for i in range(n_docs):
+            best = 0; best_sc = -2
+            for m_pos, m in enumerate(medoid_idx):
+                sc = cosine(centroids[i], centroids[m])
+                if sc > best_sc:
+                    best_sc = sc; best = m_pos
+            assign[i] = best
+        # Reselect medoid in each cluster: doc whose mean cosine to others in cluster is highest
+        new_medoids = list(medoid_idx)
+        for c_idx in range(k):
+            members = [i for i in range(n_docs) if assign[i] == c_idx]
+            if not members: continue
+            best_m = members[0]; best_score = -1e9
+            for cand in members:
+                s = sum(cosine(centroids[cand], centroids[m]) for m in members)
+                if s > best_score:
+                    best_score = s; best_m = cand
+            new_medoids[c_idx] = best_m
+        if new_medoids == medoid_idx: break
+        medoid_idx = new_medoids
+        if not quiet:
+            print(f"  iter {it+1}: medoids stabilising", file=sys.stderr)
+
+    # 3) Build cluster report
+    clusters = collections.defaultdict(list)
+    for i in range(n_docs):
+        clusters[assign[i]].append(i)
+    # Sort clusters by size
+    cluster_order = sorted(clusters.keys(), key=lambda c: -len(clusters[c]))
+
+    # Cluster label: most semantically central LINE in that cluster
+    rel_root = root.rstrip("/")
+    def relpath(p): return p[len(rel_root)+1:] if p.startswith(rel_root+"/") else p
+
+    md = [f"# Document clusters under {os.path.basename(rel_root)}\n",
+          f"`apple-cluster-docs` (NLEmbedding centroids + k-medoids), {time.strftime('%Y-%m-%d %H:%M')}.\n",
+          f"{n_docs} docs · k={k} clusters · min {min_lines} prose lines per doc.\n"]
+    for c_pos, c_idx in enumerate(cluster_order, 1):
+        members = clusters[c_idx]
+        med = docs[medoid_idx[c_idx]]
+        # Find rep line: highest cosine to medoid centroid
+        med_c = centroids[medoid_idx[c_idx]]
+        best_line = None; best_sc = -2
+        for di in members:
+            for txt, v, ln in docs[di]["items"]:
+                if len(v) != len(med_c): continue
+                vv = norm(v)
+                s = cosine(vv, med_c)
+                if s > best_sc:
+                    best_sc = s; best_line = (txt, docs[di]["file"], ln)
+        rep_text = (best_line[0] if best_line else "—")[:120]
+        rep_file = relpath(best_line[1]) if best_line else "—"
+        rep_line = best_line[2] if best_line else 0
+        md.append(f"\n## Cluster {c_pos}  ·  {len(members)} docs  ·  medoid: `{relpath(med['file'])}`\n")
+        md.append(f"  Representative line ({rep_file}:{rep_line}):\n  > _{rep_text}_\n\n  Members:\n")
+        # Limit displayed members
+        for di in members[:25]:
+            d = docs[di]
+            md.append(f"- `{relpath(d['file'])}` ({d['n']} lines)\n")
+        if len(members) > 25:
+            md.append(f"- … {len(members)-25} more\n")
+
+    text = "".join(md)
+    if out_path:
+        with open(os.path.expanduser(out_path), "w") as f:
+            f.write(text)
+        print(f"▸ wrote {out_path}", file=sys.stderr)
+    else:
+        print(text)
+
+if __name__ == "__main__":
+    main()

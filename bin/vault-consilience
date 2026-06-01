@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""
+vault-consilience — cross-source paraphrase finder.
+
+Given a claim/phrase, returns the best matching line from EACH listed root.
+The output IS the cross-source consilience table: same idea, different
+vocabulary, across different decades / inventors / books.
+
+Mechanics: identical to vault-grep — uses the per-file embed cache at
+~/.vault-embeds/. Runs the cosine pass once per root, takes the single best
+hit (or top-N with --per-root N) and prints a comparison row per root.
+
+Usage:
+  vault-consilience "the active vacuum is the energy source" \\
+      --root ~/work/merlib-dump/Cheniere.org \\
+      --root ~/work/merlib-dump/sources/walter-russell \\
+      --root ~/work/merlib-dump/sources/hilarion \\
+      [--per-root N]      default 1
+      [--threshold X]     default 0.0
+      [--ext .md,.txt]    default
+      [--rebuild]         re-embed everything
+
+Companion to ~/work/apple/bin/vault-grep — uses the same helpers + cache.
+"""
+import os
+import sys
+import time
+
+# Pull helpers from vault-grep so this stays a thin wrapper.
+# vault-grep has no .py extension; use SourceFileLoader so importlib accepts it.
+HERE = os.path.dirname(os.path.abspath(__file__))
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("vg", os.path.join(HERE, "vault-grep"))
+spec = importlib.util.spec_from_loader("vg", loader)
+vg = importlib.util.module_from_spec(spec)
+loader.exec_module(vg)
+
+
+def search_root(root, qv, threshold, per_root):
+    """Return list of {file, line, text, score} for the best per_root hits in this root."""
+    texts, vectors, files, lines = vg.load_caches_under(root)
+    if not texts:
+        return []
+    scored = []
+    for k, v in enumerate(vectors):
+        if len(v) != len(qv): continue
+        sc = vg.cosine(qv, v)
+        if sc >= threshold:
+            scored.append((sc, k))
+    scored.sort(reverse=True)
+    seen_files = set()
+    out = []
+    for sc, k in scored:
+        if files[k] in seen_files:
+            continue
+        seen_files.add(files[k])
+        out.append({"score": sc, "file": files[k], "line": lines[k],
+                     "text": texts[k]})
+        if len(out) >= per_root:
+            break
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+
+    roots = []
+    per_root = 1
+    threshold = 0.0
+    rebuild = False
+    cached_only = False     # if True, skip embedding pass; only search what's cached
+    limit_per_root = None   # cap files-to-embed per root
+    exts = vg.DEFAULT_EXTS
+    query_parts = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--root" and i + 1 < len(args):
+            roots.append(os.path.abspath(os.path.expanduser(args[i+1])))
+            i += 2; continue
+        if a == "--per-root" and i + 1 < len(args):
+            per_root = int(args[i+1]); i += 2; continue
+        if a == "--threshold" and i + 1 < len(args):
+            threshold = float(args[i+1]); i += 2; continue
+        if a == "--limit" and i + 1 < len(args):
+            limit_per_root = int(args[i+1]); i += 2; continue
+        if a == "--cached-only":
+            cached_only = True; i += 1; continue
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i+1].split(","))
+            i += 2; continue
+        if a == "--rebuild":
+            rebuild = True; i += 1; continue
+        query_parts.append(a); i += 1
+
+    if not roots:
+        vg.die("usage: vault-consilience <query> --root <dir> [--root <dir2> …] [--per-root N] [--threshold X]")
+    if not query_parts:
+        vg.die("missing query")
+    query = " ".join(query_parts)
+
+    # 1) Ensure every root's cache is up to date (skip when --cached-only).
+    if not cached_only:
+        for root in roots:
+            if not os.path.isdir(root):
+                print(f"skip: {root} not a directory", file=sys.stderr); continue
+            files = vg.walk_root(root, exts, limit=limit_per_root)
+            needs = [p for p in files
+                      if rebuild or not os.path.exists(vg.cache_path_for(p))]
+            if needs:
+                print(f"embedding {len(needs)} files under {root[-50:]} …",
+                      file=sys.stderr)
+                t0 = time.time()
+                for k, p in enumerate(needs):
+                    try:
+                        vg.ensure_file_embedded(p, force=rebuild, verbose=False)
+                    except Exception as e:
+                        print(f"  skip: {e}", file=sys.stderr)
+                print(f"  done in {time.time()-t0:.1f}s", file=sys.stderr)
+
+    # 2) Embed query once.
+    qv = vg.embed_query(query)
+
+    # 3) For each root, take top per_root hits. Render side by side.
+    print()
+    print(f"  QUERY:  \"{query}\"")
+    print()
+    print(f"  {'SCORE':>6}  {'SOURCE / FILE:LINE':<70}  TEXT")
+    print(f"  {'─'*6}  {'─'*70}  {'─'*60}")
+    for root in roots:
+        rel_root = root.rstrip("/")
+        label = os.path.basename(rel_root) or rel_root
+        hits = search_root(root, qv, threshold, per_root)
+        if not hits:
+            print(f"  {'─':>6}  {label[:70]:<70}  (no hits)")
+            continue
+        for n, h in enumerate(hits):
+            file_rel = h["file"][len(rel_root)+1:] if h["file"].startswith(rel_root + "/") else h["file"]
+            tag = f"[{label}] {file_rel}:{h['line']}"
+            text = h["text"][:90]
+            star = " " if n == 0 else "·"
+            print(f"  {h['score']:.3f}{star} {tag[:70]:<70}  {text}")
+    print()
+
+
+if __name__ == "__main__":
+    main()

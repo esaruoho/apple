@@ -1,0 +1,103 @@
+#!/usr/bin/env swift
+// apple-semantic-match — find MEANING-similar text on-device, no deps.
+//
+// Apple's NaturalLanguage sentence embeddings (NLEmbedding, built into every Mac
+// since macOS 10.15) embed text into 512-dim neural vectors; cosine similarity
+// ranks by meaning, not shared words. This is the "find connections between files
+// in a folder" engine — Apple-native, no Homebrew, no pip, no network.
+//
+// Modes:
+//   apple-semantic-match --dir <folder> [--top N] [--threshold X] [--json]
+//        embed every .txt/.md file in the folder; print the most semantically
+//        related FILE PAIRS (connections within a folder).
+//   apple-semantic-match --from <fileA> --to <fileB> [--top N] [--threshold X] [--json]
+//        each non-empty line in A → its nearest line(s) in B (list-to-list match).
+//   apple-semantic-match --query "some text" --to <fileB> [--top N]
+//        one query → nearest lines in B.
+//
+// Cosine guide (NLEmbedding): >0.8 strong, 0.6–0.8 maybe, <0.6 usually noise.
+// NLEmbedding is a light model — great for ranking, confirm hits by hand.
+import Foundation
+import NaturalLanguage
+
+func die(_ s: String) -> Never { FileHandle.standardError.write((s+"\n").data(using:.utf8)!); exit(1) }
+
+// ---- args ----
+var args = Array(CommandLine.arguments.dropFirst())
+func opt(_ name: String) -> String? {
+    guard let i = args.firstIndex(of: name), i+1 < args.count else { return nil }
+    return args[i+1]
+}
+let flagJSON = args.contains("--json")
+let top = Int(opt("--top") ?? "1") ?? 1
+let threshold = Double(opt("--threshold") ?? "0") ?? 0
+let dir = opt("--dir"); let fromF = opt("--from"); let toF = opt("--to"); let query = opt("--query")
+
+guard let emb = NLEmbedding.sentenceEmbedding(for: .english) else {
+    die("no on-device sentence-embedding model (needs macOS 10.15+).")
+}
+func vec(_ s: String) -> [Double]? { emb.vector(for: s) }
+@inline(__always) func cosine(_ a: [Double], _ b: [Double]) -> Double {
+    if a.isEmpty || b.isEmpty { return -1 }
+    var d=0.0, na=0.0, nb=0.0
+    for i in 0..<a.count { d+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i] }
+    return d/(na.squareRoot()*nb.squareRoot()+1e-9)
+}
+func lines(_ path: String) -> [String] {
+    guard let t = try? String(contentsOfFile: path, encoding: .utf8) else { die("can't read \(path)") }
+    return t.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+}
+
+struct Hit: Codable { let source: String; let match: String; let score: Double }
+var hits: [Hit] = []
+
+if let dir = dir {
+    // ---- folder mode: most-related file pairs ----
+    let fm = FileManager.default
+    let urls = ((try? fm.contentsOfDirectory(at: URL(fileURLWithPath: dir),
+                includingPropertiesForKeys: nil)) ?? [])
+        .filter { ["txt","md","markdown","text"].contains($0.pathExtension.lowercased()) }
+    if urls.count < 2 { die("need >=2 .txt/.md files in \(dir)") }
+    var names: [String] = [], vecs: [[Double]] = []
+    for u in urls {
+        guard let raw = try? String(contentsOf: u, encoding: .utf8) else { continue }
+        let snip = String(raw.prefix(2000))
+        if let v = vec(snip) { names.append(u.lastPathComponent); vecs.append(v) }
+    }
+    FileHandle.standardError.write("embedded \(names.count) files…\n".data(using:.utf8)!)
+    var pairs: [Hit] = []
+    for i in 0..<names.count { for j in (i+1)..<names.count {
+        let s = (cosine(vecs[i],vecs[j])*1000).rounded()/1000
+        if s >= threshold { pairs.append(Hit(source: names[i], match: names[j], score: s)) }
+    }}
+    hits = pairs.sorted { $0.score > $1.score }.prefix(max(top, 20)).map { $0 }
+} else if let toF = toF, (fromF != nil || query != nil) {
+    // ---- list-to-list (or query-to-list) ----
+    let targets = lines(toF)
+    let tvecs = targets.map { vec($0) ?? [] }
+    let sources = query != nil ? [query!] : lines(fromF!)
+    FileHandle.standardError.write("matching \(sources.count) → \(targets.count) targets…\n".data(using:.utf8)!)
+    for s in sources {
+        guard let sv = vec(s) else { continue }
+        var scored = targets.indices.map { (i: $0, sc: cosine(sv, tvecs[$0])) }
+        scored.sort { $0.sc > $1.sc }
+        for r in scored.prefix(top) where r.sc >= threshold {
+            hits.append(Hit(source: s, match: targets[r.i], score: (r.sc*1000).rounded()/1000))
+        }
+    }
+} else {
+    die("""
+    usage:
+      apple-semantic-match --dir <folder> [--top N] [--threshold X] [--json]
+      apple-semantic-match --from <A> --to <B> [--top N] [--threshold X] [--json]
+      apple-semantic-match --query "text" --to <B> [--top N]
+    """)
+}
+
+if flagJSON {
+    let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted]
+    print(String(data: try! enc.encode(hits), encoding: .utf8)!)
+} else {
+    for h in hits { print(String(format: "%.3f  %@  ⟶  %@", h.score, h.source, h.match)) }
+    if hits.isEmpty { print("(no matches above threshold \(threshold))") }
+}

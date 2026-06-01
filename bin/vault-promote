@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+vault-promote — move a vault-distilled digest into the cc-vault as canonical
+knowledge.  Memory-promotion chain per ENVOY doctrine:
+
+  raw archive file    →   ~/work/merlib-dump/.../X.md      (canonical source)
+  distilled digest    →   ~/.vault-distill/<sha>.md         (local cache)
+  promoted knowledge  →   ~/work/cc/vault/sources/<topic>/<file>.md  (canon)
+
+Promote is the only step that touches the cc-vault. Distill is reversible
+(re-run anytime); promotion lays down something the rest of the system can
+search, link, and publish.
+
+Usage:
+  vault-promote <file> [--topic <name>] [--force]
+
+If --topic is omitted, it is inferred from the source path:
+  ~/work/merlib-dump/Cheniere.org/...   →  bearden
+  ~/work/merlib-dump/sources/hilarion/.. →  hilarion
+  ~/work/merlib-dump/sources/walter-russell/..  →  walter-russell
+  ~/work/merlib-dump/diary/..           →  free-energy/diary
+  default                                →  general
+
+If the distilled cache doesn't exist yet, vault-promote runs vault-distill
+first (which spawns claude, costs tokens).
+"""
+import os
+import shutil
+import subprocess
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+VAULT_DIR = f"{HOME}/work/cc/vault/sources/conversations"
+
+# Pull helpers from vault-distill
+HERE = os.path.dirname(os.path.abspath(__file__))
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("vd", os.path.join(HERE, "vault-distill"))
+spec = importlib.util.spec_from_loader("vd", loader)
+vd = importlib.util.module_from_spec(spec)
+loader.exec_module(vd)
+
+
+def infer_topic(src_path):
+    p = os.path.abspath(src_path)
+    m = HOME + "/work/merlib-dump/"
+    if not p.startswith(m):
+        return "general"
+    rest = p[len(m):]
+    head = rest.split("/", 1)[0]
+    # Bearden / Cheniere
+    if head == "Cheniere.org":
+        return "free-energy/bearden"
+    # Diary
+    if head == "diary":
+        return "free-energy/diary"
+    # Source-of-X folders
+    if head == "sources":
+        sub = rest.split("/", 2)[1] if "/" in rest[len("sources/"):] else ""
+        if sub.startswith("walter-russell"): return "free-energy/walter-russell"
+        if sub == "hilarion":                 return "free-energy/hilarion"
+        if sub.startswith("tesla"):           return "free-energy/tesla"
+        if sub.startswith("dollard"):         return "free-energy/dollard"
+        if sub.startswith("bedini"):          return "free-energy/bedini"
+        if sub.startswith("kortela"):         return "free-energy/kortela"
+        if sub.startswith("hilarion"):        return "free-energy/hilarion"
+        if sub.startswith("jon-fox"):         return "free-energy/hilarion-fox"
+        if sub:                                return f"free-energy/sources/{sub}"
+    # articles, audio, etc
+    return f"free-energy/{head}"
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+
+    topic = None
+    force = False
+    files = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--topic" and i + 1 < len(args):
+            topic = args[i+1]; i += 2; continue
+        if a == "--force":
+            force = True; i += 1; continue
+        files.append(a); i += 1
+    if not files:
+        vd.die("usage: vault-promote <file> [--topic <name>] [--force]")
+
+    for fp in files:
+        abs_src = os.path.abspath(fp)
+        if not os.path.isfile(abs_src):
+            print(f"skip: {abs_src} not a file", file=sys.stderr); continue
+        # 1) Ensure distill exists
+        distill_path, note = vd.distill_file(abs_src, force=force)
+        # 2) Topic
+        t = topic or infer_topic(abs_src)
+        # 3) Destination filename: <basename-of-source>.md
+        src_name = os.path.basename(abs_src)
+        if not src_name.endswith(".md"):
+            src_name += ".md"
+        vault_dir = os.path.join(VAULT_DIR, t)
+        os.makedirs(vault_dir, exist_ok=True)
+        dest = os.path.join(vault_dir, src_name)
+
+        # 4) Read distilled, inject promotion frontmatter, write to vault
+        with open(distill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        promoted_at = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+        extra_fm = (f"topic: {t}\n"
+                     f"promoted_at: {promoted_at}\n"
+                     f"vault_path: {dest}\n"
+                     f"original_source: {abs_src}\n")
+        if content.startswith("---\n"):
+            end = content.find("\n---\n", 4)
+            if end > 0:
+                content = content[:end] + "\n" + extra_fm + content[end:]
+        else:
+            content = f"---\n{extra_fm}---\n\n{content}"
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"promoted →  {dest}")
+        print(f"  topic: {t}")
+        print(f"  from:  {abs_src}")
+        print(f"  via:   {distill_path}  {note}")
+
+
+if __name__ == "__main__":
+    main()
