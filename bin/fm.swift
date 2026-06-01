@@ -20,6 +20,9 @@ func popValue(_ flag: String) -> String? {
 }
 let checkOnly = args.contains("--check"); args.removeAll { $0 == "--check" }
 let system = popValue("--system")
+// semantic_search searches this folder (default: the apple wiki — always on the Mini).
+let searchDir = popValue("--search-dir") ?? "\(NSHomeDirectory())/work/apple/wiki"
+let binDir = ProcessInfo.processInfo.environment["FM_BIN_DIR"] ?? "\(NSHomeDirectory())/work/apple/bin"
 
 // ── availability ──
 let model = SystemLanguageModel.default
@@ -276,13 +279,40 @@ enum WebText {
     }
 }
 
+// semantic_search — on-device RAG. The model calls it to ground answers in the
+// user's own notes; it shells to bin/vault-grep (NLEmbedding) and returns ranked
+// snippets. Read-only, allowlisted — the model picks the query, never a command.
+struct SemanticSearchTool: Tool {
+    let name = "semantic_search"
+    let description = "Search the user's own notes and documents for passages related in meaning to a query and return ranked snippets with their file locations. Call this whenever the user asks about their own notes, files, or projects rather than general knowledge, then ground the answer in what comes back."
+    let searchDir: String
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "A short phrase or question describing what to look for.")
+        let query: String
+    }
+    func call(arguments: Arguments) async throws -> ToolOutput {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        p.arguments = ["python3", "\(binDir)/vault-grep", arguments.query, "--root", searchDir, "--top", "5"]
+        let outPipe = Pipe()
+        p.standardOutput = outPipe
+        p.standardError = FileHandle.nullDevice   // drop embedding/progress noise
+        do { try p.run() } catch { return ToolOutput("semantic_search could not run: \(error)") }
+        p.waitUntilExit()
+        let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+        let out = (String(data: data, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return ToolOutput(out.isEmpty ? "No matching passages found in the user's notes." : out)
+    }
+}
+
 // ── generate (async bridged to the CLI via a semaphore) ──
 let groundingTools: [any Tool] = [
     CurrentDateTimeTool(), CalculatorTool(), UnitConvertTool(), SystemStateTool(),
-    WebReaderTool(),
+    WebReaderTool(), SemanticSearchTool(searchDir: searchDir, binDir: binDir),
 ]
-let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState, webReader. "
-    + "Use them for the current date/time, arithmetic, unit conversions, machine status, and reading a web page (webReader) rather than guessing."
+let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState, webReader, semantic_search. "
+    + "Use them for the current date/time, arithmetic, unit conversions, machine status, reading a web page (webReader), and searching the user's own notes (semantic_search) rather than guessing."
 
 let sema = DispatchSemaphore(value: 0)
 var output = ""
