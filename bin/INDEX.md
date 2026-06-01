@@ -1,4 +1,4 @@
-# CLI Tools Index — 121 tools in bin/
+# CLI Tools Index — 131 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -14,10 +14,12 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-report` — (no description) — `bin/apple-report`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`
 `avs-prefs-write.py` — (no description) — `bin/avs-prefs-write.py`
+`backup-mailbox` — (no description) — `bin/backup-mailbox`
 `batch-import.sh` — Import all .shortcut files into Shortcuts.app — `bin/batch-import.sh`
 `bootstrap-hey-sal.sh` — ONE-COMMAND install of the Hey Sal × Paketti stack. — `bin/bootstrap-hey-sal.sh`
 `build-delete-now-shortcut.py` — (no description) — `bin/build-delete-now-shortcut.py`
@@ -48,6 +50,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `dock` — (no description) — `bin/dock`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
+`fleet` — (no description) — `bin/fleet`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
 `hey-sal` — (no description) — `bin/hey-sal`
@@ -62,6 +65,9 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
+`mac-stats` — (no description) — `bin/mac-stats`
+`mac-temps` — read this Mac's temperature sensors in °C, no sudo. — `bin/mac-temps`
+`mac-thermals` — (no description) — `bin/mac-thermals`
 `machine-card` — (no description) — `bin/machine-card`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
@@ -75,12 +81,14 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
+`rtfc` — Rich Text For Clipboard. Take a markdown file (or stdin), strip — `bin/rtfc`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`
 `sal-archive-status.py` — (no description) — `bin/sal-archive-status.py`
 `sal-discover-interviews.py` — (no description) — `bin/sal-discover-interviews.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
+`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -88,6 +96,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
+`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
@@ -120,6 +129,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
 `voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
+`why-no-mount` — (no description) — `bin/why-no-mount`
 `wiki-index.py` — (no description) — `bin/wiki-index.py`
 `wiki-lint.py` — (no description) — `bin/wiki-lint.py`
 `window-frame` — report on-screen window geometry vs. screen geometry. — `bin/window-frame`
