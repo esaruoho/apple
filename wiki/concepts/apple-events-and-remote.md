@@ -109,6 +109,31 @@ WORKS, including over Tailscale.**
   over eppc. Finder/Music (always-running or auto-launching) are fine.
 - Seamless auth here is same-username + reachable; cross-account would prompt.
 
+### Auth reality — eppc re-prompts EVERY connection (settled 2026-06-01)
+My earlier "authenticated seamlessly" was wrong — those prompts were landing on
+Esa's screen and he was typing them. The hard truth, after a long investigation:
+- **Each `osascript … eppc://…` is a fresh process → fresh connection → fresh
+  auth dialog** ("Authorization is required for 'Finder' on eppc://cloudcitymacmini").
+- A **hand-created `eppc` keychain item (even `-T /usr/bin/osascript`) is NOT honored** —
+  still prompts.
+- Worse, the dialog's **"Add to keychain"/"Remember" creates a NEW item each time
+  instead of matching the prior one** → duplicate eppc creds pile up (we found 2,
+  cleared them). Even after clearing to ZERO and saving exactly ONE clean credential
+  with "Add to keychain" checked, **the very next connection still prompted**
+  (screenshot-confirmed, macOS Sequoia 15.6.1 → Mini Tahoe 26.3).
+- Conclusion: **the keychain does not give silent eppc reuse on current macOS.**
+  Treat eppc as **one password prompt per connection**, full stop. Do NOT spend
+  more time trying to cache it — this is settled.
+
+**Mitigations (the only real ones):**
+- **One-connection "snapshot" probe** (`bin/eppc-probe … snapshot`) bundles several
+  reads into a SINGLE connection → one prompt per readout instead of one per field.
+- For zero-auth cross-machine work, use the **Syncthing panel-inbox runner** — it
+  never authenticates interactively. eppc/APPS is the "live answer, costs a password"
+  tool; Syncthing is the daily driver.
+- A persistent resident osascript holding one connection could auth once for many
+  events, but the first connect still prompts and it's a heavier build — not pursued.
+
 Verdict: eppc is a **real, live third transport** for Fleet — synchronous, drives
 the peer's actual apps, ~4s/call, faster than the Syncthing runner. Syncthing stays
 the durable default (survives sleep/offline); eppc is the live fast path when the
