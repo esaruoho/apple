@@ -360,7 +360,10 @@ def new_argv(provider):
 # ─────────────────────────── TUI ─────────────────────────────────────
 
 def run_picker(stdscr, folder):
-    curses.curs_set(0)
+    try:
+        curses.curs_set(0)  # some terminals can't hide the cursor; Python 3.14 raises on ERR
+    except curses.error:
+        pass
     stdscr.keypad(True)
     stdscr.timeout(REFRESH_MS)
     try:
