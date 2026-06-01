@@ -202,12 +202,87 @@ struct SystemStateTool: Tool {
     }
 }
 
+// Fetch a web page and hand back its readable text. The model on its own can't
+// reach the network; this tool gives it eyes on a single URL the user names.
+// Foundation-only on purpose: NSAttributedString's HTML importer needs AppKit and
+// a main thread, which is fragile in this headless CLI — so we strip markup with
+// regex instead. Reads only; no JS, no following links, capped payload.
+struct WebReaderTool: Tool {
+    let name = "webReader"
+    let description = "Fetch a web page by its URL and return its readable text (page title plus main body text). Call this whenever the user provides a URL or asks what a web page says."
+    @Generable struct Arguments {
+        @Guide(description: "The absolute URL to fetch, including the https:// scheme.")
+        let url: String
+    }
+    func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let url = URL(string: arguments.url),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            return ToolOutput("Not a valid http(s) URL: \(arguments.url)")
+        }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 20
+        req.setValue("Mozilla/5.0 (Macintosh) fm", forHTTPHeaderField: "User-Agent")
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            return ToolOutput("Could not fetch \(arguments.url) (HTTP \(status)).")
+        }
+        guard let html = String(data: data, encoding: .utf8)
+                ?? String(data: data, encoding: .isoLatin1) else {
+            return ToolOutput("Could not decode the page at \(arguments.url).")
+        }
+        let title = WebText.title(html)
+        let text = WebText.strip(html)
+        let capped = String(text.prefix(6000))   // respect the small context window
+        var out = title.isEmpty ? "" : "Title: \(title)\n\n"
+        out += capped
+        if text.count > capped.count { out += "\n\n[truncated]" }
+        return ToolOutput(out)
+    }
+}
+
+// Tiny Foundation-only HTML → text. Not a full parser; enough to read an article.
+enum WebText {
+    static func re(_ s: String, _ p: String, _ rep: String) -> String {
+        s.replacingOccurrences(of: p, with: rep, options: [.regularExpression, .caseInsensitive])
+    }
+    static func title(_ html: String) -> String {
+        guard let m = html.range(of: "<title[^>]*>(.*?)</title>",
+                                 options: [.regularExpression, .caseInsensitive]) else { return "" }
+        let inner = re(re(String(html[m]), "<title[^>]*>", ""), "</title>", "")
+        return decode(inner).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    static func strip(_ html: String) -> String {
+        var s = html
+        s = re(s, "(?s)<script.*?</script>", " ")
+        s = re(s, "(?s)<style.*?</style>", " ")
+        s = re(s, "(?s)<!--.*?-->", " ")
+        s = re(s, "(?s)<head.*?</head>", " ")
+        s = re(s, "<(br|/p|/div|/h[1-6]|/li|/tr)[^>]*>", "\n")   // block ends → newline
+        s = re(s, "<[^>]+>", " ")                                 // remaining tags → space
+        s = decode(s)
+        s = re(s, "[ \\t]+", " ")
+        s = re(s, " *\\n *", "\n")
+        s = re(s, "\\n{3,}", "\n\n")
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    static func decode(_ s: String) -> String {
+        var t = s
+        let ents = ["&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'",
+                    "&apos;": "'", "&nbsp;": " ", "&mdash;": "—", "&ndash;": "–",
+                    "&hellip;": "…", "&rsquo;": "'", "&lsquo;": "'", "&ldquo;": "\"", "&rdquo;": "\""]
+        for (k, v) in ents { t = t.replacingOccurrences(of: k, with: v) }
+        return re(t, "&#x?[0-9a-fA-F]+;", " ")   // drop any remaining numeric entities
+    }
+}
+
 // ── generate (async bridged to the CLI via a semaphore) ──
 let groundingTools: [any Tool] = [
     CurrentDateTimeTool(), CalculatorTool(), UnitConvertTool(), SystemStateTool(),
+    WebReaderTool(),
 ]
-let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState. "
-    + "Use them for the current date/time, arithmetic, unit conversions, and machine status rather than guessing."
+let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState, webReader. "
+    + "Use them for the current date/time, arithmetic, unit conversions, machine status, and reading a web page (webReader) rather than guessing."
 
 let sema = DispatchSemaphore(value: 0)
 var output = ""
