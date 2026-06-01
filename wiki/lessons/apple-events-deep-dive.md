@@ -122,8 +122,13 @@ end using terms from
   if the firewall allows 3031 on that interface — not guaranteed.
 - Auth is the usual friction on Sequoia/Tahoe.
 - It is literally remote-code-execution surface — only on trusted networks.
-- **Tested 2026-06-01:** not live on CloudcityMacMini (`com.apple.eppc` unloaded,
-  3031 closed on Tailscale + LAN). See [[apple-events-and-remote]].
+- **Tested 2026-06-01:** once "Remote Application Scripting" was enabled on
+  CloudcityMacMini, eppc **worked over Tailscale** — `tell app "Finder" of machine
+  "eppc://esaruoho@cloudcitymacmini" to get version` → `26.3`, ~4s/call, live
+  Finder data back. Gotchas: a user-context `lsof`/`launchctl` shows "not loaded"
+  even while launchd is listening (probe with `nc -z host 3031` instead); and
+  faceless apps not already running return `-600` (System Events did). See
+  [[apple-events-and-remote]].
 
 ### Where it sits for Fleet
 

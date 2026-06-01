@@ -83,24 +83,36 @@ real app; fall back to the Syncthing job runner otherwise. Same posture as SSH.
 and confirm it authenticates and returns. If it does, wire an "Apple Events"
 transport into Fleet alongside the Syncthing one.
 
-## Tested 2026-06-01 — eppc was NOT live (robust-beats-brittle, confirmed)
+## Tested 2026-06-01 — first NOT live, then VERIFIED WORKING after enabling
 
-Tried to prove the eppc channel laptop → CloudcityMacMini and it did **not** work:
-- `com.apple.eppc.plist` ships on the Mini but is **not loaded** (`launchctl print
-  system/com.apple.eppc` empty, nothing in `launchctl list`). So nothing listens.
-- Port **3031 closed** from both Tailscale (`100.117.30.102`) and LAN
-  (`192.168.32.102`).
-- Can't enable remotely — `systemsetup -setremoteappleevents on` needs admin and the
-  file-drop bridge runs unprivileged.
+**First pass (before it was enabled):** eppc did not work — `com.apple.eppc` not
+loaded, port 3031 closed on Tailscale + LAN. Can't enable remotely (needs admin;
+the file-drop bridge is unprivileged).
 
-Meanwhile the **Syncthing panel-inbox runner worked**: ran `report` on the Mini,
-got the Mini's real spec back (`Mac mini Mac14,12 · M2 Pro · 32 GB · macOS 26.3`),
-`ok: True`, ~17s. That is the durable channel; eppc stays a *would-be* fast path
-that has to be switched on (admin, on the Mini) and is LAN-bound by nature.
+**Second pass (after Esa enabled "Remote Application Scripting" on the Mini): IT
+WORKS, including over Tailscale.**
+- 3031 now **OPEN** from the laptop on both `100.117.30.102` (Tailscale) and
+  `192.168.32.102` (LAN). Firewall is off, so the Tailscale interface reaches it.
+- `tell application "Finder" of machine "eppc://esaruoho@cloudcitymacmini" to get
+  version` → **`26.3`** (the Mini's macOS), `exit 0`, authenticated seamlessly
+  (no password prompt — same user/keychain context).
+- Drove the Mini's Finder live: `Macintosh HD · free 241 GB / 494 GB`;
+  `get name of home` → `esaruoho`. **~4.4s per `osascript` invocation** (mostly
+  connection + auth setup; once connected, events are sub-second).
 
-To revisit eppc: enable Remote Apple Events on the Mini, confirm `lsof -iTCP:3031`
-shows launchd, be on the same LAN (or open 3031 to the Tailscale interface), then
-`osascript -e 'tell app "Finder" of machine "eppc://esaruoho@cloudcitymacmini" to get version'`.
+### Gotchas found
+- **`launchctl list` / `lsof -iTCP:3031` as the user show "not loaded" even when it
+  IS listening** — launchd (pid 1, system domain) holds the socket and spawns
+  AEServer on demand. Trust a TCP probe (`nc -z host 3031`), not user-context lsof.
+- **Faceless apps must already be running on the remote.** `System Events of machine
+  eppc://…` returned **-600 "Application isn't running"** — it doesn't auto-launch
+  over eppc. Finder/Music (always-running or auto-launching) are fine.
+- Seamless auth here is same-username + reachable; cross-account would prompt.
+
+Verdict: eppc is a **real, live third transport** for Fleet — synchronous, drives
+the peer's actual apps, ~4s/call, faster than the Syncthing runner. Syncthing stays
+the durable default (survives sleep/offline); eppc is the live fast path when the
+peer is up.
 
 ## Related
 - [[automation-architecture-7-layers]] · where Apple Events sit under Shortcuts/App Intents
