@@ -1,4 +1,4 @@
-# CLI Tools Index — 119 tools in bin/
+# CLI Tools Index — 121 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -10,6 +10,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-folder-to-mbox` — (no description) — `bin/apple-folder-to-mbox`
 `apple-grand-export` — run every bulk exporter in one pass. — `bin/apple-grand-export`
 `apple-grand-search` — unified search across every exporter vault. — `bin/apple-grand-search`
+`apple-panel` — (no description) — `bin/apple-panel`
 `apple-report` — (no description) — `bin/apple-report`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
@@ -43,6 +44,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `dictation-commands-port-audit.py` — (no description) — `bin/dictation-commands-port-audit.py`
 `dictation-commands-to-shortcuts.py` — (no description) — `bin/dictation-commands-to-shortcuts.py`
 `dictation-commands-vocal-shortcuts-import.py` — (no description) — `bin/dictation-commands-vocal-shortcuts-import.py`
+`disk-overview` — (no description) — `bin/disk-overview`
 `dock` — (no description) — `bin/dock`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
