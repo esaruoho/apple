@@ -1,0 +1,19 @@
+#!/bin/bash
+# fm — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps.
+# macOS 26 (Tahoe) only, with Apple Intelligence enabled. On the fleet that's
+# the Mac Mini; on an older macOS this prints a clear message instead of failing.
+#
+# Usage: fm "prompt"  |  echo text | fm  |  fm --check  |  fm --system "..." "prompt"
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/fm.swift"
+if [ ! -d /System/Library/Frameworks/FoundationModels.framework ]; then
+    echo "fm: FoundationModels needs macOS 26 (Tahoe); this machine is $(sw_vers -productVersion). Run it on a 26 node (the Mini)." >&2
+    exit 4
+fi
+CACHE="$HOME/.cache/apple"; BIN="$CACHE/fm"; mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O -target arm64-apple-macos26.0 "$SRC" -o "$BIN" \
+        -framework FoundationModels -framework Foundation
+fi
+exec "$BIN" "$@"
