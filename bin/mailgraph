@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""
+mailgraph — directed who-wrote-to-whom graph from a message base, parsed
+straight from From:/To: headers. No NER, no inference — the addressing IS the
+edge. Works on WILDCAT/FidoNet BBS dumps (`From :`/`To :`) and RFC822 email.
+
+Features:
+  • directed sender→recipient graph with real message counts
+  • internet-gateway alias folding (billb@eskimo.com → Bill Beaty)
+  • subject-line threading (--threads): groups Re:/(R) replies into threads
+  • Apple-native SVG render (--svg out.svg): hub-and-spoke, no Graphviz needed
+  • Graphviz DOT (--dot) and JSON (--json) too
+
+Usage:
+  mailgraph --dir <folder> [--dir <folder> ...]
+            [--ext .eml,.msg,...]   extra extensions (default: extensionless + .msg/.eml/.txt)
+            [--top N]               default 25
+            [--min-edge N]          default 2
+            [--threads]             show subject-line threads instead of edges
+            [--svg out.svg]         render the graph as SVG (then `open` it)
+            [--dot out.dot] [--json]
+            [--no-fold]             disable email→name alias folding
+
+Apple-native pedigree: Python stdlib only.
+"""
+import json
+import math
+import os
+import re
+import sys
+from collections import Counter, defaultdict
+
+FROM_RE = re.compile(r'^\s*From\s*:\s*(.+?)\s*$', re.I)
+TO_RE   = re.compile(r'^\s*To\s*:\s*(.+?)\s*$', re.I)
+SUBJ_RE = re.compile(r'^\s*Subject\s*:\s*(.+?)\s*$', re.I)
+MSG_BREAK = re.compile(r'^\s*(Message\s+\d|={5,}|-{5,})', re.I)
+REPLY_RE = re.compile(r'^\s*(\(\s*[rf]\s*\)|re\s*:|fwd?\s*:|\(r\))\s*', re.I)
+BROADCAST = {"all", "everyone", "anyone", "sysop", "n/a", "public", ""}
+
+
+def clean_name(s):
+    s = s.strip()
+    # RFC822 "Display Name <local@domain>" → keep the display name
+    m = re.match(r'^"?(.*?)"?\s*<\s*([^>]+)>\s*$', s)
+    if m:
+        disp = re.sub(r'\([^)]*\)', '', m.group(1)).strip(' ",')   # drop phone parens
+        s = disp if disp else m.group(2).strip()      # only an address → keep it
+    else:
+        # "local@domain (Display Name)" → keep the parenthesised name
+        m2 = re.match(r'^(\S+@\S+)\s*\((.*?)\)\s*$', s)
+        if m2:
+            s = m2.group(2).strip()
+    # strip FidoNet routing junk: "Dave Coble @ 910/901", "@1:161/601 via … FIDOnet"
+    s = re.sub(r'@\s*\d+[:/].*$', '', s).strip()
+    s = re.sub(r'\s+@\{.*$', '', s).strip()
+    s = re.sub(r'--.*?--', '', s)
+    s = re.sub(r'\((?:sysop|co-?sysop|moderator|carbon copy|cc|internet|fwd)\)',
+               '', s, flags=re.I)
+    s = re.sub(r'\s+', ' ', s).strip(' .,;:"\'-\t')
+    if s and s.upper() == s and "@" not in s:
+        s = s.title()
+    s = re.sub(r'\bMc([a-z])', lambda m: "Mc" + m.group(1).upper(), s)
+    s = re.sub(r"\bMac([a-z])(?=[a-z]{2})", lambda m: "Mac" + m.group(1).upper(), s)
+    return s
+
+
+def die(m):
+    print(m, file=sys.stderr); sys.exit(1)
+
+
+def files_under(dirs, exts):
+    out = []
+    for d in dirs:
+        if os.path.isfile(d):
+            out.append(d); continue
+        for base, subdirs, fns in os.walk(d):
+            subdirs[:] = [s for s in subdirs if not s.startswith(".")]
+            for fn in fns:
+                ext = os.path.splitext(fn)[1].lower()
+                if ext == "" or ext in exts:
+                    out.append(os.path.join(base, fn))
+    return out
+
+
+def parse_file(path):
+    """Yield dict(frm, to, subj) per message."""
+    try:
+        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError:
+        return
+    frm = to = subj = None
+    for ln in lines:
+        if MSG_BREAK.match(ln):
+            frm = to = subj = None
+            continue
+        m = FROM_RE.match(ln)
+        if m and frm is None:
+            frm = clean_name(m.group(1)); continue
+        m = TO_RE.match(ln)
+        if m and to is None:
+            to = clean_name(m.group(1)); continue
+        m = SUBJ_RE.match(ln)
+        if m and subj is None:
+            subj = m.group(1).strip()
+        if frm and to:
+            yield {"frm": frm, "to": to, "subj": subj or ""}
+            frm = to = subj = None
+
+
+def build_email_aliases(names):
+    """Map an email address to a person name when the local-part clearly
+    identifies one (first-name prefix or last-name substring), uniquely."""
+    persons = [n for n in names if "@" not in n and " " in n]
+    alias = {}
+    EMAIL = re.compile(r'^[\w.+-]+@[\w.-]+\.\w{2,}$')
+    for n in names:
+        if not EMAIL.match(n):          # only fold genuine bare email addresses
+            continue
+        la = re.sub(r'[^a-z]', '', re.split(r'[@]', n)[0].lower())
+        strong, weak = set(), set()
+        for p in persons:
+            toks = [t.lower() for t in p.split() if t.isalpha()]
+            if len(toks) < 2:
+                continue
+            first, last = toks[0], toks[-1]
+            # strong: full last name, or first+last-initial ("billb"=bill+b),
+            # or first-initial+last ("jdecker"), or first+last
+            if (last in la and len(last) >= 4) or la in (first + last[0],
+                    first[0] + last, first + last) or la.startswith(first + last[0]):
+                strong.add(p)
+            elif la.startswith(first) and len(first) >= 4:   # weak: first-name prefix
+                weak.add(p)
+        pick = strong if len(strong) == 1 else (weak if len(weak) == 1 and not strong else None)
+        if pick:
+            alias[n] = next(iter(pick))
+    return alias
+
+
+def norm_subject(s):
+    prev = None
+    s = s.strip()
+    while prev != s:                      # peel repeated Re:/(R)/Fwd: prefixes
+        prev = s
+        s = REPLY_RE.sub('', s).strip()
+    return s
+
+
+# ───────────────────────────── SVG render ──────────────────────────────────
+
+def render_svg(sent, recv, edges, top, path):
+    """Hub-and-spoke layout: busiest node in the centre, the rest on a ring.
+    Node area ∝ total traffic; edge width ∝ message count. Pure-stdlib SVG."""
+    total = sent + recv
+    nodes = [n for n, _ in total.most_common(top)]
+    if not nodes:
+        die("nothing to render")
+    idx = {n: i for i, n in enumerate(nodes)}
+    W = H = 1000
+    cx = cy = W / 2
+    R = 380
+    hub = nodes[0]
+    pos = {hub: (cx, cy)}
+    ring = nodes[1:]
+    for i, n in enumerate(ring):
+        a = 2 * math.pi * i / max(1, len(ring)) - math.pi / 2
+        pos[n] = (cx + R * math.cos(a), cy + R * math.sin(a))
+    maxt = max(total[n] for n in nodes)
+    rad = {n: 12 + 46 * math.sqrt(total[n] / maxt) for n in nodes}
+    # edges among shown nodes (combine both directions for width)
+    pairw = Counter()
+    for (a, b), c in edges.items():
+        if a in idx and b in idx and a != b:
+            pairw[frozenset((a, b))] += c
+    maxe = max(pairw.values()) if pairw else 1
+
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
+           f'viewBox="0 0 {W} {H}" font-family="-apple-system,Helvetica,sans-serif">',
+           f'<rect width="{W}" height="{H}" fill="#0f1117"/>',
+           f'<text x="{cx}" y="34" fill="#9aa4b2" font-size="20" text-anchor="middle">'
+           f'KeelyNET BBS — who wrote to whom (message counts)</text>']
+    for pair, w in sorted(pairw.items(), key=lambda kv: kv[1]):
+        a, b = tuple(pair)
+        (x1, y1), (x2, y2) = pos[a], pos[b]
+        sw = 1 + 9 * (w / maxe)
+        op = 0.15 + 0.55 * (w / maxe)
+        out.append(f'<line x1="{x1:.0f}" y1="{y1:.0f}" x2="{x2:.0f}" y2="{y2:.0f}" '
+                   f'stroke="#4f8cff" stroke-width="{sw:.1f}" stroke-opacity="{op:.2f}"/>')
+    for n in nodes:
+        x, y = pos[n]
+        r = rad[n]
+        fill = "#ff7a59" if n == hub else "#7aa2ff"
+        out.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{r:.0f}" fill="{fill}" '
+                   f'fill-opacity="0.92" stroke="#0f1117" stroke-width="2"/>')
+        fs = max(11, min(18, int(r / 2)))
+        label = n if len(n) <= 22 else n[:21] + "…"
+        out.append(f'<text x="{x:.0f}" y="{y + r + 14:.0f}" fill="#e6e9ef" '
+                   f'font-size="{fs}" text-anchor="middle">{_xml(label)}</text>')
+        out.append(f'<text x="{x:.0f}" y="{y + 4:.0f}" fill="#0f1117" '
+                   f'font-size="{max(10, int(r/2.4))}" font-weight="700" '
+                   f'text-anchor="middle">{total[n]}</text>')
+    out.append('</svg>')
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out))
+
+
+def _xml(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+# ───────────────────────────────── main ────────────────────────────────────
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    dirs, exts = [], {".msg", ".eml", ".txt"}
+    top, min_edge = 25, 2
+    dot_out = svg_out = None
+    as_json = threads = False
+    fold = True
+    manual_alias = {}
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--alias" and i + 1 < len(args):
+            k, _, v = args[i + 1].partition("=")
+            if v:
+                manual_alias[k.strip()] = v.strip()
+            i += 2; continue
+        if a == "--dir" and i + 1 < len(args):
+            dirs.append(os.path.expanduser(args[i + 1])); i += 2; continue
+        if a == "--ext" and i + 1 < len(args):
+            exts |= {"." + e.strip().lstrip(".").lower() for e in args[i + 1].split(",")}; i += 2; continue
+        if a == "--top" and i + 1 < len(args):
+            top = int(args[i + 1]); i += 2; continue
+        if a == "--min-edge" and i + 1 < len(args):
+            min_edge = int(args[i + 1]); i += 2; continue
+        if a == "--dot" and i + 1 < len(args):
+            dot_out = args[i + 1]; i += 2; continue
+        if a == "--svg" and i + 1 < len(args):
+            svg_out = args[i + 1]; i += 2; continue
+        if a == "--threads":
+            threads = True; i += 1; continue
+        if a == "--json":
+            as_json = True; i += 1; continue
+        if a == "--no-fold":
+            fold = False; i += 1; continue
+        i += 1
+    if not dirs:
+        die("usage: mailgraph --dir <folder> [--threads] [--svg out.svg] [--top N] [--min-edge N]")
+
+    files = files_under(dirs, exts)
+    if not files:
+        die("no message files found")
+
+    raw = list(m for p in files for m in parse_file(p))
+    if not raw:
+        die("no From:/To: messages parsed")
+
+    # email→name alias folding
+    names = {m["frm"] for m in raw} | {m["to"] for m in raw}
+    alias = build_email_aliases(names) if fold else {}
+    # manual overrides: --alias "k=v" flags + an auto-loaded <dir>/mailgraph-aliases.json
+    for d in dirs:
+        side = os.path.join(d, "mailgraph-aliases.json") if os.path.isdir(d) else None
+        if side and os.path.exists(side):
+            try:
+                alias.update(json.load(open(side)))
+            except Exception as e:
+                print(f"  (bad alias file {side}: {e})", file=sys.stderr)
+    alias.update(manual_alias)
+    def canon(n): return alias.get(n, n)
+
+    sent, recv, edges = Counter(), Counter(), Counter()
+    threadmap = defaultdict(lambda: {"n": 0, "people": set()})
+    msgs = 0
+    for m in raw:
+        frm, to = canon(m["frm"]), canon(m["to"])
+        if frm:
+            sent[frm] += 1
+        if to.lower() in BROADCAST or not frm:
+            continue
+        recv[to] += 1
+        edges[(frm, to)] += 1
+        msgs += 1
+        if m["subj"]:
+            t = threadmap[norm_subject(m["subj"]).lower()]
+            t["n"] += 1; t["people"].update((frm, to))
+            t.setdefault("disp", norm_subject(m["subj"]))
+
+    print(f"mailgraph: {len(files)} files · {msgs} addressed messages · "
+          f"{len(sent)} senders · {len(recv)} recipients · "
+          f"{len(alias)} email aliases folded", file=sys.stderr)
+    if alias:
+        for em, nm in list(alias.items())[:8]:
+            print(f"    fold: {em}  →  {nm}", file=sys.stderr)
+
+    if svg_out:
+        render_svg(sent, recv, edges, top, svg_out)
+        print(f"wrote {svg_out}", file=sys.stderr)
+    if dot_out:
+        el = sorted(((a, b, c) for (a, b), c in edges.items() if c >= min_edge),
+                    key=lambda x: -x[2])
+        with open(dot_out, "w", encoding="utf-8") as f:
+            f.write("digraph mail {\n  rankdir=LR;\n  node [shape=box];\n")
+            for a, b, c in el[:top * 2]:
+                f.write(f'  "{a}" -> "{b}" [label={c}];\n')
+            f.write("}\n")
+        print(f"wrote {dot_out}", file=sys.stderr)
+
+    if as_json:
+        el = sorted(((a, b, c) for (a, b), c in edges.items() if c >= min_edge),
+                    key=lambda x: -x[2])
+        print(json.dumps({
+            "senders": [{"name": n, "sent": c} for n, c in sent.most_common(top)],
+            "recipients": [{"name": n, "recv": c} for n, c in recv.most_common(top)],
+            "edges": [{"from": a, "to": b, "count": c} for a, b, c in el[:top]],
+        }, ensure_ascii=False, indent=2))
+        return
+
+    if threads:
+        rows = sorted(threadmap.values(), key=lambda t: -t["n"])[:top]
+        print(f"\n=== TOP {len(rows)} SUBJECT THREADS (messages · participants) ===")
+        for t in rows:
+            ppl = ", ".join(sorted(t["people"])[:4]) + ("…" if len(t["people"]) > 4 else "")
+            disp = t.get("disp", "")[:54]
+            print(f"{t['n']:4}  [{len(t['people'])}p]  {disp:54}  {ppl}")
+        return
+
+    def bars(counter, label):
+        rows = counter.most_common(top)
+        mx = rows[0][1] if rows else 1
+        print(f"\n=== TOP {len(rows)} {label} ===")
+        for n, c in rows:
+            print(f"{c:5}  {'▇' * max(1, int(c / mx * 30))} {n}")
+
+    bars(sent, "SENDERS (messages written)")
+    bars(recv, "RECIPIENTS (messages received)")
+    el = sorted(((a, b, c) for (a, b), c in edges.items() if c >= min_edge),
+                key=lambda x: -x[2])
+    print(f"\n=== TOP {min(top, len(el))} DIRECTED PAIRS (sender → recipient) ===")
+    for a, b, c in el[:top]:
+        print(f"{c:4}  {a}  →  {b}")
+
+
+if __name__ == "__main__":
+    main()

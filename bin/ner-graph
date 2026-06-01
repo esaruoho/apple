@@ -1,0 +1,386 @@
+#!/usr/bin/env python3
+"""
+ner-graph — build a who-connects-to-whom graph from a folder of text, using
+Apple's on-device NER (apple-ner / NaturalLanguage NLTagger). Zero-token: no
+Claude in the loop, no network.
+
+For each file: extract every PersonalName + OrganizationName via apple-ner,
+dedupe within the file, then count co-occurrence (two entities in the same
+file = one edge). The result is the contacts network — the machine version of
+a hand-built "X-contacts-network-analysis.md", rebuilt across the WHOLE corpus
+and re-runnable for free as the corpus grows.
+
+Usage:
+  ner-graph --dir <folder> [--dir <folder> ...]
+            [--top-nodes N]     default 30   (most-mentioned entities)
+            [--top-edges N]     default 30   (strongest co-occurrences)
+            [--min-edge N]      default 2    (drop pairs seen fewer times)
+            [--persons-only]    drop organizations, keep people
+            [--dot out.dot]     also write Graphviz DOT (render: dot -Tpng)
+            [--json]            machine-readable nodes+edges
+
+Apple-native pedigree: Python stdlib + the apple-ner Swift CLI. No third-party
+deps. apple-ner is NaturalLanguage NLTagger, on-device, Neural-Engine.
+"""
+import json
+import os
+import subprocess
+import sys
+from collections import Counter
+from itertools import combinations
+
+HOME = os.path.expanduser("~")
+
+
+def find_apple_ner():
+    for c in [f"{HOME}/work/apple/bin/apple-ner", f"{HOME}/bin/apple-ner"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    from shutil import which
+    return which("apple-ner")
+
+
+def die(m):
+    print(m, file=sys.stderr); sys.exit(1)
+
+
+# entity-name cleanup: collapse case/whitespace, drop 1-char and pure-stopword hits
+NAME_STOP = {"the", "a", "an", "i", "you", "he", "she", "it", "we", "they",
+             "this", "that", "re", "fwd", "subject", "date", "from", "to"}
+
+
+def norm_name(s):
+    s = " ".join(s.split()).strip(" .,;:-_\"'")
+    return s
+
+
+# ── alias resolution (entity coreference) ──────────────────────────────────
+# Merge "Norman Wootan / Wootan / Norm / Norman" → one canonical node.
+# Conservative: a single first/last name only merges into a full name when it
+# matches EXACTLY ONE full-name cluster (ambiguous → left as its own node).
+
+NICKNAMES = {
+    "norm": "norman", "tom": "thomas", "tommy": "thomas", "bill": "william",
+    "will": "william", "billy": "william", "bob": "robert", "rob": "robert",
+    "bobby": "robert", "mike": "michael", "mick": "michael", "dave": "david",
+    "jim": "james", "jimmy": "james", "ed": "edward", "eddie": "edward",
+    "ken": "kenneth", "dick": "richard", "rick": "richard", "rich": "richard",
+    "stan": "stanley", "hal": "harold", "harry": "harold", "joe": "joseph",
+    "ron": "ronald", "don": "donald", "chuck": "charles", "charlie": "charles",
+    "tony": "anthony", "greg": "gregory", "jerry": "gerald", "larry": "lawrence",
+    "ray": "raymond", "fred": "frederick", "freddie": "frederick", "sam": "samuel",
+    "al": "albert", "art": "arthur", "nick": "nicholas", "pat": "patrick",
+    "pete": "peter", "phil": "philip", "steve": "stephen", "ted": "theodore",
+    "tim": "timothy", "walt": "walter", "wally": "walter", "gene": "eugene",
+    "andy": "andrew", "matt": "matthew", "dan": "daniel", "danny": "daniel",
+    "tom.": "thomas", "jp": "john", "jack": "john", "johnny": "john",
+}
+# Particles that are not a person's "last" word for keying purposes.
+NAME_PARTICLES = {"jr", "sr", "ii", "iii", "iv", "phd", "md", "dr", "mr", "mrs", "ms"}
+
+
+# English / BBS words NER mis-tags as a name token. A 2-word "name" containing
+# one of these is junk ("Heck Jerry", "Ala Maxwell", "Tesla Shield").
+COMMON_WORDS = {
+    "the","a","an","and","or","of","to","in","on","at","for","is","are","was",
+    "be","by","as","it","this","that","with","from","you","your","my","we","they",
+    "hello","dear","hi","thanks","thank","regards","sincerely","yours","cheers",
+    "re","fwd","subject","date","note","message","reply","post","wrote","said",
+    "say","says","well","new","old","good","best","yes","no","ok","please",
+    "heck","ala","hey","sir","also","here","there","now","then","just","like",
+    "shield","energy","field","system","device","power","keelynet","bbs","net",
+    "mra","file","page","two","one","three","email","internet","group","company",
+    "inc","co","etc","via","per","com","org","www","http",
+    # words NER kept grabbing as a name token in this corpus
+    "given","talks","pivot","constant","coilbak","theory","mr","mrs","dr","prof",
+    "about","over","into","when","what","which","whose","whom","because","since",
+}
+
+
+def name_tokens(name):
+    toks = [t.strip(".").lower() for t in name.split()]
+    toks = [t for t in toks if t and t.isalpha() and t not in NAME_PARTICLES]
+    return toks
+
+
+def canon_first(tok):
+    return NICKNAMES.get(tok, tok)
+
+
+def is_namelike(tok):
+    return tok.isalpha() and len(tok) >= 2 and tok not in COMMON_WORDS
+
+
+def build_alias_map(freq):
+    """freq: {surface: mentions} → {surface: canonical}. Last-name-anchored
+    clustering with nickname-aware first names, junk filtering, and frequency-
+    dominant disambiguation for bare tokens."""
+    # 1. split into clean full names (exactly first+last, or first+initial+last),
+    #    bare tokens, and "leftovers" (3+ real-word mashes like "Joel McClain
+    #    Norman" — two people NER glued together; never let them seed a cluster).
+    fulls = []     # (canon_first, last, surface, freq)
+    singles = []   # (tok, surface, freq)
+    leftovers = [] # (toks, surface, freq)
+    for name, c in freq.items():
+        toks = name_tokens(name)
+        if not toks:
+            continue
+        namelike = [t for t in toks if is_namelike(t)]
+        clean2 = (is_namelike(toks[0]) and is_namelike(toks[-1]) and
+                  (len(toks) == 2 or (len(toks) == 3 and len(toks[1]) == 1)))
+        if clean2:
+            fulls.append((canon_first(toks[0]), toks[-1], name, c))
+        elif len(namelike) == 1:                       # bare token (or junk pair)
+            singles.append((namelike[0], name, c))
+        elif len(namelike) >= 2:                       # multi-word mash → defer
+            leftovers.append(([canon_first(t) for t in namelike], name, c))
+
+    # 2. build (canon_first, last) clusters of full-name surfaces
+    clusters = {}                                      # key -> {surface: freq}
+    for cf, last, surface, c in fulls:
+        clusters.setdefault((cf, last), {})
+        clusters[(cf, last)][surface] = clusters[(cf, last)].get(surface, 0) + c
+
+    def cfreq(key):
+        return sum(clusters[key].values())
+
+    def ccanon(key):                                   # nicest surface form for the cluster
+        return max(clusters[key].items(),
+                   key=lambda kv: (len(kv[0].split()) > 1,       # prefer multiword
+                                   not kv[0].isupper(),          # prefer not ALLCAPS
+                                   kv[0][:1].isupper(),          # prefer Title-case start
+                                   kv[1], len(kv[0])))[0]
+
+    by_last = {}                                       # last -> [keys]
+    by_first = {}                                      # canon_first -> set(keys)
+    for key in clusters:
+        by_last.setdefault(key[1], []).append(key)
+        by_first.setdefault(key[0], set()).add(key)
+
+    # 3. canonical per cluster; fold single-INITIAL first names into the dominant
+    #    same-last cluster ("T Bearden" → "Tom Bearden")
+    canon_of_key = {}
+    for last, keys in by_last.items():
+        dom = max(keys, key=cfreq)
+        for k in keys:
+            canon_of_key[k] = ccanon(dom) if (len(k[0]) == 1 and len(keys) > 1) else ccanon(k)
+
+    alias = {}
+    for cf, last, surface, c in fulls:
+        alias[surface] = canon_of_key[(cf, last)]
+
+    # 4. bare tokens: consider BOTH the last-name cluster and the (unique)
+    #    first-name cluster, and pick whichever is the more-mentioned person.
+    #    (Fixes "Norman" being stolen by a junk "X Norman" pair when the real
+    #    "Norman Wootan" cluster is far larger.)
+    last_dom = {last: max(keys, key=cfreq) for last, keys in by_last.items()}
+    last_to_canon = {last: canon_of_key[k] for last, k in last_dom.items()}
+    for tok, surface, c in singles:
+        cf = canon_first(tok)
+        cands = []
+        if tok in last_dom:
+            cands.append(last_dom[tok])
+        if cf in by_first:
+            fk = sorted(by_first[cf], key=cfreq, reverse=True)
+            # unique, or clearly dominant over the runner-up → safe to fold
+            if len(fk) == 1 or cfreq(fk[0]) >= 1.5 * cfreq(fk[1]):
+                cands.append(fk[0])
+        if cands:
+            best = max(cands, key=cfreq)
+            alias[surface] = canon_of_key[best]
+        else:
+            alias[surface] = surface
+
+    # 5. multi-word mashes: map to a real cluster if any adjacent (first,last)
+    #    token pair matches one ("Joel McClain Norman" → "Joel McClain").
+    for toks, surface, c in leftovers:
+        target = None
+        for i in range(len(toks) - 1):
+            key = (canon_first(toks[i]), toks[i + 1])
+            if key in clusters:
+                target = canon_of_key[key]; break
+        if target is None:                             # else fall back to a known surname
+            for t in toks:
+                if t in last_to_canon:
+                    target = last_to_canon[t]; break
+        alias[surface] = target or surface
+
+    for name in freq:                                  # anything untouched maps to itself
+        alias.setdefault(name, name)
+    return alias
+
+
+def good_name(s):
+    if len(s) < 3:
+        return False
+    if s.lower() in NAME_STOP:
+        return False
+    # must contain at least one letter and not be all-lowercase junk fragments
+    if not any(c.isalpha() for c in s):
+        return False
+    return True
+
+
+def entities_in_file(ner_bin, path, persons_only):
+    """Return the set of distinct entity names found in one file."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return set()
+    if not text.strip():
+        return set()
+    try:
+        proc = subprocess.run([ner_bin], input=text, text=True,
+                              capture_output=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        return set()
+    if proc.returncode != 0:
+        return set()
+    found = {}
+    want = {"PersonalName"} if persons_only else {"PersonalName", "OrganizationName"}
+    for ln in proc.stdout.splitlines():
+        ln = ln.strip()
+        if not ln.startswith("{"):
+            continue
+        try:
+            obj = json.loads(ln)
+        except Exception:
+            continue
+        if obj.get("type") not in want:
+            continue
+        name = norm_name(obj.get("text", ""))
+        if good_name(name):
+            # canonical key by casefold; keep the first-seen surface form
+            found.setdefault(name.casefold(), name)
+    return set(found.values())
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+
+    dirs, i = [], 0
+    top_nodes, top_edges, min_edge = 30, 30, 2
+    persons_only = False
+    dot_out = None
+    as_json = False
+    show_merges = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--show-merges":
+            show_merges = 25; i += 1; continue
+        if a == "--dir" and i + 1 < len(args):
+            dirs.append(os.path.expanduser(args[i + 1])); i += 2; continue
+        if a == "--top-nodes" and i + 1 < len(args):
+            top_nodes = int(args[i + 1]); i += 2; continue
+        if a == "--top-edges" and i + 1 < len(args):
+            top_edges = int(args[i + 1]); i += 2; continue
+        if a == "--min-edge" and i + 1 < len(args):
+            min_edge = int(args[i + 1]); i += 2; continue
+        if a == "--persons-only":
+            persons_only = True; i += 1; continue
+        if a == "--dot" and i + 1 < len(args):
+            dot_out = args[i + 1]; i += 2; continue
+        if a == "--json":
+            as_json = True; i += 1; continue
+        i += 1
+
+    if not dirs:
+        die("usage: ner-graph --dir <folder> [--persons-only] [--dot out.dot] [--json]")
+    ner_bin = find_apple_ner()
+    if not ner_bin:
+        die("apple-ner not found at ~/work/apple/bin/apple-ner")
+
+    # collect files
+    files = []
+    for d in dirs:
+        if os.path.isfile(d):
+            files.append(d); continue
+        for base, subdirs, fns in os.walk(d):
+            subdirs[:] = [s for s in subdirs if s != "node_modules" and not s.startswith(".")]
+            for fn in fns:
+                if fn.lower().endswith((".md", ".txt")):
+                    files.append(os.path.join(base, fn))
+    if not files:
+        die("no .md/.txt files under the given dirs")
+
+    print(f"ner-graph: scanning {len(files)} files with {os.path.basename(ner_bin)} …",
+          file=sys.stderr)
+
+    # Pass 1: extract raw entity sets per file + global frequency.
+    per_file = []
+    raw_freq = Counter()
+    for k, path in enumerate(files, start=1):
+        ents = entities_in_file(ner_bin, path, persons_only)
+        per_file.append(ents)
+        for e in ents:
+            raw_freq[e] += 1
+        if k % 25 == 0:
+            print(f"  [{k}/{len(files)}] {len(raw_freq)} raw entities so far",
+                  file=sys.stderr)
+
+    # Build alias map and report the merges.
+    alias = build_alias_map(raw_freq)
+    merged = {s: c for s, c in alias.items() if c != s}
+    print(f"  alias-merge: {len(raw_freq)} raw → "
+          f"{len(set(alias.values()))} canonical "
+          f"({len(merged)} surface forms folded in)", file=sys.stderr)
+    if show_merges:
+        from collections import defaultdict
+        groups = defaultdict(list)
+        for s, canon in merged.items():
+            groups[canon].append((s, raw_freq[s]))
+        ranked_g = sorted(groups.items(),
+                          key=lambda kv: -sum(f for _, f in kv[1]))
+        print("\n=== ALIAS MERGES (canonical ← folded surface forms) ===")
+        for canon, surfs in ranked_g[:show_merges]:
+            parts = ", ".join(f"{s}({f})" for s, f in
+                              sorted(surfs, key=lambda x: -x[1]))
+            print(f"  {canon}  ←  {parts}")
+
+    # Pass 2: recount nodes + co-occurrence on canonical names.
+    node_count = Counter()     # canonical entity -> files mentioning it
+    edge_count = Counter()     # frozenset(a,b) -> co-occurrence files
+    for ents in per_file:
+        canon = {alias.get(e, e) for e in ents}     # dedup after merge
+        for e in canon:
+            node_count[e] += 1
+        for a, b in combinations(sorted(canon), 2):
+            edge_count[frozenset((a, b))] += 1
+
+    nodes = node_count.most_common(top_nodes)
+    edges = [(tuple(sorted(p)), c) for p, c in edge_count.items() if c >= min_edge]
+    edges.sort(key=lambda x: -x[1])
+    edges = edges[:top_edges]
+
+    if as_json:
+        print(json.dumps({
+            "nodes": [{"name": n, "mentions": c} for n, c in nodes],
+            "edges": [{"a": a, "b": b, "weight": w} for (a, b), w in edges],
+        }, ensure_ascii=False, indent=2))
+        return
+
+    if dot_out:
+        with open(dot_out, "w", encoding="utf-8") as f:
+            f.write("graph contacts {\n  node [shape=ellipse];\n")
+            for (a, b), w in edges:
+                f.write(f'  "{a}" -- "{b}" [weight={w},penwidth={min(6, w)}];\n')
+            f.write("}\n")
+        print(f"wrote {dot_out}  (render: dot -Tpng {dot_out} -o contacts.png)",
+              file=sys.stderr)
+
+    print(f"\n=== TOP {len(nodes)} ENTITIES (files mentioning) ===")
+    maxn = nodes[0][1] if nodes else 1
+    for n, c in nodes:
+        bar = "▇" * max(1, int(c / maxn * 30))
+        print(f"{c:5}  {bar} {n}")
+
+    print(f"\n=== TOP {len(edges)} CONNECTIONS (co-occur in ≥{min_edge} files) ===")
+    for (a, b), w in edges:
+        print(f"{w:4}  {a}  ──  {b}")
+
+
+if __name__ == "__main__":
+    main()

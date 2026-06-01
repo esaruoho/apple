@@ -1,0 +1,58 @@
+#!/usr/bin/env swift
+// apple-lang — Apple-native language detector.
+//
+// Reads UTF-8 text on stdin and prints the dominant language(s) with
+// confidence scores. Uses NaturalLanguage.NLLanguageRecognizer. On-device,
+// 10.14+. ~57 languages supported. No third-party deps.
+//
+// Usage:
+//   echo "Tämä on suomea" | apple-lang
+//   apple-lang --top 3 < text          # top 3 candidates with confidences
+//   apple-lang --json  < text          # JSON output
+
+import Foundation
+import NaturalLanguage
+
+let args = CommandLine.arguments.dropFirst().map { String($0) }
+var top = 1
+var json = false
+var i = 0
+while i < args.count {
+    let a = args[i]
+    if a == "--top" && i+1 < args.count { top = Int(args[i+1]) ?? 1; i += 2; continue }
+    if a == "--json" { json = true; i += 1; continue }
+    if a == "-h" || a == "--help" {
+        FileHandle.standardError.write("usage: apple-lang [--top N] [--json] < text\n".data(using:.utf8)!)
+        exit(0)
+    }
+    i += 1
+}
+
+let data = FileHandle.standardInput.readDataToEndOfFile()
+guard let text = String(data: data, encoding: .utf8), !text.trimmingCharacters(in: .whitespaces).isEmpty else {
+    FileHandle.standardError.write("apple-lang: empty stdin\n".data(using:.utf8)!); exit(1)
+}
+
+let r = NLLanguageRecognizer()
+r.processString(text)
+
+let hypotheses = r.languageHypotheses(withMaximum: top)
+let sorted = hypotheses.sorted { $0.value > $1.value }
+
+if json {
+    let arr = sorted.map { ["language": $0.key.rawValue, "confidence": $0.value] }
+    if let d = try? JSONSerialization.data(withJSONObject: arr, options:[.sortedKeys]),
+       let s = String(data: d, encoding:.utf8) { print(s) }
+} else {
+    if sorted.isEmpty {
+        print("unknown")
+    } else if top == 1 {
+        print(sorted[0].key.rawValue)
+    } else {
+        for (lang, conf) in sorted {
+            let langPad = (lang.rawValue + "        ").prefix(8)
+            let confStr = String(format: "%.3f", conf)
+            print("\(langPad)  \(confStr)")
+        }
+    }
+}

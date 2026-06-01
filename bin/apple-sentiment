@@ -1,0 +1,100 @@
+#!/usr/bin/env swift
+// apple-sentiment — Apple-native sentence sentiment scorer.
+//
+// Reads UTF-8 text on stdin (one sentence per line, or a whole document
+// which we'll sentence-split). Emits one JSON line per sentence:
+//   {"t":"sentence","s":-0.2,"line":3}
+//
+// Uses NaturalLanguage.NLTagger with the .sentimentScore scheme. Score
+// range: -1.0 (negative) to +1.0 (positive); ~0 = neutral. On-device,
+// ANE-accelerated, 10.15+. Zero third-party deps.
+//
+// Usage:
+//   apple-sentiment            < text          # one JSON line per sentence
+//   apple-sentiment --doc      < text          # aggregate score for whole doc
+//   apple-sentiment --table    < text          # human-readable columns
+
+import Foundation
+import NaturalLanguage
+
+let args = CommandLine.arguments.dropFirst().map { String($0) }
+let mode: String = args.first { ["--doc","--table","--json"].contains($0) } ?? "--json"
+
+let data = FileHandle.standardInput.readDataToEndOfFile()
+guard let full = String(data: data, encoding: .utf8), !full.isEmpty else {
+    FileHandle.standardError.write("apple-sentiment: empty stdin\n".data(using:.utf8)!); exit(1)
+}
+
+// Split into sentences via NLTokenizer
+let tok = NLTokenizer(unit: .sentence)
+tok.string = full
+var sentences: [(String, Int)] = []   // sentence text, 1-indexed line number
+var idx = full.startIndex
+var line = 1
+// Pre-compute line breaks for line-number mapping
+var lineStarts: [String.Index] = [full.startIndex]
+var ii = full.startIndex
+while ii < full.endIndex {
+    if full[ii] == "\n" { lineStarts.append(full.index(after: ii)) }
+    ii = full.index(after: ii)
+}
+func lineFor(_ pos: String.Index) -> Int {
+    var lo = 0, hi = lineStarts.count - 1, ans = 0
+    while lo <= hi {
+        let m = (lo+hi)/2
+        if lineStarts[m] <= pos { ans = m; lo = m+1 } else { hi = m-1 }
+    }
+    return ans + 1
+}
+
+tok.enumerateTokens(in: full.startIndex..<full.endIndex) { range, _ in
+    let s = String(full[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+    if !s.isEmpty {
+        sentences.append((s, lineFor(range.lowerBound)))
+    }
+    return true
+}
+
+// Score each sentence
+let tagger = NLTagger(tagSchemes: [.sentimentScore])
+var scores: [(String, Double, Int)] = []
+for (s, ln) in sentences {
+    tagger.string = s
+    let (tag, _) = tagger.tag(at: s.startIndex, unit: .paragraph, scheme: .sentimentScore)
+    let score = Double(tag?.rawValue ?? "0") ?? 0
+    scores.append((s, score, ln))
+}
+
+if mode == "--doc" {
+    let avg = scores.isEmpty ? 0 : scores.map { $0.1 }.reduce(0,+) / Double(scores.count)
+    let pos = scores.filter { $0.1 >  0.1 }.count
+    let neu = scores.filter { abs($0.1) <= 0.1 }.count
+    let neg = scores.filter { $0.1 < -0.1 }.count
+    let obj: [String: Any] = [
+        "sentences": scores.count,
+        "average":   round(avg * 1000) / 1000,
+        "positive":  pos,
+        "neutral":   neu,
+        "negative":  neg,
+        "min":       scores.map { $0.1 }.min() ?? 0,
+        "max":       scores.map { $0.1 }.max() ?? 0,
+    ]
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options:[.sortedKeys]),
+       let s = String(data: d, encoding:.utf8) { print(s) }
+} else if mode == "--table" {
+    for (s, sc, ln) in scores {
+        let bar: String = {
+            let n = max(-10, min(10, Int(sc * 10)))
+            if n > 0 { return "+" + String(repeating: "█", count: n) }
+            if n < 0 { return "-" + String(repeating: "▓", count: -n) }
+            return "·"
+        }()
+        print(String(format: "L%4d  %+.2f  %-14s  %@", ln, sc, bar, s.prefix(80) as CVarArg))
+    }
+} else {  // --json default
+    for (s, sc, ln) in scores {
+        let obj: [String: Any] = ["t": s, "s": sc, "line": ln]
+        if let d = try? JSONSerialization.data(withJSONObject: obj, options:[.sortedKeys]),
+           let str = String(data: d, encoding:.utf8) { print(str) }
+    }
+}

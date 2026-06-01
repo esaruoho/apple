@@ -1,0 +1,23 @@
+#!/bin/bash
+# apple-ner — Apple-native named-entity recognition (NaturalLanguage NLTagger,
+# on-device, Neural-Engine). Self-building: compiles bin/apple-ner.swift to a
+# cached binary on first use (or when the source changes), then runs it.
+#
+# The script interpreter (`#!/usr/bin/env swift`) re-parses + JIT-compiles the
+# whole file on EVERY invocation (~1s startup) — fine for one file, fatal for a
+# 2,000-file corpus driven by ner-graph. The compiled binary starts in ~50ms,
+# so per-file spawning over a big email corpus becomes practical.
+#
+# Usage: apple-ner [--json|--table] < file.txt    (see bin/apple-ner.swift)
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/apple-ner.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/apple-ner"
+mkdir -p "$CACHE"
+# Rebuild if the binary is missing or older than the source.
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" \
+        -framework Foundation -framework NaturalLanguage
+fi
+exec "$BIN" "$@"

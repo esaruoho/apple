@@ -1,0 +1,153 @@
+#!/usr/bin/env swift
+// apple-keywords — the "useful words, no junk" extractor. Apple-native, no deps.
+//
+// Apple's NaturalLanguage NLTagger tags every word's lexical class (part of
+// speech) ON-DEVICE. We keep only content words (nouns, verbs, adjectives by
+// default) and DROP the "of / the / and / is" function words automatically —
+// no hand-maintained stopword list doing the heavy lifting. NLTagger also
+// lemmatizes, so motor/motors and tap/tapping/tapped collapse to one count.
+//
+// This is the word-cloud / "biggest useful words" engine: feed it a folder or
+// stdin, get a ranked frequency table of the terms that actually carry meaning.
+//
+// Modes:
+//   apple-keywords --dir <folder> [--top N] [--pos noun,verb,adj,adv]
+//                  [--min-len N] [--min-count N] [--json] [--cloud]
+//   apple-keywords < file.txt                  # read stdin
+//   cat a.md b.md | apple-keywords --top 40
+//
+//   --pos       which lexical classes to keep  (default noun,verb,adj)
+//   --min-len   drop lemmas shorter than this  (default 3)
+//   --min-count drop lemmas seen fewer times   (default 1)
+//   --cloud     print a size-graded ASCII cloud instead of a table
+//   --json      one {"word":..,"count":..,"pos":..} object per line
+import Foundation
+import NaturalLanguage
+
+func die(_ s: String) -> Never { FileHandle.standardError.write((s+"\n").data(using:.utf8)!); exit(1) }
+
+// ---- args ----
+var args = Array(CommandLine.arguments.dropFirst())
+func opt(_ n: String) -> String? { guard let i = args.firstIndex(of:n), i+1 < args.count else {return nil}; return args[i+1] }
+let dir       = opt("--dir")
+let top       = Int(opt("--top") ?? "50") ?? 50
+let minLen    = Int(opt("--min-len") ?? "3") ?? 3
+let minCount  = Int(opt("--min-count") ?? "1") ?? 1
+let asJSON    = args.contains("--json")
+let asCloud   = args.contains("--cloud")
+let posArg    = (opt("--pos") ?? "noun,verb,adj").lowercased()
+let extArg    = opt("--ext") ?? "md,txt"
+let exts      = extArg.lowercased().split(separator: ",").map { "." + $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: ".")) }
+
+// map the --pos tokens to NLTag lexical classes
+var keep = Set<NLTag>()
+for p in posArg.split(separator: ",").map({String($0).trimmingCharacters(in: .whitespaces)}) {
+    switch p {
+    case "noun":  keep.insert(.noun)
+    case "verb":  keep.insert(.verb)
+    case "adj", "adjective": keep.insert(.adjective)
+    case "adv", "adverb":    keep.insert(.adverb)
+    case "other", "otherword": keep.insert(.otherWord)
+    default: break
+    }
+}
+if keep.isEmpty { keep = [.noun, .verb, .adjective] }
+
+// A tiny residual stoplist: NLTagger classes these as content words by POS, but
+// they carry no topical signal — modal/auxiliary verbs, vague quantifiers, and
+// boilerplate tokens. (Domain words like "current"/"charge" are deliberately
+// NOT here — they're real EE vocabulary.)
+let stop: Set<String> = [
+    // weak verbs + modals/auxiliaries
+    "be","have","do","get","make","go","use","one","also","can","will","would",
+    "may","could","should","must","might","shall","cannot","let","seem","become",
+    // vague quantifiers / pronoun-ish adjectives
+    "thing","way","time","year","day","other","such","same","many","much","more",
+    "most","own","only","then","some","any","each","every","both","few","lot",
+    // boilerplate / web / mail
+    "mr","etc","via","per","page","file","www","http","https","com","org","net",
+    "html","email","date","subject","re","fwd","said","says","like","just","good"]
+
+// ---- gather text ----
+func filesUnder(_ root: String) -> [String] {
+    var out: [String] = []
+    let fm = FileManager.default
+    guard let en = fm.enumerator(atPath: root) else { return out }
+    for case let rel as String in en {
+        let low = rel.lowercased()
+        if exts.contains(where: { low.hasSuffix($0) }) {
+            if rel.contains("/node_modules/") || rel.hasPrefix("node_modules/") { continue }
+            out.append((root as NSString).appendingPathComponent(rel))
+        }
+    }
+    return out
+}
+
+var corpus = ""
+if let d = dir {
+    let paths = filesUnder((d as NSString).expandingTildeInPath)
+    if paths.isEmpty { die("apple-keywords: no .md/.txt under \(d)") }
+    for p in paths {
+        if let s = try? String(contentsOfFile: p, encoding: .utf8) { corpus += s + "\n" }
+    }
+} else {
+    let data = FileHandle.standardInput.readDataToEndOfFile()
+    corpus = String(data: data, encoding: .utf8) ?? ""
+}
+if corpus.isEmpty { die("apple-keywords: no input (give --dir or pipe text on stdin)") }
+
+// ---- tag + count ----
+let tagger = NLTagger(tagSchemes: [.lexicalClass, .lemma])
+tagger.string = corpus
+let opts: NLTagger.Options = [.omitWhitespace, .omitPunctuation, .omitOther]
+
+var counts: [String: Int] = [:]
+var posOf:  [String: NLTag] = [:]
+
+tagger.enumerateTags(in: corpus.startIndex..<corpus.endIndex,
+                     unit: .word, scheme: .lexicalClass, options: opts) { tag, range in
+    guard let tag = tag, keep.contains(tag) else { return true }
+    // lemma if available, else the surface form, lowercased
+    var word: String
+    let (lemmaTag, _) = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lemma)
+    if let lemma = lemmaTag?.rawValue, !lemma.isEmpty {
+        word = lemma.lowercased()
+    } else {
+        word = String(corpus[range]).lowercased()
+    }
+    // keep alphabetic-ish content words only
+    if word.count < minLen { return true }
+    if stop.contains(word) { return true }
+    if !word.unicodeScalars.allSatisfy({ CharacterSet.letters.contains($0) || $0 == "-" }) { return true }
+    counts[word, default: 0] += 1
+    if posOf[word] == nil { posOf[word] = tag }
+    return true
+}
+
+let ranked = counts.filter { $0.value >= minCount }
+                   .sorted { $0.value > $1.value || ($0.value == $1.value && $0.key < $1.key) }
+                   .prefix(top)
+if ranked.isEmpty { die("apple-keywords: no content words found", ) }
+
+// ---- output ----
+if asJSON {
+    for (w, c) in ranked {
+        let pos = posOf[w]?.rawValue ?? "?"
+        print("{\"word\":\"\(w)\",\"count\":\(c),\"pos\":\"\(pos)\"}")
+    }
+} else if asCloud {
+    let maxC = ranked.first!.value
+    for (w, c) in ranked.sorted(by: { $0.key < $1.key }) {
+        let scale = Double(c) / Double(maxC)
+        let bucket = scale > 0.66 ? "███" : scale > 0.33 ? "▓▓" : "░"
+        print("\(bucket) \(w) (\(c))")
+    }
+} else {
+    let maxC = ranked.first!.value
+    for (w, c) in ranked {
+        let barLen = max(1, Int(Double(c) / Double(maxC) * 40))
+        let pos = (posOf[w]?.rawValue ?? "?").prefix(4)
+        print(String(format: "%6d  %-5@ %@ %@", c, String(pos) as NSString,
+                     String(repeating: "▇", count: barLen) as NSString, w as NSString))
+    }
+}

@@ -1,0 +1,90 @@
+#!/usr/bin/env swift
+// apple-pos — Apple-native part-of-speech tagger.
+//
+// Reads UTF-8 text on stdin and emits one JSON line per word:
+//   {"text":"running","pos":"Verb","line":12}
+//
+// Uses NaturalLanguage.NLTagger with the .lexicalClass scheme. On-device,
+// 10.14+. Apple tag set: Noun, Verb, Adjective, Adverb, Pronoun, Determiner,
+// Particle, Preposition, Number, Conjunction, Interjection, Classifier,
+// Idiom, OtherWord.
+//
+// Usage:
+//   echo "Tesla studied electric currents." | apple-pos
+//   apple-pos --filter Verb < text          # only verbs
+//   apple-pos --filter Noun,Adjective < text
+//   apple-pos --uniq < text                 # unique words + counts per POS
+
+import Foundation
+import NaturalLanguage
+
+let args = CommandLine.arguments.dropFirst().map { String($0) }
+let filter: Set<String>? = {
+    if let i = args.firstIndex(of: "--filter"), i + 1 < args.count {
+        return Set(args[i+1].split(separator: ",").map { String($0) })
+    }
+    return nil
+}()
+let uniq = args.contains("--uniq")
+let table = args.contains("--table")
+
+let data = FileHandle.standardInput.readDataToEndOfFile()
+guard let full = String(data: data, encoding: .utf8), !full.isEmpty else {
+    FileHandle.standardError.write("apple-pos: empty stdin\n".data(using:.utf8)!); exit(1)
+}
+
+let tagger = NLTagger(tagSchemes: [.lexicalClass])
+tagger.string = full
+
+var lineStarts: [String.Index] = [full.startIndex]
+var ii = full.startIndex
+while ii < full.endIndex {
+    if full[ii] == "\n" { lineStarts.append(full.index(after: ii)) }
+    ii = full.index(after: ii)
+}
+func lineFor(_ pos: String.Index) -> Int {
+    var lo = 0, hi = lineStarts.count - 1, ans = 0
+    while lo <= hi {
+        let m = (lo+hi)/2
+        if lineStarts[m] <= pos { ans = m; lo = m+1 } else { hi = m-1 }
+    }
+    return ans + 1
+}
+
+var counts: [String: [String: Int]] = [:]  // pos → word → count
+var rows: [(text: String, pos: String, line: Int)] = []
+
+tagger.enumerateTags(in: full.startIndex..<full.endIndex,
+                      unit: .word, scheme: .lexicalClass,
+                      options: [.omitWhitespace, .omitPunctuation]) { tag, range in
+    guard let tag = tag else { return true }
+    let posTag = tag.rawValue
+    if let f = filter, !f.contains(posTag) { return true }
+    let text = String(full[range])
+    if text.count < 2 { return true }
+    counts[posTag, default: [:]][text.lowercased(), default: 0] += 1
+    rows.append((text: text, pos: posTag, line: lineFor(range.lowerBound)))
+    return true
+}
+
+if uniq {
+    for (pos, words) in counts.sorted(by: { $0.key < $1.key }) {
+        print("\n## \(pos)")
+        for (w, n) in words.sorted(by: { $0.value > $1.value }).prefix(50) {
+            let n5 = String(repeating: " ", count: max(0, 5 - String(n).count)) + String(n)
+            print("\(n5)  \(w)")
+        }
+    }
+} else if table {
+    for r in rows {
+        let lnPad = String(repeating: " ", count: max(0, 4 - String(r.line).count)) + String(r.line)
+        let posPad = (r.pos + "            ").prefix(12)
+        print("L\(lnPad)  \(posPad)  \(r.text)")
+    }
+} else {
+    for r in rows {
+        let obj: [String: Any] = ["text": r.text, "pos": r.pos, "line": r.line]
+        if let d = try? JSONSerialization.data(withJSONObject: obj, options:[.sortedKeys]),
+           let s = String(data: d, encoding:.utf8) { print(s) }
+    }
+}

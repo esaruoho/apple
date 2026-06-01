@@ -1,0 +1,474 @@
+#!/usr/bin/env python3
+"""
+ner-graph-svg — render the cross-decade name graph as a force-directed SVG.
+
+Inputs:
+  ~/work/merlib-dump/articles/_machine-output/NER-COOC.json   (from build-ner-graph.py)
+  optional: per-person sentiment overlay (--with-sentiment)
+
+Output:
+  ~/work/merlib-dump/articles/_machine-output/NER-GRAPH.svg
+  opens it in the default viewer (Safari/Preview)
+
+Apple-native: Python stdlib only. SVG renders in Safari, Preview, Quick Look.
+
+Usage:
+  ner-graph-svg                       # default settings (top 30 people, edges > 3)
+  ner-graph-svg --top 40 --min-edge 2
+  ner-graph-svg --with-sentiment      # color nodes by avg sentiment of files mentioning them
+  ner-graph-svg --no-open             # don't auto-open
+"""
+import json
+import math
+import os
+import random
+import subprocess
+import sys
+import collections
+
+HOME = os.path.expanduser("~")
+COOC = f"{HOME}/work/merlib-dump/articles/_machine-output/NER-COOC.json"
+OUT  = f"{HOME}/work/merlib-dump/articles/_machine-output/NER-GRAPH.svg"
+HTML = f"{HOME}/work/merlib-dump/articles/_machine-output/NER-GRAPH.html"
+
+
+def parse_args():
+    top = 30; min_edge = 3; do_open = True; sentiment = False
+    args = sys.argv[1:]; i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--top" and i+1 < len(args): top = int(args[i+1]); i += 2; continue
+        if a == "--min-edge" and i+1 < len(args): min_edge = int(args[i+1]); i += 2; continue
+        if a == "--no-open": do_open = False; i += 1; continue
+        if a == "--with-sentiment": sentiment = True; i += 1; continue
+        if a in ("-h","--help"):
+            print(__doc__); sys.exit(0)
+        i += 1
+    return top, min_edge, do_open, sentiment
+
+
+def compute_person_sentiment(top_people, all_files_persons):
+    """For each person in top_people, find the files that mention them, then
+    average the doc-level sentiment of those files. Returns {person: avg_sent}."""
+    sent_bin = os.path.expanduser("~/work/apple/bin/apple-sentiment")
+    if not os.path.isfile(sent_bin):
+        return {}
+    # Inverse map: person → [files]
+    person_to_files = collections.defaultdict(list)
+    for fp, persons in all_files_persons.items():
+        for p in persons:
+            if p in top_people:
+                person_to_files[p].append(fp)
+    print(f"  scoring sentiment for {len(person_to_files)} people …", file=sys.stderr)
+    file_avg_cache = {}
+    out = {}
+    for n, person in enumerate(top_people, 1):
+        files = person_to_files.get(person, [])[:8]   # cap at 8 files per person
+        if not files:
+            continue
+        scores = []
+        for fp in files:
+            if fp in file_avg_cache:
+                scores.append(file_avg_cache[fp]); continue
+            if not os.path.isfile(fp): continue
+            try:
+                with open(fp,"r",encoding="utf-8",errors="replace") as f:
+                    txt = f.read()
+                if len(txt) > 250_000: txt = txt[:250_000]
+                proc = subprocess.run([sent_bin,"--doc"], input=txt, text=True,
+                                       capture_output=True, timeout=30)
+                d = json.loads(proc.stdout.strip())
+                avg = d.get("average", 0)
+                file_avg_cache[fp] = avg
+                scores.append(avg)
+            except Exception:
+                pass
+        if scores:
+            out[person] = sum(scores)/len(scores)
+        if n % 5 == 0:
+            print(f"    {n}/{len(top_people)} people scored", file=sys.stderr)
+    return out
+
+
+def layout_force_directed(nodes, edges, w=1400, h=900, iters=300):
+    """Fruchterman-Reingold. nodes = list of names; edges = {(a,b): weight}.
+    Returns {name: (x, y)} in pixel coords."""
+    random.seed(42)
+    pos = {n: [random.uniform(50, w-50), random.uniform(50, h-50)] for n in nodes}
+    area = w * h
+    k = math.sqrt(area / max(len(nodes), 1)) * 0.55
+    t = w / 8.0           # initial temperature
+    cooling = 0.96
+
+    edges_list = [(a,b,wt) for (a,b),wt in edges.items() if a in pos and b in pos]
+    for _ in range(iters):
+        disp = {n: [0.0, 0.0] for n in nodes}
+        # repulsive forces
+        names = list(pos.keys())
+        for i in range(len(names)):
+            ax, ay = pos[names[i]]
+            for j in range(i+1, len(names)):
+                bx, by = pos[names[j]]
+                dx = ax - bx; dy = ay - by
+                d = math.hypot(dx, dy) or 0.01
+                f = (k*k) / d
+                ux, uy = dx/d, dy/d
+                disp[names[i]][0] += ux*f; disp[names[i]][1] += uy*f
+                disp[names[j]][0] -= ux*f; disp[names[j]][1] -= uy*f
+        # attractive forces (edges)
+        for a,b,wt in edges_list:
+            ax, ay = pos[a]; bx, by = pos[b]
+            dx = ax - bx; dy = ay - by
+            d = math.hypot(dx, dy) or 0.01
+            wt_scaled = math.log1p(wt)   # damp very-strong edges
+            f = (d*d) / k * wt_scaled
+            ux, uy = dx/d, dy/d
+            disp[a][0] -= ux*f; disp[a][1] -= uy*f
+            disp[b][0] += ux*f; disp[b][1] += uy*f
+        # apply with temperature cap
+        for n in nodes:
+            dx, dy = disp[n]
+            d = math.hypot(dx, dy) or 0.01
+            cap = min(d, t)
+            pos[n][0] += dx/d * cap
+            pos[n][1] += dy/d * cap
+            pos[n][0] = max(30, min(w-30, pos[n][0]))
+            pos[n][1] = max(30, min(h-30, pos[n][1]))
+        t *= cooling
+    return {n: (pos[n][0], pos[n][1]) for n in pos}
+
+
+def sent_to_color(avg):
+    """avg sentiment in [-1, 1] → SVG hex color from red (neg) → grey (neutral) → green (pos)."""
+    avg = max(-1.0, min(1.0, avg or 0.0))
+    if avg < 0:
+        # red → grey
+        t = abs(avg)
+        r = 220; g = int(220 * (1 - t * 0.55)); b = int(220 * (1 - t * 0.55))
+    else:
+        t = avg
+        r = int(220 * (1 - t * 0.55)); g = 220; b = int(220 * (1 - t * 0.55))
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def main():
+    top, min_edge, do_open, want_sentiment = parse_args()
+    if not os.path.isfile(COOC):
+        print(f"missing {COOC} — run build-ner-graph.py first", file=sys.stderr)
+        sys.exit(1)
+    with open(COOC) as f:
+        data = json.load(f)
+    people_freq = data["people_freq"]
+    cooc_raw = data["cooccurrence"]
+    files_to_persons = data.get("files_to_persons", {})
+
+    # Top-N people
+    top_people = [n for n,_ in collections.Counter(people_freq).most_common(top)]
+    top_set = set(top_people)
+    print(f"▸ {len(top_people)} top people, min-edge {min_edge}", file=sys.stderr)
+
+    # Edges: only between top people
+    edges = {}
+    for a, neigh in cooc_raw.items():
+        if a not in top_set: continue
+        for b, wt in neigh.items():
+            if b not in top_set or a >= b: continue   # dedup
+            if wt < min_edge: continue
+            edges[(a,b)] = wt
+    print(f"  {len(edges)} edges above min_edge", file=sys.stderr)
+
+    # Layout
+    print(f"  computing force-directed layout (300 iters) …", file=sys.stderr)
+    pos = layout_force_directed(top_people, edges)
+
+    # Optional sentiment overlay
+    sent_by_person = {}
+    if want_sentiment and files_to_persons:
+        sent_by_person = compute_person_sentiment(top_people, files_to_persons)
+        print(f"  sentiment scored for {len(sent_by_person)} people", file=sys.stderr)
+
+    # SVG
+    w, h = 1400, 900
+    parts = []
+    parts.append(f'<?xml version="1.0" encoding="UTF-8"?>')
+    parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" '
+                  f'style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,sans-serif;background:#0b0b0c">')
+    parts.append(f'<style>'
+                  f'.lbl{{font-size:13px;fill:#e9e9ea;text-anchor:middle;'
+                  f'paint-order:stroke;stroke:#0b0b0c;stroke-width:3px;}}'
+                  f'.cnt{{font-size:10px;fill:#9c9c9e;text-anchor:middle;}}'
+                  f'.edge{{stroke:#3a3a3c;fill:none;}}'
+                  f'.node{{stroke:#1c1c1e;stroke-width:1.5;}}'
+                  f'</style>')
+    parts.append(f'<text x="{w/2}" y="32" text-anchor="middle" fill="#9c9c9e" '
+                  f'style="font-size:18px;font-weight:600">'
+                  f'merlib-dump: cross-decade name graph '
+                  f'(top {len(top_people)}, edges ≥{min_edge})'
+                  f'{" · node colour = avg sentiment of mentioning files" if sent_by_person else ""}</text>')
+    parts.append(f'<text x="{w/2}" y="52" text-anchor="middle" fill="#5a5a5c" '
+                  f'style="font-size:11px">'
+                  f'Generated by apple-ner (NLTagger) + Fruchterman-Reingold layout + Apple sentiment</text>')
+
+    # Edges — tag endpoints for interactive highlight
+    max_w = max(edges.values()) if edges else 1
+    # We need name→id later but it's not defined yet here; build inline name_to_id
+    _name_to_id_early = {n: f"n{i}" for i, n in enumerate(top_people)}
+    for (a,b), wt in edges.items():
+        ax, ay = pos[a]; bx, by = pos[b]
+        thick = 0.5 + (wt/max_w) * 4.5
+        opacity = 0.25 + (wt/max_w) * 0.55
+        parts.append(f'<line class="edge" data-a="{_name_to_id_early[a]}" '
+                      f'data-b="{_name_to_id_early[b]}" data-wt="{wt}" '
+                      f'x1="{ax:.1f}" y1="{ay:.1f}" '
+                      f'x2="{bx:.1f}" y2="{by:.1f}" '
+                      f'stroke-width="{thick:.2f}" opacity="{opacity:.2f}"/>')
+
+    # Nodes — tag with data-attrs so the HTML JS can light up neighbours
+    max_freq = max(people_freq[p] for p in top_people)
+    # neighbor map
+    neighbors = collections.defaultdict(set)
+    for (a, b) in edges:
+        neighbors[a].add(b); neighbors[b].add(a)
+    name_to_id = {n: f"n{i}" for i, n in enumerate(top_people)}
+    for name in top_people:
+        x, y = pos[name]
+        freq = people_freq[name]
+        r = 8 + (freq/max_freq) * 32
+        if sent_by_person and name in sent_by_person:
+            fill = sent_to_color(sent_by_person[name])
+        else:
+            fill = "#7aa7d4"
+        nid = name_to_id[name]
+        neigh_ids = " ".join(name_to_id[n] for n in neighbors[name] if n in name_to_id)
+        sent_txt = f'{sent_by_person[name]:+.2f}' if name in sent_by_person else ''
+        parts.append(f'<circle class="node" id="{nid}" data-name="{name}" '
+                      f'data-freq="{freq}" data-sent="{sent_txt}" data-neighbors="{neigh_ids}" '
+                      f'cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{fill}"/>')
+        parts.append(f'<text class="lbl" data-for="{nid}" x="{x:.1f}" y="{y - r - 4:.1f}">{name}</text>')
+        sub = f'{freq}'
+        if name in sent_by_person:
+            sub += f' · {sent_by_person[name]:+.2f}'
+        parts.append(f'<text class="cnt" data-for="{nid}" x="{x:.1f}" y="{y + r + 14:.1f}">{sub}</text>')
+
+    # Tag edges with their endpoints so JS can highlight them on node click
+    parts_edges_tagged = []
+    for line in parts:
+        if line.startswith('<line class="edge"'):
+            parts_edges_tagged.append(line)
+        else:
+            parts_edges_tagged.append(line)
+
+    # Legend
+    legend_y = h - 56
+    parts.append(f'<text x="22" y="{legend_y}" fill="#9c9c9e" style="font-size:12px;font-weight:600">Legend</text>')
+    parts.append(f'<text x="22" y="{legend_y+16}" fill="#7a7a7c" style="font-size:11px">node size = mentions across all ledgers</text>')
+    parts.append(f'<text x="22" y="{legend_y+30}" fill="#7a7a7c" style="font-size:11px">edge thickness = co-occurrence in ledger files</text>')
+    if sent_by_person:
+        parts.append(f'<text x="22" y="{legend_y+44}" fill="#7a7a7c" style="font-size:11px">colour: red = negative · grey = neutral · green = positive avg sentiment</text>')
+
+    parts.append('</svg>')
+    svg_body = "\n".join(parts)
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT, "w") as f:
+        f.write(svg_body)
+    print(f"▸ wrote {OUT}", file=sys.stderr)
+
+    # HTML wrapper — pan / zoom / click-highlight / search.
+    # The SVG is inlined so the page is fully offline-portable.
+    html = """<!doctype html>
+<html><head><meta charset="utf-8"><title>merlib-dump · cross-decade name graph</title>
+<style>
+html,body{margin:0;padding:0;background:#0b0b0c;color:#e9e9ea;
+  font-family:-apple-system,BlinkMacSystemFont,Helvetica,sans-serif;height:100%;overflow:hidden;}
+#bar{position:fixed;top:0;left:0;right:0;padding:10px 16px;
+  background:rgba(10,10,12,0.92);backdrop-filter:saturate(180%) blur(10px);
+  border-bottom:1px solid #222;display:flex;gap:14px;align-items:center;z-index:10;}
+#bar input{background:#1a1a1c;border:1px solid #2c2c2e;border-radius:6px;
+  color:#e9e9ea;padding:6px 10px;font-size:13px;width:240px;}
+#bar button{background:#2a2a2c;border:1px solid #3a3a3c;color:#e9e9ea;
+  border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;}
+#bar button:hover{background:#3a3a3c;}
+#bar .hint{color:#8a8a8c;font-size:11px;margin-left:auto;}
+#stage{width:100vw;height:100vh;cursor:grab;touch-action:none;}
+#stage.grabbing{cursor:grabbing;}
+#info{position:fixed;left:16px;bottom:16px;padding:12px 14px;
+  background:rgba(20,20,22,0.95);border:1px solid #2c2c2e;border-radius:8px;
+  font-size:12px;max-width:380px;display:none;z-index:9;}
+#info b{color:#fff;font-size:13px;}
+#info .row{color:#9c9c9e;margin-top:4px;}
+#info .neighlink{color:#ffcc33;cursor:pointer;text-decoration:none;border-bottom:1px dotted #555;padding:1px 2px;}
+#info .neighlink:hover{background:#332b00;border-bottom-color:#ffcc33;}
+.dim circle.node{opacity:0.15;}
+.dim text{opacity:0.15;}
+.dim line.edge{opacity:0.05;}
+circle.node.hit{stroke:#fff;stroke-width:3;}
+circle.node.neigh{opacity:1;stroke:#fff;stroke-width:1.5;}
+text.lbl.neigh,text.cnt.neigh{opacity:1;font-weight:700;}
+line.edge.hit{opacity:1;stroke:#ffcc33;stroke-width:3;}
+text.lbl,text.cnt,circle.node,line.edge{transition:opacity 0.18s, stroke-width 0.18s;}
+</style></head>
+<body>
+<div id="bar">
+  <input id="search" placeholder="find a name…" autocomplete="off">
+  <button onclick="reset()">reset</button>
+  <button onclick="fit()">fit</button>
+  <button onclick="zoomIn()">+</button>
+  <button onclick="zoomOut()">−</button>
+  <span class="hint">scroll = zoom · drag = pan · click a node = highlight neighbours · esc = reset</span>
+</div>
+<svg id="stage" preserveAspectRatio="xMidYMid meet">__SVG_INNER__</svg>
+<div id="info"></div>
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const inner = stage.querySelector('svg') || stage;
+  // Move every child of inner inline-svg into stage (because we wrapped twice)
+  // ... actually we inlined the inner svg's body so the <svg> wrapper is just stage
+  // Already correct; we just use stage as the root.
+
+  let vb = { x: 0, y: 0, w: 1400, h: 900 };
+  function setVB(){ stage.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+  setVB();
+
+  // Pan
+  let isDown = false, startX, startY, startVB;
+  stage.addEventListener('mousedown', e => {
+    isDown = true; startX = e.clientX; startY = e.clientY;
+    startVB = {...vb}; stage.classList.add('grabbing');
+  });
+  window.addEventListener('mouseup', () => { isDown = false; stage.classList.remove('grabbing'); });
+  window.addEventListener('mousemove', e => {
+    if (!isDown) return;
+    const rect = stage.getBoundingClientRect();
+    const dx = (e.clientX - startX) * (vb.w / rect.width);
+    const dy = (e.clientY - startY) * (vb.h / rect.height);
+    vb.x = startVB.x - dx; vb.y = startVB.y - dy;
+    setVB();
+  });
+
+  // Zoom (wheel)
+  stage.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = stage.getBoundingClientRect();
+    const mx = vb.x + (e.clientX - rect.left) * vb.w / rect.width;
+    const my = vb.y + (e.clientY - rect.top)  * vb.h / rect.height;
+    const factor = Math.exp(e.deltaY * 0.0015);
+    vb.w *= factor; vb.h *= factor;
+    vb.x = mx - (mx - vb.x) * factor;
+    vb.y = my - (my - vb.y) * factor;
+    setVB();
+  }, {passive: false});
+
+  function reset(){ vb = {x:0,y:0,w:1400,h:900}; setVB(); clearHighlight(); document.getElementById('search').value=''; }
+  function fit(){ vb={x:0,y:0,w:1400,h:900}; setVB(); }
+  function zoomIn(){ const f=0.8; vb.w*=f; vb.h*=f; vb.x+=vb.w*0.125; vb.y+=vb.h*0.125; setVB(); }
+  function zoomOut(){ const f=1.25; vb.x-=vb.w*0.125; vb.y-=vb.h*0.125; vb.w*=f; vb.h*=f; setVB(); }
+  window.reset=reset; window.fit=fit; window.zoomIn=zoomIn; window.zoomOut=zoomOut;
+  window.addEventListener('keydown', e => { if (e.key==='Escape') reset(); });
+
+  // Highlight + re-orient
+  const info = document.getElementById('info');
+  function clearHighlight(){
+    stage.classList.remove('dim');
+    stage.querySelectorAll('.hit,.neigh').forEach(el => el.classList.remove('hit','neigh'));
+    info.style.display = 'none';
+  }
+  function focusNode(id, pan){
+    const t = document.getElementById(id);
+    if (!t) return;
+    clearHighlight();
+    stage.classList.add('dim');
+    t.classList.add('hit');
+    const name = t.dataset.name;
+    const freq = t.dataset.freq;
+    const sent = t.dataset.sent;
+    const neighs = (t.dataset.neighbors || '').split(' ').filter(Boolean);
+    neighs.forEach(nid => {
+      const n = document.getElementById(nid);
+      if (n) n.classList.add('neigh');
+      stage.querySelectorAll(`text.lbl[data-for="${nid}"], text.cnt[data-for="${nid}"]`)
+        .forEach(el => el.classList.add('neigh'));
+    });
+    stage.querySelectorAll(`text.lbl[data-for="${id}"], text.cnt[data-for="${id}"]`)
+      .forEach(el => el.classList.add('neigh'));
+    stage.querySelectorAll(`line.edge[data-a="${id}"], line.edge[data-b="${id}"]`)
+      .forEach(el => el.classList.add('hit'));
+    // Build info card — neighbours are clickable to re-focus.
+    const edgeRows = [];
+    stage.querySelectorAll(`line.edge[data-a="${id}"], line.edge[data-b="${id}"]`).forEach(line => {
+      const other = (line.dataset.a===id) ? line.dataset.b : line.dataset.a;
+      const otherNode = document.getElementById(other);
+      if (otherNode) edgeRows.push({id: other, name: otherNode.dataset.name, wt: parseInt(line.dataset.wt)});
+    });
+    edgeRows.sort((a,b) => b.wt - a.wt);
+    const links = edgeRows.slice(0, 20).map(r =>
+      `<span class="neighlink" onclick="focusNode('${r.id}', true)">${r.name} (${r.wt})</span>`
+    ).join(' ');
+    info.innerHTML = `<b>${name}</b><div class="row">${freq} total mentions${sent ? ' · sent '+sent : ''}</div>` +
+      `<div class="row" style="margin-top:8px">${edgeRows.length} neighbour(s) (click to re-orient):</div>` +
+      `<div class="row" style="margin-top:6px;line-height:1.8">${links}</div>`;
+    info.style.display = 'block';
+    if (pan) {
+      // Pan & zoom so the new focus is centred and reasonably tight.
+      const cx = parseFloat(t.getAttribute('cx'));
+      const cy = parseFloat(t.getAttribute('cy'));
+      const targetW = Math.min(vb.w, 900);
+      const targetH = Math.min(vb.h, 600);
+      vb.w = targetW; vb.h = targetH;
+      vb.x = cx - vb.w / 2; vb.y = cy - vb.h / 2;
+      setVB();
+    }
+  }
+  window.focusNode = focusNode;
+  stage.addEventListener('click', e => {
+    const t = e.target;
+    if (t.tagName !== 'circle' || !t.classList.contains('node')) {
+      clearHighlight(); return;
+    }
+    focusNode(t.id, false);
+  });
+
+  // Search
+  const search = document.getElementById('search');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    if (!q) { clearHighlight(); return; }
+    const matches = [...stage.querySelectorAll('circle.node')].filter(n =>
+      n.dataset.name.toLowerCase().includes(q));
+    if (matches.length === 0) return;
+    clearHighlight(); stage.classList.add('dim');
+    matches.forEach(m => {
+      m.classList.add('hit');
+      stage.querySelectorAll(`text.lbl[data-for="${m.id}"], text.cnt[data-for="${m.id}"]`)
+        .forEach(el => el.classList.add('neigh'));
+    });
+    // Centre viewbox on first match
+    if (matches.length === 1) {
+      const m = matches[0];
+      const cx = parseFloat(m.getAttribute('cx'));
+      const cy = parseFloat(m.getAttribute('cy'));
+      vb.w = 600; vb.h = 400;
+      vb.x = cx - vb.w/2; vb.y = cy - vb.h/2;
+      setVB();
+    }
+  });
+})();
+</script>
+</body></html>
+"""
+    # Inline SVG body (strip outer wrapper) into the HTML stage
+    # svg_body opens with <?xml…?><svg …> and closes with </svg>; we keep everything inside the outer <svg>
+    inner_start = svg_body.find(">", svg_body.find("<svg")) + 1
+    inner_end = svg_body.rfind("</svg>")
+    inner = svg_body[inner_start:inner_end]
+    html_out = html.replace("__SVG_INNER__", inner)
+    with open(HTML, "w") as f:
+        f.write(html_out)
+    print(f"▸ wrote {HTML}", file=sys.stderr)
+
+    if do_open:
+        subprocess.run(["open", "-a", "Safari", HTML])
+
+
+if __name__ == "__main__":
+    main()
