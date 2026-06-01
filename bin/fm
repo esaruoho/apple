@@ -13,7 +13,11 @@ if [ ! -d /System/Library/Frameworks/FoundationModels.framework ]; then
 fi
 CACHE="$HOME/.cache/apple"; BIN="$CACHE/fm"; mkdir -p "$CACHE"
 if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
-    xcrun swiftc -O -target arm64-apple-macos26.0 "$SRC" -o "$BIN" \
+    # -sdk is REQUIRED so swiftc finds the FoundationModelsMacros plugin that the
+    # @Generable macro (used by tools) depends on. Without it the build fails:
+    # "plugin for module 'FoundationModelsMacros' not found".
+    xcrun swiftc -O -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
+        -target arm64-apple-macos26.0 "$SRC" -o "$BIN" \
         -framework FoundationModels -framework Foundation
 fi
 exec "$BIN" "$@"
