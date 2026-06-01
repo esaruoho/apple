@@ -60,7 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     func startServer() {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        p.arguments = ["python3", panelBin, "--no-open"]
+        // -u: unbuffered stdout. Without it Python block-buffers when stdout is
+        // a pipe, so the "live at http://…" banner never flushes (serve_forever
+        // blocks) and we'd wait forever for a URL line. This is the fix for the
+        // "Starting Apple Panel…" hang.
+        p.arguments = ["python3", "-u", panelBin, "--no-open"]
         let pipe = Pipe()
         p.standardOutput = pipe
         p.standardError = pipe
@@ -81,6 +85,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
             try p.run()
         } catch {
             showMessage("Couldn't start apple-panel:<br>\(error.localizedDescription)")
+            return
+        }
+        // Defensive: never hang silently. If no URL within 10 s, show what the
+        // server actually printed so the failure is diagnosable, not a spinner.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+            guard let self = self, !self.loaded else { return }
+            let log = self.serverLog.isEmpty ? "(no output from server)" : self.serverLog
+            self.showMessage("Apple Panel server didn't report a URL within 10 s.<br><br>"
+                + "<pre style='text-align:left;white-space:pre-wrap'>\(log)</pre>")
         }
     }
 
