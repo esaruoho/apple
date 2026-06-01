@@ -521,8 +521,18 @@ final class FleetModel: ObservableObject {
             let found = CardSource.syncthingPeers(excluding: selfID)
             DispatchQueue.main.async {
                 for c in found {
-                    // Don't let a stale syncthing card clobber a live bonjour one.
-                    if let existing = self.peers[c.id], existing.origin == .bonjour { continue }
+                    // Keep whichever card carries the newer data — compare by the
+                    // card's own `ts` (when machine-card generated it), NOT by which
+                    // transport delivered it. A bonjour card is a one-shot snapshot
+                    // taken when the peer last dialed in; NWBrowser only redials when
+                    // the advertised service set changes, so while the peer stays up
+                    // that snapshot freezes and never refreshes over the LAN. The
+                    // Syncthing card, by contrast, is republished continuously. The
+                    // old "never let syncthing clobber bonjour" rule pinned the stale
+                    // LAN number forever (Fleet stuck at OCR 127/717 while the fresh
+                    // Syncthing card already said 394/717). Newest ts wins.
+                    if let existing = self.peers[c.id],
+                       (existing.ts ?? 0) >= (c.ts ?? 0) { continue }
                     self.peers[c.id] = c
                 }
             }
