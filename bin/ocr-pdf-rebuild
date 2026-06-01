@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""ocr-pdf-rebuild — build a proper searchable PDF from a clean scan + OCR text.
+
+The fix for PDFWorkshop's blank `_ocr.pdf` outputs. Root cause: `buildOcrPdf`
+uses pdf-lib `copyPages`, which corrupts CCITTFax-G4 image streams. This rebuilds
+the searchable PDF with **PyMuPDF (fitz)** instead — fitz preserves the original
+images (incl. CCITTFax) and only adds an invisible text layer (render mode 3), so
+the result renders AND is searchable.
+
+Usage:
+    ocr-pdf-rebuild <clean-source.pdf> <ocr.txt> <out.pdf>
+
+The OCR text is split on "=== Page N ===" markers (PDFWorkshop/GLM-OCR format) and
+laid onto the matching page as invisible, searchable text. Apple-Silicon-friendly
+(PyMuPDF), no pdf-lib.
+"""
+
+import re
+import sys
+
+import fitz   # PyMuPDF
+
+
+def main() -> int:
+    if len(sys.argv) < 4:
+        print("usage: ocr-pdf-rebuild <clean-source.pdf> <ocr.txt> <out.pdf>", file=sys.stderr)
+        return 2
+    src, txt_path, out = sys.argv[1], sys.argv[2], sys.argv[3]
+
+    doc = fitz.open(src)
+    raw = open(txt_path, encoding="utf-8", errors="replace").read()
+    # Split on "=== Page N ===" markers; element 0 is any preamble.
+    parts = re.split(r'===\s*Page\s+\d+\s*===', raw)
+    page_texts = parts[1:] if len(parts) > 1 else [raw]
+
+    placed = 0
+    for i, page in enumerate(doc):
+        t = page_texts[i].strip() if i < len(page_texts) else ""
+        if not t:
+            continue
+        # Invisible text layer (render_mode 3 = neither fill nor stroke).
+        page.insert_textbox(page.rect, t, fontsize=6, fontname="helv",
+                            color=(0, 0, 0), render_mode=3, overlay=True)
+        placed += 1
+
+    doc.save(out, garbage=4, deflate=True)
+    import os
+    print(f"wrote {out}  ({doc.page_count} pages, text on {placed}, {os.path.getsize(out)/1e6:.1f} MB)")
+
+    # verify: a mid page renders (non-white) and the text layer is searchable
+    chk = fitz.open(out)
+    idx = min(11, chk.page_count - 1)
+    pix = chk[idx].get_pixmap(dpi=72); s = pix.samples
+    nz = sum(1 for b in s if b < 250)
+    words = len(chk[idx].get_text().split())
+    print(f"verify page {idx+1}: non-white {100*nz/max(1,len(s)):.1f}%, searchable words: {words}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
