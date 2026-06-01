@@ -1,29 +1,28 @@
 ---
-description: PDFWorkshop produced 7 blank/corrupt _ocr.pdf outputs (corrupt CCITTFax). Text .txt is intact; page images need re-OCR. Checklist of affected docs + recoverability, pending a buildOcrPdf fix.
+description: RESOLVED 2026-06-01 — PDFWorkshop's buildOcrPdf corrupted CCITTFax-G4 images (pdf-lib copyPages) → 7 blank _ocr.pdf. All 7 rebuilt with PyMuPDF; root cause fixed upstream so future OCRs are clean.
 ---
 
-# Blank / corrupt _ocr.pdf outputs (PDFWorkshop buildOcrPdf bug)
+# Blank / corrupt _ocr.pdf outputs — RESOLVED
 
-Found 2026-06-01. Of **371** OCR'd PDFs, **7 render blank** — `buildOcrPdf`
-re-embedded the page images as **CCITTFax-G4 that's corrupt** (CoreGraphics AND
-MuPDF both fail: "invalid code in 2d faxd"). The `.txt` OCR text is **intact** for
-all 7 — only the searchable-PDF packaging is broken. NOT a repair: the images in
-the `_ocr.pdf` are unrecoverable; must re-OCR from the original scan.
+**Root cause:** PDFWorkshop `buildOcrPdf` used pdf-lib `copyPages`, which corrupts
+**CCITTFax-G4** image streams → blank `_ocr.pdf` for fax-scanned books (7 of 371).
+The `.txt` OCR text was always intact; only the PDF packaging was broken.
 
-**Order:** fix `buildOcrPdf` (CCITTFax re-encode) FIRST — re-OCR before that just
-reproduces the corruption.
+**Fix (upstream, permanent):** `buildOcrPdf` now assembles the searchable PDF with
+**PyMuPDF** (`build_ocr_pdf.py`) — preserves the page images, adds an invisible text
+layer. PDFWorkshop commit `1589f05` (2026-06-01). Future OCR runs are clean.
 
-## Re-OCR-able from the Mini (original still in PDFWorkshop/queue/uploads/)
-- [ ] `kron-equivalent-circuits-electric-machinery-GE-series`
-- [ ] `hunt-stein-1963-static` …
-- [ ] `allais-1999-NASA-memoir-allais-effect-paraconical-pendulum`
+**Recovery tool:** `bin/ocr-pdf-rebuild` (`/ocr-pdf-rebuild`) — clean scan + the
+`.txt` → proper searchable PDF, via PyMuPDF.
 
-## Originals DELETED — must be re-supplied from the source archive
-- [ ] `1959_-_Tensors_for_Circuits__Dover_2nd_edition_`
-- [ ] `01_Book_of_GEET`
-- [ ] `seike-principles-of-ultra-…`
-- [ ] `davson-physics-primary-…`
+## All 7 rebuilt (proper searchable PDFs, placed next to their source as `_ocr.pdf`)
+- [x] `merlib-dump/sources/kron/1959 - Tensors for Circuits (Dover 2nd edition)_ocr.pdf` (270 pp)
+- [x] `merlib-dump/sources/kron/kron-equivalent-circuits-electric-machinery-GE-series_ocr.pdf` (303 pp)
+- [x] `merlib-dump/sources/geet/01 Book of GEET_ocr.pdf` (172 pp)
+- [x] `merlib-dump/sources/steinmetz/hunt-stein-1963-static-electromagnetic-devices-full-book_ocr.pdf` (391 pp)
+- [x] `merlib-dump/sources/shinichi-seike/seike-principles-of-ultra-relativity_ocr.pdf` (188 pp)
+- [x] `merlib-dump/sources/davson-schappeller/davson-physics-primary-state-of-matter-1955_ocr.pdf` (340 pp)
+- [x] `merlib-dump/sources/eclipse-gravity/allais-1999-NASA-memoir-allais-effect-paraconical-pendulum_ocr.pdf` (167 pp)
 
-## Detection
-`ssh cloudcity` → PyMuPDF render each `_ocr.pdf` page; <0.2% non-white = blank.
-See `bin/bridge-doctor` neighbours; root-cause write-up in this session's log.
+All verified: render (images present) + searchable (text layer). The new files live
+in the merlib-dump archive — commit/sync per that repo's workflow.

@@ -1,4 +1,4 @@
-# CLI Tools Index — 136 tools in bin/
+# CLI Tools Index — 159 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -7,17 +7,27 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `app-plist-probe.py` — (no description) — `bin/app-plist-probe.py`
 `app-probe.py` — (no description) — `bin/app-probe.py`
 `apple-bootstrap` — one-command setup for any Apple user. — `bin/apple-bootstrap`
+`apple-embed` — Apple-native sentence-embedding pipe. — `bin/apple-embed`
+`apple-embed-pro` — sharper sentence-embedding pipe, CoreML edition. — `bin/apple-embed-pro`
 `apple-folder-to-mbox` — (no description) — `bin/apple-folder-to-mbox`
 `apple-grand-export` — run every bulk exporter in one pass. — `bin/apple-grand-export`
 `apple-grand-search` — unified search across every exporter vault. — `bin/apple-grand-search`
+`apple-image-similar` — find visually similar / duplicate images on-device, no deps. — `bin/apple-image-similar`
+`apple-keywords` — the "useful words, no junk" extractor. Apple-native, no deps. — `bin/apple-keywords`
+`apple-ner` — Apple-native named-entity recognition pipe. — `bin/apple-ner`
 `apple-panel` — (no description) — `bin/apple-panel`
 `apple-report` — (no description) — `bin/apple-report`
+`apple-semantic-match` — find MEANING-similar text on-device, no deps. — `bin/apple-semantic-match`
+`apple-sentiment` — Apple-native sentence sentiment scorer. — `bin/apple-sentiment`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
+`apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`
 `avs-prefs-write.py` — (no description) — `bin/avs-prefs-write.py`
+`backup-mailbox` — (no description) — `bin/backup-mailbox`
 `batch-import.sh` — Import all .shortcut files into Shortcuts.app — `bin/batch-import.sh`
 `bootstrap-hey-sal.sh` — ONE-COMMAND install of the Hey Sal × Paketti stack. — `bin/bootstrap-hey-sal.sh`
 `bridge-doctor` — (no description) — `bin/bridge-doctor`
@@ -40,6 +50,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-here` — (no description) — `bin/cc-here`
 `cc-index` — (no description) — `bin/cc-index`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
+`convergence` — (no description) — `bin/convergence`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
 `dictation-commands-port-audit.py` — (no description) — `bin/dictation-commands-port-audit.py`
@@ -48,6 +59,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `disk-overview` — (no description) — `bin/disk-overview`
 `dock` — (no description) — `bin/dock`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
+`embed` — (no description) — `bin/embed`
 `eppc-auth` — (no description) — `bin/eppc-auth`
 `eppc-probe` — (no description) — `bin/eppc-probe`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
@@ -74,6 +86,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
+`ner-graph` — (no description) — `bin/ner-graph`
 `notify-iphone` — (no description) — `bin/notify-iphone`
 `ocr-pdf-rebuild` — (no description) — `bin/ocr-pdf-rebuild`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
@@ -85,12 +98,14 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
+`rtfc` — Rich Text For Clipboard. Take a markdown file (or stdin), strip — `bin/rtfc`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`
 `sal-archive-status.py` — (no description) — `bin/sal-archive-status.py`
 `sal-discover-interviews.py` — (no description) — `bin/sal-discover-interviews.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
+`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -98,6 +113,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
+`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
@@ -106,6 +122,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sessions` — (no description) — `bin/sessions`
+`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
@@ -126,9 +143,15 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `tag-smart` — (no description) — `bin/tag-smart`
 `tag-trinity` — (no description) — `bin/tag-trinity`
 `tag-watcher` — (no description) — `bin/tag-watcher`
+`test-vault-tools.sh` — end-to-end smoke for the vault + apple ML toolchain. — `bin/test-vault-tools.sh`
 `thought-archive.py` — (no description) — `bin/thought-archive.py`
 `toolbox-goto` — open AppleToolbox --live at a given folder. — `bin/toolbox-goto`
 `transcribe-bench` — (no description) — `bin/transcribe-bench`
+`vault-cluster` — (no description) — `bin/vault-cluster`
+`vault-consilience` — (no description) — `bin/vault-consilience`
+`vault-distill` — (no description) — `bin/vault-distill`
+`vault-grep` — (no description) — `bin/vault-grep`
+`vault-promote` — (no description) — `bin/vault-promote`
 `vision-ocr` — on-device OCR via Apple's Vision framework (Neural Engine). — `bin/vision-ocr`
 `vocal-shortcuts-router-verify.py` — (no description) — `bin/vocal-shortcuts-router-verify.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
