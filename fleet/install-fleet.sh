@@ -15,6 +15,11 @@
 #
 # Either way: allow the one-time "Local Network" prompt and this Mac is in the
 # fleet (auto-trust same-LAN, full data). Safe to re-run.
+#
+# On first install it also drops ~/.config/fleet/config.json (from
+# fleet/config.example.json, with bin_dir pointed at this clone) so you can edit
+# where the Syncthing queue lives and which services show. An existing config is
+# never overwritten. Delete it to fall back to the built-in defaults.
 
 set -u
 REPO="https://github.com/esaruoho/apple"
@@ -40,6 +45,37 @@ else
   git clone --depth 1 "$REPO" "$DIR" || die "clone failed (network?)."
 fi
 ok "source ready at $DIR"
+
+# 2.5. Config scaffold ------------------------------------------------------
+# Fleet + machine-card read ~/.config/fleet/config.json for where the helper
+# binaries and the Syncthing queue live. Absence = historical defaults, so this
+# is purely a convenience: drop a real, editable file in place on first install
+# and never touch it again (safe to re-run — an existing config is left alone).
+CFG_DIR="$HOME/.config/fleet"
+CFG="$CFG_DIR/config.json"
+EXAMPLE="$DIR/fleet/config.example.json"
+if [ -f "$CFG" ]; then
+  ok "config present — leaving $CFG untouched"
+elif [ -f "$EXAMPLE" ]; then
+  mkdir -p "$CFG_DIR"
+  # Point bin_dir at wherever the repo actually landed; keep the rest as the
+  # example ships it (queue_dir + service registry, edit to taste).
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$EXAMPLE" "$CFG" "$DIR/bin" <<'PY'
+import json, sys
+src, dst, bindir = sys.argv[1], sys.argv[2], sys.argv[3]
+cfg = json.load(open(src))
+cfg["bin_dir"] = bindir
+json.dump(cfg, open(dst, "w"), indent=2)
+print(dst)
+PY
+  else
+    cp "$EXAMPLE" "$CFG"
+  fi
+  ok "wrote $CFG (edit queue_dir / services for your layout)"
+else
+  warn "no config.example.json in repo — Fleet will use built-in defaults"
+fi
 
 MACOS_MAJOR=$(sw_vers -productVersion | cut -d. -f1)
 HAVE_SWIFTC=0; xcrun -f swiftc >/dev/null 2>&1 && HAVE_SWIFTC=1
