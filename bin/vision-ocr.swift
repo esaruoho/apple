@@ -30,13 +30,18 @@ func cgImage(fromImageFile url: URL) -> CGImage? {
     return CGImageSourceCreateImageAtIndex(src, 0, nil)
 }
 
-func cgImages(fromPDF url: URL, scale: CGFloat, maxPages: Int) -> [CGImage] {
+func cgImages(fromPDF url: URL, minScale: CGFloat, maxPages: Int) -> [CGImage] {
     guard let doc = CGPDFDocument(url as CFURL) else { return [] }
     var out: [CGImage] = []
     let n = maxPages > 0 ? min(maxPages, doc.numberOfPages) : doc.numberOfPages
     for i in 1...max(1, n) {
         guard i <= doc.numberOfPages, let page = doc.page(at: i) else { continue }
         let box = page.getBoxRect(.mediaBox)
+        // Render to a TARGET resolution, not a fixed multiple of the page's
+        // points: small-page PDFs (e.g. a 363pt Dover book) come out too low-res
+        // for OCR at a flat 2×. Scale so the long edge is ~2200px.
+        let target: CGFloat = 2200
+        let scale = max(minScale, target / max(box.width, box.height))
         let w = Int(box.width * scale), h = Int(box.height * scale)
         guard w > 0, h > 0,
               let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8,
@@ -87,7 +92,7 @@ let ext = url.pathExtension.lowercased()
 
 var images: [CGImage] = []
 if ext == "pdf" {
-    images = cgImages(fromPDF: url, scale: 2.0, maxPages: maxPages)   // 2× ≈ 144 dpi
+    images = cgImages(fromPDF: url, minScale: 2.0, maxPages: maxPages)   // ≥2×, scaled up to ~2200px long edge
 } else if let img = cgImage(fromImageFile: url) {
     images = [img]
 }
