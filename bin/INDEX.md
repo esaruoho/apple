@@ -1,4 +1,4 @@
-# CLI Tools Index — 121 tools in bin/
+# CLI Tools Index — 125 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -62,6 +62,9 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
+`mac-stats` — (no description) — `bin/mac-stats`
+`mac-temps` — read this Mac's temperature sensors in °C, no sudo. — `bin/mac-temps`
+`mac-thermals` — (no description) — `bin/mac-thermals`
 `machine-card` — (no description) — `bin/machine-card`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
@@ -120,6 +123,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
 `voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
+`why-no-mount` — (no description) — `bin/why-no-mount`
 `wiki-index.py` — (no description) — `bin/wiki-index.py`
 `wiki-lint.py` — (no description) — `bin/wiki-lint.py`
 `window-frame` — report on-screen window geometry vs. screen geometry. — `bin/window-frame`
