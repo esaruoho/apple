@@ -47,9 +47,15 @@ rule; no network-exposed remote-code surface):
 
 | Target | How a run is dispatched |
 |---|---|
-| **localhost** | local Panel `/run` (already works, inline) |
-| **live LAN peer** | Bonjour gives presence; the **run still goes via Syncthing panel-inbox** (no peer HTTP exposure) |
+| **localhost** | local Panel `/run` (inline) |
 | **off-LAN / asleep peer** | Syncthing `panel-inbox/<job>.json`; peer's panel-worker runs it, writes `panel-results/<job>.json`, Syncthing mirrors it back |
+| **reachable peer, want a live answer from a real app** | **eppc / Remote Apple Events** — `bin/eppc-probe` over `eppc://user@host`, synchronous, ~4s (the **APPS · eppc** face). Built 2026-06-01. See [[apple-events-and-remote]] |
+
+Three transports now live: **local `--run`** (curated scripts, inline) ·
+**Syncthing panel-inbox** (curated scripts, async, the robust default) · **eppc**
+(the peer's *actual apps*, synchronous, opportunistic). eppc drives Finder/Music/
+etc. and returns values; it needs Remote Application Scripting on + reachability,
+so it's the fast path, not the default.
 
 ### Why a `panel-inbox` worker, not network HTTP
 
