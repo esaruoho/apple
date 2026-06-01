@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# mac-temps — read this Mac's temperature sensors in °C, no sudo.
+# Compiles bin/mac-temps.swift to a cached binary once, then runs the fast binary.
+# (swift-interpreting the source every poll is too slow for a live dashboard.)
+set -euo pipefail
+
+DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SRC="$DIR/mac-temps.swift"
+CACHE="${XDG_CACHE_HOME:-$HOME/Library/Caches}/apple-skill"
+BIN="$CACHE/mac-temps"
+mkdir -p "$CACHE"
+
+# (re)compile if the binary is missing or the source is newer
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+  if command -v xcrun >/dev/null 2>&1; then
+    xcrun swiftc -O "$SRC" -o "$BIN" 2>/dev/null || /usr/bin/swiftc -O "$SRC" -o "$BIN"
+  else
+    /usr/bin/swiftc -O "$SRC" -o "$BIN"
+  fi
+fi
+
+exec "$BIN" "$@"

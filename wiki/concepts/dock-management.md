@@ -94,3 +94,5 @@ When the user says any of:
 - "add smart folder to dock" / "pin smart folder"
 
 → this page is the entry point. Don't reinvent.
+
+`dock list` is also exposed as a one-click button in the [apple-panel](apple-panel.md) browser control surface.

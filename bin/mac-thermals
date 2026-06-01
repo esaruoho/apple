@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""mac-thermals — fan RPM + die temperatures, the only Apple-native way: powermetrics.
+
+powermetrics requires root. Rather than run anything as root persistently, this
+wraps it in `osascript ... with administrator privileges`, which pops the standard
+macOS password dialog once and returns the output. No Homebrew, no third-party
+temp tools.
+
+Usage:
+    mac-thermals            human-readable fans + temps
+    mac-thermals --json     machine-readable JSON
+"""
+
+import json
+import re
+import subprocess
+import sys
+
+# one short powermetrics sample of the SMC + thermal sensors
+PM = "/usr/bin/powermetrics -n 1 -i 250 --samplers smc,thermal 2>&1"
+
+
+def grab_with_admin():
+    """Run powermetrics via the GUI admin prompt. Returns (ok, text)."""
+    script = f'do shell script "{PM}" with administrator privileges'
+    try:
+        p = subprocess.run(["osascript", "-e", script],
+                           capture_output=True, text=True, timeout=120)
+        if p.returncode != 0:
+            err = (p.stderr or "").strip()
+            if "User canceled" in err or "-128" in err:
+                return False, "Cancelled — no password entered."
+            return False, err or "powermetrics failed."
+        return True, p.stdout
+    except subprocess.TimeoutExpired:
+        return False, "Timed out waiting for powermetrics / password."
+    except Exception as e:  # noqa: BLE001
+        return False, str(e)
+
+
+def parse(text):
+    fans, temps = [], []
+    for line in text.splitlines():
+        low = line.lower()
+        if "fan" in low and "rpm" in low:
+            m = re.search(r"([\d.]+)\s*rpm", line, re.I)
+            fans.append({"label": line.split(":")[0].strip() if ":" in line else "Fan",
+                         "rpm": float(m.group(1)) if m else None, "raw": line.strip()})
+        elif "temperature" in low or re.search(r":\s*[\d.]+\s*C\b", line):
+            m = re.search(r"([\d.]+)\s*C\b", line)
+            if m:
+                temps.append({"label": line.split(":")[0].strip(),
+                              "celsius": float(m.group(1)), "raw": line.strip()})
+    pressure = ""
+    mp = re.search(r"pressure level:\s*(\w+)", text, re.I)
+    if mp:
+        pressure = mp.group(1)
+    return fans, temps, pressure
+
+
+def main(argv):
+    if "-h" in argv or "--help" in argv:
+        print(__doc__)
+        return 0
+    ok, text = grab_with_admin()
+    if not ok:
+        if "--json" in argv:
+            print(json.dumps({"ok": False, "error": text}))
+        else:
+            print(f"\n  ⛔ {text}\n")
+        return 1
+    fans, temps, pressure = parse(text)
+    if "--json" in argv:
+        print(json.dumps({"ok": True, "fans": fans, "temps": temps,
+                          "pressure": pressure}))
+        return 0
+    print("\n  🌡  Fans & die temperatures  (live, via powermetrics)\n")
+    if fans:
+        for f in fans:
+            print(f"    🌀 {f['label']}: {f['rpm']:.0f} rpm" if f["rpm"] is not None
+                  else f"    🌀 {f['raw']}")
+    else:
+        print("    🌀 (no fan reported — Apple Silicon may not expose RPM, or fans are off)")
+    if temps:
+        print()
+        for t in temps:
+            print(f"    🌡  {t['label']}: {t['celsius']:.1f} °C")
+    if pressure:
+        print(f"\n    thermal pressure: {pressure}")
+    if not fans and not temps:
+        print("\n  (powermetrics ran but exposed no SMC fan/temp keys on this model.)")
+        print("  Raw tail:")
+        for line in text.strip().splitlines()[-12:]:
+            print(f"    {line}")
+    print()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -1,0 +1,473 @@
+#!/usr/bin/env python3
+"""why-no-mount — diagnose why a disk/volume isn't mounting. Apple-native, zero-token.
+
+Walks the same diagnostic ladder a careful operator would, and renders the same
+narrative — only the variables change per device:
+
+    Layer 1  Electrical / USB enumeration   (system_profiler SPUSBDataType)
+    Layer 2  Block device / kernel          (diskutil list / info)
+    Layer 3  Filesystem                      (diskutil info + mount probes + system log)
+
+It then prints a one-line VERDICT, the SMOKING GUNS that justify it, and a
+copy-paste RECOMMENDED NEXT STEP keyed to the filesystem type.
+
+Apple-native only: python3 stdlib + Apple-shipped CLIs (diskutil, system_profiler,
+log, mount). No Homebrew, no pip, no third-party imports.
+
+Usage:
+    why-no-mount                 auto-detect: diagnose every UNMOUNTED external volume
+    why-no-mount disk4           diagnose every volume on whole-disk disk4
+    why-no-mount disk4s1         diagnose one specific volume
+    why-no-mount --list          just list external volumes + mount state, no diagnosis
+    why-no-mount --probe-only X  inspect only; do NOT attempt live mounts (read-only)
+    why-no-mount --minutes N X   how far back to scan the unified log (default 30)
+
+Exit status: 0 = at least one target is mounted/healthy, 1 = a target is unmountable,
+2 = nothing to diagnose / bad input.
+"""
+
+import json
+import plistlib
+import subprocess
+import sys
+
+# ───────────────────────── shell helpers (Apple-shipped CLIs only) ─────────────────────────
+
+def run(args, text=True):
+    """Run a command, return (rc, stdout, stderr). Never raises."""
+    try:
+        p = subprocess.run(args, capture_output=True, text=text, timeout=30)
+        return p.returncode, p.stdout, p.stderr
+    except Exception as e:  # noqa: BLE001 — diagnostics must never crash
+        return 255, "", str(e)
+
+
+def diskutil_info(ident):
+    """diskutil info -plist <ident> -> dict (empty on failure)."""
+    rc, out, _ = run(["diskutil", "info", "-plist", ident], text=False)
+    if rc != 0 or not out:
+        return {}
+    try:
+        return plistlib.loads(out)
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+# partition content types that are NEVER meant to mount as a user volume —
+# filtering these stops the auto-detector from crying wolf over helper slices.
+SKIP_CONTENT = {
+    "EFI", "Apple_Boot", "Apple_KernelCoreDump",
+    "Apple_APFS", "Apple_APFS_ISC", "Apple_APFS_Recovery",
+    "Microsoft Reserved",
+}
+
+
+def _phys_whole(disk):
+    """For a synthesized APFS container, resolve the physical whole disk (for USB lookup)."""
+    import re
+    stores = disk.get("APFSPhysicalStores", []) or []
+    if stores:
+        ps = stores[0].get("DeviceIdentifier") or stores[0].get("APFSPhysicalStore") or ""
+        m = re.match(r"(disk\d+)", ps)
+        if m:
+            return m.group(1)
+    return disk.get("DeviceIdentifier", "")
+
+
+def external_volumes():
+    """Return [(whole_disk, volume_ident, mounted_bool), ...] for external disks.
+
+    Skips helper partitions (EFI, container stores, MS-Reserved). Includes real
+    APFS volumes and maps them back to their physical whole disk.
+    """
+    rc, out, _ = run(["diskutil", "list", "-plist", "external"], text=False)
+    out_volumes = []
+    if rc != 0 or not out:
+        return out_volumes
+    try:
+        d = plistlib.loads(out)
+    except Exception:  # noqa: BLE001
+        return out_volumes
+    for disk in d.get("AllDisksAndPartitions", []):
+        whole = disk.get("DeviceIdentifier", "")
+        # ordinary partitions — honour the skip list
+        for p in disk.get("Partitions", []) or []:
+            ident = p.get("DeviceIdentifier", "")
+            if not ident or p.get("Content", "") in SKIP_CONTENT:
+                continue
+            out_volumes.append((whole, ident, bool(p.get("MountPoint"))))
+        # APFS volumes are always real user volumes; tie them to the physical disk
+        phys = _phys_whole(disk)
+        for v in disk.get("APFSVolumes", []) or []:
+            ident = v.get("DeviceIdentifier", "")
+            if not ident:
+                continue
+            out_volumes.append((phys, ident, bool(v.get("MountPoint"))))
+    return out_volumes
+
+
+def usb_node_for(bsd_whole):
+    """Find the USB device node whose Media carries bsd_whole. Returns dict of facts."""
+    rc, out, _ = run(["system_profiler", "-json", "SPUSBDataType"])
+    facts = {}
+    if rc != 0 or not out:
+        return facts
+    try:
+        tree = json.loads(out)
+    except Exception:  # noqa: BLE001
+        return facts
+
+    def media_has(node, bsd):
+        for m in node.get("Media", []) or []:
+            if m.get("bsd_name") == bsd:
+                return m
+        return None
+
+    def walk(node):
+        # node may itself be the device carrying the media
+        m = media_has(node, bsd_whole)
+        if m is not None:
+            return node, m
+        for child in node.get("_items", []) or []:
+            r = walk(child)
+            if r:
+                return r
+        return None
+
+    for root in tree.get("SPUSBDataType", []):
+        r = walk(root)
+        if r:
+            dev, media = r
+            facts = {
+                "name": dev.get("_name", ""),
+                "manufacturer": dev.get("manufacturer", ""),
+                "vendor_id": dev.get("vendor_id", ""),
+                "product_id": dev.get("product_id", ""),
+                "serial": dev.get("serial_num", ""),
+                "speed": dev.get("device_speed", ""),
+                "current_required": dev.get("current_required", ""),
+                "current_available": dev.get("current_available", ""),
+                "smart": media.get("smart_status", ""),
+                "media_size": media.get("size_in_bytes", ""),
+                "removable": media.get("removable_media", ""),
+            }
+            return facts
+    return facts
+
+
+SPEED_HUMAN = {
+    "super_speed_plus": "up to 10 Gb/s (USB 3.1 gen 2)",
+    "super_speed": "up to 5 Gb/s (USB 3.0)",
+    "high_speed": "up to 480 Mb/s (USB 2.0)",
+    "full_speed": "up to 12 Mb/s (USB 1.1)",
+    "low_speed": "up to 1.5 Mb/s (USB 1.0)",
+}
+
+
+def log_signals(bsd_whole, minutes):
+    """Scan the unified log for DiskArbitration / StorageKit verdicts on this device.
+
+    Uses fixed-string matching (grep-free, in Python) — no regex, no backtracking risk.
+    """
+    rc, out, _ = run([
+        "log", "show", "--last", f"{minutes}m",
+        "--predicate", 'process == "diskarbitrationd" OR process == "storagekitd"',
+        "--style", "compact",
+    ])
+    sig = {"not_readable": False, "invalid": False, "lines": []}
+    if rc != 0 or not out:
+        return sig
+    needle = bsd_whole  # e.g. "disk4"
+    for line in out.splitlines():
+        if needle not in line:
+            continue
+        low = line.lower()
+        if "is not readable" in low:
+            sig["not_readable"] = True
+            sig["lines"].append(line.strip())
+        if "isvalid=0" in low.replace(" ", ""):
+            sig["invalid"] = True
+            sig["lines"].append(line.strip())
+    return sig
+
+
+def attempt_mount(ident, read_only):
+    """Non-destructive mount probe. Returns (ok, message)."""
+    args = ["diskutil", "mount"]
+    if read_only:
+        args.append("readOnly")
+    args.append(ident)
+    rc, out, err = run(args)
+    msg = (out + err).strip().splitlines()
+    msg = msg[-1] if msg else ""
+    return rc == 0, msg
+
+
+# ───────────────────────── the narrative (frozen "way of talking") ─────────────────────────
+
+FSCK = {
+    "msdos": "fsck_msdos",
+    "exfat": "fsck_exfat",
+    "hfs": "fsck_hfs",
+    "apfs": "fsck_apfs",
+    "ufsd_NTFS": "(NTFS — macOS is read-only; check on Windows with chkdsk)",
+}
+
+
+def yesno(flag):
+    return "\033[32m✅\033[0m" if flag else "\033[31m❌\033[0m"
+
+
+def diagnose(whole, ident, minutes, probe):
+    info = diskutil_info(ident)
+    winfo = diskutil_info(whole)
+
+    fs_type = info.get("FilesystemType") or info.get("FilesystemName") or ""
+    fs_pers = info.get("FilesystemUserVisibleName") or info.get("FilesystemName") or fs_type or "unknown"
+    content = info.get("Content", "")
+    vol_name = info.get("VolumeName", "") or ""
+    part_size = int(info.get("Size", 0) or 0)
+    total_size = int(info.get("TotalSize", 0) or 0)
+    mount_point = info.get("MountPoint", "") or ""
+    bus = info.get("BusProtocol") or winfo.get("BusProtocol") or ""
+    smart = winfo.get("SMARTStatus") or info.get("SMARTStatus") or ""
+
+    usb = usb_node_for(whole) if bus.upper() == "USB" else {}
+    sig = log_signals(whole, minutes)
+
+    # ── device-not-attached path: diskutil knows nothing about it right now ──
+    device_present = bool(info) or bool(winfo) or bool(usb)
+    if not device_present:
+        print(f"\n═══ why-no-mount: {ident}  (on whole disk {whole}) ═══\n")
+        print("  Verdict")
+        print(f"    ⛔ /dev/{ident} is NOT attached right now. diskutil sees no such device.")
+        if sig["not_readable"] or sig["lines"]:
+            print(f"\n  (The log DID record this device in the last {minutes} min, then it went away —")
+            print("   it was unplugged, the cable/hub dropped it, or it browned out and re-enumerated")
+            print("   under a different disk number. Re-insert it and re-run why-no-mount.)")
+            for line in sig["lines"][:4]:
+                print(f"      {line}")
+        else:
+            print("\n  Plug the stick back in and run:  why-no-mount        (auto-detects unmounted volumes)")
+            print("  If it still doesn't appear, it never enumerated — suspect cable / port / hub, not the data:")
+            print("      system_profiler SPUSBDataType")
+        print()
+        return 1
+
+    # ── Layer 1: electrical / enumeration ──
+    l1_ok = bool(usb) or bus != ""
+    speed = SPEED_HUMAN.get(usb.get("speed", ""), usb.get("speed", "") or "?")
+    cur_req = usb.get("current_required", "")
+    cur_avail = usb.get("current_available", "")
+    power_starved = False
+    try:
+        if cur_req and cur_avail and int(cur_req) > int(cur_avail):
+            power_starved = True
+    except ValueError:
+        pass
+
+    # ── Layer 3: filesystem ──
+    mounted = bool(mount_point)
+    bpb_unreadable = (part_size > 0 and total_size == 0)
+
+    mounted_now = mounted
+    ro_now = False
+    rw_msg = ro_msg = ""
+    if not mounted and not probe:
+        ok, rw_msg = attempt_mount(ident, read_only=False)
+        if ok:
+            mounted_now = True
+            info = diskutil_info(ident)
+            mount_point = info.get("MountPoint", "") or mount_point
+        else:
+            ok_ro, ro_msg = attempt_mount(ident, read_only=True)
+            if ok_ro:
+                ro_now = True
+                info = diskutil_info(ident)
+                mount_point = info.get("MountPoint", "") or mount_point
+
+    # ── render ──
+    print(f"\n═══ why-no-mount: {ident}  (on whole disk {whole}) ═══\n")
+
+    print("  Diagnostic ladder")
+    print(f"    1. Electrical / USB enumeration .... {yesno(l1_ok and not power_starved)}")
+    if usb:
+        print(f"         {usb.get('manufacturer','?')} {usb.get('name','')}  "
+              f"vendor {usb.get('vendor_id','?')}  S/N {usb.get('serial','?')}")
+        print(f"         speed: {speed};  power: needs {cur_req or '?'} mA of {cur_avail or '?'} mA available")
+        if smart:
+            print(f"         SMART: {smart}")
+    elif bus:
+        print(f"         bus protocol: {bus} (device present; not on USB tree)")
+    if power_starved:
+        print("         \033[31m⚠ power-starved: device asks for more current than the port offers\033[0m")
+
+    print(f"    2. Block device / kernel .......... {yesno(bool(info))}")
+    print(f"         /dev/{ident}  content={content or '?'}  partition size={human(part_size)}")
+
+    fs_layer_ok = mounted_now
+    print(f"    3. Filesystem ..................... {yesno(fs_layer_ok)}")
+    print(f"         type={fs_pers}  label={vol_name or '(blank)'}  "
+          f"volume total space={human(total_size)}")
+
+    # ── smoking guns ──
+    guns = []
+    if bpb_unreadable:
+        guns.append(f"`diskutil info` reports volume total space = 0 B while the partition "
+                    f"holds {human(part_size)} — macOS cannot read the {fs_pers} boot "
+                    f"sector / superblock that declares the volume's size.")
+    if not vol_name and not mounted_now:
+        guns.append("volume label is blank — the filesystem header that carries the name is unreadable.")
+    if sig["not_readable"]:
+        guns.append("the unified log shows diskarbitrationd: \"disk is not readable\" — "
+                    "the auto-mount daemon rejected it, which is why Finder never showed it.")
+    if sig["invalid"]:
+        guns.append("storagekitd cached the device with isValid=0 — confirms an unreadable filesystem.")
+    if rw_msg and not mounted_now:
+        guns.append(f"normal mount refused: \"{rw_msg}\"")
+    if ro_msg and not ro_now:
+        guns.append(f"read-only mount also refused: \"{ro_msg}\" — damage is in core structures, "
+                    "not just a dirty-unmount flag.")
+
+    # ── verdict + next step ──
+    print("\n  Verdict")
+    fsck_cmd = FSCK.get(fs_type, "diskutil repairVolume")
+    rdev = f"/dev/r{ident}"
+
+    if mounted_now and not ro_now and mount_point:
+        if mounted:
+            print(f"    ✅ This volume is already mounted at {mount_point}. Nothing wrong with it.")
+        else:
+            print(f"    ✅ It was just not auto-mounted. I mounted it for you at {mount_point}.")
+        rc = 0
+        next_step = None
+    elif ro_now:
+        print(f"    ⚠ Mounted READ-ONLY at {mount_point}. The data is readable now — copy it off first. "
+              f"The filesystem is dirty (needs repair), but not structurally destroyed.")
+        rc = 1
+        next_step = (f"# copy your data off NOW (it's read-only and fragile), then repair:\n"
+                     f"sudo {fsck_cmd} -y {rdev}      # writes; repairs the {fs_pers} filesystem\n"
+                     f"# or, Apple front-end:  diskutil repairVolume {ident}")
+    elif l1_ok and not power_starved:
+        print(f"    ❌ Hardware is fine — the {fs_pers} FILESYSTEM on this stick is corrupt. "
+              f"macOS sees the device and the partition but cannot read the filesystem inside it, "
+              f"so there is no volume to mount or show in Finder.")
+        rc = 1
+        next_step = (f"# 1. see the damage (writes NOTHING — answers 'no' to every prompt):\n"
+                     f"sudo {fsck_cmd} -n {rdev}\n"
+                     f"# 2. if the data matters, image it before touching it:\n"
+                     f"sudo dd if={rdev} of=~/Desktop/{ident}-image.img bs=1m\n"
+                     f"# 3. repair (this WRITES to the stick):\n"
+                     f"sudo {fsck_cmd} -y {rdev}      # or:  diskutil repairVolume {ident}")
+    elif power_starved:
+        print("    ❌ Power problem — the device draws more current than this port/hub provides. "
+              "Move it to a powered hub or a direct Mac port.")
+        rc = 1
+        next_step = "# plug into a powered USB hub or a port directly on the Mac, then re-run why-no-mount"
+    else:
+        print("    ❓ Present but unclassified — mounted=no, and the filesystem type is unknown.")
+        rc = 1
+        if fs_type in FSCK and not FSCK[fs_type].startswith("("):
+            next_step = f"sudo {FSCK[fs_type]} -n {rdev}   # dry-run filesystem check (writes nothing)"
+        else:
+            next_step = f"diskutil verifyVolume {ident}   # Apple front-end, read-only check"
+
+    if guns:
+        print("\n  Smoking guns")
+        for g in guns:
+            print(f"    • {g}")
+
+    if next_step:
+        print("\n  Recommended next step")
+        for line in next_step.splitlines():
+            print(f"    {line}")
+    print()
+    return rc
+
+
+def human(n):
+    n = float(int(n or 0))
+    if n <= 0:
+        return "0 B"
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if n < 1024 or unit == "TB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+# ───────────────────────── entry point ─────────────────────────
+
+def main(argv):
+    minutes = 30
+    probe = False
+    list_only = False
+    target = None
+
+    args = argv[1:]
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-h", "--help"):
+            print(__doc__)
+            return 0
+        elif a == "--list":
+            list_only = True
+        elif a == "--probe-only":
+            probe = True
+        elif a == "--minutes":
+            i += 1
+            minutes = int(args[i]) if i < len(args) else 30
+        else:
+            target = a.replace("/dev/", "")
+        i += 1
+
+    vols = external_volumes()
+
+    if list_only:
+        if not vols:
+            print("No external physical volumes found.")
+            return 2
+        print("\n  External volumes:")
+        for whole, ident, mounted in vols:
+            state = "\033[32mmounted\033[0m" if mounted else "\033[31mNOT mounted\033[0m"
+            print(f"    {ident:<10} (on {whole})  {state}")
+        print()
+        return 0
+
+    # resolve which volumes to diagnose
+    targets = []
+    if target:
+        import re
+        m = re.match(r"(disk\d+)", target)
+        whole = m.group(1) if m else target
+        if target != whole:
+            # a specific partition was named, e.g. disk4s1
+            targets = [(whole, target)]
+        else:
+            # a whole disk was named — diagnose its volumes (prefer the unmounted ones)
+            kids = [(w, v, mtd) for (w, v, mtd) in vols if w == target]
+            unmounted = [(w, v) for (w, v, mtd) in kids if not mtd]
+            targets = unmounted or [(w, v) for (w, v, mtd) in kids] or [(whole, target)]
+    else:
+        # auto-detect: every unmounted external volume
+        targets = [(w, v) for (w, v, mtd) in vols if not mtd]
+        if not targets:
+            print("\n  ✅ Every external volume is already mounted. Nothing to diagnose.")
+            if vols:
+                for whole, ident, _ in vols:
+                    info = diskutil_info(ident)
+                    print(f"     {ident} → {info.get('MountPoint','?')}")
+            print("\n  (If a stick you just plugged in still isn't here, it didn't enumerate at all — "
+                  "suspect the cable, port, or hub. Try:  system_profiler SPUSBDataType)\n")
+            return 0
+
+    worst = 0
+    for whole, ident in targets:
+        rc = diagnose(whole, ident, minutes, probe)
+        worst = max(worst, rc)
+    return worst
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""mac-stats — live snapshot of this Mac's state. Apple-native, no sudo, fast (<300ms).
+
+Everything here is readable without a password, from Apple-shipped tools:
+pmset, ioreg, vm_stat, sysctl, df, ps, route, ipconfig, networksetup, sw_vers.
+
+Fan RPM and CPU/GPU die temperature require root (powermetrics) — those live in
+the companion tool `mac-thermals`, which uses a GUI admin prompt.
+
+Usage:
+    mac-stats            human-readable summary
+    mac-stats --json     machine-readable JSON (what apple-panel polls)
+"""
+
+import json
+import re
+import subprocess
+import sys
+import time
+
+
+def sh(args, timeout=4):
+    try:
+        p = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        return p.stdout
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def sysctl(name):
+    return sh(["sysctl", "-n", name]).strip()
+
+
+def host_block(fast=False):
+    boottime = sysctl("kern.boottime")  # { sec = 1780..., usec = ... }
+    m = re.search(r"sec\s*=\s*(\d+)", boottime)
+    up = int(time.time()) - int(m.group(1)) if m else 0
+    total = int(sysctl("hw.logicalcpu") or 0)
+    p_cores = int(sysctl("hw.perflevel0.logicalcpu") or 0)
+    e_cores = int(sysctl("hw.perflevel1.logicalcpu") or 0)
+    chip = sysctl("machdep.cpu.brand_string")
+    model = sysctl("hw.model")
+    if not fast:
+        # the friendly marketing name ("MacBook Pro") only comes from system_profiler
+        sp = sh(["system_profiler", "SPHardwareDataType"], timeout=6)
+        mm = re.search(r"Model Name:\s*(.+)", sp)
+        if mm:
+            model = mm.group(1).strip()
+        mc = re.search(r"Chip:\s*(.+)", sp)
+        if mc:
+            chip = mc.group(1).strip()
+    return {
+        "model": model, "chip": chip,
+        "cores_total": total, "cores_p": p_cores, "cores_e": e_cores,
+        "macos": sh(["sw_vers", "-productVersion"]).strip(),
+        "build": sh(["sw_vers", "-buildVersion"]).strip(),
+        "hostname": sh(["scutil", "--get", "ComputerName"]).strip() or sh(["hostname"]).strip(),
+        "uptime_sec": up,
+    }
+
+
+def cpu_block():
+    la = sysctl("vm.loadavg")  # "{ 1.23 1.10 0.95 }"
+    nums = re.findall(r"[\d.]+", la)
+    load = [float(x) for x in nums[:3]] if nums else [0, 0, 0]
+    ncpu = int(sysctl("hw.logicalcpu") or 1)
+    return {"load1": load[0], "load5": load[1], "load15": load[2],
+            "ncpu": ncpu, "load_per_core": round(load[0] / ncpu, 2) if ncpu else 0}
+
+
+def mem_block():
+    pagesize = int(sysctl("hw.pagesize") or 16384)
+    total = int(sysctl("hw.memsize") or 0)
+    vm = sh(["vm_stat"])
+    def pages(label):
+        m = re.search(rf"{label}:\s+(\d+)\.", vm)
+        return int(m.group(1)) if m else 0
+    free = (pages("Pages free") + pages("Pages speculative")) * pagesize
+    wired = pages("Pages wired down") * pagesize
+    compressed = pages("Pages occupied by compressor") * pagesize
+    used = total - free
+    # pressure level: 1 normal, 2 warn, 4 critical
+    lvl = sysctl("kern.memorystatus_vm_pressure_level")
+    pressure = {"1": "Normal", "2": "Warning", "4": "Critical"}.get(lvl, "Normal")
+    # swap (sysctl vm.swapusage: "total = 2048.00M  used = 512.00M  free = 1536.00M")
+    sw = sysctl("vm.swapusage")
+    def swval(label):
+        m = re.search(rf"{label}\s*=\s*([\d.]+)M", sw)
+        return int(float(m.group(1)) * 1024 * 1024) if m else 0
+    swap = {"total": swval("total"), "used": swval("used")}
+    # top consumers by resident memory (ps -m sorts by memory; rss is in KB)
+    top = []
+    for line in sh(["ps", "-Amo", "pid=,rss=,comm="]).splitlines()[:6]:
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            continue
+        pid, rss, comm = parts
+        top.append({"pid": int(pid), "bytes": int(rss) * 1024,
+                    "name": comm.rsplit("/", 1)[-1]})
+    return {"total": total, "used": used, "free": free, "wired": wired,
+            "compressed": compressed,
+            "pct_used": round(used / total * 100) if total else 0,
+            "pressure": pressure, "swap": swap, "top": top}
+
+
+def battery_block():
+    batt = sh(["pmset", "-g", "batt"])
+    present = "InternalBattery" in batt
+    if not present:
+        return {"present": False}
+    pct = None
+    m = re.search(r"(\d+)%", batt)
+    if m:
+        pct = int(m.group(1))
+    src = "AC" if "AC Power" in batt else "Battery"
+    state = "charging" if "charging" in batt else ("charged" if "charged" in batt
+            else ("discharging" if "discharging" in batt else "?"))
+    tm = re.search(r"(\d+:\d\d) remaining", batt)
+    io = sh(["ioreg", "-rn", "AppleSmartBattery"])
+    def ioint(key):
+        m = re.search(rf'"{key}"\s*=\s*(\d+)', io)
+        return int(m.group(1)) if m else None
+    temp = ioint("Temperature")
+    return {
+        "present": True, "percent": pct, "source": src, "state": state,
+        "time_remaining": tm.group(1) if tm else None,
+        "temp_c": round(temp / 100, 1) if temp else None,
+        "cycle_count": ioint("CycleCount"),
+        "health_pct": ioint("MaxCapacity"),
+        "design_capacity": ioint("DesignCapacity"),
+        "voltage_v": round((ioint("Voltage") or 0) / 1000, 2),
+    }
+
+
+def thermal_block():
+    t = sh(["pmset", "-g", "therm"])
+    speed = re.search(r"CPU_Speed_Limit\s*=\s*(\d+)", t)
+    nominal = "No thermal warning level has been recorded" in t
+    block = {
+        "pressure": "Nominal" if nominal else ("Throttled" if speed else "See pmset"),
+        "speed_limit_pct": int(speed.group(1)) if speed else 100,
+        "temp_c": None, "temp_avg_c": None, "sensor_count": 0, "sensors": [],
+    }
+    # real die temperatures (°C) from the no-sudo HID sensor reader
+    import os
+    temps = sh([os.path.join(os.path.dirname(os.path.realpath(__file__)), "mac-temps"),
+                "--json"], timeout=4)
+    if temps.strip().startswith("{"):
+        try:
+            td = json.loads(temps)
+            if td.get("ok"):
+                block["temp_c"] = td.get("headline")
+                block["temp_avg_c"] = td.get("avg")
+                block["sensor_count"] = td.get("count", 0)
+                block["sensors"] = td.get("sensors", [])[:8]
+        except Exception:  # noqa: BLE001
+            pass
+    return block
+
+
+def disk_block():
+    out = sh(["df", "-k"])
+    vols = []
+    for line in out.splitlines()[1:]:
+        f = line.split()
+        if len(f) < 9:
+            continue
+        mount = " ".join(f[8:])
+        if not (mount == "/" or mount.startswith("/System/Volumes/Data")
+                or mount.startswith("/Volumes/")):
+            continue
+        total = int(f[1]) * 1024
+        used = int(f[2]) * 1024
+        avail = int(f[3]) * 1024
+        if total < 1_000_000_000:  # skip tiny system mounts < 1GB
+            continue
+        name = mount
+        if mount == "/System/Volumes/Data":
+            name = "Macintosh HD (Data)"
+        elif mount == "/":
+            name = "Macintosh HD (System)"
+        vols.append({"name": name, "mount": mount, "total": total,
+                     "used": used, "free": avail,
+                     "pct_used": round(used / total * 100) if total else 0})
+    # de-dupe by total+used (System/Data share a store)
+    seen, uniq = set(), []
+    for v in vols:
+        key = (v["total"], v["used"])
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(v)
+    return uniq
+
+
+def net_block():
+    rt = sh(["route", "-n", "get", "default"])
+    iface = re.search(r"interface:\s*(\S+)", rt)
+    gw = re.search(r"gateway:\s*(\S+)", rt)
+    ifn = iface.group(1) if iface else ""
+    ip = sh(["ipconfig", "getifaddr", ifn]).strip() if ifn else ""
+    ssid = ""
+    if ifn:
+        w = sh(["networksetup", "-getairportnetwork", ifn])
+        ms = re.search(r"Current Wi-Fi Network:\s*(.+)", w)
+        if ms:
+            ssid = ms.group(1).strip()
+    return {"interface": ifn, "ip": ip, "router": gw.group(1) if gw else "", "ssid": ssid}
+
+
+def procs_block():
+    out = sh(["ps", "-Aro", "pid=,pcpu=,pmem=,comm="])
+    rows = []
+    for line in out.splitlines()[:6]:
+        parts = line.split(None, 3)
+        if len(parts) < 4:
+            continue
+        pid, pcpu, pmem, comm = parts
+        rows.append({"pid": int(pid), "cpu": float(pcpu), "mem": float(pmem),
+                     "name": comm.rsplit("/", 1)[-1]})
+    return rows
+
+
+def gather(fast=False):
+    return {
+        "ts": int(time.time()),
+        "host": host_block(fast=fast),
+        "cpu": cpu_block(),
+        "memory": mem_block(),
+        "battery": battery_block(),
+        "thermal": thermal_block(),
+        "disk": disk_block(),
+        "network": net_block(),
+        "top_procs": procs_block(),
+    }
+
+
+def human_bytes(n):
+    n = float(n or 0)
+    for u in ["B", "KB", "MB", "GB", "TB"]:
+        if n < 1024 or u == "TB":
+            return f"{n:.0f} {u}" if u == "B" else f"{n:.1f} {u}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+def human_uptime(s):
+    d, s = divmod(int(s), 86400)
+    h, s = divmod(s, 3600)
+    m, _ = divmod(s, 60)
+    return (f"{d}d " if d else "") + f"{h}h {m}m"
+
+
+def print_human(d):
+    h, c, mem, b, t = d["host"], d["cpu"], d["memory"], d["battery"], d["thermal"]
+    print(f"\n  {h['model']} · {h['chip']} · {h['cores_total']} cores "
+          f"({h['cores_p']}P+{h['cores_e']}E) · macOS {h['macos']}")
+    print(f"  up {human_uptime(h['uptime_sec'])}\n")
+    print(f"  CPU load   {c['load1']}  {c['load5']}  {c['load15']}   "
+          f"({int(c['load_per_core']*100)}% per-core)")
+    print(f"  Memory     {human_bytes(mem['used'])} / {human_bytes(mem['total'])} "
+          f"({mem['pct_used']}%)  · pressure {mem['pressure']}")
+    print(f"  Thermal    {t['pressure']}  · CPU speed limit {t['speed_limit_pct']}%")
+    if b.get("present"):
+        print(f"  Battery    {b['percent']}% {b['state']} ({b['source']})  · "
+              f"{b['temp_c']}°C · {b['cycle_count']} cycles · health {b['health_pct']}%")
+    print("  Disk")
+    for v in d["disk"]:
+        print(f"    {v['name']:<26} {human_bytes(v['used'])} / {human_bytes(v['total'])} "
+              f"({v['pct_used']}%)")
+    n = d["network"]
+    print(f"  Network    {n['interface']} {n['ip']}"
+          + (f" · Wi-Fi {n['ssid']}" if n['ssid'] else ""))
+    print("  Top CPU")
+    for p in d["top_procs"][:5]:
+        print(f"    {p['cpu']:5.1f}%  {p['name']}")
+    print()
+
+
+def main(argv):
+    if "-h" in argv or "--help" in argv:
+        print(__doc__)
+        return 0
+    d = gather(fast="--fast" in argv)
+    if "--json" in argv:
+        print(json.dumps(d))
+    else:
+        print_human(d)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
