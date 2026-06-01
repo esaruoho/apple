@@ -411,7 +411,7 @@ def load_or_build_shape(force: bool) -> dict:
         except Exception:
             pass
     data = {"shape": compute_shape(), "ports": compute_ports(),
-            "skills": compute_skills(), "panel_actions": compute_panel_actions()}
+            "skills": compute_skills()}
     # Don't persist a failed shape — if the probe came back chip-less (e.g. a
     # transient system_profiler hiccup), caching it would pin garbage for 6h.
     if data["shape"].get("chip"):
@@ -435,7 +435,10 @@ def build_card(force_cache: bool = False) -> dict:
         "shape": stable["shape"],
         "ports": stable["ports"],
         "skills": stable["skills"],
-        "panel_actions": stable.get("panel_actions", []),
+        # Live, NOT cached with the slow shape data: the registry is cheap to read
+        # (~0.2s) and must reflect the current panel, so every --publish emits it
+        # fresh. Caching it for 6h is what made the Mini's card go actionless.
+        "panel_actions": compute_panel_actions(),
         "running": compute_running(),
     }
 
