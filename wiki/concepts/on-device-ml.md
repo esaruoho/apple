@@ -112,8 +112,13 @@ trigger→worker chassis (Finder tag, Voice Memo, Stickies, Mail flag, Panel, no
 
 Deploy = `git -C …/apple reset --hard origin/main` on the Mini (the deploy node diverges
 from origin via its own auto-regen commits, so `pull --ff-only` fails — reset is the clean
-path; untracked WIP is preserved) then `nohup …/bin/fm-worker &`. For durable persistence
-it should become a Cloudcity-Boot pane (currently nohup'd).
+path; untracked WIP is preserved). **Persistence (2026-06-02): it's now the "FM Worker" pane
+in Cloudcity-Boot** (`comms/cloudcity-boot/main.applescript`, splits the MERLib Mirror pane),
+running foreground in a crash-only `while-true` wrapper — survives reboots and boot cycles.
+The worker is stateless, so a cycle that kills it mid-generation is harmless: the job stays
+in `fm-inbox/` and is reprocessed on restart. After editing the applescript: `build.sh` on the
+Mini, then cycle (`!pk cloudcity restart`). Kill any stray `nohup` worker first so it doesn't
+double up with the pane's worker.
 
 ### Measured speed (M2 Pro Mini, 2026-06-01)
 **Model is fast: ~0.9–1.5 s** to generate a sentence or short list (`model_ms` in every
