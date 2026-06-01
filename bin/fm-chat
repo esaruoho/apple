@@ -94,6 +94,16 @@ def ask(prompt: str, system: str, timeout: float = 180.0):
     return None, time.time() - t0
 
 
+def humanize_err(err: str) -> str:
+    e = (err or "").strip()
+    if "guardrail" in e.lower() or "unsafe content" in e.lower():
+        return ("Apple's on-device safety guardrail blocked this (it's aggressive). "
+                "Rephrase and try again.")
+    while e.lower().startswith("fm error:"):
+        e = e[len("fm error:"):].strip()
+    return e or "unknown"
+
+
 def worker_alive() -> str:
     if not HEARTBEAT.exists():
         return "no heartbeat yet"
@@ -153,7 +163,7 @@ def main() -> int:
                   f"`fm-submit --status`){RESET}")
             continue
         if not res.get("ok"):
-            print(f"{YELLOW}  fm error: {res.get('err','unknown')}{RESET}")
+            print(f"{YELLOW}  ⚠ {humanize_err(res.get('err',''))}{RESET}\n")
             continue
         answer = res.get("out", "").strip()
         # the model may echo a leading "Assistant:" from the cue — strip it

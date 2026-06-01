@@ -96,6 +96,39 @@ The mistake to avoid (made 2026-06-01): I checked FoundationModels on the *lapto
 - Probe a machine: `ls /System/Library/Frameworks/FoundationModels.framework` + `sw_vers`, then a 3-line Swift check of `SystemLanguageModel.default.availability` (framework presence ≠ enabled; only the availability property confirms the model is downloaded + AI toggled on). On the Mini, run it via the file-bridge (drop `run --direct …` into `pakettibot-inbox/`), not SSH.
 - For a heavier/sharper embedding than NLEmbedding without leaving the Apple stack: convert a sentence-transformer to **CoreML** (`coremltools`, build-time only) and run it on the ANE.
 
+## FoundationModels as a fleet worker — `fm-worker` / `fm-submit` / `fm-chat` (2026-06-01)
+
+FM only exists on macOS 26, so on the fleet it lives on the **Mini**. Three tools make
+it usable from any machine, zero-network, zero-cost — the 6th instance of the
+trigger→worker chassis (Finder tag, Voice Memo, Stickies, Mail flag, Panel, now FM):
+
+- **`bin/fm-worker`** (Mini): watches `~/work/comms/queue/fm-inbox/<id>.json`
+  (`{prompt, system?}`), runs `bin/fm`, times the model wall-clock, writes the answer
+  to `fm-outbox/<id>.json`. Stateless — only ever execs `bin/fm`, never a shell.
+- **`bin/fm-submit`** (any Mac): one-shot prompt → answer (`--wait`/`--system`/`--status`).
+- **`bin/fm-chat`** (any Mac): live REPL. Conversation memory is replayed **client-side**
+  (the worker is stateless) — verified working: a neutral fact stated in turn 1 is
+  correctly recalled in turn 3.
+
+Deploy = `git -C …/apple reset --hard origin/main` on the Mini (the deploy node diverges
+from origin via its own auto-regen commits, so `pull --ff-only` fails — reset is the clean
+path; untracked WIP is preserved) then `nohup …/bin/fm-worker &`. For durable persistence
+it should become a Cloudcity-Boot pane (currently nohup'd).
+
+### Measured speed (M2 Pro Mini, 2026-06-01)
+**Model is fast: ~0.9–1.5 s** to generate a sentence or short list (`model_ms` in every
+result). The variable cost is the **Syncthing round-trip: ~4 s good case, ~11 s** when a
+scan cycle lags — `syncthing-nudge` on both inbox and outbox keeps it near the floor. So
+"how fast is FM" = ~1 s of model + transport. Run `fm-chat` *on the Mini* to drop the
+transport entirely.
+
+### Guardrails are aggressive — expect refusals
+Apple's on-device model has a trigger-happy safety guardrail. Two refusal shapes seen:
+a hard `guardrailViolation("May contain unsafe content")` error, and soft in-content
+declines ("I'm sorry, but I can't assist with that"). Personal-info recall ("what is my
+name") trips it even in a benign chat. The client tools humanize the hard-guardrail error;
+rephrasing usually clears it. This is an FM property, not a pipeline bug.
+
 ## See also
 
 - [asobjc.md](asobjc.md) — the other "first-party capability we missed for years" (Cocoa from AppleScript)

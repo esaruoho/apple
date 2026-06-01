@@ -77,6 +77,17 @@ def wait_for(job_id: str, timeout: float):
     return None, time.time() - t0
 
 
+def humanize_err(err: str) -> str:
+    e = (err or "").strip()
+    if "guardrail" in e.lower() or "unsafe content" in e.lower():
+        return ("Apple's on-device safety guardrail blocked this prompt or its "
+                "reply (the FoundationModels guardrail is aggressive). Rephrase and retry.")
+    # strip the doubled 'fm error:' the Swift CLI already prepends
+    while e.lower().startswith("fm error:"):
+        e = e[len("fm error:"):].strip()
+    return e or "unknown"
+
+
 def status():
     pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
     done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
@@ -146,7 +157,7 @@ def main() -> int:
                          f"Is fm-worker running on the Mini? (fm-submit --status)\n")
         return 1
     if not result.get("ok"):
-        sys.stderr.write(f"fm error: {result.get('err', 'unknown')}\n")
+        sys.stderr.write(f"fm: {humanize_err(result.get('err', ''))}\n")
         return 1
     print(result.get("out", ""))
     model_ms = result.get("model_ms", 0)
