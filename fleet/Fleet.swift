@@ -963,8 +963,10 @@ struct CardView: View {
                 .buttonStyle(.plain)
                 .help(probe.desc ?? "")
             }
-            Text("needs Remote Application Scripting on + peer reachable")
+            Text("Each connection asks for a password (macOS won't cache eppc) — "
+                + "use Snapshot for one prompt. Needs Remote Application Scripting on + peer reachable.")
                 .font(.system(size: 9)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
