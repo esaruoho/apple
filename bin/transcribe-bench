@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""transcribe-bench <audio> [--locale en-US] — game Apple Speech against Whisper.
+
+Runs both engines that exist on THIS machine on the same clip, times each, and
+prints them side by side. Apple Speech is `bin/speech-transcribe` (on-device,
+Speech.framework). Whisper is the local `whisp`/`whisper` binary if present.
+
+For the full head-to-head run it on a machine that has BOTH — the Mac Mini has
+`~/work/whisp/whisp` and (macOS 26) Speech. On the laptop it runs Speech and
+notes Whisper is remote.
+
+Apple-native + Python stdlib only.
+
+Usage: transcribe-bench <audio-file> [--locale en-US]
+"""
+
+import glob
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+
+
+def speech(audio: str, locale: str):
+    t = time.time()
+    p = subprocess.run([os.path.join(HERE, "speech-transcribe"), audio,
+                        "--locale", locale, "--timeout", "240"],
+                       capture_output=True, text=True)
+    dt = time.time() - t
+    text = p.stdout.strip() or f"(no result — {p.stderr.strip()})"
+    return text, dt
+
+
+def find_whisper():
+    for c in (os.path.expanduser("~/work/whisp/whisp"),
+              os.path.expanduser("~/work/transcript/whisp"),
+              shutil.which("whisper")):
+        if c and os.path.exists(c) and os.access(c, os.X_OK):
+            return c
+    return None
+
+
+def whisper(audio: str, binp: str):
+    out = tempfile.mkdtemp(prefix="tbench_")
+    env = dict(os.environ)
+    env["PATH"] = "/opt/homebrew/bin:" + env.get("PATH", "")   # ffmpeg/whisper
+    t = time.time()
+    if binp.endswith("/whisp"):
+        subprocess.run([binp, "--en", "--out", out, audio],
+                       capture_output=True, text=True, env=env)
+    else:
+        subprocess.run([binp, audio, "--model", "turbo", "--language", "en",
+                        "--output_format", "txt", "--output_dir", out],
+                       capture_output=True, text=True, env=env)
+    dt = time.time() - t
+    txts = sorted(glob.glob(os.path.join(out, "*.txt")))
+    text = open(txts[0]).read().strip() if txts else "(no .txt produced)"
+    return text, dt
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    locale = "en-US"
+    if "--locale" in args:
+        i = args.index("--locale")
+        locale = args[i + 1]
+        del args[i:i + 2]
+    if not args:
+        print("usage: transcribe-bench <audio-file> [--locale en-US]", file=sys.stderr)
+        return 2
+    audio = args[0]
+    if not os.path.exists(audio):
+        print(f"no such file: {audio}", file=sys.stderr)
+        return 1
+
+    print(f"━━ transcribe-bench · {os.path.basename(audio)} ━━\n")
+
+    stext, sdt = speech(audio, locale)
+    print(f"── Apple Speech (on-device)   [{sdt:.1f}s] ──\n{stext}\n")
+
+    wbin = find_whisper()
+    if wbin:
+        wtext, wdt = whisper(audio, wbin)
+        print(f"── Whisper ({os.path.basename(wbin)})   [{wdt:.1f}s] ──\n{wtext}\n")
+        sw = len(stext.split()); ww = len(wtext.split())
+        print(f"── summary ──\nSpeech: {sw} words in {sdt:.1f}s · Whisper: {ww} words in {wdt:.1f}s")
+        if sdt and wdt:
+            faster = "Speech" if sdt < wdt else "Whisper"
+            print(f"faster: {faster} ({max(sdt,wdt)/max(0.01,min(sdt,wdt)):.1f}×)")
+    else:
+        print("── Whisper ──\n(no local whisp/whisper here — run transcribe-bench on the Mini for both)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
