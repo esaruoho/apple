@@ -138,6 +138,38 @@ def synthesize_peer_from_heartbeats() -> dict | None:
     }
 
 
+# A shape-only Machine Card probe that runs under python 2.7 OR 3.x, for Macs
+# too old to have python3 (El Capitan etc.). sysctl/sw_vers exist on every macOS.
+LEGACY_PROBE = r'''
+from __future__ import print_function
+import json, subprocess
+def s(c):
+    try: out = subprocess.check_output(c)
+    except Exception: return ""
+    try: out = out.decode("utf-8", "ignore")
+    except Exception: pass
+    return out.strip()
+model = s(["sysctl", "-n", "hw.model"])
+pfx = "".join(ch for ch in model if ch.isalpha())
+names = {"MacPro": "Mac Pro", "MacBookPro": "MacBook Pro", "Macmini": "Mac mini",
+         "iMac": "iMac", "MacBookAir": "MacBook Air", "MacBook": "MacBook",
+         "iMacPro": "iMac Pro"}
+total = s(["sysctl", "-n", "hw.physicalcpu"])
+mem = s(["sysctl", "-n", "hw.memsize"])
+host = s(["scutil", "--get", "LocalHostName"]) or s(["hostname", "-s"])
+card = {"schema": "machine-card/1", "id": host, "scope": "public", "legacy": True,
+        "identity": {"hostname": host, "platform": "macOS"},
+        "shape": {"chip": s(["sysctl", "-n", "machdep.cpu.brand_string"]) or None,
+                  "model_name": names.get(pfx), "model_identifier": model or None,
+                  "cores_total": int(total) if total.isdigit() else None,
+                  "ram_gb": int(round(float(mem) / 1e9)) if mem.isdigit() else None,
+                  "macos_version": s(["sw_vers", "-productVersion"]) or None,
+                  "macos_build": s(["sw_vers", "-buildVersion"]) or None, "ai": {}},
+        "ports": {"channels": []}, "skills": [], "running": {}}
+print(json.dumps(card))
+'''
+
+
 # ───────────────────────── handshake: collect live cards from every machine ─────────────────────────
 
 def _tailscale_bin():
@@ -177,12 +209,28 @@ def discover_targets():
             targets.append({"label": name, "kind": "ssh", "ssh": ssh})
 
     # Extra LAN hosts the user named that aren't on the tailnet (best-effort).
-    for extra in ("esaRMBP.local", "HertsiMacPro.local"):
-        base = extra.split(".")[0].lower()
+    # An entry may carry an explicit "user@host" when the account differs.
+    for extra in ("esaRMBP.local", "esaruoho@HertsiMacPro.local"):
+        host = extra.split("@")[-1]            # strip optional user@
+        base = host.split(".")[0].lower()
         if base not in seen:
             seen.add(base)
-            targets.append({"label": extra.split(".")[0], "kind": "ssh", "ssh": extra, "lan": True})
+            targets.append({"label": host.split(".")[0], "kind": "ssh", "ssh": extra, "lan": True})
     return targets
+
+
+def _ssh(target, remote, stdin, timeout=50):
+    """Run a remote command over SSH, returning the CompletedProcess (or None).
+    PubkeyAcceptedAlgorithms=+ssh-rsa re-enables SHA-1 RSA so legacy Macs'
+    old sshd can verify an RSA key; harmless for modern hosts."""
+    try:
+        return subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+             "-o", "StrictHostKeyChecking=accept-new",
+             "-o", "PubkeyAcceptedAlgorithms=+ssh-rsa", target["ssh"], remote],
+            input=stdin, capture_output=True, text=True, timeout=timeout)
+    except Exception:
+        return None
 
 
 def collect_card(target):
@@ -208,22 +256,34 @@ def collect_card(target):
               '/usr/local/bin/python3; do command -v "$P" >/dev/null 2>&1 && '
               'exec "$P" - --public --json --cache; done; '
               'echo "machine-card: no python3 found" >&2; exit 127')
-    try:
-        p = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
-             "-o", "StrictHostKeyChecking=accept-new", target["ssh"], remote],
-            input=script, capture_output=True, text=True, timeout=50)
-    except Exception as e:
-        return None, f"ssh: {e}"
-    if p.returncode != 0 or not p.stdout.strip():
-        msg = (p.stderr or "").strip().splitlines()
-        return None, (msg[-1] if msg else f"ssh rc={p.returncode}")
-    try:
-        c = json.loads(p.stdout)
-        c["_origin"] = "handshake"
-        return c, None
-    except Exception as e:
-        return None, f"parse: {e}"
+    p = _ssh(target, remote, script)
+    if p is None:
+        return None, "ssh failed"
+    if p.returncode == 0 and p.stdout.strip():
+        try:
+            c = json.loads(p.stdout)
+            c["_origin"] = "handshake"
+            return c, None
+        except Exception as e:
+            return None, f"parse: {e}"
+    # Legacy fallback: ancient Macs (e.g. El Capitan) ship only python2. Emit a
+    # shape-only card with a tiny py2/py3-compatible probe (sysctl/sw_vers).
+    if "no python3" in (p.stderr or ""):
+        legacy = ('for P in /usr/bin/python python python2.7 python3; do '
+                  'command -v "$P" >/dev/null 2>&1 && exec "$P" -; done; '
+                  'echo "no python at all" >&2; exit 127')
+        lp = _ssh(target, legacy, LEGACY_PROBE, timeout=30)
+        if lp is not None and lp.returncode == 0 and lp.stdout.strip():
+            try:
+                c = json.loads(lp.stdout)
+                c["_origin"] = "handshake-legacy"
+                return c, None
+            except Exception as e:
+                return None, f"legacy parse: {e}"
+        emsg = (lp.stderr or "").strip().splitlines() if lp else []
+        return None, "legacy: " + (emsg[-1] if emsg else "no python at all")
+    msg = (p.stderr or "").strip().splitlines()
+    return None, (msg[-1] if msg else f"ssh rc={p.returncode}")
 
 
 def aggregate(cards):
