@@ -76,14 +76,28 @@ def sh(cmd: list[str], timeout: float = 8.0) -> str:
 
 # ───────────────────────── identity ─────────────────────────
 
+_IDENTITY_CACHE: dict | None = None
+
+
 def identity() -> dict:
-    return {
-        "hostname": socket.gethostname().split(".")[0],
-        "computer_name": sh(["scutil", "--get", "ComputerName"]) or socket.gethostname(),
-        "local_hostname": sh(["scutil", "--get", "LocalHostName"]),
-        "user": os.environ.get("USER", ""),
-        "platform": "macOS",
-    }
+    # Memoised — scutil is a subprocess and identity is asked for repeatedly
+    # (ownership checks, card id, tailscale port). Stable for the process life.
+    global _IDENTITY_CACHE
+    if _IDENTITY_CACHE is None:
+        _IDENTITY_CACHE = {
+            "hostname": socket.gethostname().split(".")[0],
+            "computer_name": sh(["scutil", "--get", "ComputerName"]) or socket.gethostname(),
+            "local_hostname": sh(["scutil", "--get", "LocalHostName"]),
+            "user": os.environ.get("USER", ""),
+            "platform": "macOS",
+        }
+    return _IDENTITY_CACHE
+
+
+def _my_names() -> set[str]:
+    ident = identity()
+    return {n.lower() for n in (ident.get("hostname"), ident.get("computer_name"),
+                                ident.get("local_hostname")) if n}
 
 
 # ───────────────────────── shape (cached) ─────────────────────────
@@ -278,6 +292,38 @@ def heartbeat_age(name: str) -> float | None:
         return None
 
 
+def heartbeat_host(name: str) -> str | None:
+    """The host that produced this heartbeat, or None if it doesn't say.
+    Writers differ: whisp stamps `worker_host`; others should stamp `host`."""
+    p = QUEUE / name
+    if not p.exists():
+        return None
+    try:
+        d = json.loads(p.read_text())
+    except Exception:
+        return None
+    for k in ("host", "worker_host", "hostname"):
+        v = d.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.split(".")[0]
+    return None
+
+
+def owns_service(heartbeat: str) -> bool:
+    """True if THIS machine produced the heartbeat. The queue dir is Syncthing-
+    shared fleet-wide, so a fresh heartbeat alone does NOT mean the service runs
+    here — without this check every Mac claims every peer's service (esarMBP was
+    advertising the Mini's ocr/voicebox/whisp/pakettibot). Robust rule: the
+    heartbeat's declared host must match one of my names. Legacy writers that
+    don't stamp a host fall back to claimed, so the real owner never loses the
+    skill mid-migration — the spurious peer claim clears the moment that writer
+    starts stamping `host`."""
+    declared = heartbeat_host(heartbeat)
+    if declared is None:
+        return True
+    return declared.lower() in _my_names()
+
+
 def compute_skills() -> list[dict]:
     skills: dict[str, dict] = {}
 
@@ -292,8 +338,11 @@ def compute_skills() -> list[dict]:
                               "inbox": None, "verb": None, "age_s": None}
 
     # 2. Services — a warm heartbeat means running + reachable now. These carry
-    #    the routable inbox ports.
+    #    the routable inbox ports. Only services THIS machine actually hosts
+    #    (see owns_service) — a peer's synced heartbeat is not our skill.
     for name, meta in SERVICES.items():
+        if not owns_service(meta["heartbeat"]):
+            continue
         age = heartbeat_age(meta["heartbeat"])
         warm = age is not None and age <= HEARTBEAT_WARM_SECS
         entry = skills.get(name, {"name": name, "source": "service"})
@@ -307,6 +356,59 @@ def compute_skills() -> list[dict]:
         skills[name] = entry
 
     return sorted(skills.values(), key=lambda s: (not s["warm"], s["name"]))
+
+
+def compute_activity() -> list[dict]:
+    """Live, per-service job state for services THIS machine hosts — what the
+    fleet is DOING right now, not just what it CAN do. Same heartbeats as skills,
+    but carries the rich fields Fleet renders as a readout: status, current job,
+    page x/y progress, ETA, queue depth. Only owned services (see owns_service),
+    so a peer reading the synced card sees the owner's work attributed correctly."""
+    acts: list[dict] = []
+    for name, meta in SERVICES.items():
+        if not owns_service(meta["heartbeat"]):
+            continue
+        p = QUEUE / meta["heartbeat"]
+        if not p.exists():
+            continue
+        try:
+            d = json.loads(p.read_text())
+        except Exception:
+            continue
+        age = heartbeat_age(meta["heartbeat"])
+        warm = age is not None and age <= HEARTBEAT_WARM_SECS
+        rec: dict = {
+            "service": name,
+            "warm": warm,
+            "age_s": round(age) if age is not None else None,
+            "status": d.get("status"),
+        }
+        job = d.get("current_job") or d.get("current")
+        if isinstance(job, str) and job:
+            rec["current_job"] = job
+        cur, tot = d.get("current_page"), d.get("total_pages")
+        if isinstance(cur, int) and isinstance(tot, int) and tot > 0:
+            rec["progress"] = {"cur": cur, "total": tot}
+        if isinstance(d.get("eta_ms"), (int, float)):
+            rec["eta_s"] = round(d["eta_ms"] / 1000)
+        if isinstance(d.get("elapsed_ms"), (int, float)):
+            rec["elapsed_s"] = round(d["elapsed_ms"] / 1000)
+        q = d.get("queue")
+        if isinstance(q, dict):
+            qq = {k: q[k] for k in ("pending", "done", "failed")
+                  if isinstance(q.get(k), int)}
+            if qq:
+                rec["queue"] = qq
+        elif isinstance(d.get("pending"), int):
+            # voicebox/pakettibot keep a bare top-level `pending` rather than a
+            # queue object — surface it so an idle service still shows depth 0.
+            rec["queue"] = {"pending": d["pending"]}
+        if "gateway_ready" in d:
+            rec["ready"] = bool(d.get("gateway_ready"))
+        if isinstance(d.get("active_agents"), int):
+            rec["agents"] = d["active_agents"]
+        acts.append(rec)
+    return sorted(acts, key=lambda a: (not a["warm"], a["service"]))
 
 
 # ───────────────────────── running (cheap, always fresh) ─────────────────────────
@@ -439,6 +541,7 @@ def build_card(force_cache: bool = False) -> dict:
         # (~0.2s) and must reflect the current panel, so every --publish emits it
         # fresh. Caching it for 6h is what made the Mini's card go actionless.
         "panel_actions": compute_panel_actions(),
+        "activity": compute_activity(),
         "running": compute_running(),
     }
 

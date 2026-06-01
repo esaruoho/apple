@@ -31,13 +31,14 @@ struct Card: Codable, Identifiable {
     var ports: Ports?
     var skills: [Skill]?
     var panel_actions: [PanelAction]?
+    var activity: [Activity]?
     var running: Running?
 
     // Transport metadata — not part of the JSON; set after decode.
     var origin: Origin = .local
     var lastSeen: Date = Date()
 
-    enum CodingKeys: String, CodingKey { case id, ts, identity, shape, ports, skills, panel_actions, running }
+    enum CodingKeys: String, CodingKey { case id, ts, identity, shape, ports, skills, panel_actions, activity, running }
 
     enum Origin: String { case local, bonjour, syncthing }
 }
@@ -102,6 +103,24 @@ struct PanelAction: Codable, Identifiable {
     var label: String
     var desc: String?
     var arg: String?        // placeholder if it needs an input value, else nil
+}
+
+/// Live per-service job state — what a machine is DOING right now, drawn from
+/// its service heartbeats. Only services the machine actually hosts appear.
+struct Progress: Codable { var cur: Int?; var total: Int? }
+struct Activity: Codable, Identifiable {
+    var id: String { service }
+    var service: String
+    var warm: Bool?
+    var age_s: Int?
+    var status: String?
+    var current_job: String?
+    var progress: Progress?
+    var eta_s: Int?
+    var elapsed_s: Int?
+    var queue: [String: Int]?
+    var ready: Bool?
+    var agents: Int?
 }
 
 struct TopProc: Codable { var cpu: Double?; var cmd: String? }
@@ -667,6 +686,9 @@ struct CardView: View {
             face("SHAPE", icon: "cpu") { shapeFace }
             face("PORTS", icon: "cable.connector") { portsFace }
             face("RUNNING", icon: "waveform.path.ecg") { runningFace }
+            if let acts = card.activity, !acts.isEmpty {
+                face("ACTIVITY", icon: "bolt.horizontal.fill") { activityFace(acts) }
+            }
             face("SKILLS", icon: "wrench.and.screwdriver") { skillsFace }
             if let acts = card.panel_actions, !acts.isEmpty {
                 face("RUN", icon: "play.circle") { runFace(acts) }
@@ -742,6 +764,66 @@ struct CardView: View {
                 }
             }
         }
+    }
+
+    // ACTIVITY — live per-service job state: what this machine is doing NOW.
+    // Capability (SKILLS) says "I can OCR"; this says "I'm on page 3/12, ETA 4m".
+    @ViewBuilder private func activityFace(_ acts: [Activity]) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            ForEach(acts) { a in
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Circle().fill((a.warm ?? false) ? Color.green : Color.gray.opacity(0.4))
+                            .frame(width: 7, height: 7)
+                        Text(a.service).font(.caption).bold()
+                        if let s = a.status, !s.isEmpty { statusPill(s) }
+                        Spacer(minLength: 0)
+                    }
+                    if let pr = a.progress, let cur = pr.cur, let tot = pr.total, tot > 0 {
+                        ProgressView(value: Double(min(cur, tot)), total: Double(tot))
+                            .progressViewStyle(.linear).tint(.accentColor)
+                        HStack(spacing: 4) {
+                            Text("\(cur)/\(tot)")
+                            if let eta = a.eta_s { Text("· ETA \(fmtDur(eta))") }
+                            Spacer(minLength: 0)
+                        }.font(.system(size: 9)).foregroundColor(.secondary)
+                    }
+                    if let job = a.current_job {
+                        Text(prettyJob(job)).font(.system(size: 9))
+                            .foregroundColor(.secondary).lineLimit(1).truncationMode(.middle)
+                    }
+                    if a.progress == nil, let line = queueLine(a) {
+                        Text(line).font(.system(size: 9)).foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func statusPill(_ s: String) -> some View {
+        Text(s).font(.system(size: 9)).foregroundColor(.secondary)
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .background(Capsule().fill(Color.secondary.opacity(0.15)))
+    }
+    private func fmtDur(_ s: Int) -> String {
+        s < 60 ? "\(s)s" : "\(s / 60)m\(String(format: "%02d", s % 60))s"
+    }
+    private func prettyJob(_ raw: String) -> String {
+        var f = (raw as NSString).lastPathComponent
+        if let r = f.range(of: "^[0-9]{8}-[0-9]{6}-", options: .regularExpression) {
+            f.removeSubrange(r)  // strip the inbox's "YYYYMMDD-HHMMSS-" stamp
+        }
+        return f
+    }
+    private func queueLine(_ a: Activity) -> String? {
+        var parts: [String] = []
+        if let q = a.queue {
+            if let p = q["pending"] { parts.append("\(p) pending") }
+            if let d = q["done"] { parts.append("\(d) done") }
+            if let fl = q["failed"], fl > 0 { parts.append("\(fl) failed") }
+        }
+        if let ag = a.agents { parts.append("\(ag) agent\(ag == 1 ? "" : "s")") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     // SKILLS — service skills with an inbox become route buttons.

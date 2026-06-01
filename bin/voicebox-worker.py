@@ -31,10 +31,13 @@ After processing each job:
 import json
 import os
 import shutil
+import socket
 import sys
 import time
 import urllib.request
 from pathlib import Path
+
+HOST = socket.gethostname().split(".")[0]
 
 QUEUE = Path(os.environ.get(
     "VOICEBOX_QUEUE",
@@ -60,6 +63,7 @@ def log_event(event: dict):
 
 
 def heartbeat(state: dict):
+    state["host"] = HOST  # so fleet peers attribute this service to its real machine
     state["ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     tmp = HEARTBEAT.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False))
