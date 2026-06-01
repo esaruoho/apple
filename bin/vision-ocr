@@ -1,0 +1,18 @@
+#!/bin/bash
+# vision-ocr — on-device OCR via Apple's Vision framework (Neural Engine).
+# Self-building: compiles bin/vision-ocr.swift to a cached binary on first use
+# (or when the source changes), then runs it. Apple-native, no deps.
+#
+# Usage: vision-ocr <image-or-pdf> [--lang en,fi] [--fast] [--pages N] [--langs]
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/vision-ocr.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/vision-ocr"
+mkdir -p "$CACHE"
+# Rebuild if the binary is missing or older than the source.
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" \
+        -framework Vision -framework CoreGraphics -framework ImageIO -framework Foundation
+fi
+exec "$BIN" "$@"
