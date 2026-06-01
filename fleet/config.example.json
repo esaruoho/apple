@@ -1,0 +1,15 @@
+{
+  "_comment": "Fleet whitelabel config. COPY to ~/.config/fleet/config.json and edit. Both Fleet.app and bin/machine-card read this same file so the renderer and the emitter agree. Every key is optional — omit one and Fleet falls back to its historical default (Esa's layout). Paths may start with ~ or $HOME. Env vars FLEET_BIN_DIR / FLEET_QUEUE_DIR / FLEET_CONFIG override these at runtime.",
+
+  "bin_dir": "~/work/apple/bin",
+  "queue_dir": "~/work/comms/queue",
+
+  "_services_comment": "Optional. Omit to use the built-in default registry. If present, this REPLACES the default list. Each entry: name (required), heartbeat (default <name>-heartbeat.json), inbox (a queue subdir to route files to, or null for read-only liveness), verb (human label). Bonjour LAN discovery works regardless of this list; services only gate the routable-skill buttons and the activity readout.",
+  "services": [
+    { "name": "ocr",        "heartbeat": "ocr-heartbeat.json",        "inbox": "ocr-inbox",        "verb": "OCR a PDF or image" },
+    { "name": "voicebox",   "heartbeat": "voicebox-heartbeat.json",   "inbox": "voicebox-inbox",   "verb": "Text-to-speech" },
+    { "name": "whisp",      "heartbeat": "whisp-heartbeat.json",      "inbox": "pakettibot-inbox", "verb": "Transcribe audio / YouTube" },
+    { "name": "pakettibot", "heartbeat": "pakettibot-heartbeat.json", "inbox": "pakettibot-inbox", "verb": "Run a !pk command" },
+    { "name": "repo-puller","heartbeat": "repo-puller-heartbeat.json","inbox": null,               "verb": "Auto-pull tracked repos" }
+  ]
+}

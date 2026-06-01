@@ -45,15 +45,44 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 APPLE_REPORT = HERE / "apple-report"
-QUEUE = Path.home() / "work" / "comms" / "queue"
 SKILLS_DIR = Path.home() / ".claude" / "skills"
 CACHE = Path.home() / ".cache" / "apple" / "machine-card-shape.json"
 CACHE_TTL = 6 * 3600  # shape/ports/skills are stable; refresh at most every 6h
 
+# Whitelabel config. machine-card and Fleet read the SAME file so the emitter
+# and the renderer never disagree about where the queue is or what services
+# exist. Resolution (first hit wins, falling back to the historical defaults so
+# an unconfigured install behaves exactly as before):
+#   1. env override   FLEET_QUEUE_DIR
+#   2. config file     $FLEET_CONFIG, else ~/.config/fleet/config.json
+#   3. default         ~/work/comms/queue  +  the built-in service registry below
+# See fleet/config.example.json for the shape.
+
+def _expand(p: str) -> Path:
+    return Path(os.path.expanduser(os.path.expandvars(p)))
+
+def _load_config() -> dict:
+    cfg_path = os.environ.get("FLEET_CONFIG") or os.path.expanduser("~/.config/fleet/config.json")
+    try:
+        with open(cfg_path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+_CFG = _load_config()
+
+if os.environ.get("FLEET_QUEUE_DIR"):
+    QUEUE = _expand(os.environ["FLEET_QUEUE_DIR"])
+elif _CFG.get("queue_dir"):
+    QUEUE = _expand(_CFG["queue_dir"])
+else:
+    QUEUE = Path.home() / "work" / "comms" / "queue"
+
 # Services whose presence is advertised as a routable skill. A warm heartbeat
 # means "running and reachable right now"; an inbox means work can be routed
 # to this machine by dropping a file into the Syncthing-mirrored queue dir.
-SERVICES = {
+# Override the whole list via config "services": [{name,heartbeat,inbox,verb},...].
+_DEFAULT_SERVICES = {
     "ocr":           {"heartbeat": "ocr-heartbeat.json",          "inbox": "ocr-inbox",        "verb": "OCR a PDF or image"},
     "voicebox":      {"heartbeat": "voicebox-heartbeat.json",     "inbox": "voicebox-inbox",   "verb": "Text-to-speech"},
     "whisp":         {"heartbeat": "whisp-heartbeat.json",        "inbox": "pakettibot-inbox", "verb": "Transcribe audio / YouTube"},
@@ -62,6 +91,22 @@ SERVICES = {
     "spine":         {"heartbeat": "spine-heartbeat.json",        "inbox": None,               "verb": "Spine orchestrator"},
     "repo-puller":   {"heartbeat": "repo-puller-heartbeat.json",  "inbox": None,               "verb": "Auto-pull tracked repos"},
 }
+
+def _services_from_config(cfg: dict):
+    svc = cfg.get("services")
+    if not isinstance(svc, list) or not svc:
+        return None
+    out = {}
+    for s in svc:
+        name = s.get("name")
+        if not name:
+            continue
+        out[name] = {"heartbeat": s.get("heartbeat") or f"{name}-heartbeat.json",
+                     "inbox": s.get("inbox"),
+                     "verb": s.get("verb") or name}
+    return out or None
+
+SERVICES = _services_from_config(_CFG) or _DEFAULT_SERVICES
 HEARTBEAT_WARM_SECS = 180  # a heartbeat older than this is "cold"
 
 

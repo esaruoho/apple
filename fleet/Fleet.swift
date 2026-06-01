@@ -145,14 +145,55 @@ struct Running: Codable {
     var queues: [String: [String: Int]]?
 }
 
+// ─────────────────────── Config (whitelabel) ───────────────────────
+//
+// Fleet ships with no host, path, or service baked in. Where the helper
+// binaries live and where the Syncthing queue is come from a JSON config so a
+// stranger can run Fleet against their own layout. Resolution order, first hit
+// wins, falling back to the historical defaults so an unconfigured install (or
+// Esa's) behaves exactly as before:
+//   1. env override   FLEET_BIN_DIR / FLEET_QUEUE_DIR  (handy for testing)
+//   2. config file     $FLEET_CONFIG, else ~/.config/fleet/config.json
+//   3. default         ~/work/apple/bin  and  ~/work/comms/queue
+// machine-card reads the SAME file (queue_dir + services), so the renderer and
+// the emitter never disagree about where the queue is. See fleet/config.example.json.
+
+enum FleetConfig {
+    static let binDir   = resolve(env: "FLEET_BIN_DIR",   key: "bin_dir",   default: "\(NSHomeDirectory())/work/apple/bin")
+    static let queueDir = resolve(env: "FLEET_QUEUE_DIR", key: "queue_dir", default: "\(NSHomeDirectory())/work/comms/queue")
+
+    /// Parsed config JSON (empty on absence / parse error — defaults then win).
+    private static let json: [String: Any] = {
+        let env = ProcessInfo.processInfo.environment
+        let path = env["FLEET_CONFIG"] ?? "\(NSHomeDirectory())/.config/fleet/config.json"
+        guard let data = FileManager.default.contents(atPath: path),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return [:] }
+        return obj
+    }()
+
+    private static func resolve(env: String, key: String, default def: String) -> String {
+        if let v = ProcessInfo.processInfo.environment[env], !v.isEmpty { return expand(v) }
+        if let v = json[key] as? String, !v.isEmpty { return expand(v) }
+        return def
+    }
+
+    /// Expand a leading `~` or `$HOME` so config files can stay portable.
+    private static func expand(_ p: String) -> String {
+        if p == "~" || p.hasPrefix("~/") { return NSHomeDirectory() + p.dropFirst(1) }
+        if p.hasPrefix("$HOME") { return NSHomeDirectory() + p.dropFirst(5) }
+        return p
+    }
+}
+
 // ─────────────────────── Machine-card data source ───────────────────────
 
 enum CardSource {
-    static let bin = "\(NSHomeDirectory())/work/apple/bin/machine-card"
-    static let panelBin = "\(NSHomeDirectory())/work/apple/bin/apple-panel"
-    static let nudgeBin = "\(NSHomeDirectory())/work/apple/bin/syncthing-nudge"
-    static let eppcBin = "\(NSHomeDirectory())/work/apple/bin/eppc-probe"
-    static let queue = "\(NSHomeDirectory())/work/comms/queue"
+    static let bin = "\(FleetConfig.binDir)/machine-card"
+    static let panelBin = "\(FleetConfig.binDir)/apple-panel"
+    static let nudgeBin = "\(FleetConfig.binDir)/syncthing-nudge"
+    static let eppcBin = "\(FleetConfig.binDir)/eppc-probe"
+    static let queue = FleetConfig.queueDir
 
     /// The curated eppc probe registry (machine-agnostic), loaded once.
     static func loadEppcProbes() -> [EppcProbe] {
