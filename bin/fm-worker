@@ -114,6 +114,11 @@ def process_one(path: Path) -> bool:
         "from": job.get("submitter_host"),
     })
     path.unlink(missing_ok=True)   # consume the job
+    # one line per job so the Cloudcity-Boot pane is a live monitor
+    mark = "ok" if res["ok"] else "ERR"
+    preview = (res["out"] or res["err"] or "").replace("\n", " ")[:60]
+    print(f"[{time.strftime('%H:%M:%S')}] {job_id} → {mark} "
+          f"({res['model_ms']}ms) {preview}", flush=True)
     return True
 
 
