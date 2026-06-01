@@ -416,16 +416,12 @@ def strip_private(obj):
 
 
 def public_card(card: dict) -> dict:
-    pub = strip_private(card)
-    # Coarse liveness only — drop exact load/mem/process detail.
-    run = pub.get("running", {})
-    pub["running"] = {
-        "up": True,
-        "battery_pct": run.get("battery_pct"),
-        "power_source": run.get("power_source"),
-        "queues": run.get("queues", {}),
-    }
-    return pub
+    # Running telemetry — load, mem, uptime, top processes, thermal, queue
+    # depths — is operational data, not identifying. A fleet peer needs to SEE
+    # the other machine actually working, not just "up". The genuinely-private
+    # fields (serial, MACs, IPs, security posture) live in _private quadrants
+    # and are stripped by strip_private; running was never one of them. Keep it.
+    return strip_private(card)
 
 
 def main() -> int:

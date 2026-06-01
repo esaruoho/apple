@@ -1,0 +1,421 @@
+#!/usr/bin/env python3
+"""fleet — show this computer next to the others we can connect to.
+
+Reads this machine's full Machine Card (via `machine-card`) and every peer card
+published to the Syncthing queue (machine-card-<host>.json). For a known peer
+that publishes service heartbeats but hasn't adopted the protocol yet (the Mac
+Mini), it SYNTHESIZES a card from the heartbeats + inbox dirs already in the
+queue — so the side-by-side works today, zero changes on the other machine.
+
+Zero LLM tokens: pure stdlib, reads files the fleet already writes.
+
+Usage:
+    fleet              this Mac next to its peers, side by side (text)
+    fleet --handshake  actively reach every machine (Tailscale + LAN), collect a
+                       live card from each by piping machine-card over SSH-stdin,
+                       and deduce the network — combined compute, the union of
+                       skills, and which services are routable right now. Writes
+                       a shared fleet-registry.json. (--no-write to skip.)
+    fleet --json       the whole fleet (from the queue) as one JSON document
+    fleet --refresh    force-refresh this Mac's cached shape first
+"""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+MACHINE_CARD = HERE / "machine-card"
+QUEUE = Path.home() / "work" / "comms" / "queue"
+WARM = 180  # seconds — a heartbeat younger than this is "warm"
+
+# Known peer that publishes heartbeats. Synthesized until it publishes a card.
+PEER_HEARTBEAT_HOST = "CloudcityMacMini"
+SERVICE_VERB = {
+    "ocr": "OCR a PDF/image", "voicebox": "Text-to-speech",
+    "whisp": "Transcribe audio/YouTube", "pakettibot": "Run a !pk command",
+    "merlib-mirror": "Mirror a website", "spine": "Spine orchestrator",
+    "repo-puller": "Auto-pull repos",
+}
+
+
+def self_card(refresh: bool) -> dict:
+    argv = [str(MACHINE_CARD)] + (["--cache"] if refresh else [])
+    try:
+        out = subprocess.run(argv, capture_output=True, text=True, timeout=45).stdout
+        return json.loads(out)
+    except Exception:
+        return {"id": socket.gethostname().split(".")[0], "schema": "machine-card/1"}
+
+
+def published_peers(self_id: str) -> list[dict]:
+    cards = []
+    for p in sorted(QUEUE.glob("machine-card-*.json")):
+        try:
+            c = json.loads(p.read_text())
+        except Exception:
+            continue
+        if c.get("id") and c["id"] != self_id:
+            c["_origin"] = "published"
+            cards.append(c)
+    return cards
+
+
+def ts_to_epoch(ts):
+    """Normalise a heartbeat ts (int seconds, int ms, or ISO-8601 string) to
+    epoch seconds. Matches machine-card.ts_to_epoch so liveness verdicts agree."""
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float)):
+        return float(ts) / 1000.0 if ts > 1e12 else float(ts)
+    if isinstance(ts, str):
+        from datetime import datetime
+        try:
+            return datetime.fromisoformat(ts.strip().replace("Z", "+00:00")).timestamp()
+        except Exception:
+            return None
+    return None
+
+
+def heartbeat_age(name: str):
+    p = QUEUE / name
+    if not p.exists():
+        return None
+    try:
+        epoch = ts_to_epoch(json.loads(p.read_text()).get("ts"))
+        if epoch is not None:
+            return max(0.0, time.time() - epoch)
+    except Exception:
+        pass
+    try:
+        return max(0.0, time.time() - p.stat().st_mtime)
+    except Exception:
+        return None
+
+
+def synthesize_peer_from_heartbeats() -> dict | None:
+    """Build a card for the heartbeat-publishing peer (the Mini)."""
+    services = []
+    for hb in sorted(QUEUE.glob("*-heartbeat.json")):
+        name = hb.name[:-len("-heartbeat.json")]
+        if name.startswith("machine-card"):
+            continue
+        if name.endswith("-guardian") or name.endswith("-log-mirror"):
+            continue
+        age = heartbeat_age(hb.name)
+        if age is None:
+            continue
+        services.append({"name": name, "warm": age <= WARM, "age_s": round(age),
+                         "verb": SERVICE_VERB.get(name)})
+    if not services:
+        return None
+    inboxes = [d.name for d in sorted(QUEUE.glob("*-inbox")) if d.is_dir()]
+    # Pull a little live detail from pakettibot's heartbeat if present.
+    running = {}
+    pb = QUEUE / "pakettibot-heartbeat.json"
+    if pb.exists():
+        try:
+            j = json.loads(pb.read_text())
+            running = {"uptime_s": j.get("uptime_s"), "ws_ping_ms": j.get("ws_ping_ms"),
+                       "gateway_ready": j.get("gateway_ready")}
+        except Exception:
+            pass
+    return {
+        "schema": "machine-card/1", "id": PEER_HEARTBEAT_HOST, "_origin": "synthesized",
+        "identity": {"hostname": PEER_HEARTBEAT_HOST, "platform": "macOS"},
+        "shape": None,  # unknown until it publishes — run `machine-card --publish` on the Mini
+        "ports": {"channels": [{"name": ib, "kind": "file-drop",
+                                "target": f"~/work/comms/queue/{ib}", "available": True}
+                               for ib in inboxes]},
+        "skills": sorted(services, key=lambda s: (not s["warm"], s["name"])),
+        "running": running,
+    }
+
+
+# ───────────────────────── handshake: collect live cards from every machine ─────────────────────────
+
+def _tailscale_bin():
+    for c in ("tailscale", "/Applications/Tailscale.app/Contents/MacOS/Tailscale"):
+        if shutil.which(c) or os.path.exists(c):
+            return c
+    return None
+
+
+def discover_targets():
+    """Who is in the fleet, and how do we reach each one?
+
+    local + every online macOS Tailscale peer (reached by SSH-stdin), plus any
+    extra LAN hosts the user named. The emitter piped to each is THIS machine's
+    machine-card, so every card is computed by the same (fixed) code — the fix
+    travels with the request; no stale clone on the far side matters."""
+    self_name = socket.gethostname().split(".")[0].lower()
+    targets = [{"label": socket.gethostname().split(".")[0], "kind": "local", "ssh": None}]
+    seen = {self_name}
+
+    tb = _tailscale_bin()
+    if tb:
+        try:
+            out = subprocess.run([tb, "status"], capture_output=True, text=True, timeout=8).stdout
+        except Exception:
+            out = ""
+        for line in out.splitlines():
+            cols = line.split()
+            if len(cols) < 4:
+                continue
+            ip, name, user, osname = cols[0], cols[1], cols[2], cols[3]
+            if osname != "macOS" or "offline" in line or name.lower() in seen:
+                continue
+            seen.add(name.lower())
+            # Proven SSH alias wins over raw MagicDNS name where we have one.
+            ssh = "cloudcity" if name.lower().startswith("cloudcity") else name
+            targets.append({"label": name, "kind": "ssh", "ssh": ssh})
+
+    # Extra LAN hosts the user named that aren't on the tailnet (best-effort).
+    for extra in ("esaRMBP.local",):
+        base = extra.split(".")[0].lower()
+        if base not in seen:
+            seen.add(base)
+            targets.append({"label": extra.split(".")[0], "kind": "ssh", "ssh": extra, "lan": True})
+    return targets
+
+
+def collect_card(target):
+    """Run machine-card on one target and return (card, error)."""
+    if target["kind"] == "local":
+        try:
+            out = subprocess.run([str(MACHINE_CARD), "--json"],
+                                 capture_output=True, text=True, timeout=45).stdout
+            c = json.loads(out)
+            c["_origin"] = "self"
+            return c, None
+        except Exception as e:
+            return None, f"local: {e}"
+    # Remote: pipe THIS machine's machine-card over SSH stdin, run with --public.
+    try:
+        script = Path(MACHINE_CARD).read_text()
+    except Exception as e:
+        return None, f"read emitter: {e}"
+    try:
+        p = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+             "-o", "StrictHostKeyChecking=accept-new", target["ssh"], "python3 - --public --json"],
+            input=script, capture_output=True, text=True, timeout=50)
+    except Exception as e:
+        return None, f"ssh: {e}"
+    if p.returncode != 0 or not p.stdout.strip():
+        msg = (p.stderr or "").strip().splitlines()
+        return None, (msg[-1] if msg else f"ssh rc={p.returncode}")
+    try:
+        c = json.loads(p.stdout)
+        c["_origin"] = "handshake"
+        return c, None
+    except Exception as e:
+        return None, f"parse: {e}"
+
+
+def aggregate(cards):
+    cores = ram = ssd = 0
+    chips, oses = [], set()
+    skillmap = {}
+    for c in cards:
+        s = c.get("shape") or {}
+        cores += s.get("cores_total") or 0
+        ram += s.get("ram_gb") or 0
+        ssd += s.get("ssd_gb") or 0
+        if s.get("chip"):
+            chips.append((c.get("id"), s["chip"], s.get("ram_gb")))
+        if s.get("macos_version"):
+            oses.add(s["macos_version"])
+        for sk in c.get("skills", []):
+            if not isinstance(sk, dict):
+                continue
+            e = skillmap.setdefault(sk["name"], {"on": set(), "warm_on": set(),
+                                                 "inbox": None, "verb": None})
+            e["on"].add(c.get("id"))
+            if sk.get("warm"):
+                e["warm_on"].add(c.get("id"))
+            if sk.get("inbox"):
+                e["inbox"] = sk["inbox"]
+            if sk.get("verb"):
+                e["verb"] = sk["verb"]
+    # Routable = a skill that is warm somewhere AND has an inbox to route to.
+    routable = {n: {"inbox": e["inbox"], "verb": e["verb"], "on": sorted(e["warm_on"])}
+                for n, e in skillmap.items() if e["inbox"] and e["warm_on"]}
+    return {"cores": cores, "ram_gb": ram, "ssd_gb": ssd, "chips": chips,
+            "oses": sorted(oses), "n_skills": len(skillmap), "routable": routable,
+            "skillmap": skillmap}
+
+
+def handshake(write_registry=True):
+    targets = discover_targets()
+    cards, unreachable = [], []
+    print(f"\n  HANDSHAKE — probing {len(targets)} machine(s)\n  " + "─" * 56)
+    for t in targets:
+        card, err = collect_card(t)
+        if card:
+            s = card.get("shape") or {}
+            warm = sum(1 for x in card.get("skills", []) if isinstance(x, dict) and x.get("warm"))
+            print(f"  ✓ {t['label']:18} {s.get('chip','?')} · {s.get('ram_gb','?')}GB · {warm} warm")
+            cards.append(card)
+        else:
+            tag = "LAN, login off?" if t.get("lan") else err
+            print(f"  ✗ {t['label']:18} unreachable — {tag}")
+            unreachable.append({"label": t["label"], "reason": err, "ssh": t.get("ssh")})
+
+    agg = aggregate(cards)
+    print("\n  NETWORK — what these machines are, together")
+    print("  " + "─" * 56)
+    print(f"  Compute   {len(cards)} Macs · {agg['cores']} cores · {agg['ram_gb']} GB RAM · "
+          f"{agg['ssd_gb']} GB SSD")
+    print(f"  OS        macOS {', '.join(agg['oses']) or '?'}")
+    for mid, chip, r in agg["chips"]:
+        print(f"              · {mid}: {chip} ({r} GB)")
+    print(f"\n  Skills    {agg['n_skills']} distinct across the fleet")
+    print(f"  Routable services (warm + has an inbox — drop a file, it runs):")
+    if agg["routable"]:
+        for n, r in sorted(agg["routable"].items()):
+            print(f"    → {n:14} {r['verb'] or '':28} on {', '.join(r['on'])}  [{r['inbox']}]")
+    else:
+        print("    (none warm right now)")
+
+    # The deduction.
+    server = [m for m, _, _ in agg["chips"] if m and "mini" in m.lower()]
+    print("\n  Deduction")
+    kind = "a personal compute fabric" if len(cards) > 1 else "a single machine"
+    extra = f" anchored by an always-on Mini server ({', '.join(server)})" if server else ""
+    print(f"    This is {kind}{extra}: {len(cards)} reachable Mac(s) sharing one "
+          f"Syncthing queue,\n    pooling {agg['cores']} cores / {agg['ram_gb']} GB, with "
+          f"{len(agg['routable'])} live routable service(s).")
+    if unreachable:
+        ur = ", ".join(u["label"] for u in unreachable)
+        print(f"    Off-grid: {ur} (known but no open channel — enable Remote Login to include).")
+
+    if write_registry:
+        reg = {"generated": int(time.time()),
+               "machines": cards, "unreachable": unreachable, "summary":
+               {k: (v if k != "skillmap" else None) for k, v in agg.items()}}
+        try:
+            (QUEUE / "fleet-registry.json").write_text(json.dumps(reg, indent=2, default=list))
+            print(f"\n  registry → {QUEUE / 'fleet-registry.json'}  ({len(cards)} cards, shared via Syncthing)")
+        except Exception as e:
+            print(f"\n  (could not write registry: {e})")
+    print()
+    return 0
+
+
+# ───────────────────────── render ─────────────────────────
+
+def card_lines(card: dict) -> list[str]:
+    L = []
+    ident = card.get("identity", {})
+    shape = card.get("shape")
+    origin = card.get("_origin", "self")
+    head = card.get("id", "?")
+    if shape:
+        head += f"  ·  {shape.get('model_name','')} ({shape.get('model_identifier','')})".rstrip(" ()")
+    tag = {"self": "● this machine", "published": "◆ peer (published)",
+           "synthesized": "◇ peer (from heartbeats)"}.get(origin, origin)
+    L.append(head)
+    L.append(tag)
+    L.append("")
+
+    L.append("SHAPE")
+    if shape:
+        L.append(f"  {shape.get('chip','?')} · {shape.get('cores_total','?')} cores · "
+                 f"{shape.get('ram_gb','?')} GB · {shape.get('gpu_cores','?')}c GPU · "
+                 f"{shape.get('ssd_gb','?')} GB SSD")
+        L.append(f"  macOS {shape.get('macos_version','?')} ({shape.get('macos_build','?')})")
+        ai = shape.get("ai", {})
+        if ai.get("max_model_b_q4"):
+            L.append(f"  AI ~{ai['max_model_b_q4']}B@Q4 · {ai.get('memory_bandwidth_gbs','?')} GB/s")
+    else:
+        L.append("  (not yet published — run `machine-card --publish` here)")
+    L.append("")
+
+    L.append("PORTS")
+    for ch in card.get("ports", {}).get("channels", []):
+        mark = "+" if ch.get("available") else "-"
+        L.append(f"  [{mark}] {ch['name']}")
+    L.append("")
+
+    run = card.get("running", {})
+    L.append("RUNNING")
+    if "load_pct" in run:
+        L.append(f"  up {run.get('uptime','?')} · load {run.get('load_pct')}% · "
+                 f"mem {run.get('mem_used_gb','?')}GB · batt {run.get('battery_pct','?')}%")
+        for t in run.get("top", [])[:3]:
+            L.append(f"    {t['cpu']:>5.1f}%  {t['cmd']}")
+    elif run.get("uptime_s") is not None:
+        hrs = run["uptime_s"] / 3600
+        L.append(f"  up {hrs:.1f}h · ping {run.get('ws_ping_ms','?')}ms · "
+                 f"gateway {'ready' if run.get('gateway_ready') else 'down'}")
+    else:
+        L.append("  (no live data)")
+    L.append("")
+
+    skills = card.get("skills", [])
+    warm = [s for s in skills if isinstance(s, dict) and s.get("warm")]
+    L.append(f"SKILLS  ({len(skills)} total · {len(warm)} warm)")
+    for s in warm:
+        verb = f" — {s['verb']}" if s.get("verb") else ""
+        L.append(f"  * {s['name']}{verb}")
+    if not warm and skills:
+        L.append(f"  {len(skills)} installed (none running as a service)")
+    return L
+
+
+def side_by_side(cards: list[dict]) -> str:
+    term = shutil.get_terminal_size((100, 40)).columns
+    n = len(cards)
+    gap = 3
+    col = max(28, (term - gap * (n - 1)) // n)
+    blocks = []
+    for c in cards:
+        lines = [ln[:col] for ln in card_lines(c)]
+        blocks.append(lines)
+    height = max(len(b) for b in blocks)
+    for b in blocks:
+        b += [""] * (height - len(b))
+    rows = []
+    for i in range(height):
+        rows.append((" " * gap).join(b[i].ljust(col) for b in blocks).rstrip())
+    return "\n".join(rows)
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    if "--handshake" in args:
+        return handshake(write_registry="--no-write" not in args)
+    me = self_card("--refresh" in args)
+    me["_origin"] = "self"
+    self_id = me.get("id", "")
+    peers = published_peers(self_id)
+    if not any(p["id"] == PEER_HEARTBEAT_HOST for p in peers):
+        syn = synthesize_peer_from_heartbeats()
+        if syn:
+            peers.append(syn)
+    fleet = [me] + peers
+
+    if "--json" in args:
+        print(json.dumps({"generated": int(time.time()), "machines": fleet}, indent=2))
+        return 0
+
+    print()
+    print(f"  FLEET — {len(fleet)} machine(s)")
+    print("  " + "─" * 60)
+    print(side_by_side(fleet))
+    print()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
