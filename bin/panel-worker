@@ -36,6 +36,9 @@ INBOX = QUEUE / "panel-inbox"
 RESULTS = QUEUE / "panel-results"
 HEARTBEAT = QUEUE / "panel-worker-heartbeat.json"
 POLL_SECONDS = 2.0
+HEARTBEAT_SECONDS = 30     # write the heartbeat at most this often — rewriting
+                           # it every poll churns the Syncthing queue folder and
+                           # delays job/result propagation (sub-30s-churn trap).
 RUN_TIMEOUT = 110          # leave headroom under Fleet's 120s poll
 STALE_JOB_SECONDS = 3600   # a job nobody claimed in an hour is swept
 
@@ -173,10 +176,14 @@ def main() -> int:
         return 0
     # daemon
     print(f"panel-worker watching {INBOX} (answers to: {', '.join(sorted(SELF))})")
+    beat()                 # one fresh beat at startup
+    last_beat = time.time()
     while True:
         try:
-            scan()
-            beat()
+            scan()                                  # cheap local glob, every 2s
+            if time.time() - last_beat >= HEARTBEAT_SECONDS:
+                beat()                              # but only churn the queue every 30s
+                last_beat = time.time()
         except Exception as e:  # noqa: BLE001
             print(f"  loop error: {e}", file=sys.stderr)
         time.sleep(POLL_SECONDS)
