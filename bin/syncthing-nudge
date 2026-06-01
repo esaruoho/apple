@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""syncthing-nudge <path> — force Syncthing to rescan <path> right now.
+
+After writing a file into a Syncthing-shared folder, the change otherwise waits
+for the filesystem-watcher delay (or the periodic rescan) before it propagates.
+Calling this immediately after the write makes Syncthing scan + announce that
+path now, so a peer pulls it within a second or two instead of tens of seconds.
+
+Used by the Fleet × Panel runner so a remote Run feels responsive: Fleet nudges
+after dropping a job, panel-worker nudges after writing a result.
+
+Best-effort: a silent no-op if Syncthing isn't running, the config/API key can't
+be read, or the path isn't inside a shared folder. Never fails the caller.
+Apple-native: Python stdlib only (reads the local Syncthing config.xml, POSTs to
+the local REST API).
+
+Usage: syncthing-nudge <absolute-path-inside-a-synced-folder>
+"""
+
+import sys
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+CONFIG = Path.home() / "Library" / "Application Support" / "Syncthing" / "config.xml"
+
+
+def read_config():
+    root = ET.parse(CONFIG).getroot()
+    gui = root.find("gui")
+    addr = (gui.findtext("address") if gui is not None else None) or "127.0.0.1:8384"
+    key = gui.findtext("apikey") if gui is not None else None
+    folders = [(f.get("id"), f.get("path")) for f in root.findall("folder")]
+    return addr, key, folders
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        return 0
+    try:
+        target = Path(sys.argv[1]).resolve()
+    except Exception:
+        return 0
+    try:
+        addr, key, folders = read_config()
+    except Exception:
+        return 0
+    if not key:
+        return 0
+
+    # Find the most specific shared folder that contains the target.
+    best = None
+    for fid, fpath in folders:
+        if not fid or not fpath:
+            continue
+        try:
+            fp = Path(fpath).expanduser().resolve()
+        except Exception:
+            continue
+        if target == fp or fp in target.parents:
+            if best is None or len(str(fp)) > len(str(best[1])):
+                best = (fid, fp)
+    if not best:
+        return 0
+    fid, fp = best
+    try:
+        sub = str(target.relative_to(fp))
+    except Exception:
+        sub = ""
+
+    url = f"http://{addr}/rest/db/scan?folder={urllib.parse.quote(fid)}"
+    if sub and sub != ".":
+        url += f"&sub={urllib.parse.quote(sub)}"
+    req = urllib.request.Request(url, method="POST", headers={"X-API-Key": key})
+    try:
+        urllib.request.urlopen(req, timeout=5).read()
+    except Exception:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -88,12 +88,23 @@ def run_action(action_id: str, arg: str) -> dict:
         return {"ok": False, "rc": None, "out": "", "err": str(e)}
 
 
+def nudge(path: Path):
+    """Best-effort: make Syncthing scan + announce this path now, so the
+    requester pulls the result in a second or two instead of tens of seconds."""
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
 def write_result(job_id: str, payload: dict):
     RESULTS.mkdir(parents=True, exist_ok=True)
     tmp = RESULTS / f".{job_id}.tmp"
     final = RESULTS / f"{job_id}.json"
     tmp.write_text(json.dumps(payload))
     tmp.replace(final)   # atomic; Syncthing ships a complete file
+    nudge(final)         # propagate it back to the requester immediately
 
 
 def process_one(path: Path) -> bool:

@@ -122,7 +122,20 @@ struct Running: Codable {
 enum CardSource {
     static let bin = "\(NSHomeDirectory())/work/apple/bin/machine-card"
     static let panelBin = "\(NSHomeDirectory())/work/apple/bin/apple-panel"
+    static let nudgeBin = "\(NSHomeDirectory())/work/apple/bin/syncthing-nudge"
     static let queue = "\(NSHomeDirectory())/work/comms/queue"
+
+    /// Best-effort: make Syncthing scan + announce a just-written path now, so a
+    /// peer pulls it in a second or two instead of after the watcher delay.
+    static func nudgeSyncthing(_ path: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        p.arguments = ["python3", nudgeBin, path]
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        try? p.run()
+        p.waitUntilExit()
+    }
 
     /// Run one curated panel action on THIS machine and capture its output.
     /// (Local arm of the runner; remote goes via the Syncthing panel-inbox.)
@@ -170,10 +183,12 @@ enum CardSource {
             "job_id": jobID, "target": target, "id": actionID, "arg": arg,
             "from": ProcessInfo.processInfo.hostName.components(separatedBy: ".").first ?? "",
             "ts": Int(Date().timeIntervalSince1970)]
+        let jobPath = "\(inbox)/\(jobID).json"
         guard let data = try? JSONSerialization.data(withJSONObject: job),
-              fm.createFile(atPath: "\(inbox)/\(jobID).json", contents: data) else {
+              fm.createFile(atPath: jobPath, contents: data) else {
             return ("Couldn’t write the job into panel-inbox.", false)
         }
+        nudgeSyncthing(jobPath)   // push it to the target now, not after the watcher delay
         let resultPath = "\(results)/\(jobID).json"
         let deadline = Date().addingTimeInterval(120)   // Syncthing round-trip + run
         while Date() < deadline {
