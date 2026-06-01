@@ -130,10 +130,24 @@ enum CardSource {
         } catch { return nil }
     }
 
-    /// Raw public-card JSON bytes to hand to a peer over the wire.
-    static func localPublicJSON() -> Data? {
-        guard let card = local(publicOnly: true) else { return nil }
-        return try? JSONEncoder().encode(card)
+    /// Raw card JSON bytes to hand to a peer over the live socket.
+    /// Auto-trust same-LAN: peers reachable over Bonjour are on your trusted
+    /// LAN, so they get the FULL card (serial, exact load, everything) — not
+    /// the stripped subset. The --public strip is only for the persisted
+    /// Syncthing file (readable on disk), not for a point-to-point LAN link.
+    static func localFullJSON() -> Data? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        p.arguments = [bin]                 // full card, no --public
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = Pipe()
+        do {
+            try p.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            p.waitUntilExit()
+            return data.isEmpty ? nil : data
+        } catch { return nil }
     }
 
     /// Peers published into the Syncthing queue as machine-card-<host>.json.
@@ -245,7 +259,7 @@ final class FleetNet: ObservableObject {
     }
 
     private func sendCard(on conn: NWConnection) {
-        guard let payload = CardSource.localPublicJSON() else { return }
+        guard let payload = CardSource.localFullJSON() else { return }
         var len = UInt32(payload.count).bigEndian
         var frame = Data(bytes: &len, count: 4)
         frame.append(payload)
