@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""eppc-probe — send a curated, read-only Apple Event to a peer Mac over eppc.
+
+Fleet's THIRD transport (Remote Application Scripting / Remote Apple Events):
+synchronous, drives the peer's actual apps, returns live values. The peer must
+have Remote Application Scripting enabled and be reachable.
+
+Security: only the fixed probes below run — a read-only allowlist of AppleScript
+against always-running apps (Finder). Fleet never sends arbitrary script; it
+names a probe id, exactly like the panel registry. Same allowlist posture.
+
+Usage:
+    eppc-probe --list-json                    the probe registry as JSON
+    eppc-probe <host> <probe-id> [--user U]   run one probe against eppc://U@host
+"""
+
+import json
+import subprocess
+import sys
+
+# Curated read-only probes. Each `script` runs inside
+#   tell application "<app>" of machine "eppc://<user>@<host>" … end tell
+PROBES = [
+    {"id": "os-version", "app": "Finder", "label": "macOS version",
+     "desc": "The peer's Finder/macOS version.",
+     "script": 'get version'},
+    {"id": "startup-disk", "app": "Finder", "label": "Startup disk + free space",
+     "desc": "Name, free and total space of the peer's startup disk.",
+     "script": ('set d to startup disk\n'
+                'return (name of d) & " — free " & ((free space of d) div 1000000000) '
+                '& " GB / " & ((capacity of d) div 1000000000) & " GB"')},
+    {"id": "home-path", "app": "Finder", "label": "Home folder path",
+     "desc": "POSIX path of the peer's home folder.",
+     "script": 'get POSIX path of (home as alias)'},
+    {"id": "disk-list", "app": "Finder", "label": "All mounted disks",
+     "desc": "Names of every disk mounted on the peer.",
+     "script": 'get name of every disk'},
+    {"id": "trash-count", "app": "Finder", "label": "Items in Trash",
+     "desc": "How many items are in the peer's Trash.",
+     "script": 'return (count of items of trash) as string'},
+]
+BY_ID = {p["id"]: p for p in PROBES}
+TIMEOUT = 30
+
+
+def run(host: str, probe_id: str, user: str) -> int:
+    p = BY_ID.get(probe_id)
+    if not p:
+        print(f"unknown probe: {probe_id!r}", file=sys.stderr)
+        return 2
+    if not host:
+        print("no host", file=sys.stderr)
+        return 2
+    mach = f"eppc://{(user + '@') if user else ''}{host.lower()}"
+    script = f'tell application "{p["app"]}" of machine "{mach}"\n{p["script"]}\nend tell'
+    try:
+        r = subprocess.run(["osascript", "-e", script],
+                           capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        print(f"Timed out after {TIMEOUT}s — is {host} reachable and is Remote "
+              f"Application Scripting enabled on it?", file=sys.stderr)
+        return 1
+    if r.returncode != 0:
+        msg = (r.stderr or "").strip() or "eppc error"
+        # Friendlier hints for the common failures.
+        if "-600" in msg:
+            msg += "\n(That app isn't running on the peer — eppc can't auto-launch faceless apps.)"
+        elif "-1708" in msg or "not authorized" in msg.lower() or "-10004" in msg:
+            msg += "\n(Authentication/authorization to the peer failed.)"
+        print(msg, file=sys.stderr)
+        return r.returncode
+    sys.stdout.write(r.stdout)
+    return 0
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if "--list-json" in args:
+        print(json.dumps([{k: p[k] for k in ("id", "app", "label", "desc")} for p in PROBES]))
+        return 0
+    user, pos = "", []
+    i = 0
+    while i < len(args):
+        if args[i] == "--user" and i + 1 < len(args):
+            user = args[i + 1]
+            i += 2
+            continue
+        pos.append(args[i])
+        i += 1
+    if len(pos) < 2:
+        print("usage: eppc-probe <host> <probe-id> [--user U]  |  eppc-probe --list-json",
+              file=sys.stderr)
+        return 2
+    return run(pos[0], pos[1], user)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -105,6 +105,15 @@ struct PanelAction: Codable, Identifiable {
     var arg: String?        // placeholder if it needs an input value, else nil
 }
 
+/// A curated read-only Apple-Event probe (third transport): sent to a peer's real
+/// app over eppc. Machine-agnostic — the same probes work against any peer.
+struct EppcProbe: Codable, Identifiable {
+    var id: String
+    var app: String
+    var label: String
+    var desc: String?
+}
+
 /// Live per-service job state — what a machine is DOING right now, drawn from
 /// its service heartbeats. Only services the machine actually hosts appear.
 struct Progress: Codable { var cur: Int?; var total: Int? }
@@ -142,7 +151,38 @@ enum CardSource {
     static let bin = "\(NSHomeDirectory())/work/apple/bin/machine-card"
     static let panelBin = "\(NSHomeDirectory())/work/apple/bin/apple-panel"
     static let nudgeBin = "\(NSHomeDirectory())/work/apple/bin/syncthing-nudge"
+    static let eppcBin = "\(NSHomeDirectory())/work/apple/bin/eppc-probe"
     static let queue = "\(NSHomeDirectory())/work/comms/queue"
+
+    /// The curated eppc probe registry (machine-agnostic), loaded once.
+    static func loadEppcProbes() -> [EppcProbe] {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        p.arguments = ["python3", eppcBin, "--list-json"]
+        let pipe = Pipe(); p.standardOutput = pipe; p.standardError = Pipe()
+        do { try p.run() } catch { return [] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        return (try? JSONDecoder().decode([EppcProbe].self, from: data)) ?? []
+    }
+
+    /// Run one curated probe against a peer over eppc. Blocking — call off-main.
+    static func runEppc(host: String, user: String, probeID: String) -> (out: String, ok: Bool) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        var a = ["python3", eppcBin, host, probeID]
+        if !user.isEmpty { a += ["--user", user] }
+        p.arguments = a
+        let outPipe = Pipe(), errPipe = Pipe()
+        p.standardOutput = outPipe; p.standardError = errPipe
+        do { try p.run() } catch { return ("Couldn’t launch eppc-probe: \(error.localizedDescription)", false) }
+        let o = String(data: outPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let e = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        p.waitUntilExit()
+        let ok = p.terminationStatus == 0
+        let text = ok ? (o.isEmpty ? "(no output)" : o) : (e.isEmpty ? "eppc failed" : e)
+        return (text, ok)
+    }
 
     /// Best-effort: make Syncthing scan + announce a just-written path now, so a
     /// peer pulls it in a second or two instead of after the watcher delay.
@@ -428,6 +468,7 @@ final class FleetModel: ObservableObject {
     @Published var peers: [String: Card] = [:]   // id → card
     @Published var toast: String?
     @Published var runResult: RunResult?
+    @Published var eppcProbes: [EppcProbe] = []   // third transport (Remote Apple Events)
 
     // Our own hostname — matches the `id` machine-card emits (socket.gethostname).
     // Known synchronously so we exclude our own published card from peers even
@@ -446,6 +487,10 @@ final class FleetModel: ObservableObject {
 
     func boot() {
         refreshLocal()
+        DispatchQueue.global(qos: .utility).async {
+            let probes = CardSource.loadEppcProbes()
+            DispatchQueue.main.async { self.eppcProbes = probes }
+        }
         net.onPeer = { [weak self] card in
             guard let self else { return }
             // Bonjour advertises on every interface, so the browser also finds
@@ -534,6 +579,22 @@ final class FleetModel: ObservableObject {
                 guard self.runResult != nil else { return }   // user closed it
                 self.runResult = RunResult(title: title, target: target,
                                            running: false, output: out, ok: ok)
+            }
+        }
+    }
+
+    // ── third transport: drive a peer's real apps over eppc ──
+    func runEppc(probe: EppcProbe, on card: Card) {
+        let host = card.identity?.hostname ?? card.id
+        let user = card.identity?.user ?? ""
+        let title = "\(probe.label) · \(probe.app)", target = card.id
+        runResult = RunResult(title: "\(title)  (eppc)", target: target, running: true, output: "")
+        DispatchQueue.global(qos: .userInitiated).async {
+            let r = CardSource.runEppc(host: host, user: user, probeID: probe.id)
+            DispatchQueue.main.async {
+                guard self.runResult != nil else { return }
+                self.runResult = RunResult(title: "\(title)  (eppc)", target: target,
+                                           running: false, output: r.out, ok: r.ok)
             }
         }
     }
@@ -692,6 +753,12 @@ struct CardView: View {
             face("SKILLS", icon: "wrench.and.screwdriver") { skillsFace }
             if let acts = card.panel_actions, !acts.isEmpty {
                 face("RUN", icon: "play.circle") { runFace(acts) }
+            }
+            // APPS · eppc — drive a peer's real apps over Remote Application
+            // Scripting. Peer cards only (you don't eppc to yourself), needs an
+            // identity to address and reachability at click time.
+            if card.origin != .local, card.identity?.hostname != nil, !model.eppcProbes.isEmpty {
+                face("APPS · eppc", icon: "macwindow.on.rectangle") { eppcFace }
             }
         }
         .padding(14)
@@ -877,6 +944,27 @@ struct CardView: View {
                     .help(act.desc ?? "")
                 }
             }
+        }
+    }
+
+    // APPS · eppc — read-only probes that drive the peer's real apps live over
+    // Remote Application Scripting. Click → osascript over eppc → result sheet.
+    @ViewBuilder private var eppcFace: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(model.eppcProbes) { probe in
+                Button { model.runEppc(probe: probe, on: card) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "macwindow").font(.caption2).foregroundColor(.accentColor)
+                        Text(probe.label).font(.caption).lineLimit(1).truncationMode(.tail)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(probe.desc ?? "")
+            }
+            Text("needs Remote Application Scripting on + peer reachable")
+                .font(.system(size: 9)).foregroundColor(.secondary)
         }
     }
 
