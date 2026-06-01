@@ -77,8 +77,10 @@ a fast local **first pass** — reserve the LLM pipeline for what Vision can't r
 2. **NL embeddings → semantic search** across the bulk-export vaults
    ([[EXPORTERS]]) and the wiki — `bin/` tool + a Panel card.
 3. **Speech** local transcription as a whisp alternative for short clips.
-4. **FoundationModels on the Mini** — an Apple-native local LLM `bin/`/service
-   (summarize, classify, clean OCR text) reachable via the Fleet runner.
+4. **FoundationModels on the Mini** — **built + proven: `bin/fm` / `/fm`.**
+   `fm --check` → `available` on the Mini; ~2 s replies, Apple-native (no Ollama/
+   network). Reachable across the fleet via the Syncthing runner. Summarize,
+   classify, or *clean OCR text* locally.
 5. Each becomes a `bin/<tool>` + a `commands/<name>.md` slash + optionally a
    Panel card and a Shortcut — the skill's zero-roundtrip pattern.
 
