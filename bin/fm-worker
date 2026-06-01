@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""fm-worker — run Apple FoundationModels prompts that arrive in the Syncthing fm-inbox.
+
+The 6th instance of the trigger→worker chassis (Finder tag, Voice Memo, Stickies,
+Mail flag, Panel, now FM). FoundationModels — the ~3B on-device LLM behind Apple
+Intelligence — only exists on macOS 26 (Tahoe). On the fleet that's the Mac Mini.
+A laptop (or anything) drops a job into ~/work/comms/queue/fm-inbox/<id>.json:
+
+    {"id": "...", "prompt": "...", "system": "...optional..."}
+
+This worker runs `bin/fm` (the self-building Swift FoundationModels CLI sitting
+next to this file), times the model wall-clock, and writes the answer to
+fm-outbox/<id>.json — which Syncthing carries back to the requester:
+
+    {"id": "...", "ok": true, "out": "...", "model_ms": 842, "host": "...", "ts": ...}
+
+Security boundary: a job carries a prompt + optional system instruction. It never
+carries a shell command — the worker only ever execs `bin/fm`. Syncthing is the
+sole transport; there is no network listener.
+
+Usage:
+    fm-worker            watch the inbox forever (the daemon)
+    fm-worker --once     process whatever is queued right now, then exit
+    fm-worker --status   show queue depth + last heartbeat, then exit
+
+Apple-native: python3 stdlib only; the model itself is first-party, on-device,
+zero-network, zero-cost.
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+FM = HERE / "fm"
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "fm-inbox"
+OUTBOX = QUEUE / "fm-outbox"
+HEARTBEAT = QUEUE / "fm-worker-heartbeat.json"
+POLL_SECONDS = 1.0          # snappy: chat wants sub-2s pickup
+HEARTBEAT_SECONDS = 30      # but only churn the Syncthing queue folder every 30s
+RUN_TIMEOUT = 180           # a long generation can take a while on a 3B model
+STALE_JOB_SECONDS = 3600    # a job nobody answered in an hour is swept
+
+
+def nudge(path: Path):
+    """Best-effort: make Syncthing scan + announce this path now, so the
+    requester pulls the result in a second or two instead of tens of seconds."""
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def run_fm(prompt: str, system: str) -> dict:
+    """Execute bin/fm. Prompt goes on stdin (no arg-length limit); system as a flag.
+    Returns ok/out/err and the model wall-clock in ms."""
+    cmd = [str(FM)]
+    if system:
+        cmd += ["--system", system]
+    t0 = time.perf_counter()
+    try:
+        p = subprocess.run(cmd, input=prompt, capture_output=True,
+                           text=True, timeout=RUN_TIMEOUT)
+        ms = int((time.perf_counter() - t0) * 1000)
+        return {"ok": p.returncode == 0, "rc": p.returncode,
+                "out": (p.stdout or "").rstrip("\n"), "err": p.stderr or "",
+                "model_ms": ms}
+    except subprocess.TimeoutExpired:
+        ms = int((time.perf_counter() - t0) * 1000)
+        return {"ok": False, "rc": None, "out": "",
+                "err": f"timed out after {RUN_TIMEOUT}s", "model_ms": ms}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "rc": None, "out": "", "err": str(e), "model_ms": 0}
+
+
+def write_result(job_id: str, payload: dict):
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    tmp = OUTBOX / f".{job_id}.tmp"
+    final = OUTBOX / f"{job_id}.json"
+    tmp.write_text(json.dumps(payload, ensure_ascii=False))
+    tmp.replace(final)   # atomic; Syncthing ships a complete file
+    nudge(final)         # propagate back to the requester immediately
+
+
+def process_one(path: Path) -> bool:
+    try:
+        job = json.loads(path.read_text())
+    except Exception:
+        return False
+    prompt = job.get("prompt", "")
+    if not prompt:
+        # malformed; sweep if stale so it doesn't pile up
+        try:
+            if time.time() - path.stat().st_mtime > STALE_JOB_SECONDS:
+                path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False
+    job_id = job.get("id") or path.stem
+    res = run_fm(prompt, job.get("system", "") or "")
+    write_result(job_id, {
+        "id": job_id,
+        "ok": res["ok"], "rc": res["rc"],
+        "out": res["out"], "err": res["err"],
+        "model_ms": res["model_ms"],
+        "host": socket.gethostname().split(".")[0],
+        "ts": int(time.time()),
+        "from": job.get("submitter_host"),
+    })
+    path.unlink(missing_ok=True)   # consume the job
+    return True
+
+
+def beat():
+    try:
+        HEARTBEAT.write_text(json.dumps({"ts": int(time.time()),
+                                         "host": socket.gethostname().split(".")[0]}))
+    except Exception:
+        pass
+
+
+def scan() -> int:
+    if not INBOX.is_dir():
+        return 0
+    handled = 0
+    for p in sorted(INBOX.glob("*.json")):
+        if process_one(p):
+            handled += 1
+    return handled
+
+
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"fm-worker · host {socket.gethostname().split('.')[0]}")
+    print(f"  inbox:   {INBOX}  ({pend} prompt(s) queued)")
+    print(f"  outbox:  {OUTBOX}  ({done} answer(s))")
+    fmframework = Path("/System/Library/Frameworks/FoundationModels.framework")
+    print(f"  FoundationModels: {'present' if fmframework.is_dir() else 'ABSENT (needs macOS 26)'}")
+    if HEARTBEAT.exists():
+        try:
+            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
+            print(f"  last heartbeat: {age:.0f}s ago")
+        except Exception:
+            pass
+    else:
+        print("  last heartbeat: never (worker not running)")
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    if "--status" in args:
+        status()
+        return 0
+    INBOX.mkdir(parents=True, exist_ok=True)
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    if "--once" in args:
+        n = scan()
+        beat()
+        print(f"processed {n} prompt(s)")
+        return 0
+    # daemon
+    print(f"fm-worker watching {INBOX}")
+    beat()
+    last_beat = time.time()
+    while True:
+        try:
+            scan()                                  # cheap local glob, every 1s
+            if time.time() - last_beat >= HEARTBEAT_SECONDS:
+                beat()                              # but only churn the queue every 30s
+                last_beat = time.time()
+        except Exception as e:  # noqa: BLE001
+            print(f"  loop error: {e}", file=sys.stderr)
+        time.sleep(POLL_SECONDS)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""fm-submit — send a single prompt to Apple's on-device LLM on the Mini, get the answer back.
+
+Drops a job into ~/work/comms/queue/fm-inbox/ which Syncthing mirrors to the Mac
+Mini, where fm-worker runs it through FoundationModels and writes the answer to
+fm-outbox/, which Syncthing carries back here. macOS 26 (Tahoe) lives on the Mini;
+this works from any machine on the fleet, no FM required locally.
+
+Usage:
+    fm-submit "your prompt"               submit and wait for the reply (default)
+    echo text | fm-submit -               prompt from stdin
+    fm-submit --system "..." "prompt"      set a system instruction
+    fm-submit --no-wait "prompt"           fire-and-forget (just queue it)
+    fm-submit --id slug "prompt"           name the job (else timestamp+hash)
+    fm-submit --status                     show queue depth + worker heartbeat
+    fm-submit --timeout 60 "prompt"        how long to wait for the answer (default 120s)
+
+For an interactive conversation, use `fm-chat`.
+Apple-native: python3 stdlib only.
+"""
+
+import hashlib
+import json
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "fm-inbox"
+OUTBOX = QUEUE / "fm-outbox"
+HEARTBEAT = QUEUE / "fm-worker-heartbeat.json"
+
+
+def nudge(path: Path):
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def submit(prompt: str, system: str, job_id: str) -> Path:
+    INBOX.mkdir(parents=True, exist_ok=True)
+    spec = {"id": job_id, "prompt": prompt, "system": system,
+            "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "submitter_host": socket.gethostname().split(".")[0]}
+    tmp = INBOX / f".{job_id}.tmp"
+    final = INBOX / f"{job_id}.json"
+    tmp.write_text(json.dumps(spec, ensure_ascii=False))
+    tmp.replace(final)   # atomic
+    nudge(final)
+    return final
+
+
+def wait_for(job_id: str, timeout: float):
+    """Poll the outbox; return the parsed result dict, or None on timeout.
+    Returns (result, round_trip_seconds)."""
+    result_path = OUTBOX / f"{job_id}.json"
+    t0 = time.time()
+    spin = "|/-\\"
+    i = 0
+    while time.time() - t0 < timeout:
+        if result_path.exists():
+            try:
+                return json.loads(result_path.read_text()), time.time() - t0
+            except Exception:
+                pass  # mid-write; try again
+        i += 1
+        sys.stderr.write(f"\r  waiting {spin[i % 4]} {time.time() - t0:4.1f}s")
+        sys.stderr.flush()
+        nudge(OUTBOX)   # pull the result folder forward
+        time.sleep(1.0)
+    sys.stderr.write("\r" + " " * 24 + "\r")
+    return None, time.time() - t0
+
+
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"inbox:  {INBOX}  ({pend} queued)")
+    print(f"outbox: {OUTBOX}  ({done} answers)")
+    if HEARTBEAT.exists():
+        try:
+            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
+            host = json.loads(HEARTBEAT.read_text()).get("host", "?")
+            print(f"worker: {host}, last heartbeat {age:.0f}s ago"
+                  + ("  ⚠ stale" if age > 120 else "  ✓"))
+        except Exception:
+            pass
+    else:
+        print("worker: no heartbeat yet (fm-worker not running on the Mini?)")
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0 if args else 2
+    if args[0] == "--status":
+        status()
+        return 0
+
+    system = ""
+    job_id = None
+    wait = True
+    timeout = 120.0
+    rest = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--system":
+            system = args[i + 1]; i += 2
+        elif a == "--id":
+            job_id = args[i + 1]; i += 2
+        elif a == "--timeout":
+            timeout = float(args[i + 1]); i += 2
+        elif a == "--no-wait":
+            wait = False; i += 1
+        elif a == "-":
+            rest.append(sys.stdin.read()); i += 1
+        else:
+            rest.append(a); i += 1
+
+    prompt = " ".join(rest).strip()
+    if not prompt:
+        prompt = sys.stdin.read().strip()
+    if not prompt:
+        sys.stderr.write("fm-submit: no prompt (pass text, pipe stdin, or use -)\n")
+        return 2
+
+    if not job_id:
+        h = hashlib.sha1(prompt.encode()).hexdigest()[:8]
+        job_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{h}"
+
+    submit(prompt, system, job_id)
+    if not wait:
+        print(f"queued: {job_id}")
+        return 0
+
+    result, rt = wait_for(job_id, timeout)
+    if result is None:
+        sys.stderr.write(f"timed out after {rt:.0f}s — job {job_id} still queued. "
+                         f"Is fm-worker running on the Mini? (fm-submit --status)\n")
+        return 1
+    if not result.get("ok"):
+        sys.stderr.write(f"fm error: {result.get('err', 'unknown')}\n")
+        return 1
+    print(result.get("out", ""))
+    model_ms = result.get("model_ms", 0)
+    sys.stderr.write(f"  [{result.get('host', '?')} · model {model_ms/1000:.1f}s · "
+                     f"round-trip {rt:.1f}s]\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
