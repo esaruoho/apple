@@ -522,7 +522,9 @@ struct FleetView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            ScrollView(.horizontal, showsIndicators: true) {
+            // Scroll both ways: a card with many RUN actions can be taller than
+            // the screen, and several cards can be wider than it.
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 HStack(alignment: .top, spacing: 16) {
                     ForEach(model.cards) { card in
                         CardView(card: card)
