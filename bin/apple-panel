@@ -1,0 +1,582 @@
+#!/usr/bin/env python3
+"""apple-panel — a local "what can I do" control panel for the Apple skill.
+
+Opens a web page in your browser where every capability is a card with a real
+button. Click it, the tool RUNS on this Mac, and the output renders right there
+on the page. Not docs you copy-paste — automated buttons.
+
+A browser file:// page can't run shell commands (sandbox). So this is a tiny
+local HTTP server (python3 stdlib only — no Homebrew, no pip) bound to
+127.0.0.1. It only ever runs commands from the curated ACTIONS registry below,
+and arguments are passed as discrete argv elements (never through a shell), so
+there is no command-injection surface.
+
+Usage:
+    apple-panel                 start server, open the panel in your browser
+    apple-panel --port 9000     pick a port (default 8787)
+    apple-panel --no-open       don't auto-open the browser
+    apple-panel --print         just print the URL and registry, don't serve
+
+Stop it with Ctrl-C, or the "Stop server" button on the page.
+"""
+
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import threading
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+BIN = os.path.dirname(os.path.realpath(__file__))
+PY = sys.executable
+ANSI = re.compile(r"\x1b\[[0-9;]*m")  # bounded, no backtracking
+
+# ───────────────────────── the registry — the ONLY runnable actions ─────────────────────────
+# kind: "safe" = read-only / no side effects;  "action" = does something / writes.
+# cmd:  argv list. "{BIN}" -> bin dir, "PYTHON" -> this python, "{arg}" -> user input.
+# arg:  None, or a placeholder string that shows in an input box next to the button.
+
+ACTIONS = [
+    # ── Disks & Drives ──
+    {"id": "disk_overview", "group": "Disks & Drives", "kind": "safe",
+     "label": "Show all disks & volumes (Disk Utility view)",
+     "desc": "A Disk Utility–style snapshot of everything connected: every volume "
+             "(internal, external, USB stick, disk image), its filesystem, size, how "
+             "full it is, and where it's mounted. Apple's hidden system volumes are "
+             "filtered out, just like Disk Utility does. Read-only.",
+     "cmd": ["{BIN}/disk-overview"], "arg": None},
+    {"id": "disk_usb", "group": "Disks & Drives", "kind": "safe",
+     "label": "Show the connected USB stick",
+     "desc": "Just the removable USB drives — vendor, capacity, format, and mount point. "
+             "Says so plainly if none is plugged in right now.",
+     "cmd": ["{BIN}/disk-overview", "--usb"], "arg": None},
+    {"id": "wnm_auto", "group": "Disks & Drives", "kind": "safe",
+     "label": "Diagnose drives that won't mount",
+     "desc": "Auto-detects every plugged-in external volume that isn't mounting and walks the "
+             "USB → block-device → filesystem ladder for each. Tells you whether it's hardware, "
+             "power, or a corrupt filesystem — and the exact repair command.",
+     "cmd": ["{BIN}/why-no-mount"], "arg": None},
+    {"id": "wnm_list", "group": "Disks & Drives", "kind": "safe",
+     "label": "List external volumes + mount state",
+     "desc": "Every external volume and whether it's mounted. Helper partitions (EFI, container "
+             "stores) are filtered out so you only see real data volumes.",
+     "cmd": ["{BIN}/why-no-mount", "--list"], "arg": None},
+    {"id": "wnm_one", "group": "Disks & Drives", "kind": "safe",
+     "label": "Diagnose a specific disk",
+     "desc": "Point it at one disk id and get the full ladder + verdict + repair step.",
+     "cmd": ["{BIN}/why-no-mount", "--probe-only", "{arg}"], "arg": "disk4  or  disk4s1"},
+
+    # ── This Mac ──
+    {"id": "report", "group": "This Mac", "kind": "safe",
+     "label": "Mac capability report",
+     "desc": "CPU / GPU / RAM / SSD / security / power, plus an AI-workload read. "
+             "Leads with a one-line full-stack summary.",
+     "cmd": ["{BIN}/apple-report"], "arg": None},
+    {"id": "thermals", "group": "This Mac", "kind": "action",
+     "label": "Fans & die temps (asks for password)",
+     "desc": "Fan RPM and CPU/GPU die temperature — the only Apple-native source is "
+             "powermetrics, which needs root, so this pops the standard macOS password "
+             "dialog once and reads the SMC sensors.",
+     "cmd": ["{BIN}/mac-thermals"], "arg": None},
+    {"id": "dock_list", "group": "This Mac", "kind": "safe",
+     "label": "List Dock items",
+     "desc": "Everything currently pinned to your Dock, read straight from com.apple.dock.",
+     "cmd": ["{BIN}/dock", "list"], "arg": None},
+
+    # ── Windows ──
+    {"id": "snap", "group": "Windows", "kind": "action",
+     "label": "Tile windows into a grid",
+     "desc": "Auto-arranges your open windows into a non-uniform grid. (Moves your windows.)",
+     "cmd": ["{BIN}/snap"], "arg": None},
+
+    # ── Search your exported data ──
+    {"id": "grand_search", "group": "Search your data", "kind": "safe",
+     "label": "Search everything you've exported",
+     "desc": "One ripgrep query across every Apple bulk-export vault — Mail, Safari, Notes, "
+             "iMessage, Voice Memos, Calendar, Photos.",
+     "cmd": ["{BIN}/apple-grand-search", "{arg}"], "arg": "search term"},
+
+    # ── Maintenance (all safe to re-run) ──
+    {"id": "wiki_index", "group": "Maintenance", "kind": "action",
+     "label": "Rebuild the wiki index",
+     "desc": "Regenerates wiki/INDEX.md from the current wiki pages. Safe to run anytime.",
+     "cmd": ["PYTHON", "{BIN}/wiki-index.py"], "arg": None},
+    {"id": "wiki_lint", "group": "Maintenance", "kind": "safe",
+     "label": "Lint the wiki",
+     "desc": "Reports orphan pages, oversized pages, and broken cross-references. Read-only.",
+     "cmd": ["PYTHON", "{BIN}/wiki-lint.py"], "arg": None},
+    {"id": "gen_indexes", "group": "Maintenance", "kind": "action",
+     "label": "Rebuild all skill indexes",
+     "desc": "Regenerates the bin / workflows / dictionaries / exporters catalogs. Safe to re-run.",
+     "cmd": ["PYTHON", "{BIN}/gen-skill-indexes.py"], "arg": None},
+]
+
+ACTION_BY_ID = {a["id"]: a for a in ACTIONS}
+
+
+def build_argv(action, arg):
+    """Turn a registry entry + optional user arg into a concrete argv list (no shell)."""
+    argv = []
+    needs_arg = any("{arg}" in tok for tok in action["cmd"])
+    arg = (arg or "").strip().replace("\n", " ").replace("\r", " ")[:512]
+    if needs_arg and not arg:
+        return None, "This action needs an argument."
+    for tok in action["cmd"]:
+        if tok == "PYTHON":
+            argv.append(PY)
+        elif tok == "{arg}":
+            argv.append(arg)
+        else:
+            argv.append(tok.replace("{BIN}", BIN))
+    # arg supplied but no placeholder -> append it
+    if arg and not needs_arg:
+        argv.append(arg)
+    return argv, None
+
+
+def run_action(action, arg):
+    argv, err = build_argv(action, arg)
+    if err:
+        return {"ok": False, "rc": None, "out": "", "err": err, "cmd": ""}
+    try:
+        p = subprocess.run(argv, capture_output=True, text=True, timeout=120, cwd=os.path.dirname(BIN))
+        out = ANSI.sub("", p.stdout or "")
+        errt = ANSI.sub("", p.stderr or "")
+        return {"ok": p.returncode == 0, "rc": p.returncode, "out": out, "err": errt,
+                "cmd": " ".join(argv)}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "rc": None, "out": "", "err": "Timed out after 120 s.",
+                "cmd": " ".join(argv)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "rc": None, "out": "", "err": str(e), "cmd": " ".join(argv)}
+
+
+# ───────────────────────── the page ─────────────────────────
+
+PAGE = """<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apple Panel — what I can do</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+         margin: 0; background: Canvas; color: CanvasText; }
+  header { position: sticky; top: 0; backdrop-filter: blur(20px);
+           background: color-mix(in srgb, Canvas 80%, transparent);
+           border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+           padding: 18px 24px; display: flex; align-items: baseline; gap: 14px; z-index: 5; }
+  header h1 { font-size: 20px; margin: 0; font-weight: 680; }
+  header .sub { font-size: 13px; opacity: .6; }
+  header .spacer { flex: 1; }
+  .stopbtn { font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+             border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+             background: transparent; color: CanvasText; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px; }
+  .note { font-size: 12.5px; opacity: .6; margin: 0 0 22px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .55;
+       margin: 30px 0 12px; font-weight: 640; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent); border-radius: 14px;
+          padding: 16px; background: color-mix(in srgb, Canvas 96%, CanvasText); display: flex;
+          flex-direction: column; gap: 10px; }
+  .card h3 { margin: 0; font-size: 15.5px; font-weight: 640; }
+  .card p { margin: 0; font-size: 13px; opacity: .72; flex: 1; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  input[type=text] { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 9px; font: inherit;
+          border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+          background: Canvas; color: CanvasText; }
+  button.run { padding: 8px 16px; border-radius: 9px; border: 0; cursor: pointer; font: inherit;
+          font-weight: 600; color: white; background: #0a84ff; white-space: nowrap; }
+  button.run.act { background: #ff9f0a; color: #1a1200; }
+  button.run:disabled { opacity: .5; cursor: default; }
+  .kind { font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 600;
+          background: color-mix(in srgb, #30d158 22%, transparent); color: #1c7a3a; }
+  .kind.act { background: color-mix(in srgb, #ff9f0a 26%, transparent); color: #8a5300; }
+  @media (prefers-color-scheme: dark) {
+    .kind { color: #7ee69a; } .kind.act { color: #ffce80; } button.run.act { color: #1a1200; }
+  }
+  pre.out { margin: 4px 0 0; padding: 12px; border-radius: 10px; font-size: 12px;
+          font-family: "SF Mono", ui-monospace, Menlo, monospace; white-space: pre-wrap;
+          word-break: break-word; max-height: 420px; overflow: auto;
+          background: color-mix(in srgb, CanvasText 6%, Canvas); border: 1px solid
+          color-mix(in srgb, CanvasText 12%, transparent); display: none; }
+  pre.out.show { display: block; }
+  pre.out.ok { border-left: 3px solid #30d158; }
+  pre.out.bad { border-left: 3px solid #ff453a; }
+  .cmd { font-size: 11px; opacity: .5; font-family: "SF Mono", ui-monospace, monospace; }
+  .sys { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent); border-radius: 16px;
+         padding: 18px; margin-bottom: 26px;
+         background: color-mix(in srgb, Canvas 96%, CanvasText); }
+  .syshead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .syshead b { font-size: 16px; } .syshead .sub { font-size: 12.5px; opacity: .6; }
+  .auto { font-size: 12px; opacity: .7; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; }
+  .gauge { border: 1px solid color-mix(in srgb, CanvasText 10%, transparent); border-radius: 12px;
+           padding: 12px; }
+  .gauge.clk { cursor: pointer; transition: border-color .15s, background .15s; }
+  .gauge.clk:hover { border-color: #0a84ff; background: color-mix(in srgb, #0a84ff 7%, transparent); }
+  .gauge.sel { border-color: #0a84ff; box-shadow: inset 0 0 0 1px #0a84ff; }
+  .gauge.concern { border-color: #ff9f0a; }
+  .detailhint { font-size: 11px; opacity: .45; margin: 10px 0 0; }
+  .detail { margin-top: 12px; }
+  .detail:empty { display: none; }
+  .dbox { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent); border-radius: 12px;
+          padding: 14px; background: color-mix(in srgb, Canvas 94%, CanvasText); }
+  .dbox h4 { margin: 0 0 4px; font-size: 14px; }
+  .verdict { font-size: 13px; margin: 0 0 12px; padding: 9px 11px; border-radius: 9px;
+             background: color-mix(in srgb, CanvasText 6%, Canvas);
+             border-left: 3px solid #8e8e93; }
+  .verdict.warn { border-left-color: #ff9f0a; }
+  .verdict.crit { border-left-color: #ff453a; }
+  .verdict.ok { border-left-color: #30d158; }
+  .glabel { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .55;
+            font-weight: 640; }
+  .gval { font-size: 22px; font-weight: 680; margin: 3px 0 8px; }
+  .gval .gsub { font-size: 12px; font-weight: 400; opacity: .55; }
+  .track { height: 7px; border-radius: 4px; overflow: hidden;
+           background: color-mix(in srgb, CanvasText 12%, transparent); }
+  .fill { height: 100%; border-radius: 4px; transition: width .4s, background .4s; }
+  .gnote { font-size: 11.5px; opacity: .6; margin-top: 7px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 12px;
+           margin-top: 14px; }
+  .mini { display: flex; align-items: center; gap: 8px; font-size: 12.5px; margin: 5px 0; }
+  .mini .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini .tk { width: 90px; height: 6px; border-radius: 3px;
+              background: color-mix(in srgb, CanvasText 12%, transparent); overflow: hidden; }
+  .mini .tk > div { height: 100%; }
+  .mono { font-family: "SF Mono", ui-monospace, monospace; }
+</style></head><body>
+<header>
+  <h1>🧰 Apple Panel</h1><span class="sub">what I can do — on this Mac, with one click</span>
+  <span class="spacer"></span>
+  <button class="stopbtn" onclick="stopServer()">Stop server</button>
+</header>
+<main>
+  <p class="note">Local only — this page is served from 127.0.0.1 and each button runs a real
+  command on your Mac. 🟢 read-only · 🟠 makes a change. Output appears in the card.</p>
+
+  <section class="sys">
+    <div class="syshead">
+      <b id="model">reading this Mac…</b>
+      <span class="sub" id="specs"></span>
+      <span class="spacer" style="flex:1"></span>
+      <span class="sub" id="uptime"></span>
+      <label class="auto"><input type="checkbox" id="autoref" checked> live (4s)</label>
+    </div>
+    <div class="gauges" id="gauges"></div>
+    <div class="detailhint sub" id="detailhint">tip: click any gauge to investigate it</div>
+    <div class="detail" id="detail"></div>
+    <div class="grid2">
+      <div class="gauge"><div class="glabel">Disk</div><div id="disk"></div></div>
+      <div class="gauge"><div class="glabel">Top CPU</div><div id="procs"></div></div>
+      <div class="gauge"><div class="glabel">Network</div><div id="net"></div></div>
+    </div>
+  </section>
+
+  <div id="groups"></div>
+</main>
+<script>
+const ACTIONS = __ACTIONS__;
+const groups = {};
+ACTIONS.forEach(a => { (groups[a.group] ||= []).push(a); });
+const root = document.getElementById('groups');
+for (const [g, items] of Object.entries(groups)) {
+  const h = document.createElement('h2'); h.textContent = g; root.appendChild(h);
+  const grid = document.createElement('div'); grid.className = 'grid';
+  items.forEach(a => grid.appendChild(card(a)));
+  root.appendChild(grid);
+}
+function card(a) {
+  const el = document.createElement('div'); el.className = 'card';
+  const isAct = a.kind === 'action';
+  el.innerHTML = `<div class="row" style="justify-content:space-between">
+      <h3>${esc(a.label)}</h3>
+      <span class="kind ${isAct?'act':''}">${isAct?'🟠 changes':'🟢 read-only'}</span></div>
+    <p>${esc(a.desc)}</p>`;
+  const row = document.createElement('div'); row.className = 'row';
+  let input = null;
+  if (a.arg) { input = document.createElement('input'); input.type='text';
+    input.placeholder = a.arg; row.appendChild(input); }
+  const btn = document.createElement('button'); btn.className = 'run' + (isAct?' act':'');
+  btn.textContent = 'Run';
+  const out = document.createElement('pre'); out.className = 'out';
+  btn.onclick = () => fire(a, input, btn, out);
+  row.appendChild(btn); el.appendChild(row); el.appendChild(out);
+  return el;
+}
+async function fire(a, input, btn, out) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Running…';
+  out.className = 'out show'; out.textContent = 'working…';
+  try {
+    const r = await fetch('/run', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: a.id, arg: input ? input.value : ''})});
+    const d = await r.json();
+    out.className = 'out show ' + (d.ok ? 'ok' : 'bad');
+    let body = (d.out || '') + (d.err ? ('\\n' + d.err) : '');
+    if (!body.trim()) body = d.ok ? '(done — no output)' : '(failed — no output)';
+    out.textContent = body.trim();
+    if (d.cmd) { const c = document.createElement('div'); c.className='cmd';
+      c.textContent = '$ ' + d.cmd; out.after(c);
+      setTimeout(()=>{ if(c.nextSibling && c.nextSibling.className==='cmd') c.remove(); },0); }
+  } catch (e) { out.className='out show bad'; out.textContent = 'request failed: ' + e; }
+  btn.disabled = false; btn.textContent = old;
+}
+function stopServer(){ fetch('/shutdown',{method:'POST'}).finally(()=>{
+  document.body.innerHTML='<main><p class="note">Server stopped. You can close this tab.</p></main>';});}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ── live system dashboard ──
+function gb(n){ n=Number(n)||0; const u=['B','KB','MB','GB','TB']; let i=0;
+  while(n>=1024&&i<u.length-1){n/=1024;i++;} return (i?n.toFixed(1):n.toFixed(0))+' '+u[i]; }
+function upt(s){ s=Number(s)||0; const d=Math.floor(s/86400); s%=86400;
+  const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60);
+  return (d?d+'d ':'')+h+'h '+m+'m'; }
+function col(pct,warn,crit){ return pct>=crit?'#ff453a':(pct>=warn?'#ff9f0a':'#30d158'); }
+function gauge(key,label,val,sub,pct,color,note,concern){
+  return `<div class="gauge clk${concern?' concern':''}${SEL===key?' sel':''}" data-k="${key}">
+    <div class="glabel">${label}</div>
+    <div class="gval">${val}<span class="gsub">${sub||''}</span></div>
+    <div class="track"><div class="fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div>
+    <div class="gnote">${esc(note||'')}</div></div>`;
+}
+let LAST=null, SEL=null;
+function renderStats(d){
+  if(d.error){ document.getElementById('model').textContent='stats error: '+d.error; return; }
+  LAST=d;
+  const h=d.host,c=d.cpu,m=d.memory,b=d.battery,t=d.thermal;
+  document.getElementById('model').textContent = h.model;
+  document.getElementById('specs').textContent =
+    `${h.chip} · ${h.cores_total} cores (${h.cores_p}P+${h.cores_e}E) · macOS ${h.macos}`;
+  document.getElementById('uptime').textContent = 'up ' + upt(h.uptime_sec);
+
+  const cpuPct = Math.round((c.load_per_core||0)*100);
+  let g = gauge('cpu','CPU', cpuPct+'%', ' busy', cpuPct, col(cpuPct,70,90),
+                `load ${c.load1} · ${c.ncpu} cores`, cpuPct>=90);
+  const mp = m.pressure==='Critical'?95:(m.pressure==='Warning'?80:m.pct_used);
+  g += gauge('memory','Memory', m.pct_used+'%', '', mp, col(mp,75,90),
+             `${gb(m.used)} / ${gb(m.total)} · ${m.pressure}`, m.pressure!=='Normal');
+  if(b.present){
+    const temp=b.temp_c||0;
+    g += gauge('battery','Battery', b.percent+'%', ' '+temp+'°C', b.percent, col(temp,38,42),
+               `${b.state} (${b.source}) · ${b.cycle_count} cyc · health ${b.health_pct}%`, temp>=42);
+  }
+  // Thermal = real die temperature in °C (no-sudo HID sensors), pressure as a note
+  const tc=t.temp_c;
+  if(tc!=null){
+    g += gauge('thermal','Thermal', Math.round(tc)+'°C', '', Math.min(tc,110),
+               col(tc,80,95), `${t.pressure} · ${t.sensor_count} sensors · limit ${t.speed_limit_pct||100}%`,
+               tc>=95);
+  } else {
+    g += gauge('thermal','Thermal', t.pressure, '', 100-(t.speed_limit_pct||100), col(100-(t.speed_limit_pct||100),1,40),
+               `CPU speed limit ${t.speed_limit_pct||100}% · (temps: click Fans button)`, false);
+  }
+  document.getElementById('gauges').innerHTML = g;
+  if(SEL) drill(SEL);  // keep an open drill-in fresh on each tick
+
+  document.getElementById('disk').innerHTML = (d.disk||[]).map(v=>
+    `<div class="mini"><span class="nm">${esc(v.name)}</span>
+      <span class="tk"><div style="width:${v.pct_used}%;background:${col(v.pct_used,80,93)}"></div></span>
+      <span class="mono">${v.pct_used}%</span></div>`).join('') || '—';
+  document.getElementById('procs').innerHTML = (d.top_procs||[]).slice(0,5).map(p=>
+    `<div class="mini"><span class="nm">${esc(p.name)}</span>
+      <span class="mono">${p.cpu.toFixed(0)}%</span></div>`).join('') || '—';
+  const n=d.network;
+  document.getElementById('net').innerHTML =
+    `<div class="mini"><span class="nm">interface</span><span class="mono">${esc(n.interface||'—')}</span></div>
+     <div class="mini"><span class="nm">IP</span><span class="mono">${esc(n.ip||'—')}</span></div>`
+     + (n.ssid?`<div class="mini"><span class="nm">Wi-Fi</span><span class="mono">${esc(n.ssid)}</span></div>`:'')
+     + (n.router?`<div class="mini"><span class="nm">router</span><span class="mono">${esc(n.router)}</span></div>`:'');
+}
+// click any gauge → investigate it (the panel knows what to study per metric)
+document.getElementById('gauges').addEventListener('click', e => {
+  const card = e.target.closest('.gauge'); if(!card) return;
+  const k = card.dataset.k;
+  SEL = (SEL===k) ? null : k;       // toggle
+  document.querySelectorAll('.gauge').forEach(x=>x.classList.toggle('sel', x.dataset.k===SEL));
+  drill(SEL);
+});
+function vbox(cls,html){ return `<p class="verdict ${cls}">${html}</p>`; }
+function rows(list){ return list.map(r=>
+  `<div class="mini"><span class="nm">${esc(r.l)}</span><span class="mono">${esc(r.v)}</span></div>`).join(''); }
+function drill(key){
+  const box=document.getElementById('detail'); if(!key||!LAST){ box.innerHTML=''; return; }
+  const d=LAST, m=d.memory, t=d.thermal, c=d.cpu, b=d.battery;
+  let html='';
+  if(key==='memory'){
+    const swU=m.swap?m.swap.used:0, swT=m.swap?m.swap.total:0;
+    let cls='ok', v;
+    if(m.pressure==='Critical'){ cls='crit';
+      v=`<b>Critical memory pressure.</b> macOS is struggling — ${gb(swU)} swapped to disk. Quit the largest apps below.`; }
+    else if(m.pressure==='Warning'){ cls='warn';
+      v=`<b>Memory pressure: Warning.</b> ${m.pct_used}% used and <b>${gb(swU)}</b> pushed to swap${swT?` of ${gb(swT)}`:''}, ${gb(m.compressed)} compressed. RAM is the bottleneck — closing a couple of the heavy apps below will help.`; }
+    else { v=`Memory is healthy — ${m.pct_used}% used, ${gb(m.free)} free, ${gb(swU)} swap.`; }
+    html=`<div class="dbox"><h4>Memory — what's going on</h4>${vbox(cls,v)}
+      ${rows([
+        {l:'Used / total',v:`${gb(m.used)} / ${gb(m.total)}`},
+        {l:'Free',v:gb(m.free)}, {l:'Wired (can\'t be paged out)',v:gb(m.wired)},
+        {l:'Compressed',v:gb(m.compressed)},
+        {l:'Swap used',v:`${gb(swU)}${swT?` / ${gb(swT)}`:''}`},
+      ])}
+      <div class="glabel" style="margin-top:10px">Largest processes (resident)</div>
+      ${rows((m.top||[]).slice(0,5).map(p=>({l:p.name,v:gb(p.bytes)})))}</div>`;
+  } else if(key==='thermal'){
+    const tc=t.temp_c;
+    let cls = tc==null?'':(tc>=95?'crit':(tc>=80?'warn':'ok'));
+    let v = tc==null ? 'No live die-temp sensor read yet — use the "Fans & die temps" button for a powermetrics reading.'
+      : (tc>=95?`<b>Running hot: ${Math.round(tc)}°C.</b> Expect fans up / throttling.`
+        : tc>=80?`<b>Warm: ${Math.round(tc)}°C</b> under load — normal for sustained work.`
+        : `Cool — hottest die sensor ${Math.round(tc)}°C, average ${Math.round(t.temp_avg_c)}°C. CPU speed limit ${t.speed_limit_pct||100}% (no throttling).`);
+    html=`<div class="dbox"><h4>Thermal — ${t.sensor_count} live sensors (no password)</h4>${vbox(cls,v)}
+      <div class="glabel">Hottest sensors</div>
+      ${rows((t.sensors||[]).slice(0,8).map(s=>({l:s.name,v:s.c+'°C'})))}
+      <p class="detailhint">Fan RPM needs root — use the 🟠 “Fans &amp; die temps” button below.</p></div>`;
+  } else if(key==='cpu'){
+    const pc=Math.round((c.load_per_core||0)*100);
+    let cls=pc>=90?'crit':(pc>=70?'warn':'ok');
+    html=`<div class="dbox"><h4>CPU — top consumers</h4>
+      ${vbox(cls,`Load ${c.load1} across ${c.ncpu} cores (~${pc}% per core). Biggest users right now:`)}
+      ${rows((d.top_procs||[]).slice(0,6).map(p=>({l:p.name,v:p.cpu.toFixed(0)+'%'})))}</div>`;
+  } else if(key==='battery'){
+    let cls=(b.temp_c>=42)?'warn':'ok';
+    html=`<div class="dbox"><h4>Battery</h4>
+      ${vbox(cls,`${b.percent}% · ${b.state} (${b.source}) · ${b.temp_c}°C`)}
+      ${rows([{l:'Health',v:b.health_pct+'%'},{l:'Cycle count',v:b.cycle_count},
+        {l:'Temperature',v:b.temp_c+'°C'},{l:'Voltage',v:b.voltage_v+' V'},
+        {l:'Design capacity',v:b.design_capacity+' mAh'}])}</div>`;
+  }
+  box.innerHTML=html;
+}
+let firstStat=true;
+async function tick(){
+  if(!firstStat && !document.getElementById('autoref').checked) return;
+  try{ const r=await fetch('/stats'+(firstStat?'?full=1':'')); renderStats(await r.json()); firstStat=false; }
+  catch(e){}
+}
+tick(); setInterval(tick, 4000);
+</script></body></html>"""
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, *a):  # quiet
+        pass
+
+    def _send(self, code, body, ctype="application/json"):
+        b = body if isinstance(body, bytes) else body.encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(b)))
+        self.end_headers()
+        self.wfile.write(b)
+
+    def do_GET(self):
+        if self.path in ("/", "/index.html"):
+            slim = [{"id": a["id"], "group": a["group"], "kind": a["kind"],
+                     "label": a["label"], "desc": a["desc"], "arg": a["arg"]} for a in ACTIONS]
+            html = PAGE.replace("__ACTIONS__", json.dumps(slim))
+            self._send(200, html, "text/html; charset=utf-8")
+        elif self.path == "/health":
+            self._send(200, json.dumps({"ok": True}))
+        elif self.path.startswith("/stats"):
+            full = "full=1" in self.path
+            cmd = [PY, os.path.join(BIN, "mac-stats"), "--json"]
+            if not full:
+                cmd.append("--fast")
+            try:
+                p = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+                self._send(200, p.stdout or json.dumps({"error": p.stderr}))
+            except Exception as e:  # noqa: BLE001
+                self._send(200, json.dumps({"error": str(e)}))
+        else:
+            self._send(404, json.dumps({"error": "not found"}))
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        raw = self.rfile.read(length) if length else b"{}"
+        if self.path == "/shutdown":
+            self._send(200, json.dumps({"ok": True}))
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
+        if self.path != "/run":
+            self._send(404, json.dumps({"error": "not found"}))
+            return
+        try:
+            data = json.loads(raw or b"{}")
+        except Exception:  # noqa: BLE001
+            self._send(400, json.dumps({"ok": False, "err": "bad JSON"}))
+            return
+        action = ACTION_BY_ID.get(data.get("id", ""))
+        if not action:
+            self._send(404, json.dumps({"ok": False, "err": "unknown action"}))
+            return
+        result = run_action(action, data.get("arg", ""))
+        self._send(200, json.dumps(result))
+
+
+def pick_port(preferred):
+    for port in [preferred] + [preferred + i for i in range(1, 12)]:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) != 0:
+                return port
+    return preferred
+
+
+def main(argv):
+    port = 8787
+    do_open = True
+    just_print = False
+    args = argv[1:]
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-h", "--help"):
+            print(__doc__)
+            return 0
+        elif a == "--port":
+            i += 1
+            port = int(args[i])
+        elif a == "--no-open":
+            do_open = False
+        elif a == "--print":
+            just_print = True
+        i += 1
+
+    port = pick_port(port)
+    url = f"http://127.0.0.1:{port}/"
+
+    if just_print:
+        print(url)
+        for a in ACTIONS:
+            print(f"  [{a['kind']:6}] {a['group']:20} {a['label']}")
+        return 0
+
+    # warm the mac-temps cache in the background so the first /stats poll never
+    # blocks on the one-time Swift compile
+    def _warm():
+        try:
+            subprocess.run([os.path.join(BIN, "mac-temps"), "--json"],
+                           capture_output=True, timeout=60)
+        except Exception:  # noqa: BLE001
+            pass
+    threading.Thread(target=_warm, daemon=True).start()
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    print(f"\n  🧰 Apple Panel is live at  {url}")
+    print("     (local only · Ctrl-C to stop · or the Stop button on the page)\n")
+    if do_open:
+        try:
+            subprocess.run(["open", url], timeout=5)
+        except Exception:  # noqa: BLE001
+            webbrowser.open(url)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n  stopped.\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

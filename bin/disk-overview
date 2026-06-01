@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""disk-overview — a Disk Utility–style read-only snapshot of everything connected.
+
+Shows every volume on this Mac (internal, external, USB stick, disk image),
+its filesystem, size, how full it is, and where it's mounted — plus a clearly
+marked section for any removable USB drive. Apple-native: parses `diskutil`
+plist output and `system_profiler SPUSBDataType` JSON. Python stdlib only.
+
+Usage:
+    disk-overview              full overview (all volumes + USB section)
+    disk-overview --usb        only the removable-USB section
+    disk-overview --json       machine-readable dump
+
+Read-only — never mounts, unmounts, erases, or repairs anything.
+"""
+
+import json
+import plistlib
+import subprocess
+import sys
+
+
+def diskutil_plist(*args):
+    out = subprocess.run(["diskutil", *args, "-plist"], capture_output=True)
+    if out.returncode != 0:
+        return None
+    try:
+        return plistlib.loads(out.stdout)
+    except Exception:
+        return None
+
+
+def info(ident):
+    """`diskutil info -plist <ident>` -> dict, or None."""
+    out = subprocess.run(["diskutil", "info", "-plist", ident], capture_output=True)
+    if out.returncode != 0:
+        return None
+    try:
+        return plistlib.loads(out.stdout)
+    except Exception:
+        return None
+
+
+def human(n):
+    if n is None:
+        return "—"
+    n = float(n)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or unit == "TB":
+            return (f"{n:.0f} {unit}" if unit in ("B", "KB") else f"{n:.1f} {unit}")
+        n /= 1024
+
+
+def bar(used, total, width=24):
+    if not total:
+        return "[" + " " * width + "]"
+    frac = max(0.0, min(1.0, used / total))
+    fill = int(round(frac * width))
+    return "[" + "#" * fill + "·" * (width - fill) + f"] {frac*100:4.1f}%"
+
+
+# Apple's hidden internal system volumes — Disk Utility doesn't show these either.
+HIDDEN_INTERNAL = {"Preboot", "Recovery", "VM", "Update",
+                   "iSCPreboot", "xART", "Hardware"}
+
+
+def collect_volumes(removable_bsds=None):
+    """Return a list of volume dicts for every real, user-meaningful volume.
+
+    removable_bsds: set of parent BSD names known-removable from system_profiler.
+    """
+    removable_bsds = removable_bsds or set()
+    top = diskutil_plist("list")
+    if not top:
+        return []
+    idents = []
+    for disk in top.get("AllDisksAndPartitions", []):
+        for part in disk.get("Partitions", []):
+            idents.append(part["DeviceIdentifier"])
+        for vol in disk.get("APFSVolumes", []):
+            idents.append(vol["DeviceIdentifier"])
+    vols = []
+    for ident in idents:
+        d = info(ident)
+        if not d:
+            continue
+        fs = d.get("FilesystemUserVisibleName") or d.get("FilesystemName") or ""
+        content = d.get("Content", "")
+        name = (d.get("VolumeName") or "").strip()
+        mount = d.get("MountPoint") or ""
+        internal = d.get("Internal", False)
+        bus = d.get("BusProtocol", "")
+        # Drop container stores / helper partitions with no real volume.
+        if content in ("Apple_APFS", "EFI", "Apple_APFS_ISC", "Apple_APFS_Recovery",
+                       "Microsoft Reserved") and not mount and not fs:
+            continue
+        # Hide Apple's internal system volumes + the os-update snapshot mount.
+        if internal and (name in HIDDEN_INTERNAL or mount == "/System/Volumes/Update/mnt1"):
+            continue
+
+        parent = ident.split("s")[0]  # disk4s1 -> disk4
+        if internal:
+            kind = "Internal"
+        elif bus == "Disk Image":
+            kind = "Disk image"
+        elif parent in removable_bsds or ident in removable_bsds:
+            kind = "USB (removable)"
+        else:
+            kind = "External"
+
+        total = d.get("TotalSize") or d.get("Size")
+        # APFS volumes report FreeSpace=0; the real free is the container free.
+        free = d.get("APFSContainerFree")
+        if free is None:
+            free = d.get("FreeSpace")
+        used = d.get("VolumeUsedSpace")
+        if used is None:
+            csize = d.get("APFSContainerSize")
+            cfree = d.get("APFSContainerFree")
+            if csize is not None and cfree is not None:
+                used = csize - cfree          # container-level (shared across APFS vols)
+                shared = True
+            elif total is not None and free is not None:
+                used = total - free
+                shared = False
+            else:
+                shared = False
+        else:
+            shared = False
+        # An unmounted non-APFS volume can't report real usage — don't fake it.
+        if not mount and not shared:
+            used = free = None
+        vols.append({
+            "id": ident,
+            "name": name or "(unnamed)",
+            "fs": fs,
+            "kind": kind,
+            "bus": bus,
+            "mount": mount,
+            "total": total,
+            "free": free,
+            "used": used,
+            "shared": shared,
+            "mediaName": d.get("MediaName", ""),
+        })
+    return vols
+
+
+def usb_devices():
+    """Removable USB drives from system_profiler, keyed by BSD name."""
+    out = subprocess.run(["system_profiler", "-json", "SPUSBDataType"],
+                         capture_output=True, text=True)
+    if out.returncode != 0:
+        return {}
+    try:
+        data = json.loads(out.stdout)
+    except Exception:
+        return {}
+    found = {}
+
+    def walk(node):
+        if isinstance(node, dict):
+            media = node.get("Media")
+            if isinstance(media, list):
+                for m in media:
+                    bsd = m.get("bsd_name")
+                    if bsd:
+                        found[bsd] = {
+                            "name": node.get("_name", ""),
+                            "vendor": node.get("manufacturer", ""),
+                            "capacity": m.get("size", ""),
+                            "removable": str(m.get("removable_media", "")).lower(),
+                        }
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(data)
+    return found
+
+
+def removable_bsd_set(usb):
+    """BSD names of USB media flagged removable (the actual thumb-drive signal)."""
+    return {bsd for bsd, dev in usb.items() if dev.get("removable") == "yes"}
+
+
+def print_overview(usb_only=False):
+    usb = usb_devices()
+    removable = removable_bsd_set(usb)
+    vols = collect_volumes(removable)
+    if not usb_only:
+        print("DISKS & VOLUMES — this Mac")
+        print("=" * 60)
+        order = {"Internal": 0, "USB (removable)": 1, "External": 2, "Disk image": 3}
+        for v in sorted(vols, key=lambda x: (order.get(x["kind"], 9), x["id"])):
+            tag = {"Internal": "💻", "USB (removable)": "🔌",
+                   "External": "🗄️ ", "Disk image": "📀"}.get(v["kind"], "  ")
+            print(f"\n{tag} {v['name']}   [{v['kind']}]   {v['id']}")
+            line = f"     {v['fs'] or '—'}   {human(v['total'])} total"
+            if v["used"] is not None:
+                used_label = "used (container)" if v.get("shared") else "used"
+                line += f"   {human(v['used'])} {used_label}   {human(v['free'])} free"
+            print(line)
+            if v["mount"]:
+                print(f"     mounted at {v['mount']}")
+            else:
+                print("     not mounted")
+            if v["total"] and v["used"] is not None:
+                print("     " + bar(v["used"], v["total"]))
+
+    # USB removable section — always shown.
+    print("\n" + "=" * 60)
+    print("🔌 REMOVABLE USB DRIVES")
+    print("=" * 60)
+    usb_vols = [v for v in vols if v["kind"].startswith("USB")]
+    if not usb and not usb_vols:
+        print("  (none connected)")
+        return
+    # Match volumes to their physical USB device by parent disk id.
+    for v in usb_vols:
+        parent = v["id"].split("s")[0]  # disk4s1 -> disk4
+        dev = usb.get(parent) or usb.get(v["id"]) or {}
+        print(f"\n  {v['name']}  ({v['id']})")
+        if dev:
+            print(f"    device:  {dev.get('vendor','').strip()} {dev.get('name','').strip()}".rstrip())
+            if dev.get("capacity"):
+                print(f"    media:   {dev['capacity']}  (removable: {dev.get('removable','?')})")
+        print(f"    format:  {v['fs'] or '—'}")
+        print(f"    size:    {human(v['total'])} total · {human(v['free'])} free")
+        print(f"    mount:   {v['mount'] or 'not mounted'}")
+
+
+def main():
+    args = sys.argv[1:]
+    if "--json" in args:
+        usb = usb_devices()
+        vols = collect_volumes(removable_bsd_set(usb))
+        print(json.dumps({"volumes": vols, "usb": usb}, indent=2))
+        return
+    print_overview(usb_only="--usb" in args)
+
+
+if __name__ == "__main__":
+    main()
