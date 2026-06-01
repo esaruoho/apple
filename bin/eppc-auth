@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""eppc-auth — store an eppc (Remote Application Scripting) credential in the
+login keychain so osascript uses it SILENTLY — no password on every connection.
+
+Why you need this: each `osascript … eppc://…` opens a fresh connection and
+re-authenticates. macOS only stops prompting when there's an `eppc`-protocol
+credential in your login keychain that osascript is *trusted* to read without a
+confirmation dialog. This tool creates exactly that, once per peer.
+
+Your password is typed into `security`'s own prompt — it is never passed on the
+command line (so it can't leak into shell history or `ps`).
+
+Usage (run it INTERACTIVELY so it can prompt — use the ! prefix in Claude):
+    ! ~/work/apple/bin/eppc-auth <host> [--user U]
+    ! ~/work/apple/bin/eppc-auth cloudcitymacmini --user esaruoho
+
+After it succeeds, eppc-probe / Fleet's APPS buttons run without prompting. If a
+one-time keychain dialog still appears, choose "Always Allow".
+"""
+
+import os
+import subprocess
+import sys
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    user = os.environ.get("USER", "")
+    host = ""
+    i = 0
+    while i < len(args):
+        if args[i] == "--user" and i + 1 < len(args):
+            user = args[i + 1]
+            i += 2
+            continue
+        if not host:
+            host = args[i]
+        i += 1
+    if not host:
+        print("usage: eppc-auth <host> [--user U]", file=sys.stderr)
+        return 2
+    host = host.lower()
+
+    if not sys.stdin.isatty():
+        print("eppc-auth needs a terminal to prompt for the password.\n"
+              f"Run it interactively (note the leading '!'):\n"
+              f"  ! {sys.argv[0]} {host} --user {user}", file=sys.stderr)
+        return 1
+
+    print(f"Storing an eppc credential for {user}@{host}, trusted for osascript.")
+    print("security will now prompt for that account's password (typed into its")
+    print("own prompt, never stored in shell history).\n")
+    # -w with NO value => security prompts on the tty (password kept off argv).
+    # -U updates the item if it already exists. -T trusts osascript to read it.
+    cmd = ["security", "add-internet-password",
+           "-a", user, "-s", host, "-r", "eppc",
+           "-l", f"Remote Apple Events ({host})",
+           "-T", "/usr/bin/osascript",
+           "-U", "-w"]
+    rc = subprocess.call(cmd)   # inherits the tty so security can prompt
+    if rc != 0:
+        print(f"\nsecurity exited {rc} — credential not stored.", file=sys.stderr)
+        return rc
+    print(f"\n✓ Stored. eppc/APPS to {host} should now run without prompting.")
+    print("  Test it:  ~/work/apple/bin/eppc-probe", host, "os-version --user", user)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
