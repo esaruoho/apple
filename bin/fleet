@@ -372,6 +372,28 @@ def handshake(write_registry=True):
             print(f"\n  registry → {QUEUE / 'fleet-registry.json'}  ({len(cards)} cards, shared via Syncthing)")
         except Exception as e:
             print(f"\n  (could not write registry: {e})")
+
+        # Bridge the active handshake into the published-card surface Fleet.app
+        # reads: write each SSH-collected peer's card as machine-card-<id>.json
+        # so it shows in Fleet.app too. Skip machines that already self-publish a
+        # fresh card (e.g. the Mini's 60s publisher) — don't stomp the live one.
+        published = []
+        for c in cards:
+            if c.get("_origin") not in ("handshake", "handshake-legacy"):
+                continue
+            cid = c.get("id")
+            if not cid:
+                continue
+            dest = QUEUE / f"machine-card-{cid}.json"
+            try:
+                if dest.exists() and (time.time() - dest.stat().st_mtime) < 120:
+                    continue  # a live self-publisher owns this file
+                dest.write_text(json.dumps({k: v for k, v in c.items() if k != "_origin"}))
+                published.append(cid)
+            except Exception:
+                pass
+        if published:
+            print(f"  published peer cards for Fleet.app: {', '.join(published)}")
     print()
     return 0
 
