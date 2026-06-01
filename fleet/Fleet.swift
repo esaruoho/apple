@@ -135,9 +135,22 @@ enum CardSource {
         let outPipe = Pipe(); let errPipe = Pipe()
         p.standardOutput = outPipe; p.standardError = errPipe
         do { try p.run() } catch { return ("Couldn’t launch: \(error.localizedDescription)", false) }
-        let o = String(data: outPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        let e = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
+        // Read both pipes concurrently (a full stderr buffer can't deadlock
+        // stdout) and bound it with a hard timeout so the sheet never hangs.
+        final class Box { var data = Data() }
+        let outBox = Box(), errBox = Box()
+        let g = DispatchGroup()
+        let q = DispatchQueue(label: "panel.run.read", attributes: .concurrent)
+        g.enter(); q.async { outBox.data = outPipe.fileHandleForReading.readDataToEndOfFile(); g.leave() }
+        g.enter(); q.async { errBox.data = errPipe.fileHandleForReading.readDataToEndOfFile(); g.leave() }
+        if g.wait(timeout: .now() + 90) == .timedOut {
+            p.terminate()
+            return ("Timed out after 90 s — terminated. (The command kept running with no output.)", false)
+        }
         p.waitUntilExit()
+        let o = String(data: outBox.data, encoding: .utf8) ?? ""
+        let e = String(data: errBox.data, encoding: .utf8) ?? ""
         let combined = o + (e.isEmpty ? "" : "\n— stderr —\n\(e)")
         return (combined.isEmpty ? "(no output)" : combined, p.terminationStatus == 0)
     }
@@ -481,10 +494,12 @@ final class FleetModel: ObservableObject {
                 (out, ok) = (r.out, r.ok)
             }
             DispatchQueue.main.async {
-                // Mutate in place — same id keeps the sheet up and refreshes it.
-                self.runResult?.output = out
-                self.runResult?.ok = ok
-                self.runResult?.running = false
+                // Reassign the whole struct (not a nested-field mutation) so the
+                // sheet reliably re-renders. The sheet is keyed on isPresented,
+                // not on id, so a fresh id is fine and won't dismiss it.
+                guard self.runResult != nil else { return }   // user closed it
+                self.runResult = RunResult(title: title, target: target,
+                                           running: false, output: out, ok: ok)
             }
         }
     }
