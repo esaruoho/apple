@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""panel-worker — run Apple-Panel jobs that arrive in the Syncthing panel-inbox.
+
+The remote arm of the Fleet × Panel unification. A peer (Fleet) drops a job
+into ~/work/comms/queue/panel-inbox/<job>.json naming THIS machine as target
+and an action id from the curated registry. This worker validates the id
+against its OWN apple-panel registry, runs it, and writes the output to
+panel-results/<job>.json — which Syncthing mirrors back to the requester.
+
+Security boundary: a job names a registered action id + an optional arg value.
+It NEVER carries a command. apple-panel --run rejects unknown ids. So this is
+the same allowlist the local panel uses — nothing new is exposed, and there is
+no network listener (Syncthing is the only transport). 5th instance of the
+trigger→worker chassis (Finder tag, Voice Memo, Stickies, Mail flag, now this).
+
+Usage:
+    panel-worker            watch the inbox forever (the daemon)
+    panel-worker --once     process whatever is queued right now, then exit
+    panel-worker --status   show queue depth + last heartbeat, then exit
+
+Apple-native: python3 stdlib only.
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+PANEL = HERE / "apple-panel"
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "panel-inbox"
+RESULTS = QUEUE / "panel-results"
+HEARTBEAT = QUEUE / "panel-worker-heartbeat.json"
+POLL_SECONDS = 2.0
+RUN_TIMEOUT = 110          # leave headroom under Fleet's 120s poll
+STALE_JOB_SECONDS = 3600   # a job nobody claimed in an hour is swept
+
+
+def self_names() -> set:
+    """Every name this machine might be addressed by (lowercased)."""
+    names = set()
+    host = socket.gethostname()
+    names.add(host.lower())
+    names.add(host.split(".")[0].lower())
+    try:
+        names.add(os.uname().nodename.split(".")[0].lower())
+    except Exception:
+        pass
+    try:
+        cn = subprocess.run(["scutil", "--get", "ComputerName"],
+                            capture_output=True, text=True, timeout=4).stdout.strip()
+        if cn:
+            names.add(cn.lower())
+    except Exception:
+        pass
+    return {n for n in names if n}
+
+
+SELF = self_names()
+
+
+def is_for_me(target: str) -> bool:
+    if not target:
+        return False
+    t = target.strip().lower()
+    return t in SELF or any(t == n or t.startswith(n) or n.startswith(t) for n in SELF)
+
+
+def run_action(action_id: str, arg: str) -> dict:
+    """Execute via the curated registry. Output captured, never a shell."""
+    cmd = [str(PANEL), "--run", action_id]
+    if arg:
+        cmd += ["--arg", arg]
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=RUN_TIMEOUT)
+        return {"ok": p.returncode == 0, "rc": p.returncode,
+                "out": p.stdout or "", "err": p.stderr or ""}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "rc": None, "out": "", "err": f"timed out after {RUN_TIMEOUT}s"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "rc": None, "out": "", "err": str(e)}
+
+
+def write_result(job_id: str, payload: dict):
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    tmp = RESULTS / f".{job_id}.tmp"
+    final = RESULTS / f"{job_id}.json"
+    tmp.write_text(json.dumps(payload))
+    tmp.replace(final)   # atomic; Syncthing ships a complete file
+
+
+def process_one(path: Path) -> bool:
+    """Returns True if this machine handled (or swept) the job."""
+    try:
+        job = json.loads(path.read_text())
+    except Exception:
+        return False
+    target = job.get("target", "")
+    if not is_for_me(target):
+        # Not ours. Sweep only if it's gone stale (the owner never showed up).
+        try:
+            if time.time() - path.stat().st_mtime > STALE_JOB_SECONDS:
+                path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False
+
+    job_id = job.get("job_id") or path.stem
+    action_id = job.get("id", "")
+    arg = job.get("arg", "") or ""
+    res = run_action(action_id, arg)
+    write_result(job_id, {
+        "job_id": job_id, "host": socket.gethostname().split(".")[0],
+        "id": action_id, "ok": res["ok"], "rc": res["rc"],
+        "out": res["out"], "err": res["err"], "ts": int(time.time()),
+        "from": job.get("from"),
+    })
+    path.unlink(missing_ok=True)   # consume the job we owned
+    return True
+
+
+def beat():
+    try:
+        HEARTBEAT.write_text(json.dumps({"ts": int(time.time()),
+                                         "host": socket.gethostname().split(".")[0]}))
+    except Exception:
+        pass
+
+
+def scan() -> int:
+    if not INBOX.is_dir():
+        return 0
+    handled = 0
+    for p in sorted(INBOX.glob("*.json")):
+        if process_one(p):
+            handled += 1
+    return handled
+
+
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    print(f"panel-worker · this machine answers to: {', '.join(sorted(SELF))}")
+    print(f"  inbox:   {INBOX}  ({pend} job(s) queued)")
+    print(f"  results: {RESULTS}")
+    if HEARTBEAT.exists():
+        try:
+            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
+            print(f"  last heartbeat: {age:.0f}s ago")
+        except Exception:
+            pass
+    else:
+        print("  last heartbeat: never (worker not running)")
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    if "--status" in args:
+        status()
+        return 0
+    INBOX.mkdir(parents=True, exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    if "--once" in args:
+        n = scan()
+        beat()
+        print(f"processed {n} job(s) for this machine")
+        return 0
+    # daemon
+    print(f"panel-worker watching {INBOX} (answers to: {', '.join(sorted(SELF))})")
+    while True:
+        try:
+            scan()
+            beat()
+        except Exception as e:  # noqa: BLE001
+            print(f"  loop error: {e}", file=sys.stderr)
+        time.sleep(POLL_SECONDS)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

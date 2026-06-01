@@ -474,9 +474,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/index.html"):
-            slim = [{"id": a["id"], "group": a["group"], "kind": a["kind"],
-                     "label": a["label"], "desc": a["desc"], "arg": a["arg"]} for a in ACTIONS]
-            html = PAGE.replace("__ACTIONS__", json.dumps(slim))
+            html = PAGE.replace("__ACTIONS__", json.dumps(slim_actions()))
             self._send(200, html, "text/html; charset=utf-8")
         elif self.path == "/health":
             self._send(200, json.dumps({"ok": True}))
@@ -524,6 +522,13 @@ def pick_port(preferred):
     return preferred
 
 
+def slim_actions():
+    """The publishable registry — id/label/group/kind/arg, no internals.
+    Shared by the web page, the machine card, and the run modes."""
+    return [{"id": a["id"], "group": a["group"], "kind": a["kind"],
+             "label": a["label"], "desc": a["desc"], "arg": a["arg"]} for a in ACTIONS]
+
+
 def main(argv):
     port = 8787
     do_open = True
@@ -542,6 +547,35 @@ def main(argv):
             do_open = False
         elif a == "--print":
             just_print = True
+        elif a == "--actions-json":
+            # Dump the curated registry as JSON. The machine card embeds this so
+            # a fleet peer knows what this machine can run.
+            print(json.dumps(slim_actions()))
+            return 0
+        elif a == "--run":
+            # Headless execute one registered action: the single executor shared
+            # by Fleet-local and the remote panel-worker. Curated id only — never
+            # an arbitrary command. Optional value via --arg.
+            i += 1
+            run_id = args[i] if i < len(args) else ""
+            run_arg = ""
+            j = i + 1
+            while j < len(args):
+                if args[j] == "--arg" and j + 1 < len(args):
+                    run_arg = args[j + 1]
+                    j += 2
+                    continue
+                j += 1
+            action = ACTION_BY_ID.get(run_id)
+            if not action:
+                print(f"unknown action: {run_id!r}", file=sys.stderr)
+                return 2
+            res = run_action(action, run_arg)
+            if res.get("out"):
+                sys.stdout.write(res["out"])
+            if res.get("err"):
+                sys.stderr.write(res["err"])
+            return 0 if res.get("ok") else (res.get("rc") or 1)
         i += 1
 
     port = pick_port(port)

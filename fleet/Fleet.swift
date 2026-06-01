@@ -30,13 +30,14 @@ struct Card: Codable, Identifiable {
     var shape: Shape?
     var ports: Ports?
     var skills: [Skill]?
+    var panel_actions: [PanelAction]?
     var running: Running?
 
     // Transport metadata — not part of the JSON; set after decode.
     var origin: Origin = .local
     var lastSeen: Date = Date()
 
-    enum CodingKeys: String, CodingKey { case id, ts, identity, shape, ports, skills, running }
+    enum CodingKeys: String, CodingKey { case id, ts, identity, shape, ports, skills, panel_actions, running }
 
     enum Origin: String { case local, bonjour, syncthing }
 }
@@ -92,6 +93,17 @@ struct Skill: Codable, Identifiable {
     var verb: String?
 }
 
+/// One runnable Apple-Panel action a machine advertises. The unification with
+/// the panel: Fleet renders these per machine and dispatches a run.
+struct PanelAction: Codable, Identifiable {
+    var id: String
+    var group: String
+    var kind: String        // "safe" = read-only · "action" = makes a change
+    var label: String
+    var desc: String?
+    var arg: String?        // placeholder if it needs an input value, else nil
+}
+
 struct TopProc: Codable { var cpu: Double?; var cmd: String? }
 struct Running: Codable {
     var load_pct: Int?
@@ -109,7 +121,63 @@ struct Running: Codable {
 
 enum CardSource {
     static let bin = "\(NSHomeDirectory())/work/apple/bin/machine-card"
+    static let panelBin = "\(NSHomeDirectory())/work/apple/bin/apple-panel"
     static let queue = "\(NSHomeDirectory())/work/comms/queue"
+
+    /// Run one curated panel action on THIS machine and capture its output.
+    /// (Local arm of the runner; remote goes via the Syncthing panel-inbox.)
+    static func runLocal(actionID: String, arg: String) -> (out: String, ok: Bool) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        var a = ["python3", "-u", panelBin, "--run", actionID]
+        if !arg.isEmpty { a += ["--arg", arg] }
+        p.arguments = a
+        let outPipe = Pipe(); let errPipe = Pipe()
+        p.standardOutput = outPipe; p.standardError = errPipe
+        do { try p.run() } catch { return ("Couldn’t launch: \(error.localizedDescription)", false) }
+        let o = String(data: outPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let e = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        p.waitUntilExit()
+        let combined = o + (e.isEmpty ? "" : "\n— stderr —\n\(e)")
+        return (combined.isEmpty ? "(no output)" : combined, p.terminationStatus == 0)
+    }
+
+    /// Run a curated action on a REMOTE machine via the Syncthing panel-inbox:
+    /// drop a job, the target's panel-worker validates it against its own
+    /// registry and writes panel-results/<job>.json, Syncthing mirrors it back.
+    /// No network-exposed exec; the registry is the allowlist. Blocking — call
+    /// off the main thread.
+    static func runRemote(actionID: String, arg: String, target: String) -> (out: String, ok: Bool) {
+        let fm = FileManager.default
+        let inbox = "\(queue)/panel-inbox"
+        let results = "\(queue)/panel-results"
+        try? fm.createDirectory(atPath: inbox, withIntermediateDirectories: true)
+        let jobID = UUID().uuidString
+        let job: [String: Any] = [
+            "job_id": jobID, "target": target, "id": actionID, "arg": arg,
+            "from": ProcessInfo.processInfo.hostName.components(separatedBy: ".").first ?? "",
+            "ts": Int(Date().timeIntervalSince1970)]
+        guard let data = try? JSONSerialization.data(withJSONObject: job),
+              fm.createFile(atPath: "\(inbox)/\(jobID).json", contents: data) else {
+            return ("Couldn’t write the job into panel-inbox.", false)
+        }
+        let resultPath = "\(results)/\(jobID).json"
+        let deadline = Date().addingTimeInterval(120)   // Syncthing round-trip + run
+        while Date() < deadline {
+            if let d = fm.contents(atPath: resultPath),
+               let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] {
+                let out = (obj["out"] as? String) ?? ""
+                let err = (obj["err"] as? String) ?? ""
+                let ok = (obj["ok"] as? Bool) ?? false
+                try? fm.removeItem(atPath: resultPath)   // consume it
+                let combined = out + (err.isEmpty ? "" : "\n— stderr —\n\(err)")
+                return (combined.isEmpty ? "(no output)" : combined, ok)
+            }
+            Thread.sleep(forTimeInterval: 1.0)
+        }
+        return ("No response from \(target) within 120 s.\n"
+            + "Is its panel-worker running and Syncthing connected?", false)
+    }
 
     /// Run `machine-card` and decode. `public` = the publishable subset we send
     /// to peers; full (local) is what we display for ourselves.
@@ -297,10 +365,22 @@ final class FleetNet: ObservableObject {
 
 // ───────────────────────────── ViewModel ─────────────────────────────
 
+/// The output of running one action on one machine — shown in a sheet, updated
+/// in place (same id) so a running→done transition refreshes without flicker.
+struct RunResult: Identifiable {
+    let id = UUID()
+    let title: String
+    let target: String
+    var running: Bool
+    var output: String
+    var ok: Bool = true
+}
+
 final class FleetModel: ObservableObject {
     @Published var local: Card?
     @Published var peers: [String: Card] = [:]   // id → card
     @Published var toast: String?
+    @Published var runResult: RunResult?
 
     // Our own hostname — matches the `id` machine-card emits (socket.gethostname).
     // Known synchronously so we exclude our own published card from peers even
@@ -380,6 +460,46 @@ final class FleetModel: ObservableObject {
             if self.toast == msg { self.toast = nil }
         }
     }
+
+    // ── run an action on a machine (the Fleet × Panel unification) ──
+    func run(action: PanelAction, on card: Card) {
+        var arg = ""
+        if let placeholder = action.arg {          // action needs an input value
+            guard let entered = promptForArg(action: action, placeholder: placeholder),
+                  !entered.isEmpty else { return }
+            arg = entered
+        }
+        let title = action.label, target = card.id, isLocal = (card.origin == .local)
+        runResult = RunResult(title: title, target: target, running: true, output: "")
+        DispatchQueue.global(qos: .userInitiated).async {
+            let out: String, ok: Bool
+            if isLocal {
+                let r = CardSource.runLocal(actionID: action.id, arg: arg)
+                (out, ok) = (r.out, r.ok)
+            } else {
+                let r = CardSource.runRemote(actionID: action.id, arg: arg, target: target)
+                (out, ok) = (r.out, r.ok)
+            }
+            DispatchQueue.main.async {
+                // Mutate in place — same id keeps the sheet up and refreshes it.
+                self.runResult?.output = out
+                self.runResult?.ok = ok
+                self.runResult?.running = false
+            }
+        }
+    }
+
+    private func promptForArg(action: PanelAction, placeholder: String) -> String? {
+        let alert = NSAlert()
+        alert.messageText = action.label
+        alert.informativeText = action.desc ?? "Enter a value:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
+        field.placeholderString = placeholder
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Run")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
+    }
 }
 
 // ───────────────────────────── Views ─────────────────────────────
@@ -418,6 +538,11 @@ struct FleetView: View {
             }
         }
         .frame(minWidth: 420, minHeight: 460)
+        .sheet(isPresented: Binding(
+            get: { model.runResult != nil },
+            set: { if !$0 { model.runResult = nil } })) {
+            RunOutputView().environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -437,6 +562,42 @@ struct FleetView: View {
             }.buttonStyle(.borderless)
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
+    }
+}
+
+// Output of a run — reads model.runResult so a running→done update refreshes live.
+struct RunOutputView: View {
+    @EnvironmentObject var model: FleetModel
+    var body: some View {
+        let r = model.runResult
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(r?.title ?? "Run").font(.headline)
+                    Text("on \(r?.target ?? "")").font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                if r?.running == true { ProgressView().scaleEffect(0.7) }
+            }
+            Divider()
+            ScrollView {
+                Text(r.map { $0.output.isEmpty ? "Running…" : $0.output } ?? "")
+                    .font(.system(.caption, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+            HStack {
+                if r?.running == false {
+                    Image(systemName: (r?.ok ?? false) ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                        .foregroundColor((r?.ok ?? false) ? .green : .red)
+                    Text((r?.ok ?? false) ? "Done" : "Failed").font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Button("Close") { model.runResult = nil }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(16)
+        .frame(width: 640, height: 480)
     }
 }
 
@@ -475,6 +636,9 @@ struct CardView: View {
             face("PORTS", icon: "cable.connector") { portsFace }
             face("RUNNING", icon: "waveform.path.ecg") { runningFace }
             face("SKILLS", icon: "wrench.and.screwdriver") { skillsFace }
+            if let acts = card.panel_actions, !acts.isEmpty {
+                face("RUN", icon: "play.circle") { runFace(acts) }
+            }
         }
         .padding(14)
         .frame(width: 340, alignment: .leading)
@@ -570,6 +734,35 @@ struct CardView: View {
             }
             Text("\(others.count) installed skill\(others.count == 1 ? "" : "s")")
                 .font(.caption2).foregroundColor(.secondary)
+        }
+    }
+
+    // RUN — every Apple-Panel action this machine advertises, as a button.
+    // Click → runs locally (this Mac) or dispatches over Syncthing (a peer).
+    @ViewBuilder private func runFace(_ acts: [PanelAction]) -> some View {
+        let groups = Dictionary(grouping: acts, by: { $0.group })
+        VStack(alignment: .leading, spacing: 7) {
+            ForEach(groups.keys.sorted(), id: \.self) { g in
+                Text(g).font(.caption2).foregroundColor(.secondary).tracking(0.5)
+                ForEach(groups[g] ?? []) { act in
+                    Button { model.run(action: act, on: card) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: act.kind == "safe" ? "play.circle" : "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundColor(act.kind == "safe" ? .accentColor : .orange)
+                            Text(act.label).font(.caption).lineLimit(1).truncationMode(.tail)
+                            if act.arg != nil {
+                                Image(systemName: "character.cursor.ibeam")
+                                    .font(.system(size: 8)).foregroundColor(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(act.desc ?? "")
+                }
+            }
         }
     }
 
