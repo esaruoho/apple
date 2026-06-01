@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""bridge-doctor — diagnose a "the Mini bridge is dead!" situation correctly.
+
+THE RECURRING TRUTH: when heartbeats go stale and the file bridge stops
+responding, it is almost never the Mini. It is usually THIS laptop running low
+on disk, which trips Syncthing's per-folder `minDiskFree` guard so Syncthing
+silently refuses to write incoming files (heartbeats, outbox results) — the
+bridge only *looks* dead. Check disk FIRST, panic never.
+
+This tool leads with the disk check, then Syncthing folder errors, then heartbeat
+freshness, and prints a plain verdict. Apple-native: Python stdlib + the local
+Syncthing REST API + diskutil/shutil.
+
+Usage: bridge-doctor
+"""
+
+import glob
+import json
+import os
+import shutil
+import time
+import urllib.request
+import xml.etree.ElementTree as ET
+
+QUEUE = os.path.expanduser("~/work/comms/queue")
+CFG = os.path.expanduser("~/Library/Application Support/Syncthing/config.xml")
+
+
+def human(n):
+    for u in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or u == "TB":
+            return f"{n:.1f} {u}"
+        n /= 1024
+
+
+def syncthing():
+    """(addr, apikey, comms_path, mindiskfree_pct) from the local config."""
+    r = ET.parse(CFG).getroot()
+    gui = r.find("gui")
+    addr = (gui.findtext("address") if gui is not None else None) or "127.0.0.1:8384"
+    key = gui.findtext("apikey") if gui is not None else None
+    path, pct = None, None
+    for f in r.findall("folder"):
+        if f.get("id") == "comms":
+            path = f.get("path")
+            mdf = f.find("minDiskFree")
+            if mdf is not None and (mdf.get("unit") in ("%", "percent")):
+                pct = float(mdf.text or 0)
+    return addr, key, path, pct
+
+
+def api(addr, key, path):
+    req = urllib.request.Request(f"http://{addr}{path}", headers={"X-API-Key": key})
+    return json.load(urllib.request.urlopen(req, timeout=8))
+
+
+def heartbeat_age(name):
+    p = os.path.join(QUEUE, f"{name}-heartbeat.json")
+    try:
+        ts = json.load(open(p)).get("ts", 0)
+        ts = ts / 1000 if ts > 1e12 else ts
+        return time.time() - ts
+    except Exception:
+        return None
+
+
+def main():
+    print("bridge-doctor — is the bridge really dead, or is the laptop just full?\n")
+
+    # 1. DISK FIRST (the usual culprit)
+    du = shutil.disk_usage("/")
+    free = du.free
+    addr = key = path = pct = None
+    guard = None
+    try:
+        addr, key, path, pct = syncthing()
+        if pct is not None:
+            guard = du.total * pct / 100.0
+    except Exception as e:
+        print(f"  (couldn't read Syncthing config: {e})")
+
+    print("1. LAPTOP DISK")
+    print(f"   free: {human(free)}  of {human(du.total)}")
+    disk_problem = False
+    if guard is not None:
+        print(f"   Syncthing minDiskFree guard: {pct:g}% = {human(guard)}")
+        if free < guard:
+            disk_problem = True
+            print(f"   ❌ BELOW THE GUARD — Syncthing will NOT write incoming files.")
+        else:
+            print(f"   ✓ above the guard")
+
+    # 2. Syncthing comms folder health
+    errors = needfiles = state = None
+    if key and "comms" not in (path or "comms"):
+        pass
+    if key:
+        try:
+            st = api(addr, key, "/rest/db/status?folder=comms")
+            errors, needfiles, state = st.get("errors"), st.get("needFiles"), st.get("state")
+        except Exception as e:
+            print(f"\n2. SYNCTHING comms folder: (api err: {e})")
+    print("\n2. SYNCTHING comms folder")
+    if errors is not None:
+        print(f"   state: {state} · needFiles: {needfiles} · errors: {errors}")
+        if errors:
+            try:
+                errs = api(addr, key, "/rest/folder/errors?folder=comms").get("errors", [])[:3]
+                for e in errs:
+                    print(f"     {os.path.basename(e.get('path',''))}: {str(e.get('error',''))[:60]}")
+                if any("insufficient space" in str(e.get("error", "")) for e in errs):
+                    disk_problem = True
+            except Exception:
+                pass
+
+    # 3. Heartbeats (laptop-side copies)
+    print("\n3. HEARTBEATS (laptop's synced copies)")
+    pb = heartbeat_age("pakettibot")
+    print(f"   pakettibot: {pb:.0f}s old" if pb is not None else "   pakettibot: ?")
+
+    # VERDICT
+    print("\nVERDICT")
+    if disk_problem:
+        need = human(guard - free) if guard else "some"
+        print(f"   🟠 The LAPTOP is out of disk — Syncthing can't write, so the bridge")
+        print(f"      only LOOKS dead. The Mini is almost certainly fine.")
+        print(f"      FIX: free ~{need}+ on this laptop (caches: ~/.cache/whisper,")
+        print(f"      ~/.cache/huggingface, ~/Library/Caches/Homebrew), then it self-heals.")
+        print(f"      Do NOT assume the Mini is down. (Confirm Mini with: ssh cloudcity uptime)")
+    elif pb is not None and pb > 300:
+        print(f"   🟡 Disk is OK but heartbeats are stale. Now it's worth SSHing the Mini:")
+        print(f"      ssh cloudcity 'uptime; pgrep -fl \"node index.js\"'")
+    else:
+        print(f"   🟢 Healthy — disk above guard, heartbeats fresh.")
+
+
+if __name__ == "__main__":
+    main()
