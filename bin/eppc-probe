@@ -21,6 +21,15 @@ import sys
 # Curated read-only probes. Each `script` runs inside
 #   tell application "<app>" of machine "eppc://<user>@<host>" … end tell
 PROBES = [
+    {"id": "snapshot", "app": "Finder", "label": "Snapshot (one connection / one prompt)",
+     "desc": "macOS version + startup disk free + home + Trash count, all in a SINGLE "
+             "eppc connection — so it costs one password prompt instead of one per item.",
+     "script": ('set d to startup disk\n'
+                'return "macOS " & version & linefeed '
+                '& "Startup: " & (name of d) & " — " & ((free space of d) div 1000000000) '
+                '& " GB free of " & ((capacity of d) div 1000000000) & " GB" & linefeed '
+                '& "Home: " & (POSIX path of (home as alias)) & linefeed '
+                '& "Trash: " & (count of items of trash) & " items"')},
     {"id": "os-version", "app": "Finder", "label": "macOS version",
      "desc": "The peer's Finder/macOS version.",
      "script": 'get version'},
