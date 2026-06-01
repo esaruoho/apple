@@ -201,10 +201,17 @@ def collect_card(target):
         script = Path(MACHINE_CARD).read_text()
     except Exception as e:
         return None, f"read emitter: {e}"
+    # SSH gives a minimal PATH, and python3 lives in a different place on every
+    # Mac (/usr/bin, /opt/homebrew/bin, /usr/local/bin). Search known locations
+    # and exec the first that works; stdin (the piped emitter) is preserved.
+    remote = ('for P in python3 /usr/bin/python3 /opt/homebrew/bin/python3 '
+              '/usr/local/bin/python3; do command -v "$P" >/dev/null 2>&1 && '
+              'exec "$P" - --public --json --cache; done; '
+              'echo "machine-card: no python3 found" >&2; exit 127')
     try:
         p = subprocess.run(
             ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
-             "-o", "StrictHostKeyChecking=accept-new", target["ssh"], "python3 - --public --json"],
+             "-o", "StrictHostKeyChecking=accept-new", target["ssh"], remote],
             input=script, capture_output=True, text=True, timeout=50)
     except Exception as e:
         return None, f"ssh: {e}"
@@ -264,7 +271,7 @@ def handshake(write_registry=True):
             print(f"  ✓ {t['label']:18} {s.get('chip','?')} · {s.get('ram_gb','?')}GB · {warm} warm")
             cards.append(card)
         else:
-            tag = "LAN, login off?" if t.get("lan") else err
+            tag = err or "no answer"
             print(f"  ✗ {t['label']:18} unreachable — {tag}")
             unreachable.append({"label": t["label"], "reason": err, "ssh": t.get("ssh")})
 

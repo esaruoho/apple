@@ -158,6 +158,24 @@ def compute_shape() -> dict:
     macos_version = sh(["sw_vers", "-productVersion"])
     macos_build = sh(["sw_vers", "-buildVersion"])
 
+    # ── Fallback via sysctl — works on EVERY macOS, incl. < 10.15 where
+    #    `system_profiler -json` doesn't exist (Mojave Macs come back blank). ──
+    chip = hw.get("chip_type") or hw.get("cpu_type") \
+        or (sh(["sysctl", "-n", "machdep.cpu.brand_string"]) or None)
+    model_id = hw.get("machine_model") or (sh(["sysctl", "-n", "hw.model"]) or None)
+    model_name = hw.get("machine_name")
+    if not model_name and model_id:
+        pfx = "".join(ch for ch in model_id if ch.isalpha())
+        model_name = {"MacBookPro": "MacBook Pro", "MacBookAir": "MacBook Air",
+                      "MacBook": "MacBook", "Macmini": "Mac mini", "iMac": "iMac",
+                      "MacPro": "Mac Pro", "iMacPro": "iMac Pro"}.get(pfx)
+    if total is None:
+        pc = sh(["sysctl", "-n", "hw.physicalcpu"])
+        total = int(pc) if pc.isdigit() else None
+    if ram_gb is None:
+        ms = sh(["sysctl", "-n", "hw.memsize"])
+        ram_gb = round(int(ms) / 1e9) if ms.isdigit() else None
+
     # ── Optional AI enrichment from apple-report (this Mac only) ──
     ai_src = _apple_report().get("ai", {})
     fit = {f"{c['params_billions']}b_{c['quant']}": c["fits"]
@@ -165,9 +183,9 @@ def compute_shape() -> dict:
 
     return {
         # ── stable + public (green quadrant) ──
-        "chip": hw.get("chip_type"),
-        "model_name": hw.get("machine_name"),
-        "model_identifier": hw.get("machine_model"),
+        "chip": chip,
+        "model_name": model_name,
+        "model_identifier": model_id,
         "cores_total": total,
         "cores_perf": perf,
         "cores_efficiency": eff,
@@ -370,6 +388,20 @@ def compute_running() -> dict:
 
 # ───────────────────────── assembly + caching ─────────────────────────
 
+def compute_panel_actions() -> list:
+    """The Apple Panel registry this machine can run, as a fleet peer sees it.
+    Lets Fleet render per-machine action cards and dispatch a run here. Empty
+    list if the panel isn't present."""
+    panel = HERE / "apple-panel"
+    if not panel.exists():
+        return []
+    try:
+        out = sh([str(panel), "--actions-json"], timeout=10)
+        return json.loads(out) if out else []
+    except Exception:
+        return []
+
+
 def load_or_build_shape(force: bool) -> dict:
     if not force and CACHE.exists():
         try:
@@ -378,12 +410,16 @@ def load_or_build_shape(force: bool) -> dict:
                 return cached["data"]
         except Exception:
             pass
-    data = {"shape": compute_shape(), "ports": compute_ports(), "skills": compute_skills()}
-    try:
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        CACHE.write_text(json.dumps({"_cached_at": time.time(), "data": data}))
-    except Exception:
-        pass
+    data = {"shape": compute_shape(), "ports": compute_ports(),
+            "skills": compute_skills(), "panel_actions": compute_panel_actions()}
+    # Don't persist a failed shape — if the probe came back chip-less (e.g. a
+    # transient system_profiler hiccup), caching it would pin garbage for 6h.
+    if data["shape"].get("chip"):
+        try:
+            CACHE.parent.mkdir(parents=True, exist_ok=True)
+            CACHE.write_text(json.dumps({"_cached_at": time.time(), "data": data}))
+        except Exception:
+            pass
     return data
 
 
@@ -399,6 +435,7 @@ def build_card(force_cache: bool = False) -> dict:
         "shape": stable["shape"],
         "ports": stable["ports"],
         "skills": stable["skills"],
+        "panel_actions": stable.get("panel_actions", []),
         "running": compute_running(),
     }
 
