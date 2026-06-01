@@ -12,9 +12,32 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 blocked on physical action (UI clicks, voice tests, sending an email) or
 is a focused next deliverable I can pick up unattended.
 
+### 2026-06-01 — recently shipped + open follow-ups
+
+**Shipped this session** (all committed): Fleet × Panel runner (`bin/panel-worker`,
+eppc APPS face, `bin/syncthing-nudge`), `panel-app/ApplePanel.app`, Apple-Silicon ML
+tools (`bin/vision-ocr`, `bin/fm`, `bin/speech-transcribe`, `bin/transcribe-bench`),
+`bin/bridge-doctor`, `bin/disk-overview`, `bin/ocr-pdf-rebuild`. Blank `_ocr.pdf`
+root cause fixed upstream (PDFWorkshop `buildOcrPdf` → PyMuPDF, commit `1589f05`).
+Full diary: `wiki/log.md` 2026-06-01.
+
+**Open — quick / unattended:**
+- [ ] **Commit/sync the 7 recovered `_ocr.pdf` now in `merlib-dump/sources/`**
+  (Tensors, kron-GE, GEET, hunt-stein, seike, davson, allais). Written to disk but
+  NOT yet committed to the merlib-dump repo — do this so they aren't lost. ← don't-lose-it
+- [ ] Clear the 1 lingering Syncthing `comms` error (`gdrive-results` dir-delete; `/bridge-doctor` flags it).
+- [ ] Optional: `vision-ocr` opt-in flag in PDFWorkshop for single-column docs.
+
+**Diagnosis reflex:** when the Mini bridge looks dead, run **`/bridge-doctor` FIRST** —
+it's almost always THIS laptop's disk tripping Syncthing's minDiskFree guard, not the
+Mini. Disk first, SSH second, panic never. (memory: `feedback_bridge_dead_is_laptop_disk`)
+
 ### Blocked on you — physical action
 
-- [ ] **Get CloudcityMacMini back online and activate `!pk voice` end-to-end.**
+- [ ] _[SUPERSEDED 2026-06-01 — the Mini is healthy (up 11 days); the "all heartbeats
+  went silent at once" pattern is almost always THIS laptop's disk tripping Syncthing,
+  not the Mini. Run `/bridge-doctor`. Voice-activation steps kept below for reference.]_
+  **Get CloudcityMacMini back online and activate `!pk voice` end-to-end.**
   Status as of 2026-05-21 ~15:18: the Mini went silent — all three Syncthing
   heartbeats (`voicebox-heartbeat.json`, `whisp-heartbeat.json`,
   `ocr-heartbeat.json` in `~/work/comms/queue/`) stopped updating at the same
