@@ -84,6 +84,20 @@ a fast local **first pass** — reserve the LLM pipeline for what Vision can't r
 5. Each becomes a `bin/<tool>` + a `commands/<name>.md` slash + optionally a
    Panel card and a Shortcut — the skill's zero-roundtrip pattern.
 
+## Built tools (this stack, shipped)
+- **`bin/vision-ocr`** (`/vision-ocr`) — Vision OCR. Fast (~2 s/page). **Best on
+  single-column/modern docs**; on multi-column academic scans with math it
+  interleaves columns and garbles equations, so the Cloudcity GLM-OCR (ollama)
+  stays better there (measured 2026-06-01). Use Vision opt-in, not as the
+  archive default.
+- **`bin/fm`** (`/fm`) — FoundationModels on-device LLM. macOS 26 (the Mini).
+  Proven: `--check` → available, ~2 s replies.
+- **`bin/speech-transcribe`** (`/speech-transcribe`) — Speech on-device STT.
+  ~3 s on a ~12 s clip, high accuracy. **Gotcha:** SFSpeechRecognizer callbacks
+  come on the main run loop — spin `RunLoop.main.run()` and exit from the handler;
+  a semaphore-blocked main thread deadlocks (no result). TCC-gated (Speech
+  Recognition). A fast complement to whisp/Whisper for short clips.
+
 ## Related
 - `bin/vision-ocr` · `commands/vision-ocr.md` — the built tool
 - [[automation-tiers]] · where these frameworks sit among the tiers

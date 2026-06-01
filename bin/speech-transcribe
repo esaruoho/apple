@@ -1,0 +1,13 @@
+#!/bin/bash
+# speech-transcribe — on-device speech-to-text via Apple's Speech framework.
+# Self-building Swift, no deps. Usage: speech-transcribe <audio> [--locale en-US]
+# (Speech Recognition is TCC-gated — grant it to this terminal/app once.)
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/speech-transcribe.swift"
+CACHE="$HOME/.cache/apple"; BIN="$CACHE/speech-transcribe"; mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" \
+        -framework Speech -framework AVFoundation -framework Foundation
+fi
+exec "$BIN" "$@"
