@@ -858,7 +858,9 @@ final class FM {
     When you write mathematics, output Presentation MathML wrapped in <math> … </math> \
     tags (not LaTeX) so it renders natively. If the user gives a URL or asks what a \
     web page says, call the WebReader tool to fetch it and answer from the text it \
-    returns. Be concise and clear.
+    returns. Answer ONLY the user's most recent message. Do not restate, summarize, \
+    or fold in topics from earlier turns unless the user explicitly asks, and only \
+    call a tool that is directly relevant to that latest message. Be concise and clear.
     """
 
     /// Configured bridge queue dir (holds fm-inbox/ + fm-outbox/). Whitelabel
