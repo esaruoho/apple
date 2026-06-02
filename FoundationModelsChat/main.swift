@@ -1632,39 +1632,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         panel.title = "Export conversation as PDF"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        // Render the export HTML in an offscreen webview, then print it to PDF
-        // (paginated, US Letter) once the content has laid out.
+        // Render the export HTML in an offscreen webview, then capture it with
+        // WKWebView.createPDF — async, no print system, never blocks the main
+        // thread. (NSPrintOperation.run() on a detached WKWebView hangs the app,
+        // which is the freeze this replaces.)
         let web = WKWebView(frame: NSRect(x: 0, y: 0, width: 612, height: 792))
         let delegate = LoadDoneDelegate { [weak self] w in
             guard let self = self else { return }
-            self.writePDF(from: w, to: url)
-            self.pdfExportWeb = nil
-            self.pdfExportDelegate = nil
+            w.createPDF(configuration: WKPDFConfiguration()) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let data):
+                        do { try data.write(to: url); self.revealInFinder(url) }
+                        catch { self.exportAlert("Couldn't write the PDF: \(error.localizedDescription)") }
+                    case .failure(let err):
+                        self.exportAlert("PDF render failed: \(err.localizedDescription)")
+                    }
+                    self.pdfExportWeb = nil
+                    self.pdfExportDelegate = nil
+                }
+            }
         }
         pdfExportWeb = web
         pdfExportDelegate = delegate
         web.navigationDelegate = delegate
         web.loadHTMLString(conversationExportHTML(), baseURL: nil)
-    }
-
-    private func writePDF(from web: WKWebView, to url: URL) {
-        let attrs: [NSPrintInfo.AttributeKey: Any] = [
-            .jobDisposition: NSPrintInfo.JobDisposition.save,
-            .jobSavingURL: url
-        ]
-        let info = NSPrintInfo(dictionary: attrs)
-        info.paperSize = NSSize(width: 612, height: 792)   // US Letter @72dpi
-        info.leftMargin = 36; info.rightMargin = 36
-        info.topMargin = 36; info.bottomMargin = 36
-        info.horizontalPagination = .fit
-        info.verticalPagination = .automatic
-        info.isHorizontallyCentered = false
-        info.isVerticallyCentered = false
-        let op = web.printOperation(with: info)
-        op.showsPrintPanel = false
-        op.showsProgressPanel = false
-        op.run()
-        revealInFinder(url)
     }
 
     private func revealInFinder(_ url: URL) {
