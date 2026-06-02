@@ -1300,7 +1300,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         }
     }
 
+    /// Pre-LLM fast path: obvious intents run a script directly (via apple-do) and
+    /// return the answer — no model to reason, decide, stream, or hang. A 3B model is
+    /// slow and unreliable at *deciding* to call a tool (it'll refuse "homepod sensors"
+    /// outright), so for known intents we skip it. Returns the answer, or nil to fall
+    /// through to the model. Works even when FoundationModels is unavailable.
+    func directAnswer(_ text: String) -> String? {
+        let q = text.lowercased()
+        func has(_ ws: [String]) -> Bool { ws.contains { q.contains($0) } }
+        let ad = "\(ToolEnv.binDir)/apple-do"
+        if has(["temperature", "humidity", "homepod", "climate", "how warm", "how hot", "how cold"])
+            && !has(["weather", "outside", "outdoor"]) {
+            return runCLI([ad, "home"])
+        }
+        if has(["fleet", "workers"]) || (q.contains("mini") && has(["busy", "status", "running", "hot", "alive"])) {
+            return runCLI([ad, "fleet"])
+        }
+        if has(["what day", "what time", "what's the date", "what is the date", "today's date",
+                "todays date", "current time", "current date", "time is it", "day is it"]) {
+            return runCLI([ad, "now"])
+        }
+        return nil
+    }
+
     func send(userText: String, display: String? = nil) {
+        // Pre-LLM fast path: known intents run a script, no model — instant, can't hang.
+        if let direct = directAnswer(userText) {
+            messages.append(("user", display ?? userText))
+            convo.append(("user", userText))
+            store.log(role: "user", text: userText)
+            messages.append(("assistant", direct))
+            convo.append(("assistant", direct))
+            store.log(role: "assistant", text: direct)
+            render()
+            return
+        }
         guard fm.available else {
             appendAssistant("Model unavailable — can't send.")
             return
