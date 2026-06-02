@@ -853,7 +853,7 @@ final class FM {
         }
     }
 
-    static let systemInstructions = """
+    static let defaultInstructions = """
     You are a knowledgeable conversational assistant running fully on-device. You have \
     broad built-in knowledge of science, engineering, history, and general topics — \
     ANSWER FROM IT. You do NOT have, and do NOT need, the internet. NEVER reply that you \
@@ -865,6 +865,23 @@ final class FM {
     emit Presentation MathML wrapped in <math> … </math> (not LaTeX). Answer only the \
     user's most recent message, concisely, and do not fold in earlier turns unless asked.
     """
+
+    /// The LIVE, user-editable system prompt — this is what colors every reply.
+    /// Persists in UserDefaults; seeds from defaultInstructions. Edit it in-app via
+    /// Prompt ▸ Edit System Prompt… and the next replies reflect the change.
+    static var systemInstructions: String {
+        get { UserDefaults.standard.string(forKey: "FMChatSystemPrompt") ?? defaultInstructions }
+        set { UserDefaults.standard.set(newValue.isEmpty ? nil : newValue, forKey: "FMChatSystemPrompt") }
+    }
+
+    /// Recreate the local session so an edited system prompt takes effect immediately.
+    func resetSession() {
+        if #available(macOS 26.0, *), case .local = backend {
+            let s = LanguageModelSession(instructions: FM.systemInstructions)
+            s.prewarm()
+            sessionBox = s
+        }
+    }
 
     /// Configured bridge queue dir (holds fm-inbox/ + fm-outbox/). Whitelabel
     /// default is none; set ~/Library/Application Support/FoundationModelsChat/
@@ -1222,6 +1239,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         appendAssistant("🆕 New chat. The previous conversation is saved to `\(prev)`.")
     }
 
+    /// ⇧⌘P — view/edit the system prompt that colors every reply. Save applies it to a
+    /// fresh chat so you can watch how the prompt changes the model's behavior.
+    @objc func editSystemPrompt() {
+        let alert = NSAlert()
+        alert.messageText = "System Prompt"
+        alert.informativeText = "This text is sent to the model ahead of every message — it colors all replies. Edit and Save to apply (starts a fresh chat)."
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 540, height: 260))
+        scroll.hasVerticalScroller = true
+        scroll.borderType = .bezelBorder
+        let tv = NSTextView(frame: NSRect(x: 0, y: 0, width: 540, height: 260))
+        tv.isEditable = true
+        tv.isRichText = false
+        tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        tv.string = FM.systemInstructions
+        tv.isAutomaticQuoteSubstitutionEnabled = false
+        tv.autoresizingMask = [.width, .height]
+        scroll.documentView = tv
+        alert.accessoryView = scroll
+        alert.addButton(withTitle: "Save")             // .alertFirstButtonReturn
+        alert.addButton(withTitle: "Reset to Default")  // .alertSecondButtonReturn
+        alert.addButton(withTitle: "Cancel")            // .alertThirdButtonReturn
+        let r = alert.runModal()
+        if r == .alertFirstButtonReturn {
+            FM.systemInstructions = tv.string
+            fm.resetSession()
+            _ = beginNewChat(); render()
+            appendAssistant("✏️ System prompt updated — fresh chat started. Replies are now colored by your new prompt.")
+        } else if r == .alertSecondButtonReturn {
+            FM.systemInstructions = ""   // clearing the key falls back to defaultInstructions
+            fm.resetSession()
+            _ = beginNewChat(); render()
+            appendAssistant("↩︎ System prompt reset to default — fresh chat started.")
+        }
+    }
+
     /// Start a genuinely fresh chat and re-send the exact prompt that overflowed
     /// the previous window — fired by the button on the overflow bubble.
     func startNewChatFromOverflow() {
@@ -1300,6 +1352,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         c.target = self
         connMenu.addItem(c)
         connItem.submenu = connMenu
+
+        // ── Prompt menu — view/edit the system prompt that colors replies ──
+        let promptItem = NSMenuItem(); mainMenu.addItem(promptItem)
+        let promptMenu = NSMenu(title: "Prompt")
+        let ep = NSMenuItem(title: "Edit System Prompt…", action: #selector(editSystemPrompt), keyEquivalent: "p")
+        ep.keyEquivalentModifierMask = [.command, .shift]   // ⇧⌘P (avoid ⌘P = print)
+        ep.target = self
+        promptMenu.addItem(ep)
+        promptItem.submenu = promptMenu
 
         // ── Window menu — Minimize (⌘M), Zoom, standard window list ──
         let winItem = NSMenuItem(); mainMenu.addItem(winItem)
