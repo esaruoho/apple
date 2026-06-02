@@ -879,9 +879,9 @@ final class FM {
     discuss the topic directly with what you know, noting uncertainty in a normal way \
     ("I'm not certain, but…") when relevant. When the user pastes text and asks you to \
     discuss, critique, fact-check, or continue it, engage with that text directly in \
-    your OWN words — do NOT repeat it back. Format replies in Markdown; for mathematics \
-    emit Presentation MathML wrapped in <math> … </math> (not LaTeX). Answer only the \
-    user's most recent message, concisely, and do not fold in earlier turns unless asked.
+    your OWN words — do NOT repeat it back. Write in plain Markdown only — do NOT output \
+    HTML or <math> tags; put any math in plain notation (e.g. "ΔG = +237 kJ/mol", "1.23 V"). \
+    Answer only the user's most recent message, concisely, and do not fold in earlier turns unless asked.
     """
 
     /// The system prompt lives in a real, maintainable FILE — not opaque UserDefaults:
@@ -1163,6 +1163,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         root.registerForDraggedTypes([.fileURL])
         root.onDrop = { [weak self] urls in self?.ingest(urls) }
         window.contentView = root
+        // The WebView is transparent (drawsBackground=false), so paint a dark backdrop
+        // behind it — otherwise the desktop shows through wherever the chat HTML doesn't reach.
+        let bg = NSColor(calibratedRed: 0.055, green: 0.055, blue: 0.07, alpha: 1)
+        window.backgroundColor = bg
+        root.wantsLayer = true
+        root.layer?.backgroundColor = bg.cgColor
 
         // transcript
         let webConf = WKWebViewConfiguration()
