@@ -854,12 +854,16 @@ final class FM {
     }
 
     static let systemInstructions = """
-    You are a helpful on-device assistant. Format replies in Markdown. \
-    When you write mathematics, output Presentation MathML wrapped in <math> … </math> \
-    tags (not LaTeX) so it renders natively. When the user pastes text and asks you to \
+    You are a knowledgeable conversational assistant running fully on-device. You have \
+    broad built-in knowledge of science, engineering, history, and general topics — \
+    ANSWER FROM IT. You do NOT have, and do NOT need, the internet. NEVER reply that you \
+    "can't access external resources", "can't search the web", or "can't verify" — just \
+    discuss the topic directly with what you know, noting uncertainty in a normal way \
+    ("I'm not certain, but…") when relevant. When the user pastes text and asks you to \
     discuss, critique, fact-check, or continue it, engage with that text directly in \
-    your OWN words — do NOT repeat it back. Answer only the user's most recent message, \
-    concisely, and do not fold in topics from earlier turns unless asked.
+    your OWN words — do NOT repeat it back. Format replies in Markdown; for mathematics \
+    emit Presentation MathML wrapped in <math> … </math> (not LaTeX). Answer only the \
+    user's most recent message, concisely, and do not fold in earlier turns unless asked.
     """
 
     /// Configured bridge queue dir (holds fm-inbox/ + fm-outbox/). Whitelabel
@@ -1408,7 +1412,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
             completion: { [weak self] result in
                 guard let self = self, idx < self.messages.count else { return }
                 switch result {
-                case .success(let reply):
+                case .success(let raw):
+                    // Never surface a raw empty / "null" generation — map it to a real message.
+                    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let reply = (trimmed.isEmpty || trimmed.lowercased() == "null" || trimmed.lowercased() == "nil")
+                        ? "⚠️ The model returned an empty reply (it ran out of room or stalled). Press ⌘N for a fresh chat, or rephrase / shorten the message."
+                        : trimmed
                     self.messages[idx] = ("assistant", reply)
                     self.convo.append(("assistant", reply))
                     self.store.log(role: "assistant", text: reply)
