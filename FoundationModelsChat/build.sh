@@ -38,10 +38,16 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
+# Gate: the Markdown renderer must pass its headless tests before we build the
+# app. A render regression (e.g. ordered lists not counting) fails here, loudly,
+# instead of in a screenshot. Pure Foundation — runs anywhere swiftc does.
+echo "testing Markdown renderer …"
+"$HERE/test-markdown.sh"
+
 echo "compiling …"
 # Deployment target 14.0 so the app LAUNCHES on older macOS and reports the
 # FoundationModels requirement gracefully (FM calls are #available-gated to 26).
-xcrun swiftc -O -target arm64-apple-macos14.0 "$HERE/main.swift" \
+xcrun swiftc -O -target arm64-apple-macos14.0 "$HERE/main.swift" "$HERE/Markdown.swift" \
   -o "$BUNDLE/Contents/MacOS/$APP" \
   -framework AppKit -framework WebKit -framework FoundationModels \
   -framework PDFKit -framework Vision -framework UniformTypeIdentifiers \
