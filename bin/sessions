@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-sessions — TUI session picker for Claude Code, GitHub Copilot CLI, OpenAI Codex
-CLI, and FoundationModels (bin/fm-chat, the on-device LLM).
+sessions — TUI session picker for Claude Code, GitHub Copilot CLI, OpenAI Codex CLI,
+and FoundationModels (the fm-chat on-device LLM).
 
 Upstream: https://github.com/esaruoho/sessions
 This file is the apple-repo copy; the standalone repo above is the canonical
@@ -25,6 +25,9 @@ Per-provider mapping:
   • Codex    ~/.codex/sessions/YYYY/MM/DD/rollout-*-<uuid>.jsonl
              first line is session_meta with `cwd` and `id`
              resume: codex resume <uuid>
+  • fm-chat  ~/.fm-chat/sessions/<uuid>.jsonl  (FoundationModels on-device LLM)
+             first line session_meta with cwd+uuid, then {role,content} messages
+             resume: fm-chat --resume <uuid>
 
 Apple-native: stdlib only. No Homebrew, no pip.
 """
@@ -33,7 +36,9 @@ import json
 import os
 import shutil
 import sqlite3
+import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -44,9 +49,9 @@ REFRESH_MS = 1500
 # ─────────────────────────── shared types ────────────────────────────
 
 class Row:
-    __slots__ = ("provider", "uuid", "cwd", "path", "mtime", "size", "turns", "snippet", "title")
+    __slots__ = ("provider", "uuid", "cwd", "path", "mtime", "size", "turns", "snippet", "title", "lineage")
 
-    def __init__(self, provider, uuid, cwd, path, mtime, size=0, turns=0, snippet=None, title=None):
+    def __init__(self, provider, uuid, cwd, path, mtime, size=0, turns=0, snippet=None, title=None, lineage=None):
         self.provider = provider   # "claude" | "copilot" | "codex" | "fm-chat"
         self.uuid = uuid
         self.cwd = cwd
@@ -56,6 +61,8 @@ class Row:
         self.turns = turns
         self.snippet = snippet     # lazy; None means not yet loaded — first user prompt
         self.title = title         # user-set rename / summary, if any
+        self.lineage = lineage     # reserved: provenance tag if a session was
+                                   # spawned by another tool (currently unused)
 
 
 # ─────────────────────────── Claude ──────────────────────────────────
@@ -257,7 +264,8 @@ def load_codex_meta(row):
 
 
 # ─────────────────────────── fm-chat ─────────────────────────────────
-# Apple on-device LLM chats (bin/fm-chat) persisted to ~/.fm-chat/sessions/.
+# Apple on-device LLM chats (the `fm-chat` CLI) persisted to ~/.fm-chat/sessions/.
+# Each file: line 1 session_meta {uuid,cwd,...}, then message lines {role,content}.
 FMCHAT_ROOT = f"{HOME}/.fm-chat/sessions"
 
 
@@ -307,8 +315,12 @@ def load_fmchat_meta(row):
 
 # ─────────────────────────── shared helpers ──────────────────────────
 
-LOAD = {"claude": load_claude_meta, "copilot": load_copilot_meta,
-        "codex": load_codex_meta, "fm-chat": load_fmchat_meta}
+LOAD = {
+    "claude":   load_claude_meta,
+    "copilot":  load_copilot_meta,
+    "codex":    load_codex_meta,
+    "fm-chat":  load_fmchat_meta,
+}
 
 
 def list_all(folder):
@@ -389,7 +401,7 @@ def find_bin(name, extra_paths=()):
     return shutil.which(name) or name
 
 
-def resume_argv(provider, uuid):
+def resume_argv(provider, uuid, path=None):
     if provider == "claude":
         return [find_bin("claude"), "--dangerously-skip-permissions", "--resume", uuid]
     if provider == "copilot":
@@ -401,7 +413,7 @@ def resume_argv(provider, uuid):
     raise ValueError(provider)
 
 
-def new_argv(provider, folder=None):
+def new_argv(provider):
     if provider == "claude":
         return [find_bin("claude"), "--dangerously-skip-permissions"]
     if provider == "copilot":
@@ -409,10 +421,7 @@ def new_argv(provider, folder=None):
     if provider == "codex":
         return [find_bin("codex")]
     if provider == "fm-chat":
-        argv = [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",))]
-        if folder:
-            argv += ["--cwd", folder]
-        return argv
+        return [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",))]
     raise ValueError(provider)
 
 
@@ -471,7 +480,7 @@ def run_picker(stdscr, folder):
         fn = sum(1 for r in rows if r.provider == "fm-chat")
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
         header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn} F:{fn}"
-        footer = " ↑/↓ select · ⏎ resume · n new claude · c new copilot · x new codex · f new fm-chat · q quit · auto-refresh"
+        footer = " ↑/↓ select · ⏎ resume · n claude · c copilot · x codex · f fm-chat · q quit · auto-refresh"
         try:
             stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
@@ -479,7 +488,7 @@ def run_picker(stdscr, folder):
             pass
 
         if not rows:
-            msg = "No Claude/Copilot/Codex sessions for this folder. n=claude  c=copilot  x=codex  q=quit"
+            msg = "No sessions for this folder. n=claude  c=copilot  x=codex  f=fm-chat  q=quit"
             try:
                 stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, w)
             except curses.error:
@@ -570,30 +579,815 @@ def run_picker(stdscr, folder):
         elif k in (10, 13, curses.KEY_ENTER):
             if rows:
                 r = rows[sel]
-                return ("resume", r.provider, r.uuid)
+                return ("resume", r.provider, r.uuid, r.path)
         elif k in (ord('n'), ord('N')):
-            return ("new", "claude", None)
+            return ("new", "claude", None, None)
         elif k in (ord('c'), ord('C')):
-            return ("new", "copilot", None)
+            return ("new", "copilot", None, None)
         elif k in (ord('x'), ord('X')):
-            return ("new", "codex", None)
+            return ("new", "codex", None, None)
         elif k in (ord('f'), ord('F')):
-            return ("new", "fm-chat", None)
+            return ("new", "fm-chat", None, None)
         elif k in (ord('q'), ord('Q'), 27):
-            return ("quit", None, None)
+            return ("quit", None, None, None)
 
         if rows and 0 <= sel < len(rows):
             sel_key = keyfor(rows[sel])
 
 
+# ─────────────────────────── CLI subcommands ─────────────────────────
+#
+# Doctrine: every conversation across every provider is queryable text.
+# From inside Claude / Codex / Copilot / a plain shell, you can pull any
+# past session into the current context via `!sessions cat <id>`.
+
+def all_rows_global():
+    """List every session from every provider, regardless of folder filter.
+    For ls/cat/grep we don't want folder-scoping; we want the full corpus."""
+    rows = []
+    # Claude / Copilot / Codex are folder-scoped at the API level. To go
+    # global we walk their root dirs directly.
+    try:
+        for project in os.listdir(f"{HOME}/.claude/projects"):
+            pdir = f"{HOME}/.claude/projects/{project}"
+            if not os.path.isdir(pdir):
+                continue
+            for n in os.listdir(pdir):
+                if not n.endswith(".jsonl"):
+                    continue
+                full = os.path.join(pdir, n)
+                try:
+                    st = os.stat(full)
+                except OSError:
+                    continue
+                rows.append(Row("claude", n[:-6], project, full, st.st_mtime, st.st_size))
+    except FileNotFoundError:
+        pass
+    if os.path.isfile(COPILOT_DB):
+        try:
+            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro&immutable=1", uri=True)
+            for sid, cwd, ts, _name in con.execute(
+                "SELECT id, working_directory, updated_at, name FROM sessions"
+            ):
+                rows.append(Row("copilot", sid, cwd or "(unknown)", COPILOT_DB,
+                                 parse_iso(ts), 0))
+            con.close()
+        except sqlite3.Error:
+            pass
+    try:
+        for year in os.listdir(f"{HOME}/.codex/sessions"):
+            for month in os.listdir(f"{HOME}/.codex/sessions/{year}"):
+                for day in os.listdir(f"{HOME}/.codex/sessions/{year}/{month}"):
+                    ddir = f"{HOME}/.codex/sessions/{year}/{month}/{day}"
+                    for n in os.listdir(ddir):
+                        if not n.startswith("rollout-") or not n.endswith(".jsonl"):
+                            continue
+                        full = os.path.join(ddir, n)
+                        try:
+                            st = os.stat(full)
+                        except OSError:
+                            continue
+                        sid = n.rsplit("-", 1)[-1][:-6]
+                        rows.append(Row("codex", sid, "(unknown)", full, st.st_mtime, st.st_size))
+    except FileNotFoundError:
+        pass
+    rows.sort(key=lambda r: r.mtime, reverse=True)
+    return rows
+
+
+def find_session(query):
+    """Find a session by uuid / stamp / prefix. Returns Row or None."""
+    rows = all_rows_global()
+    # Exact match first
+    for r in rows:
+        if r.uuid == query:
+            return r
+    # Prefix match
+    matches = [r for r in rows if r.uuid.startswith(query)]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        print(f"sessions: ambiguous id '{query}' — {len(matches)} matches:",
+              file=sys.stderr)
+        for m in matches[:6]:
+            print(f"  {m.provider:8} {m.uuid}", file=sys.stderr)
+        sys.exit(2)
+    return None
+
+
+def render_session(row):
+    """Return the full conversation as plain text, chronologically."""
+    out = []
+    out.append(f"# {row.provider} session  {row.uuid}")
+    if row.cwd and row.cwd != "(global)":
+        out.append(f"# cwd: {row.cwd}")
+    out.append(f"# mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(row.mtime))}")
+    out.append("")
+    try:
+        if row.provider == "claude":
+            with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    try: d = json.loads(line)
+                    except Exception: continue
+                    t = d.get("type")
+                    if t == "user":
+                        c = d.get("message", {}).get("content", "")
+                        if isinstance(c, list):
+                            c = " ".join(x.get("text","") for x in c if isinstance(x, dict))
+                        if not isinstance(c, str): c = str(c)
+                        out.append(f"\n## USER\n{c.strip()}")
+                    elif t == "assistant":
+                        c = d.get("message", {}).get("content", "")
+                        if isinstance(c, list):
+                            c = "\n".join(x.get("text","") for x in c if isinstance(x, dict) and x.get("type") == "text")
+                        if not isinstance(c, str): c = str(c)
+                        if c.strip():
+                            out.append(f"\n## ASSISTANT\n{c.strip()}")
+        elif row.provider == "codex":
+            with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    try: d = json.loads(line)
+                    except Exception: continue
+                    role = d.get("role") or (d.get("payload") or {}).get("role")
+                    content = d.get("content") or (d.get("payload") or {}).get("content")
+                    if isinstance(content, list):
+                        content = "\n".join(x.get("text","") for x in content if isinstance(x, dict))
+                    if not role or not content: continue
+                    out.append(f"\n## {role.upper()}\n{str(content).strip()}")
+        elif row.provider == "copilot":
+            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro&immutable=1", uri=True)
+            for role, content in con.execute(
+                "SELECT role, content FROM turns WHERE session_id = ? ORDER BY created_at",
+                (row.uuid,)
+            ):
+                out.append(f"\n## {role.upper()}\n{str(content).strip()}")
+            con.close()
+        elif row.provider == "fm-chat":
+            with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    try: d = json.loads(line)
+                    except Exception: continue
+                    if d.get("type") == "message":
+                        role = d.get("role", "?")
+                        c = d.get("content", "")
+                        if str(c).strip():
+                            out.append(f"\n## {role.upper()}\n{str(c).strip()}")
+    except FileNotFoundError:
+        out.append(f"(file not found: {row.path})")
+    return "\n".join(out)
+
+
+def cmd_ls(args):
+    rows = all_rows_global()
+    limit = 50
+    if args and args[0].isdigit():
+        limit = int(args[0])
+    for r in rows[:limit]:
+        ensure_meta_for(r)
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
+        snip = (r.snippet or "").replace("\n", " ")[:80]
+        print(f"{r.provider:8} {r.uuid[:24]:24} {when}  {r.turns:>4}t  {snip}")
+
+
+def ensure_meta_for(r):
+    if r.snippet is None:
+        try: LOAD[r.provider](r)
+        except Exception: r.snippet = ""
+
+
+def cmd_cat(args):
+    if not args:
+        print("usage: sessions cat <session-id>", file=sys.stderr); sys.exit(2)
+    r = find_session(args[0])
+    if r is None:
+        print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    print(render_session(r))
+
+
+def cmd_grep(args):
+    if not args:
+        print("usage: sessions grep <pattern>", file=sys.stderr); sys.exit(2)
+    pat = args[0].lower()
+    for r in all_rows_global():
+        ensure_meta_for(r)
+        text = render_session(r)
+        if pat in text.lower():
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
+            # Show first matching line for context
+            for ln in text.split("\n"):
+                if pat in ln.lower():
+                    print(f"{r.provider:8} {r.uuid[:24]:24} {when}  {ln.strip()[:120]}")
+                    break
+
+
+def cmd_open(args):
+    if not args:
+        print("usage: sessions open <session-id>", file=sys.stderr); sys.exit(2)
+    r = find_session(args[0])
+    if r is None:
+        print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    argv = resume_argv(r.provider, r.uuid, r.path)
+    os.execvp(argv[0], argv)
+
+
+# ─────────────────────────── distill + promote ──────────────────────
+#
+# ENVOY-doctrine memory-promotion chain:  raw → distilled → promoted.
+# Raw transcript stays in its native store. Distilled summary is a cheap
+# context-friendly digest cached locally. Promotion moves the digest into
+# the cc-vault under a topic folder where it becomes addressable knowledge.
+
+DISTILL_DIR = f"{HOME}/.sessions/distilled"
+VAULT_DIR   = f"{HOME}/work/cc/vault/sources/conversations"
+
+DISTILL_PROMPT = """Read this conversation transcript and produce a compact digest with these exact markdown headings (in this order):
+
+## Topic
+(one sentence — what was this conversation actually about?)
+
+## Key claims and conclusions
+(bullet list — only the substantive ones)
+
+## Decisions made
+(bullet list — only explicit decisions; "none" if there weren't any)
+
+## Open questions
+(bullet list — unresolved threads that should be carried forward)
+
+## Notable artifacts
+(bullet list of files/URLs/named concepts referenced; "none" if none)
+
+Be terse. Quote phrases verbatim only when they capture something important. Skip pleasantries, debugging back-and-forth, and tool-result echo. Aim for ~250 words total.
+
+--- TRANSCRIPT ---
+"""
+
+
+def distill_paths(row):
+    """Where the distilled .md for this session lives in the local cache."""
+    base = os.path.join(DISTILL_DIR, row.provider)
+    os.makedirs(base, exist_ok=True)
+    return os.path.join(base, f"{row.uuid}.md")
+
+
+def find_claude_bin():
+    home = os.path.expanduser("~")
+    for c in [f"{home}/.claude/local/claude", f"{home}/bin/claude",
+              "/usr/local/bin/claude", "/opt/homebrew/bin/claude"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("claude") or "claude"
+
+
+def call_claude(prompt, cwd=None, timeout=180):
+    """One-shot Claude call via `-p --output-format json`. Returns the
+    `result` field (the text) and the session_id (so this distill call is
+    itself a real Claude session, threaded into the lineage)."""
+    env = os.environ.copy()
+    home = os.path.expanduser("~")
+    env["PATH"] = (env.get("PATH", "") +
+                   f":{home}/.claude/local:{home}/bin:/usr/local/bin:/opt/homebrew/bin")
+    proc = subprocess.run(
+        [find_claude_bin(), "-p", "--output-format", "json", prompt],
+        cwd=cwd or os.getcwd(),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"claude exited {proc.returncode}: {proc.stderr.strip()[:400]}")
+    try:
+        obj = json.loads(proc.stdout)
+    except Exception:
+        # CLI may have returned plain text in older versions
+        return proc.stdout.strip(), None
+    return (obj.get("result") or "").strip(), obj.get("session_id")
+
+
+def infer_topic(row):
+    """Pick the vault subfolder for this session."""
+    if row.cwd and row.cwd not in ("(global)", "(unknown)"):
+        return os.path.basename(row.cwd.rstrip("/")) or "general"
+    return "general"
+
+
+def distill_session(row, force=False, agent_cwd=None):
+    """Produce a distilled digest of a session. Cached at DISTILL_DIR/<provider>/<uuid>.md
+    unless --force. Returns the path."""
+    out_path = distill_paths(row)
+    if os.path.exists(out_path) and not force:
+        return out_path, "(cached — pass --force to regenerate)"
+    ensure_meta_for(row)
+    transcript = render_session(row)
+    if not transcript.strip():
+        raise RuntimeError("empty transcript")
+    prompt = DISTILL_PROMPT + transcript
+    cwd = agent_cwd or os.path.expanduser("~/work/cc/vault")
+    if not os.path.isdir(cwd):
+        cwd = os.path.expanduser("~")
+    print(f"calling claude in {cwd} … ({len(transcript)} chars in)", file=sys.stderr)
+    digest, distill_sid = call_claude(prompt, cwd=cwd)
+    when = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+    frontmatter = [
+        "---",
+        f"source: {row.provider}",
+        f"provider_uuid: {row.uuid}",
+        f"original_mtime: {time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(row.mtime))}",
+        f"distilled_at: {when}",
+        f"distilled_by: claude",
+        f"distilled_session_id: {distill_sid or ''}",
+        f"turns: {row.turns}",
+        f"original_path: {row.path}",
+        "---",
+        "",
+    ]
+    body = "\n".join(frontmatter) + digest + "\n"
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(body)
+    return out_path, "(freshly distilled)"
+
+
+def promote_session(row, topic=None, force_distill=False):
+    """Move/copy the distilled digest into the cc-vault under <topic>/.
+    Auto-distills first if no cached digest exists."""
+    distill_path = distill_paths(row)
+    if not os.path.exists(distill_path) or force_distill:
+        distill_path, _ = distill_session(row, force=force_distill)
+    topic = topic or infer_topic(row)
+    vault_dir = os.path.join(VAULT_DIR, topic)
+    os.makedirs(vault_dir, exist_ok=True)
+    # Filename: <provider>-<uuid-or-stamp>.md
+    safe_uuid = row.uuid.replace("/", "_").replace(" ", "_")
+    out_name = f"{row.provider}-{safe_uuid}.md"
+    out_path = os.path.join(vault_dir, out_name)
+    # Add `topic` and `promoted_at` to the frontmatter of the distilled file.
+    with open(distill_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    if content.startswith("---\n"):
+        end = content.find("\n---\n", 4)
+        if end > 0:
+            extra = (f"topic: {topic}\n"
+                     f"promoted_at: {time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime())}\n"
+                     f"vault_path: {out_path}\n")
+            content = content[:end] + "\n" + extra + content[end:]
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return out_path
+
+
+def cmd_distill(args):
+    force = "--force" in args
+    args = [a for a in args if a != "--force"]
+    if not args:
+        print("usage: sessions distill <session-id> [--force]", file=sys.stderr)
+        sys.exit(2)
+    r = find_session(args[0])
+    if r is None:
+        print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    try:
+        path, note = distill_session(r, force=force)
+    except Exception as e:
+        print(f"distill failed: {e}", file=sys.stderr); sys.exit(1)
+    print(path)
+    with open(path, "r", encoding="utf-8") as f:
+        sys.stdout.write(f.read())
+    print(f"\n{note}", file=sys.stderr)
+
+
+def cmd_promote(args):
+    topic = None
+    force = "--force" in args
+    args = [a for a in args if a != "--force"]
+    # Optional --topic <name>
+    if "--topic" in args:
+        i = args.index("--topic")
+        if i + 1 < len(args):
+            topic = args[i + 1]
+            args = args[:i] + args[i + 2:]
+    if not args:
+        print("usage: sessions promote <session-id> [--topic <name>] [--force]",
+              file=sys.stderr)
+        sys.exit(2)
+    r = find_session(args[0])
+    if r is None:
+        print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    try:
+        path = promote_session(r, topic=topic, force_distill=force)
+    except Exception as e:
+        print(f"promote failed: {e}", file=sys.stderr); sys.exit(1)
+    print(path)
+
+
+# ─────────────────────────── sgrep — semantic grep ───────────────────
+#
+# Apple-native semantic search across all sessions.  Builds a corpus from
+# distilled .md files (cheap, fast) by default; --raw walks full transcripts
+# (slow, hits the apple-semantic-match Swift script on every line).  Each
+# match maps back to (provider, uuid) so you can open or cat the source.
+
+def find_apple_semantic_match():
+    home = os.path.expanduser("~")
+    for c in [f"{home}/work/apple/bin/apple-semantic-match",
+              f"{home}/bin/apple-semantic-match",
+              "/usr/local/bin/apple-semantic-match"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("apple-semantic-match")
+
+
+def find_apple_embed():
+    home = os.path.expanduser("~")
+    for c in [f"{home}/work/apple/bin/apple-embed",
+              f"{home}/bin/apple-embed",
+              "/usr/local/bin/apple-embed"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("apple-embed")
+
+
+# ─────────────────────────── embedding cache ─────────────────────────
+# One JSONL per session under ~/.sessions/embeddings/<provider>/<uuid>.jsonl
+# Each line:  {"t": "<text>", "v": [<512 floats>]}
+# Built once per session, reused forever. Invalidated by mtime check.
+
+EMBED_DIR = f"{HOME}/.sessions/embeddings"
+
+
+def session_embed_path(row):
+    base = os.path.join(EMBED_DIR, row.provider)
+    return os.path.join(base, f"{row.uuid}.jsonl")
+
+
+def session_embed_is_fresh(row):
+    """Cache is fresh if it exists, full stop. Mtime-based freshness was too
+    aggressive — any new turn in an active Claude session bumps the .jsonl
+    mtime, which would force a full re-embed of a long transcript every time.
+    Use --rebuild to force a refresh; the cache file is otherwise treated as
+    canon."""
+    return os.path.exists(session_embed_path(row))
+
+
+def ensure_session_embedded(row, verbose=False):
+    """If cache for this session is missing/stale, render → filter → embed → save.
+    Returns the cache path."""
+    if session_embed_is_fresh(row):
+        return session_embed_path(row)
+    bin_embed = find_apple_embed()
+    if not bin_embed:
+        raise RuntimeError("apple-embed not found on PATH or in ~/work/apple/bin/")
+    try:
+        text = render_session(row)
+    except Exception as e:
+        raise RuntimeError(f"render failed for {row.uuid}: {e}")
+    lines = []
+    for ln in text.split("\n"):
+        ln = ln.strip().lstrip("-* •").strip()
+        if looks_like_prose(ln):
+            lines.append(ln)
+    if not lines:
+        if verbose:
+            print(f"  ({row.uuid[:12]}): no prose lines, skipping", file=sys.stderr)
+        # Still touch an empty file so we don't retry on every sgrep run.
+        out = session_embed_path(row)
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out, "w", encoding="utf-8") as f:
+            pass
+        return out
+    if verbose:
+        print(f"  embedding {row.provider}/{row.uuid[:12]} … ({len(lines)} lines)",
+              file=sys.stderr)
+    proc = subprocess.run(
+        [bin_embed],
+        input="\n".join(lines), text=True,
+        capture_output=True, timeout=600,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"apple-embed failed: {proc.stderr.strip()[:200]}")
+    out = session_embed_path(row)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    # Atomic write so a killed process doesn't leave a half-baked cache.
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False,
+                                       dir=os.path.dirname(out)) as f:
+        f.write(proc.stdout)
+        tmp = f.name
+    os.replace(tmp, out)
+    return out
+
+
+def load_cached_corpus():
+    """Walk EMBED_DIR, load every JSONL, return (texts, vectors, owners).
+    owners[i] = (provider, uuid). vectors[i] = list of floats (length 512)."""
+    texts, vectors, owners = [], [], []
+    if not os.path.isdir(EMBED_DIR):
+        return texts, vectors, owners
+    for provider in sorted(os.listdir(EMBED_DIR)):
+        pdir = os.path.join(EMBED_DIR, provider)
+        if not os.path.isdir(pdir):
+            continue
+        for fn in sorted(os.listdir(pdir)):
+            if not fn.endswith(".jsonl"):
+                continue
+            uuid = fn[:-len(".jsonl")]
+            full = os.path.join(pdir, fn)
+            try:
+                with open(full, "r", encoding="utf-8") as f:
+                    for line in f:
+                        try: d = json.loads(line)
+                        except Exception: continue
+                        t = d.get("t"); v = d.get("v")
+                        if not t or not isinstance(v, list):
+                            continue
+                        texts.append(t)
+                        vectors.append(v)
+                        owners.append((provider, uuid))
+            except OSError:
+                continue
+    return texts, vectors, owners
+
+
+def embed_query(query):
+    """Embed a single query string. Returns the 512-d float vector."""
+    bin_embed = find_apple_embed()
+    if not bin_embed:
+        raise RuntimeError("apple-embed not found")
+    proc = subprocess.run(
+        [bin_embed], input=query, text=True,
+        capture_output=True, timeout=30,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"apple-embed failed on query: {proc.stderr.strip()}")
+    line = proc.stdout.strip().split("\n")[0]
+    d = json.loads(line)
+    return d["v"]
+
+
+def cosine(a, b):
+    # Both vectors are 512-d. Pure stdlib — no numpy.
+    s = 0.0; na = 0.0; nb = 0.0
+    for i in range(len(a)):
+        ai = a[i]; bi = b[i]
+        s  += ai * bi
+        na += ai * ai
+        nb += bi * bi
+    if na == 0 or nb == 0: return 0.0
+    return s / ((na ** 0.5) * (nb ** 0.5))
+
+
+def build_distilled_corpus():
+    """Concatenate every distilled .md into a corpus + parallel index.
+    Returns (corpus_lines, index) where index[i] = (provider, uuid)."""
+    corpus = []
+    index = []
+    if not os.path.isdir(DISTILL_DIR):
+        return corpus, index
+    for provider in sorted(os.listdir(DISTILL_DIR)):
+        pdir = os.path.join(DISTILL_DIR, provider)
+        if not os.path.isdir(pdir):
+            continue
+        for fn in sorted(os.listdir(pdir)):
+            if not fn.endswith(".md"):
+                continue
+            uuid = fn[:-3]
+            try:
+                with open(os.path.join(pdir, fn), "r", encoding="utf-8", errors="replace") as f:
+                    in_front = False
+                    for raw_line in f:
+                        ln = raw_line.strip()
+                        if ln == "---":
+                            in_front = not in_front
+                            continue
+                        if in_front:
+                            continue
+                        if not ln or ln.startswith("#") or len(ln) < 12:
+                            continue
+                        # Strip bullet/list markers so the embedding sees the
+                        # content, not the formatting.
+                        ln = ln.lstrip("-* ").strip()
+                        if not ln:
+                            continue
+                        corpus.append(ln)
+                        index.append((provider, uuid))
+            except OSError:
+                continue
+    return corpus, index
+
+
+def looks_like_prose(ln):
+    """Filter out lines that aren't English-like content. The semantic
+    embedder is wasted on JSON, paths, code, log lines, timestamps."""
+    if len(ln) < 20 or len(ln) > 240:
+        return False
+    if ln.startswith(("#", "{", "[", "<", "$", ">", "│", "|", "-", "*", "•")):
+        # most starts: code, json, prompts, tables, bullets (we strip bullets
+        # separately, this catches the rest)
+        return False
+    if ln.count("/") > 3 or ln.count(":") > 3 or ln.count("=") > 2:
+        return False
+    # Require some alphabetic density — at least 60% letters/spaces.
+    letters_and_space = sum(1 for c in ln if c.isalpha() or c == " ")
+    if letters_and_space / len(ln) < 0.6:
+        return False
+    # Require at least 4 word-like tokens
+    if len(ln.split()) < 4:
+        return False
+    return True
+
+
+def build_raw_corpus(limit=8):
+    """Render the newest `limit` sessions, prose-filter, return corpus +
+    index. `limit` defaults to 8 because the semantic embedder is ~12ms/line
+    and corpora over a few thousand lines push runtime past 'feels frozen'."""
+    corpus = []
+    index = []
+    rows = all_rows_global()[:limit]
+    for r in rows:
+        try:
+            text = render_session(r)
+        except Exception:
+            continue
+        for ln in text.split("\n"):
+            ln = ln.strip().lstrip("-* •").strip()
+            if not looks_like_prose(ln):
+                continue
+            corpus.append(ln)
+            index.append((r.provider, r.uuid))
+    return corpus, index
+
+
+def cmd_sgrep(raw_args):
+    """Semantic search across all sessions via the embedding cache.
+    First call on a fresh machine builds the per-session cache (~30s per
+    long session). Every subsequent call is sub-second."""
+    top = 10
+    threshold = 0.0
+    sessions_limit = None    # default: search EVERY cached session
+    rebuild = False          # --rebuild forces a fresh embedding pass
+    args = []
+    i = 0
+    while i < len(raw_args):
+        a = raw_args[i]
+        if a == "--top" and i + 1 < len(raw_args):
+            top = int(raw_args[i+1]); i += 1
+        elif a == "--threshold" and i + 1 < len(raw_args):
+            threshold = float(raw_args[i+1]); i += 1
+        elif a == "--limit" and i + 1 < len(raw_args):
+            sessions_limit = int(raw_args[i+1]); i += 1
+        elif a == "--rebuild":
+            rebuild = True
+        elif a == "--raw":
+            pass  # legacy flag — no-op, the cache IS the corpus now
+        else:
+            args.append(a)
+        i += 1
+    if not args:
+        print("usage: sessions sgrep <phrase> [--top N] [--threshold X] [--limit N] [--rebuild]",
+              file=sys.stderr)
+        sys.exit(2)
+    query = " ".join(args)
+
+    if not find_apple_embed():
+        print("sgrep: apple-embed not found at ~/work/apple/bin/apple-embed",
+              file=sys.stderr); sys.exit(1)
+
+    # 1) Bring the cache up to date. Embed any session that's missing/stale.
+    rows = all_rows_global()
+    if sessions_limit:
+        rows = rows[:sessions_limit]
+    needs = []
+    for r in rows:
+        if rebuild or not session_embed_is_fresh(r):
+            needs.append(r)
+    if needs:
+        print(f"embedding {len(needs)} session(s) into ~/.sessions/embeddings/ \u2026",
+              file=sys.stderr)
+        t0 = time.time()
+        for k, r in enumerate(needs):
+            try:
+                ensure_session_embedded(r, verbose=True)
+            except Exception as e:
+                print(f"  skip {r.provider}/{r.uuid[:12]}: {e}", file=sys.stderr)
+            if (k + 1) % 5 == 0:
+                elapsed = time.time() - t0
+                rate = elapsed / (k + 1)
+                remaining = rate * (len(needs) - k - 1)
+                print(f"  [{k+1}/{len(needs)}]  elapsed {elapsed:.0f}s  eta {remaining:.0f}s",
+                      file=sys.stderr)
+        print(f"  done embedding in {time.time()-t0:.1f}s", file=sys.stderr)
+
+    # 2) Load the cached corpus. Fast — JSONL reads only.
+    texts, vectors, owners = load_cached_corpus()
+    if not texts:
+        print("sgrep: corpus is empty (no sessions had prose lines)", file=sys.stderr)
+        sys.exit(1)
+
+    # 3) Embed the query.
+    try:
+        qv = embed_query(query)
+    except Exception as e:
+        print(f"sgrep: embed_query failed: {e}", file=sys.stderr); sys.exit(1)
+
+    # 4) Cosine across the whole cache in pure Python. ~50ms per 10k lines.
+    t0 = time.time()
+    scores = []
+    for k, v in enumerate(vectors):
+        if len(v) != len(qv):
+            continue
+        scores.append((cosine(qv, v), k))
+    scores.sort(reverse=True)
+
+    # 5) Dedup by session, keep best score per session.
+    seen = {}
+    for sc, k in scores:
+        if sc < threshold:
+            break
+        provider, uuid = owners[k]
+        key = (provider, uuid)
+        if key not in seen:
+            seen[key] = {"provider": provider, "uuid": uuid,
+                         "score": sc, "line": texts[k]}
+        if len(seen) >= top:
+            break
+    final = sorted(seen.values(), key=lambda x: -x["score"])[:top]
+    if not final:
+        print("(no hits above threshold)", file=sys.stderr); return
+
+    all_rows = {(r.provider, r.uuid): r for r in all_rows_global()}
+    for hit in final:
+        r = all_rows.get((hit["provider"], hit["uuid"]))
+        when = time.strftime("%Y-%m-%d", time.localtime(r.mtime)) if r else "\u2014"
+        snip = hit["line"][:100]
+        print(f"{hit['score']:.3f}  {hit['provider']:8} {hit['uuid'][:18]:18}  {when}  {snip}")
+    print(f"  ({time.time()-t0:.2f}s \u00b7 {len(texts)} cached lines \u00b7 {len(set(owners))} sessions)",
+          file=sys.stderr)
+
+
+def cmd_help():
+    print("""sessions — TUI picker + cross-provider query/promote CLI
+
+Usage:
+  sessions                            TUI picker for the current folder (newest first)
+  sessions <folder>                   TUI picker scoped to <folder>
+  sessions ls [N]                     Plain-text listing across ALL providers (default 50)
+  sessions cat <id>                   Print the full transcript of any session (pipe-friendly)
+  sessions grep <pattern>             Search session contents across all providers
+  sessions open <id>                  Resume a session in its native tool
+  sessions distill <id> [--force]     Produce a ~250-word digest via Claude. Cached
+                                      at ~/.sessions/distilled/<provider>/<uuid>.md
+  sessions promote <id> [--topic T]   Distill (if needed) and copy the digest into
+                          [--force]   ~/work/cc/vault/sources/conversations/<topic>/
+  sessions sgrep <phrase>             Semantic search across distilled sessions
+              [--raw] [--top N]       (Apple NaturalLanguage embeddings, on-device).
+              [--threshold X]         --raw searches full transcripts (newest 30).
+
+Providers:  claude (C) · copilot (G) · codex (X) · fm-chat (F)
+IDs match any uuid / prefix. Use a 6-char prefix in practice.
+
+Doctrine — memory promotion chain (ENVOY):
+  raw transcript   (the native log — claude .jsonl, fm-chat .jsonl, etc.)
+    → distilled    (cheap digest, local cache)
+    → promoted     (lives in the cc-vault, addressable knowledge)
+
+From inside another tool:
+  !sessions cat <id>      pulls raw transcript into current context
+  !sessions distill <id>  pulls compact digest (cheaper, faster)
+""")
+
+
 def main():
-    folder = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
+    # If invoked as `sgrep` (via a symlink), treat all args as the query
+    # for semantic search. Lets you skip the `sessions sgrep` prefix.
+    progname = os.path.basename(sys.argv[0])
+    if progname == "sgrep":
+        cmd_sgrep(sys.argv[1:])
+        return
+
+    args = sys.argv[1:]
+    if args and args[0] in ("ls",):
+        cmd_ls(args[1:]); return
+    if args and args[0] in ("cat",):
+        cmd_cat(args[1:]); return
+    if args and args[0] in ("grep",):
+        cmd_grep(args[1:]); return
+    if args and args[0] in ("open",):
+        cmd_open(args[1:]); return
+    if args and args[0] in ("distill",):
+        cmd_distill(args[1:]); return
+    if args and args[0] in ("promote",):
+        cmd_promote(args[1:]); return
+    if args and args[0] in ("sgrep",):
+        cmd_sgrep(args[1:]); return
+    if args and args[0] in ("-h", "--help", "help"):
+        cmd_help(); return
+
+    folder = os.path.abspath(args[0]) if args else os.getcwd()
     if not os.path.isdir(folder):
         print(f"sessions: not a directory: {folder}", file=sys.stderr)
-        sys.exit(2)
+        cmd_help(); sys.exit(2)
 
     try:
-        action, provider, uuid = curses.wrapper(run_picker, folder)
+        action, provider, uuid, path = curses.wrapper(run_picker, folder)
     except KeyboardInterrupt:
         sys.exit(0)
 
@@ -601,7 +1395,7 @@ def main():
         sys.exit(0)
 
     os.chdir(folder)
-    argv = resume_argv(provider, uuid) if action == "resume" else new_argv(provider, folder)
+    argv = resume_argv(provider, uuid, path) if action == "resume" else new_argv(provider)
     os.execvp(argv[0], argv)
 
 
