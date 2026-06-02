@@ -1554,7 +1554,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         if errorIsContextWindow(err) {
             return "The conversation filled the on-device model's context window and couldn't be condensed. Use the button below — or press ⌘N — to start a fresh chat with your last prompt."
         }
-        return "\(err)"
+        if s.contains("unsupportedlanguage") || s.contains("unsupported language") || s.contains("languageorlocale") {
+            return "This on-device model doesn't support that language. It works in English (and a few others) — Finnish isn't supported, so ask in English. (I can add automatic Finnish⇄English translation if you want to keep writing in Finnish.)"
+        }
+        if s.contains("ratelimit") || s.contains("rate limit") {
+            return "The model is rate-limited right now — wait a moment and try again."
+        }
+        // Unknown error: surface the model's own message, not the raw Swift dump.
+        let raw = "\(err)"
+        if let lo = raw.range(of: "debugDescription: \""),
+           let hi = raw.range(of: "\"", range: lo.upperBound..<raw.endIndex) {
+            return "The model couldn't complete that: \(raw[lo.upperBound..<hi.lowerBound]) — try rephrasing, or ⌘N for a fresh chat."
+        }
+        return "The model couldn't complete that. Try rephrasing, or ⌘N for a fresh chat."
     }
 
     func appendAssistant(_ t: String) { messages.append(("assistant", t)); render() }
