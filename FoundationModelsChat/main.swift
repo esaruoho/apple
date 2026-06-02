@@ -957,11 +957,28 @@ final class DropView: NSView {
 
 // ─────────────────────── app ───────────────────────────────────
 
+/// Calls `done(webView)` once a WKWebView finishes loading, after a short tick so
+/// layout settles — used by the PDF export to print only after content is ready.
+final class LoadDoneDelegate: NSObject, WKNavigationDelegate {
+    let done: (WKWebView) -> Void
+    init(_ done: @escaping (WKWebView) -> Void) { self.done = done }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak webView] in
+            guard let webView = webView else { return }
+            self.done(webView)
+        }
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WKScriptMessageHandler {
     var window: NSWindow!
     var webView: WKWebView!
     var inputView: NSTextView!
     var sendButton: NSButton!
+    var mdButton: NSButton!
+    var pdfButton: NSButton!
+    var pdfExportWeb: WKWebView?         // offscreen webview kept alive during PDF render
+    var pdfExportDelegate: AnyObject?    // its nav delegate, kept alive too
     let fm = FM()
     var store = SessionStore()
     var messages: [(role: String, text: String)] = []   // what's shown (display text)
@@ -1020,7 +1037,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         inputScroll.documentView = inputView
         root.addSubview(inputScroll)
 
-        sendButton = NSButton(frame: NSRect(x: root.bounds.width - 108, y: 12, width: 96, height: 88))
+        sendButton = NSButton(frame: NSRect(x: root.bounds.width - 108, y: 42, width: 96, height: 58))
         sendButton.autoresizingMask = [.minXMargin]
         sendButton.title = "Send"
         sendButton.bezelStyle = .rounded
@@ -1028,6 +1045,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         sendButton.target = self
         sendButton.action = #selector(sendTapped)
         root.addSubview(sendButton)
+
+        // Export this conversation, verbatim. .md = the labelled transcript; .pdf =
+        // the same content rendered (lists/code/headings/math preserved). Both also
+        // available from the File menu (⌘E / ⇧⌘E).
+        mdButton = NSButton(frame: NSRect(x: root.bounds.width - 108, y: 12, width: 46, height: 24))
+        mdButton.autoresizingMask = [.minXMargin]
+        mdButton.title = ".md"
+        mdButton.bezelStyle = .rounded
+        mdButton.font = NSFont.systemFont(ofSize: 11)
+        mdButton.toolTip = "Export conversation as Markdown (⌘E)"
+        mdButton.target = self
+        mdButton.action = #selector(exportMarkdown)
+        root.addSubview(mdButton)
+
+        pdfButton = NSButton(frame: NSRect(x: root.bounds.width - 58, y: 12, width: 46, height: 24))
+        pdfButton.autoresizingMask = [.minXMargin]
+        pdfButton.title = ".pdf"
+        pdfButton.bezelStyle = .rounded
+        pdfButton.font = NSFont.systemFont(ofSize: 11)
+        pdfButton.toolTip = "Export conversation as PDF (⇧⌘E)"
+        pdfButton.target = self
+        pdfButton.action = #selector(exportPDF)
+        root.addSubview(pdfButton)
 
         // ESC aborts an in-flight answer and re-enables Send so you can start over.
         escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -1226,6 +1266,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         let nc = NSMenuItem(title: "New Chat", action: #selector(newChatMenu), keyEquivalent: "n")
         nc.target = self
         fileMenu.addItem(nc)
+        fileMenu.addItem(.separator())
+        let exMD = NSMenuItem(title: "Export as Markdown…", action: #selector(exportMarkdown), keyEquivalent: "e")
+        exMD.target = self
+        fileMenu.addItem(exMD)
+        let exPDF = NSMenuItem(title: "Export as PDF…", action: #selector(exportPDF), keyEquivalent: "E")
+        exPDF.keyEquivalentModifierMask = [.command, .shift]
+        exPDF.target = self
+        fileMenu.addItem(exPDF)
         fileMenu.addItem(.separator())
         // performClose: routes up the responder chain to the key window.
         fileMenu.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
@@ -1513,6 +1561,119 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         let r = NLLanguageRecognizer()
         r.processString(text)
         return r.dominantLanguage?.rawValue
+    }
+
+    // ─────────────────────── export (Markdown / PDF) ────────────────
+    // Verbatim from `messages` — the same text shown on screen and saved to the
+    // continuous transcript. .md is the labelled source; .pdf renders it.
+
+    /// The conversation as Markdown — identical shape to the auto-saved transcript.
+    func conversationMarkdown() -> String {
+        var out = "# FoundationModels Chat — \(store.stamp)\n\n"
+        for m in messages {
+            let who = m.role == "user" ? "You" : "FoundationModels"
+            out += "**\(who):**\n\n\(m.text)\n\n"
+        }
+        return out
+    }
+
+    /// A print-friendly (light) HTML document of the whole conversation, with each
+    /// turn's Markdown rendered. Used as the source for the PDF.
+    func conversationExportHTML() -> String {
+        var body = ""
+        for m in messages {
+            let who = m.role == "user" ? "You" : "FoundationModels"
+            body += "<div class=\"msg \(m.role)\"><div class=\"who\">\(who)</div>"
+                  + "<div class=\"bubble\">\(renderMessageHTML(m.text))</div></div>"
+        }
+        return """
+        <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+          body { font: 12pt -apple-system, system-ui; color: #111; background: #fff;
+                 margin: 0; -webkit-print-color-adjust: exact; }
+          h1.title { font-size: 16pt; margin: 0 0 14pt; }
+          .msg { margin: 0 0 12pt; page-break-inside: avoid; }
+          .who { font-size: 8pt; text-transform: uppercase; letter-spacing: .06em;
+                 color: #666; margin-bottom: 3pt; }
+          .bubble { border: 1px solid #ddd; border-radius: 8px; padding: 6pt 9pt; background: #fafafa; }
+          .user .bubble { background: #eef4fb; border-color: #cfe0f3; }
+          p { margin: 4pt 0; } h1,h2,h3,h4 { margin: 8pt 0 4pt; }
+          code { background: #f0f0f0; border-radius: 3px; padding: 1px 4px; font: 10pt ui-monospace, Menlo; }
+          pre { background: #f4f4f4; border-radius: 6px; padding: 8pt; white-space: pre-wrap; word-wrap: break-word; }
+          pre code { background: none; padding: 0; }
+          a { color: #0a4d8c; }
+          math { font-family: "STIX Two Math", "Latin Modern Math", serif; }
+          math[display="block"] { display: block; margin: 6pt 0; }
+        </style></head><body><h1 class="title">FoundationModels Chat — \(store.stamp)</h1>\(body)</body></html>
+        """
+    }
+
+    @objc func exportMarkdown() {
+        guard !messages.isEmpty else { NSSound.beep(); return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "chat-\(store.stamp).md"
+        if #available(macOS 11.0, *) { panel.allowedContentTypes = [.init(filenameExtension: "md") ?? .plainText] }
+        panel.canCreateDirectories = true
+        panel.directoryURL = store.dir
+        panel.title = "Export conversation as Markdown"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try conversationMarkdown().data(using: .utf8)?.write(to: url)
+            revealInFinder(url)
+        } catch { exportAlert("Couldn't save the Markdown file: \(error.localizedDescription)") }
+    }
+
+    @objc func exportPDF() {
+        guard !messages.isEmpty else { NSSound.beep(); return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "chat-\(store.stamp).pdf"
+        if #available(macOS 11.0, *) { panel.allowedContentTypes = [.pdf] }
+        panel.canCreateDirectories = true
+        panel.directoryURL = store.dir
+        panel.title = "Export conversation as PDF"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        // Render the export HTML in an offscreen webview, then print it to PDF
+        // (paginated, US Letter) once the content has laid out.
+        let web = WKWebView(frame: NSRect(x: 0, y: 0, width: 612, height: 792))
+        let delegate = LoadDoneDelegate { [weak self] w in
+            guard let self = self else { return }
+            self.writePDF(from: w, to: url)
+            self.pdfExportWeb = nil
+            self.pdfExportDelegate = nil
+        }
+        pdfExportWeb = web
+        pdfExportDelegate = delegate
+        web.navigationDelegate = delegate
+        web.loadHTMLString(conversationExportHTML(), baseURL: nil)
+    }
+
+    private func writePDF(from web: WKWebView, to url: URL) {
+        let attrs: [NSPrintInfo.AttributeKey: Any] = [
+            .jobDisposition: NSPrintInfo.JobDisposition.save,
+            .jobSavingURL: url
+        ]
+        let info = NSPrintInfo(dictionary: attrs)
+        info.paperSize = NSSize(width: 612, height: 792)   // US Letter @72dpi
+        info.leftMargin = 36; info.rightMargin = 36
+        info.topMargin = 36; info.bottomMargin = 36
+        info.horizontalPagination = .fit
+        info.verticalPagination = .automatic
+        info.isHorizontallyCentered = false
+        info.isVerticallyCentered = false
+        let op = web.printOperation(with: info)
+        op.showsPrintPanel = false
+        op.showsProgressPanel = false
+        op.run()
+        revealInFinder(url)
+    }
+
+    private func revealInFinder(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    private func exportAlert(_ msg: String) {
+        let a = NSAlert(); a.messageText = "Export failed"; a.informativeText = msg
+        a.alertStyle = .warning; a.runModal()
     }
 
     func render() {
