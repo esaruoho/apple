@@ -14,6 +14,7 @@ import PDFKit
 import Vision
 import ImageIO
 import UniformTypeIdentifiers
+import NaturalLanguage
 
 // ─────────────────────────── helpers ───────────────────────────
 
@@ -528,6 +529,23 @@ struct SemanticSearchTool: Tool {
         let out = runCLI(["\(binDir)/vault-rag", arguments.query,
                           "--root", searchDir, "--top", "4"], cap: 7000)
         return out == "(no output)" ? "No matching passages found in the user's notes." : out
+    }
+}
+
+/// Append a timestamped line to ~/Documents/FoundationModelsChat/debug.log so the
+/// whole pipeline (input, detected language, model input, RAW reply, translation,
+/// errors) can be inspected after the fact — snoop it with `tail -f` or over ssh.
+func dlog(_ s: String) {
+    let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("FoundationModelsChat", isDirectory: true)
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("debug.log")
+    let line = "[\(ISO8601DateFormatter().string(from: Date()))] \(s)\n"
+    if let h = try? FileHandle(forWritingTo: url) {
+        defer { try? h.close() }
+        h.seekToEndOfFile(); h.write(Data(line.utf8))
+    } else {
+        try? line.write(to: url, atomically: true, encoding: .utf8)
     }
 }
 
@@ -1471,17 +1489,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
             appendAssistant("Model unavailable — can't send.")
             return
         }
+        // ── Translation harness ── the on-device LLM only speaks English (+ a few).
+        // If you write in another language, translate IN to English for the model and
+        // translate its reply BACK to your language via apple-translate (Apple's
+        // Translation framework). The model never sees the foreign text.
+        var modelInput = userText
+        var replyLang: String? = nil
+        if let lang = dominantLanguage(userText), lang != "en", lang != "und" {
+            let en = runCLI(["\(ToolEnv.binDir)/apple-translate", "--to", "en"], stdin: userText)
+            if en.isEmpty || en == "(no output)" || en.contains("Unable to Translate") {
+                messages.append(("user", display ?? userText)); render()
+                appendAssistant("⚠️ To chat in this language I translate it to English for the model and translate the reply back — but the **\(lang) ⇄ en** translation pack isn't installed. Install it once in **System Settings ▸ General ▸ Language & Region ▸ Translation Languages ▸ Add**, then try again. (The model itself only speaks English; translation bridges it.)")
+                return
+            }
+            modelInput = en
+            replyLang = lang
+        }
         // Any previous overflow button is now stale.
         newChatPrompt = nil; newChatDisplay = nil; newChatMsgIndex = nil
         busy = true
         sendButton.isEnabled = false
-        messages.append(("user", display ?? userText))
-        convo.append(("user", userText))      // full sent text → remote replay
+        messages.append(("user", display ?? userText))   // show your ORIGINAL text
+        convo.append(("user", modelInput))                // the model sees English
         store.log(role: "user", text: userText)
         messages.append(("assistant", "…"))   // live streaming target
         render()
         let idx = messages.count - 1
-        fm.askStreaming(latest: userText, history: convo,
+        dlog("SEND lang=\(replyLang ?? "en") userText=\(userText.replacingOccurrences(of: "\n", with: "⏎").prefix(160)) | modelInput=\(modelInput.replacingOccurrences(of: "\n", with: "⏎").prefix(160))")
+        fm.askStreaming(latest: modelInput, history: convo,
             onPartial: { [weak self] partial in
                 // Update only the last bubble in place — no full reload, so the
                 // view doesn't flicker or lose scroll while tokens arrive.
@@ -1494,16 +1529,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
                 guard let self = self, idx < self.messages.count else { return }
                 switch result {
                 case .success(let raw):
+                    dlog("RAW-REPLY (\(raw.count) chars): \(raw.replacingOccurrences(of: "\n", with: "⏎").prefix(600))")
                     // Never surface a raw empty / "null" generation — map it to a real message.
                     let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let reply = (trimmed.isEmpty || trimmed.lowercased() == "null" || trimmed.lowercased() == "nil")
+                    var reply = (trimmed.isEmpty || trimmed.lowercased() == "null" || trimmed.lowercased() == "nil")
                         ? "⚠️ The model returned an empty reply (it ran out of room or stalled). Press ⌘N for a fresh chat, or rephrase / shorten the message."
                         : trimmed
+                    // Translation harness: turn the English reply back into your language.
+                    if let lang = replyLang, !reply.hasPrefix("⚠️") {
+                        let back = runCLI(["\(ToolEnv.binDir)/apple-translate", "--to", lang], stdin: reply)
+                        dlog("TRANSLATE-OUT →\(lang) ok=\(!back.contains("Unable to Translate")): \(back.prefix(200))")
+                        if !back.isEmpty, back != "(no output)", !back.contains("Unable to Translate") { reply = back }
+                    }
                     self.messages[idx] = ("assistant", reply)
                     self.convo.append(("assistant", reply))
                     self.store.log(role: "assistant", text: reply)
                 case .failure(let err):
+                    dlog("ERROR raw: \(err)")
                     let msg = self.friendly(err)
+                    dlog("ERROR friendly: \(msg)")
                     self.messages[idx] = ("assistant", "⚠️ " + msg)
                     self.store.log(role: "assistant", text: "[error] " + msg)
                     if self.errorIsContextWindow(err) {
@@ -1560,7 +1604,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         if s.contains("ratelimit") || s.contains("rate limit") {
             return "The model is rate-limited right now — wait a moment and try again."
         }
-        // Unknown error: surface the model's own message, not the raw Swift dump.
+        // Unknown error: a clean sentence — NEVER a raw Swift/JSON-looking dump.
+        // 1) a real message we attached to a bridge NSError, 2) the model's own
+        // debugDescription, else 3) a plain generic sentence.
+        let ld = (err as NSError).localizedDescription
+        if !ld.isEmpty, !ld.lowercased().hasPrefix("the operation couldn") {
+            return ld
+        }
         let raw = "\(err)"
         if let lo = raw.range(of: "debugDescription: \""),
            let hi = raw.range(of: "\"", range: lo.upperBound..<raw.endIndex) {
@@ -1570,6 +1620,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     }
 
     func appendAssistant(_ t: String) { messages.append(("assistant", t)); render() }
+
+    /// Best-guess dominant language code ("fi", "en", …) of a message, for the
+    /// translation harness. Returns nil/"und" when it can't tell (short text).
+    func dominantLanguage(_ text: String) -> String? {
+        guard text.count >= 8 else { return "en" }   // too short to judge → assume English
+        let r = NLLanguageRecognizer()
+        r.processString(text)
+        return r.dominantLanguage?.rawValue
+    }
 
     func render() {
         var body = ""
