@@ -181,10 +181,19 @@ func renderMessageHTML(_ raw: String) -> String {
         if inList { html += "</ul>"; inList = false }
         if inOL { html += "</ol>"; inOL = false }
     }
+    var pendingBlank = false
     for rawLine in lines {
-        let line = rawLine
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-        if trimmed.isEmpty { closeLists(); continue }
+        let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { pendingBlank = true; continue }
+        let isUL = trimmed.range(of: "^[-*+]\\s+", options: .regularExpression) != nil
+        let isOL = trimmed.range(of: "^\\d+\\.\\s+", options: .regularExpression) != nil
+        // A blank line BETWEEN items of the same list is a "loose list" — keep the list
+        // open, otherwise an ordered list restarts at 1 on every item (the bug). Only a
+        // blank line followed by a NON-list line actually ends the list.
+        if pendingBlank {
+            if !((inOL && isOL) || (inList && isUL)) { closeLists() }
+            pendingBlank = false
+        }
         // headings
         if let m = trimmed.range(of: "^(#{1,4})\\s+", options: .regularExpression) {
             closeLists()
@@ -193,15 +202,13 @@ func renderMessageHTML(_ raw: String) -> String {
             html += "<h\(hashes)>\(inlineMD(content, stash))</h\(hashes)>"
             continue
         }
-        // unordered list
-        if trimmed.range(of: "^[-*+]\\s+", options: .regularExpression) != nil {
+        if isUL {
             if !inList { closeLists(); html += "<ul>"; inList = true }
             let content = trimmed.replacingOccurrences(of: "^[-*+]\\s+", with: "", options: .regularExpression)
             html += "<li>\(inlineMD(content, stash))</li>"
             continue
         }
-        // ordered list
-        if trimmed.range(of: "^\\d+\\.\\s+", options: .regularExpression) != nil {
+        if isOL {
             if !inOL { closeLists(); html += "<ol>"; inOL = true }
             let content = trimmed.replacingOccurrences(of: "^\\d+\\.\\s+", with: "", options: .regularExpression)
             html += "<li>\(inlineMD(content, stash))</li>"
