@@ -38,31 +38,33 @@ the backend and prints the answer.
 
 ## Status — what's built (2026-06-02)
 
-**`fm` CLI: 16 tools live.** **GUI: only WebReader (needs the other 15 ported).**
+**`fm` CLI: 16 tools live.** **GUI: 16 tools live (15 ported 2026-06-02 — parity).**
 **`apple-do`: 6 capabilities wired.**
 
 | Tool | fm CLI | GUI | apple-do | Backend |
 |---|:---:|:---:|:---:|---|
-| `currentDateTime` | ✅ | ⬜ | `now` ✅ | `Date()`+`DateFormatter` (pure Swift) |
-| `calculator` | ✅ | ⬜ | — | recursive-descent parser (pure Swift) |
-| `unitConvert` | ✅ | ⬜ | — | `Measurement`/`Dimension` (pure Swift) |
-| `systemState` | ✅ | ⬜ | — | battery/disk/thermal |
+| `currentDateTime` | ✅ | ✅ | `now` ✅ | `Date()`+`DateFormatter` (pure Swift) |
+| `calculator` | ✅ | ✅ | — | recursive-descent parser (pure Swift) |
+| `unitConvert` | ✅ | ✅ | — | `Measurement`/`Dimension` (pure Swift) |
+| `systemState` | ✅ | ✅ | — | battery/disk/thermal |
 | `webReader` | ✅ | ✅ | — | `URLSession` + HTML→text |
-| `semantic_search` | ✅ | ⬜ | `search` ✅ | **`vault-rag` → CoreML MiniLM (ANE)** |
-| `readFile` | ✅ | ⬜ | — | file→text |
-| `ocr` | ✅ | ⬜ | `ocr` ✅ | `vision-ocr` (Vision `VNRecognizeText`) |
-| `entities` | ✅ | ⬜ | — | `apple-ner` (NLTagger) |
-| `keywords` | ✅ | ⬜ | — | `apple-keywords` |
-| `translate` | ✅ | ⬜ | — | `apple-translate` (Translation) |
-| `sentiment` | ✅ | ⬜ | — | `apple-sentiment` |
-| `imageSimilar` | ✅ | ⬜ | — | `apple-image-similar` (Vision FeaturePrint) |
-| `spotlight` | ✅ | ⬜ | `spotlight` ✅ | `mdfind` |
-| `fleetStatus` | ✅ | ⬜ | `fleet` ✅ | reads `*-heartbeat.json` |
-| `homeClimate` | ✅ | ⬜ | `home` ✅ | `homepod-now` (HomePod sensor log) |
+| `semantic_search` | ✅ | ✅ | `search` ✅ | **`vault-rag` → CoreML MiniLM (ANE)** |
+| `readFile` | ✅ | ✅ | — | file→text |
+| `ocr` | ✅ | ✅ | `ocr` ✅ | `vision-ocr` (Vision `VNRecognizeText`) |
+| `entities` | ✅ | ✅ | — | `apple-ner` (NLTagger) |
+| `keywords` | ✅ | ✅ | — | `apple-keywords` |
+| `translate` | ✅ | ✅ | — | `apple-translate` (Translation) |
+| `sentiment` | ✅ | ✅ | — | `apple-sentiment` |
+| `imageSimilar` | ✅ | ✅ | — | `apple-image-similar` (Vision FeaturePrint) |
+| `spotlight` | ✅ | ✅ | `spotlight` ✅ | `mdfind` |
+| `fleetStatus` | ✅ | ✅ | `fleet` ✅ | reads `*-heartbeat.json` |
+| `homeClimate` | ✅ | ✅ | `home` ✅ | `homepod-now` (HomePod sensor log) |
 
-**The headline gap:** the GUI is at 1/16. Porting the proven 15 into
-`FoundationModelsChat/main.swift` is the biggest single win and is low-risk (the code
-already works in `fm.swift`).
+**Parity reached (2026-06-02):** the 15 were ported into `FoundationModelsChat/main.swift`
+(extracted verbatim from `fm.swift`, each `@available(macOS 26.0,*)`, registered via a
+shared `fmTools()` factory at all 3 session sites). GUI builds clean with all 16. **Future
+parity isn't guaranteed by copy** — the proper next step is factoring the tools into one
+shared `.swift` both apps compile, so adding a tool can't silently skip one surface.
 
 ---
 
@@ -179,8 +181,8 @@ FM-on-Mini already lives in the fleet. Let it act on the fleet.
 
 ## How to roll the rest out
 
-1. **Port the 15 proven tools into the GUI** — the biggest single win; the GUI becomes as
-   capable as the CLI, with streaming + drag-PDF + MathML on top.
+1. **Port the 15 proven tools into the GUI** — ✅ DONE 2026-06-02 (GUI = 16/16, builds clean).
+   Follow-up: factor into a shared `.swift` so parity is structural, not copy-maintained.
 2. **Personal/fleet second wave** — `calendar`, `mailSearch`, `speak`, `submitOCR`, `weather`.
 3. **Write/destructive tools** (`runShell`, add-event, submit-jobs, `notifyPhone`) **only
    behind explicit confirmation + a tight allow-list.** A 3B model *will* occasionally call
