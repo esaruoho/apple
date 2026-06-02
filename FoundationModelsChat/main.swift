@@ -920,12 +920,16 @@ final class FM {
     /// text as it's generated, `completion` fires once with the final text (or an
     /// error). The remote bridge is request/response (file-drop), so for it — and
     /// when there's no model — we fall back to the one-shot `ask`.
+    /// The in-flight local streaming task, so ESC can abort a generation.
+    var streamTask: Task<Void, Never>?
+    func cancelStreaming() { streamTask?.cancel() }
+
     func askStreaming(latest: String, history: [(role: String, text: String)],
                       onPartial: @escaping (String) -> Void,
                       completion: @escaping (Result<String, Error>) -> Void) {
         if case .local = backend, #available(macOS 26.0, *),
            let session = sessionBox as? LanguageModelSession {
-            Task {
+            streamTask = Task {
                 do {
                     let out = try await FM.runStream(session, prompt: latest, onPartial: onPartial)
                     await MainActor.run { completion(.success(out)) }
@@ -955,10 +959,15 @@ final class FM {
     private static func runStream(_ session: LanguageModelSession, prompt: String,
                                   onPartial: @escaping (String) -> Void) async throws -> String {
         var last = ""
-        for try await snapshot in session.streamResponse(to: prompt) {
-            let cur = snapshot.content   // cumulative text so far
-            last = cur
-            await MainActor.run { onPartial(cur) }
+        do {
+            for try await snapshot in session.streamResponse(to: prompt) {
+                if Task.isCancelled { break }   // ESC aborted — keep what streamed so far
+                let cur = snapshot.content   // cumulative text so far
+                last = cur
+                await MainActor.run { onPartial(cur) }
+            }
+        } catch is CancellationError {
+            // user pressed ESC: stop streaming, return the partial text
         }
         return last
     }
@@ -1072,6 +1081,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     var messages: [(role: String, text: String)] = []   // what's shown (display text)
     var convo: [(role: String, text: String)] = []       // what was actually sent (for remote replay)
     var busy = false
+    var escMonitor: Any?
 
     // When a prompt overflows the context window we stash it here and attach a
     // "start a new chat with that prompt" button to the error bubble.
@@ -1126,6 +1136,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         sendButton.target = self
         sendButton.action = #selector(sendTapped)
         root.addSubview(sendButton)
+
+        // ESC aborts an in-flight answer and re-enables Send so you can start over.
+        escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self else { return event }
+            if event.keyCode == 53, self.busy {   // 53 = Escape
+                self.fm.cancelStreaming()
+                self.busy = false
+                self.sendButton.isEnabled = true
+                return nil   // consume ESC
+            }
+            return event
+        }
 
         buildMenu()
         render()
