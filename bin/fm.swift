@@ -217,10 +217,10 @@ struct WebReaderTool: Tool {
         @Guide(description: "The absolute URL to fetch, including the https:// scheme.")
         let url: String
     }
-    func call(arguments: Arguments) async throws -> ToolOutput {
+    func call(arguments: Arguments) async throws -> String {
         guard let url = URL(string: arguments.url),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
-            return ToolOutput("Not a valid http(s) URL: \(arguments.url)")
+            return "Not a valid http(s) URL: \(arguments.url)"
         }
         var req = URLRequest(url: url)
         req.timeoutInterval = 20
@@ -228,11 +228,11 @@ struct WebReaderTool: Tool {
         let (data, resp) = try await URLSession.shared.data(for: req)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            return ToolOutput("Could not fetch \(arguments.url) (HTTP \(status)).")
+            return "Could not fetch \(arguments.url) (HTTP \(status))."
         }
         guard let html = String(data: data, encoding: .utf8)
                 ?? String(data: data, encoding: .isoLatin1) else {
-            return ToolOutput("Could not decode the page at \(arguments.url).")
+            return "Could not decode the page at \(arguments.url)."
         }
         let title = WebText.title(html)
         let text = WebText.strip(html)
@@ -240,7 +240,7 @@ struct WebReaderTool: Tool {
         var out = title.isEmpty ? "" : "Title: \(title)\n\n"
         out += capped
         if text.count > capped.count { out += "\n\n[truncated]" }
-        return ToolOutput(out)
+        return out
     }
 }
 
@@ -291,18 +291,200 @@ struct SemanticSearchTool: Tool {
         @Guide(description: "A short phrase or question describing what to look for.")
         let query: String
     }
-    func call(arguments: Arguments) async throws -> ToolOutput {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        p.arguments = ["python3", "\(binDir)/vault-grep", arguments.query, "--root", searchDir, "--top", "5"]
-        let outPipe = Pipe()
-        p.standardOutput = outPipe
-        p.standardError = FileHandle.nullDevice   // drop embedding/progress noise
-        do { try p.run() } catch { return ToolOutput("semantic_search could not run: \(error)") }
-        p.waitUntilExit()
-        let data = outPipe.fileHandleForReading.readDataToEndOfFile()
-        let out = (String(data: data, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return ToolOutput(out.isEmpty ? "No matching passages found in the user's notes." : out)
+    func call(arguments: Arguments) async throws -> String {
+        let out = runCLI(["python3", "\(binDir)/vault-grep", arguments.query,
+                          "--root", searchDir, "--top", "5"])
+        return out == "(no output)" ? "No matching passages found in the user's notes." : out
+    }
+}
+
+// ─────────────────────── tool plumbing (Priority-1 batch) ───────
+// Most of the apple-* CLIs already do the real work on-device. These tools are
+// thin, read-only Swift wrappers that shell to them and hand the text back to the
+// model. One shared runner: optional stdin (fed on a background thread to avoid a
+// pipe deadlock), drained stdout, capped so a big result can't blow the context.
+func runCLI(_ argv: [String], stdin: String? = nil, cap: Int = 4000) -> String {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    p.arguments = argv
+    let outPipe = Pipe()
+    p.standardOutput = outPipe
+    p.standardError = FileHandle.nullDevice
+    var inPipe: Pipe?
+    if stdin != nil { inPipe = Pipe(); p.standardInput = inPipe }
+    do { try p.run() } catch { return "tool could not run: \(error)" }
+    if let inPipe, let data = stdin?.data(using: .utf8) {
+        DispatchQueue.global().async {
+            inPipe.fileHandleForWriting.write(data)
+            try? inPipe.fileHandleForWriting.close()
+        }
+    }
+    let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+    p.waitUntilExit()
+    let s = (String(data: data, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    if s.isEmpty { return "(no output)" }
+    return s.count > cap ? String(s.prefix(cap)) + "\n[truncated]" : s
+}
+
+struct ReadFileTool: Tool {
+    let name = "readFile"
+    let description = "Read a file from disk and return its text — works for text, PDF, RTF, and images (OCR). Use to read a path, often one returned by semantic_search, so you can quote the full passage."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "Absolute path to the file to read.")
+        let path: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/file-to-text", arguments.path])
+    }
+}
+
+struct OCRTool: Tool {
+    let name = "ocr"
+    let description = "Run on-device OCR (Apple Vision) on an image or scanned PDF and return the recognized text. Use when the user asks what a screenshot, photo, or scanned document says."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "Absolute path to the image or PDF to OCR.")
+        let path: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/vision-ocr", arguments.path])
+    }
+}
+
+struct EntitiesTool: Tool {
+    let name = "entities"
+    let description = "Extract named entities — people, places, organizations — from a piece of text. Pass the text to analyze."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "The text to analyze for named entities.")
+        let text: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/apple-ner", "--table"], stdin: arguments.text)
+    }
+}
+
+struct KeywordsTool: Tool {
+    let name = "keywords"
+    let description = "Return the most meaningful keywords/terms in a piece of text, ranked. Use to get the gist or topic of some text."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "The text to extract keywords from.")
+        let text: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/apple-keywords"], stdin: arguments.text)
+    }
+}
+
+struct TranslateTool: Tool {
+    let name = "translate"
+    let description = "Translate text into another language on-device (Apple Translation). Give the text and a target language code."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "The text to translate.")
+        let text: String
+        @Guide(description: "Target language code, e.g. en, fi, sv, de, fr.")
+        let to: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/apple-translate", "--to", arguments.to, "--from", "auto"], stdin: arguments.text)
+    }
+}
+
+struct SentimentTool: Tool {
+    let name = "sentiment"
+    let description = "Score the sentiment/tone of a piece of text (positive vs negative). Use for triage or to gauge how a message reads."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "The text to score.")
+        let text: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/apple-sentiment", "--doc"], stdin: arguments.text)
+    }
+}
+
+struct ImageSimilarTool: Tool {
+    let name = "imageSimilar"
+    let description = "Find images visually similar to a query image within a folder (Apple Vision feature-prints). Use for 'find the screenshot like this' or duplicate detection."
+    let binDir: String
+    @Generable struct Arguments {
+        @Guide(description: "Absolute path to the query image.")
+        let image: String
+        @Guide(description: "Absolute path to the folder to search.")
+        let folder: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["\(binDir)/apple-image-similar", "--query", arguments.image,
+                "--dir", arguments.folder, "--top", "5"])
+    }
+}
+
+struct SpotlightTool: Tool {
+    let name = "spotlight"
+    let description = "Find files on this Mac by name or content using Spotlight, returning matching paths. Use to locate a file the user describes."
+    @Generable struct Arguments {
+        @Guide(description: "The search query — a file name or content keywords.")
+        let query: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        runCLI(["mdfind", arguments.query], cap: 2000)
+    }
+}
+
+struct FleetStatusTool: Tool {
+    let name = "fleetStatus"
+    let description = "Report which fleet workers (OCR, transcription, FoundationModels, mirror, pakettibot) are alive and what they're doing, from their heartbeat files. Call when asked if the Mini or a service is busy or OK."
+    @Generable struct Arguments {}
+    func call(arguments: Arguments) async throws -> String {
+        let dir = URL(fileURLWithPath: "\(NSHomeDirectory())/work/comms/queue")
+        guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else {
+            return "No fleet queue directory found."
+        }
+        let beats = files.filter { $0.lastPathComponent.hasSuffix("-heartbeat.json") }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        if beats.isEmpty { return "No heartbeats found." }
+        let now = Date()
+        let iso = ISO8601DateFormatter()
+        var lines: [String] = []
+        for f in beats {
+            let name = f.lastPathComponent.replacingOccurrences(of: "-heartbeat.json", with: "")
+            guard let data = try? Data(contentsOf: f),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
+            var age = "?"
+            if let ts = obj["ts"] as? Double { age = "\(Int(now.timeIntervalSince1970 - ts))s ago" }
+            else if let s = obj["ts"] as? String, let d = iso.date(from: s) { age = "\(Int(now.timeIntervalSince(d)))s ago" }
+            let status = (obj["status"] as? String).map { " [\($0)]" } ?? ""
+            let job = (obj["current_job"] as? String).map { " job: \($0)" } ?? ""
+            lines.append("\(name): \(age)\(status)\(job)")
+        }
+        return lines.isEmpty ? "No readable heartbeats." : lines.joined(separator: "\n")
+    }
+}
+
+struct HomeClimateTool: Tool {
+    let name = "homeClimate"
+    let description = "Report the latest temperature and humidity at home from the HomePod sensor. Call when asked about the temperature or humidity at home."
+    @Generable struct Arguments {}
+    func call(arguments: Arguments) async throws -> String {
+        let dir = URL(fileURLWithPath: "\(NSHomeDirectory())/work/comms/queue/homepod-climate")
+        guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil),
+              let latest = files.filter({ $0.pathExtension == "jsonl" })
+                  .sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).last,
+              let content = try? String(contentsOf: latest, encoding: .utf8) else {
+            return "No HomePod climate data found."
+        }
+        guard let last = content.split(separator: "\n").last(where: { !$0.isEmpty }),
+              let data = last.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return "Could not read the latest climate reading."
+        }
+        let t = o["temperature_cal"] ?? o["temperature_c"] ?? "?"
+        let h = o["humidity_cal"] ?? o["humidity_pct"] ?? "?"
+        let ts = (o["timestamp"] as? String) ?? ""
+        return "Home climate\(ts.isEmpty ? "" : " (as of \(ts))"): \(t)°C, \(h)% humidity."
     }
 }
 
@@ -310,9 +492,19 @@ struct SemanticSearchTool: Tool {
 let groundingTools: [any Tool] = [
     CurrentDateTimeTool(), CalculatorTool(), UnitConvertTool(), SystemStateTool(),
     WebReaderTool(), SemanticSearchTool(searchDir: searchDir, binDir: binDir),
+    ReadFileTool(binDir: binDir), OCRTool(binDir: binDir),
+    EntitiesTool(binDir: binDir), KeywordsTool(binDir: binDir),
+    TranslateTool(binDir: binDir), SentimentTool(binDir: binDir),
+    ImageSimilarTool(binDir: binDir), SpotlightTool(),
+    FleetStatusTool(), HomeClimateTool(),
 ]
-let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState, webReader, semantic_search. "
-    + "Use them for the current date/time, arithmetic, unit conversions, machine status, reading a web page (webReader), and searching the user's own notes (semantic_search) rather than guessing."
+let toolHint = "\n\nYou can call tools: currentDateTime, calculator, unitConvert, systemState, "
+    + "webReader, semantic_search, readFile, ocr, entities, keywords, translate, sentiment, "
+    + "imageSimilar, spotlight, fleetStatus, homeClimate. Use them — for the date/time, arithmetic, "
+    + "unit conversions, machine status, reading a web page, searching the user's own notes, reading a "
+    + "file or OCRing an image, extracting entities/keywords, translating, scoring sentiment, finding "
+    + "similar images, locating files with Spotlight, fleet worker status, and the home temperature — "
+    + "rather than guessing."
 
 let sema = DispatchSemaphore(value: 0)
 var output = ""
