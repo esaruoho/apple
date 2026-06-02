@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-sessions — TUI session picker for Claude Code, GitHub Copilot CLI, and OpenAI Codex CLI.
+sessions — TUI session picker for Claude Code, GitHub Copilot CLI, OpenAI Codex
+CLI, and FoundationModels (bin/fm-chat, the on-device LLM).
 
 Upstream: https://github.com/esaruoho/sessions
 This file is the apple-repo copy; the standalone repo above is the canonical
@@ -9,11 +10,11 @@ home when the two diverge.
 Usage:
     sessions [folder]
 
-Run inside (or pass) a project folder. Lists every session any of the three
+Run inside (or pass) a project folder. Lists every session any of the four
 agents has for that folder, newest-first. Cursor up/down to select, Enter
 resumes with the right CLI + flags, n starts a new claude session, c starts
-a new copilot, x starts a new codex, q/Esc/Ctrl-C quits. Auto-refreshes
-every ~1.5 s.
+a new copilot, x starts a new codex, f starts a new fm-chat (FoundationModels),
+q/Esc/Ctrl-C quits. Auto-refreshes every ~1.5 s.
 
 Per-provider mapping:
   • Claude   ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl
@@ -46,7 +47,7 @@ class Row:
     __slots__ = ("provider", "uuid", "cwd", "path", "mtime", "size", "turns", "snippet", "title")
 
     def __init__(self, provider, uuid, cwd, path, mtime, size=0, turns=0, snippet=None, title=None):
-        self.provider = provider   # "claude" | "copilot" | "codex"
+        self.provider = provider   # "claude" | "copilot" | "codex" | "fm-chat"
         self.uuid = uuid
         self.cwd = cwd
         self.path = path           # jsonl path, or sqlite db path for copilot
@@ -467,9 +468,10 @@ def run_picker(stdscr, folder):
         cn = sum(1 for r in rows if r.provider == "claude")
         gn = sum(1 for r in rows if r.provider == "copilot")
         xn = sum(1 for r in rows if r.provider == "codex")
+        fn = sum(1 for r in rows if r.provider == "fm-chat")
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
-        header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn}"
-        footer = " ↑/↓ select · ⏎ resume · n new claude · c new copilot · x new codex · q quit · auto-refresh"
+        header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn} F:{fn}"
+        footer = " ↑/↓ select · ⏎ resume · n new claude · c new copilot · x new codex · f new fm-chat · q quit · auto-refresh"
         try:
             stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
