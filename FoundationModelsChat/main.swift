@@ -830,7 +830,7 @@ final class FM {
 
     init() {
         if #available(macOS 26.0, *), case .available = SystemLanguageModel.default.availability {
-            let session = LanguageModelSession(instructions:FM.systemInstructions)
+            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.systemInstructions)
             session.prewarm()   // warm the model so the first reply isn't slow
             sessionBox = session
             backend = .local
@@ -857,7 +857,7 @@ final class FM {
     /// no-model has nothing to reset.
     func startFreshSession() {
         if #available(macOS 26.0, *), case .local = backend {
-            let session = LanguageModelSession(instructions:FM.systemInstructions)
+            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.systemInstructions)
             session.prewarm()
             sessionBox = session
         }
@@ -912,10 +912,19 @@ final class FM {
         }
     }
 
+    /// A model with RELAXED guardrails. Apple's DEFAULT guardrail blocks benign prompts
+    /// like "how to love myself" / "how do I accept myself" as "unsafe" (caught in the
+    /// debug log 2026-06-02 — it even fired mid-stream and ate the reply).
+    /// permissiveContentTransformations is the SDK's sanctioned relaxation.
+    @available(macOS 26.0, *)
+    static var permissiveModel: SystemLanguageModel {
+        SystemLanguageModel(guardrails: .permissiveContentTransformations)
+    }
+
     /// Recreate the local session so an edited system prompt takes effect immediately.
     func resetSession() {
         if #available(macOS 26.0, *), case .local = backend {
-            let s = LanguageModelSession(instructions: FM.systemInstructions)
+            let s = LanguageModelSession(model: FM.permissiveModel, instructions: FM.systemInstructions)
             s.prewarm()
             sessionBox = s
         }
@@ -1042,12 +1051,12 @@ final class FM {
             .map { "\($0.role == "user" ? "User" : "Assistant"): \($0.text)" }
             .joined(separator: "\n")
         var summary = ""
-        let summarizer = LanguageModelSession(instructions:
+        let summarizer = LanguageModelSession(model: FM.permissiveModel, instructions:
             "Summarize the conversation in 4-6 sentences, preserving names, facts, numbers, and the current task.")
         if let r = try? await summarizer.respond(to: "Conversation:\n\(transcript)") { summary = r.content }
         let instr = summary.isEmpty ? FM.systemInstructions
             : FM.systemInstructions + "\n\nEarlier context summary:\n" + summary
-        let seeded = LanguageModelSession(instructions:instr)
+        let seeded = LanguageModelSession(model: FM.permissiveModel, instructions:instr)
         seeded.prewarm()
         sessionBox = seeded
         return seeded
