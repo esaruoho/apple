@@ -292,9 +292,33 @@ struct SemanticSearchTool: Tool {
         let query: String
     }
     func call(arguments: Arguments) async throws -> String {
-        let out = runCLI(["python3", "\(binDir)/vault-grep", arguments.query,
+        // vault-grep ranks the matches and prints one line each:
+        //   "<score>  <path>:<line>  <one-line snippet>"
+        // That one line is too thin to quote, so for each hit we open the file
+        // and pull a window of real lines around the match — actual body text
+        // the model can ground its answer in.
+        let raw = runCLI(["python3", "\(binDir)/vault-grep", arguments.query,
                           "--root", searchDir, "--top", "5"])
-        return out == "(no output)" ? "No matching passages found in the user's notes." : out
+        let hits = raw.split(separator: "\n").map(String.init)
+            .filter { !$0.isEmpty && $0 != "(no output)" }
+        if hits.isEmpty { return "No matching passages found in the user's notes." }
+        var blocks: [String] = []
+        for hit in hits.prefix(5) {
+            let cols = hit.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+            guard cols.count >= 2, let colon = cols[1].lastIndex(of: ":"),
+                  let lineNo = Int(cols[1][cols[1].index(after: colon)...]) else {
+                blocks.append(hit); continue          // unparseable → keep the raw line
+            }
+            let rel = String(cols[1][..<colon])
+            guard let body = try? String(contentsOfFile: "\(searchDir)/\(rel)", encoding: .utf8) else {
+                blocks.append(hit); continue
+            }
+            let fileLines = body.components(separatedBy: "\n")
+            let lo = max(0, lineNo - 7), hi = min(fileLines.count, lineNo + 6)
+            let window = fileLines[lo..<hi].joined(separator: "\n")
+            blocks.append("[\(cols[0])] \(rel) (lines \(lo + 1)-\(hi)):\n\(window)")
+        }
+        return String(blocks.joined(separator: "\n\n---\n\n").prefix(7000))
     }
 }
 
