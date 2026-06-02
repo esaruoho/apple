@@ -866,12 +866,32 @@ final class FM {
     user's most recent message, concisely, and do not fold in earlier turns unless asked.
     """
 
-    /// The LIVE, user-editable system prompt — this is what colors every reply.
-    /// Persists in UserDefaults; seeds from defaultInstructions. Edit it in-app via
-    /// Prompt ▸ Edit System Prompt… and the next replies reflect the change.
+    /// The system prompt lives in a real, maintainable FILE — not opaque UserDefaults:
+    ///   ~/Documents/FoundationModelsChat/system-prompt.md
+    /// Human-readable, editable in-app (⇧⌘P) or in any editor, persistent, backable-up.
+    static let promptFileURL: URL = {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("FoundationModelsChat", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("system-prompt.md")
+    }()
+
+    /// The LIVE system prompt that colors every reply. Read from the file; seeded with
+    /// defaultInstructions (and the file written) on first use. Saving writes the file.
     static var systemInstructions: String {
-        get { UserDefaults.standard.string(forKey: "FMChatSystemPrompt") ?? defaultInstructions }
-        set { UserDefaults.standard.set(newValue.isEmpty ? nil : newValue, forKey: "FMChatSystemPrompt") }
+        get {
+            if let s = try? String(contentsOf: promptFileURL, encoding: .utf8),
+               !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return s
+            }
+            try? defaultInstructions.write(to: promptFileURL, atomically: true, encoding: .utf8)
+            return defaultInstructions
+        }
+        set {
+            let v = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            try? (v.isEmpty ? defaultInstructions : v)
+                .write(to: promptFileURL, atomically: true, encoding: .utf8)
+        }
     }
 
     /// Recreate the local session so an edited system prompt takes effect immediately.
@@ -1244,7 +1264,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     @objc func editSystemPrompt() {
         let alert = NSAlert()
         alert.messageText = "System Prompt"
-        alert.informativeText = "This text is sent to the model ahead of every message — it colors all replies. Edit and Save to apply (starts a fresh chat)."
+        alert.informativeText = "Stored at ~/Documents/FoundationModelsChat/system-prompt.md (edit here or in any editor). Sent to the model ahead of every message — it colors all replies. Save applies it and starts a fresh chat."
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 540, height: 260))
         scroll.hasVerticalScroller = true
         scroll.borderType = .bezelBorder
