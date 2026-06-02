@@ -23,10 +23,12 @@ Apple-native: python3 stdlib only.
 
 import hashlib
 import json
+import os
 import socket
 import subprocess
 import sys
 import time
+import uuid as uuidlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -34,6 +36,72 @@ QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
 HEARTBEAT = QUEUE / "fm-worker-heartbeat.json"
+
+# Persisted sessions so the `sessions` TUI can list + resume an fm-chat.
+SESS_DIR = Path.home() / ".fm-chat" / "sessions"
+
+
+def _spath(uid):
+    return SESS_DIR / f"{uid}.jsonl"
+
+
+def new_session(cwd, system):
+    # Don't touch disk yet — the file is written on the FIRST real turn, so
+    # opening fm-chat and quitting without chatting leaves no empty session.
+    uid = uuidlib.uuid4().hex[:16]
+    meta = {"type": "session_meta", "uuid": uid, "cwd": os.path.realpath(cwd),
+            "created": time.time(), "system": system or ""}
+    return uid, meta
+
+
+def load_session(uid):
+    meta, history = None, []
+    try:
+        for line in _spath(uid).read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                d = json.loads(line)
+            except Exception:
+                continue
+            if d.get("type") == "session_meta":
+                meta = d
+            elif d.get("type") == "message":
+                history.append((d["role"], d["content"]))
+    except FileNotFoundError:
+        sys.exit(f"fm-chat: no session {uid}")
+    if not meta:
+        sys.exit(f"fm-chat: {uid} missing session_meta")
+    return meta, history
+
+
+def append_turn(meta, role, content):
+    uid = meta["uuid"]
+    path = _spath(uid)
+    if not path.exists():                  # lazily create with the meta header
+        SESS_DIR.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(meta) + "\n")
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"type": "message", "role": role,
+                            "content": content, "ts": time.time()}) + "\n")
+
+
+def list_sessions(folder):
+    resolved = os.path.realpath(folder)
+    if not SESS_DIR.is_dir():
+        print("(no fm-chat sessions yet)"); return
+    rows = []
+    for p in SESS_DIR.glob("*.jsonl"):
+        try:
+            meta, hist = load_session(p.stem)
+        except SystemExit:
+            continue
+        if os.path.realpath(meta["cwd"]) != resolved:
+            continue
+        first = next((c for r, c in hist if r == "user"), "(empty)")
+        rows.append((meta["created"], meta["uuid"], len(hist) // 2, first[:60]))
+    for created, uid, ex, first in sorted(rows, reverse=True):
+        print(f"  {uid}  {ex:3} exch  {first}")
+    if not rows:
+        print(f"(no fm-chat sessions for {resolved})")
 
 BOLD = "\033[1m"; DIM = "\033[2m"; CYAN = "\033[36m"; GREEN = "\033[32m"
 YELLOW = "\033[33m"; RESET = "\033[0m"
@@ -115,22 +183,52 @@ def worker_alive() -> str:
         return "unreadable"
 
 
+def _pop(args, flag):
+    if flag in args:
+        i = args.index(flag)
+        if i + 1 < len(args):
+            v = args[i + 1]; del args[i:i + 2]; return v
+    return None
+
+
 def main() -> int:
     args = sys.argv[1:]
-    system = ""
     if args and args[0] in ("-h", "--help"):
         print(__doc__); return 0
-    if len(args) >= 2 and args[0] == "--system":
-        system = args[1]
+
+    do_list = "--list" in args
+    if do_list:
+        args.remove("--list")
+    resume = _pop(args, "--resume")
+    cwd = _pop(args, "--cwd") or os.getcwd()
+    system = _pop(args, "--system") or ""
+
+    if do_list:
+        list_sessions(cwd); return 0
+
+    if resume:
+        uid, meta = resume, None
+        meta, history = load_session(resume)
+        system = meta.get("system", "")
+        cwd = meta.get("cwd", cwd)
+    else:
+        uid, meta = new_session(cwd, system)
+        history = []
 
     print(f"{BOLD}fm-chat{RESET} — Apple FoundationModels on the Mini  "
           f"{DIM}(worker: {worker_alive()}){RESET}")
+    print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
+          f"resume later: fm-chat --resume {uid}{RESET}")
     print(f"{DIM}commands: /reset  /system TEXT  /history  /exit{RESET}")
     if system:
         print(f"{DIM}system: {system}{RESET}")
+    if history:
+        print(f"{DIM}— replaying {len(history)//2} prior exchanges —{RESET}")
+        for role, text in history:
+            who = f"{CYAN}you{RESET}" if role == "user" else f"{GREEN}fm{RESET}"
+            print(f"{who} › {text}")
     print()
 
-    history = []   # list of (role, text)
     while True:
         try:
             line = input(f"{CYAN}{BOLD}you ›{RESET} ").strip()
@@ -174,6 +272,8 @@ def main() -> int:
         print(f"{DIM}     [{res.get('host','?')} · model {mm:.1f}s · round-trip {rt:.1f}s]{RESET}\n")
         history.append(("user", line))
         history.append(("assistant", answer))
+        append_turn(meta, "user", line)           # persist → resumable in `sessions`
+        append_turn(meta, "assistant", answer)
 
 
 if __name__ == "__main__":

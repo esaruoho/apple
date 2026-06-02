@@ -66,7 +66,25 @@ let stop: Set<String> = [
     "most","own","only","then","some","any","each","every","both","few","lot",
     // boilerplate / web / mail
     "mr","etc","via","per","page","file","www","http","https","com","org","net",
-    "html","email","date","subject","re","fwd","said","says","like","just","good"]
+    "html","email","date","subject","re","fwd","said","says","like","just","good",
+    // HTML / CMS / web-mirror markup (kept OUT: field/current/charge/force/power
+    // /energy/wave — those are real physics terms, never stoplisted)
+    "content","asset","cgi","css","embed","emoji","json","upload","theme","tag",
+    "widget","plugin","href","div","span","php","wordpress","sidebar","footer",
+    "header","navbar","cookie","javascript","stylesheet","author","domain","custom",
+    "format","src","alt","meta","url","uri","api","cdn","svg","png","jpg","gif",
+    "login","admin","comment","post","menu","nav","link","button","script","style",
+    "default","option","setting","config","version","download","install","search",
+    "site","web","server","client","browser","template","render","module","class"]
+
+// Decode bytes robustly: UTF-8 first, then Latin-1 (maps every byte, never
+// fails) so old web-mirror / DOS text with non-UTF-8 bytes still reads instead
+// of yielding an empty corpus and a bogus "no input".
+func decodeText(_ data: Data) -> String {
+    if let s = String(data: data, encoding: .utf8) { return s }
+    if let s = String(data: data, encoding: .isoLatin1) { return s }
+    return String(decoding: data, as: UTF8.self)   // lossy last resort
+}
 
 // ---- gather text ----
 func filesUnder(_ root: String) -> [String] {
@@ -88,11 +106,13 @@ if let d = dir {
     let paths = filesUnder((d as NSString).expandingTildeInPath)
     if paths.isEmpty { die("apple-keywords: no .md/.txt under \(d)") }
     for p in paths {
-        if let s = try? String(contentsOfFile: p, encoding: .utf8) { corpus += s + "\n" }
+        if let d = FileManager.default.contents(atPath: p) {
+            corpus += decodeText(d) + "\n"
+        }
     }
 } else {
     let data = FileHandle.standardInput.readDataToEndOfFile()
-    corpus = String(data: data, encoding: .utf8) ?? ""
+    corpus = decodeText(data)
 }
 if corpus.isEmpty { die("apple-keywords: no input (give --dir or pipe text on stdin)") }
 

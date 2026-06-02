@@ -316,7 +316,7 @@ text.lbl,text.cnt,circle.node,line.edge{transition:opacity 0.18s, stroke-width 0
   <button onclick="zoomOut()">−</button>
   <span class="hint">scroll = zoom · drag = pan · click a node = highlight neighbours · esc = reset</span>
 </div>
-<svg id="stage" preserveAspectRatio="xMidYMid meet">__SVG_INNER__</svg>
+<svg id="stage" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid meet">__SVG_INNER__</svg>
 <div id="info"></div>
 <script>
 (function(){
@@ -330,14 +330,15 @@ text.lbl,text.cnt,circle.node,line.edge{transition:opacity 0.18s, stroke-width 0
   function setVB(){ stage.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
   setVB();
 
-  // Pan
-  let isDown = false, startX, startY, startVB;
-  stage.addEventListener('mousedown', e => {
+  // Pan via pointer events (works on touch + mouse, captures across child elements)
+  let isDown = false, startX, startY, startVB, pid = null;
+  stage.addEventListener('pointerdown', e => {
     isDown = true; startX = e.clientX; startY = e.clientY;
-    startVB = {...vb}; stage.classList.add('grabbing');
+    startVB = {...vb}; pid = e.pointerId;
+    try { stage.setPointerCapture(pid); } catch (_) {}
+    stage.classList.add('grabbing');
   });
-  window.addEventListener('mouseup', () => { isDown = false; stage.classList.remove('grabbing'); });
-  window.addEventListener('mousemove', e => {
+  stage.addEventListener('pointermove', e => {
     if (!isDown) return;
     const rect = stage.getBoundingClientRect();
     const dx = (e.clientX - startX) * (vb.w / rect.width);
@@ -345,6 +346,13 @@ text.lbl,text.cnt,circle.node,line.edge{transition:opacity 0.18s, stroke-width 0
     vb.x = startVB.x - dx; vb.y = startVB.y - dy;
     setVB();
   });
+  function endPan() {
+    isDown = false; stage.classList.remove('grabbing');
+    if (pid !== null) { try { stage.releasePointerCapture(pid); } catch (_) {} pid = null; }
+  }
+  stage.addEventListener('pointerup', endPan);
+  stage.addEventListener('pointercancel', endPan);
+  stage.addEventListener('pointerleave', endPan);
 
   // Zoom (wheel)
   stage.addEventListener('wheel', e => {

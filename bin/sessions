@@ -255,9 +255,59 @@ def load_codex_meta(row):
     row.snippet = (snippet or "(empty)")[:200]
 
 
+# ─────────────────────────── fm-chat ─────────────────────────────────
+# Apple on-device LLM chats (bin/fm-chat) persisted to ~/.fm-chat/sessions/.
+FMCHAT_ROOT = f"{HOME}/.fm-chat/sessions"
+
+
+def list_fmchat(folder):
+    if not os.path.isdir(FMCHAT_ROOT):
+        return []
+    resolved = os.path.realpath(folder)
+    rows = []
+    for name in os.listdir(FMCHAT_ROOT):
+        if not name.endswith(".jsonl"):
+            continue
+        full = os.path.join(FMCHAT_ROOT, name)
+        try:
+            st = os.stat(full)
+            with open(full, "r", encoding="utf-8", errors="replace") as f:
+                meta = json.loads(f.readline())
+        except Exception:
+            continue
+        if meta.get("type") != "session_meta":
+            continue
+        cwd, uid = meta.get("cwd"), meta.get("uuid")
+        if not cwd or not uid or os.path.realpath(cwd) != resolved:
+            continue
+        rows.append(Row("fm-chat", uid, cwd, full, st.st_mtime, st.st_size))
+    rows.sort(key=lambda r: r.mtime, reverse=True)
+    return rows
+
+
+def load_fmchat_meta(row):
+    snippet, turns = None, 0
+    try:
+        with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("type") == "message" and d.get("role") == "user":
+                    turns += 1
+                    if snippet is None:
+                        snippet = (d.get("content") or "").strip().replace("\n", " ")
+    except FileNotFoundError:
+        pass
+    row.turns = turns
+    row.snippet = (snippet or "(empty)")[:200]
+
+
 # ─────────────────────────── shared helpers ──────────────────────────
 
-LOAD = {"claude": load_claude_meta, "copilot": load_copilot_meta, "codex": load_codex_meta}
+LOAD = {"claude": load_claude_meta, "copilot": load_copilot_meta,
+        "codex": load_codex_meta, "fm-chat": load_fmchat_meta}
 
 
 def list_all(folder):
@@ -265,6 +315,7 @@ def list_all(folder):
     rows.extend(list_claude(folder))
     rows.extend(list_copilot(folder))
     rows.extend(list_codex(folder))
+    rows.extend(list_fmchat(folder))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
@@ -321,7 +372,7 @@ def human_size(n):
     return f"{n/1024/1024:.1f}M"
 
 
-PROVIDER_GLYPH = {"claude": "C", "copilot": "G", "codex": "X"}
+PROVIDER_GLYPH = {"claude": "C", "copilot": "G", "codex": "X", "fm-chat": "F"}
 
 
 def find_bin(name, extra_paths=()):
@@ -344,16 +395,23 @@ def resume_argv(provider, uuid):
         return [find_bin("copilot"), f"--resume={uuid}"]
     if provider == "codex":
         return [find_bin("codex"), "resume", uuid]
+    if provider == "fm-chat":
+        return [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",)), "--resume", uuid]
     raise ValueError(provider)
 
 
-def new_argv(provider):
+def new_argv(provider, folder=None):
     if provider == "claude":
         return [find_bin("claude"), "--dangerously-skip-permissions"]
     if provider == "copilot":
         return [find_bin("copilot")]
     if provider == "codex":
         return [find_bin("codex")]
+    if provider == "fm-chat":
+        argv = [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",))]
+        if folder:
+            argv += ["--cwd", folder]
+        return argv
     raise ValueError(provider)
 
 
@@ -517,6 +575,8 @@ def run_picker(stdscr, folder):
             return ("new", "copilot", None)
         elif k in (ord('x'), ord('X')):
             return ("new", "codex", None)
+        elif k in (ord('f'), ord('F')):
+            return ("new", "fm-chat", None)
         elif k in (ord('q'), ord('Q'), 27):
             return ("quit", None, None)
 
@@ -539,7 +599,7 @@ def main():
         sys.exit(0)
 
     os.chdir(folder)
-    argv = resume_argv(provider, uuid) if action == "resume" else new_argv(provider)
+    argv = resume_argv(provider, uuid) if action == "resume" else new_argv(provider, folder)
     os.execvp(argv[0], argv)
 
 

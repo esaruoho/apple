@@ -24,6 +24,17 @@ run_one() {
     local out="$f/_WORDCLOUD.md"
     local tmp; tmp="$(mktemp -t wordcloud)"
     local n=0 capped=0 total=0 sz
+
+    # Instant feedback: stub + open + notification BEFORE the slow scan, so the
+    # user sees something immediately instead of a silent gap.
+    {
+        echo "# Word Cloud — $(basename "$f")"
+        echo
+        echo "⏳ _Generating… (scanning text files, on-device NLTagger). This"
+        echo "tab will fill in when done — reopen _WORDCLOUD.md if it doesn't refresh._"
+    } > "$out"
+    open "$out" 2>/dev/null || true
+    osascript -e "display notification \"Scanning $(basename "$f")…\" with title \"Word Cloud\" subtitle \"started\"" >/dev/null 2>&1 || true
     while IFS= read -r -d '' file; do
         total=$((total + 1))
         [ "$n" -ge "$CAP" ] && { capped=1; continue; }

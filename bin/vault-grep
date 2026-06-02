@@ -23,6 +23,7 @@ Usage:
 Apple-native pedigree: Python stdlib only. The embedder is the local
 `apple-embed` Swift CLI that ships with the apple skill (~/work/apple/bin/).
 """
+import collections
 import hashlib
 import json
 import os
@@ -314,39 +315,35 @@ def read_jsonl_rows(paths, dim):
     return vecs, files, lines, texts
 
 
-def build_matrix_cache(verbose=True):
+DEFAULT_DIM = 512   # NLEmbedding English. Override only if a non-512 batch dominates.
+
+
+def build_matrix_cache(verbose=True, dim=DEFAULT_DIM):
     """Read every JSONL once, write the consolidated matrix + sidecars.
-    Rows are L2-normalized at build time so a query is a single matmul."""
+    Rows are L2-normalized at build time so a query is a single matmul.
+
+    Single-pass: assumes a known `dim` (default 512 for NLEmbedding). Any rows
+    of a different length are silently skipped — they belong to a different
+    embedder family (MiniLM=384) and should get their own matrix later."""
     import numpy as np
     if verbose:
-        print("building matrix cache (one-time, after embedding changes) …",
-              file=sys.stderr)
+        print(f"building matrix cache (one-time, after embedding changes; dim={dim}) …",
+              file=sys.stderr, flush=True)
     t0 = time.time()
-    # First pass: find the modal vector dimension (NLEmbedding=512, pro=384).
-    dim_counts = {}
     cache_files = [os.path.join(CACHE_DIR, cn) for cn in os.listdir(CACHE_DIR)
-                   if cn.endswith(".jsonl")]
-    for cp in cache_files:
-        try:
-            with open(cp, "r", encoding="utf-8", errors="replace") as f:
-                for ln in f:
-                    try: d = json.loads(ln)
-                    except Exception: continue
-                    v = d.get("v")
-                    if isinstance(v, list) and v:
-                        dim_counts[len(v)] = dim_counts.get(len(v), 0) + 1
-        except OSError:
-            continue
-    if not dim_counts:
-        die("no vectors in cache to build a matrix from")
-    dim = max(dim_counts, key=dim_counts.get)
+                   if cn.endswith(".jsonl") and not cn.startswith("_")]
+    n_files = len(cache_files)
 
-    # Second pass: collect rows of the modal dim.
     file_index = {}            # path -> int
     files_list = []
-    file_idx, lines, texts = [], [], []
-    vecs = []
-    for cp in cache_files:
+    file_idx_buf = []          # python list of ints (cheap to append)
+    line_buf = []
+    text_buf = []
+    # Vectors accumulate as a list of float32 1D arrays — fast to vstack at end,
+    # ~3× faster than np.asarray on a list-of-list-of-Python-floats.
+    vec_buf = []
+
+    for idx, cp in enumerate(cache_files):
         try:
             with open(cp, "r", encoding="utf-8", errors="replace") as f:
                 for ln in f:
@@ -361,31 +358,38 @@ def build_matrix_cache(verbose=True):
                         fi = len(files_list)
                         file_index[fp] = fi
                         files_list.append(fp)
-                    file_idx.append(fi)
-                    lines.append(int(d.get("l", 0)))
-                    texts.append(str(d.get("t", "")).replace("\n", " ").replace("\r", " "))
-                    vecs.append(v)
+                    file_idx_buf.append(fi)
+                    line_buf.append(int(d.get("l", 0)))
+                    text_buf.append(str(d.get("t", "")).replace("\n", " ").replace("\r", " "))
+                    vec_buf.append(np.asarray(v, dtype=np.float32))
         except OSError:
             continue
+        if verbose and (idx + 1) % 2000 == 0:
+            el = time.time() - t0
+            print(f"  scanned {idx+1}/{n_files} files  rows={len(vec_buf):,}  {el:.0f}s",
+                  file=sys.stderr, flush=True)
 
-    M = np.asarray(vecs, dtype=np.float32)               # (N, dim)
+    if not vec_buf:
+        die("no vectors in cache to build a matrix from")
+
+    M = np.vstack(vec_buf)                               # (N, dim)
     norms = np.linalg.norm(M, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     M /= norms                                           # pre-normalize rows
     np.save(MATRIX_NPY, M)
     np.savez(MATRIX_ROWS,
-             file_idx=np.asarray(file_idx, dtype=np.int32),
-             line=np.asarray(lines, dtype=np.int32))
+             file_idx=np.asarray(file_idx_buf, dtype=np.int32),
+             line=np.asarray(line_buf, dtype=np.int32))
     with open(MATRIX_FILES, "w", encoding="utf-8") as f:
         json.dump(files_list, f)
     with open(MATRIX_TEXTS, "w", encoding="utf-8") as f:
-        f.write("\n".join(texts))
+        f.write("\n".join(text_buf))
     with open(MATRIX_MANIFEST, "w", encoding="utf-8") as f:
-        json.dump({"baked": _scan_jsonl(),          # which JSONL files are in the matrix
+        json.dump({"baked": _scan_jsonl(),
                    "dim": dim, "count": int(M.shape[0])}, f)
     if verbose:
-        print(f"  matrix: {M.shape[0]} rows × {dim} dim in {time.time()-t0:.1f}s",
-              file=sys.stderr)
+        print(f"  matrix: {M.shape[0]:,} rows × {dim} dim in {time.time()-t0:.1f}s",
+              file=sys.stderr, flush=True)
 
 
 def load_matrix_cache():
@@ -480,6 +484,87 @@ def fast_query(qv, root, top, threshold):
               f"`vault-grep --rebuild-matrix --root <dir> <q>` to refold)",
               file=sys.stderr)
     return sorted(seen.values(), key=lambda x: -x["score"])[:top]
+
+
+def fast_query_topk(qv, top=12, threshold=0.0, root=None, max_per_file=3):
+    """Like fast_query but allows up to `max_per_file` hits per source file.
+    Used by RAG (vault-ask) — retrieves N best LINES (not files). Optional
+    `root` restricts the corpus; pass None to query the entire cache.
+    Returns list[dict{score,file,line,text}] or None if matrix path unavailable.
+    Same mmap + delta-merge semantics as fast_query."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    if not (os.path.exists(MATRIX_NPY) and os.path.exists(MATRIX_MANIFEST)):
+        build_matrix_cache()
+    try:
+        M, files_list, file_idx, line, texts, baked, dim = load_matrix_cache()
+    except (OSError, ValueError, KeyError):
+        return None
+    if dim != len(qv):
+        return None
+    q = np.asarray(qv, dtype=np.float32)
+    qn = np.linalg.norm(q)
+    if qn == 0:
+        return []
+    q = q / qn
+    root_abs = (os.path.abspath(root) + os.sep) if root else None
+
+    current = _scan_jsonl()
+    delta_names = [n for n, mt in current.items()
+                   if n not in baked or mt > baked.get(n, 0.0) + 1e-6]
+    d_vecs, d_files, d_lines, d_texts = read_jsonl_rows(
+        [os.path.join(CACHE_DIR, n) for n in delta_names], dim)
+
+    sims = M @ q                                              # (N,) cosine
+    if root_abs:
+        keep_file = np.fromiter((p.startswith(root_abs) for p in files_list),
+                                dtype=bool, count=len(files_list))
+        sims = np.where(keep_file[file_idx], sims, -2.0)
+    base_idx = {p: i for i, p in enumerate(files_list)}
+    changed = [base_idx[p] for p in {f for f in d_files if f in base_idx}]
+    if changed:
+        sims = np.where(np.isin(file_idx, np.asarray(changed, dtype=np.int32)),
+                        -2.0, sims)
+
+    pool = max(top * max_per_file * 4, 200)
+    order = np.argsort(-sims)[:pool]
+    base_hits = []
+    for j in order:
+        sc = float(sims[j])
+        if sc < threshold or sc <= -2.0:
+            break
+        fp = files_list[int(file_idx[j])]
+        base_hits.append({"score": sc, "file": fp, "line": int(line[j]),
+                          "text": texts[j] if j < len(texts) else ""})
+
+    delta_hits = []
+    if d_vecs:
+        D = np.asarray(d_vecs, dtype=np.float32)
+        dn = np.linalg.norm(D, axis=1); dn[dn == 0] = 1.0
+        dsims = (D @ q) / dn
+        for k in range(len(d_files)):
+            fp = d_files[k]
+            if root_abs and not fp.startswith(root_abs):
+                continue
+            sc = float(dsims[k])
+            if sc < threshold:
+                continue
+            delta_hits.append({"score": sc, "file": fp, "line": int(d_lines[k]),
+                               "text": d_texts[k]})
+
+    merged = sorted(base_hits + delta_hits, key=lambda h: -h["score"])
+    per_file = collections.defaultdict(int)
+    out = []
+    for h in merged:
+        if per_file[h["file"]] >= max_per_file:
+            continue
+        per_file[h["file"]] += 1
+        out.append(h)
+        if len(out) >= top:
+            break
+    return out
 
 
 # ─────────────────────────── main ──────────────────────────────
