@@ -165,8 +165,9 @@ func renderMessageHTML(_ raw: String) -> String {
     // 3) Display math $$...$$ and \[...\]
     text = regexReplace(text, "(?s)\\$\\$(.+?)\\$\\$") { g in keep(latexToMathML(g[1], display: true)) }
     text = regexReplace(text, "(?s)\\\\\\[(.+?)\\\\\\]") { g in keep(latexToMathML(g[1], display: true)) }
-    // 4) Inline math $...$ (not $$)
+    // 4) Inline math $...$ (not $$) and \(...\)
     text = regexReplace(text, "\\$([^$\\n]+?)\\$") { g in keep(latexToMathML(g[1], display: false)) }
+    text = regexReplace(text, "(?s)\\\\\\((.+?)\\\\\\)") { g in keep(latexToMathML(g[1], display: false)) }
     // 5) Inline code spans.
     text = regexReplace(text, "`([^`\\n]+?)`") { g in keep("<code>\(escapeHTML(g[1]))</code>") }
 
@@ -434,6 +435,18 @@ final class FM {
         }
     }
 
+    /// Throw away the current on-device session and start a brand-new one with
+    /// no history — a true "new chat". The remote bridge is stateless (each call
+    /// replays the whole convo), so clearing the caller's `convo` is enough;
+    /// no-model has nothing to reset.
+    func startFreshSession() {
+        if #available(macOS 26.0, *), case .local = backend {
+            let session = LanguageModelSession(tools: [WebReaderTool()], instructions: FM.systemInstructions)
+            session.prewarm()
+            sessionBox = session
+        }
+    }
+
     var backendDescription: String {
         switch backend {
         case .local: return "on-device model"
@@ -651,16 +664,22 @@ final class DropView: NSView {
 
 // ─────────────────────── app ───────────────────────────────────
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WKScriptMessageHandler {
     var window: NSWindow!
     var webView: WKWebView!
     var inputView: NSTextView!
     var sendButton: NSButton!
     let fm = FM()
-    let store = SessionStore()
+    var store = SessionStore()
     var messages: [(role: String, text: String)] = []   // what's shown (display text)
     var convo: [(role: String, text: String)] = []       // what was actually sent (for remote replay)
     var busy = false
+
+    // When a prompt overflows the context window we stash it here and attach a
+    // "start a new chat with that prompt" button to the error bubble.
+    var newChatPrompt: String?       // the userText to resend
+    var newChatDisplay: String?      // its display label (for file-ingest prompts)
+    var newChatMsgIndex: Int?        // which bubble carries the button
 
     func applicationDidFinishLaunching(_ note: Notification) {
         let frame = NSRect(x: 0, y: 0, width: 820, height: 720)
@@ -679,6 +698,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
 
         // transcript
         let webConf = WKWebViewConfiguration()
+        let ucc = WKUserContentController()
+        ucc.add(self, name: "fmchat")   // HTML buttons post back here
+        webConf.userContentController = ucc
         webView = WKWebView(frame: NSRect(x: 0, y: 110, width: 820, height: 610), configuration: webConf)
         webView.autoresizingMask = [.width, .height]
         webView.setValue(false, forKey: "drawsBackground")
@@ -721,6 +743,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
         case .none:
             appendAssistant("⚠️ No FoundationModels here.\n\n\(fm.reason)\n\n**Two ways to fix it:**\n1. Run this app on an **Apple Silicon Mac on macOS 26** with **Apple Intelligence** enabled, or\n2. **Connect to a Mac that has it** — menu **Connect ▸ Connect to a Mac…**, and point it at a folder shared with that Mac (e.g. a Syncthing queue dir). That Mac runs the worker; this app sends prompts there and shows the replies.")
         }
+
+        if ProcessInfo.processInfo.environment["FMCHAT_SIMULATE_OVERFLOW"] != nil {
+            simulateOverflow()
+        }
     }
 
     @objc func connectToMac() {
@@ -743,6 +769,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
         restart.runModal()
     }
 
+    // HTML → Swift bridge. The overflow bubble's button posts "newchat".
+    func userContentController(_ ucc: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "fmchat", (message.body as? String) == "newchat" else { return }
+        startNewChatFromOverflow()
+    }
+
+    /// Tear down the current chat and start a clean one: fresh on-device session,
+    /// empty history, and a NEW timestamped transcript on disk (the previous one
+    /// stays saved). Returns the previous transcript dir so callers can show it.
+    @discardableResult
+    func beginNewChat() -> String {
+        let prevDir = store.dir.path
+        newChatPrompt = nil; newChatDisplay = nil; newChatMsgIndex = nil
+        fm.startFreshSession()
+        store = SessionStore()          // fresh transcript on disk; old one preserved
+        messages.removeAll()
+        convo.removeAll()
+        return prevDir
+    }
+
+    /// ⌘N — start a new conversation. The previous one is already fully saved.
+    @objc func newChatMenu() {
+        guard !busy else { return }
+        let prev = beginNewChat()
+        render()
+        appendAssistant("🆕 New chat. The previous conversation is saved to `\(prev)`.")
+    }
+
+    /// Start a genuinely fresh chat and re-send the exact prompt that overflowed
+    /// the previous window — fired by the button on the overflow bubble.
+    func startNewChatFromOverflow() {
+        guard !busy, let prompt = newChatPrompt else { return }
+        let display = newChatDisplay
+        beginNewChat()                  // clears newChatPrompt — captured above first
+        appendAssistant("🆕 New chat — re-sending the prompt that filled the previous one.")
+        send(userText: prompt, display: display)
+    }
+
+    /// Debug only (env FMCHAT_SIMULATE_OVERFLOW): render the context-window
+    /// dead-end + recovery button on a Mac with no on-device model (macOS <26),
+    /// through the exact same friendly()/render() path the real error hits.
+    func simulateOverflow() {
+        // MathML render proof: LaTeX the on-device model actually emits.
+        messages.append(("assistant", "Reactance: \\(X = 2 \\pi f L\\)\n\nReactive power: \\(Q = V^2 / X\\)"))
+        let prompt = "show me the variable reactance, lenz law and reactive power equations."
+        messages.append(("user", "…(earlier long conversation that filled the 4096-token window)…"))
+        messages.append(("user", prompt))
+        let err = NSError(domain: "FM", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "exceededContextWindowSize"])
+        messages.append(("assistant", "⚠️ " + friendly(err)))
+        newChatPrompt = prompt
+        newChatDisplay = nil
+        newChatMsgIndex = messages.count - 1
+        render()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { true }
 
     func buildMenu() {
@@ -753,6 +835,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(NSMenuItem(title: "About FoundationModels Chat",
                                    action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
+        appMenu.addItem(.separator())
+        let nc = NSMenuItem(title: "New Chat", action: #selector(newChatMenu), keyEquivalent: "n")
+        nc.target = self
+        appMenu.addItem(nc)
         appMenu.addItem(.separator())
         appMenu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         appItem.submenu = appMenu
@@ -821,6 +907,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
             appendAssistant("Model unavailable — can't send.")
             return
         }
+        // Any previous overflow button is now stale.
+        newChatPrompt = nil; newChatDisplay = nil; newChatMsgIndex = nil
         busy = true
         sendButton.isEnabled = false
         messages.append(("user", display ?? userText))
@@ -849,6 +937,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
                     let msg = self.friendly(err)
                     self.messages[idx] = ("assistant", "⚠️ " + msg)
                     self.store.log(role: "assistant", text: "[error] " + msg)
+                    if self.errorIsContextWindow(err) {
+                        // Same predicate friendly() uses → button can't diverge
+                        // from the "start a new chat" message.
+                        self.newChatPrompt = userText
+                        self.newChatDisplay = display
+                        self.newChatMsgIndex = idx
+                    }
                 }
                 self.busy = false
                 self.sendButton.isEnabled = true
@@ -869,13 +964,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
+    /// True when an error is the context-window-full case — from the typed
+    /// on-device GenerationError or, for the remote bridge, the error string.
+    /// friendly() and the recovery-button logic both call this, so the button
+    /// always appears exactly when the "start a new chat" message does.
+    func errorIsContextWindow(_ err: Error) -> Bool {
+        if #available(macOS 26.0, *) {
+            if case LanguageModelSession.GenerationError.exceededContextWindowSize = err { return true }
+        }
+        let s = "\(err)".lowercased()
+        return (s.contains("context") && s.contains("window")) || s.contains("exceededcontext")
+            || s.contains("context length") || s.contains("contextlength")
+    }
+
     func friendly(_ err: Error) -> String {
         let s = "\(err)".lowercased()
         if s.contains("guardrail") || s.contains("unsafe") {
             return "Apple's on-device safety guardrail blocked that one (it's aggressive). Rephrase and try again."
         }
-        if s.contains("context") && s.contains("window") || s.contains("exceededcontext") {
-            return "The conversation filled the on-device model's context window and couldn't be condensed. Start a new chat to continue."
+        if errorIsContextWindow(err) {
+            return "The conversation filled the on-device model's context window and couldn't be condensed. Use the button below — or press ⌘N — to start a fresh chat with your last prompt."
         }
         return "\(err)"
     }
@@ -884,10 +992,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
 
     func render() {
         var body = ""
-        for m in messages {
+        for (i, m) in messages.enumerated() {
             let cls = m.role == "user" ? "user" : "bot"
             let who = m.role == "user" ? "You" : "FoundationModels"
-            body += "<div class=\"msg \(cls)\"><div class=\"who\">\(who)</div><div class=\"bubble\">\(renderMessageHTML(m.text))</div></div>"
+            var inner = "<div class=\"who\">\(who)</div><div class=\"bubble\">\(renderMessageHTML(m.text))</div>"
+            if i == newChatMsgIndex, newChatPrompt != nil {
+                inner += "<div><button class=\"newchat\" "
+                       + "onclick=\"window.webkit.messageHandlers.fmchat.postMessage('newchat')\">"
+                       + "↻ Start a new chat with that prompt</button></div>"
+            }
+            body += "<div class=\"msg \(cls)\">\(inner)</div>"
         }
         let html = """
         <!DOCTYPE html><html><head><meta charset="utf-8">
@@ -908,6 +1022,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate {
           pre { background: #000; border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
           pre code { background: none; padding: 0; }
           a { color: #4aa3ff; }
+          .newchat { margin-top: 10px; background: #0a4d8c; color: #fff; border: none;
+                     border-radius: 8px; padding: 8px 14px; cursor: pointer;
+                     font: 13px -apple-system, system-ui; }
+          .newchat:hover { background: #0b5aa6; }
           math { font-family: "STIX Two Math", "Latin Modern Math", serif; font-size: 1.05em; }
           math[display="block"] { display: block; margin: 8px 0; }
         </style></head><body>\(body)
