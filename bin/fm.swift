@@ -19,6 +19,12 @@ func popValue(_ flag: String) -> String? {
     let v = args[i + 1]; args.removeSubrange(i...(i + 1)); return v
 }
 let checkOnly = args.contains("--check"); args.removeAll { $0 == "--check" }
+// Tools are OPT-IN. The 16 grounding tools' schemas serialize into the model's
+// context as a large preamble (~4600 tokens) that fills the entire 4096-token
+// window before the prompt is even added — so a plain question overflows with
+// "exceededContextWindowSize". Default to a tool-less session (tiny preamble,
+// fits easily); pass --tools to enable the grounding toolbox for agentic use.
+let useTools = args.contains("--tools"); args.removeAll { $0 == "--tools" }
 let system = popValue("--system")
 // semantic_search searches this folder (default: the apple wiki — always on the Mini).
 let searchDir = popValue("--search-dir") ?? "\(NSHomeDirectory())/work/apple/wiki"
@@ -515,8 +521,12 @@ var output = ""
 var failure: String?
 Task {
     do {
-        let instructions = (system ?? "You are a helpful, concise assistant.") + toolHint
-        let session = LanguageModelSession(tools: groundingTools, instructions: instructions)
+        let base = system ?? "You are a helpful, concise assistant."
+        // Tool-less by default so the prompt fits the 4096-token window; the
+        // grounding toolbox (and its large schema preamble) is opt-in via --tools.
+        let session = useTools
+            ? LanguageModelSession(tools: groundingTools, instructions: base + toolHint)
+            : LanguageModelSession(instructions: base)
         let result = try await session.respond(to: prompt)
         output = result.content
     } catch {
