@@ -1501,11 +1501,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         // Translation framework). The model never sees the foreign text.
         var modelInput = userText
         var replyLang: String? = nil
+        // Apple Translation supports only these 19 languages (verified 2026-06-02 — NOT
+        // Finnish or any Nordic/Baltic language). wiki/concepts/apple-translation-language-support.md
+        let appleTranslatable: Set<String> = ["ar","de","en","es","fr","hi","id","it","ja","ko",
+                                              "nl","pl","pt","ru","th","tr","uk","vi","zh"]
         if let lang = dominantLanguage(userText), lang != "en", lang != "und" {
+            guard appleTranslatable.contains(lang) else {
+                messages.append(("user", display ?? userText)); render()
+                appendAssistant("⚠️ That looks like **\(lang)** — which neither the on-device model nor Apple's Translation framework supports (as of macOS 26, Apple Translation has no Finnish/Nordic languages, so there is NO pack to install). Please write in English.")
+                return
+            }
             let en = runCLI(["\(ToolEnv.binDir)/apple-translate", "--to", "en"], stdin: userText)
             if en.isEmpty || en == "(no output)" || en.contains("Unable to Translate") {
                 messages.append(("user", display ?? userText)); render()
-                appendAssistant("⚠️ To chat in this language I translate it to English for the model and translate the reply back — but the **\(lang) ⇄ en** translation pack isn't installed. Install it once in **System Settings ▸ General ▸ Language & Region ▸ Translation Languages ▸ Add**, then try again. (The model itself only speaks English; translation bridges it.)")
+                appendAssistant("⚠️ I can bridge **\(lang)** ⇄ English, but its translation pack isn't installed. Install it once in **System Settings ▸ General ▸ Language & Region ▸ Translation Languages ▸ Add**, then try again.")
                 return
             }
             modelInput = en
