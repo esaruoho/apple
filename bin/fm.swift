@@ -284,7 +284,7 @@ enum WebText {
 // snippets. Read-only, allowlisted — the model picks the query, never a command.
 struct SemanticSearchTool: Tool {
     let name = "semantic_search"
-    let description = "Search the user's own notes and documents for passages related in meaning to a query and return ranked snippets with their file locations. Call this whenever the user asks about their own notes, files, or projects rather than general knowledge, then ground the answer in what comes back."
+    let description = "Search the user's own notes and documents for passages related in meaning to a query and return ranked snippets with their file locations. Call this whenever the user asks about their own notes, files, or projects rather than general knowledge. Each result is a SHORT snippet plus a file path — when you need to quote or summarize a result in any depth, call the readFile tool on that path to read the full passage before answering. Always ground the answer in what comes back, and cite the file."
     let searchDir: String
     let binDir: String
     @Generable struct Arguments {
