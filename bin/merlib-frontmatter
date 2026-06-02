@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""
+merlib-frontmatter — audit (and optionally repair) YAML frontmatter across a
+markdown archive. Reports files with NO frontmatter, MALFORMED frontmatter
+(opening `---` but no closing fence), and files missing required keys.
+
+Apple-native: Python stdlib only. YAML isn't stdlib, so this hand-parses the
+simple top-level `key:` shape the archive actually uses — enough to audit
+presence/absence; it does not deep-parse values.
+
+Usage:
+  merlib-frontmatter <dir> [<dir> ...]
+        [--require title,tags,source]   keys every file SHOULD have
+        [--report out.md]               write a markdown report
+        [--fix-title]                   add a `title:` (from the first H1, else
+                                        filename) to files that HAVE frontmatter
+                                        but lack a title.  Implies a backup-free
+                                        in-place edit — use with --dry-run first.
+        [--dry-run]                      with --fix-title, only show what'd change
+        [--max-list N]                   cap lines listed per section (default 60)
+"""
+import os
+import re
+import sys
+
+H1 = re.compile(r'^#\s+(.+?)\s*$')
+KEY = re.compile(r'^([A-Za-z][\w-]*):')
+
+
+def read_head(path, n=4000):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read(n)
+    except OSError:
+        return ""
+
+
+def parse_fm(text):
+    """Return (status, keys, fm_end_index). status: 'none'|'malformed'|'ok'."""
+    if not text.startswith("---"):
+        return "none", set(), 0
+    # find the closing fence on its own line
+    m = re.search(r'\n---\s*(?:\n|$)', text)
+    if not m:
+        return "malformed", set(), 0
+    block = text[3:m.start()]
+    keys = set()
+    for line in block.splitlines():
+        km = KEY.match(line)
+        if km:
+            keys.add(km.group(1).lower())
+    return "ok", keys, m.end()
+
+
+def first_h1(text, after):
+    for line in text[after:].splitlines():
+        hm = H1.match(line)
+        if hm:
+            return hm.group(1)
+    return None
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    dirs, exts = [], (".md",)
+    require = set()
+    report = None
+    fix_title = "--fix-title" in args
+    dry = "--dry-run" in args
+    max_list = 60
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--require" and i + 1 < len(args):
+            require = {k.strip().lower() for k in args[i + 1].split(",")}; i += 2; continue
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i + 1].split(",")); i += 2; continue
+        if a == "--report" and i + 1 < len(args):
+            report = args[i + 1]; i += 2; continue
+        if a == "--max-list" and i + 1 < len(args):
+            max_list = int(args[i + 1]); i += 2; continue
+        if a in ("--fix-title", "--dry-run"):
+            i += 1; continue
+        if not a.startswith("-"):
+            dirs.append(os.path.expanduser(a)); i += 1; continue
+        i += 1
+    if not dirs:
+        print("usage: merlib-frontmatter <dir> [--require title,tags] [--fix-title --dry-run]", file=sys.stderr)
+        sys.exit(1)
+
+    files = []
+    for d in dirs:
+        for base, subdirs, fns in os.walk(d):
+            subdirs[:] = [s for s in subdirs if s not in (".git", "node_modules", "__pycache__")]
+            for fn in fns:
+                if fn.lower().endswith(exts):
+                    files.append(os.path.join(base, fn))
+
+    none_fm, malformed, missing_keys = [], [], []
+    key_pop = {}
+    fixed = 0
+    for f in files:
+        text = read_head(f)
+        status, keys, end = parse_fm(text)
+        if status == "none":
+            none_fm.append(f); continue
+        if status == "malformed":
+            malformed.append(f); continue
+        for k in keys:
+            key_pop[k] = key_pop.get(k, 0) + 1
+        miss = require - keys if require else set()
+        if miss:
+            missing_keys.append((f, sorted(miss)))
+        # opt-in: add a title to frontmatter that lacks one
+        if fix_title and "title" not in keys:
+            full = open(f, encoding="utf-8", errors="replace").read()
+            st2, _, end2 = parse_fm(full)
+            if st2 == "ok":
+                title = first_h1(full, end2) or os.path.splitext(os.path.basename(f))[0]
+                title = title.replace('"', "'")
+                if dry:
+                    print(f"  would add title: \"{title}\"  →  {f}")
+                else:
+                    # insert title right after the opening fence's newline
+                    fence_nl = full.index("\n") + 1
+                    newfull = full[:fence_nl] + f'title: "{title}"\n' + full[fence_nl:]
+                    with open(f, "w", encoding="utf-8") as wf:
+                        wf.write(newfull)
+                fixed += 1
+
+    lines = [f"# merlib-frontmatter — {', '.join(dirs)}\n",
+             f"- markdown files: **{len(files)}**",
+             f"- with frontmatter: **{len(files) - len(none_fm) - len(malformed)}**",
+             f"- **no frontmatter: {len(none_fm)}**",
+             f"- **malformed (no closing fence): {len(malformed)}**"]
+    if require:
+        lines.append(f"- missing required {sorted(require)}: **{len(missing_keys)}**")
+    if fix_title:
+        lines.append(f"- titles {'would be ' if dry else ''}added: **{fixed}**")
+    if key_pop:
+        top = sorted(key_pop.items(), key=lambda kv: -kv[1])[:14]
+        lines.append("\n## Frontmatter keys in use\n")
+        lines.append(", ".join(f"`{k}` ({n})" for k, n in top))
+    if none_fm:
+        lines.append(f"\n## No frontmatter (first {min(len(none_fm), max_list)})\n")
+        lines += [f"- `{f}`" for f in none_fm[:max_list]]
+    if malformed:
+        lines.append(f"\n## Malformed frontmatter (first {min(len(malformed), max_list)})\n")
+        lines += [f"- `{f}`" for f in malformed[:max_list]]
+    if missing_keys:
+        lines.append(f"\n## Missing required keys (first {min(len(missing_keys), max_list)})\n")
+        lines += [f"- `{f}` — missing {m}" for f, m in missing_keys[:max_list]]
+
+    text = "\n".join(lines)
+    if report:
+        with open(report, "w", encoding="utf-8") as f:
+            f.write(text + "\n")
+        print(f"wrote {report}", file=sys.stderr)
+    print("\n".join(lines[:7 + (1 if require else 0) + (1 if fix_title else 0)]))
+
+
+if __name__ == "__main__":
+    main()

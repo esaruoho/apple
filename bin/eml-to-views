@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+"""
+eml-to-views — regenerate the derived KeelyNET archive views from messages-eml/.
+Reads every .eml under a messages-eml/ tree and rebuilds, consistently across
+the whole corpus:
+
+  messages-md/YYYY/YYYY-MM-DD/<same>.md   per-message markdown + YAML frontmatter
+                                          (thread_key, prev/next_by_date, siblings)
+  <name>.mbox                              single mbox (RFC2047-encoded subjects)
+  index.html                               chronological, grouped by month/day
+  by-sender.html                           grouped by sender
+  by-thread.html                           grouped by thread (subject)
+  timeline.json                            {"count", "entries":[…]} chronological
+
+Apple-native pedigree: Python stdlib only (email, html, json).
+
+Usage:
+  eml-to-views --root <messages-split-dir> [--mbox-name "KeelyNET Message Archive"]
+               [--md-only] [--no-md]
+"""
+import email
+import email.header
+import email.utils
+import html
+import json
+import os
+import re
+import sys
+from datetime import datetime
+
+
+def die(m):
+    print(m, file=sys.stderr); sys.exit(1)
+
+
+def slug(s, maxlen=40):
+    s = re.sub(r'--.*?--', '', s).lower()
+    s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
+    return (s[:maxlen].rstrip('-') or "unknown") if len(s) > maxlen else (s or "unknown")
+
+
+def thread_key(subject):
+    s = subject.strip()
+    prev = None
+    while prev != s:                       # peel (R)/(F)/Re:/Fwd:
+        prev = s
+        s = re.sub(r'^\s*(\(\s*[rf]\s*\)|re\s*:|fwd?\s*:)\s*', '', s, flags=re.I).strip()
+    return slug(s)
+
+
+def dec(h):
+    if h is None:
+        return ""
+    out = []
+    for txt, enc in email.header.decode_header(h):
+        if isinstance(txt, bytes):
+            for e in (enc, "utf-8", "latin-1"):     # tolerate 'unknown-8bit' etc.
+                try:
+                    out.append(txt.decode(e or "utf-8", "replace")); break
+                except (LookupError, TypeError):
+                    continue
+            else:
+                out.append(txt.decode("utf-8", "replace"))
+        else:
+            out.append(txt)
+    return "".join(out).strip()
+
+
+def parse_eml(path, root_eml):
+    with open(path, "rb") as f:
+        m = email.message_from_binary_file(f)
+    def g(name):
+        return str(m.get(name) or "").strip()
+    body = m.get_payload(decode=True)
+    body = (body.decode("utf-8", "replace") if body else m.get_payload() or "")
+    raw_dt = g("X-BBS-Datetime-Raw")
+    try:
+        dt = datetime.strptime(raw_dt, "%m/%d/%y %H:%M")
+    except ValueError:
+        d = email.utils.parsedate_to_datetime(str(m.get("Date", "")))
+        dt = d.replace(tzinfo=None) if d else None
+    if dt is None:
+        return None
+    rel = os.path.relpath(path, root_eml)            # YYYY/YYYY-MM-DD/<name>.eml
+    return {
+        "msg_id": g("X-BBS-Message-ID"),
+        "dt": dt,
+        "dt_iso": dt.strftime("%Y-%m-%dT%H:%M:%S"),
+        "dt_raw": raw_dt,
+        "sender": dec(m.get("From")).split("<")[0].strip(),
+        "recipient": dec(m.get("To")).split("<")[0].strip(),
+        "subject": dec(m.get("Subject")),
+        "folder": g("X-BBS-Folder"),
+        "source_file": g("X-BBS-Source-File"),
+        "year": rel.split(os.sep)[0],
+        "day": rel.split(os.sep)[1],
+        "base": os.path.splitext(os.path.basename(rel))[0],
+        "eml_rel": "messages-eml/" + rel,
+        "md_rel": "messages-md/" + os.path.splitext(rel)[0] + ".md",
+        "from_addr": (re.search(r'<([^>]+)>', m.get("From", "")) or [None, "unknown"])[1],
+        "body": body,
+    }
+
+
+def write_md(rec, root, prevf, nextf, siblings):
+    out = os.path.join(root, "messages-md", rec["year"], rec["day"], rec["base"] + ".md")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    fold = rec["folder"].replace('"', '\\"')
+    fm = ["---",
+          f'msg_id: "{rec["msg_id"]}"',
+          f'datetime_raw: "{rec["dt_raw"]}"',
+          f'datetime_iso: "{rec["dt_iso"]}"',
+          f'sender: "{rec["sender"]}"',
+          f'recipient: "{rec["recipient"]}"',
+          f'subject: "{rec["subject"].replace(chr(34), chr(92)+chr(34))}"',
+          f'folder: "{fold}"',
+          f'source_file: "{rec["source_file"]}"',
+          f'thread_key: "{rec["thread_key"]}"',
+          f'prev_by_date: "{prevf or ""}"',
+          f'next_by_date: "{nextf or ""}"']
+    if siblings:
+        fm.append("thread_siblings:")
+        fm += [f'  - "{s}"' for s in siblings]
+    else:
+        fm.append("thread_siblings: []")
+    fm.append("---")
+    body = "\n".join(fm) + f"\n\n# {rec['subject']}\n\n"
+    body += (f"**From:** {rec['sender']}  \n**To:** {rec['recipient']}  \n"
+             f"**Date:** {rec['dt_iso']}  \n**Folder:** {rec['folder']}  \n"
+             f"**Source:** `{rec['source_file']}` (msg {rec['msg_id']})\n\n---\n\n")
+    body += rec["body"].rstrip() + "\n"
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(body)
+
+
+def mbox_message(rec):
+    addr = rec["from_addr"]
+    ctime = rec["dt"].strftime("%a %b %d %H:%M:%S %Y")
+    subj = rec["subject"]
+    try:
+        subj_enc = email.header.Header(subj, "utf-8").encode()
+    except Exception:
+        subj_enc = subj
+    hdr = [f"From {addr} {ctime}",
+           f"From: {rec['sender']} <{addr}>",
+           f"To: {rec['recipient']} <{slug(rec['recipient'])}@bbs-keelynet.archived.local>",
+           f"Subject: {subj_enc}",
+           f"Message-ID: <bbs-{rec['msg_id']}@bbs-keelynet.archived.local>",
+           f"Date: {email.utils.format_datetime(rec['dt']).replace('+0000','-0000')}",
+           f"X-BBS-Folder: {rec['folder']}",
+           f"X-BBS-Source-File: {rec['source_file']}",
+           f"X-BBS-Message-ID: {rec['msg_id']}",
+           f"X-BBS-Datetime-Raw: {rec['dt_raw']}",
+           'Content-Type: text/plain; charset="utf-8"',
+           "Content-Transfer-Encoding: 8bit", "MIME-Version: 1.0", ""]
+    esc = re.sub(r'^(From )', r'>\1', rec["body"], flags=re.M)   # mbox From-quoting
+    return "\n".join(hdr) + esc.rstrip("\n") + "\n\n"
+
+
+HEAD = """<!doctype html><html><head><meta charset='utf-8'>
+<title>{title}</title>
+<style>
+body {{ font-family: -apple-system, system-ui, sans-serif; max-width: 1200px; margin: 2em auto; padding: 0 1em; line-height: 1.5; color: #222; }}
+h1, h2, h3 {{ color: #114; }}
+a {{ color: #0a4; text-decoration: none; }}
+a:hover {{ text-decoration: underline; }}
+.meta {{ color: #666; font-size: 0.9em; }}
+table {{ border-collapse: collapse; width: 100%; margin: 1em 0; }}
+th, td {{ padding: 6px 10px; border: 1px solid #ddd; text-align: left; font-size: 0.9em; vertical-align: top; }}
+th {{ background: #eef; }}
+tr:hover {{ background: #f8f8f0; }}
+.day-block {{ margin-bottom: 2em; padding-bottom: 1em; border-bottom: 1px solid #ccc; }}
+.day-block h3 {{ margin: 1em 0 0.3em 0; }}
+.nav {{ background: #eef; padding: 0.5em 1em; border-radius: 6px; margin-bottom: 1em; }}
+.nav a {{ margin-right: 1em; font-weight: bold; }}
+.subject {{ font-style: italic; }}
+</style></head><body>
+<h1>{title}</h1>
+<div class='nav'>
+<a href='index.html'>Chronological</a>
+<a href='by-sender.html'>By sender</a>
+<a href='by-thread.html'>By thread (subject)</a>
+<a href='KeelyNET Message Archive.mbox'>KeelyNET Message Archive.mbox</a>
+<a href='timeline.json'>timeline.json</a>
+</div>
+<p class='meta'>{count:,} messages parsed from BBS dumps.</p>
+"""
+
+
+def row_html(r):
+    e = html.escape
+    return (f"<tr>\n<td>{r['dt'].strftime('%H:%M')}</td>\n<td>{e(r['sender'])}</td>\n"
+            f"<td>{e(r['recipient'])}</td>\n"
+            f"<td class='subject'><a href='{e(r['md_rel'])}'>{e(r['subject'])}</a></td>\n"
+            f"<td><a href='{e(r['md_rel'])}'>md</a> | <a href='{e(r['eml_rel'])}'>eml</a></td>\n</tr>")
+
+
+def write_index(recs, root):
+    by_month = {}
+    for r in recs:
+        by_month.setdefault(r["dt"].strftime("%Y-%m"), {}).setdefault(r["day"], []).append(r)
+    parts = [HEAD.format(title="BBS messages — chronological index", count=len(recs))]
+    for month in sorted(by_month):
+        days = by_month[month]
+        n = sum(len(v) for v in days.values())
+        parts.append(f"<h2 id='{month}'>{month} ({n} messages)</h2>")
+        for day in sorted(days):
+            rows = sorted(days[day], key=lambda r: r["dt"])
+            parts.append(f"<div class='day-block'>\n<h3>{day} ({len(rows)} msg)</h3>")
+            parts.append("<table><thead><tr><th>Time</th><th>From</th><th>To</th>"
+                         "<th>Subject</th><th>Files</th></tr></thead><tbody>")
+            parts += [row_html(r) for r in rows]
+            parts.append("</tbody></table>\n</div>")
+    parts.append("</body></html>")
+    open(os.path.join(root, "index.html"), "w", encoding="utf-8").write("\n".join(parts))
+
+
+def write_grouped(recs, root, fname, title, keyfn, labelfn):
+    groups = {}
+    for r in recs:
+        groups.setdefault(keyfn(r), []).append(r)
+    parts = [HEAD.format(title=title, count=len(recs))]
+    for k in sorted(groups, key=lambda k: (-len(groups[k]), k)):
+        rows = sorted(groups[k], key=lambda r: r["dt"])
+        parts.append(f"<h2>{html.escape(labelfn(k, rows))} ({len(rows)})</h2>")
+        parts.append("<table><thead><tr><th>Date</th><th>From</th><th>To</th>"
+                     "<th>Subject</th><th>Files</th></tr></thead><tbody>")
+        for r in rows:
+            e = html.escape
+            parts.append(
+                f"<tr>\n<td>{r['dt'].strftime('%Y-%m-%d %H:%M')}</td>\n<td>{e(r['sender'])}</td>\n"
+                f"<td>{e(r['recipient'])}</td>\n"
+                f"<td class='subject'><a href='{e(r['md_rel'])}'>{e(r['subject'])}</a></td>\n"
+                f"<td><a href='{e(r['md_rel'])}'>md</a> | <a href='{e(r['eml_rel'])}'>eml</a></td>\n</tr>")
+        parts.append("</tbody></table>")
+    parts.append("</body></html>")
+    open(os.path.join(root, fname), "w", encoding="utf-8").write("\n".join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    root = None
+    mbox_name = "KeelyNET Message Archive"
+    md_only = "--md-only" in args
+    no_md = "--no-md" in args
+    md_years = None
+    i = 0
+    while i < len(args):
+        if args[i] == "--root" and i + 1 < len(args):
+            root = os.path.expanduser(args[i + 1]); i += 2; continue
+        if args[i] == "--mbox-name" and i + 1 < len(args):
+            mbox_name = args[i + 1]; i += 2; continue
+        if args[i] == "--md-years" and i + 1 < len(args):
+            md_years = set(args[i + 1].split(",")); i += 2; continue
+        i += 1
+    if not root:
+        die("usage: eml-to-views --root <messages-split-dir> [--mbox-name NAME] [--md-only|--no-md]")
+    root_eml = os.path.join(root, "messages-eml")
+    if not os.path.isdir(root_eml):
+        die(f"no messages-eml/ under {root}")
+
+    recs = []
+    for base, _, files in os.walk(root_eml):
+        for fn in files:
+            if fn.lower().endswith(".eml"):
+                r = parse_eml(os.path.join(base, fn), root_eml)
+                if r:
+                    recs.append(r)
+    if not recs:
+        die("no .eml parsed")
+    recs.sort(key=lambda r: (r["dt"], r["msg_id"]))
+    for r in recs:
+        r["thread_key"] = thread_key(r["subject"])
+    print(f"parsed {len(recs)} messages "
+          f"({recs[0]['dt'].date()} … {recs[-1]['dt'].date()})", file=sys.stderr)
+
+    # threads → siblings
+    threads = {}
+    for r in recs:
+        threads.setdefault(r["thread_key"], []).append(r)
+
+    if not no_md:
+        written = 0
+        for idx, r in enumerate(recs):
+            if md_years and r["year"] not in md_years:   # threading still global; only write chosen years
+                continue
+            prevf = os.path.basename(recs[idx - 1]["md_rel"]) if idx > 0 else ""
+            nextf = os.path.basename(recs[idx + 1]["md_rel"]) if idx < len(recs) - 1 else ""
+            sibs = [os.path.basename(s["md_rel"]) for s in threads[r["thread_key"]]
+                    if s is not r][:12]
+            write_md(r, root, prevf, nextf, sibs)
+            written += 1
+        print(f"wrote {written} messages-md files"
+              + (f" (years {sorted(md_years)})" if md_years else ""), file=sys.stderr)
+    if md_only:
+        return
+
+    with open(os.path.join(root, f"{mbox_name}.mbox"), "w", encoding="utf-8") as mb:
+        for r in recs:
+            mb.write(mbox_message(r))
+    print("wrote mbox", file=sys.stderr)
+
+    write_index(recs, root)
+    write_grouped(recs, root, "by-sender.html", "BBS messages — by sender",
+                  lambda r: r["sender"], lambda k, rows: k or "(unknown)")
+    write_grouped(recs, root, "by-thread.html", "BBS messages — by thread (subject)",
+                  lambda r: r["thread_key"], lambda k, rows: rows[0]["subject"] or k)
+    print("wrote index.html, by-sender.html, by-thread.html", file=sys.stderr)
+
+    timeline = {"count": len(recs),
+                "entries": [{"msg_id": r["msg_id"], "datetime_iso": r["dt_iso"],
+                             "datetime_raw": r["dt_raw"], "sender": r["sender"],
+                             "recipient": r["recipient"], "subject": r["subject"],
+                             "folder": r["folder"], "md": r["md_rel"], "eml": r["eml_rel"]}
+                            for r in recs]}
+    json.dump(timeline, open(os.path.join(root, "timeline.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=0)
+    print("wrote timeline.json", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

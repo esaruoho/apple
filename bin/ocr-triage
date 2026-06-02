@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""
+ocr-triage — find image-only PDFs (little/no text layer) that need OCR, and
+optionally queue them to the Cloudcity Syncthing OCR pipeline. NEVER runs OCR
+locally (project hard rule) — detection only is on-device via PDFKit
+(bin/pdf-textlen), submission goes through bbs-ocr-submit.sh.
+
+A PDF is "image-only" when its extractable text averages below
+--min-chars-per-page (default 50) — a real text layer is hundreds–thousands of
+chars/page; a scan has ~0.
+
+Usage:
+  ocr-triage <dir> [<dir> ...]
+        [--min-chars-per-page N]   image-only threshold (default 50)
+        [--report out.md]          write a markdown report
+        [--submit]                 queue image-only PDFs to the OCR pipeline
+                                   (bbs-ocr-submit.sh) + append to the ledger
+        [--limit N]                cap PDFs scanned
+        [--batch N]                paths per pdf-textlen call (default 150)
+
+Python stdlib only; detection via the local PDFKit helper.
+"""
+import os
+import subprocess
+import sys
+
+HOME = os.path.expanduser("~")
+SELF_DIR = os.path.dirname(os.path.realpath(__file__))
+PDFTEXTLEN = os.path.join(SELF_DIR, "pdf-textlen")
+LEDGER = f"{HOME}/work/merlib-dump/articles/MASTER-OCR-LEDGER.md"
+
+
+def find_submitter():
+    for c in [f"{HOME}/.claude/skills/bbs/bin/bbs-ocr-submit.sh",
+              f"{HOME}/work/apple/bin/bbs-ocr-submit.sh"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    from shutil import which
+    return which("bbs-ocr-submit.sh")
+
+
+def textlen_batch(paths):
+    """Return {path: (pages, sampled, chars, ok)} via pdf-textlen.
+    pdf-textlen samples the first few pages, so this is cheap even on huge scans."""
+    out = {}
+    try:
+        proc = subprocess.run([PDFTEXTLEN] + paths, capture_output=True, text=True, timeout=300)
+    except Exception as e:
+        print(f"  pdf-textlen batch failed ({e}) — skipping {len(paths)} files", file=sys.stderr)
+        return out
+    for line in proc.stdout.splitlines():
+        parts = line.split("\t", 4)
+        if len(parts) != 5:
+            continue
+        tag, pages, sampled, chars, path = parts
+        try:
+            out[path] = (int(pages), int(sampled), int(chars), tag == "OK")
+        except ValueError:
+            continue
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    dirs = []
+    thresh = 50
+    report = None
+    submit = "--submit" in args
+    limit = None
+    batch = 150
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--min-chars-per-page" and i + 1 < len(args):
+            thresh = int(args[i + 1]); i += 2; continue
+        if a == "--report" and i + 1 < len(args):
+            report = args[i + 1]; i += 2; continue
+        if a == "--limit" and i + 1 < len(args):
+            limit = int(args[i + 1]); i += 2; continue
+        if a == "--batch" and i + 1 < len(args):
+            batch = int(args[i + 1]); i += 2; continue
+        if a == "--submit":
+            i += 1; continue
+        if not a.startswith("-"):
+            dirs.append(os.path.expanduser(a)); i += 1; continue
+        i += 1
+    if not dirs:
+        print("usage: ocr-triage <dir> [--submit] [--min-chars-per-page N] [--report out.md]",
+              file=sys.stderr)
+        sys.exit(1)
+    if not (os.path.isfile(PDFTEXTLEN) and os.access(PDFTEXTLEN, os.X_OK)):
+        sys.exit("ocr-triage: bin/pdf-textlen not found/executable")
+
+    pdfs = []
+    for d in dirs:
+        if os.path.isfile(d) and d.lower().endswith(".pdf"):
+            pdfs.append(d); continue
+        for base, subdirs, fns in os.walk(d):
+            subdirs[:] = [s for s in subdirs if s not in (".git", "node_modules")]
+            for fn in fns:
+                if fn.lower().endswith(".pdf"):
+                    pdfs.append(os.path.join(base, fn))
+                    if limit and len(pdfs) >= limit:
+                        break
+            if limit and len(pdfs) >= limit:
+                break
+    if not pdfs:
+        print("no PDFs found", file=sys.stderr); sys.exit(1)
+    print(f"scanning {len(pdfs)} PDFs with pdf-textlen …", file=sys.stderr)
+
+    results = {}
+    for k in range(0, len(pdfs), batch):
+        results.update(textlen_batch(pdfs[k:k + batch]))
+        print(f"  [{min(k+batch, len(pdfs))}/{len(pdfs)}]", file=sys.stderr)
+
+    image_only, errors, ok = [], [], 0
+    for p in pdfs:
+        pages, sampled, chars, good = results.get(p, (0, 0, 0, False))
+        if not good or pages == 0 or sampled == 0:
+            errors.append(p); continue
+        cpp = chars / sampled                       # chars per SAMPLED page
+        if cpp < thresh:
+            image_only.append((p, pages, chars, cpp))
+        else:
+            ok += 1
+    image_only.sort(key=lambda x: x[3])
+
+    submitter = find_submitter() if submit else None
+    submitted = 0
+    if submit and not submitter:
+        print("  (--submit: bbs-ocr-submit.sh not found — skipping submission)", file=sys.stderr)
+    elif submit:
+        ledger_lines = []
+        for p, pages, chars, cpp in image_only:
+            try:
+                subprocess.run([submitter, p], capture_output=True, text=True, timeout=60)
+                submitted += 1
+                ledger_lines.append(f"- [ ] `{p}` — {pages}p, {chars} chars ({cpp:.0f}/pg) — queued")
+            except Exception as e:
+                print(f"  submit failed {p}: {e}", file=sys.stderr)
+        if ledger_lines and os.path.isdir(os.path.dirname(LEDGER)):
+            with open(LEDGER, "a", encoding="utf-8") as f:
+                f.write(f"\n## ocr-triage batch ({submitted} queued)\n" + "\n".join(ledger_lines) + "\n")
+
+    lines = [f"# ocr-triage — {', '.join(dirs)}\n",
+             f"- PDFs scanned: **{len(pdfs)}**",
+             f"- text-layer OK: **{ok}**",
+             f"- **image-only (needs OCR): {len(image_only)}**  (< {thresh} chars/page)",
+             f"- unreadable / 0-page: {len(errors)}"]
+    if submit:
+        lines.append(f"- queued to OCR pipeline: **{submitted}**")
+    if image_only:
+        lines.append(f"\n## Image-only PDFs (first 100)\n")
+        for p, pages, chars, cpp in image_only[:100]:
+            lines.append(f"- `{p}` — {pages}p, {chars} chars ({cpp:.0f}/pg)")
+    if errors:
+        lines.append(f"\n## Unreadable (first 40)\n")
+        lines += [f"- `{p}`" for p in errors[:40]]
+
+    if report:
+        with open(report, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print(f"wrote {report}", file=sys.stderr)
+    print("\n".join(lines[:6 + (1 if submit else 0)]))
+
+
+if __name__ == "__main__":
+    main()

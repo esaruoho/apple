@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""
+bbs-to-eml — convert a WILDCAT/BBS message base into RFC822 .eml files,
+matching the KeelyNET archive layout (messages-eml/YYYY/YYYY-MM-DD/
+<HHMM>-<from>-<subject>-<bbs#>.eml). Apple-native pedigree: Python stdlib.
+
+Parses message blocks of the form:
+    ===============================================================================
+    Message 8234                       DATE/TIME: 09/04/94 08:01
+    From   : NORMAN WOOTAN             -- RECEIVED --
+    To     : BILL BEATY
+    Subject: Reed/ Free Energy Inventor
+    Folder : A, "Public Mail"
+
+    <body…>
+
+Usage:
+  bbs-to-eml --src <dir> --out <dir> [--year 1995,1996] [--dry-run]
+             [--source-tag <name>]   value for X-BBS-Source-File (default: per-file)
+  --dry-run prints what WOULD be written (counts + a sample) and writes nothing.
+"""
+import email.utils
+import os
+import re
+import sys
+from datetime import datetime, timezone
+
+SEP = re.compile(r'^\s*={5,}\s*$')
+MSG = re.compile(r'^\s*Message\s+(\d+)\s+DATE/TIME:\s*(\d\d)/(\d\d)/(\d\d)\s+(\d\d):(\d\d)', re.I)
+FROM = re.compile(r'^\s*From\s*:\s*(.+?)\s*$', re.I)
+TO   = re.compile(r'^\s*To\s*:\s*(.+?)\s*$', re.I)
+SUBJ = re.compile(r'^\s*Subject\s*:\s*(.+?)\s*$', re.I)
+FOLDER = re.compile(r'^\s*Folder\s*:\s*(.+?)\s*$', re.I)
+DOMAIN = "bbs-keelynet.archived.local"
+
+
+def slug(s, maxlen=40):
+    s = re.sub(r'--.*?--', '', s)
+    s = s.lower()
+    s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
+    if len(s) > maxlen:
+        s = s[:maxlen].rstrip('-')
+    return s or "unknown"
+
+
+def clean_addr_name(s):
+    return re.sub(r'\s*--.*?--\s*', '', s).strip()
+
+
+def parse(path):
+    """Yield message dicts from one BBS file."""
+    try:
+        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError:
+        return
+    blocks, cur = [], []
+    for ln in lines:
+        if SEP.match(ln):
+            if cur:
+                blocks.append(cur); cur = []
+        else:
+            cur.append(ln)
+    if cur:
+        blocks.append(cur)
+    for b in blocks:
+        msg = {"num": None, "dt": None, "from": None, "to": None,
+               "subj": "", "folder": "", "body": ""}
+        body_start = None
+        for i, ln in enumerate(b):
+            m = MSG.match(ln)
+            if m and msg["num"] is None:
+                msg["num"] = int(m.group(1))
+                mm, dd, yy = int(m.group(2)), int(m.group(3)), int(m.group(4))
+                hh, mi = int(m.group(5)), int(m.group(6))
+                yr = 1900 + yy if yy >= 70 else 2000 + yy
+                try:
+                    msg["dt"] = datetime(yr, mm, dd, hh, mi, tzinfo=timezone.utc)
+                except ValueError:
+                    msg["dt"] = None
+                continue
+            if msg["num"] is None:
+                continue
+            for key, rx in (("from", FROM), ("to", TO), ("subj", SUBJ), ("folder", FOLDER)):
+                mm2 = rx.match(ln)
+                if mm2 and not msg[key]:
+                    msg[key] = mm2.group(1).strip()
+                    if key == "folder":
+                        body_start = i + 1
+                    break
+        if msg["num"] is None or msg["dt"] is None or not msg["from"]:
+            continue
+        if body_start is not None:
+            body = "\n".join(b[body_start:]).strip("\n")
+            msg["body"] = body.lstrip("\n")
+        yield msg
+
+
+def to_eml(msg, source_tag):
+    frm = clean_addr_name(msg["from"]) or "UNKNOWN"
+    to = clean_addr_name(msg["to"] or "ALL") or "ALL"
+    subj = msg["subj"] or "(no subject)"
+    n = msg["num"]
+    date_hdr = email.utils.format_datetime(msg["dt"])     # "Sat, 17 Sep 1994 13:45:00 +0000"
+    date_hdr = date_hdr.replace("+0000", "-0000")
+    raw_dt = msg["dt"].strftime("%m/%d/%y %H:%M")
+    hdr = [
+        f"From: {frm} <{slug(frm)}@{DOMAIN}>",
+        f"To: {to} <{slug(to)}@{DOMAIN}>",
+        f"Subject: {subj}",
+        f"Message-ID: <bbs-{n}@{DOMAIN}>",
+        f"Date: {date_hdr}",
+        f'X-BBS-Folder: {msg["folder"]}',
+        f"X-BBS-Source-File: {source_tag}",
+        f"X-BBS-Message-ID: {n}",
+        f"X-BBS-Datetime-Raw: {raw_dt}",
+        'Content-Type: text/plain; charset="utf-8"',
+        "Content-Transfer-Encoding: 8bit",
+        "MIME-Version: 1.0",
+    ]
+    return "\n".join(hdr) + "\n\n" + msg["body"] + "\n"   # blank line = end of headers
+
+
+def filename(msg):
+    hhmm = msg["dt"].strftime("%H%M")
+    return f"{hhmm}-{slug(msg['from'])}-{slug(msg['subj'])}-{msg['num']}.eml"
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    src = out = None
+    years = None
+    dry = False
+    source_tag = None
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--src" and i + 1 < len(args): src = os.path.expanduser(args[i+1]); i += 2; continue
+        if a == "--out" and i + 1 < len(args): out = os.path.expanduser(args[i+1]); i += 2; continue
+        if a == "--year" and i + 1 < len(args):
+            years = {int(y) for y in args[i+1].split(",")}; i += 2; continue
+        if a == "--source-tag" and i + 1 < len(args): source_tag = args[i+1]; i += 2; continue
+        if a == "--dry-run": dry = True; i += 1; continue
+        i += 1
+    if not src or not out:
+        print("usage: bbs-to-eml --src <dir> --out <dir> [--year 1995,1996] [--dry-run]", file=sys.stderr)
+        sys.exit(1)
+
+    files = []
+    for base, dirs, fns in os.walk(src):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for fn in fns:
+            if os.path.splitext(fn)[1].lower() in ("", ".msg"):
+                files.append(os.path.join(base, fn))
+
+    seen = set()
+    by_year = {}
+    written = 0
+    sample = None
+    for p in files:
+        tag = source_tag or os.path.basename(p)
+        for msg in parse(p):
+            yr = msg["dt"].year
+            if years and yr not in years:
+                continue
+            sig = (msg["num"], msg["dt"].isoformat(), slug(msg["from"]), slug(msg["to"] or "all"))
+            if sig in seen:
+                continue
+            seen.add(sig)
+            by_year[yr] = by_year.get(yr, 0) + 1
+            day = msg["dt"].strftime("%Y-%m-%d")
+            rel = os.path.join(str(yr), day, filename(msg))
+            dest = os.path.join(out, rel)
+            if sample is None:
+                sample = (rel, to_eml(msg, tag))
+            if not dry:
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                # avoid clobber if same filename recurs
+                if os.path.exists(dest):
+                    base_, ext_ = os.path.splitext(dest)
+                    k = 2
+                    while os.path.exists(f"{base_}-{k}{ext_}"):
+                        k += 1
+                    dest = f"{base_}-{k}{ext_}"
+                with open(dest, "w", encoding="utf-8") as f:
+                    f.write(to_eml(msg, tag))
+                written += 1
+
+    print(f"{'DRY-RUN — ' if dry else ''}messages by year: "
+          f"{dict(sorted(by_year.items()))}  (total {sum(by_year.values())})",
+          file=sys.stderr)
+    if not dry:
+        print(f"wrote {written} .eml files under {out}", file=sys.stderr)
+    if sample:
+        rel, txt = sample
+        print(f"\n--- sample: {rel} ---")
+        print("\n".join(txt.splitlines()[:16]))
+
+
+if __name__ == "__main__":
+    main()

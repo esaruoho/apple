@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""fm-converse — one-shot, STATEFUL sender to Apple's on-device LLM on the Mini.
+
+Same transport as fm-submit (Syncthing → fm-worker → FoundationModels → back),
+but it REMEMBERS. Each call replays the prior dialogue so the (stateless) worker
+sees the whole conversation — so Converse's Cmd-1 becomes a real conversation,
+not a series of unrelated one-shots.
+
+Memory is keyed to the CURRENT Converse session by default: the newest dir under
+~/work/converse/sessions/. Start a new Converse session → fresh conversation.
+Override with --session NAME. History lives in ~/.cache/fm-converse/<key>.json.
+
+If the prompt is a path to a file (txt/md/rtf/pdf/image/…), the file is converted
+to text via `file-to-text` (Apple-native; Vision OCR for PDFs/images) and sent as
+the turn — so "drag a file in, select it, Cmd-1" just works.
+
+    fm-converse "your message"        send (remembers prior turns)
+    echo text | fm-converse -          message from stdin
+    fm-converse --session NAME "..."   pick the memory bucket explicitly
+    fm-converse --system "..." "..."   set/replace the system instruction
+    fm-converse --reset                forget this session's conversation
+    fm-converse --history              print the running transcript
+    fm-converse --timeout 90 "..."     how long to wait (default 120s)
+
+Apple-native: python3 stdlib only. Delegates the round-trip to fm-submit.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SESSIONS = Path.home() / "work" / "converse" / "sessions"
+STORE = Path.home() / ".cache" / "fm-converse"
+REPLAY_BUDGET = 24000     # chars of prior dialogue to replay (model window guard)
+FILE_CAP = 12000          # chars of an attachment to keep per turn
+
+
+def current_session_key() -> str:
+    """The Converse session you're in right now = newest sessions/ dir."""
+    try:
+        dirs = [d for d in SESSIONS.iterdir() if d.is_dir()]
+        if dirs:
+            return max(dirs, key=lambda d: d.stat().st_mtime).name
+    except OSError:
+        pass
+    return "default"
+
+
+def store_path(key: str) -> Path:
+    STORE.mkdir(parents=True, exist_ok=True)
+    safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in key)
+    return STORE / f"{safe}.json"
+
+
+def load(key: str) -> dict:
+    p = store_path(key)
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            pass
+    return {"system": "", "turns": []}
+
+
+def save(key: str, state: dict):
+    store_path(key).write_text(json.dumps(state, ensure_ascii=False))
+
+
+def maybe_file_to_text(prompt: str) -> tuple[str, str | None]:
+    """If `prompt` is a path to a real file, return (extracted_text, filename).
+    Else (prompt, None)."""
+    s = prompt.strip()
+    if not s or "\n" in s:
+        return prompt, None
+    if s.startswith("file://"):
+        from urllib.parse import urlparse, unquote
+        s = unquote(urlparse(s).path)
+    s = s.strip("'\"")
+    p = Path(s).expanduser()
+    if not p.is_file():
+        return prompt, None
+    try:
+        out = subprocess.run([str(HERE / "file-to-text"), str(p)],
+                             capture_output=True, text=True, timeout=180)
+    except Exception:
+        return prompt, None
+    if out.returncode != 0 or not out.stdout.strip():
+        return prompt, None
+    text = out.stdout
+    if len(text) > FILE_CAP:
+        text = text[:FILE_CAP] + f"\n\n[…truncated; {len(out.stdout)} chars total]"
+    return text, p.name
+
+
+def build_replay(turns: list, new_user: str) -> str:
+    """Replay recent dialogue as one prompt ending on the new turn."""
+    lines = []
+    # walk newest→oldest, keep within the char budget, then restore order
+    kept, total = [], 0
+    for role, text in reversed(turns):
+        tag = "User" if role == "user" else "Assistant"
+        chunk = f"{tag}: {text}"
+        if total + len(chunk) > REPLAY_BUDGET:
+            break
+        kept.append(chunk)
+        total += len(chunk)
+    lines = list(reversed(kept))
+    lines.append(f"User: {new_user}")
+    lines.append("Assistant:")
+    return "\n".join(lines)
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if args and args[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+
+    session = None
+    system_override = None
+    timeout = "120"
+    do_reset = False
+    do_history = False
+    rest = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--session":
+            session = args[i + 1]; i += 2
+        elif a == "--system":
+            system_override = args[i + 1]; i += 2
+        elif a == "--timeout":
+            timeout = args[i + 1]; i += 2
+        elif a == "--reset":
+            do_reset = True; i += 1
+        elif a == "--history":
+            do_history = True; i += 1
+        elif a == "-":
+            rest.append(sys.stdin.read()); i += 1
+        else:
+            rest.append(a); i += 1
+
+    key = session or current_session_key()
+    state = load(key)
+    if system_override is not None:
+        state["system"] = system_override
+        save(key, state)
+
+    if do_reset:
+        save(key, {"system": "", "turns": []})
+        print(f"— conversation '{key}' cleared —")
+        return 0
+    if do_history:
+        for role, text in state["turns"]:
+            print(f"{role}: {text}")
+        return 0
+
+    prompt = " ".join(rest).strip()
+    if not prompt:
+        prompt = sys.stdin.read().strip()
+    if not prompt:
+        sys.stderr.write("fm-converse: no message (pass text, pipe stdin, or use -)\n")
+        return 2
+
+    # If the message is a file path, swap in the file's text.
+    sent_text, filename = maybe_file_to_text(prompt)
+    user_turn = sent_text
+    if filename:
+        # Neutral framing: a small model reflexively refuses "read this file",
+        # so we just present the text inline as the thing to work with.
+        user_turn = (f"Here is some text (from {filename}) to help me with:\n\n"
+                     f"{sent_text}\n\n"
+                     f"Please summarize it and note anything important.")
+
+    replay = build_replay(state["turns"], user_turn)
+
+    cmd = [str(HERE / "fm-submit"), "--timeout", timeout]
+    if state.get("system"):
+        cmd += ["--system", state["system"]]
+    cmd.append(replay)
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    reply = proc.stdout.strip()
+    # the model sometimes echoes the "Assistant:" cue — strip it
+    if reply.lower().startswith("assistant:"):
+        reply = reply.split(":", 1)[1].strip()
+
+    if proc.returncode != 0 or not reply:
+        # surface fm-submit's stderr (guardrail / timeout / worker-down) as the reply
+        err = proc.stderr.strip().splitlines()
+        msg = err[-1] if err else "no reply (is fm-worker running? `fm-submit --status`)"
+        print(f"[FM-on-Mini] {msg}")
+        return 1
+
+    # Persist the turn. For files we keep the (capped) content so follow-up
+    # questions about the file still have it in context; replay-budget clipping
+    # drops the oldest turns once the conversation grows.
+    state["turns"].append(["user", user_turn])
+    state["turns"].append(["assistant", reply])
+    save(key, state)
+
+    print(reply)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

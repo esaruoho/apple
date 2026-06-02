@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""doi-harvest — grow a DOI list from text that CITES papers without DOIs.
+
+A regex already grabs DOIs written in the text. This finds the OTHER references —
+the ones cited as plain text ("Tesla, N. (1905). The transmission of electrical
+energy. Electrical World 45.") with no DOI — and resolves them to DOIs.
+
+Pipeline per file:
+  1. find candidate reference lines that have NO DOI already (heuristic: a year,
+     enough words, bibliographic shape)
+  2. (optional --fm) hand the candidates to FoundationModels on the Mini, which
+     cleans real citations into "Authors. Title. Venue Year." and drops non-citations
+  3. resolve each candidate via the CrossRef API (query.bibliographic → best DOI)
+  4. keep DOIs not already in --known; everything goes to a REVIEW file so a wrong
+     match never silently becomes a download
+
+Apple-native: python3 stdlib for everything; the optional ML step shells to
+`fm-submit` (FoundationModels on the Mini). CrossRef is a plain HTTP API.
+
+Usage:
+  doi-harvest --files a.md b.md [--fm] [--known dois.txt]
+              [--out new-dois.txt] [--review review.tsv]
+              [--limit-per-file N] [--max-candidates N] [--mailto you@x.com]
+"""
+import argparse
+import json
+import re
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DOI_RE = re.compile(r'10\.[0-9]{4,9}/[^\s)\]"<>]+')
+YEAR_RE = re.compile(r'(1[89]\d{2}|20\d{2})')
+
+
+def looks_like_reference(line: str) -> bool:
+    s = line.strip().lstrip("-*•0123456789.[]() \t").strip()
+    if not (40 <= len(s) <= 400):
+        return False
+    if DOI_RE.search(s):           # already has a DOI — regex pass got it
+        return False
+    if not YEAR_RE.search(s):      # citations almost always carry a year
+        return False
+    if len(s.split()) < 6:
+        return False
+    # bibliographic shape: commas / "et al" / vol/pp / quotes / journal-ish
+    score = 0
+    score += s.count(",")
+    if re.search(r'\bet al\.?', s, re.I): score += 2
+    if re.search(r'\b(vol|no|pp|p)\b\.?', s, re.I): score += 1
+    if re.search(r'[""].+?[""]', s): score += 1
+    if re.search(r'\bJournal\b|\bReview\b|\bProc\b|\bTrans\b|\bPhys\b', s, re.I): score += 1
+    return score >= 2
+
+
+def extract_candidates(path: Path, cap: int) -> list:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    out, seen = [], set()
+    for raw in text.splitlines():
+        if looks_like_reference(raw):
+            s = raw.strip()
+            key = s.lower()[:120]
+            if key not in seen:
+                seen.add(key)
+                out.append(s)
+                if len(out) >= cap:
+                    break
+    return out
+
+
+def fm_clean(candidates: list, timeout: int = 120) -> list:
+    """Ask FoundationModels (on the Mini) to canonicalize real citations and drop
+    non-citations. Returns cleaned citation strings. Best-effort; on failure the
+    raw candidates are returned unchanged."""
+    fmsubmit = HERE / "fm-submit"
+    if not fmsubmit.exists():
+        return candidates
+    cleaned = []
+    for i in range(0, len(candidates), 15):     # batch to bound FM round-trips
+        batch = candidates[i:i + 15]
+        numbered = "\n".join(f"{j+1}. {c}" for j, c in enumerate(batch))
+        prompt = (
+            "Below are candidate bibliographic reference lines. For each line that "
+            "is a genuine academic paper/book citation, output ONE line in the form:\n"
+            "Authors. Title. Venue Year.\n"
+            "Keep the SAME order and number (e.g. '3. ...'). For lines that are NOT "
+            "real citations (prose, headings, junk), output the number then 'SKIP'. "
+            "Do not invent citations.\n\n" + numbered)
+        try:
+            r = subprocess.run([str(fmsubmit), "--timeout", str(timeout), prompt],
+                               capture_output=True, text=True, timeout=timeout + 30)
+            for ln in r.stdout.splitlines():
+                m = re.match(r'\s*(\d+)\.\s*(.+)', ln)
+                if not m:
+                    continue
+                body = m.group(2).strip()
+                if body.upper() == "SKIP" or len(body) < 15:
+                    continue
+                cleaned.append(body)
+        except Exception:
+            cleaned.extend(batch)   # fall back to raw on any failure
+    return cleaned or candidates
+
+
+def crossref(citation: str, mailto: str) -> dict | None:
+    """Resolve a citation string to its best DOI via CrossRef. Returns
+    {doi, title, score} or None."""
+    q = urllib.parse.urlencode({"query.bibliographic": citation, "rows": "1",
+                                "select": "DOI,title,score"})
+    url = f"https://api.crossref.org/works?{q}"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": f"doi-harvest/1.0 (mailto:{mailto})"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.load(resp)
+    except Exception:
+        return None
+    items = data.get("message", {}).get("items", [])
+    if not items:
+        return None
+    it = items[0]
+    title = (it.get("title") or [""])[0]
+    return {"doi": (it.get("DOI") or "").lower(),
+            "title": title, "score": float(it.get("score", 0))}
+
+
+def title_overlap(a: str, b: str) -> float:
+    wa = {w for w in re.findall(r'[a-z]{4,}', a.lower())}
+    wb = {w for w in re.findall(r'[a-z]{4,}', b.lower())}
+    if not wa or not wb:
+        return 0.0
+    return len(wa & wb) / len(wa | wb)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--files", nargs="+", required=True)
+    ap.add_argument("--fm", action="store_true", help="clean candidates via FoundationModels first")
+    ap.add_argument("--known", help="file of DOIs already have (one per line)")
+    ap.add_argument("--out", default="/tmp/doi-harvest-new.txt")
+    ap.add_argument("--review", default="/tmp/doi-harvest-review.tsv")
+    ap.add_argument("--max-candidates", type=int, default=60)
+    ap.add_argument("--mailto", default="research@localhost")
+    ap.add_argument("--min-overlap", type=float, default=0.34,
+                    help="min title-word overlap to accept a CrossRef match")
+    args = ap.parse_args()
+
+    known = set()
+    if args.known and Path(args.known).exists():
+        known = {l.strip().lower() for l in Path(args.known).read_text().splitlines() if l.strip()}
+
+    candidates = []
+    for f in args.files:
+        c = extract_candidates(Path(f).expanduser(), args.max_candidates)
+        print(f"  {f}: {len(c)} candidate refs without a DOI", file=sys.stderr)
+        candidates.extend(c)
+    # global dedup
+    seen, uniq = set(), []
+    for c in candidates:
+        k = c.lower()[:120]
+        if k not in seen:
+            seen.add(k); uniq.append(c)
+    candidates = uniq
+    print(f"total unique candidates: {len(candidates)}", file=sys.stderr)
+
+    if args.fm:
+        print("cleaning via FoundationModels on the Mini …", file=sys.stderr)
+        candidates = fm_clean(candidates)
+        print(f"  → {len(candidates)} cleaned citations", file=sys.stderr)
+
+    new_dois, review = [], []
+    for i, c in enumerate(candidates):
+        r = crossref(c, args.mailto)
+        time.sleep(0.4)   # be polite to CrossRef
+        if not r or not r["doi"]:
+            review.append((c, "", "", "no-match"))
+            continue
+        ov = title_overlap(c, r["title"])
+        verdict = "accept" if (ov >= args.min_overlap and r["doi"] not in known) else \
+                  ("known" if r["doi"] in known else "low-confidence")
+        review.append((c, r["doi"], r["title"], f"{verdict} ov={ov:.2f}"))
+        if verdict == "accept":
+            new_dois.append(r["doi"])
+        if (i + 1) % 10 == 0:
+            print(f"  resolved {i+1}/{len(candidates)} …", file=sys.stderr)
+
+    new_dois = sorted(set(new_dois))
+    Path(args.out).write_text("\n".join(new_dois) + ("\n" if new_dois else ""))
+    with open(args.review, "w") as f:
+        f.write("candidate\tdoi\tcrossref_title\tverdict\n")
+        for c, d, t, v in review:
+            f.write(f"{c}\t{d}\t{t}\t{v}\n")
+
+    print(f"\nNEW DOIs (not in --known, confident): {len(new_dois)} → {args.out}", file=sys.stderr)
+    print(f"full review (every candidate + match): {args.review}", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

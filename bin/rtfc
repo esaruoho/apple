@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# rtfc — Rich Text For Clipboard. Take a markdown file (or stdin), strip
+# YAML frontmatter and any leading H1 title, render to RTF, put on the
+# macOS clipboard. Apple-native (delegates to md-to-clipboard).
+#
+# Usage:
+#   rtfc path/to/file.md
+#   cat file.md | rtfc
+#   echo "**hi**" | rtfc
+#
+# Why this exists: md-to-clipboard does the right thing on raw body
+# markdown, but if you feed it an archive markdown file with YAML
+# frontmatter at the top, the frontmatter ends up as literal text on the
+# pasteboard. RTFC strips frontmatter + the first H1 (so it doesn't double
+# up when the title is already in the email subject / message header)
+# before handing off to md-to-clipboard.
+#
+# Reference: ~/.claude/skills/free-energy/rules/rtfc-clipboard.md
+#            ~/.claude/CLAUDE.md § "MANDATORY: RTFC command — clipboard hygiene"
+
+set -uo pipefail
+
+INPUT="${1:--}"
+
+if [ "$INPUT" = "-" ]; then
+    SRC="$(cat)"
+elif [ -f "$INPUT" ]; then
+    SRC="$(cat "$INPUT")"
+else
+    echo "rtfc: no such file: $INPUT" >&2
+    exit 1
+fi
+
+CLEANED="$(printf '%s' "$SRC" | python3 -c '
+import sys
+t = sys.stdin.read()
+# Strip leading YAML frontmatter (--- ... ---)
+if t.startswith("---"):
+    parts = t.split("---", 2)
+    if len(parts) >= 3:
+        t = parts[2].lstrip("\n")
+# Strip leading H1 (and following blank lines) so the title does not
+# duplicate when the user has already typed a subject line.
+lines = t.splitlines()
+while lines and not lines[0].strip():
+    lines = lines[1:]
+if lines and lines[0].startswith("# "):
+    lines = lines[1:]
+    while lines and not lines[0].strip():
+        lines = lines[1:]
+sys.stdout.write("\n".join(lines))
+')"
+
+printf '%s' "$CLEANED" | /Users/esaruoho/work/apple/bin/md-to-clipboard

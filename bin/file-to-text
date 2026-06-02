@@ -1,0 +1,37 @@
+#!/bin/bash
+# file-to-text <path> — extract plain text from a file so a text-only LLM can
+# read it. Apple-native: cat for text, `textutil` for rich/office/html, and
+# on-device Vision OCR (bin/vision-ocr) for PDFs and images. No third-party deps.
+#
+# This is the "make FM accept attachments" primitive: FM (and any LLM) only
+# takes text in its context window, so we convert the attachment to text first.
+#
+# Usage: file-to-text <path>     prints extracted UTF-8 text to stdout
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+[ $# -ge 1 ] || { echo "usage: file-to-text <path>" >&2; exit 2; }
+f="$1"
+[ -f "$f" ] || { echo "file-to-text: no such file: $f" >&2; exit 1; }
+
+ext="$(printf '%s' "${f##*.}" | tr '[:upper:]' '[:lower:]')"
+
+case "$ext" in
+  txt|text|md|markdown|mdown|csv|tsv|json|jsonl|log|conf|cfg|ini|yaml|yml|xml|srt|vtt|tex|rst|org|py|sh|js|ts|swift|lua|c|h|cpp|rb|go|rs)
+    cat "$f"
+    ;;
+  rtf|rtfd|doc|docx|odt|html|htm|webarchive|wordml)
+    textutil -convert txt -stdout "$f"
+    ;;
+  pdf|png|jpg|jpeg|tiff|tif|heic|heif|gif|bmp|webp)
+    # On-device Apple Vision OCR — works for scanned PDFs/images and text PDFs.
+    "$HERE/vision-ocr" "$f"
+    ;;
+  *)
+    # Unknown: try textutil, then a plain read, else give up cleanly.
+    if textutil -convert txt -stdout "$f" 2>/dev/null; then :
+    elif file "$f" | grep -qi text; then cat "$f"
+    else echo "file-to-text: don't know how to extract '$ext' ($f)" >&2; exit 1
+    fi
+    ;;
+esac

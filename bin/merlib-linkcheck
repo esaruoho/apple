@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""
+merlib-linkcheck — mirror-health checker for an archive of .md / .html files.
+Finds broken INTERNAL links (relative targets that don't resolve to a file on
+disk), empty/zero-byte pages, and — optionally — orphan files nothing links to.
+
+Network is never touched: external http(s)/ftp/mailto links are reported as a
+count but not fetched (Apple-native pedigree, and you don't want a crawler).
+
+Usage:
+  merlib-linkcheck <dir> [<dir> ...]
+        [--ext .md,.html,.htm]   file types to scan (default these three)
+        [--report out.md]        write a markdown report (default: stdout summary)
+        [--orphans]              also list files nothing links to (O(N·links))
+        [--empty-bytes N]        flag files smaller than N bytes (default 1)
+        [--max-broken N]         cap broken-link lines printed (default 200)
+        [--by-collection]        rank top-level collections by broken-link count
+        [--ignore-md-docs]       skip links FROM .md files (wiki-links / doc
+                                 examples are noise for mirror health — focus on
+                                 the .html mirrors)
+        [--missing-targets]      rank the MISSING files by how many links point at
+                                 them — fix the top few, clear the most rot
+        [--max-targets N]        cap missing-target rows (default 100)
+
+Python stdlib only.
+"""
+import html as htmllib
+import os
+import re
+import sys
+import urllib.parse
+
+MD_LINK = re.compile(r'\]\(\s*<?([^)\s>]+)>?\s*(?:"[^"]*")?\)')
+WIKI_LINK = re.compile(r'\[\[([^\]|#]+)')
+HTML_LINK = re.compile(r'(?:href|src)\s*=\s*["\']([^"\']+)["\']', re.I)
+EXTERNAL = re.compile(r'^(https?:|ftp:|mailto:|tel:|data:|javascript:|#|//)', re.I)
+
+
+def is_external(t):
+    return bool(EXTERNAL.match(t.strip()))
+
+
+# "Chrome" = styling / scripting / CMS-plugin / archiver-UI assets a mirror
+# references but that aren't content. Missing chrome breaks links cosmetically.
+CHROME_EXT = (".css", ".js", ".mjs", ".woff", ".woff2", ".ttf", ".eot", ".otf",
+              ".map", ".ico", ".less", ".scss")
+CHROME_PARTS = ("wp-content", "wp-includes", "mu-plugins", "_static", "/static/",
+                "archivebox/", "fontello", "jetpack", "gutenberg", "/admin/",
+                "/plugins/", "/themes/", "/assets/templates/", "/_next/",
+                "global-print", "actionbar", "hovercard", "gravatar")
+
+
+def is_chrome(path):
+    low = path.lower()
+    if low.endswith(CHROME_EXT):
+        return True
+    return any(p in low for p in CHROME_PARTS)
+
+
+# "Dynamic" = server-generated pages (never static, so never mirrorable) + site
+# furniture (nav/search/contact/cart) + cross-site product slugs. Not content.
+DYNAMIC_EXT = (".asp", ".aspx", ".php", ".php3", ".cgi", ".jsp", ".do", ".cfm",
+               ".pl", ".ashx", ".axd")
+NAV_TOKENS = ("addtowishlist", "optionhelp", "order_by", "order-by", "checkout",
+              "thumbnail", "notify", "wishlist", "/cart", "shoppingcart",
+              "pretraga", "mapa_c", "kontakt", "pomoc", "favico", "favicon",
+              "tesla-model", "subscribe", "newsletter", "signin", "signup",
+              "/login", "/register", "/account", "comment-page", "/help.htm",
+              "/search", "/sitemap", "/contact")
+
+
+def is_dynamic(path):
+    low = path.lower()
+    if low.endswith(DYNAMIC_EXT):
+        return True
+    return any(tok in low for tok in NAV_TOKENS)
+
+
+def resolve(src_file, target, site_root):
+    t = target.split("#", 1)[0].split("?", 1)[0].strip()
+    if not t:
+        return None
+    t = urllib.parse.unquote(htmllib.unescape(t))
+    if t.startswith("/"):                 # absolute = relative to the SITE ROOT
+        base, t = site_root, t.lstrip("/")
+    else:
+        base = os.path.dirname(src_file)
+    return os.path.normpath(os.path.join(base, t))
+
+
+def links_in(path, is_html):
+    out = []
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for ln, line in enumerate(f, 1):
+                if is_html:
+                    for m in HTML_LINK.finditer(line):
+                        out.append((ln, m.group(1)))
+                else:
+                    for m in MD_LINK.finditer(line):
+                        out.append((ln, m.group(1)))
+                    for m in WIKI_LINK.finditer(line):
+                        out.append((ln, m.group(1).strip()))
+    except OSError:
+        pass
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    dirs, exts = [], (".md", ".html", ".htm")
+    report = None
+    orphans = False
+    empty_bytes = 1
+    max_broken = 200
+    by_collection = "--by-collection" in args
+    ignore_md_docs = "--ignore-md-docs" in args
+    missing_targets = "--missing-targets" in args
+    ignore_chrome = "--ignore-chrome" in args
+    ignore_dynamic = "--ignore-dynamic" in args
+    max_targets = 100
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--ext" and i + 1 < len(args):
+            exts = tuple("." + e.strip().lstrip(".") for e in args[i + 1].split(",")); i += 2; continue
+        if a == "--report" and i + 1 < len(args):
+            report = args[i + 1]; i += 2; continue
+        if a == "--orphans":
+            orphans = True; i += 1; continue
+        if a == "--empty-bytes" and i + 1 < len(args):
+            empty_bytes = int(args[i + 1]); i += 2; continue
+        if a == "--max-broken" and i + 1 < len(args):
+            max_broken = int(args[i + 1]); i += 2; continue
+        if a == "--max-targets" and i + 1 < len(args):
+            max_targets = int(args[i + 1]); i += 2; continue
+        if a in ("--by-collection", "--ignore-md-docs", "--missing-targets",
+                 "--ignore-chrome", "--ignore-dynamic"):
+            i += 1; continue
+        if not a.startswith("-"):
+            dirs.append(os.path.expanduser(a)); i += 1; continue
+        i += 1
+    if not dirs:
+        print("usage: merlib-linkcheck <dir> [--report out.md] [--orphans]", file=sys.stderr)
+        sys.exit(1)
+
+    files = []                            # (path, site_root)
+    for d in dirs:
+        d = os.path.normpath(d)
+        for base, subdirs, fns in os.walk(d):
+            subdirs[:] = [s for s in subdirs if s not in (".git", "node_modules", "__pycache__")]
+            for fn in fns:
+                if fn.lower().endswith(exts):
+                    files.append((os.path.join(base, fn), d))
+    if not files:
+        print("no .md/.html files found", file=sys.stderr); sys.exit(1)
+
+    fileset = set(os.path.normpath(f) for f, _ in files)
+    broken = []          # (src, line, target, resolved)
+    empty = []
+    chrome_skipped = 0
+    ext_count = 0
+    int_count = 0
+    referenced = set()
+    exists_cache = {}
+
+    def exists(p):
+        if p not in exists_cache:
+            exists_cache[p] = os.path.exists(p)
+        return exists_cache[p]
+
+    for f, site_root in files:
+        try:
+            if os.path.getsize(f) < empty_bytes:
+                empty.append(f)
+        except OSError:
+            pass
+        is_html = f.lower().endswith((".html", ".htm"))
+        if ignore_md_docs and not is_html:        # skip the markdown layer's own links
+            continue
+        for ln, target in links_in(f, is_html):
+            if is_external(target):
+                ext_count += 1
+                continue
+            r = resolve(f, target, site_root)
+            if r is None:
+                continue
+            int_count += 1
+            referenced.add(os.path.normpath(r))
+            # a link to a directory resolves if an index exists; accept dir too
+            if not (exists(r) or exists(os.path.join(r, "index.html")) or
+                    exists(os.path.join(r, "index.md"))):
+                if (ignore_chrome and is_chrome(r)) or (ignore_dynamic and is_dynamic(r)):
+                    chrome_skipped += 1
+                    continue
+                broken.append((f, ln, target, r))
+
+    orphan_list = []
+    if orphans:
+        orphan_list = sorted(p for p in fileset
+                             if p not in referenced and not p.endswith(("index.html", "index.md")))
+
+    # ── output ──
+    lines = []
+    lines.append(f"# merlib-linkcheck — {', '.join(dirs)}\n")
+    lines.append(f"- files scanned: **{len(files)}**")
+    lines.append(f"- internal links checked: **{int_count}**  ·  external (not fetched): {ext_count}")
+    lines.append(f"- **broken internal links: {len(broken)}**"
+                 + (f"  (after dropping {chrome_skipped} chrome/asset links)" if ignore_chrome else ""))
+    lines.append(f"- empty/tiny files (<{empty_bytes}B): {len(empty)}")
+    if orphans:
+        lines.append(f"- orphan files (nothing links to them): {len(orphan_list)}")
+    lines.append("")
+    if by_collection and broken:
+        from collections import Counter
+        root0 = os.path.commonpath(dirs) if len(dirs) > 1 else dirs[0]
+        coll = Counter()
+        for src, ln, target, r in broken:
+            rel = os.path.relpath(src, root0)
+            coll[rel.split(os.sep)[0]] += 1
+        lines.append("## Broken links by collection (worst first)\n")
+        for name, n in coll.most_common(40):
+            lines.append(f"- **{n}** — `{name}`")
+        lines.append("")
+    if missing_targets and broken:
+        from collections import Counter, defaultdict
+        root0 = os.path.commonpath(dirs) if len(dirs) > 1 else dirs[0]
+        refs = Counter()
+        pages = defaultdict(set)
+        for src, ln, target, r in broken:
+            refs[r] += 1
+            pages[r].add(src)
+        ranked = sorted(refs.items(), key=lambda kv: (-len(pages[kv[0]]), -kv[1]))
+        lines.append(f"## Missing targets by reference count "
+                     f"({len(refs)} distinct missing files; top {min(len(refs), max_targets)})\n")
+        lines.append("Fix these files first — each clears every link pointing at it.\n")
+        for r, nlinks in ranked[:max_targets]:
+            rel = os.path.relpath(r, root0)
+            lines.append(f"- **{len(pages[r])} pages** ({nlinks} links) → `{rel}`")
+        lines.append("")
+    if broken:
+        lines.append(f"## Broken links (showing {min(len(broken), max_broken)})\n")
+        rel0 = os.path.commonpath(dirs) if len(dirs) > 1 else dirs[0]
+        for src, ln, target, r in broken[:max_broken]:
+            s = os.path.relpath(src, rel0)
+            lines.append(f"- `{s}:{ln}` → `{target}`  (missing: {os.path.relpath(r, rel0)})")
+        if len(broken) > max_broken:
+            lines.append(f"\n…and {len(broken) - max_broken} more.")
+        lines.append("")
+    if empty:
+        lines.append("## Empty / tiny files\n")
+        for f in empty[:80]:
+            lines.append(f"- `{f}`")
+        lines.append("")
+    if orphan_list:
+        lines.append(f"## Orphans (first 80 of {len(orphan_list)})\n")
+        for f in orphan_list[:80]:
+            lines.append(f"- `{f}`")
+
+    text = "\n".join(lines)
+    if report:
+        with open(report, "w", encoding="utf-8") as f:
+            f.write(text + "\n")
+        print(f"wrote {report}", file=sys.stderr)
+    # print summary (+ the by-collection ranking) to stdout; stop before the
+    # long per-link dump.
+    cut = next((i for i, ln in enumerate(lines)
+                if ln.startswith("## Broken links (showing")), len(lines))
+    print("\n".join(lines[:cut]))
+    if broken and not report:
+        print(f"(use --report out.md for the full {len(broken)}-line broken list)")
+
+
+if __name__ == "__main__":
+    main()

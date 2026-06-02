@@ -1,0 +1,12 @@
+#!/bin/bash
+# pdf-textlen — self-building Swift wrapper around PDFKit. Prints, per PDF path,
+# "OK<TAB>pages<TAB>chars<TAB>path" (or ERR). Apple-native, no deps.
+# (Same compile-and-cache pattern as bin/fm and bin/apple-ner.)
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/pdf-textlen.swift"
+CACHE="$HOME/.cache/apple"; BIN="$CACHE/pdf-textlen"; mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" -framework PDFKit -framework Foundation 2>&1
+fi
+exec "$BIN" "$@"

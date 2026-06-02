@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""
+sentiment-map-svg — render an X/Y scatter of corpora by emotional tone.
+
+Reads cached sentiment from ~/.vault-sentiment/ (built by apple-sentiment-cache).
+Groups files by --corpora <label:dir,label:dir,...>. Each file becomes a point.
+Each corpus becomes a colored cluster with a labeled centroid.
+
+X axis: mean sentiment (positive ↔ negative)
+Y axis: per-file sentiment standard deviation (= register dispersion)
+   or:  --y count   →  Y = log file count
+   or:  --y len    →  Y = avg sentence count per file
+
+Output:  ~/work/merlib-dump/articles/_machine-output/SENTIMENT-MAP.{svg,html}
+
+Usage:
+  sentiment-map-svg --corpora "KeelyNet:~/work/merlib-dump/keelynet,Cheniere:~/work/merlib-dump/Cheniere.org"
+  sentiment-map-svg                       (default = preset 8-corpus map of merlib-dump)
+  sentiment-map-svg --y len               (Y = mean sentences per file instead of stdev)
+"""
+import json, os, sys, statistics, subprocess
+
+HOME = os.path.expanduser("~")
+CACHE_DIR = f"{HOME}/.vault-sentiment"
+OUT_SVG = f"{HOME}/work/merlib-dump/articles/_machine-output/SENTIMENT-MAP.svg"
+OUT_HTML = f"{HOME}/work/merlib-dump/articles/_machine-output/SENTIMENT-MAP.html"
+
+DEFAULT_CORPORA = [
+    ("KeelyNet",            f"{HOME}/work/merlib-dump/keelynet"),
+    ("KeelyNet BBS USB",    f"{HOME}/work/merlib-dump/sources/norman-wootan"),
+    ("Cheniere/Bearden",    f"{HOME}/work/merlib-dump/Cheniere.org"),
+    ("free-energy.ws",      f"{HOME}/work/merlib-dump/free-energy.ws"),
+    ("Patrick Kelly",       f"{HOME}/work/merlib-dump/mirrors/free-energy-info Patrick Kelly"),
+    ("tuks.nl (Dutch)",     f"{HOME}/work/merlib-dump/mirrors/tuks.nl"),
+    ("gratisenergi",        f"{HOME}/work/merlib-dump/gratisenergi-freeenergy"),
+    ("EVGray forum",        f"{HOME}/work/merlib-dump/EVGray.io"),
+    ("diary (Esa)",         f"{HOME}/work/merlib-dump/diary"),
+    ("articles (Esa)",      f"{HOME}/work/merlib-dump/articles"),
+]
+
+PALETTE = [
+    "#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#9b5de5",
+    "#f15bb5", "#fee440", "#00bbf9", "#ef476f", "#7ae582",
+]
+
+def parse_args():
+    a = sys.argv[1:]
+    corpora = None
+    y_axis = "stdev"
+    open_after = True
+    for i,x in enumerate(a):
+        if x == "--corpora" and i+1 < len(a):
+            corpora = []
+            for spec in a[i+1].split(","):
+                if ":" not in spec: continue
+                lbl, p = spec.split(":", 1)
+                corpora.append((lbl.strip(), os.path.expanduser(p.strip())))
+        if x == "--y" and i+1 < len(a):
+            y_axis = a[i+1]
+        if x == "--no-open": open_after = False
+    if corpora is None: corpora = DEFAULT_CORPORA
+    return corpora, y_axis, open_after
+
+def load_cache_for(roots):
+    """{label: [{file, doc.average, doc.sentences, ...}]}"""
+    buckets = {lbl: [] for lbl,_ in roots}
+    prefixes = [(lbl, os.path.abspath(p)+os.sep) for lbl,p in roots]
+    if not os.path.isdir(CACHE_DIR): return buckets
+    for fn in os.listdir(CACHE_DIR):
+        if not fn.endswith(".json"): continue
+        try:
+            d = json.load(open(os.path.join(CACHE_DIR, fn)))
+        except Exception: continue
+        fp = d.get("file", "")
+        for lbl, pref in prefixes:
+            if fp.startswith(pref):
+                buckets[lbl].append(d); break
+    return buckets
+
+def svg_escape(s):
+    return (s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+              .replace('"',"&quot;"))
+
+def main():
+    corpora, y_axis, open_after = parse_args()
+    buckets = load_cache_for(corpora)
+    # Drop empty corpora from the chart
+    corpora = [(l,p) for l,p in corpora if buckets[l]]
+
+    if not corpora:
+        print("sentiment-map: no cached data for any corpus. Run apple-sentiment-cache --root <dir> first.", file=sys.stderr)
+        sys.exit(1)
+
+    # Compute per-file (x,y) values
+    def file_y(d):
+        if y_axis == "len":
+            return d.get("doc",{}).get("sentences",0)
+        # default 'stdev' = file-internal score range proxy: max-min/2
+        doc = d.get("doc",{})
+        return (doc.get("max",0) - doc.get("min",0)) / 2.0
+
+    # Layout
+    W, H = 1400, 900
+    pad_l, pad_r, pad_t, pad_b = 90, 240, 80, 70
+    plot_w = W - pad_l - pad_r
+    plot_h = H - pad_t - pad_b
+
+    # Axes
+    x_vals = [d["doc"]["average"] for lbl,_ in corpora for d in buckets[lbl] if "doc" in d]
+    y_vals = [file_y(d) for lbl,_ in corpora for d in buckets[lbl] if "doc" in d]
+    if not x_vals:
+        print("no data points", file=sys.stderr); sys.exit(1)
+    x_min = min(min(x_vals), -1.0); x_max = max(max(x_vals), 0.2)
+    y_min = 0; y_max = max(y_vals) or 1.0
+    # Pad
+    xr = x_max - x_min; yr = y_max - y_min
+    x_min -= xr*0.05; x_max += xr*0.05
+    y_min -= yr*0.05; y_max += yr*0.10
+
+    def x_to_px(v): return pad_l + (v - x_min)/(x_max - x_min) * plot_w
+    def y_to_px(v): return pad_t + (1 - (v - y_min)/(y_max - y_min)) * plot_h
+
+    parts = []
+    parts.append(f'<?xml version="1.0" encoding="UTF-8"?>')
+    parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
+                 f'style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,sans-serif;background:#0b0b0c">')
+    parts.append('<style>'
+                 '.title{font-size:18px;fill:#e9e9ea;font-weight:600;text-anchor:middle}'
+                 '.subtitle{font-size:11px;fill:#8a8a8c;text-anchor:middle}'
+                 '.axis{font-size:11px;fill:#8a8a8c}'
+                 '.axisLabel{font-size:13px;fill:#9c9c9e;text-anchor:middle}'
+                 '.tick{stroke:#2a2a2c;stroke-width:1}'
+                 '.dot{stroke:none;opacity:0.55}'
+                 '.dot:hover{opacity:1}'
+                 '.centroid{stroke:#fff;stroke-width:2.5;}'
+                 '.cenLbl{font-size:13px;fill:#fff;font-weight:600;paint-order:stroke;stroke:#0b0b0c;stroke-width:4}'
+                 '.legendName{font-size:12px;fill:#e9e9ea}'
+                 '.legendStat{font-size:10px;fill:#7a7a7c}'
+                 '.zero{stroke:#3a3a3c;stroke-dasharray:4 4}'
+                 '</style>')
+    parts.append(f'<text class="title" x="{W/2}" y="32">Emotional register · {len(corpora)} free-energy corpora · '
+                 f'{sum(len(buckets[l]) for l,_ in corpora)} files</text>')
+    parts.append(f'<text class="subtitle" x="{W/2}" y="52">'
+                 f'apple-sentiment / NLTagger ·  X = mean doc sentiment  ·  '
+                 f'Y = per-file sentence-score spread (max-min)/2  ·  larger circle = corpus centroid</text>')
+
+    # Grid + axes
+    parts.append(f'<line class="zero" x1="{x_to_px(0):.1f}" y1="{pad_t}" '
+                 f'x2="{x_to_px(0):.1f}" y2="{pad_t+plot_h}"/>')
+    for xv in [-1,-0.5,0,0.5,1]:
+        if xv < x_min or xv > x_max: continue
+        xp = x_to_px(xv)
+        parts.append(f'<line class="tick" x1="{xp:.1f}" y1="{pad_t+plot_h}" x2="{xp:.1f}" y2="{pad_t+plot_h+5}"/>')
+        parts.append(f'<text class="axis" x="{xp:.1f}" y="{pad_t+plot_h+22}" text-anchor="middle">{xv:+.1f}</text>')
+    for yv_step in range(0, int(y_max*10)+1):
+        yv = yv_step/10
+        if yv > y_max: break
+        yp = y_to_px(yv)
+        parts.append(f'<line class="tick" x1="{pad_l-5}" y1="{yp:.1f}" x2="{pad_l}" y2="{yp:.1f}"/>')
+        parts.append(f'<text class="axis" x="{pad_l-10}" y="{yp+4:.1f}" text-anchor="end">{yv:.1f}</text>')
+    parts.append(f'<text class="axisLabel" x="{pad_l + plot_w/2}" y="{pad_t+plot_h+50}">'
+                 f'← negative ·  mean sentiment  · positive →</text>')
+    parts.append(f'<text class="axisLabel" x="-{pad_t + plot_h/2}" y="22" transform="rotate(-90)">'
+                 f'register spread (intra-file score range)</text>')
+
+    # Dots
+    centroids = []
+    for ci, (lbl, _) in enumerate(corpora):
+        col = PALETTE[ci % len(PALETTE)]
+        xs, ys = [], []
+        for d in buckets[lbl]:
+            x = d["doc"]["average"]; y = file_y(d)
+            xp, yp = x_to_px(x), y_to_px(y)
+            xs.append(x); ys.append(y)
+            tooltip = svg_escape(os.path.basename(d["file"]))
+            parts.append(f'<circle class="dot" cx="{xp:.1f}" cy="{yp:.1f}" r="3.5" '
+                          f'fill="{col}"><title>{tooltip}  ({x:+.2f}, {y:.2f})</title></circle>')
+        if xs:
+            cx = statistics.mean(xs); cy = statistics.mean(ys)
+            sx = statistics.stdev(xs) if len(xs)>1 else 0
+            sy = statistics.stdev(ys) if len(ys)>1 else 0
+            cxp, cyp = x_to_px(cx), y_to_px(cy)
+            # Standard-deviation ellipse
+            sxp_w = (sx / (x_max - x_min)) * plot_w
+            syp_h = (sy / (y_max - y_min)) * plot_h
+            parts.append(f'<ellipse cx="{cxp:.1f}" cy="{cyp:.1f}" rx="{sxp_w:.1f}" ry="{syp_h:.1f}" '
+                          f'fill="{col}" fill-opacity="0.15" stroke="{col}" stroke-opacity="0.4" stroke-width="1.5"/>')
+            parts.append(f'<circle class="centroid" cx="{cxp:.1f}" cy="{cyp:.1f}" r="9" fill="{col}"/>')
+            parts.append(f'<text class="cenLbl" x="{cxp+12:.1f}" y="{cyp+5:.1f}">{svg_escape(lbl)}</text>')
+            centroids.append((lbl, cx, sx, len(xs), col))
+
+    # Legend / table
+    lx = pad_l + plot_w + 20
+    ly = pad_t
+    parts.append(f'<text class="legendName" x="{lx}" y="{ly}" style="font-weight:600">Corpus · N · mean ± σ</text>')
+    for i, (lbl, mn, sx, n, col) in enumerate(centroids):
+        y = ly + 22 + i*26
+        parts.append(f'<rect x="{lx}" y="{y-10}" width="12" height="12" fill="{col}" rx="2"/>')
+        parts.append(f'<text class="legendName" x="{lx+18}" y="{y}">{svg_escape(lbl)}</text>')
+        parts.append(f'<text class="legendStat" x="{lx+18}" y="{y+12}">'
+                     f'{n} files · {mn:+.3f} ± {sx:.3f}</text>')
+
+    parts.append('</svg>')
+    svg_body = "\n".join(parts)
+    os.makedirs(os.path.dirname(OUT_SVG), exist_ok=True)
+    with open(OUT_SVG, "w") as f: f.write(svg_body)
+    print(f"▸ wrote {OUT_SVG}", file=sys.stderr)
+
+    # Self-contained HTML with proper pointer-event pan/zoom.
+    html = '''<!doctype html><html><head><meta charset="utf-8">
+<title>Sentiment map</title>
+<style>
+html,body{margin:0;padding:0;background:#0b0b0c;height:100%;overflow:hidden}
+#stage{width:100vw;height:100vh;cursor:grab;touch-action:none;display:block}
+#stage.grabbing{cursor:grabbing}
+#bar{position:fixed;top:10px;right:14px;display:flex;gap:6px;z-index:10}
+#bar button{background:#2a2a2c;border:1px solid #3a3a3c;color:#e9e9ea;
+  border-radius:6px;padding:5px 10px;font:13px -apple-system;cursor:pointer}
+#bar button:hover{background:#3a3a3c}
+#hint{position:fixed;bottom:10px;right:14px;color:#5a5a5c;font:11px -apple-system}
+</style></head><body>
+<div id="bar">
+  <button onclick="vbReset()">reset</button>
+  <button onclick="vbZoom(0.8)">+</button>
+  <button onclick="vbZoom(1.25)">−</button>
+</div>
+<svg id="stage" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid meet">__INNER__</svg>
+<div id="hint">drag = pan · scroll = zoom · esc = reset</div>
+<script>
+(function(){
+  var stage = document.getElementById("stage");
+  var vb = {x:0, y:0, w:1400, h:900};
+  function setVB(){ stage.setAttribute("viewBox", vb.x+" "+vb.y+" "+vb.w+" "+vb.h); }
+  window.vbReset = function(){ vb={x:0,y:0,w:1400,h:900}; setVB(); };
+  window.vbZoom = function(f){
+    var r = stage.getBoundingClientRect();
+    var cx = vb.x + vb.w/2, cy = vb.y + vb.h/2;
+    vb.w *= f; vb.h *= f;
+    vb.x = cx - vb.w/2; vb.y = cy - vb.h/2;
+    setVB();
+  };
+  var down=false, sx=0, sy=0, startVB=null, pid=null;
+  stage.addEventListener("pointerdown", function(e){
+    down = true; sx = e.clientX; sy = e.clientY;
+    startVB = {x:vb.x, y:vb.y, w:vb.w, h:vb.h};
+    pid = e.pointerId;
+    try { stage.setPointerCapture(pid); } catch(_){}
+    stage.classList.add("grabbing");
+  });
+  stage.addEventListener("pointermove", function(e){
+    if (!down) return;
+    var r = stage.getBoundingClientRect();
+    var dx = (e.clientX - sx) * vb.w / r.width;
+    var dy = (e.clientY - sy) * vb.h / r.height;
+    vb.x = startVB.x - dx; vb.y = startVB.y - dy;
+    setVB();
+  });
+  function endPan(){ down=false; stage.classList.remove("grabbing");
+    if (pid !== null) { try { stage.releasePointerCapture(pid); } catch(_){} pid=null; }
+  }
+  stage.addEventListener("pointerup", endPan);
+  stage.addEventListener("pointercancel", endPan);
+  stage.addEventListener("pointerleave", endPan);
+  stage.addEventListener("wheel", function(e){
+    e.preventDefault();
+    var r = stage.getBoundingClientRect();
+    var mx = vb.x + (e.clientX - r.left) * vb.w / r.width;
+    var my = vb.y + (e.clientY - r.top)  * vb.h / r.height;
+    var f = Math.exp(e.deltaY * 0.0015);
+    vb.w *= f; vb.h *= f;
+    vb.x = mx - (mx - vb.x) * f;
+    vb.y = my - (my - vb.y) * f;
+    setVB();
+  }, {passive:false});
+  window.addEventListener("keydown", function(e){ if (e.key === "Escape") vbReset(); });
+})();
+</script></body></html>
+'''
+    inner = svg_body[svg_body.find(">", svg_body.find("<svg"))+1:svg_body.rfind("</svg>")]
+    with open(OUT_HTML, "w") as f: f.write(html.replace("__INNER__", inner))
+    print(f"▸ wrote {OUT_HTML}", file=sys.stderr)
+    if open_after:
+        subprocess.run(["open", "-a", "Safari", OUT_HTML])
+
+
+if __name__ == "__main__":
+    main()
