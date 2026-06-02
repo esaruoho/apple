@@ -979,6 +979,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     var pdfButton: NSButton!
     var pdfExportWeb: WKWebView?         // offscreen webview kept alive during PDF render
     var pdfExportDelegate: AnyObject?    // its nav delegate, kept alive too
+    var pdfExportWindow: NSWindow?       // offscreen host window — print needs one
     let fm = FM()
     var store = SessionStore()
     var messages: [(role: String, text: String)] = []   // what's shown (display text)
@@ -1632,29 +1633,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         panel.title = "Export conversation as PDF"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        // Render the export HTML in an offscreen webview, then capture it with
-        // WKWebView.createPDF — async, no print system, never blocks the main
-        // thread. (NSPrintOperation.run() on a detached WKWebView hangs the app,
-        // which is the freeze this replaces.)
-        let web = WKWebView(frame: NSRect(x: 0, y: 0, width: 612, height: 792))
+        // Render the export HTML in a webview hosted in an OFFSCREEN WINDOW, then
+        // print it to PDF (paginated, US Letter). The window is essential: a
+        // print operation on a windowless WKWebView hangs the main thread (the
+        // earlier freeze). With a window, run() paginates and returns cleanly,
+        // honouring the stylesheet's page-break-inside:avoid so bubbles don't split.
+        let pageW: CGFloat = 612, pageH: CGFloat = 792   // US Letter @72dpi
+        let web = WKWebView(frame: NSRect(x: 0, y: 0, width: pageW, height: pageH))
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: pageW, height: pageH),
+                           styleMask: [.borderless], backing: .buffered, defer: false)
+        win.isReleasedWhenClosed = false
+        win.contentView = web
+        win.setFrameOrigin(NSPoint(x: -20000, y: -20000))   // park it off every screen
+        win.orderBack(nil)
+
         let delegate = LoadDoneDelegate { [weak self] w in
             guard let self = self else { return }
-            w.createPDF(configuration: WKPDFConfiguration()) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let data):
-                        do { try data.write(to: url); self.revealInFinder(url) }
-                        catch { self.exportAlert("Couldn't write the PDF: \(error.localizedDescription)") }
-                    case .failure(let err):
-                        self.exportAlert("PDF render failed: \(err.localizedDescription)")
-                    }
-                    self.pdfExportWeb = nil
-                    self.pdfExportDelegate = nil
-                }
-            }
+            let info = NSPrintInfo(dictionary: [
+                .jobDisposition: NSPrintInfo.JobDisposition.save,
+                .jobSavingURL: url
+            ])
+            info.paperSize = NSSize(width: pageW, height: pageH)
+            info.leftMargin = 36; info.rightMargin = 36
+            info.topMargin = 36; info.bottomMargin = 36
+            info.horizontalPagination = .fit
+            info.verticalPagination = .automatic
+            info.isHorizontallyCentered = false
+            info.isVerticallyCentered = false
+            let op = w.printOperation(with: info)
+            op.showsPrintPanel = false
+            op.showsProgressPanel = false
+            op.run()
+            self.revealInFinder(url)
+            self.pdfExportWindow?.orderOut(nil)
+            self.pdfExportWeb = nil
+            self.pdfExportDelegate = nil
+            self.pdfExportWindow = nil
         }
         pdfExportWeb = web
         pdfExportDelegate = delegate
+        pdfExportWindow = win
         web.navigationDelegate = delegate
         web.loadHTMLString(conversationExportHTML(), baseURL: nil)
     }
