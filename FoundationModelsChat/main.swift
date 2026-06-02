@@ -1189,13 +1189,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         let ucc = WKUserContentController()
         ucc.add(self, name: "fmchat")   // HTML buttons post back here
         webConf.userContentController = ucc
-        webView = WKWebView(frame: NSRect(x: 0, y: 110, width: 820, height: 610), configuration: webConf)
+        webView = WKWebView(frame: NSRect(x: 0, y: 110, width: root.bounds.width, height: max(root.bounds.height - 110, 100)), configuration: webConf)
         webView.autoresizingMask = [.width, .height]
         webView.setValue(false, forKey: "drawsBackground")
         root.addSubview(webView)
 
         // input
-        let inputScroll = NSScrollView(frame: NSRect(x: 12, y: 12, width: 690, height: 88))
+        let inputScroll = NSScrollView(frame: NSRect(x: 12, y: 12, width: max(root.bounds.width - 130, 100), height: 88))
         inputScroll.autoresizingMask = [.width]
         inputScroll.hasVerticalScroller = true
         inputScroll.borderType = .lineBorder
@@ -1208,7 +1208,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         inputScroll.documentView = inputView
         root.addSubview(inputScroll)
 
-        sendButton = NSButton(frame: NSRect(x: 712, y: 12, width: 96, height: 88))
+        sendButton = NSButton(frame: NSRect(x: root.bounds.width - 108, y: 12, width: 96, height: 88))
         sendButton.autoresizingMask = [.minXMargin]
         sendButton.title = "Send"
         sendButton.bezelStyle = .rounded
