@@ -1610,28 +1610,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
 
     @objc func exportMarkdown() {
         guard !messages.isEmpty else { NSSound.beep(); return }
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "chat-\(store.stamp).md"
-        if #available(macOS 11.0, *) { panel.allowedContentTypes = [.init(filenameExtension: "md") ?? .plainText] }
-        panel.canCreateDirectories = true
-        panel.directoryURL = store.dir
-        panel.title = "Export conversation as Markdown"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // Save into the session's own folder — right beside the conversation —
+        // then open it. No Save dialog.
+        let url = store.dir.appendingPathComponent("chat-\(store.stamp).md")
         do {
             try conversationMarkdown().data(using: .utf8)?.write(to: url)
-            revealInFinder(url)
+            NSWorkspace.shared.open(url)   // default Markdown viewer (Preview can't render .md)
         } catch { exportAlert("Couldn't save the Markdown file: \(error.localizedDescription)") }
     }
 
     @objc func exportPDF() {
         guard !messages.isEmpty else { NSSound.beep(); return }
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "chat-\(store.stamp).pdf"
-        if #available(macOS 11.0, *) { panel.allowedContentTypes = [.pdf] }
-        panel.canCreateDirectories = true
-        panel.directoryURL = store.dir
-        panel.title = "Export conversation as PDF"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // Save into the session's own folder, beside the .md, then open in Preview.
+        let url = store.dir.appendingPathComponent("chat-\(store.stamp).pdf")
 
         // Render the export HTML in a webview hosted in an OFFSCREEN WINDOW, then
         // print it to PDF (paginated, US Letter). The window is essential: a
@@ -1664,7 +1655,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
             op.showsPrintPanel = false
             op.showsProgressPanel = false
             op.run()
-            self.revealInFinder(url)
+            self.openInPreview(url)
             self.pdfExportWindow?.orderOut(nil)
             self.pdfExportWeb = nil
             self.pdfExportDelegate = nil
@@ -1677,8 +1668,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         web.loadHTMLString(conversationExportHTML(), baseURL: nil)
     }
 
-    private func revealInFinder(_ url: URL) {
-        NSWorkspace.shared.activateFileViewerSelecting([url])
+    /// Open a file specifically in Preview.app (falls back to the default app).
+    private func openInPreview(_ url: URL) {
+        let preview = URL(fileURLWithPath: "/System/Applications/Preview.app")
+        if FileManager.default.fileExists(atPath: preview.path) {
+            NSWorkspace.shared.open([url], withApplicationAt: preview,
+                                    configuration: NSWorkspace.OpenConfiguration(),
+                                    completionHandler: nil)
+        } else {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func exportAlert(_ msg: String) {
