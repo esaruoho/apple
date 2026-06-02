@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# va-batch — run a list of questions through vault-ask, concatenate the answers
+# into one markdown demo file. Zero-roundtrip Sal-style: one verb, one result.
+#
+# Each line in QUESTIONS-FILE is a single question (blank lines + #-comments skipped).
+# Output is a clean markdown report — feed it to your editor, paste into a vault.
+#
+# Usage:
+#   va-batch <questions-file> [--out PATH] [--root DIR] [--top N]
+#            [--fm | --claude | --raw]
+#            [--title "Header"] [--fallback]
+#
+# Defaults: root=~/work/merlib-dump, top=8, mode=--fm (free, on-device),
+# out=~/work/merlib-dump/articles/_machine-output/RAG-BATCH-<date>.md.
+#
+# --fallback: when fm-submit times out on a question, retry that question in --raw
+# mode so the report has zero gaps.
+#
+# Example:
+#   va-batch ~/work/apple/sources/rag-demo-questions.txt --title "16-Q RAG Demo"
+#
+# Apple-native: bash + python3 stdlib. Reuses vault-ask's --markdown + --qnum.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$HOME/work/merlib-dump"
+TOP="8"
+MODE="--fm"
+TITLE=""
+OUT=""
+FALLBACK=0
+
+QFILE=""
+while (( $# )); do
+  case "$1" in
+    --out) OUT="$2"; shift 2 ;;
+    --root) ROOT="$2"; shift 2 ;;
+    --top) TOP="$2"; shift 2 ;;
+    --fm|--claude|--raw|--no-llm) MODE="$1"; shift ;;
+    --title) TITLE="$2"; shift 2 ;;
+    --fallback) FALLBACK=1; shift ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    *) QFILE="$1"; shift ;;
+  esac
+done
+
+if [[ -z "$QFILE" || ! -f "$QFILE" ]]; then
+  echo "usage: va-batch <questions-file> [--out PATH] [--root DIR] [--top N] [--fm|--claude|--raw] [--title T] [--fallback]" >&2
+  exit 1
+fi
+
+if [[ -z "$OUT" ]]; then
+  STAMP="$(date +%Y-%m-%d-%H%M)"
+  OUT="$ROOT/articles/_machine-output/RAG-BATCH-$STAMP.md"
+fi
+mkdir -p "$(dirname "$OUT")"
+
+[[ -z "$TITLE" ]] && TITLE="RAG batch — $(basename "$QFILE" .txt)"
+
+MODE_LABEL="${MODE#--}"
+{
+  echo "# $TITLE"
+  echo
+  echo "**Generated:** $(date '+%Y-%m-%d %H:%M %z')  "
+  echo "**Mode:** $MODE_LABEL  "
+  echo "**Root:** \`$ROOT\`  "
+  echo "**Top-K:** $TOP per question  "
+  echo "**Questions file:** \`$QFILE\`"
+  echo
+  echo "---"
+  echo
+} > "$OUT"
+
+i=0
+while IFS= read -r Q; do
+  # skip blanks and comments
+  [[ -z "${Q// }" ]] && continue
+  [[ "${Q:0:1}" == "#" ]] && continue
+  i=$((i+1))
+  printf '\n\033[1m▸ Q%s  %s\033[0m\n\n' "$i" "$Q" >&2
+
+  # Run the question; capture the rendered markdown so we can BOTH write it to
+  # the file AND echo it to the terminal (so the run is watchable, not silent).
+  if BLOCK="$("$HERE/vault-ask" "$Q" --root "$ROOT" --top "$TOP" "$MODE" \
+       --markdown --qnum "$i" 2>/dev/null)"; then
+    :
+  elif (( FALLBACK )) && [[ "$MODE" != "--raw" ]]; then
+    echo "  ↳ $MODE failed; falling back to --raw for Q$i" >&2
+    BLOCK="$("$HERE/vault-ask" "$Q" --root "$ROOT" --top "$TOP" --raw \
+       --markdown --qnum "$i" 2>/dev/null || true)"
+  else
+    BLOCK="$(printf '## Q%s. %s\n\n_(error: vault-ask failed in %s mode. Re-run with --fallback or --raw.)_' "$i" "$Q" "$MODE")"
+  fi
+
+  # File gets clean markdown; terminal gets the same so you can read answers live.
+  printf '%s\n\n---\n\n' "$BLOCK" >> "$OUT"
+  printf '%s\n' "$BLOCK"
+done < "$QFILE"
+
+ERRS=$(grep -c '_(error: vault-ask failed' "$OUT" || true)
+echo >&2
+echo "▸ done: $i questions, written to $OUT" >&2
+echo "  lines: $(wc -l < "$OUT") · sections: $(grep -c '^## Q' "$OUT" || true) · errors: $ERRS" >&2
+if (( ERRS > 0 )) && [[ "$MODE" != "--raw" ]]; then
+  echo "  ⚠ $ERRS question(s) failed in $MODE mode (on-device timeout / guardrail refusal)." >&2
+  echo "    Re-run with --fallback (retry failures in --raw) or --claude (demo-grade answers)." >&2
+fi
+echo "  open it:  open \"$OUT\"   ·   preview rich:  /md-rich \"$OUT\"" >&2

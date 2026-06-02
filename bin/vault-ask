@@ -1,0 +1,573 @@
+#!/usr/bin/env python3
+"""
+vault-ask — proper Retrieval-Augmented Generation against the archive.
+
+Embeds your question (Apple NLEmbedding on the Neural Engine), retrieves the
+top-K most semantically relevant lines from the embed cache, packages them
+with citation markers, and asks Claude to answer the question USING ONLY
+those retrieved passages — with [N] inline citations.
+
+This is the unified RAG endpoint. All the pieces existed (vector store at
+~/.vault-embeds, retriever in vault-grep, LLM via the `claude` CLI). This
+chains them so you can ask one question and get a cited answer.
+
+Pipeline:
+    question
+      → apple-embed                         (Neural Engine, 512-d query vector)
+      → cosine against entire ~/.vault-embeds cache, group by file
+      → take top K=12 lines, prepare context block with [1] [2] [3] ... markers
+      → spawn  `claude -p`   with: system prompt + context + question
+      → print answer with inline [N] citations + a source legend at the bottom
+
+Usage:
+    vault-ask "what does Bearden say about over-unity proof"
+    vault-ask "..." --root ~/work/merlib-dump/Cheniere.org
+    vault-ask "..." --top 8                  (default 12 chunks)
+    vault-ask "..." --threshold 0.4          (default 0.4)
+    vault-ask "..." --json                   (structured output)
+    vault-ask "..." --no-llm                 (just show retrieved chunks, skip Claude)
+
+Apple-native ML in the retrieval path (NLEmbedding + cosine). The generator
+is Claude via subprocess — substitutable with `apple-fm` once macOS 26 lands
+on this machine.
+"""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import collections
+
+HOME = os.path.expanduser("~")
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+# Pull vault-grep helpers (cosine, load_caches_under, embed_query, etc.)
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("vg", os.path.join(HERE, "vault-grep"))
+spec = importlib.util.spec_from_loader("vg", loader)
+vg = importlib.util.module_from_spec(spec); loader.exec_module(vg)
+
+
+SYSTEM_PROMPT = """You are answering a question using ONLY the numbered source passages below. Rules:
+
+1. Cite every claim you make with [N] referring to source numbers. Multiple sources → [1,3].
+2. If the sources don't answer the question, say so explicitly. Do not invent.
+3. Quote verbatim where the source is precise. Paraphrase where you need to compress.
+4. Be concise. 250 words max unless the question genuinely needs more.
+5. End with a one-line summary if the question has a clear answer.
+
+Do not refer to "the sources" abstractly — always use the [N] markers."""
+
+
+def parse_args():
+    a = sys.argv[1:]
+    if not a or a[0] in ("-h", "--help"):
+        print(__doc__); sys.exit(0)
+    root = None
+    top = 12
+    threshold = 0.4
+    mode = "raw"          # raw = no LLM, free, default. fm = Apple on-device. claude = paid.
+    as_json = False
+    as_markdown = False
+    qnum = None
+    parts = []
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if x == "--root" and i+1 < len(a):
+            root = os.path.abspath(os.path.expanduser(a[i+1])); i += 2; continue
+        if x == "--top" and i+1 < len(a):
+            top = int(a[i+1]); i += 2; continue
+        if x == "--threshold" and i+1 < len(a):
+            threshold = float(a[i+1]); i += 2; continue
+        if x in ("--claude", "--agent"):
+            if x == "--agent" and i+1 < len(a) and a[i+1] != "claude":
+                vg.die(f"unknown agent: {a[i+1]} (use --claude or --fm)")
+            mode = "claude"
+            i += 2 if x == "--agent" else 1
+            continue
+        if x == "--fm":
+            mode = "fm"; i += 1; continue
+        if x in ("--no-llm", "--raw"):
+            mode = "raw"; i += 1; continue
+        if x == "--json":
+            as_json = True; i += 1; continue
+        if x == "--markdown":
+            as_markdown = True; i += 1; continue
+        if x == "--qnum" and i+1 < len(a):
+            qnum = int(a[i+1]); i += 2; continue
+        parts.append(x); i += 1
+    if not parts:
+        vg.die("usage: vault-ask \"question\"  [--root <dir>] [--top N] [--threshold X] "
+               "[--fm | --claude] [--json]\n"
+               "  default: zero-token raw mode (shows retrieved passages with ±5 lines)\n"
+               "  --fm   : route synthesis to Apple FoundationModels on the Mini (free, on-device)\n"
+               "  --claude: route synthesis to Claude CLI (paid)")
+    return " ".join(parts), root, top, threshold, mode, as_json, as_markdown, qnum
+
+
+_QUESTION_STARTS = ("what ", "how ", "why ", "when ", "where ", "who ",
+                    "which ", "does ", "did ", "do ", "is ", "are ", "was ",
+                    "were ", "can ", "could ", "should ", "would ")
+
+def declarativize(q):
+    """Turn a question into a declarative seed for embedding so cosine matches
+    answer-shaped lines instead of other question-shaped lines.
+    "What does Bearden say about scalar electromagnetics?"
+       → "Bearden scalar electromagnetics"
+    Cheap rule-based strip; we keep the original question for the LLM."""
+    s = q.strip().rstrip("?").strip()
+    low = s.lower()
+    for w in _QUESTION_STARTS:
+        if low.startswith(w):
+            s = s[len(w):].lstrip()
+            low = s.lower()
+            break
+    # strip leading "does X say" / "did X observe" auxiliary chains
+    for verb in ("say about ", "describe ", "claim about ", "publish about ",
+                 "observe about ", "explain about ", "tell us about ",
+                 "say ", "describe", "claim ", "publish ", "observe ", "explain "):
+        if verb in low:
+            idx = low.find(verb) + len(verb)
+            tail = s[idx:].lstrip()
+            if tail:
+                s = s.split(" ", 1)[0] + " " + tail   # keep subject + tail
+                break
+    return s
+
+
+def looks_like_question(text):
+    """True if a retrieved chunk is itself an interrogative line — drop it."""
+    if not text: return False
+    t = text.strip()
+    if t.endswith("?"):
+        return True
+    low = t.lower().lstrip("'\"‘“•- *>")
+    return low.startswith(_QUESTION_STARTS)
+
+
+def looks_like_title(text):
+    """Drop archive headings — they score very high in cosine against topic
+    keywords but carry no answer content. Two signals:
+      • mostly-uppercase line (≥70% of letters are caps) under ~100 chars
+      • Title Case Run with no terminal sentence punctuation under ~80 chars
+    Keeps mid-sentence fragments like "internal work, which requires …"
+    (lowercase start, no terminal punct, but not Title Case)."""
+    t = text.strip()
+    if not t: return False
+    letters = [c for c in t if c.isalpha()]
+    if letters and len(t) < 120:
+        ucfrac = sum(1 for c in letters if c.isupper()) / len(letters)
+        if ucfrac >= 0.70:
+            return True
+    if len(t) < 80 and not t.rstrip(" *_-").endswith((".", "!", ";", ",")):
+        words = [w for w in t.split() if w and w[0].isalpha()]
+        if len(words) >= 2:
+            cap = sum(1 for w in words if w[0].isupper())
+            if cap / len(words) >= 0.6:
+                return True
+    return False
+
+
+def is_low_quality(text):
+    return looks_like_question(text) or looks_like_title(text)
+
+
+def fast_query_topk(qv, top=12, threshold=0.0, root=None, max_per_file=3,
+                    drop_questions=True):
+    """Like vg.fast_query but allows up to `max_per_file` hits per source file
+    (RAG needs N best LINES, not files). Reuses vault-grep's mmap'd matrix +
+    delta-merge of any new JSONL files since the matrix was baked. Returns
+    list[dict{score,file,line,text}] or None if numpy/matrix unavailable."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    if not (os.path.exists(vg.MATRIX_NPY) and os.path.exists(vg.MATRIX_MANIFEST)):
+        vg.build_matrix_cache()
+    try:
+        M, files_list, file_idx, line, texts, baked, dim = vg.load_matrix_cache()
+    except (OSError, ValueError, KeyError):
+        return None
+    if dim != len(qv):
+        return None
+    q = np.asarray(qv, dtype=np.float32)
+    qn = np.linalg.norm(q)
+    if qn == 0:
+        return []
+    q = q / qn
+    root_abs = (os.path.abspath(root) + os.sep) if root else None
+
+    current = vg._scan_jsonl()
+    delta_names = [n for n, mt in current.items()
+                   if n not in baked or mt > baked.get(n, 0.0) + 1e-6]
+    d_vecs, d_files, d_lines, d_texts = vg.read_jsonl_rows(
+        [os.path.join(vg.CACHE_DIR, n) for n in delta_names], dim)
+
+    sims = M @ q
+    if root_abs:
+        keep_file = np.fromiter((p.startswith(root_abs) for p in files_list),
+                                dtype=bool, count=len(files_list))
+        sims = np.where(keep_file[file_idx], sims, -2.0)
+    base_idx = {p: i for i, p in enumerate(files_list)}
+    changed = [base_idx[p] for p in {f for f in d_files if f in base_idx}]
+    if changed:
+        sims = np.where(np.isin(file_idx, np.asarray(changed, dtype=np.int32)),
+                        -2.0, sims)
+
+    pool = max(top * max_per_file * 4, 200)
+    order = np.argsort(-sims)[:pool]
+    base_hits = []
+    for j in order:
+        sc = float(sims[j])
+        if sc < threshold or sc <= -2.0:
+            break
+        fp = files_list[int(file_idx[j])]
+        base_hits.append({"score": sc, "file": fp, "line": int(line[j]),
+                          "text": texts[j] if j < len(texts) else ""})
+
+    delta_hits = []
+    if d_vecs:
+        D = np.asarray(d_vecs, dtype=np.float32)
+        dn = np.linalg.norm(D, axis=1); dn[dn == 0] = 1.0
+        dsims = (D @ q) / dn
+        for k in range(len(d_files)):
+            fp = d_files[k]
+            if root_abs and not fp.startswith(root_abs):
+                continue
+            sc = float(dsims[k])
+            if sc < threshold:
+                continue
+            delta_hits.append({"score": sc, "file": fp, "line": int(d_lines[k]),
+                               "text": d_texts[k]})
+
+    merged = sorted(base_hits + delta_hits, key=lambda h: -h["score"])
+    if drop_questions:
+        merged = [h for h in merged if not is_low_quality(h.get("text",""))]
+    per_file = collections.defaultdict(int)
+    out = []
+    for h in merged:
+        if per_file[h["file"]] >= max_per_file:
+            continue
+        per_file[h["file"]] += 1
+        out.append(h)
+        if len(out) >= top:
+            break
+    return out
+
+
+def retrieve(question, root, top, threshold):
+    """Embed question; cosine over the consolidated matrix (mmap'd .npy +
+    delta-merge of any new JSONL files); group by file with cap 3 per file.
+
+    Two RAG-quality tweaks because Apple NLEmbedding strongly captures
+    sentence-shape:
+      1. Strip interrogatives from the embed seed ("What does Bearden say
+         about X?" → "Bearden X"), so cosine matches answer-shaped lines.
+      2. Drop retrieved chunks that are themselves questions.
+    The full original question still goes to the LLM."""
+    seed = declarativize(question)
+    qv = vg.embed_query(seed)
+    chunks = fast_query_topk(qv, top=top, threshold=threshold,
+                             root=root, max_per_file=3, drop_questions=True)
+    if chunks is not None:
+        return qv, chunks
+    # Fallback: pure-Python JSONL walk (slow). Only hit when matrix is absent.
+    if root:
+        texts, vectors, files, lines = vg.load_caches_under(root)
+    else:
+        texts, vectors, files, lines = [], [], [], []
+        cache_dir = os.path.expanduser(vg.CACHE_DIR)
+        if not os.path.isdir(cache_dir):
+            return qv, []
+        for cn in os.listdir(cache_dir):
+            if not cn.endswith(".jsonl") or cn.startswith("_"):
+                continue
+            try:
+                with open(os.path.join(cache_dir, cn), "r", encoding="utf-8", errors="replace") as f:
+                    for ln in f:
+                        try: d = json.loads(ln)
+                        except Exception: continue
+                        v = d.get("v")
+                        if not v: continue
+                        texts.append(d.get("t","")); vectors.append(v)
+                        files.append(d.get("f","")); lines.append(d.get("l", 0))
+            except OSError:
+                continue
+    if not texts:
+        return qv, []
+    scored = vg.rank_against(qv, vectors)
+    by_file = collections.defaultdict(list)
+    chunks = []
+    for sc, k in scored:
+        if sc < threshold: break
+        fp = files[k]
+        if len(by_file[fp]) >= 3: continue
+        by_file[fp].append(k)
+        chunks.append({"score": sc, "text": texts[k], "file": fp, "line": lines[k]})
+        if len(chunks) >= top: break
+    return qv, chunks
+
+
+# ─────────────────────── clickable links ───────────────────────
+# Source citations are clickable everywhere:
+#   • TTY output → OSC 8 escape (iTerm2 honors it; Cmd-Click jumps to file:line).
+#   • Markdown / piped output → standard [text](url) links.
+# Scheme is configurable via env: VAULT_ASK_LINK_SCHEME=cursor|vscode|subl|bbedit|
+# mvim|txmt|file. Default: cursor (works for Cursor and VS Code, both honor the
+# cursor://file/path:line:col shape).
+
+def _link_url(abs_path, line, scheme=None):
+    scheme = scheme or os.environ.get("VAULT_ASK_LINK_SCHEME", "cursor")
+    if scheme in ("cursor", "vscode"):
+        return f"{scheme}://file{abs_path}:{line}:1"
+    if scheme in ("subl", "bbedit", "mvim", "txmt"):
+        return f"{scheme}://open?url=file://{abs_path}&line={line}"
+    if scheme == "file":
+        return f"file://{abs_path}"
+    return f"{scheme}://file{abs_path}:{line}:1"
+
+
+def _osc8(url, text):
+    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+
+
+def cite_link(abs_path, line, label=None, force_markdown=False):
+    """Return a clickable reference. force_markdown=True for file output;
+    otherwise auto-detect TTY → OSC 8."""
+    label = label or f"{abs_path}:{line}"
+    url = _link_url(abs_path, line)
+    if force_markdown or not sys.stdout.isatty():
+        return f"[{label}]({url})"
+    return _osc8(url, label)
+
+
+_FILE_LINE_CACHE = {}
+
+def _read_file_lines(path):
+    if path in _FILE_LINE_CACHE:
+        return _FILE_LINE_CACHE[path]
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            ls = f.readlines()
+    except OSError:
+        ls = []
+    _FILE_LINE_CACHE[path] = ls
+    return ls
+
+
+def expand_context(chunk, window=5):
+    """Pull ±`window` lines around the hit from the source file so Claude sees
+    a real passage, not a single-line snippet. The retrieved line is anchored
+    with > … <. Falls back to the snippet if the file is unreadable."""
+    fp = chunk["file"]; ln = chunk["line"]
+    lines = _read_file_lines(fp)
+    if not lines or ln <= 0 or ln > len(lines):
+        return chunk["text"]
+    lo = max(0, ln - 1 - window)
+    hi = min(len(lines), ln + window)
+    body = []
+    for k in range(lo, hi):
+        s = lines[k].rstrip("\n")
+        if k == ln - 1:
+            body.append(f"> {s} <")
+        else:
+            body.append(f"  {s}")
+    return "\n".join(body)
+
+
+def build_context(chunks, expand=True, window=5):
+    """Format retrieved chunks as numbered context block for the LLM.
+    Each chunk is shown with surrounding lines from the source file (the
+    retrieved line is bracketed by > … <) so Claude has real paragraph
+    context, not a one-line snippet."""
+    home = os.path.expanduser("~")
+    out = []
+    for i, c in enumerate(chunks, 1):
+        rel = c["file"].replace(home + "/", "~/")
+        body = expand_context(c, window=window) if expand else c["text"]
+        out.append(f"[{i}]  ({rel}:{c['line']})\n{body}\n")
+    return "\n".join(out)
+
+
+def find_claude():
+    for c in [f"{HOME}/.claude/local/claude", f"{HOME}/bin/claude",
+              "/usr/local/bin/claude", "/opt/homebrew/bin/claude"]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("claude")
+
+
+def call_claude(question, context):
+    bin_path = find_claude()
+    if not bin_path:
+        return None, "claude CLI not on PATH"
+    prompt = (f"{SYSTEM_PROMPT}\n\n"
+              f"=== SOURCES ===\n{context}\n=== QUESTION ===\n{question}\n\n"
+              f"Answer with [N] citations:")
+    env = os.environ.copy()
+    env["PATH"] = (env.get("PATH","") +
+                   f":{HOME}/.claude/local:{HOME}/bin:/usr/local/bin:/opt/homebrew/bin")
+    proc = subprocess.run([bin_path, "-p", "--output-format", "json", prompt],
+                          env=env, capture_output=True, text=True, timeout=120)
+    if proc.returncode != 0:
+        return None, f"claude exited {proc.returncode}: {proc.stderr.strip()[:300]}"
+    try:
+        d = json.loads(proc.stdout)
+        return (d.get("result","").strip(), d.get("session_id"))
+    except Exception:
+        return proc.stdout.strip(), None
+
+
+def call_fm(question, context, timeout=300):
+    """Route synthesis to Apple FoundationModels on the Mini via fm-submit.
+    Zero per-token cost, on-device (macOS 26), Syncthing round-trip ~5-15s."""
+    fm = f"{HOME}/work/apple/bin/fm-submit"
+    if not os.path.isfile(fm):
+        return None, "fm-submit not at ~/work/apple/bin/fm-submit"
+    prompt = (f"=== SOURCES ===\n{context}\n=== QUESTION ===\n{question}\n\n"
+              f"Answer the question using only the numbered sources. Cite with [N]. "
+              f"If the sources don't answer, say so. Be concise.")
+    proc = subprocess.run([fm, "--system", SYSTEM_PROMPT,
+                           "--timeout", str(timeout), prompt],
+                          capture_output=True, text=True, timeout=timeout + 30)
+    if proc.returncode != 0:
+        return None, f"fm-submit exited {proc.returncode}: {proc.stderr.strip()[:300]}"
+    return proc.stdout.strip(), None
+
+
+def print_raw_digest(question, chunks):
+    """Zero-token presentation: clean markdown digest of the retrieved passages.
+    Each source gets a ±5 line excerpt with the matched line anchored > … <.
+    User reads them directly — no LLM, no tokens, sub-5s round-trip."""
+    home = os.path.expanduser("~")
+    print(f"# {question}\n")
+    print(f"_{len(chunks)} passages from the archive — read the bracketed `> … <` "
+          f"lines first; surrounding lines give context._\n")
+    for i, c in enumerate(chunks, 1):
+        rel = c["file"].replace(home + "/", "~/")
+        body = expand_context(c, window=5)
+        link = cite_link(c["file"], c["line"], label=f"{rel}:{c['line']}")
+        print(f"## [{i}] cos {c['score']:.3f} — {link}\n")
+        print("```")
+        print(body)
+        print("```\n")
+
+
+def render_markdown(question, qnum, answer, chunks, mode, retrieval_s, gen_s):
+    """Render a single Q&A as clean markdown — the same shape va-batch concatenates
+    into demo files. Called when --markdown is set in fm/claude modes (raw mode
+    already prints clean markdown via print_raw_digest)."""
+    home = os.path.expanduser("~")
+    out = [f"## Q{qnum}. {question}\n", "**Answer**\n", answer.strip() + "\n",
+           "\n**Sources**\n"]
+    for n, c in enumerate(chunks, 1):
+        rel = c["file"].replace(home + "/", "~/")
+        link = cite_link(c["file"], c["line"], label=f"{rel}:{c['line']}",
+                         force_markdown=True)
+        snip = c["text"].replace("\n", " ").strip()
+        if len(snip) > 130: snip = snip[:127] + "..."
+        out.append(f"- `[{n}]` cos={c['score']:.3f} {link} — \"{snip}\"")
+    out.append("")
+    out.append(f"_(retrieval {retrieval_s:.2f}s · {mode} {gen_s:.2f}s)_\n")
+    print("\n".join(out))
+
+
+def render_markdown_raw(question, qnum, chunks, retrieval_s):
+    """Raw-mode markdown: ±5-line context excerpts, matched line bracketed `> … <`."""
+    home = os.path.expanduser("~")
+    print(f"## Q{qnum}. {question}\n")
+    print("**Answer (raw — zero-LLM passages; bracketed `> … <` line is the retrieved match)**\n")
+    for n, c in enumerate(chunks, 1):
+        rel = c["file"].replace(home + "/", "~/")
+        body = expand_context(c, window=5)
+        link = cite_link(c["file"], c["line"], label=f"{rel}:{c['line']}",
+                         force_markdown=True)
+        print(f"\n**[{n}] cos {c['score']:.3f}** {link}\n")
+        print("```")
+        print(body)
+        print("```\n")
+    print(f"\n_(retrieval {retrieval_s:.2f}s · raw mode · zero tokens)_\n")
+
+
+def main():
+    question, root, top, threshold, mode, as_json, as_markdown, qnum = parse_args()
+    t0 = time.time()
+    print(f"\n  Q:  {question}", file=sys.stderr)
+    print(f"  mode: {mode}   (--fm for Apple on-device, --claude for paid synthesis)\n",
+          file=sys.stderr)
+    qv, chunks = retrieve(question, root, top, threshold)
+    if not chunks:
+        msg = (f"  No cached lines above cosine ≥ {threshold}.\n"
+               f"  Try lowering --threshold, or seed the cache first with "
+               f"`vault-grep \"x\" --root <dir>`.")
+        print(msg)
+        sys.exit(1)
+    print(f"  retrieved {len(chunks)} chunks in {time.time()-t0:.2f}s", file=sys.stderr)
+    print(f"  top hit: {chunks[0]['score']:.3f}  {os.path.basename(chunks[0]['file'])}:{chunks[0]['line']}",
+          file=sys.stderr)
+
+    # Raw mode — default, zero-token.
+    if mode == "raw":
+        if as_json:
+            print(json.dumps({"question": question, "chunks": chunks},
+                             indent=2, ensure_ascii=False))
+        elif as_markdown:
+            render_markdown_raw(question, qnum if qnum is not None else 1,
+                                chunks, time.time() - t0)
+        else:
+            print_raw_digest(question, chunks)
+        print(f"\n  (retrieval {time.time()-t0:.2f}s · raw mode · zero tokens)",
+              file=sys.stderr)
+        return
+
+    # LLM modes — synthesize.
+    context = build_context(chunks)
+    t1 = time.time()
+    if mode == "fm":
+        print(f"  → fm-submit (Apple on-device, Mini) …", file=sys.stderr)
+        answer, err = call_fm(question, context)
+        agent_label = "fm (Apple on-device)"
+    elif mode == "claude":
+        print(f"  → claude (paid) …", file=sys.stderr)
+        answer, sid = call_claude(question, context)
+        err = None if answer else sid
+        agent_label = "claude"
+    else:
+        vg.die(f"unknown mode: {mode}")
+
+    if answer is None:
+        print(f"  LLM error ({mode}): {err}", file=sys.stderr); sys.exit(1)
+    latency = time.time() - t1
+
+    retrieval_s = time.time() - t0 - latency
+    if as_json:
+        out = {"question": question, "answer": answer, "chunks": chunks,
+               "mode": mode,
+               "retrieval_s": round(retrieval_s, 2),
+               "generation_s": round(latency, 2)}
+        print(json.dumps(out, indent=2, ensure_ascii=False)); return
+
+    if as_markdown:
+        render_markdown(question, qnum if qnum is not None else 1, answer, chunks,
+                        agent_label, retrieval_s, latency)
+    else:
+        print()
+        print(f"# {question}\n")
+        print(answer)
+        print("\n## Sources\n")
+        home = os.path.expanduser("~")
+        for i, c in enumerate(chunks, 1):
+            rel = c["file"].replace(home + "/", "~/")
+            link = cite_link(c["file"], c["line"], label=f"{rel}:{c['line']}")
+            snip = c["text"][:100].replace("\n", " ")
+            print(f"- `[{i}]` cos={c['score']:.3f} {link} — \"{snip}\"")
+        print()
+    print(f"  ({len(chunks)} sources · retrieval {retrieval_s:.1f}s · {agent_label} {latency:.1f}s)",
+          file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

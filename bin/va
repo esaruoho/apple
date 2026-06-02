@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# va — short-cut for "vault-ask against merlib-dump, free on-device synthesis".
+#
+# Zero per-token cost: retrieval is local (Apple NLEmbedding + numpy matmul),
+# synthesis is Apple FoundationModels on the Mini via fm-submit over Syncthing.
+# Round-trip ~15-25s including the Mini hop.
+#
+# Usage:
+#   va "your question"                          # synthesize via --fm (free)
+#   va "your question" --raw                    # zero-LLM: show passages only
+#   va "your question" --claude                 # paid synthesis via Claude
+#   va "your question" --top 12                 # more passages (default 8)
+#   va "your question" --root ~/other/archive   # different corpus
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$HOME/work/merlib-dump"
+MODE="--fm"
+TOP="8"
+ARGS=()
+
+while (( $# )); do
+  case "$1" in
+    --raw|--no-llm) MODE="--raw"; shift ;;
+    --claude) MODE="--claude"; shift ;;
+    --fm) MODE="--fm"; shift ;;
+    --root) ROOT="$2"; shift 2 ;;
+    --top) TOP="$2"; shift 2 ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+
+if (( ${#ARGS[@]} == 0 )); then
+  cat <<EOF >&2
+va — quick zero-token RAG against ~/work/merlib-dump
+
+  va "your question"                          (default: --fm, on-device free)
+  va "your question" --raw                    (show retrieved passages only)
+  va "your question" --claude                 (opt-in paid synthesis)
+  va "your question" --top 12                 (default 8 chunks)
+  va "your question" --root <other-archive>
+
+The retrieval is sub-5s, on-device. Synthesis via fm-submit takes ~10-15s.
+EOF
+  exit 1
+fi
+
+exec "$HERE/vault-ask" "${ARGS[@]}" --root "$ROOT" --top "$TOP" "$MODE"
