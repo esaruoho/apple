@@ -13,11 +13,23 @@ if [ ! -d /System/Library/Frameworks/FoundationModels.framework ]; then
 fi
 CACHE="$HOME/.cache/apple"; BIN="$CACHE/fm"; mkdir -p "$CACHE"
 if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
-    # -sdk is REQUIRED so swiftc finds the FoundationModelsMacros plugin that the
-    # @Generable macro (used by tools) depends on. Without it the build fails:
-    # "plugin for module 'FoundationModelsMacros' not found".
-    xcrun swiftc -O -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
-        -target arm64-apple-macos26.0 "$SRC" -o "$BIN" \
-        -framework FoundationModels -framework Foundation
+    # The @Generable macro needs the FoundationModelsMacros plugin, which ships
+    # ONLY in full Xcode — NOT in Command Line Tools. If xcode-select points at
+    # CLT, swiftc can't find the plugin and the build dies with
+    # "plugin for module 'FoundationModelsMacros' not found". Force Xcode's
+    # toolchain for this build when it's installed (no sudo / no global change),
+    # so the self-build works regardless of the global xcode-select.
+    if [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
+        export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+    fi
+    SDK_PATH="$(xcrun --sdk macosx --show-sdk-path)"
+    if ! xcrun swiftc -O -sdk "$SDK_PATH" \
+            -target arm64-apple-macos26.0 "$SRC" -o "$BIN" \
+            -framework FoundationModels -framework Foundation; then
+        echo "fm: build failed. If the error mentions 'FoundationModelsMacros plugin not found'," >&2
+        echo "    full Xcode (not just Command Line Tools) must be installed on this machine —" >&2
+        echo "    the @Generable macro plugin ships only inside Xcode.app." >&2
+        exit 5
+    fi
 fi
 exec "$BIN" "$@"
