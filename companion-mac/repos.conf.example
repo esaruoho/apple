@@ -1,0 +1,21 @@
+# repos.conf — repos the companion auto-pulls (git push → auto-pull channel)
+# ─────────────────────────────────────────────────────────────────────
+# COPY to `repos.conf` (gitignored) and fill in YOUR repos.
+# Consumed by lib/repo-puller.sh, which runs ON the companion machine.
+#
+# One repo per line, pipe-separated, four fields:
+#
+#   <abs_repo_path>|<branch>|<post_pull_action>|<defer_check>
+#
+#   abs_repo_path     absolute path on the companion (SSH lands in ~, so absolute)
+#   branch            branch to `git pull --ff-only`
+#   post_pull_action  bash to run when HEAD actually changed. Use `noop` if the
+#                     service has its own update mechanism.
+#   defer_check       bash that EXITS 0 when work is in flight (skip the restart
+#                     this tick, retry next tick). Empty = always safe to restart.
+#
+# Lines starting with # and blank lines are ignored.
+#
+# Example (commented — these are placeholders, not real):
+# /Users/youruser/work/comms|main|noop|
+# /Users/youruser/work/myworker|main|pkill -f myworker.sh|pgrep -f 'long-running-job' >/dev/null

@@ -1,0 +1,29 @@
+# ─── companion-mac: the public/private seam ───
+# The whitelabeled scaffolding (lib/, services/_template/, *.example, README,
+# setup.sh) is PUBLIC. Anything you fill in to wire YOUR companion is PRIVATE
+# and lives only here, never in git.
+
+# Filled-in instance config
+companion.conf
+repos.conf
+lib/boot-app/panes.conf
+services/*/service.conf
+services/*/.env
+
+# Don't track the example-copied template instance, only the _template itself
+services/_template/service.conf
+
+# Generated boot-app + its source + snapshots
+lib/boot-app/main.applescript
+lib/boot-app/Companion-Boot.app/
+lib/boot-app/Companion-Boot.app.bak.*
+
+# Runtime state, logs, stdout
+state/
+*.log
+*.stdout
+
+# Any real service dir other than the template stays local until you choose to
+# publish it. Uncomment to keep ALL instantiated services private by default:
+# services/*
+# !services/_template/

@@ -1,0 +1,27 @@
+# service.conf — config for one companion service built from this template.
+# COPY this whole _template/ dir to services/<yourname>/, then copy this file
+# to service.conf (gitignored) and fill it in.
+#
+# Sourced as bash by worker.sh.
+
+SERVICE_NAME="example"                 # used for queue folder names + heartbeat
+
+# Queue folders (created by lib/queues.sh from the SERVICES list).
+# These default to the standard layout under QUEUE_DIR from companion.conf.
+# Override only if this service reads/writes somewhere non-standard.
+# INBOX="$QUEUE_DIR/${SERVICE_NAME}-inbox"
+# OUTBOX="$QUEUE_DIR/${SERVICE_NAME}-outbox"
+# PROCESSED="$QUEUE_DIR/${SERVICE_NAME}-processed"
+
+POLL_INTERVAL=5                        # seconds between inbox scans
+
+# PROCESS_CMD: how to turn ONE input file into output. It receives two args:
+#   $1 = absolute path to the input file (already moved out of the inbox)
+#   $2 = absolute path where it should write the result (in the outbox)
+# Replace this stub with your real work. Keep it a single command or a
+# function name defined in this file.
+process_one() {
+  local in="$1" out="$2"
+  # --- replace this stub ---
+  printf 'processed %s at %s\n' "$(basename "$in")" "$(date)" > "$out"
+}

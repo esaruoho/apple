@@ -1,0 +1,15 @@
+# panes.conf — the iTerm panes the companion's boot-app opens at login.
+# COPY to panes.conf (gitignored) and list YOUR services.
+#
+# One pane per line:  <Name>|<command to run in that pane>
+# Order top→bottom. The generator lays them out as alternating splits and
+# adds the SSH-launch window guard automatically.
+#
+# The doctrine: every long-running service gets a VISIBLE pane that at least
+# tails its log. "If I can't see it working, I can't trust it's working."
+# One-shot bulk jobs do NOT get a pane — they run detached + report via a
+# status command (see the wiki concept page).
+#
+# Example (commented placeholders):
+# Repo Puller|cd /Users/youruser/work/companion-mac && bash lib/repo-puller.sh
+# Example Worker|cd /Users/youruser/work/companion-mac/services/example && ./worker.sh

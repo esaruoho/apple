@@ -1,0 +1,33 @@
+# companion.conf — instance config for the companion-mac comms fabric
+# ─────────────────────────────────────────────────────────────────────
+# COPY this file to `companion.conf` (same dir) and fill it in.
+# `companion.conf` is gitignored — it is YOUR private instance.
+# The whitelabeled scaffolding (this .example, lib/, services/_template/)
+# is public; only the populated instance is private.
+#
+# Sourced as bash. Keep it to KEY="value" and arrays. No secrets that
+# would be catastrophic to leak still belong here (tokens, keys) — those
+# live in each service's own gitignored env, never in this file.
+
+# ── Identity of the companion machine ───────────────────────────────
+# Prefer a stable SSH-config alias or a Tailscale MagicDNS name over a
+# bare `.local` mDNS name — `.local` dies the moment the two machines are
+# on different networks, which is exactly when you need to reach it.
+COMPANION_HOST="companion.local"      # display/reference name
+COMPANION_SSH_ALIAS="companion"       # `ssh <alias>` — set this up in ~/.ssh/config
+COMPANION_USER="youruser"
+COMPANION_WORK="/Users/youruser/work" # remote work root (absolute — SSH lands in ~)
+
+# ── Local side (this machine) ───────────────────────────────────────
+LOCAL_WORK="$HOME/work"
+COMMS_DIR="$LOCAL_WORK/comms"          # the Syncthing-shared comms folder
+QUEUE_DIR="$COMMS_DIR/queue"           # mirrored queue root (file-drop bridge)
+
+# ── Liveness ────────────────────────────────────────────────────────
+HEARTBEAT_MAX_AGE=300                  # seconds; a heartbeat newer than this = "up"
+
+# ── Services to scaffold queues for ─────────────────────────────────
+# Each name N gets QUEUE_DIR/N-inbox, N-outbox, N-processed created.
+# These are just folder names — the actual workers are private plugins
+# you build from services/_template/.
+SERVICES=(example)
