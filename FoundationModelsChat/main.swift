@@ -744,7 +744,7 @@ func fmTools() -> [any Tool] {
 @available(macOS 26.0, *)
 struct WebReaderTool: Tool {
     let name = "WebReader"
-    let description = "Fetch a web page by its URL and return its readable text (page title plus main body text). Call this whenever the user provides a URL or asks what a web page says."
+    let description = "Fetch ONE web page's readable text. Call this ONLY when the user's message contains an explicit http:// or https:// URL to fetch. Never call it to find sources, verify claims, or look something up when there is no literal URL in the message."
 
     @Generable
     struct Arguments {
@@ -856,9 +856,11 @@ final class FM {
     static let systemInstructions = """
     You are a helpful on-device assistant. Format replies in Markdown. \
     When you write mathematics, output Presentation MathML wrapped in <math> … </math> \
-    tags (not LaTeX) so it renders natively. If the user gives a URL or asks what a \
-    web page says, call the WebReader tool to fetch it and answer from the text it \
-    returns. Answer ONLY the user's most recent message. Do not restate, summarize, \
+    tags (not LaTeX) so it renders natively. Only call the WebReader tool when the \
+    user's message contains an explicit http(s):// URL; otherwise answer from your \
+    own knowledge and never say you tried to fetch a page. When the user pastes text \
+    and asks you to discuss or continue it, just do that — do not fetch anything. \
+    Answer ONLY the user's most recent message. Do not restate, summarize, \
     or fold in topics from earlier turns unless the user explicitly asks, and only \
     call a tool that is directly relevant to that latest message. Be concise and clear.
     """
