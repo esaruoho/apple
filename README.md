@@ -739,6 +739,21 @@ Mail's IMAP queries against `[Gmail]/All Mail` block Mail for minutes (it's a se
 
 2026-05-26 iCloud INBOX message ("Re: Artikkelin kommentteja"): 4-message thread captured, 7 paper attachments routed (`.md` to merlib-dump, `.docx/.html/.tex` to mediabank misc, `.zip` to mediabank archives, SHA-256 deduped), move to Processed/FreeEnergy succeeded, total time 2.8 seconds, Mail.app stress: 1 short AppleEvent.
 
+### Pristine account backup — `/backup-mailbox` (2026-05-27)
+
+Pristine, restorable backup of a single Mail.app account: resolves account → V10 UUID via AppleScript, quits Mail for a clean snapshot, `rsync`s `~/Library/Mail/V10/<UUID>/` to `~/Backups/mail-<prefix>-YYYY-MM-DD/`, renames every top-level `.mbox` with a friendly prefix (`INBOX.mbox` → `<prefix>-inbox.mbox`, `[Gmail].mbox` → `<prefix>-gmail.mbox`), and verifies `.emlx` counts source vs backup.
+
+```bash
+/backup-mailbox --list                          # show every Mail account with sizes
+/backup-mailbox esa@raybrowser.com              # back it up, auto-prefix from email
+/backup-mailbox Ray --prefix raybrowser         # explicit prefix
+/backup-mailbox <account> --dest ~/Archive/...  # custom destination
+```
+
+Two gotchas baked into the tool: (1) Mail.app must be running when the UUID is resolved — its scripting suite goes silent when the app is dead, returning a `-2741` syntax error for every property accessor; (2) Mail must be quit *after* the resolve and *before* the rsync, so no `.emlx` is mid-write during the copy. The `repeat with a in every account` loop form never works from `osascript -e` regardless of Mail's state, so the tool uses the flat-list form (`get id of every account`) and zips the parallel lists.
+
+Source: [`bin/backup-mailbox`](bin/backup-mailbox), slash: [`commands/backup-mailbox.md`](commands/backup-mailbox.md), concept: [`wiki/concepts/mail-backup.md`](wiki/concepts/mail-backup.md). Apple-native: Python stdlib + `osascript` + `rsync` only.
+
 ---
 
 ## Roadmap to the Full Apple Experience

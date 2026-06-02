@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""
+backup-mailbox — Apple-native pristine backup of a single Mail.app account.
+
+Resolves Mail account → V10 UUID via AppleScript, quits Mail for a clean
+snapshot, rsyncs ~/Library/Mail/V10/<UUID>/ to
+~/Backups/mail-<prefix>-YYYY-MM-DD/, renames top-level .mbox folders with a
+user-friendly prefix, and verifies .emlx counts source vs backup.
+
+Apple-native: Python stdlib + osascript + rsync only.
+
+Usage:
+  backup-mailbox --list
+  backup-mailbox <account>             # account email or AppleScript name
+  backup-mailbox <account> --prefix <slug>
+  backup-mailbox <account> --dest <dir>
+  backup-mailbox <account> --keep-mail-open   # skip the quit step
+
+Examples:
+  backup-mailbox --list
+  backup-mailbox esa@raybrowser.com
+  backup-mailbox Ray --prefix raybrowser
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+V10 = Path.home() / "Library" / "Mail" / "V10"
+
+
+def osascript(src: str) -> str:
+    r = subprocess.run(
+        ["osascript", "-e", src], capture_output=True, text=True, timeout=15
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"osascript failed: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
+def ensure_mail_running() -> None:
+    """Mail.app's scripting suite only responds while the app is running.
+
+    Loop-based access (`repeat with a in every account`) silently fails outside
+    a tell-block context; we use the flat-list form which works as long as Mail
+    is live. Launch it if needed.
+    """
+    r = subprocess.run(["pgrep", "-x", "Mail"], capture_output=True)
+    if r.returncode == 0:
+        return
+    subprocess.run(["open", "-ga", "Mail"], check=False)
+    for _ in range(20):
+        time.sleep(0.5)
+        if subprocess.run(["pgrep", "-x", "Mail"], capture_output=True).returncode == 0:
+            time.sleep(1.0)  # give Mail a moment to register its scripting suite
+            return
+
+
+def list_accounts() -> list[dict]:
+    """Return [{name, id (V10 UUID), user_name}, ...] in Mail's order.
+
+    Mail.app's scripting only handles the flat-list form reliably; the loop
+    form (`repeat with a in every account`) errors with -2741.
+    """
+    ensure_mail_running()
+    names = osascript('tell application "Mail" to get name of every account').split(", ")
+    ids = osascript('tell application "Mail" to get id of every account').split(", ")
+    users = osascript('tell application "Mail" to get user name of every account').split(", ")
+    n = min(len(names), len(ids), len(users))
+    return [{"name": names[i], "id": ids[i], "user_name": users[i]} for i in range(n)]
+
+
+def resolve_account(query: str) -> dict:
+    accounts = list_accounts()
+    q = query.lower()
+    for a in accounts:
+        if q in (a["name"].lower(), a["user_name"].lower(), a["id"].lower()):
+            return a
+    # Substring fallback on email local-part / name
+    for a in accounts:
+        if q in a["user_name"].lower() or q in a["name"].lower():
+            return a
+    raise SystemExit(
+        f"no Mail account matches {query!r}. Run --list to see candidates."
+    )
+
+
+def slugify(s: str) -> str:
+    s = s.split("@", 1)[0]
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", s).strip("-").lower()
+    return s or "account"
+
+
+def quit_mail(verbose=True) -> None:
+    if verbose:
+        print("→ quitting Mail.app for clean snapshot…", flush=True)
+    try:
+        osascript('tell application "Mail" to quit')
+    except RuntimeError as e:
+        # MailQuickLookExtension occasionally errors; Mail itself still quits
+        if verbose:
+            print(f"  (quit reported: {e})", flush=True)
+    # Wait until Mail process is gone (or 8s)
+    for _ in range(16):
+        r = subprocess.run(["pgrep", "-x", "Mail"], capture_output=True)
+        if r.returncode != 0:
+            return
+        time.sleep(0.5)
+    if verbose:
+        print("  warning: Mail still running — proceeding anyway", flush=True)
+
+
+def rsync_account(src: Path, dest: Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["rsync", "-a", "--info=stats2", f"{src}/", f"{dest}/"], check=True
+    )
+
+
+def rename_top_mboxes(dest: Path, prefix: str) -> list[tuple[str, str]]:
+    """Rename every top-level *.mbox under dest with the prefix."""
+    renames: list[tuple[str, str]] = []
+    for child in sorted(dest.iterdir()):
+        if not child.is_dir() or not child.name.endswith(".mbox"):
+            continue
+        stem = child.name[: -len(".mbox")]
+        slug = slugify(stem)
+        if slug == "gmail":
+            new = f"{prefix}-gmail.mbox"
+        else:
+            new = f"{prefix}-{slug}.mbox"
+        new_path = child.with_name(new)
+        if new_path != child:
+            child.rename(new_path)
+            renames.append((child.name, new))
+    return renames
+
+
+def count_emlx(root: Path) -> int:
+    n = 0
+    for _, _, files in os.walk(root):
+        for f in files:
+            if f.endswith(".emlx"):
+                n += 1
+    return n
+
+
+def human_size(n: int) -> str:
+    for unit in ("B", "K", "M", "G", "T"):
+        if n < 1024:
+            return f"{n:.0f}{unit}"
+        n /= 1024
+    return f"{n:.0f}P"
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="backup-mailbox", description=__doc__)
+    p.add_argument("account", nargs="?", help="email, AppleScript account name, or V10 UUID")
+    p.add_argument("--list", action="store_true", help="list Mail accounts and exit")
+    p.add_argument("--prefix", help="filename prefix (default: slug of email local-part)")
+    p.add_argument("--dest", help="destination dir (default: ~/Backups/mail-<prefix>-YYYY-MM-DD)")
+    p.add_argument("--keep-mail-open", action="store_true", help="skip the Mail quit step")
+    args = p.parse_args()
+
+    if args.list:
+        for a in list_accounts():
+            src = V10 / a["id"]
+            size = human_size(sum(f.stat().st_size for f in src.rglob("*") if f.is_file())) if src.exists() else "—"
+            print(f"  {a['name']:<14} {a['user_name']:<30} {a['id']}  {size}")
+        return 0
+
+    if not args.account:
+        p.error("account required (or use --list). See --help.")
+
+    acct = resolve_account(args.account)
+    src = V10 / acct["id"]
+    if not src.exists():
+        raise SystemExit(f"no V10 directory for account: {src}")
+
+    prefix = args.prefix or slugify(acct["user_name"]) or slugify(acct["name"])
+    today = dt.date.today().isoformat()
+    dest = Path(args.dest) if args.dest else Path.home() / "Backups" / f"mail-{prefix}-{today}"
+
+    print(f"account: {acct['name']} <{acct['user_name']}>")
+    print(f"source:  {src}")
+    print(f"dest:    {dest}")
+    print(f"prefix:  {prefix}")
+
+    if not args.keep_mail_open:
+        quit_mail()
+
+    print("→ rsync…", flush=True)
+    rsync_account(src, dest)
+
+    print("→ renaming top-level .mbox folders…", flush=True)
+    for old, new in rename_top_mboxes(dest, prefix):
+        print(f"  {old} → {new}")
+
+    print("→ verifying…", flush=True)
+    src_n = count_emlx(src)
+    dest_n = count_emlx(dest)
+    dest_bytes = sum(f.stat().st_size for f in dest.rglob("*") if f.is_file())
+    print(f"  .emlx source={src_n}  dest={dest_n}  size={human_size(dest_bytes)}")
+    if src_n != dest_n:
+        print("  WARNING: .emlx count mismatch — backup may be incomplete", file=sys.stderr)
+        return 2
+
+    print(f"\nOK → {dest}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

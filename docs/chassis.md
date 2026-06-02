@@ -31,6 +31,10 @@ You edit a Sticky note. FSEvents inside the AppleToolbox process notices, deboun
 
 You flag a Mail message with one of seven colors. A poll (Mail Rules cannot trigger on user-flagging — only on incoming-mail attributes) notices the flag, walks the per-color contract in [`bin/mail-flag-config.json`](https://github.com/esaruoho/apple/blob/main/bin/mail-flag-config.json), and fans out: writes the `.eml`, extracts attachments, renders the body as markdown, files them in per-color destinations. Doc: [`wiki/concepts/mail-flag-pipeline.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/mail-flag-pipeline.md).
 
+### 5. Mail account pristine backup (`/backup-mailbox`)
+
+You type `/backup-mailbox esa@raybrowser.com`. The tool resolves the Mail account → V10 directory UUID via AppleScript (Mail must be running for its scripting suite to answer — otherwise every property accessor errors with `-2741`), quits Mail so no `.emlx` is mid-write, `rsync`s `~/Library/Mail/V10/<UUID>/` to `~/Backups/mail-<prefix>-YYYY-MM-DD/`, renames every top-level `*.mbox` with the slug prefix (`INBOX.mbox` → `<prefix>-inbox.mbox`, `[Gmail].mbox` → `<prefix>-gmail.mbox`), and verifies `.emlx` counts source vs backup. The result is drop-in restorable — copy the folder back under `~/Library/Mail/V10/` on any Mac and relaunch Mail. Doc: [`wiki/concepts/mail-backup.md`](https://github.com/esaruoho/apple/blob/main/wiki/concepts/mail-backup.md).
+
 ---
 
 ## What makes the chassis reusable

@@ -3,7 +3,7 @@
 # Zero LLM roundtrip. Deterministic shell only.
 set -u
 
-HOST="CloudcityMacMini.local"
+HOST="cloudcity"
 ROOT="/Volumes/CLOUDCITY4TB/loom-mirror"
 
 ssh -o BatchMode=yes -o ConnectTimeout=5 "$HOST" "
