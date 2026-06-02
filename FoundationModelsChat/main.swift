@@ -830,7 +830,7 @@ final class FM {
 
     init() {
         if #available(macOS 26.0, *), case .available = SystemLanguageModel.default.availability {
-            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.systemInstructions)
+            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.fullInstructions)
             session.prewarm()   // warm the model so the first reply isn't slow
             sessionBox = session
             backend = .local
@@ -857,7 +857,7 @@ final class FM {
     /// no-model has nothing to reset.
     func startFreshSession() {
         if #available(macOS 26.0, *), case .local = backend {
-            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.systemInstructions)
+            let session = LanguageModelSession(model: FM.permissiveModel, instructions:FM.fullInstructions)
             session.prewarm()
             sessionBox = session
         }
@@ -917,6 +917,28 @@ final class FM {
         }
     }
 
+    /// Long-term MEMORY — a real file the chat affects and the model reads:
+    ///   ~/Documents/FoundationModelsChat/memory.md
+    /// Injected into the prompt every session so the model "remembers" across chats.
+    /// Affect it in chat with "remember: …" / "forget: …", or the ⇧⌘M editor.
+    static let memoryFileURL: URL =
+        promptFileURL.deletingLastPathComponent().appendingPathComponent("memory.md")
+    static var memory: String {
+        get { (try? String(contentsOf: memoryFileURL, encoding: .utf8)) ?? "" }
+        set { try? newValue.write(to: memoryFileURL, atomically: true, encoding: .utf8) }
+    }
+
+    /// What actually seeds each session: the system prompt + the long-term memory. Memory
+    /// is capped so it can't blow the small (~4k-token) window — keep memory short.
+    static var fullInstructions: String {
+        let mem = memory.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mem.isEmpty else { return systemInstructions }
+        let capped = mem.count > 1500 ? "…\n" + String(mem.suffix(1500)) : mem
+        return systemInstructions
+            + "\n\nLong-term memory — established facts about the user from past chats. "
+            + "Use them naturally; don't recite them back:\n" + capped
+    }
+
     /// A model with RELAXED guardrails. Apple's DEFAULT guardrail blocks benign prompts
     /// like "how to love myself" / "how do I accept myself" as "unsafe" (caught in the
     /// debug log 2026-06-02 — it even fired mid-stream and ate the reply).
@@ -929,7 +951,7 @@ final class FM {
     /// Recreate the local session so an edited system prompt takes effect immediately.
     func resetSession() {
         if #available(macOS 26.0, *), case .local = backend {
-            let s = LanguageModelSession(model: FM.permissiveModel, instructions: FM.systemInstructions)
+            let s = LanguageModelSession(model: FM.permissiveModel, instructions: FM.fullInstructions)
             s.prewarm()
             sessionBox = s
         }
@@ -1059,8 +1081,8 @@ final class FM {
         let summarizer = LanguageModelSession(model: FM.permissiveModel, instructions:
             "Summarize the conversation in 4-6 sentences, preserving names, facts, numbers, and the current task.")
         if let r = try? await summarizer.respond(to: "Conversation:\n\(transcript)") { summary = r.content }
-        let instr = summary.isEmpty ? FM.systemInstructions
-            : FM.systemInstructions + "\n\nEarlier context summary:\n" + summary
+        let instr = summary.isEmpty ? FM.fullInstructions
+            : FM.fullInstructions + "\n\nEarlier context summary:\n" + summary
         let seeded = LanguageModelSession(model: FM.permissiveModel, instructions:instr)
         seeded.prewarm()
         sessionBox = seeded
@@ -1299,6 +1321,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
 
     /// ⇧⌘P — view/edit the system prompt that colors every reply. Save applies it to a
     /// fresh chat so you can watch how the prompt changes the model's behavior.
+    /// ⇧⌘M — view/edit the long-term memory the model is given every session.
+    @objc func editMemory() {
+        let alert = NSAlert()
+        alert.messageText = "Long-Term Memory"
+        alert.informativeText = "Facts the model is given every session (stored at ~/Documents/FoundationModelsChat/memory.md; you can also add them in chat with \"remember: …\"). Edit + Save; takes effect on the next message. Keep it short — it counts against the context window."
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 540, height: 260))
+        scroll.hasVerticalScroller = true
+        scroll.borderType = .bezelBorder
+        let tv = NSTextView(frame: NSRect(x: 0, y: 0, width: 540, height: 260))
+        tv.isEditable = true
+        tv.isRichText = false
+        tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        tv.string = FM.memory
+        tv.isAutomaticQuoteSubstitutionEnabled = false
+        tv.autoresizingMask = [.width, .height]
+        scroll.documentView = tv
+        alert.accessoryView = scroll
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Clear")
+        alert.addButton(withTitle: "Cancel")
+        let r = alert.runModal()
+        if r == .alertFirstButtonReturn {
+            FM.memory = tv.string; fm.resetSession()
+            appendAssistant("🧠 Memory updated — it'll color replies from now on.")
+        } else if r == .alertSecondButtonReturn {
+            FM.memory = ""; fm.resetSession()
+            appendAssistant("🧠 Memory cleared.")
+        }
+    }
+
     @objc func editSystemPrompt() {
         let alert = NSAlert()
         alert.messageText = "System Prompt"
@@ -1418,6 +1470,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         ep.keyEquivalentModifierMask = [.command, .shift]   // ⇧⌘P (avoid ⌘P = print)
         ep.target = self
         promptMenu.addItem(ep)
+        let em = NSMenuItem(title: "Edit Memory…", action: #selector(editMemory), keyEquivalent: "m")
+        em.keyEquivalentModifierMask = [.command, .shift]   // ⇧⌘M (⌘M = minimize)
+        em.target = self
+        promptMenu.addItem(em)
         promptItem.submenu = promptMenu
 
         // ── Window menu — Minimize (⌘M), Zoom, standard window list ──
@@ -1493,7 +1549,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         return nil
     }
 
+    /// Pull a fact out of a "remember …" message, else nil.
+    func memoryFact(from text: String) -> String? {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        for p in ["remember that ", "remember: ", "remember ", "note that ", "keep in mind that "] {
+            if t.lowercased().hasPrefix(p) {
+                let fact = String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespaces)
+                return fact.isEmpty ? nil : fact
+            }
+        }
+        return nil
+    }
+
     func send(userText: String, display: String? = nil) {
+        // Memory commands — affect the long-term memory the model reads, no model call.
+        if let fact = memoryFact(from: userText) {
+            FM.memory = (FM.memory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : FM.memory + "\n") + "- " + fact
+            fm.resetSession()   // re-seed the session so the new memory takes effect now
+            messages.append(("user", display ?? userText))
+            store.log(role: "user", text: userText)
+            appendAssistant("🧠 Added to memory: \(fact)")
+            store.log(role: "assistant", text: "[memory+] \(fact)")
+            return
+        }
+        if ["forget everything", "clear memory", "clear my memory"].contains(userText.trimmingCharacters(in: .whitespaces).lowercased()) {
+            FM.memory = ""; fm.resetSession()
+            messages.append(("user", display ?? userText)); store.log(role: "user", text: userText)
+            appendAssistant("🧠 Memory cleared.")
+            return
+        }
         // Pre-LLM fast path: known intents run a script, no model — instant, can't hang.
         if let direct = directAnswer(userText) {
             messages.append(("user", display ?? userText))
