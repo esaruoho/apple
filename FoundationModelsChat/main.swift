@@ -1562,7 +1562,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     }
 
     func send(userText: String, display: String? = nil) {
-        // Memory commands — affect the long-term memory the model reads, no model call.
+        // Memory commands — affect/inspect the long-term memory the model reads, no model call.
+        let memQ = userText.trimmingCharacters(in: .whitespaces).lowercased()
+        if ["what do you remember", "what do you remember about me", "show memory", "show my memory",
+            "show me my memory", "memory", "what's in your memory", "whats in your memory",
+            "list memory", "what have you remembered"].contains(memQ) {
+            let mem = FM.memory.trimmingCharacters(in: .whitespacesAndNewlines)
+            messages.append(("user", display ?? userText)); store.log(role: "user", text: userText)
+            appendAssistant(mem.isEmpty
+                ? "🧠 Nothing yet. Add facts with \"remember: …\" (or ⇧⌘M)."
+                : "🧠 Here's what I remember:\n\n\(mem)")
+            return
+        }
         if let fact = memoryFact(from: userText) {
             FM.memory = (FM.memory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : FM.memory + "\n") + "- " + fact
             fm.resetSession()   // re-seed the session so the new memory takes effect now
