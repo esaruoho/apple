@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# apple-do — the SCRIPTABLE front door to the toolbox: pick a capability yourself,
+# run it directly, get the answer. No FoundationModels, no LLM in the loop — the
+# deterministic twin of `fm` (where the model picks the tool). Tab-completes and
+# cycles the available capabilities (see apple-do-completion.sh).
+#
+#   apple-do                 list what it can do (name + one-line description)
+#   apple-do <capability> …  run it
+#   apple-do --complete      bare capability names, one per line (for completion)
+#
+# bash-3.2-safe: a case dispatch + a caps() registry, NO associative arrays.
+set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+# ── registry: one line per capability  "name<TAB>description" ──
+# This is the single source of truth for the list/completion. Keep names in sync
+# with the case dispatch below.
+caps() {
+  printf '%s\n' \
+"home	current temperature + humidity at home (HomePod sensor)" \
+"now	current date, time, weekday, timezone" \
+"fleet	live status of the Mini's workers (heartbeats)" \
+"spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
+"search	semantic search of your notes (MiniLM, on the Mini) — apple-do search <query>" \
+"ocr	extract text from a PDF/image (Vision) — apple-do ocr <file>"
+}
+
+if [ "${1:-}" = "--complete" ]; then caps | cut -f1; exit 0; fi
+if [ $# -eq 0 ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "--list" ]; then
+  echo "apple-do — scriptable capabilities (no LLM). Press Tab to cycle:"
+  caps | while IFS=$'\t' read -r n d; do printf '  %-11s %s\n' "$n" "$d"; done
+  exit 0
+fi
+
+cap="$1"; shift
+case "$cap" in
+  home)   exec "$HERE/homepod-now" ;;
+  now)    date "+%A, %-d %B %Y, %H:%M %Z" ;;
+  fleet)
+    q="$HOME/work/comms/queue"; nowS=$(date +%s)
+    for hb in "$q"/*-heartbeat.json; do
+      [ -f "$hb" ] || continue
+      name=$(basename "$hb" -heartbeat.json)
+      age=$(( nowS - $(stat -f %m "$hb" 2>/dev/null || echo "$nowS") ))
+      flag="ok"; [ "$age" -gt 180 ] && flag="STALE"
+      printf '  %-26s %4ds ago  %s\n' "$name" "$age" "$flag"
+    done | sort ;;
+  spotlight)
+    [ $# -gt 0 ] || { echo "usage: apple-do spotlight <query>"; exit 2; }
+    mdfind -name "$*" 2>/dev/null | head -20 ;;
+  search)
+    [ $# -gt 0 ] || { echo "usage: apple-do search <query>"; exit 2; }
+    # vault-rag's CoreML model lives on the Mini → run it there over SSH.
+    ssh -o ConnectTimeout=6 cloudcity \
+      "/Users/esaruoho/work/apple/bin/vault-rag \"$*\" --root /Users/esaruoho/work/apple/wiki --top 4" 2>/dev/null \
+      || echo "apple-do: couldn't reach the Mini for semantic search." ;;
+  ocr)
+    [ $# -gt 0 ] || { echo "usage: apple-do ocr <file>"; exit 2; }
+    exec "$HERE/vision-ocr" "$@" ;;
+  *)
+    echo "apple-do: unknown capability '$cap'"; echo "try: $(caps | cut -f1 | paste -sd' ' -)"; exit 2 ;;
+esac

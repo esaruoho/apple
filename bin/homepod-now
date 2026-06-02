@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""homepod-now — print the latest HomePod climate reading, processed.
+
+Reads the newest YYYY-MM-DD.jsonl in ~/work/comms/queue/homepod-climate/ (the
+Syncthing-mirrored output of the Mac Mini's HomePod watcher) and reports the
+calibrated temperature + humidity with the reading's age. Apple-native: stdlib
+only. Used as the home_climate tool's backend in bin/fm.swift, and standalone.
+"""
+import datetime
+import glob
+import json
+import os
+import sys
+
+D = os.path.expanduser("~/work/comms/queue/homepod-climate")
+logs = sorted(glob.glob(os.path.join(D, "20*.jsonl")))
+if not logs:
+    print("No HomePod climate data found.")
+    sys.exit(0)
+
+last = None
+for line in reversed(open(logs[-1]).read().strip().splitlines()):
+    line = line.strip()
+    if line:
+        try:
+            last = json.loads(line)
+            break
+        except Exception:
+            continue
+if not last:
+    print("No readings in the latest HomePod log.")
+    sys.exit(0)
+
+ts = datetime.datetime.strptime(last["timestamp"], "%Y-%m-%dT%H:%M:%SZ").replace(
+    tzinfo=datetime.timezone.utc)
+age_min = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds() / 60
+temp = last.get("temperature_cal", last.get("temperature_c"))
+hum = last.get("humidity_cal", last.get("humidity_pct"))
+age = f"{age_min:.0f} min ago" if age_min < 90 else f"{age_min/60:.1f} h ago"
+print(f"HomePod climate (calibrated): {temp}°C, {hum}% relative humidity. "
+      f"Reading taken {last['timestamp']} ({age}).")
