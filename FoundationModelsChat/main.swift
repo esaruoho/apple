@@ -1504,43 +1504,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
             appendAssistant("Model unavailable — can't send.")
             return
         }
-        // ── Translation harness ── the on-device LLM only speaks English (+ a few).
-        // If you write in another language, translate IN to English for the model and
-        // translate its reply BACK to your language via apple-translate (Apple's
-        // Translation framework). The model never sees the foreign text.
-        var modelInput = userText
-        var replyLang: String? = nil
-        // Apple Translation supports only these 19 languages (verified 2026-06-02 — NOT
-        // Finnish or any Nordic/Baltic language). wiki/concepts/apple-translation-language-support.md
-        let appleTranslatable: Set<String> = ["ar","de","en","es","fr","hi","id","it","ja","ko",
-                                              "nl","pl","pt","ru","th","tr","uk","vi","zh"]
-        if let lang = dominantLanguage(userText), lang != "en", lang != "und" {
-            guard appleTranslatable.contains(lang) else {
-                messages.append(("user", display ?? userText)); render()
-                appendAssistant("⚠️ That looks like **\(lang)** — which neither the on-device model nor Apple's Translation framework supports (as of macOS 26, Apple Translation has no Finnish/Nordic languages, so there is NO pack to install). Please write in English.")
-                return
-            }
-            let en = runCLI(["\(ToolEnv.binDir)/apple-translate", "--to", "en"], stdin: userText)
-            if en.isEmpty || en == "(no output)" || en.contains("Unable to Translate") {
-                messages.append(("user", display ?? userText)); render()
-                appendAssistant("⚠️ I can bridge **\(lang)** ⇄ English, but its translation pack isn't installed. Install it once in **System Settings ▸ General ▸ Language & Region ▸ Translation Languages ▸ Add**, then try again.")
-                return
-            }
-            modelInput = en
-            replyLang = lang
-        }
+        // Plain English chat — no translation harness. You type, it goes straight to
+        // the model (which speaks English). Nothing runs on the main thread before send.
         // Any previous overflow button is now stale.
         newChatPrompt = nil; newChatDisplay = nil; newChatMsgIndex = nil
         busy = true
         sendButton.isEnabled = false
-        messages.append(("user", display ?? userText))   // show your ORIGINAL text
-        convo.append(("user", modelInput))                // the model sees English
+        messages.append(("user", display ?? userText))
+        convo.append(("user", userText))
         store.log(role: "user", text: userText)
         messages.append(("assistant", "…"))   // live streaming target
         render()
         let idx = messages.count - 1
-        dlog("SEND lang=\(replyLang ?? "en") userText=\(userText.replacingOccurrences(of: "\n", with: "⏎").prefix(160)) | modelInput=\(modelInput.replacingOccurrences(of: "\n", with: "⏎").prefix(160))")
-        fm.askStreaming(latest: modelInput, history: convo,
+        dlog("SEND userText=\(userText.replacingOccurrences(of: "\n", with: "⏎").prefix(200))")
+        fm.askStreaming(latest: userText, history: convo,
             onPartial: { [weak self] partial in
                 // Update only the last bubble in place — no full reload, so the
                 // view doesn't flicker or lose scroll while tokens arrive.
@@ -1556,15 +1533,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
                     dlog("RAW-REPLY (\(raw.count) chars): \(raw.replacingOccurrences(of: "\n", with: "⏎").prefix(600))")
                     // Never surface a raw empty / "null" generation — map it to a real message.
                     let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-                    var reply = (trimmed.isEmpty || trimmed.lowercased() == "null" || trimmed.lowercased() == "nil")
+                    let reply = (trimmed.isEmpty || trimmed.lowercased() == "null" || trimmed.lowercased() == "nil")
                         ? "⚠️ The model returned an empty reply (it ran out of room or stalled). Press ⌘N for a fresh chat, or rephrase / shorten the message."
                         : trimmed
-                    // Translation harness: turn the English reply back into your language.
-                    if let lang = replyLang, !reply.hasPrefix("⚠️") {
-                        let back = runCLI(["\(ToolEnv.binDir)/apple-translate", "--to", lang], stdin: reply)
-                        dlog("TRANSLATE-OUT →\(lang) ok=\(!back.contains("Unable to Translate")): \(back.prefix(200))")
-                        if !back.isEmpty, back != "(no output)", !back.contains("Unable to Translate") { reply = back }
-                    }
                     self.messages[idx] = ("assistant", reply)
                     self.convo.append(("assistant", reply))
                     self.store.log(role: "assistant", text: reply)
