@@ -67,6 +67,21 @@ if [ ${#CHANGED_FILES[@]} -gt 0 ]; then
   git add -- "${CHANGED_FILES[@]}"
 fi
 
+# gen-docs.py writes a variable number of files under docs/, so we can't
+# enumerate the watch list. Snapshot the whole docs/ dir state instead.
+if [ -d docs ] && [ -x bin/gen-docs.py ]; then
+  docs_before=$(find docs -type f -name "*.md" -exec stat -f "%N %m" {} \; 2>/dev/null | sort)
+  if python3 bin/gen-docs.py >/dev/null 2>&1; then
+    docs_after=$(find docs -type f -name "*.md" -exec stat -f "%N %m" {} \; 2>/dev/null | sort)
+    if [ "$docs_before" != "$docs_after" ]; then
+      git add docs/
+      echo "pre-commit: regen docs/ (wiki→Jekyll mirror) → updated" >&2
+    fi
+  else
+    echo "pre-commit: gen-docs failed (continuing)" >&2
+  fi
+fi
+
 # wiki-lint: warnings only, never blocks. Surface to stderr so you see them.
 if [ -f bin/wiki-lint.py ]; then
   python3 bin/wiki-lint.py 2>&1 | grep -E "WARN|orphan|oversized|broken" >&2 || true
