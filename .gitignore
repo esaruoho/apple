@@ -94,3 +94,10 @@ FoundationModelsChat/build/
 .minilm-venv/
 models/
 *.mlpackage
+
+# ApplePanel build artifact (rebuilt via /apple-panel-app)
+panel-app/ApplePanel.app/
+
+# Runtime scratch / locks
+.claude/scheduled_tasks.lock
+.ocrloop.txt
