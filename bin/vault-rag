@@ -1,21 +1,21 @@
 #!/usr/bin/env swift
-// vault-rag — paragraph-level semantic search over a folder of notes.
+// vault-rag — paragraph/section-level semantic search over a folder of notes,
+// using a CoreML sentence-transformer (all-MiniLM-L6-v2) on the Neural Engine.
 //
-// Why this exists: vault-grep embeds and ranks ONE LINE at a time, so short
-// keyword-dense lines (code snippets, commit-log entries) outrank explanatory
-// prose, and a great prose file can miss the top hits entirely. vault-rag chunks
-// each file into paragraphs (blank-line-separated blocks), embeds each CHUNK with
-// NLEmbedding, and ranks chunks — so the unit returned is a quotable passage, not
-// a stray line. On-device, Apple-native (NaturalLanguage), no network, no pip.
+// Why MiniLM and not NLEmbedding: NLEmbedding's static vectors are too coarse —
+// they couldn't surface concepts/asobjc.md for an "AppleScriptObjC" query even in
+// the top 30. MiniLM is a real sentence-transformer (384-dim, fine-tuned for
+// similarity), so a query matches the right passage. Runtime is pure CoreML + a
+// hand-rolled WordPiece tokenizer — no pip, no network; the .mlpackage is built
+// once by bin/build-minilm.sh. Each note is chunked into header-aware sections
+// (heading + body) so a hit is a whole quotable passage.
 //
-// Embeddings are cached per file (keyed by path+mtime) at
-// ~/.cache/apple/vault-rag-cache.json, so only changed files re-embed.
-//
-// Usage:
-//   vault-rag "query" --root DIR [--top N] [--ext .md,.txt] [--json]
+// Embeddings cached per file (path+mtime) at ~/.cache/apple/vault-rag-cache-v3.json.
+// Usage: vault-rag "query" --root DIR [--top N] [--ext .md,.txt] [--json]
+// Model dir via $MINILM_DIR (default ~/work/apple/models/minilm).
 
 import Foundation
-import NaturalLanguage
+import CoreML
 
 // ---- args ----
 var args = Array(CommandLine.arguments.dropFirst())
@@ -33,34 +33,120 @@ let query = args.filter { !$0.hasPrefix("--") }.joined(separator: " ")
 func die(_ m: String) -> Never { FileHandle.standardError.write(Data((m + "\n").utf8)); exit(2) }
 if query.isEmpty { die("usage: vault-rag \"query\" --root DIR [--top N]") }
 
-guard let emb = NLEmbedding.sentenceEmbedding(for: .english) else {
-    die("NLEmbedding sentence model unavailable")
+let SEQ = 256, DIM = 384
+let cacheDir = NSHomeDirectory() + "/.cache/apple"
+try? FileManager.default.createDirectory(atPath: cacheDir, withIntermediateDirectories: true)
+let modelDir = ProcessInfo.processInfo.environment["MINILM_DIR"] ?? "\(NSHomeDirectory())/work/apple/models/minilm"
+
+// ---- load vocab.txt → token:id ----
+guard let vocabText = try? String(contentsOfFile: "\(modelDir)/vocab.txt", encoding: .utf8) else {
+    die("vault-rag: vocab.txt not found in \(modelDir) — run bin/build-minilm.sh first")
+}
+var vocab: [String: Int] = [:]
+for (i, line) in vocabText.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+    vocab[String(line)] = i
+}
+let clsId = vocab["[CLS]"] ?? 101, sepId = vocab["[SEP]"] ?? 102
+let padId = vocab["[PAD]"] ?? 0, unkId = vocab["[UNK]"] ?? 100
+
+// ---- load / compile the CoreML model (cache the compiled .mlmodelc) ----
+let fmgr = FileManager.default
+let pkgURL = URL(fileURLWithPath: "\(modelDir)/MiniLM.mlpackage")
+let compiledURL = URL(fileURLWithPath: "\(cacheDir)/MiniLM.mlmodelc")
+func mtime(_ p: String) -> Date { (try? fmgr.attributesOfItem(atPath: p)[.modificationDate] as? Date) ?? Date.distantPast }
+var needCompile = !fmgr.fileExists(atPath: compiledURL.path)
+if !needCompile { needCompile = mtime(compiledURL.path) < mtime(pkgURL.path) }
+if needCompile {
+    guard fmgr.fileExists(atPath: pkgURL.path) else {
+        die("vault-rag: MiniLM.mlpackage not found in \(modelDir) — run bin/build-minilm.sh first")
+    }
+    guard let tmp = try? MLModel.compileModel(at: pkgURL) else { die("vault-rag: model compile failed") }
+    try? fmgr.removeItem(at: compiledURL)
+    try? fmgr.copyItem(at: tmp, to: compiledURL)
+}
+let cfg = MLModelConfiguration(); cfg.computeUnits = .all
+guard let model = try? MLModel(contentsOf: compiledURL, configuration: cfg) else {
+    die("vault-rag: could not load model from \(compiledURL.path)")
 }
 
-// ---- embedding: vector for a chunk; average sentence vectors if needed ----
+// ---- WordPiece tokenizer (bert-base-uncased: lowercase, split punctuation) ----
+func wordpiece(_ token: String) -> [Int] {
+    if let id = vocab[token] { return [id] }
+    let chars = Array(token); var ids: [Int] = []; var start = 0
+    while start < chars.count {
+        var end = chars.count; var cur: Int? = nil
+        while start < end {
+            let sub = (start > 0 ? "##" : "") + String(chars[start..<end])
+            if let id = vocab[sub] { cur = id; break }
+            end -= 1
+        }
+        guard let c = cur else { return [unkId] }
+        ids.append(c); start = end
+    }
+    return ids
+}
+func tokenize(_ text: String) -> [Int] {
+    var basic: [String] = []; var word = ""
+    for ch in text.lowercased() {
+        if ch.isWhitespace {
+            if !word.isEmpty { basic.append(word); word = "" }
+        } else if !(ch.isLetter || ch.isNumber) {
+            if !word.isEmpty { basic.append(word); word = "" }
+            basic.append(String(ch))
+        } else { word.append(ch) }
+    }
+    if !word.isEmpty { basic.append(word) }
+    var ids = [clsId]
+    outer: for b in basic {
+        for id in wordpiece(b) {
+            if ids.count >= SEQ - 1 { break outer }
+            ids.append(id)
+        }
+    }
+    ids.append(sepId)
+    return ids
+}
+
+// ---- embed one text → L2-normalized mean-pooled 384-dim vector ----
 func embed(_ text: String) -> [Double]? {
-    if let v = emb.vector(for: text) { return v }
-    // NLEmbedding can balk at very long input — retry on a truncated head.
-    // (No per-sentence averaging: that pegged multiple cores for ~95s cold.)
-    return emb.vector(for: String(text.prefix(600)))
+    let ids = tokenize(text)
+    guard let idArr = try? MLMultiArray(shape: [1, NSNumber(value: SEQ)], dataType: .int32),
+          let mkArr = try? MLMultiArray(shape: [1, NSNumber(value: SEQ)], dataType: .int32) else { return nil }
+    let idp = idArr.dataPointer.bindMemory(to: Int32.self, capacity: SEQ)
+    let mkp = mkArr.dataPointer.bindMemory(to: Int32.self, capacity: SEQ)
+    for i in 0..<SEQ {
+        if i < ids.count { idp[i] = Int32(ids[i]); mkp[i] = 1 }
+        else { idp[i] = Int32(padId); mkp[i] = 0 }
+    }
+    guard let prov = try? MLDictionaryFeatureProvider(dictionary: ["input_ids": idArr, "attention_mask": mkArr]),
+          let out = try? model.prediction(from: prov),
+          let hs = out.featureValue(for: "hidden_states")?.multiArrayValue else { return nil }
+    // hs shape [1, SEQ, DIM]; offset = t*DIM + d
+    var vec = [Double](repeating: 0, count: DIM)
+    let realCount = min(ids.count, SEQ)
+    if hs.dataType == .float32 {
+        let p = hs.dataPointer.bindMemory(to: Float32.self, capacity: SEQ * DIM)
+        for t in 0..<realCount { let base = t * DIM; for d in 0..<DIM { vec[d] += Double(p[base + d]) } }
+    } else {
+        for t in 0..<realCount { for d in 0..<DIM { vec[d] += hs[[0, NSNumber(value: t), NSNumber(value: d)]].doubleValue } }
+    }
+    let n = Double(max(realCount, 1))
+    for d in 0..<DIM { vec[d] /= n }
+    let norm = sqrt(vec.reduce(0) { $0 + $1 * $1 })
+    if norm > 0 { for d in 0..<DIM { vec[d] /= norm } }
+    return vec
 }
-func cosine(_ a: [Double], _ b: [Double]) -> Double {
-    let n = min(a.count, b.count); if n == 0 { return 0 }
-    var d = 0.0, na = 0.0, nb = 0.0
-    for i in 0..<n { d += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i] }
-    return (na == 0 || nb == 0) ? 0 : d / (sqrt(na) * sqrt(nb))
+func cosine(_ a: [Double], _ b: [Double]) -> Double {   // both L2-normalized → dot product
+    let n = min(a.count, b.count); var d = 0.0
+    for i in 0..<n { d += a[i] * b[i] }
+    return d
 }
 
-// ---- chunking: header-aware sections (a Markdown heading + its body, up to the
-// next heading). This keeps "## What is ASObjC" attached to its explanation so a
-// "what is ASObjC" query matches the whole section, not a stray header or code line.
-// Over-long sections are split by line accumulation; tiny ones are dropped.
+// ---- chunking: header-aware sections (heading + body up to the next heading) ----
 func chunks(_ body: String) -> [String] {
-    var out: [String] = []
-    var cur: [String] = []
+    var out: [String] = []; var cur: [String] = []
     func flush() {
-        let s = cur.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-        cur = []
+        let s = cur.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines); cur = []
         if s.count < 40 { return }
         if s.count <= 1600 { out.append(s); return }
         var piece = ""
@@ -71,7 +157,7 @@ func chunks(_ body: String) -> [String] {
         if piece.count >= 40 { out.append(piece) }
     }
     for ln in body.components(separatedBy: "\n") {
-        if ln.hasPrefix("#") { flush() }   // a heading starts a new section
+        if ln.hasPrefix("#") { flush() }
         cur.append(ln)
     }
     flush()
@@ -81,51 +167,42 @@ func chunks(_ body: String) -> [String] {
 // ---- cache ----
 struct CachedChunk: Codable { let text: String; let vec: [Double] }
 struct CachedFile: Codable { let mtime: Double; let chunks: [CachedChunk] }
-let cacheDir = NSHomeDirectory() + "/.cache/apple"
-let cachePath = cacheDir + "/vault-rag-cache-v2.json"   // v2 = header-aware section chunks
-try? FileManager.default.createDirectory(atPath: cacheDir, withIntermediateDirectories: true)
+let cachePath = cacheDir + "/vault-rag-cache-v3.json"   // v3 = MiniLM 384-dim
 var cache: [String: CachedFile] = [:]
-if let d = FileManager.default.contents(atPath: cachePath),
+if let d = fmgr.contents(atPath: cachePath),
    let c = try? JSONDecoder().decode([String: CachedFile].self, from: d) { cache = c }
 
-// ---- walk the root for matching files ----
-let fm = FileManager.default
-guard let en = fm.enumerator(atPath: root) else { die("cannot read root: \(root)") }
+// ---- walk + build/refresh ----
+guard let en = fmgr.enumerator(atPath: root) else { die("cannot read root: \(root)") }
 var files: [String] = []
-for case let rel as String in en {
-    let ext = (rel as NSString).pathExtension.lowercased()
-    if exts.contains(ext) { files.append(rel) }
+for case let rel as String in en where exts.contains((rel as NSString).pathExtension.lowercased()) {
+    files.append(rel)
 }
-
-// ---- build/refresh chunk vectors (only re-embed changed files) ----
 struct Hit { let score: Double; let rel: String; let text: String }
 var dirty = false
-var allChunks: [(rel: String, text: String, vec: [Double])] = []
+var all: [(rel: String, text: String, vec: [Double])] = []
 for rel in files {
     let abs = root + "/" + rel
-    let attrs = try? fm.attributesOfItem(atPath: abs)
-    let mtime = (attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-    if let cf = cache[abs], cf.mtime == mtime {
-        for ch in cf.chunks { allChunks.append((rel, ch.text, ch.vec)) }
+    let mt = (try? fmgr.attributesOfItem(atPath: abs)[.modificationDate] as? Date)??.timeIntervalSince1970 ?? 0
+    if let cf = cache[abs], cf.mtime == mt {
+        for ch in cf.chunks { all.append((rel, ch.text, ch.vec)) }
         continue
     }
     guard let body = try? String(contentsOfFile: abs, encoding: .utf8) else { continue }
-    var cfChunks: [CachedChunk] = []
+    var cfc: [CachedChunk] = []
     for ch in chunks(body) {
-        guard let v = embed(ch) else { continue }
-        cfChunks.append(CachedChunk(text: ch, vec: v))
-        allChunks.append((rel, ch, v))
+        let flat = ch.replacingOccurrences(of: "\n", with: " ")
+        guard let v = embed(flat) else { continue }
+        cfc.append(CachedChunk(text: ch, vec: v)); all.append((rel, ch, v))
     }
-    cache[abs] = CachedFile(mtime: mtime, chunks: cfChunks)
-    dirty = true
+    cache[abs] = CachedFile(mtime: mt, chunks: cfc); dirty = true
 }
 if dirty, let d = try? JSONEncoder().encode(cache) { try? d.write(to: URL(fileURLWithPath: cachePath)) }
 
 // ---- rank ----
 guard let qv = embed(query) else { die("could not embed query") }
-let ranked = allChunks.map { Hit(score: cosine(qv, $0.vec), rel: $0.rel, text: $0.text) }
-    .sorted { $0.score > $1.score }
-    .prefix(top)
+let ranked = all.map { Hit(score: cosine(qv, $0.vec), rel: $0.rel, text: $0.text) }
+    .sorted { $0.score > $1.score }.prefix(top)
 
 if asJSON {
     let arr = ranked.map { ["score": $0.score, "file": $0.rel, "text": $0.text] as [String: Any] }
@@ -133,9 +210,5 @@ if asJSON {
         print(String(data: d, encoding: .utf8) ?? "[]")
     }
 } else {
-    for h in ranked {
-        print(String(format: "[%.3f] %@", h.score, h.rel))
-        print(h.text)
-        print("\n---\n")
-    }
+    for h in ranked { print(String(format: "[%.3f] %@", h.score, h.rel)); print(h.text); print("\n---\n") }
 }
