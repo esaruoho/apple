@@ -1611,11 +1611,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     @objc func exportMarkdown() {
         guard !messages.isEmpty else { NSSound.beep(); return }
         // Save into the session's own folder — right beside the conversation —
-        // then open it. No Save dialog.
+        // then highlight it in Finder. No Save dialog, no opening it.
         let url = store.dir.appendingPathComponent("chat-\(store.stamp).md")
         do {
             try conversationMarkdown().data(using: .utf8)?.write(to: url)
-            NSWorkspace.shared.open(url)   // default Markdown viewer (Preview can't render .md)
+            NSWorkspace.shared.activateFileViewerSelecting([url])   // highlight in Finder
         } catch { exportAlert("Couldn't save the Markdown file: \(error.localizedDescription)") }
     }
 
