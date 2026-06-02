@@ -1252,35 +1252,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     func buildMenu() {
         let mainMenu = NSMenu()
 
-        let appItem = NSMenuItem()
-        mainMenu.addItem(appItem)
+        // ── App menu ──
+        let appItem = NSMenuItem(); mainMenu.addItem(appItem)
         let appMenu = NSMenu()
         appMenu.addItem(NSMenuItem(title: "About FoundationModels Chat",
                                    action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
         appMenu.addItem(.separator())
-        let nc = NSMenuItem(title: "New Chat", action: #selector(newChatMenu), keyEquivalent: "n")
-        nc.target = self
-        appMenu.addItem(nc)
+        appMenu.addItem(NSMenuItem(title: "Hide FoundationModels Chat",
+                                   action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
         appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        appMenu.addItem(NSMenuItem(title: "Quit FoundationModels Chat",
+                                   action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         appItem.submenu = appMenu
 
-        let editItem = NSMenuItem()
-        mainMenu.addItem(editItem)
+        // ── File menu — New Chat (⌘N) lives here; Close (⌘W) now works ──
+        let fileItem = NSMenuItem(); mainMenu.addItem(fileItem)
+        let fileMenu = NSMenu(title: "File")
+        let nc = NSMenuItem(title: "New Chat", action: #selector(newChatMenu), keyEquivalent: "n")
+        nc.target = self
+        fileMenu.addItem(nc)
+        fileMenu.addItem(.separator())
+        // performClose: routes up the responder chain to the key window.
+        fileMenu.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        fileItem.submenu = fileMenu
+
+        // ── Edit menu — so ⌘Z/⌘C/⌘V/⌘A work in the input field ──
+        let editItem = NSMenuItem(); mainMenu.addItem(editItem)
         let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(redo)
+        editMenu.addItem(.separator())
         editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
         editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = editMenu
 
-        let connItem = NSMenuItem()
-        mainMenu.addItem(connItem)
+        // ── Connect menu (kept) ──
+        let connItem = NSMenuItem(); mainMenu.addItem(connItem)
         let connMenu = NSMenu(title: "Connect")
         let c = NSMenuItem(title: "Connect to a Mac…", action: #selector(connectToMac), keyEquivalent: "k")
         c.target = self
         connMenu.addItem(c)
         connItem.submenu = connMenu
+
+        // ── Window menu — Minimize (⌘M), Zoom, standard window list ──
+        let winItem = NSMenuItem(); mainMenu.addItem(winItem)
+        let winMenu = NSMenu(title: "Window")
+        winMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        winMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        winItem.submenu = winMenu
+        NSApp.windowsMenu = winMenu
 
         NSApp.mainMenu = mainMenu
     }
