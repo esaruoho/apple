@@ -1,4 +1,4 @@
-# CLI Tools Index — 169 tools in bin/
+# CLI Tools Index — 184 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -25,6 +25,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-report` — (no description) — `bin/apple-report`
 `apple-semantic-match` — find MEANING-similar text on-device, no deps. — `bin/apple-semantic-match`
 `apple-sentiment` — Apple-native sentence sentiment scorer. — `bin/apple-sentiment`
+`apple-sentiment-cache` — (no description) — `bin/apple-sentiment-cache`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
@@ -34,6 +35,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `avs-prefs-write.py` — (no description) — `bin/avs-prefs-write.py`
 `backup-mailbox` — (no description) — `bin/backup-mailbox`
 `batch-import.sh` — Import all .shortcut files into Shortcuts.app — `bin/batch-import.sh`
+`bbs-to-eml` — (no description) — `bin/bbs-to-eml`
 `bootstrap-hey-sal.sh` — ONE-COMMAND install of the Hey Sal × Paketti stack. — `bin/bootstrap-hey-sal.sh`
 `bridge-doctor` — (no description) — `bin/bridge-doctor`
 `build-delete-now-shortcut.py` — (no description) — `bin/build-delete-now-shortcut.py`
@@ -65,13 +67,17 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `disk-overview` — (no description) — `bin/disk-overview`
 `dock` — (no description) — `bin/dock`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
+`doi-harvest` — (no description) — `bin/doi-harvest`
 `embed` — (no description) — `bin/embed`
+`eml-to-views` — (no description) — `bin/eml-to-views`
 `eppc-auth` — (no description) — `bin/eppc-auth`
 `eppc-probe` — (no description) — `bin/eppc-probe`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
+`file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `fleet` — (no description) — `bin/fleet`
 `fm` — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps. — `bin/fm`
 `fm-chat` — (no description) — `bin/fm-chat`
+`fm-converse` — (no description) — `bin/fm-converse`
 `fm-submit` — (no description) — `bin/fm-submit`
 `fm-worker` — (no description) — `bin/fm-worker`
 `folder-wordcloud` — bounded word-cloud for a folder, backing the "Word Cloud" — `bin/folder-wordcloud`
@@ -98,19 +104,24 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
 `mailgraph` — (no description) — `bin/mailgraph`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
+`merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
+`merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `ner-graph` — (no description) — `bin/ner-graph`
 `ner-graph-svg` — (no description) — `bin/ner-graph-svg`
 `notify-iphone` — (no description) — `bin/notify-iphone`
 `ocr-pdf-rebuild` — (no description) — `bin/ocr-pdf-rebuild`
+`ocr-triage` — (no description) — `bin/ocr-triage`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
+`pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
 `probe-vocal-shortcuts.sh` — Probe where Vocal Shortcuts stores its phrase→Shortcut mappings. — `bin/probe-vocal-shortcuts.sh`
 `process` — Send a local media file (or URL) to the Cloudcity whisp pipeline. — `bin/process`
 `process-router` — Dispatch a 'process'-tagged file to the right worker. — `bin/process-router`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
+`rtfc` — Rich Text For Clipboard. Take a markdown file (or stdin), strip — `bin/rtfc`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`
 `sal-archive-status.py` — (no description) — `bin/sal-archive-status.py`
 `sal-discover-interviews.py` — (no description) — `bin/sal-discover-interviews.py`
@@ -131,6 +142,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
+`sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
@@ -156,6 +168,9 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `thought-archive.py` — (no description) — `bin/thought-archive.py`
 `toolbox-goto` — open AppleToolbox --live at a given folder. — `bin/toolbox-goto`
 `transcribe-bench` — (no description) — `bin/transcribe-bench`
+`va` — short-cut for "vault-ask against merlib-dump, free on-device synthesis". — `bin/va`
+`va-batch` — run a list of questions through vault-ask, concatenate the answers — `bin/va-batch`
+`vault-ask` — (no description) — `bin/vault-ask`
 `vault-cluster` — (no description) — `bin/vault-cluster`
 `vault-consilience` — (no description) — `bin/vault-consilience`
 `vault-distill` — (no description) — `bin/vault-distill`
