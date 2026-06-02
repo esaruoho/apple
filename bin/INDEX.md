@@ -1,4 +1,4 @@
-# CLI Tools Index — 184 tools in bin/
+# CLI Tools Index — 189 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -15,6 +15,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-grand-export` — run every bulk exporter in one pass. — `bin/apple-grand-export`
 `apple-grand-search` — unified search across every exporter vault. — `bin/apple-grand-search`
 `apple-image-similar` — find visually similar / duplicate images on-device, no deps. — `bin/apple-image-similar`
+`apple-intent` — natural language → an Apple-skill action, via on-device ML — `bin/apple-intent`
 `apple-keywords` — the "useful words, no junk" extractor. Apple-native, no deps. — `bin/apple-keywords`
 `apple-lang` — Apple-native language detector. — `bin/apple-lang`
 `apple-lemma` — Apple-native lemma extractor. — `bin/apple-lemma`
@@ -29,6 +30,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`
@@ -128,6 +130,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
+`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -135,6 +138,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
+`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
@@ -144,6 +148,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
+`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`

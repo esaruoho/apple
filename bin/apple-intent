@@ -1,0 +1,135 @@
+#!/usr/bin/env swift
+// apple-intent — natural language → an Apple-skill action, via on-device ML
+// embeddings. The NON-TAHOE twin of `fm`'s tool-routing: NO FoundationModels,
+// no LLM, no Mini required to DECIDE. It embeds what you type with Apple's
+// NLEmbedding (built into every Mac since macOS 10.15), cosine-matches it
+// against the `apple-do` capability registry, and runs the closest one.
+//
+//   apple-intent "how warm is it at home"      → runs:  apple-do home
+//   apple-intent "what time is it"              → runs:  apple-do now
+//   apple-intent "find my notes about asobjc"   → runs:  apple-do search "find my notes about asobjc"
+//   apple-intent --dry-run "is the mini busy"   → prints the match, runs nothing
+//   apple-intent --top 3 "..."                  → show the ranked matches + scores
+//
+// Why embeddings and not keywords: "how warm is it indoors" has no word in common
+// with "temperature/humidity" yet maps to `home`. Meaning, not string overlap.
+//
+// Apple-native: NaturalLanguage only. No Homebrew, no pip, no network to match.
+import Foundation
+import NaturalLanguage
+
+struct Intent { let action: String; let needsArg: Bool; let desc: String; let examples: [String] }
+
+// The catalog mirrors apple-do's caps(). Each action carries a few natural
+// phrasings; an action's score is its best-matching phrasing. Add a phrasing
+// here whenever a real query misses — that's how this gets smarter.
+let CATALOG: [Intent] = [
+  Intent(action: "home", needsArg: false, desc: "temperature + humidity at home", examples: [
+    "what's the temperature at home", "home temperature and humidity", "how warm is it at home",
+    "how humid is it at home", "how cold is it inside", "what's the climate at home", "room temperature"]),
+  Intent(action: "now", needsArg: false, desc: "current date, time, weekday", examples: [
+    "what time is it", "what's the time", "what is today's date", "what day is it today",
+    "current date and time", "what's the day today"]),
+  Intent(action: "fleet", needsArg: false, desc: "status of the Mini's workers", examples: [
+    "is the mini busy", "fleet status", "are the workers running", "is ocr running right now",
+    "what is the mini doing", "are the services alive", "status of the background workers"]),
+  Intent(action: "spotlight", needsArg: true, desc: "find files by name (Spotlight)", examples: [
+    "find a file named", "search for a file called", "locate the document", "where is the file",
+    "find the file on disk", "open the file named"]),
+  Intent(action: "search", needsArg: true, desc: "semantic search of your notes", examples: [
+    "search my notes about", "find my notes on", "what did i write about", "semantic search for",
+    "look in my notes for", "find notes mentioning", "what do my notes say about"]),
+  Intent(action: "ocr", needsArg: true, desc: "extract text from a PDF/image (Vision)", examples: [
+    "extract text from this pdf", "read this image", "ocr this file", "get the text out of this pdf",
+    "what does this scanned document say", "transcribe this screenshot"]),
+]
+
+// ── args ──
+var args = Array(CommandLine.arguments.dropFirst())
+let dryRun = args.contains("--dry-run"); args.removeAll { $0 == "--dry-run" }
+let showJSON = args.contains("--json"); args.removeAll { $0 == "--json" }
+func opt(_ n: String) -> String? {
+    guard let i = args.firstIndex(of: n), i + 1 < args.count else { return nil }
+    let v = args[i + 1]; args.remove(at: i + 1); args.remove(at: i); return v
+}
+let topN = max(1, Int(opt("--top") ?? "1") ?? 1)
+let threshold = Double(opt("--threshold") ?? "0.45") ?? 0.45
+let query = args.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+
+func die(_ s: String, _ code: Int32 = 1) -> Never {
+    FileHandle.standardError.write((s + "\n").data(using: .utf8)!); exit(code)
+}
+guard !query.isEmpty else {
+    die("usage: apple-intent [--dry-run] [--top N] [--threshold X] \"what you want\"", 2)
+}
+guard let emb = NLEmbedding.sentenceEmbedding(for: .english) else {
+    die("no on-device sentence-embedding model (needs macOS 10.15+).")
+}
+
+func vec(_ s: String) -> [Double]? { emb.vector(for: s.lowercased()) }
+@inline(__always) func cosine(_ a: [Double], _ b: [Double]) -> Double {
+    var d = 0.0, na = 0.0, nb = 0.0
+    for i in 0..<a.count { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i] }
+    return (na == 0 || nb == 0) ? 0 : d / (sqrt(na) * sqrt(nb))
+}
+
+guard let qv = vec(query) else { die("couldn't embed the query (try different words).") }
+
+// Each action scores as its best-matching example phrasing.
+struct Scored { let intent: Intent; let score: Double; let via: String }
+var scored: [Scored] = []
+for intent in CATALOG {
+    var best = -1.0, bestVia = ""
+    for ex in intent.examples {
+        guard let ev = vec(ex) else { continue }
+        let c = cosine(qv, ev)
+        if c > best { best = c; bestVia = ex }
+    }
+    scored.append(Scored(intent: intent, score: best, via: bestVia))
+}
+scored.sort { $0.score > $1.score }
+
+if showJSON {
+    let arr = scored.prefix(topN).map {
+        "{\"action\":\"\($0.intent.action)\",\"score\":\(String(format: "%.4f", $0.score)),\"via\":\"\($0.via)\"}"
+    }
+    print("[\(arr.joined(separator: ","))]"); exit(0)
+}
+
+guard let top = scored.first else { die("no match.") }
+
+if top.score < threshold {
+    print("apple-intent: not confident which action fits \"\(query)\" (best \(String(format: "%.2f", top.score))).")
+    print("did you mean one of:")
+    for s in scored.prefix(3) {
+        print(String(format: "  %-10s %.2f  — %@", (s.intent.action as NSString).utf8String!, s.score, s.intent.desc))
+    }
+    exit(3)
+}
+
+// Report the match (always), then run it (unless --dry-run).
+if topN > 1 || dryRun {
+    print("match: \(top.intent.action)  (\(String(format: "%.2f", top.score)))  — \(top.intent.desc)")
+    if topN > 1 {
+        for s in scored.dropFirst().prefix(topN - 1) {
+            print(String(format: "   alt: %-10s %.2f  — %@", (s.intent.action as NSString).utf8String!, s.score, s.intent.desc))
+        }
+    }
+}
+if dryRun {
+    if top.intent.needsArg { print("would run: apple-do \(top.intent.action) \"\(query)\"") }
+    else { print("would run: apple-do \(top.intent.action)") }
+    exit(0)
+}
+
+// Run it via apple-do (same dir as this script). Arg actions get the full query
+// — apple-do's own tool decides what to do with it (search/ocr take it whole).
+let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent().path
+let doPath = here + "/apple-do"
+guard FileManager.default.isExecutableFile(atPath: doPath) else { die("apple-do not found next to apple-intent at \(doPath)") }
+let p = Process()
+p.executableURL = URL(fileURLWithPath: doPath)
+p.arguments = top.intent.needsArg ? [top.intent.action, query] : [top.intent.action]
+do { try p.run() } catch { die("couldn't run apple-do: \(error.localizedDescription)") }
+p.waitUntilExit()
+exit(p.terminationStatus)
