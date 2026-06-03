@@ -37,4 +37,7 @@ expect "hide all icons on desktop" desktop
 expect "clean up my desktop"       desktop
 expect "hide the dock"             dock
 expect "auto-hide the dock"        dock
+expect "toggle dark mode"          dark
+expect "how much disk space"       disk
+expect "sleep the display"         sleep
 [ $fail -eq 0 ] && { echo; echo "✅ ALL INTENT-ROUTING TESTS PASS"; } || { echo; echo "❌ routing failures"; exit 1; }

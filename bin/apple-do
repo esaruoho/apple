@@ -27,6 +27,9 @@ caps() {
 "lock	lock the screen" \
 "desktop	hide/show all Desktop icons — apple-do desktop [show]" \
 "dock	hide the Dock (auto-hide) or show it — apple-do dock [show]" \
+"dark	toggle dark / light mode" \
+"sleep	put the display to sleep" \
+"disk	disk space overview" \
 "fleet	live status of the Mini's workers (heartbeats)" \
 "spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
 "search	semantic search of your notes (MiniLM, on the Mini) — apple-do search <query>" \
@@ -59,6 +62,12 @@ case "$cap" in
       && echo "Screen locked." || echo "lock: couldn't lock the screen." ;;
   desktop) exec "$HERE/desktop-icons" "$@" ;;
   dock)    exec "$HERE/dock-autohide" "$@" ;;
+  dark)
+    osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to not dark mode' 2>/dev/null
+    m=$(osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode' 2>/dev/null)
+    [ "$m" = "true" ] && echo "Dark mode ON." || echo "Light mode ON." ;;
+  sleep)  pmset displaysleepnow 2>/dev/null && echo "Display asleep." || echo "sleep: couldn't sleep the display." ;;
+  disk)   exec "$HERE/disk-overview" ;;
   fleet)
     q="$HOME/work/comms/queue"; nowS=$(date +%s)
     for hb in "$q"/*-heartbeat.json; do
