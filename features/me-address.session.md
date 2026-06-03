@@ -35,8 +35,14 @@ Two problems, both fixed here:
 ## Honest status
 
 - Routing is `@verified` (headless test passes).
-- The actual address fetch is `@built @untested`: reading Contacts via AppleScript needs
-  a **one-time Automation→Contacts permission grant**, which is a GUI prompt this
-  background shell can't answer (my test hit a 20s timeout waiting on it). When Esa runs
-  it from the command bar (or a terminal) and allows the prompt once, it returns
-  Inkiväärikuja 6 B 20. Graded honestly rather than claimed working.
+- The address fetch is `@built` and **hand-verified 2026-06-03** — returns
+  `Inkiväärikuja 6 B 20 …` cold + warm. Three bugs were found and fixed on the way:
+  1. `osascript - "$OWNER"` (passing the name as argv) is the wrong invocation for a
+     stdin heredoc → parse failure. Fix: pass the name via env + `system attribute`.
+  2. `system attribute` was placed INSIDE `tell application "Contacts"`, so it got
+     dispatched to Contacts (which ignores it) and returned empty → name fallback never
+     fired. Fix: read it at top level, before the tell block.
+  3. Contacts AppleScript queries need Contacts.app running, else `-600`. Fix: launch it
+     hidden+background (`open -gja`, no window/focus steal) when not already up.
+- No "me" card was set; the **name fallback** (`id -F` → "Esa Ruoho", matched against
+  "Esa Juhani Ruoho") is what made it work without Esa configuring anything.

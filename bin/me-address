@@ -8,41 +8,60 @@
 # FEATURE-CARD >> features/me-address.feature
 set -uo pipefail
 
-OWNER="${APPLE_OWNER:-$(id -F 2>/dev/null || true)}"
+# Pass the owner name to AppleScript via the environment (read with `system
+# attribute`) — a stdin heredoc script can't take `on run argv` arguments.
+export APPLE_OWNER_NAME="${APPLE_OWNER:-$(id -F 2>/dev/null || echo '')}"
 
-osascript - "$OWNER" <<'OSA' 2>/dev/null
-on run argv
-  set ownerName to item 1 of argv
-  tell application "Contacts"
-    set theCard to missing value
-    try
-      set theCard to my card
-    end try
-    if theCard is missing value and ownerName is not "" then
-      set ws to words of ownerName
-      if (count of ws) ≥ 1 then
-        set f to item 1 of ws
-        set l to item -1 of ws
-        set hits to (every person whose name contains f and name contains l)
-        if (count of hits) > 0 then set theCard to item 1 of hits
-      end if
+# Contacts AppleScript queries need Contacts.app running, else -600. Launch it
+# HIDDEN + in the BACKGROUND (open -gj: no window, no focus steal) if it isn't
+# already up. Only wait when we actually had to start it.
+if ! pgrep -xq Contacts 2>/dev/null; then
+  open -gja Contacts 2>/dev/null || true
+  sleep 1
+fi
+
+out=$(osascript <<'OSA' 2>/dev/null
+-- read the env var at TOP LEVEL — inside `tell application "Contacts"` the
+-- `system attribute` command would be dispatched to Contacts (which ignores it).
+set ownerName to ""
+try
+  set ownerName to (system attribute "APPLE_OWNER_NAME")
+end try
+tell application "Contacts"
+  set theCard to missing value
+  try
+    set theCard to my card
+  end try
+  if theCard is missing value and ownerName is not "" then
+    set ws to words of ownerName
+    if (count of ws) is greater than 0 then
+      set f to item 1 of ws
+      set l to item -1 of ws
+      set hits to (every person whose name contains f and name contains l)
+      if (count of hits) > 0 then set theCard to item 1 of hits
     end if
-    if theCard is missing value then
-      return "No \"me\" card set and no contact matched \"" & ownerName & "\". In Contacts: select your card ▸ Card ▸ Make This My Card."
-    end if
-    set addrs to addresses of theCard
-    if (count of addrs) is 0 then return "That contact card has no postal address."
-    set chosen to missing value
-    repeat with a in addrs
-      if (label of a) is "home" then set chosen to a
-    end repeat
-    if chosen is missing value then set chosen to item 1 of addrs
-    return formatted address of chosen
-  end tell
-end run
+  end if
+  if theCard is missing value then return "NOCARD:" & ownerName
+  set addrs to addresses of theCard
+  if (count of addrs) is 0 then return "NOADDR"
+  set chosen to missing value
+  repeat with a in addrs
+    if (label of a) is "home" then set chosen to a
+  end repeat
+  if chosen is missing value then set chosen to item 1 of addrs
+  return formatted address of chosen
+end tell
 OSA
+)
 rc=$?
+
 if [ $rc -ne 0 ]; then
   echo "me-address: couldn't read Contacts (allow Automation access to Contacts, then retry)."
   exit $rc
 fi
+case "$out" in
+  NOCARD:*) echo "No \"me\" card set and no contact matched \"${out#NOCARD:}\". In Contacts: select your card ▸ Card ▸ Make This My Card." ;;
+  NOADDR)   echo "That contact card has no postal address." ;;
+  "")       echo "me-address: Contacts returned nothing." ;;
+  *)        printf '%s\n' "$out" ;;
+esac

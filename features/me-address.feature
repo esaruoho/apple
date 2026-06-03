@@ -46,15 +46,17 @@ Feature: Home address from the Contacts me-card
     Then the matched action is `home` (climate), unaffected by the new intent
     # cite: bin/apple-intent CATALOG "home" intent (~26); test shared/test-intent-routing.sh
 
-  @built @untested
+  @built
   Scenario: The address resolves from the me-card, or by name if none is set
     Given Contacts has either a "me" card OR a contact matching the account full name
     When `apple-do address` runs
     Then it returns the home-labelled postal address (falling back to the first address)
     And if no "me" card is designated it finds the contact whose name contains the first
       and last word of `id -F` (e.g. "Esa Ruoho" → matches "Esa Juhani Ruoho")
-    # cite: bin/me-address (`my card`, else `people whose name contains f and l`); apple-do "address)"
-    # untested: needs the Automation→Contacts grant; my shell lacks it (only AppleBar has it)
+    And Contacts.app is auto-launched hidden+background (open -gj) if not running (else -600)
+    # cite: bin/me-address (pgrep guard + open -gja; `my card` else name match); apple-do "address)"
+    # hand-verified 2026-06-03: returned "Inkiväärikuja 6 B 20 …" cold + warm via the name fallback
+    # (no headless test — needs Contacts data + a permission grant; verified on the real target)
 
   @built
   Scenario: The address reads through unstyled (whitelabel passthrough)
