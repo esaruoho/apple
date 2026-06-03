@@ -13,10 +13,14 @@ import Cocoa
 import Carbon.HIToolbox
 import Speech
 import AVFoundation
+import NaturalLanguage
 
 // Path to the engine. Override with APPLE_INTENT if the repo lives elsewhere.
 let INTENT_BIN = ProcessInfo.processInfo.environment["APPLE_INTENT"]
     ?? "/Users/esaruoho/work/apple/bin/apple-intent"
+// The shared capability catalog (same file apple-intent routes over).
+let INTENTS_JSON = (INTENT_BIN as NSString).deletingLastPathComponent
+    .replacingOccurrences(of: "/bin", with: "/shared") + "/intents.json"
 
 /// A borderless panel that will accept key focus so the text field is typable.
 final class CommandPanel: NSPanel {
@@ -39,6 +43,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     // re-roll. AppleBar just wires its callbacks to the text field + mic button.
     let dictation = OnDeviceDictation()
 
+    // Spotlight-style live suggestions, ranked in-process by NLEmbedding over the
+    // shared catalog (shared/intents.json). No subprocess per keystroke.
+    struct CatItem { let action: String; let desc: String; let needsArg: Bool; let vecs: [[Double]] }
+    struct Sugg { let action: String; let desc: String; let needsArg: Bool; let score: Double }
+    let sEmb = NLEmbedding.sentenceEmbedding(for: .english)
+    var catalog: [CatItem] = []
+    var suggestions: [Sugg] = []
+    var selected = 0
+    var suggesting = false   // true while showing the suggestion list (vs a result)
+
     let panelWidth: CGFloat = 580
     let fieldRowHeight: CGFloat = 60
 
@@ -58,17 +72,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
         buildPanel()
         wireDictation()
+        loadCatalog()
         registerHotKey()
 
-        // ⌘↩ while the bar is open → rephrase the result via the LLM (FM on the Mini).
-        // Plain ↩ stays the instant template path (field.action → submit).
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             guard let self = self, self.panel.isVisible else { return e }
-            if e.keyCode == 36, e.modifierFlags.contains(.command) {   // 36 = Return
-                self.runQuery(speak: true); return nil
+            // ⌘↩ → rephrase the result via the LLM (FM on the Mini)
+            if e.keyCode == 36, e.modifierFlags.contains(.command) { self.runQuery(speak: true); return nil }
+            // ↑/↓ → move through the live suggestions (Spotlight-style)
+            if self.suggesting, !self.suggestions.isEmpty {
+                if e.keyCode == 125 { self.selected = min(self.selected + 1, self.suggestions.count - 1); self.renderSuggestions(); return nil } // ↓
+                if e.keyCode == 126 { self.selected = max(self.selected - 1, 0); self.renderSuggestions(); return nil }                          // ↑
             }
             return e
         }
+    }
+
+    // ── catalog: load shared/intents.json + embed every example once ──
+    func loadCatalog() {
+        guard let emb = sEmb,
+              let data = FileManager.default.contents(atPath: INTENTS_JSON),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let arr = obj["intents"] as? [[String: Any]] else { return }
+        catalog = arr.compactMap { d in
+            guard let a = d["action"] as? String, let ex = d["examples"] as? [String] else { return nil }
+            let vecs = ex.compactMap { emb.vector(for: $0.lowercased()) }
+            return CatItem(action: a, desc: (d["desc"] as? String) ?? a,
+                           needsArg: (d["needsArg"] as? Bool) ?? false, vecs: vecs)
+        }
+    }
+
+    func cosine(_ a: [Double], _ b: [Double]) -> Double {
+        var d = 0.0, na = 0.0, nb = 0.0
+        for i in 0..<min(a.count, b.count) { d += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i] }
+        return (na == 0 || nb == 0) ? 0 : d/(sqrt(na)*sqrt(nb))
+    }
+
+    func rank(_ text: String) {
+        guard let emb = sEmb, let qv = emb.vector(for: text.lowercased()) else { suggestions = []; return }
+        suggestions = catalog.map { item -> Sugg in
+            let best = item.vecs.map { cosine(qv, $0) }.max() ?? 0
+            return Sugg(action: item.action, desc: item.desc, needsArg: item.needsArg, score: best)
+        }.sorted { $0.score > $1.score }
+        if suggestions.count > 6 { suggestions = Array(suggestions.prefix(6)) }
+        selected = 0
     }
 
     // ── the panel ──
@@ -134,7 +181,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 
     @objc func showPanel() {
-        // center on the screen with the mouse / key window
+        collapseBody()              // open clean: just the field, no stale result/suggestions
+        field.stringValue = ""
         let screen = NSScreen.main ?? NSScreen.screens.first
         if let vf = screen?.visibleFrame {
             let x = vf.midX - panel.frame.width / 2
@@ -144,7 +192,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(field)
-        field.currentEditor()?.selectAll(nil)
+    }
+
+    // Shrink to just the field row (hide the body), without moving the top edge.
+    func collapseBody() {
+        suggesting = false
+        resultScroll.isHidden = true
+        let topY = panel.frame.origin.y + panel.frame.height
+        var f = panel.frame
+        f.size.height = fieldRowHeight
+        f.origin.y = topY - fieldRowHeight
+        panel.setFrame(f, display: true, animate: false)
+        field.frame = NSRect(x: 18, y: 12, width: panelWidth - 36 - 84, height: 36)
+        spinner.frame = NSRect(x: panelWidth - 80, y: 18, width: 22, height: 22)
+        micButton.frame = NSRect(x: panelWidth - 50, y: 13, width: 36, height: 34)
     }
 
     func togglePanel() {
@@ -159,11 +220,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         if dictation.isRunning { dictation.stop() }   // ↩/⌘↩ stops the mic, then runs what was heard
         let q = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
+        // Run the HIGHLIGHTED suggestion (Spotlight-style). For "?" converse or when
+        // there are no suggestions, pass nil → apple-intent routes/answers itself.
+        let action: String? = (suggesting && !q.hasPrefix("?") && selected < suggestions.count)
+            ? suggestions[selected].action : nil
         spinner.startAnimation(nil)
         showResult(speak ? "… (asking the model on the Mini)" : "…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let output = self.runIntent(q, speak: speak)
+            let output = self.runIntent(q, speak: speak, action: action)
             DispatchQueue.main.async {
                 self.spinner.stopAnimation(nil)
                 self.showResult(output.isEmpty ? "(no output)" : output)
@@ -171,10 +236,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         }
     }
 
-    func runIntent(_ q: String, speak: Bool) -> String {
+    func runIntent(_ q: String, speak: Bool, action: String? = nil) -> String {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: INTENT_BIN)
-        p.arguments = speak ? [q, "--speak"] : [q]
+        var a = [q]
+        if let action = action { a += ["--action", action] }
+        if speak { a += ["--speak"] }
+        p.arguments = a
         // Process() inherits a minimal PATH — apple-do shells out to date/ssh/mdfind
         // and the apple-* tools, so give it a real one.
         var env = ProcessInfo.processInfo.environment
@@ -190,28 +258,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
-    func showResult(_ text: String) {
-        resultView.string = text
-        // size the result area to the content (capped), then grow the panel + recenter.
-        let maxResultH: CGFloat = 320
-        let textH = max(28, min(maxResultH, ceil(idealHeight(of: text)) + 18))
+    // One body area shows EITHER the live suggestion list (while typing) or the
+    // result (after running). setBody sizes the panel to the content and keeps the
+    // field row pinned at the top.
+    func setBody(_ attr: NSAttributedString, maxH: CGFloat = 340) {
+        resultView.textStorage?.setAttributedString(attr)
+        let w = panelWidth - 24 - 12
+        let bound = attr.boundingRect(with: NSSize(width: w, height: .greatestFiniteMagnitude),
+                                      options: [.usesLineFragmentOrigin, .usesFontLeading])
+        let bodyH = max(28, min(maxH, ceil(bound.height) + 18))
         resultScroll.isHidden = false
-        resultScroll.frame = NSRect(x: 12, y: 10, width: panelWidth - 24, height: textH)
-        resultView.frame = NSRect(x: 0, y: 0, width: panelWidth - 24, height: textH)
+        resultScroll.frame = NSRect(x: 12, y: 10, width: panelWidth - 24, height: bodyH)
+        resultView.frame = NSRect(x: 0, y: 0, width: panelWidth - 24, height: bodyH)
 
-        let total = fieldRowHeight + textH + 8
-        if let origin = panel.frame.origin as NSPoint? {
-            // keep the field row pinned at the top by lowering origin.y as it grows
-            let topY = origin.y + panel.frame.height
-            var f = panel.frame
-            f.size.height = total
-            f.origin.y = topY - total
-            panel.setFrame(f, display: true, animate: false)
-            // move field + spinner + mic to the new top
-            field.frame = NSRect(x: 18, y: total - 48, width: panelWidth - 36 - 84, height: 36)
-            spinner.frame = NSRect(x: panelWidth - 80, y: total - 42, width: 22, height: 22)
-            micButton.frame = NSRect(x: panelWidth - 50, y: total - 47, width: 36, height: 34)
+        let total = fieldRowHeight + bodyH + 8
+        let topY = panel.frame.origin.y + panel.frame.height
+        var f = panel.frame
+        f.size.height = total
+        f.origin.y = topY - total
+        panel.setFrame(f, display: true, animate: false)
+        field.frame = NSRect(x: 18, y: total - 48, width: panelWidth - 36 - 84, height: 36)
+        spinner.frame = NSRect(x: panelWidth - 80, y: total - 42, width: 22, height: 22)
+        micButton.frame = NSRect(x: panelWidth - 50, y: total - 47, width: 36, height: 34)
+    }
+
+    func showResult(_ text: String) {
+        suggesting = false
+        setBody(NSAttributedString(string: text, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+            .foregroundColor: NSColor(calibratedWhite: 0.92, alpha: 1)]))
+    }
+
+    // Spotlight-style ranked list; the selected row is highlighted. ↑/↓ move it.
+    func renderSuggestions() {
+        suggesting = true
+        let out = NSMutableAttributedString()
+        let nameFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold)
+        let descFont = NSFont.systemFont(ofSize: 12)
+        for (i, s) in suggestions.enumerated() {
+            let sel = (i == selected)
+            let row = NSMutableAttributedString(string: "\(sel ? "▸ " : "  ")\(s.action)", attributes: [
+                .font: nameFont, .foregroundColor: sel ? NSColor.white : NSColor(calibratedWhite: 0.85, alpha: 1)])
+            row.append(NSAttributedString(string: "   \(s.desc)\n", attributes: [
+                .font: descFont, .foregroundColor: NSColor(calibratedWhite: 0.6, alpha: 1)]))
+            if sel {
+                row.addAttribute(.backgroundColor,
+                                 value: NSColor(calibratedRed: 0.04, green: 0.30, blue: 0.55, alpha: 1),
+                                 range: NSRange(location: 0, length: row.length))
+            }
+            out.append(row)
         }
+        if suggestions.isEmpty {
+            out.append(NSAttributedString(string: "no matching capability", attributes: [
+                .font: descFont, .foregroundColor: NSColor.systemGray]))
+        }
+        setBody(out)
+    }
+
+    // Live suggestions as you type. "?" = converse mode → no suggestions.
+    func controlTextDidChange(_ obj: Notification) {
+        if dictation.isRunning { return }
+        let q = field.stringValue.trimmingCharacters(in: .whitespaces)
+        if q.isEmpty || q.hasPrefix("?") { resultScroll.isHidden = true; suggesting = false; return }
+        rank(q)
+        renderSuggestions()
     }
 
     // ── dictation: wire the shared OnDeviceDictation engine to the UI ──
@@ -236,15 +346,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 
     @objc func toggleDictation() { dictation.toggle() }
-
-    func idealHeight(of text: String) -> CGFloat {
-        let font = resultView.font ?? NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        let width = panelWidth - 24 - 12
-        let attr = NSAttributedString(string: text, attributes: [.font: font])
-        let r = attr.boundingRect(with: NSSize(width: width, height: .greatestFiniteMagnitude),
-                                  options: [.usesLineFragmentOrigin, .usesFontLeading])
-        return r.height
-    }
 
     // ESC closes; Enter submits (handled by field.action).
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {

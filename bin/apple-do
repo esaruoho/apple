@@ -21,6 +21,10 @@ caps() {
 "address	your home address (Contacts me-card)" \
 "directions	open Apple Maps with directions home — apple-do directions [walk|transit]" \
 "now	current date, time, weekday, timezone" \
+"battery	battery level + charging state" \
+"wifi	current Wi-Fi network" \
+"clipboard	what's on the clipboard" \
+"lock	lock the screen" \
 "fleet	live status of the Mini's workers (heartbeats)" \
 "spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
 "search	semantic search of your notes (MiniLM, on the Mini) — apple-do search <query>" \
@@ -40,6 +44,17 @@ case "$cap" in
   address) exec "$HERE/me-address" ;;
   directions) exec "$HERE/maps-directions" "$@" ;;
   now)    date "+%A, %-d %B %Y, %H:%M %Z" ;;
+  battery)
+    pmset -g batt 2>/dev/null | grep -Eo '[0-9]+%; [a-z ]+' | head -1 || echo "battery info unavailable" ;;
+  wifi)
+    dev=$(networksetup -listallhardwareports 2>/dev/null | awk '/Wi-Fi|AirPort/{getline; print $2; exit}')
+    net=$(networksetup -getairportnetwork "${dev:-en0}" 2>/dev/null | sed 's/^Current Wi-Fi Network: //')
+    [ -n "$net" ] && echo "$net" || echo "Wi-Fi network unavailable" ;;
+  clipboard)
+    c=$(pbpaste 2>/dev/null | head -c 800); [ -n "$c" ] && printf '%s\n' "$c" || echo "(clipboard is empty)" ;;
+  lock)
+    "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession" -suspend 2>/dev/null \
+      && echo "Screen locked." || echo "lock: couldn't lock the screen." ;;
   fleet)
     q="$HOME/work/comms/queue"; nowS=$(date +%s)
     for hb in "$q"/*-heartbeat.json; do

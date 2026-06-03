@@ -28,4 +28,9 @@ expect "humidity"                  home
 expect "what time is it"           now
 expect "is the mini busy"          fleet
 expect "find my notes on tesla"    search
+# newer capabilities
+expect "how much battery do i have" battery
+expect "what wifi am i on"         wifi
+expect "what's on my clipboard"    clipboard
+expect "lock my screen"            lock
 [ $fail -eq 0 ] && { echo; echo "✅ ALL INTENT-ROUTING TESTS PASS"; } || { echo; echo "❌ routing failures"; exit 1; }

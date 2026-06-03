@@ -1,0 +1,29 @@
+{
+  "_comment": "The ONE capability catalog. Read by bin/apple-intent (NLEmbedding routing) AND apple-bar/AppleBar (live Spotlight suggestions). Add an intent here; both pick it up. Each must have a matching case in bin/apple-do. needsArg=true → the typed phrase is passed through to the tool.",
+  "intents": [
+    { "action": "home", "needsArg": false, "desc": "temperature + humidity at home (HomePod)",
+      "examples": ["temperature", "how hot is it", "how warm is it", "how cold is it", "is it hot", "is it cold", "humidity", "how humid is it", "room temperature", "indoor temperature"] },
+    { "action": "directions", "needsArg": true, "desc": "directions home in Apple Maps",
+      "examples": ["how do i get home", "directions home", "how far away am i from home", "how far is home", "navigate home", "route home", "take me home", "how long to get home", "drive home", "walk home"] },
+    { "action": "address", "needsArg": false, "desc": "your home address (Contacts)",
+      "examples": ["where is my home", "where do i live", "what's my home address", "my home address", "my address", "what is my address", "home address", "where is my house"] },
+    { "action": "now", "needsArg": false, "desc": "current date, time, weekday",
+      "examples": ["what time is it", "what's the time", "what is today's date", "what day is it today", "current date and time", "what's the day today"] },
+    { "action": "battery", "needsArg": false, "desc": "battery level + charging state",
+      "examples": ["battery level", "how much battery", "am i charging", "battery percentage", "how much charge left", "is it plugged in"] },
+    { "action": "wifi", "needsArg": false, "desc": "current Wi-Fi network",
+      "examples": ["what wifi am i on", "current network", "wifi name", "which network am i connected to", "what's my wifi", "ssid"] },
+    { "action": "clipboard", "needsArg": false, "desc": "what's on the clipboard",
+      "examples": ["what's on my clipboard", "show clipboard", "what did i copy", "clipboard contents", "what's copied"] },
+    { "action": "lock", "needsArg": false, "desc": "lock the screen",
+      "examples": ["lock my screen", "lock the mac", "lock the computer", "lock screen", "secure my mac"] },
+    { "action": "fleet", "needsArg": false, "desc": "status of the Mini's workers",
+      "examples": ["is the mini busy", "fleet status", "are the workers running", "is ocr running right now", "what is the mini doing", "are the services alive", "status of the background workers"] },
+    { "action": "spotlight", "needsArg": true, "desc": "find files by name (Spotlight)",
+      "examples": ["find a file named", "search for a file called", "locate the document", "where is the file", "find the file on disk", "open the file named"] },
+    { "action": "search", "needsArg": true, "desc": "semantic search of your notes",
+      "examples": ["search my notes about", "find my notes on", "what did i write about", "semantic search for", "look in my notes for", "find notes mentioning", "what do my notes say about"] },
+    { "action": "ocr", "needsArg": true, "desc": "extract text from a PDF/image (Vision)",
+      "examples": ["extract text from this pdf", "read this image", "ocr this file", "get the text out of this pdf", "what does this scanned document say", "transcribe this screenshot"] }
+  ]
+}
