@@ -48,6 +48,8 @@ let CATALOG: [Intent] = [
 var args = Array(CommandLine.arguments.dropFirst())
 let dryRun = args.contains("--dry-run"); args.removeAll { $0 == "--dry-run" }
 let showJSON = args.contains("--json"); args.removeAll { $0 == "--json" }
+let speak = args.contains("--speak"); args.removeAll { $0 == "--speak" }   // LLM rephrase via FM (Mini)
+let rawOut = args.contains("--raw"); args.removeAll { $0 == "--raw" }       // skip the whitelabel template
 func opt(_ n: String) -> String? {
     guard let i = args.firstIndex(of: n), i + 1 < args.count else { return nil }
     let v = args[i + 1]; args.remove(at: i + 1); args.remove(at: i); return v
@@ -127,9 +129,94 @@ if dryRun {
 let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent().path
 let doPath = here + "/apple-do"
 guard FileManager.default.isExecutableFile(atPath: doPath) else { die("apple-do not found next to apple-intent at \(doPath)") }
-let p = Process()
-p.executableURL = URL(fileURLWithPath: doPath)
-p.arguments = top.intent.needsArg ? [top.intent.action, query] : [top.intent.action]
-do { try p.run() } catch { die("couldn't run apple-do: \(error.localizedDescription)") }
-p.waitUntilExit()
-exit(p.terminationStatus)
+
+func runCapture(_ path: String, _ a: [String], mergeErr: Bool = true) -> (out: String, code: Int32) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: path)
+    p.arguments = a
+    var env = ProcessInfo.processInfo.environment
+    env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
+    p.environment = env
+    let pipe = Pipe(); p.standardOutput = pipe
+    // fm-submit draws a progress spinner on stderr; capture stdout only there so
+    // the answer comes back clean. apple-do merges stderr so its errors surface.
+    p.standardError = mergeErr ? pipe : FileHandle.nullDevice
+    do { try p.run() } catch { return ("couldn't run \(path): \(error.localizedDescription)", 1) }
+    let d = pipe.fileHandleForReading.readDataToEndOfFile()
+    p.waitUntilExit()
+    return (String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "", p.terminationStatus)
+}
+
+let doArgs = top.intent.needsArg ? [top.intent.action, query] : [top.intent.action]
+let result = runCapture(doPath, doArgs)
+let raw = result.out
+
+// ── whitelabel: turn the raw tool output into a human line ──
+// Mechanism (field extraction) lives here; the WORDING lives in an editable
+// config the user owns. Missing config → defaults written on first run.
+func loadTemplates() -> [String: String] {
+    let defaults: [String: String] = [
+        "home": "It's {tempC}°C at home, {humid}% humidity ({age}).",
+        "now": "{raw}", "fleet": "{raw}", "spotlight": "{raw}", "search": "{raw}", "ocr": "{raw}",
+    ]
+    let cfgDir = (ProcessInfo.processInfo.environment["HOME"] ?? "") + "/.config/apple-intent"
+    let cfgPath = cfgDir + "/reports.json"
+    if let d = FileManager.default.contents(atPath: cfgPath),
+       let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String] {
+        return defaults.merging(obj) { _, user in user }   // user overrides win
+    }
+    // write the defaults so the user has something to edit (the whitelabel surface)
+    try? FileManager.default.createDirectory(atPath: cfgDir, withIntermediateDirectories: true)
+    if let d = try? JSONSerialization.data(withJSONObject: defaults, options: [.prettyPrinted, .sortedKeys]) {
+        try? d.write(to: URL(fileURLWithPath: cfgPath))
+    }
+    return defaults
+}
+
+func firstMatch(_ s: String, _ pattern: String) -> String? {
+    guard let re = try? NSRegularExpression(pattern: pattern) else { return nil }
+    let ns = s as NSString
+    guard let m = re.firstMatch(in: s, range: NSRange(location: 0, length: ns.length)), m.numberOfRanges > 1
+    else { return nil }
+    return ns.substring(with: m.range(at: 1))
+}
+
+func humanize(action: String, raw: String, template: String) -> String {
+    var fields: [String: String] = ["raw": raw]
+    if action == "home" {
+        if let t = firstMatch(raw, "([0-9]+(?:\\.[0-9]+)?)\\s*°C") { fields["tempC"] = t }
+        if let h = firstMatch(raw, "([0-9]+(?:\\.[0-9]+)?)\\s*%") { fields["humid"] = h }
+        if let a = firstMatch(raw, "\\(([^)]*ago)\\)") { fields["age"] = a }
+        // if extraction missed anything the template needs, fall back to raw
+        for key in ["tempC", "humid", "age"] where template.contains("{\(key)}") && fields[key] == nil {
+            return raw
+        }
+    }
+    var out = template
+    for (k, v) in fields { out = out.replacingOccurrences(of: "{\(k)}", with: v) }
+    return out
+}
+
+var human = raw
+if !rawOut {
+    let templates = loadTemplates()
+    if let t = templates[top.intent.action], !t.isEmpty {
+        human = humanize(action: top.intent.action, raw: raw, template: t)
+    }
+}
+
+// ── optional LLM toggle: rephrase the human line via FM on the Mini ──
+if speak, !human.isEmpty {
+    let fmPath = here + "/fm-submit"
+    if FileManager.default.isExecutableFile(atPath: fmPath) {
+        let prompt = "Rephrase this device reading as one short, friendly, natural sentence. "
+                   + "Keep every number exactly as given. Add no new facts, omit nothing:\n\n\(human)"
+        let r = runCapture(fmPath, ["--wait", prompt], mergeErr: false)
+        let said = r.out.trimmingCharacters(in: .whitespacesAndNewlines)
+        if r.code == 0, !said.isEmpty, said.lowercased() != "null" { human = said }
+        // else: keep the template line (graceful fallback if the Mini is unreachable)
+    }
+}
+
+print(human)
+exit(result.code)

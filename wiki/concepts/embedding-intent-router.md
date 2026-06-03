@@ -55,6 +55,36 @@ AppleBar: `./apple-bar/build.sh` → menu-bar `◧` icon + **⌥Space** opens th
 the rarely-typed non-breaking-space. Change the keycode in `registerHotKey()` if
 you'd rather keep ⌥Space free.)
 
+## Whitelabel: how the reports read
+
+Raw tool output is robotic ("HomePod climate (calibrated): 24.45°C, 49.5% relative
+humidity. Reading taken 2026-06-03T07:45:11Z (1 min ago)."). apple-intent turns it
+into a human line, two ways — you pick per query:
+
+- **↩ — template (instant, default).** A whitelabel config at
+  `~/.config/apple-intent/reports.json` holds a per-action phrasing string you
+  own; apple-intent extracts the fields (mechanism, in code) and fills your
+  wording. Edit the file to rebrand any report — no rebuild.
+  ```
+  "home": "It's {tempC}°C at home, {humid}% humidity ({age})."
+       → It's 24.45°C at home, 49.5% humidity (1 min ago).
+  ```
+  When a template needs a field that wasn't found, it falls back to the raw line
+  rather than printing a half-filled template. `--raw` skips templating entirely;
+  `{raw}` is always available as a passthrough field.
+
+- **⌘↩ — LLM rephrase (on demand).** `apple-intent --speak` (the bar's ⌘↩) reruns
+  the line through the on-device 3B model on the Mini (`fm-submit`) with a "say
+  this like a human, keep every number, add nothing" prompt:
+  ```
+  → It's currently 24.45°C at home with 49.5% humidity.
+  ```
+  Costs the ~8s Syncthing round-trip and needs the Mini; if it's unreachable or
+  the model declines, apple-intent keeps the template line (graceful fallback).
+  Mechanism in code, **wording in the config you own** — the same public-mechanism
+  / private-whitelabel split as the [companion-mac fabric](companion-mac-fabric.md)
+  and Fleet's machine-card config.
+
 ## Making it smarter
 
 When a real query routes to the wrong action, **add a phrasing** to that intent's

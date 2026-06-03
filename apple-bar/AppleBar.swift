@@ -50,6 +50,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
         buildPanel()
         registerHotKey()
+
+        // ⌘↩ while the bar is open → rephrase the result via the LLM (FM on the Mini).
+        // Plain ↩ stays the instant template path (field.action → submit).
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+            guard let self = self, self.panel.isVisible else { return e }
+            if e.keyCode == 36, e.modifierFlags.contains(.command) {   // 36 = Return
+                self.runQuery(speak: true); return nil
+            }
+            return e
+        }
     }
 
     // ── the panel ──
@@ -76,7 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         field.backgroundColor = .clear
         field.isBezeled = false
         field.focusRingType = .none
-        field.placeholderString = "Ask the toolbox…  (e.g. how warm is it at home)"
+        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase"
         field.delegate = self
         field.target = self
         field.action = #selector(submit)
@@ -123,14 +133,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 
     // ── run the engine ──
-    @objc func submit() {
+    //  ↩  → whitelabel template (instant)   ⌘↩ → LLM rephrase via FM on the Mini
+    @objc func submit() { runQuery(speak: false) }
+
+    func runQuery(speak: Bool) {
         let q = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
         spinner.startAnimation(nil)
-        showResult("…")
+        showResult(speak ? "… (asking the model on the Mini)" : "…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let output = self.runIntent(q)
+            let output = self.runIntent(q, speak: speak)
             DispatchQueue.main.async {
                 self.spinner.stopAnimation(nil)
                 self.showResult(output.isEmpty ? "(no output)" : output)
@@ -138,10 +151,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         }
     }
 
-    func runIntent(_ q: String) -> String {
+    func runIntent(_ q: String, speak: Bool) -> String {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: INTENT_BIN)
-        p.arguments = [q]
+        p.arguments = speak ? [q, "--speak"] : [q]
         // Process() inherits a minimal PATH — apple-do shells out to date/ssh/mdfind
         // and the apple-* tools, so give it a real one.
         var env = ProcessInfo.processInfo.environment
