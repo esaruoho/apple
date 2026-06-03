@@ -51,6 +51,9 @@ apple-intent --json "..."                  # machine-readable
 ```
 
 AppleBar: `./apple-bar/build.sh` → menu-bar `◧` icon + **⌥Space** opens the bar.
+The **🎙 button** dictates the query instead of typing — on-device `SFSpeechRecognizer`
+(`requiresOnDeviceRecognition`, no network, no Tahoe); first use prompts for
+Microphone + Speech Recognition. Tap 🎙 to listen, ⏹/↩ to stop (↩ also runs).
 (⌥Space is the conventional launcher hotkey — Alfred's default — so it costs you
 the rarely-typed non-breaking-space. Change the keycode in `registerHotKey()` if
 you'd rather keep ⌥Space free.)

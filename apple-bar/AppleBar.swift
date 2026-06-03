@@ -11,6 +11,8 @@
 // Build: ./apple-bar/build.sh   (LSUIElement menu-bar agent, no Dock icon)
 import Cocoa
 import Carbon.HIToolbox
+import Speech
+import AVFoundation
 
 // Path to the engine. Override with APPLE_INTENT if the repo lives elsewhere.
 let INTENT_BIN = ProcessInfo.processInfo.environment["APPLE_INTENT"]
@@ -29,7 +31,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     var resultView: NSTextView!
     var resultScroll: NSScrollView!
     var spinner: NSProgressIndicator!
+    var micButton: NSButton!
     var hotKeyRef: EventHotKeyRef?
+
+    // Dictation (on-device Speech framework — no network, no Tahoe).
+    let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    var recognitionTask: SFSpeechRecognitionTask?
+    let audioEngine = AVAudioEngine()
+    var listening = false
 
     let panelWidth: CGFloat = 580
     let fieldRowHeight: CGFloat = 60
@@ -80,23 +90,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         root.layer?.cornerRadius = 14
         panel.contentView = root
 
-        field = NSTextField(frame: NSRect(x: 18, y: 12, width: panelWidth - 36, height: 36))
+        field = NSTextField(frame: NSRect(x: 18, y: 12, width: panelWidth - 36 - 84, height: 36))
         field.font = NSFont.systemFont(ofSize: 22, weight: .regular)
         field.textColor = .white
         field.backgroundColor = .clear
         field.isBezeled = false
         field.focusRingType = .none
-        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase"
+        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
         field.delegate = self
         field.target = self
         field.action = #selector(submit)
         root.addSubview(field)
 
-        spinner = NSProgressIndicator(frame: NSRect(x: panelWidth - 44, y: 18, width: 22, height: 22))
+        spinner = NSProgressIndicator(frame: NSRect(x: panelWidth - 80, y: 18, width: 22, height: 22))
         spinner.style = .spinning
         spinner.isDisplayedWhenStopped = false
         spinner.controlSize = .small
         root.addSubview(spinner)
+
+        micButton = NSButton(frame: NSRect(x: panelWidth - 50, y: 13, width: 36, height: 34))
+        micButton.title = "🎙"
+        micButton.bezelStyle = .rounded
+        micButton.isBordered = false
+        micButton.font = NSFont.systemFont(ofSize: 18)
+        micButton.toolTip = "Dictate (on-device speech recognition)"
+        micButton.target = self
+        micButton.action = #selector(toggleDictation)
+        root.addSubview(micButton)
 
         // result area (hidden until there's a result)
         resultScroll = NSScrollView(frame: NSRect(x: 12, y: 10, width: panelWidth - 24, height: 0))
@@ -137,6 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     @objc func submit() { runQuery(speak: false) }
 
     func runQuery(speak: Bool) {
+        if listening { stopDictation() }   // ↩/⌘↩ stops the mic, then runs what was heard
         let q = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
         spinner.startAnimation(nil)
@@ -187,10 +208,79 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
             f.size.height = total
             f.origin.y = topY - total
             panel.setFrame(f, display: true, animate: false)
-            // move field + spinner to the new top
-            field.frame = NSRect(x: 18, y: total - 48, width: panelWidth - 36, height: 36)
-            spinner.frame = NSRect(x: panelWidth - 44, y: total - 42, width: 22, height: 22)
+            // move field + spinner + mic to the new top
+            field.frame = NSRect(x: 18, y: total - 48, width: panelWidth - 36 - 84, height: 36)
+            spinner.frame = NSRect(x: panelWidth - 80, y: total - 42, width: 22, height: 22)
+            micButton.frame = NSRect(x: panelWidth - 50, y: total - 47, width: 36, height: 34)
         }
+    }
+
+    // ── dictation: on-device Speech framework (no network, no Tahoe) ──
+    @objc func toggleDictation() {
+        if listening { stopDictation(); return }
+        SFSpeechRecognizer.requestAuthorization { [weak self] sAuth in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                guard sAuth == .authorized else {
+                    self.showResult("Speech recognition isn't authorized.\nSystem Settings ▸ Privacy & Security ▸ Speech Recognition → enable AppleBar.")
+                    return
+                }
+                AVCaptureDevice.requestAccess(for: .audio) { micOK in
+                    DispatchQueue.main.async {
+                        guard micOK else {
+                            self.showResult("Microphone access denied.\nSystem Settings ▸ Privacy & Security ▸ Microphone → enable AppleBar.")
+                            return
+                        }
+                        self.startDictation()
+                    }
+                }
+            }
+        }
+    }
+
+    func startDictation() {
+        guard let recognizer = recognizer, recognizer.isAvailable else {
+            showResult("Speech recognizer unavailable right now."); return
+        }
+        recognitionTask?.cancel(); recognitionTask = nil
+        let req = SFSpeechAudioBufferRecognitionRequest()
+        req.shouldReportPartialResults = true
+        if recognizer.supportsOnDeviceRecognition { req.requiresOnDeviceRecognition = true }  // keep it local
+        recognitionRequest = req
+
+        let input = audioEngine.inputNode
+        let fmt = input.outputFormat(forBus: 0)
+        input.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in req.append(buf) }
+        audioEngine.prepare()
+        do { try audioEngine.start() } catch {
+            showResult("Couldn't start the microphone: \(error.localizedDescription)"); return
+        }
+        listening = true
+        micButton.title = "⏹"
+        micButton.contentTintColor = .systemRed
+        field.stringValue = ""
+        field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)"
+        recognitionTask = recognizer.recognitionTask(with: req) { [weak self] result, error in
+            guard let self = self else { return }
+            if let r = result { self.field.stringValue = r.bestTranscription.formattedString }
+            if error != nil || (result?.isFinal ?? false) { self.stopDictation() }
+        }
+    }
+
+    func stopDictation() {
+        if audioEngine.isRunning {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        listening = false
+        micButton.title = "🎙"
+        micButton.contentTintColor = nil
+        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
+        panel.makeFirstResponder(field)
     }
 
     func idealHeight(of text: String) -> CGFloat {

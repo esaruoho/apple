@@ -30,6 +30,8 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSMicrophoneUsageDescription</key><string>AppleBar uses the microphone to dictate your request.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>AppleBar transcribes your speech on-device to fill the command bar.</string>
 </dict>
 </plist>
 PLIST
@@ -37,7 +39,7 @@ PLIST
 echo "compiling …"
 xcrun swiftc -O -target arm64-apple-macos11.0 "$HERE/AppleBar.swift" \
   -o "$BUNDLE/Contents/MacOS/$APP" \
-  -framework Cocoa -framework Carbon
+  -framework Cocoa -framework Carbon -framework Speech -framework AVFoundation
 
 codesign -s - --force --deep "$BUNDLE" >/dev/null 2>&1 || true
 # Launch Services must re-cache the Info.plist or the agent/hotkey misbehaves.
