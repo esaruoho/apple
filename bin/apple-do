@@ -19,6 +19,7 @@ caps() {
   printf '%s\n' \
 "home	current temperature + humidity at home (HomePod sensor)" \
 "address	your home address (Contacts me-card)" \
+"directions	open Apple Maps with directions home — apple-do directions [walk|transit]" \
 "now	current date, time, weekday, timezone" \
 "fleet	live status of the Mini's workers (heartbeats)" \
 "spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
@@ -37,6 +38,7 @@ cap="$1"; shift
 case "$cap" in
   home)   exec "$HERE/homepod-now" ;;
   address) exec "$HERE/me-address" ;;
+  directions) exec "$HERE/maps-directions" "$@" ;;
   now)    date "+%A, %-d %B %Y, %H:%M %Z" ;;
   fleet)
     q="$HOME/work/comms/queue"; nowS=$(date +%s)

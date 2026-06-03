@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# maps-directions — open Apple Maps with directions to your home.
+# Source = your current location (Maps fills it when saddr is omitted); destination =
+# your home address (from me-address, cached). Transport mode auto-detected from the
+# phrase ("walk"/"transit"/… → flag), default driving.
+#
+# Reuses the Apple Maps URL pattern proven in ~/work/ray-graph
+# (js/dashboard/dashboard-ui.js getDirectionsUrl): dirflg w=walking d=driving r=transit.
+# Apple-native: just `open` on a maps.apple.com URL. python3 stdlib for URL-encoding.
+#
+# FEATURE-CARD >> features/directions-home.feature
+set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+phrase="${*:-}"
+case "$phrase" in
+  *walk*|*foot*)          flg=w; mode=walking ;;
+  *transit*|*bus*|*train*|*public*) flg=r; mode=transit ;;
+  *)                      flg=d; mode=driving ;;
+esac
+
+addr="$("$HERE/me-address" 2>/dev/null | grep -vi 'door' | paste -sd ', ' -)"
+case "$addr" in
+  ""|*"Make This My Card"*|*"couldn't read"*|*"no postal"*|*"returned nothing"*|*"no contact matched"*)
+    echo "maps-directions: couldn't get your home address (try: apple-do address)."; exit 1 ;;
+esac
+
+enc=$(printf '%s' "$addr" | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read().strip()))')
+url="https://maps.apple.com/?daddr=${enc}&dirflg=${flg}"
+if open "$url" 2>/dev/null; then
+  echo "Opening directions home in Maps ($mode) → $addr"
+else
+  echo "maps-directions: couldn't open Maps for $url"; exit 1
+fi

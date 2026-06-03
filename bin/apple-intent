@@ -25,8 +25,12 @@ struct Intent { let action: String; let needsArg: Bool; let desc: String; let ex
 // here whenever a real query misses — that's how this gets smarter.
 let CATALOG: [Intent] = [
   Intent(action: "home", needsArg: false, desc: "temperature + humidity at home", examples: [
-    "what's the temperature at home", "home temperature and humidity", "how warm is it at home",
-    "how humid is it at home", "how cold is it inside", "what's the climate at home", "room temperature"]),
+    // temperature/heat/humidity ONLY — must NOT swallow "where is home"/"how far from home"
+    "temperature", "how hot is it", "how warm is it", "how cold is it", "is it hot",
+    "is it cold", "humidity", "how humid is it", "room temperature", "indoor temperature"]),
+  Intent(action: "directions", needsArg: true, desc: "directions home in Apple Maps", examples: [
+    "how do i get home", "directions home", "how far away am i from home", "how far is home",
+    "navigate home", "route home", "take me home", "how long to get home", "drive home", "walk home"]),
   Intent(action: "address", needsArg: false, desc: "your home address (Contacts me-card)", examples: [
     "where is my home", "where do i live", "what's my home address", "my home address",
     "my address", "what is my address", "home address", "where is my house"]),
@@ -189,6 +193,7 @@ func loadTemplates() -> [String: String] {
     let defaults: [String: String] = [
         "home": "It's {tempC}°C at home, {humid}% humidity ({age}).",
         "address": "{raw}",
+        "directions": "{raw}",
         "now": "{raw}", "fleet": "{raw}", "spotlight": "{raw}", "search": "{raw}", "ocr": "{raw}",
     ]
     let cfgDir = (ProcessInfo.processInfo.environment["HOME"] ?? "") + "/.config/apple-intent"
