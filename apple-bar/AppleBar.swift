@@ -95,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         field.backgroundColor = .clear
         field.isBezeled = false
         field.focusRingType = .none
-        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
+        field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · 🎙 dictate"
         field.delegate = self
         field.target = self
         field.action = #selector(submit)
@@ -228,7 +228,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
                 self.field.stringValue = ""
                 self.field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)"
             } else {
-                self.field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
+                self.field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · 🎙 dictate"
                 self.panel.makeFirstResponder(self.field)
             }
         }
