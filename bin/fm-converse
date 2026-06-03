@@ -26,10 +26,43 @@ Apple-native: python3 stdlib only. Delegates the round-trip to fm-submit.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+# ── Markdown → ANSI (terminal only) ──────────────────────────────────────────
+# The FM model speaks Markdown (**bold**, # headings, - bullets, `code`). On a
+# real terminal we render those as ANSI styling so you read formatted text, not
+# raw markers. When stdout is piped (e.g. Converse captures it), we emit plain
+# text so no escape codes leak into the captured reply.
+_B, _I, _U, _DIM, _CODE, _R = "\033[1m", "\033[3m", "\033[4m", "\033[2m", "\033[96m", "\033[0m"
+
+def md_to_ansi(text: str) -> str:
+    out, in_fence = [], False
+    for line in text.split("\n"):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue                                   # drop fence markers
+        if in_fence:
+            out.append(_DIM + line + _R); continue
+        h = re.match(r'^(#{1,6})\s+(.*)$', line)
+        if h:
+            out.append(_B + _U + h.group(2).strip() + _R); continue
+        line = re.sub(r'^(\s*)[-*+]\s+', r'\1• ', line)            # bullets
+        line = re.sub(r'`([^`]+)`', _CODE + r'\1' + _R, line)      # inline code
+        line = re.sub(r'\*\*([^*]+)\*\*', _B + r'\1' + _R, line)   # **bold**
+        line = re.sub(r'__([^_]+)__', _B + r'\1' + _R, line)       # __bold__
+        line = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', _I + r'\1' + _R, line)  # *italic*
+        line = re.sub(r'\[([^\]]+)\]\(([^)]+)\)',                  # [text](url)
+                      _U + r'\1' + _R + _DIM + r' (\2)' + _R, line)
+        out.append(line)
+    return "\n".join(out)
+
+def emit_reply(text: str):
+    """Print the reply: ANSI-rendered Markdown on a TTY, plain when piped."""
+    sys.stdout.write((md_to_ansi(text) if sys.stdout.isatty() else text) + "\n")
 
 HERE = Path(__file__).resolve().parent
 SESSIONS = Path.home() / "work" / "converse" / "sessions"
@@ -220,7 +253,7 @@ def main() -> int:
     state["turns"].append(["assistant", reply])
     save(key, state)
 
-    print(reply)
+    emit_reply(reply)
     return 0
 
 
