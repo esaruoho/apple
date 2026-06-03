@@ -32,7 +32,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     var resultScroll: NSScrollView!
     var spinner: NSProgressIndicator!
     var micButton: NSButton!
-    var hotKeyRef: EventHotKeyRef?
+    var hotKeyRef: EventHotKeyRef?       // ⌥Space
+    var hotKeyRefCtrl: EventHotKeyRef?   // ⌃Space
 
     // Dictation: the shared on-device engine (shared/Dictation.swift), not a
     // re-roll. AppleBar just wires its callbacks to the text field + mic button.
@@ -48,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         statusItem.button?.title = "◧"
         statusItem.button?.toolTip = "AppleBar — ⌥Space"
         let menu = NSMenu()
-        let openItem = NSMenuItem(title: "Open Command Bar  (⌥Space)", action: #selector(showPanel), keyEquivalent: "")
+        let openItem = NSMenuItem(title: "Open Command Bar  (⌥Space / ⌃Space)", action: #selector(showPanel), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
         menu.addItem(.separator())
@@ -254,7 +255,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         return false
     }
 
-    // ── global hotkey: ⌥Space ──
+    // ── global hotkeys: ⌥Space AND ⌃Space (either opens the bar) ──
+    // Two bindings because ⌥Space is often taken by another launcher; if one fails
+    // to register the other still works (plus the menu-bar item is always a fallback).
     func registerHotKey() {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
@@ -266,15 +269,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
                               EventParamType(typeEventHotKeyID), nil,
                               MemoryLayout<EventHotKeyID>.size, nil, &hkID)
             let me = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
-            if hkID.id == 1 { DispatchQueue.main.async { me.togglePanel() } }
+            if hkID.id == 1 || hkID.id == 2 { DispatchQueue.main.async { me.togglePanel() } }
             return noErr
         }, 1, &eventType, selfPtr, nil)
 
-        let mods = UInt32(optionKey)           // ⌥
-        let id = EventHotKeyID(signature: OSType(0x4150424B), id: 1)   // 'APBK'
-        let status = RegisterEventHotKey(UInt32(kVK_Space), mods, id,
-                                         GetApplicationEventTarget(), 0, &hotKeyRef)
-        if status != noErr { NSLog("AppleBar: ⌥Space registration failed, OSStatus \(status)") }
+        let target = GetApplicationEventTarget()
+        // id 1 — ⌥Space
+        let optStatus = RegisterEventHotKey(UInt32(kVK_Space), UInt32(optionKey),
+                                            EventHotKeyID(signature: OSType(0x4150424B), id: 1),
+                                            target, 0, &hotKeyRef)
+        if optStatus != noErr { NSLog("AppleBar: ⌥Space registration failed, OSStatus \(optStatus)") }
+        // id 2 — ⌃Space  (note: macOS may bind ⌃Space to input-source switching;
+        // disable that in System Settings ▸ Keyboard ▸ Shortcuts if it doesn't fire)
+        let ctlStatus = RegisterEventHotKey(UInt32(kVK_Space), UInt32(controlKey),
+                                            EventHotKeyID(signature: OSType(0x4150424B), id: 2),
+                                            target, 0, &hotKeyRefCtrl)
+        if ctlStatus != noErr { NSLog("AppleBar: ⌃Space registration failed, OSStatus \(ctlStatus)") }
     }
 }
 
