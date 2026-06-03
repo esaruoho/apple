@@ -21,22 +21,39 @@
 #   card help
 #
 # Card resolution: an exact file/path wins; otherwise <name>.feature is searched
-# under ~/.claude/skills, ~/work/apple, and the current dir. Multiple matches →
-# it lists them and stops (you disambiguate with a path).
+# under the configured roots (default ~/.claude/skills, ~/work/apple, cwd).
+# Multiple matches → it lists them and stops (you disambiguate with a path).
+#
+# Config (file sets defaults, env overrides; nothing required):
+#   $CARD_CONFIG or ~/.config/card/config   a shell file sourced if present
+#   CARD_ROOTS     colon-separated card search roots
+#   CARD_PROJECTS  dir of transcripts (<session>.jsonl)
+#   FM_CONVERSE    path to the fm-converse binary
 #
 # Apple-native: bash + python3 stdlib. Delegates conversation to fm-converse.
 
 set -euo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
-FM_CONVERSE="$SELF_DIR/fm-converse"
-SEARCH_ROOTS=("$HOME/.claude/skills" "$HOME/work/apple" "$PWD")
-PROJECTS="$HOME/.claude/projects"
+
+# Config: an optional shell file sets persistent defaults, env vars override it.
+#   File   : $CARD_CONFIG, else ~/.config/card/config (sourced if present)
+#   Vars   : CARD_ROOTS    colon-separated card search roots
+#            CARD_PROJECTS  dir of Claude Code transcripts (<session>.jsonl)
+#            FM_CONVERSE    path to the fm-converse binary
+CARD_CONFIG="${CARD_CONFIG:-$HOME/.config/card/config}"
+# shellcheck disable=SC1090
+[[ -f "$CARD_CONFIG" ]] && source "$CARD_CONFIG"
+
+FM_CONVERSE="${FM_CONVERSE:-$SELF_DIR/fm-converse}"
+PROJECTS="${CARD_PROJECTS:-$HOME/.claude/projects}"
+# CARD_ROOTS is a colon list; default to skills + apple + cwd.
+IFS=':' read -r -a SEARCH_ROOTS <<< "${CARD_ROOTS:-$HOME/.claude/skills:$HOME/work/apple:$PWD}"
 
 log()  { echo "[card] $*" >&2; }
 die()  { echo "[card] ERROR: $*" >&2; exit 1; }
 
-usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 # Resolve a card argument → absolute path to its <name>.feature.
 resolve_card() {

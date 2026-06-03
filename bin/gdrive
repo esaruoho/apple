@@ -16,13 +16,18 @@
 #   gdrive --status                                show queue / results counts
 #   gdrive --help                                  this help
 #
-# Environment:
+# Config (file sets defaults, env overrides; nothing required):
+#   $GDRIVE_CONFIG or ~/.config/gdrive/config   a shell file sourced if present
 #   GDRIVE_INBOX    override drop folder   (default: ~/work/comms/queue/pakettibot-inbox)
 #   GDRIVE_OUTBOX   override reply folder  (default: ~/work/comms/queue/pakettibot-outbox)
 #   GDRIVE_RESULTS  override result folder (default: ~/work/comms/queue/gdrive-results)
 #   GDRIVE_WAIT     seconds to wait for the bot's confirmation (default: 60; 0 = don't wait)
 
 set -euo pipefail
+
+GDRIVE_CONFIG="${GDRIVE_CONFIG:-$HOME/.config/gdrive/config}"
+# shellcheck disable=SC1090
+[[ -f "$GDRIVE_CONFIG" ]] && source "$GDRIVE_CONFIG"
 
 INBOX="${GDRIVE_INBOX:-$HOME/work/comms/queue/pakettibot-inbox}"
 OUTBOX="${GDRIVE_OUTBOX:-$HOME/work/comms/queue/pakettibot-outbox}"
