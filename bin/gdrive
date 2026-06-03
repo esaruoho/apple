@@ -4,15 +4,19 @@
 # Wraps the `!pk gdrive` Discord command using the Syncthing file-command
 # bridge — NO SSH, NO Discord. Robust wins over brittle.
 #
-# It drops a `gdrive <url>` command file into the Syncthing-shared
-# pakettibot-inbox. The bot on the Mini picks it up within ~10s, queues a
-# mirror-submit download job, and writes a confirmation back to the outbox
-# (Syncthing carries it home). The downloaded content itself lands in
-# ~/work/comms/queue/gdrive-results/<label>/ on both Mini and this laptop.
+# Already have it? It just opens. If the URL's result folder already exists on
+# this computer (Syncthing-mirrored from the Mini), gdrive opens that folder in
+# Finder and does NOT re-download. Otherwise it drops a `gdrive <url>` command
+# file into the Syncthing-shared pakettibot-inbox; the bot on the Mini picks it
+# up within ~10s, queues a mirror-submit download, and writes a confirmation back
+# to the outbox. The content lands in ~/work/comms/queue/gdrive-results/<label>/
+# on both Mini and this laptop.
 #
 # Usage:
-#   gdrive <drive.google.com URL> [<URL> ...]      submit one or more links
+#   gdrive <drive.google.com URL> [<URL> ...]      open if present, else submit
 #   gdrive <URL> --label <name>                    custom result folder name
+#   gdrive <URL> --force                            re-download even if present
+#   gdrive <URL> --no-open                          don't open; just report/submit
 #   gdrive --status                                show queue / results counts
 #   gdrive --help                                  this help
 #
@@ -38,7 +42,7 @@ log() { echo "[gdrive] $*" >&2; }
 die() { echo "[gdrive] ERROR: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -62,8 +66,33 @@ case "${1:-}" in
     ;;
 esac
 
+# Pull the Drive id out of a folder / file / open?id= URL.
+gdrive_id() {
+  local u="$1" id=""
+  case "$u" in
+    *drive.google.com/drive/folders/*) id="${u#*drive/folders/}" ;;
+    *drive.google.com/file/d/*)        id="${u#*file/d/}"; id="${id%%/*}" ;;
+    *[?\&]id=*)                        id="${u#*id=}" ;;
+  esac
+  id="${id%%[?&/]*}"                    # strip query/path tail
+  printf '%s' "$id"
+}
+
+# True if a result dir holds at least one real downloaded file (ignoring the
+# worker's bookkeeping: _failed_downloads.txt, *.log, *.part, .DS_Store, SOURCE.txt).
+has_content() {
+  local dir="$1"
+  [[ -d "$dir" ]] || return 1
+  find "$dir" -type f \
+    ! -name '_failed_downloads.txt' ! -name '*.log' ! -name '*.part' \
+    ! -name '.DS_Store' ! -name 'SOURCE.txt' ! -name '_mirror.log' \
+    2>/dev/null | grep -q .
+}
+
 # Parse: collect URLs, pass through a --label <name> flag verbatim.
 label=""
+force=0
+no_open=0
 urls=()
 extra=()
 while [[ $# -gt 0 ]]; do
@@ -71,6 +100,8 @@ while [[ $# -gt 0 ]]; do
     --label)
       [[ -n "${2:-}" ]] || die "--label needs a name"
       label="$2"; extra+=(--label "$2"); shift 2 ;;
+    --force|-f) force=1; shift ;;
+    --no-open)  no_open=1; shift ;;
     http://*|https://*)
       urls+=("$1"); shift ;;
     *)
@@ -83,6 +114,32 @@ done
 for u in "${urls[@]}"; do
   [[ "$u" == *drive.google.com* ]] || die "not a Google Drive URL: $u  (gdrive only handles drive.google.com links)"
 done
+
+# Already have it? Open the local copy and drop it from the submit list.
+# (--force skips this; --label dirs are checked under that name.)
+pending=()
+if [[ "$force" == "0" ]]; then
+  for u in "${urls[@]}"; do
+    id="$(gdrive_id "$u")"
+    dir="$RESULTS/${label:-gdrive-$id}"
+    if has_content "$dir"; then
+      log "already on this computer: $dir"
+      if [[ "$no_open" == "0" ]]; then
+        open "$dir" && log "opened in Finder."
+      fi
+    else
+      pending+=("$u")
+    fi
+  done
+else
+  pending=("${urls[@]}")
+fi
+
+# Nothing left to fetch → we opened what we had; done.
+if [[ ${#pending[@]} -eq 0 ]]; then
+  exit 0
+fi
+urls=("${pending[@]}")
 
 [[ -d "$INBOX" ]] || die "inbox not found: $INBOX  (is the comms Syncthing share present?)"
 
