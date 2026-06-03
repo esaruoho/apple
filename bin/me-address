@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# me-address — print the home postal address from your Contacts "me" card.
+# Apple-native: AppleScript → Contacts.app `my card`. No deps, no network.
+# First run prompts once for Automation access to Contacts (allow it).
+#
+# FEATURE-CARD >> features/me-address.feature
+set -uo pipefail
+
+osascript <<'OSA' 2>/dev/null
+tell application "Contacts"
+  try
+    set c to my card
+  on error
+    return "No \"me\" card is set in Contacts (Card ▸ Make This My Card)."
+  end try
+  set addrs to addresses of c
+  if (count of addrs) is 0 then return "Your Contacts me-card has no postal address."
+  set chosen to missing value
+  repeat with a in addrs
+    if (label of a) is "home" then set chosen to a
+  end repeat
+  if chosen is missing value then set chosen to item 1 of addrs
+  return formatted address of chosen
+end tell
+OSA
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "me-address: couldn't read Contacts (allow Automation access to Contacts, then retry)."
+  exit $rc
+fi

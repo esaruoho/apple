@@ -27,6 +27,9 @@ let CATALOG: [Intent] = [
   Intent(action: "home", needsArg: false, desc: "temperature + humidity at home", examples: [
     "what's the temperature at home", "home temperature and humidity", "how warm is it at home",
     "how humid is it at home", "how cold is it inside", "what's the climate at home", "room temperature"]),
+  Intent(action: "address", needsArg: false, desc: "your home address (Contacts me-card)", examples: [
+    "where is my home", "where do i live", "what's my home address", "my home address",
+    "my address", "what is my address", "home address", "where is my house"]),
   Intent(action: "now", needsArg: false, desc: "current date, time, weekday", examples: [
     "what time is it", "what's the time", "what is today's date", "what day is it today",
     "current date and time", "what's the day today"]),
@@ -157,6 +160,7 @@ let raw = result.out
 func loadTemplates() -> [String: String] {
     let defaults: [String: String] = [
         "home": "It's {tempC}°C at home, {humid}% humidity ({age}).",
+        "address": "{raw}",
         "now": "{raw}", "fleet": "{raw}", "spotlight": "{raw}", "search": "{raw}", "ocr": "{raw}",
     ]
     let cfgDir = (ProcessInfo.processInfo.environment["HOME"] ?? "") + "/.config/apple-intent"
