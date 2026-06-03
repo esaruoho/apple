@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# gdrive — submit a Google Drive download to PakettiBot from any terminal.
+#
+# Wraps the `!pk gdrive` Discord command using the Syncthing file-command
+# bridge — NO SSH, NO Discord. Robust wins over brittle.
+#
+# It drops a `gdrive <url>` command file into the Syncthing-shared
+# pakettibot-inbox. The bot on the Mini picks it up within ~10s, queues a
+# mirror-submit download job, and writes a confirmation back to the outbox
+# (Syncthing carries it home). The downloaded content itself lands in
+# ~/work/comms/queue/gdrive-results/<label>/ on both Mini and this laptop.
+#
+# Usage:
+#   gdrive <drive.google.com URL> [<URL> ...]      submit one or more links
+#   gdrive <URL> --label <name>                    custom result folder name
+#   gdrive --status                                show queue / results counts
+#   gdrive --help                                  this help
+#
+# Environment:
+#   GDRIVE_INBOX    override drop folder   (default: ~/work/comms/queue/pakettibot-inbox)
+#   GDRIVE_OUTBOX   override reply folder  (default: ~/work/comms/queue/pakettibot-outbox)
+#   GDRIVE_RESULTS  override result folder (default: ~/work/comms/queue/gdrive-results)
+#   GDRIVE_WAIT     seconds to wait for the bot's confirmation (default: 60; 0 = don't wait)
+
+set -euo pipefail
+
+INBOX="${GDRIVE_INBOX:-$HOME/work/comms/queue/pakettibot-inbox}"
+OUTBOX="${GDRIVE_OUTBOX:-$HOME/work/comms/queue/pakettibot-outbox}"
+RESULTS="${GDRIVE_RESULTS:-$HOME/work/comms/queue/gdrive-results}"
+WAIT="${GDRIVE_WAIT:-60}"
+
+log() { echo "[gdrive] $*" >&2; }
+die() { echo "[gdrive] ERROR: $*" >&2; exit 1; }
+
+usage() {
+  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+case "${1:-}" in
+  ""|-h|--help) usage 0 ;;
+  --status)
+    pending=$(find "$INBOX" -maxdepth 1 -type f \( -name '*.txt' -o -name '*.cmd' \) 2>/dev/null | wc -l | tr -d ' ')
+    replies=$(find "$OUTBOX" -maxdepth 1 -type f -name '*.out.txt' 2>/dev/null | wc -l | tr -d ' ')
+    got=$(find "$RESULTS" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+    echo "inbox   : $INBOX  ($pending command(s) awaiting bot)"
+    echo "outbox  : $OUTBOX  ($replies reply file(s))"
+    echo "results : $RESULTS  ($got downloaded folder(s))"
+    hb="$HOME/work/comms/queue/pakettibot-heartbeat.json"
+    if [[ -f "$hb" ]]; then
+      age=$(( $(date +%s) - $(stat -f %m "$hb" 2>/dev/null || echo 0) ))
+      echo "bot     : heartbeat ${age}s ago"
+    else
+      echo "bot     : no heartbeat file (is the Mini up?)"
+    fi
+    exit 0
+    ;;
+esac
+
+# Parse: collect URLs, pass through a --label <name> flag verbatim.
+label=""
+urls=()
+extra=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --label)
+      [[ -n "${2:-}" ]] || die "--label needs a name"
+      label="$2"; extra+=(--label "$2"); shift 2 ;;
+    http://*|https://*)
+      urls+=("$1"); shift ;;
+    *)
+      die "unexpected argument: $1  (URLs must start with http(s)://)" ;;
+  esac
+done
+
+[[ ${#urls[@]} -ge 1 ]] || die "no URL given. usage: gdrive <drive.google.com URL> [--label <name>]"
+
+for u in "${urls[@]}"; do
+  [[ "$u" == *drive.google.com* ]] || die "not a Google Drive URL: $u  (gdrive only handles drive.google.com links)"
+done
+
+[[ -d "$INBOX" ]] || die "inbox not found: $INBOX  (is the comms Syncthing share present?)"
+
+# Build the command line the bot will parse, exactly as if typed after !pk.
+# `${arr[*]:-}` guards against bash 3.2 (macOS default) treating an empty
+# array as an unbound variable under `set -u`.
+cmd="gdrive ${urls[*]:-} ${extra[*]:-}"
+cmd="$(printf '%s' "$cmd" | sed 's/[[:space:]]*$//')"   # trim trailing space
+
+stem="gdrive-$(date +%Y%m%d-%H%M%S)-$$"
+dest="$INBOX/$stem.txt"
+
+# Atomic drop so Syncthing/the bot never see a half-written file.
+printf '%s\n' "$cmd" > "$dest.tmp"
+mv "$dest.tmp" "$dest"
+log "submitted: $cmd"
+log "drop      : $dest"
+
+if [[ "$WAIT" == "0" ]]; then
+  log "not waiting (GDRIVE_WAIT=0). Confirmation will appear at $OUTBOX/$stem.out.txt"
+  log "Download lands in: $RESULTS/${label:-<gdrive-id>}/"
+  exit 0
+fi
+
+reply="$OUTBOX/$stem.out.txt"
+log "waiting up to ${WAIT}s for the bot's confirmation…"
+deadline=$(( $(date +%s) + WAIT ))
+while [[ $(date +%s) -lt $deadline ]]; do
+  if [[ -f "$reply" ]]; then
+    echo "----- bot reply -----"
+    cat "$reply"
+    echo "---------------------"
+    log "Download lands in: $RESULTS/${label:-<gdrive-id>}/ (Syncthing-mirrored)"
+    exit 0
+  fi
+  sleep 2
+done
+
+log "no confirmation within ${WAIT}s — the bot may be busy or the Mini asleep."
+log "Check later: cat $reply"
+log "Or run: gdrive --status"
+exit 0

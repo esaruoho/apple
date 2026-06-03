@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# card — report-card helper. Resolve a card by name, converse with it on the
+# Mini's on-device LLM, and bundle its full spawning session beside it so the
+# card stays accurate even if the live transcript moves.
+#
+# A report card is the triad {<name>.feature + <name>.session.md + RESULT}, plus
+# the bundled full session {<name>.transcript.jsonl + .transcript.md}. See the
+# report-card skill: ~/.claude/skills/report-card/SKILL.md
+#
+# Usage:
+#   card list [dir]                 list every <name>.feature card under a root
+#   card show  <name|path>          print the card
+#   card path  <name|path>          print the resolved .feature path (and siblings)
+#   card converse <name|path>       converse with the card on the Mini (fm-converse)
+#   card converse <name> --full     converse over the full bundled transcript
+#   card converse <name> -- <args>  pass extra args through to fm-converse
+#   card bundle <name|path> [--session <id>]
+#                                   copy the spawning transcript beside the card as
+#                                   <name>.transcript.jsonl + render .transcript.md,
+#                                   then print the "How to get back" block to paste
+#   card help
+#
+# Card resolution: an exact file/path wins; otherwise <name>.feature is searched
+# under ~/.claude/skills, ~/work/apple, and the current dir. Multiple matches →
+# it lists them and stops (you disambiguate with a path).
+#
+# Apple-native: bash + python3 stdlib. Delegates conversation to fm-converse.
+
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+FM_CONVERSE="$SELF_DIR/fm-converse"
+SEARCH_ROOTS=("$HOME/.claude/skills" "$HOME/work/apple" "$PWD")
+PROJECTS="$HOME/.claude/projects"
+
+log()  { echo "[card] $*" >&2; }
+die()  { echo "[card] ERROR: $*" >&2; exit 1; }
+
+usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+# Resolve a card argument → absolute path to its <name>.feature.
+resolve_card() {
+  local arg="$1"
+  # 1. an existing file (a .feature, or any file in a card dir)
+  if [[ -f "$arg" ]]; then
+    case "$arg" in
+      *.feature) ( cd "$(dirname "$arg")" && echo "$PWD/$(basename "$arg")" ); return 0 ;;
+      *) local d; d="$(cd "$(dirname "$arg")" && pwd)"
+         local hit; hit="$(find "$d" -maxdepth 1 -name '*.feature' | head -1)"
+         [[ -n "$hit" ]] && { echo "$hit"; return 0; } ;;
+    esac
+  fi
+  # 2. a directory holding exactly one .feature
+  if [[ -d "$arg" ]]; then
+    local hit; hit="$(find "$arg" -maxdepth 1 -name '*.feature' | head -1)"
+    [[ -n "$hit" ]] && { ( cd "$(dirname "$hit")" && echo "$PWD/$(basename "$hit")" ); return 0; }
+  fi
+  # 3. a bare name → search the roots for <name>.feature
+  local name="${arg%.feature}"
+  local -a hits=()
+  local r
+  for r in "${SEARCH_ROOTS[@]}"; do
+    [[ -d "$r" ]] || continue
+    while IFS= read -r line; do hits+=("$line"); done \
+      < <(find "$r" -name "${name}.feature" -not -path '*/node_modules/*' 2>/dev/null)
+  done
+  # de-dup (PWD may sit under a root)
+  local -a uniq=(); local h seen
+  for h in "${hits[@]}"; do
+    seen=""; for u in "${uniq[@]:-}"; do [[ "$u" == "$h" ]] && seen=1; done
+    [[ -z "$seen" ]] && uniq+=("$h")
+  done
+  case "${#uniq[@]}" in
+    0) die "no card named '$name' found under: ${SEARCH_ROOTS[*]}" ;;
+    1) echo "${uniq[0]}"; return 0 ;;
+    *) { echo "[card] '$name' is ambiguous — pass a path:"; printf '  %s\n' "${uniq[@]}"; } >&2; exit 2 ;;
+  esac
+}
+
+# Locate the spawning transcript .jsonl for `card bundle`.
+find_transcript() {
+  local session="${1:-}"
+  if [[ -n "$session" ]]; then
+    local hit; hit="$(find "$PROJECTS" -name "${session}.jsonl" 2>/dev/null | head -1)"
+    [[ -n "$hit" ]] || die "no transcript for session '$session' under $PROJECTS"
+    echo "$hit"; return 0
+  fi
+  # default: newest .jsonl in the project dir for the current working directory
+  local proj="$PROJECTS/$(echo "$PWD" | sed 's#/#-#g')"
+  [[ -d "$proj" ]] || die "no project dir for $PWD — pass --session <id>"
+  local hit; hit="$(ls -t "$proj"/*.jsonl 2>/dev/null | head -1)"
+  [[ -n "$hit" ]] || die "no .jsonl in $proj — pass --session <id>"
+  echo "$hit"
+}
+
+render_transcript() {  # $1 = src .jsonl, $2 = dest .md
+  CARD_SRC="$1" CARD_DST="$2" python3 - <<'PY'
+import json, os, sys
+src, dst = os.environ["CARD_SRC"], os.environ["CARD_DST"]
+turns = []
+with open(src, encoding="utf-8", errors="replace") as f:
+    for line in f:
+        line = line.strip()
+        if not line: continue
+        try: o = json.loads(line)
+        except Exception: continue
+        msg = o.get("message") or {}
+        role = msg.get("role") or o.get("type")
+        content = msg.get("content")
+        if content is None: continue
+        parts = []
+        if isinstance(content, str):
+            parts.append(content)
+        elif isinstance(content, list):
+            for b in content:
+                if not isinstance(b, dict): continue
+                bt = b.get("type")
+                if bt == "text":
+                    parts.append(b.get("text", ""))
+                elif bt == "tool_use":
+                    inp = b.get("input", {}) or {}
+                    key = ""
+                    for k in ("command","file_path","description","skill","prompt","query","pattern"):
+                        if k in inp:
+                            key = f" {k}=" + str(inp[k]).replace("\n"," ")[:160]; break
+                    parts.append(f"[tool: {b.get('name','?')}{key}]")
+                elif bt == "tool_result":
+                    rc = b.get("content","")
+                    if isinstance(rc, list):
+                        rc = " ".join(x.get("text","") for x in rc if isinstance(x, dict))
+                    rc = str(rc).replace("\n"," ")
+                    parts.append(f"[tool-result: {rc[:200]}{'…' if len(rc)>200 else ''}]")
+        text = "\n".join(p for p in parts if p and p.strip())
+        if text.strip(): turns.append((role, text))
+out = [f"# Full session transcript — {os.path.basename(dst).replace('.transcript.md','')}",
+       "", "Rendered from the raw `.jsonl` for readability and `fm-converse` ingestion.",
+       "The lossless source is the sibling `.transcript.jsonl`.",
+       f"Turns: {len(turns)}. Snapshot at bundling time (session may have been live).",
+       "", "---", ""]
+for role, text in turns:
+    label = {"user":"## 🧑 User","assistant":"## 🤖 Assistant"}.get(role, f"## {role}")
+    out += [label, "", text, ""]
+open(dst, "w", encoding="utf-8").write("\n".join(out))
+print(f"{len(turns)} turns")
+PY
+}
+
+cmd="${1:-help}"; shift || true
+
+case "$cmd" in
+  -h|--help|help) usage 0 ;;
+
+  list|ls)
+    root="${1:-$HOME/.claude/skills}"
+    [[ -d "$root" ]] || die "not a directory: $root"
+    found=0
+    while IFS= read -r f; do
+      found=1; printf '%-34s %s\n' "$(basename "$f" .feature)" "$f"
+    done < <(find "$root" -name '*.feature' -not -path '*/node_modules/*' 2>/dev/null | sort)
+    [[ "$found" -eq 1 ]] || log "no .feature cards under $root"
+    ;;
+
+  show|cat)
+    [[ $# -ge 1 ]] || die "usage: card show <name|path>"
+    cat "$(resolve_card "$1")" ;;
+
+  path|which)
+    [[ $# -ge 1 ]] || die "usage: card path <name|path>"
+    f="$(resolve_card "$1")"; echo "$f"
+    d="$(dirname "$f")"; stem="$(basename "$f" .feature)"
+    for sib in session.md transcript.md transcript.jsonl; do
+      [[ -f "$d/$stem.$sib" ]] && echo "  + $d/$stem.$sib"
+    done; true ;;
+
+  converse|talk)
+    [[ $# -ge 1 ]] || die "usage: card converse <name|path> [--full] [-- <fm-converse args>]"
+    name="$1"; shift
+    target="feature"; passthru=()
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --full) target="transcript.md"; shift ;;
+        --) shift; passthru+=("$@"); break ;;
+        *) passthru+=("$1"); shift ;;
+      esac
+    done
+    f="$(resolve_card "$name")"; d="$(dirname "$f")"; stem="$(basename "$f" .feature)"
+    if [[ "$target" == "transcript.md" ]]; then
+      file="$d/$stem.transcript.md"
+      [[ -f "$file" ]] || die "no bundled transcript: run \`card bundle $stem\` first"
+    else
+      file="$f"
+    fi
+    [[ -x "$FM_CONVERSE" ]] || die "fm-converse not found at $FM_CONVERSE"
+    log "conversing with $(basename "$file") on the Mini's on-device LLM…"
+    exec "$FM_CONVERSE" "${passthru[@]:-}" "$file" ;;
+
+  bundle)
+    [[ $# -ge 1 ]] || die "usage: card bundle <name|path> [--session <id>]"
+    name="$1"; shift; session=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --session) session="${2:-}"; [[ -n "$session" ]] || die "--session needs an id"; shift 2 ;;
+        *) die "unexpected arg: $1" ;;
+      esac
+    done
+    f="$(resolve_card "$name")"; d="$(dirname "$f")"; stem="$(basename "$f" .feature)"
+    src="$(find_transcript "$session")"
+    sid="$(basename "$src" .jsonl)"
+    cp "$src" "$d/$stem.transcript.jsonl"
+    n="$(render_transcript "$src" "$d/$stem.transcript.md")"
+    log "bundled session $sid → $stem.transcript.{jsonl,md} ($n)"
+    first="$(grep -m1 -o '"timestamp":"[^"]*"' "$src" | head -1 | sed 's/.*:"//; s/"//')"
+    last="$(grep -o '"timestamp":"[^"]*"' "$src" | tail -1 | sed 's/.*:"//; s/"//')"
+    cat >&2 <<EOF
+
+  Paste this into ${stem}.session.md under "How to get back":
+
+  - Bundled full session (travels WITH the card):
+    - Lossless: ${stem}.transcript.jsonl
+    - Readable / fm-converse: ${stem}.transcript.md
+  - Live transcript (origin): file://${src}
+  - Session ID: ${sid}
+  - Resume: claude --resume ${sid}
+  - Span (UTC): ${first} → ${last}
+  - Converse: card converse ${stem}
+EOF
+    ;;
+
+  *) die "unknown command: $cmd  (try: card help)" ;;
+esac
