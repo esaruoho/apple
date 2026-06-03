@@ -64,20 +64,42 @@ guard !query.isEmpty else {
 let scriptDir = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent().path
 let learnedPath = (ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()) + "/.config/apple-bar/learned.feature"
 
-// ── converse mode: a leading "?" talks to fm-converse over the LEARNED rules ──
-// The bar is a content generator: every run is logged as a Gherkin scenario into
-// learned.feature; "? <question>" answers from that accumulated corpus via the
-// on-device LLM on the Mini. This is the escape hatch for anything the router can't
-// place (e.g. open questions about your own saved rules).
+// ── converse mode: talk to the on-device LLM on the Mini ──
+// Triggers (all answer via fm-submit):
+//   "? <question>"        → answer grounded in your LEARNED rules (learned.feature)
+//   "chat <question>"     → general chat, no rules context
+//   "converse <question>" → same as chat
+// The bar logs every run as a Gherkin scenario into learned.feature, so "?" can read
+// that accumulated corpus back. This is the escape hatch for anything the router
+// can't place.
+let lowerQ = query.lowercased()
+var converseQuestion: String? = nil
+var converseWithRules = false
 if query.hasPrefix("?") {
-    let q = String(query.dropFirst()).trimmingCharacters(in: .whitespaces)
-    var context = ""
-    if let d = FileManager.default.contents(atPath: learnedPath), let s = String(data: d, encoding: .utf8) {
-        context = String(s.suffix(3000))   // last ~3000 chars of accumulated rules
+    converseQuestion = String(query.dropFirst()).trimmingCharacters(in: .whitespaces); converseWithRules = true
+} else if lowerQ == "chat" || lowerQ == "converse" {
+    converseQuestion = ""
+} else if lowerQ.hasPrefix("chat ") {
+    converseQuestion = String(query.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+} else if lowerQ.hasPrefix("converse ") {
+    converseQuestion = String(query.dropFirst(9)).trimmingCharacters(in: .whitespaces)
+}
+if let q = converseQuestion {
+    if q.isEmpty && !converseWithRules {
+        print("Type:  chat <your question>   (or  ? <question about your saved rules>)"); exit(0)
     }
-    let prompt = q.isEmpty
-        ? "Summarise concisely what these saved rules say:\n\n\(context)"
-        : "Answer concisely, using these saved rules as context. Add no facts not supported by them or general knowledge.\n\nSAVED RULES:\n\(context)\n\nQUESTION: \(q)"
+    var prompt: String
+    if converseWithRules {
+        var context = ""
+        if let d = FileManager.default.contents(atPath: learnedPath), let s = String(data: d, encoding: .utf8) {
+            context = String(s.suffix(3000))
+        }
+        prompt = q.isEmpty
+            ? "Summarise concisely what these saved rules say:\n\n\(context)"
+            : "Answer concisely, using these saved rules as context. Add no facts not supported by them or general knowledge.\n\nSAVED RULES:\n\(context)\n\nQUESTION: \(q)"
+    } else {
+        prompt = "Answer concisely and helpfully.\n\nQUESTION: \(q)"
+    }
     // fm-submit (one-shot, on-device LLM on the Mini). fm-converse would add stateful
     // memory but currently hangs; swap it back here once that's fixed.
     let fmPath = scriptDir + "/fm-submit"

@@ -1,59 +1,380 @@
 {
   "_comment": "The ONE capability catalog. Read by bin/apple-intent (NLEmbedding routing) AND apple-bar/AppleBar (live Spotlight suggestions). Add an intent here; both pick it up. Each must have a matching case in bin/apple-do. needsArg=true → the typed phrase is passed through to the tool.",
   "intents": [
-    { "action": "home", "needsArg": false, "desc": "temperature + humidity at home (HomePod)",
-      "examples": ["temperature", "how hot is it", "how warm is it", "how cold is it", "is it hot", "is it cold", "humidity", "how humid is it", "room temperature", "indoor temperature"] },
-    { "action": "directions", "needsArg": true, "desc": "directions home in Apple Maps",
-      "examples": ["how do i get home", "directions home", "how far away am i from home", "how far is home", "navigate home", "route home", "take me home", "how long to get home", "drive home", "walk home"] },
-    { "action": "address", "needsArg": false, "desc": "your home address (Contacts)",
-      "examples": ["where is my home", "where do i live", "what's my home address", "my home address", "my address", "what is my address", "home address", "where is my house"] },
-    { "action": "now", "needsArg": false, "desc": "current date, time, weekday",
-      "examples": ["what time is it", "what's the time", "what is today's date", "what day is it today", "current date and time", "what's the day today"] },
-    { "action": "battery", "needsArg": false, "desc": "battery level + charging state",
-      "examples": ["battery level", "how much battery", "am i charging", "battery percentage", "how much charge left", "is it plugged in"] },
-    { "action": "wifi", "needsArg": false, "desc": "current Wi-Fi network",
-      "examples": ["what wifi am i on", "current network", "wifi name", "which network am i connected to", "what's my wifi", "ssid"] },
-    { "action": "clipboard", "needsArg": false, "desc": "what's on the clipboard",
-      "examples": ["what's on my clipboard", "show clipboard", "what did i copy", "clipboard contents", "what's copied"] },
-    { "action": "lock", "needsArg": false, "desc": "lock the screen",
-      "examples": ["lock my screen", "lock the mac", "lock the computer", "lock screen", "secure my mac"] },
-    { "action": "desktop", "needsArg": true, "desc": "hide (or show) all Desktop icons",
-      "examples": ["hide all icons on desktop", "hide desktop icons", "clean up my desktop", "hide my desktop", "clear the desktop", "show desktop icons", "reveal desktop icons"] },
-    { "action": "dock", "needsArg": true, "desc": "hide the Dock (auto-hide) or always show it",
-      "examples": ["hide the dock", "auto-hide the dock", "get the dock out of the way", "hide my dock", "show the dock", "always show the dock", "keep the dock visible"] },
-    { "action": "dark", "needsArg": false, "desc": "toggle dark / light mode",
-      "examples": ["toggle dark mode", "dark mode", "switch to dark mode", "turn on dark mode", "switch to light mode", "change appearance"] },
-    { "action": "sleep", "needsArg": false, "desc": "put the display to sleep",
-      "examples": ["sleep the display", "turn off the screen", "display sleep", "put the screen to sleep", "blank the screen"] },
-    { "action": "disk", "needsArg": false, "desc": "disk space overview",
-      "examples": ["how much disk space", "disk usage", "how much free space", "how full is my disk", "storage overview", "disk space"] },
-    { "action": "mute", "needsArg": false, "desc": "toggle audio mute",
-      "examples": ["mute", "mute the sound", "unmute", "toggle mute", "silence the audio", "turn off the sound"] },
-    { "action": "screenshot", "needsArg": false, "desc": "screenshot the screen to the clipboard",
-      "examples": ["take a screenshot", "screenshot", "capture the screen", "grab the screen", "screen grab to clipboard"] },
-    { "action": "eject", "needsArg": false, "desc": "eject removable disks",
-      "examples": ["eject all disks", "eject removable drives", "eject usb", "unmount external drives", "eject"] },
-    { "action": "caffeinate", "needsArg": false, "desc": "keep the Mac awake for an hour",
-      "examples": ["keep awake", "stay awake", "don't sleep", "caffeinate", "prevent sleep", "keep the mac awake"] },
-    { "action": "report", "needsArg": false, "desc": "this Mac's hardware report",
-      "examples": ["mac report", "system report", "what mac do i have", "hardware specs", "system specs", "about this mac"] },
-    { "action": "mini", "needsArg": false, "desc": "is the Mini/bridge reachable",
-      "examples": ["is the bridge ok", "is the mini reachable", "bridge health", "check the bridge", "is the mini up"] },
-    { "action": "uptime", "needsArg": false, "desc": "system uptime",
-      "examples": ["uptime", "how long has this been running", "system uptime", "how long since reboot", "time since boot"] },
-    { "action": "keywords", "needsArg": false, "desc": "keywords from the clipboard text",
-      "examples": ["keywords", "extract keywords", "key words from my clipboard", "what are the keywords", "key terms"] },
-    { "action": "entities", "needsArg": false, "desc": "named entities in the clipboard text",
-      "examples": ["named entities", "who is mentioned", "extract entities", "find names in this", "people and places mentioned"] },
-    { "action": "sentiment", "needsArg": false, "desc": "sentiment of the clipboard text",
-      "examples": ["sentiment", "how positive is this", "tone of this text", "is this positive or negative", "mood of the text"] },
-    { "action": "fleet", "needsArg": false, "desc": "status of the Mini's workers",
-      "examples": ["is the mini busy", "fleet status", "are the workers running", "is ocr running right now", "what is the mini doing", "are the services alive", "status of the background workers"] },
-    { "action": "spotlight", "needsArg": true, "desc": "find files by name (Spotlight)",
-      "examples": ["find a file named", "search for a file called", "locate the document", "where is the file", "find the file on disk", "open the file named"] },
-    { "action": "search", "needsArg": true, "desc": "semantic search of your notes",
-      "examples": ["search my notes about", "find my notes on", "what did i write about", "semantic search for", "look in my notes for", "find notes mentioning", "what do my notes say about"] },
-    { "action": "ocr", "needsArg": true, "desc": "extract text from a PDF/image (Vision)",
-      "examples": ["extract text from this pdf", "read this image", "ocr this file", "get the text out of this pdf", "what does this scanned document say", "transcribe this screenshot"] }
+    {
+      "action": "home",
+      "needsArg": false,
+      "desc": "temperature + humidity at home (HomePod)",
+      "examples": [
+        "home",
+        "temperature",
+        "how hot is it",
+        "how warm is it",
+        "how cold is it",
+        "is it hot",
+        "is it cold",
+        "humidity",
+        "how humid is it",
+        "room temperature",
+        "indoor temperature"
+      ]
+    },
+    {
+      "action": "directions",
+      "needsArg": true,
+      "desc": "directions home in Apple Maps",
+      "examples": [
+        "directions",
+        "how do i get home",
+        "directions home",
+        "how far away am i from home",
+        "how far is home",
+        "navigate home",
+        "route home",
+        "take me home",
+        "how long to get home",
+        "drive home",
+        "walk home"
+      ]
+    },
+    {
+      "action": "address",
+      "needsArg": false,
+      "desc": "your home address (Contacts)",
+      "examples": [
+        "address",
+        "where is my home",
+        "where do i live",
+        "what's my home address",
+        "my home address",
+        "my address",
+        "what is my address",
+        "home address",
+        "where is my house"
+      ]
+    },
+    {
+      "action": "now",
+      "needsArg": false,
+      "desc": "current date, time, weekday",
+      "examples": [
+        "now",
+        "what time is it",
+        "what's the time",
+        "what is today's date",
+        "what day is it today",
+        "current date and time",
+        "what's the day today"
+      ]
+    },
+    {
+      "action": "battery",
+      "needsArg": false,
+      "desc": "battery level + charging state",
+      "examples": [
+        "battery",
+        "battery level",
+        "how much battery",
+        "am i charging",
+        "battery percentage",
+        "how much charge left",
+        "is it plugged in"
+      ]
+    },
+    {
+      "action": "wifi",
+      "needsArg": false,
+      "desc": "current Wi-Fi network",
+      "examples": [
+        "wifi",
+        "what wifi am i on",
+        "current network",
+        "wifi name",
+        "which network am i connected to",
+        "what's my wifi",
+        "ssid"
+      ]
+    },
+    {
+      "action": "clipboard",
+      "needsArg": false,
+      "desc": "what's on the clipboard",
+      "examples": [
+        "clipboard",
+        "what's on my clipboard",
+        "show clipboard",
+        "what did i copy",
+        "clipboard contents",
+        "what's copied"
+      ]
+    },
+    {
+      "action": "lock",
+      "needsArg": false,
+      "desc": "lock the screen",
+      "examples": [
+        "lock",
+        "lock my screen",
+        "lock the mac",
+        "lock the computer",
+        "lock screen",
+        "secure my mac"
+      ]
+    },
+    {
+      "action": "desktop",
+      "needsArg": true,
+      "desc": "hide (or show) all Desktop icons",
+      "examples": [
+        "desktop",
+        "hide all icons on desktop",
+        "hide desktop icons",
+        "clean up my desktop",
+        "hide my desktop",
+        "clear the desktop",
+        "show desktop icons",
+        "reveal desktop icons"
+      ]
+    },
+    {
+      "action": "dock",
+      "needsArg": true,
+      "desc": "hide the Dock (auto-hide) or always show it",
+      "examples": [
+        "dock",
+        "hide the dock",
+        "auto-hide the dock",
+        "get the dock out of the way",
+        "hide my dock",
+        "show the dock",
+        "always show the dock",
+        "keep the dock visible"
+      ]
+    },
+    {
+      "action": "dark",
+      "needsArg": false,
+      "desc": "toggle dark / light mode",
+      "examples": [
+        "dark",
+        "toggle dark mode",
+        "dark mode",
+        "switch to dark mode",
+        "turn on dark mode",
+        "switch to light mode",
+        "change appearance"
+      ]
+    },
+    {
+      "action": "sleep",
+      "needsArg": false,
+      "desc": "put the display to sleep",
+      "examples": [
+        "sleep",
+        "sleep the display",
+        "turn off the screen",
+        "display sleep",
+        "put the screen to sleep",
+        "blank the screen"
+      ]
+    },
+    {
+      "action": "disk",
+      "needsArg": false,
+      "desc": "disk space overview",
+      "examples": [
+        "disk",
+        "how much disk space",
+        "disk usage",
+        "how much free space",
+        "how full is my disk",
+        "storage overview",
+        "disk space"
+      ]
+    },
+    {
+      "action": "mute",
+      "needsArg": false,
+      "desc": "toggle audio mute",
+      "examples": [
+        "mute",
+        "mute the sound",
+        "unmute",
+        "toggle mute",
+        "silence the audio",
+        "turn off the sound"
+      ]
+    },
+    {
+      "action": "screenshot",
+      "needsArg": false,
+      "desc": "screenshot the screen to the clipboard",
+      "examples": [
+        "take a screenshot",
+        "screenshot",
+        "capture the screen",
+        "grab the screen",
+        "screen grab to clipboard"
+      ]
+    },
+    {
+      "action": "eject",
+      "needsArg": false,
+      "desc": "eject removable disks",
+      "examples": [
+        "eject all disks",
+        "eject removable drives",
+        "eject usb",
+        "unmount external drives",
+        "eject"
+      ]
+    },
+    {
+      "action": "caffeinate",
+      "needsArg": false,
+      "desc": "keep the Mac awake for an hour",
+      "examples": [
+        "keep awake",
+        "stay awake",
+        "don't sleep",
+        "caffeinate",
+        "prevent sleep",
+        "keep the mac awake"
+      ]
+    },
+    {
+      "action": "report",
+      "needsArg": false,
+      "desc": "this Mac's hardware report",
+      "examples": [
+        "report",
+        "mac report",
+        "system report",
+        "what mac do i have",
+        "hardware specs",
+        "system specs",
+        "about this mac"
+      ]
+    },
+    {
+      "action": "mini",
+      "needsArg": false,
+      "desc": "is the Mini/bridge reachable",
+      "examples": [
+        "mini",
+        "is the bridge ok",
+        "is the mini reachable",
+        "bridge health",
+        "check the bridge",
+        "is the mini up"
+      ]
+    },
+    {
+      "action": "uptime",
+      "needsArg": false,
+      "desc": "system uptime",
+      "examples": [
+        "uptime",
+        "how long has this been running",
+        "system uptime",
+        "how long since reboot",
+        "time since boot"
+      ]
+    },
+    {
+      "action": "keywords",
+      "needsArg": false,
+      "desc": "keywords from the clipboard text",
+      "examples": [
+        "keywords",
+        "extract keywords",
+        "key words from my clipboard",
+        "what are the keywords",
+        "key terms"
+      ]
+    },
+    {
+      "action": "entities",
+      "needsArg": false,
+      "desc": "named entities in the clipboard text",
+      "examples": [
+        "entities",
+        "named entities",
+        "who is mentioned",
+        "extract entities",
+        "find names in this",
+        "people and places mentioned"
+      ]
+    },
+    {
+      "action": "sentiment",
+      "needsArg": false,
+      "desc": "sentiment of the clipboard text",
+      "examples": [
+        "sentiment",
+        "how positive is this",
+        "tone of this text",
+        "is this positive or negative",
+        "mood of the text"
+      ]
+    },
+    {
+      "action": "fleet",
+      "needsArg": false,
+      "desc": "status of the Mini's workers",
+      "examples": [
+        "fleet",
+        "is the mini busy",
+        "fleet status",
+        "are the workers running",
+        "is ocr running right now",
+        "what is the mini doing",
+        "are the services alive",
+        "status of the background workers"
+      ]
+    },
+    {
+      "action": "spotlight",
+      "needsArg": true,
+      "desc": "find files by name (Spotlight)",
+      "examples": [
+        "spotlight",
+        "find a file named",
+        "search for a file called",
+        "locate the document",
+        "where is the file",
+        "find the file on disk",
+        "open the file named"
+      ]
+    },
+    {
+      "action": "search",
+      "needsArg": true,
+      "desc": "semantic search of your notes",
+      "examples": [
+        "search",
+        "search my notes about",
+        "find my notes on",
+        "what did i write about",
+        "semantic search for",
+        "look in my notes for",
+        "find notes mentioning",
+        "what do my notes say about"
+      ]
+    },
+    {
+      "action": "ocr",
+      "needsArg": true,
+      "desc": "extract text from a PDF/image (Vision)",
+      "examples": [
+        "ocr",
+        "extract text from this pdf",
+        "read this image",
+        "ocr this file",
+        "get the text out of this pdf",
+        "what does this scanned document say",
+        "transcribe this screenshot"
+      ]
+    }
   ]
 }

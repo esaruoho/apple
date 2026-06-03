@@ -222,7 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         guard !q.isEmpty else { return }
         // Run the HIGHLIGHTED suggestion (Spotlight-style). For "?" converse or when
         // there are no suggestions, pass nil → apple-intent routes/answers itself.
-        let action: String? = (suggesting && !q.hasPrefix("?") && selected < suggestions.count)
+        let action: String? = (suggesting && !isConverse(q) && selected < suggestions.count)
             ? suggestions[selected].action : nil
         spinner.startAnimation(nil)
         showResult(speak ? "… (asking the model on the Mini)" : "…")
@@ -315,11 +315,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         setBody(out)
     }
 
-    // Live suggestions as you type. "?" = converse mode → no suggestions.
+    // A query that goes to the LLM rather than an action: "?" / "chat …" / "converse …"
+    func isConverse(_ q: String) -> Bool {
+        let l = q.lowercased()
+        return q.hasPrefix("?") || l == "chat" || l == "converse"
+            || l.hasPrefix("chat ") || l.hasPrefix("converse ")
+    }
+
+    // Live suggestions as you type. Converse queries get no suggestions.
     func controlTextDidChange(_ obj: Notification) {
         if dictation.isRunning { return }
         let q = field.stringValue.trimmingCharacters(in: .whitespaces)
-        if q.isEmpty || q.hasPrefix("?") { resultScroll.isHidden = true; suggesting = false; return }
+        if q.isEmpty || isConverse(q) { resultScroll.isHidden = true; suggesting = false; return }
         rank(q)
         renderSuggestions()
     }
