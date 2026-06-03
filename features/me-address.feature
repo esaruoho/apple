@@ -47,12 +47,14 @@ Feature: Home address from the Contacts me-card
     # cite: bin/apple-intent CATALOG "home" intent (~26); test shared/test-intent-routing.sh
 
   @built @untested
-  Scenario: The address resolves from the "me" card
-    Given a "me" card is set in Contacts (Esa Juhani Ruoho)
+  Scenario: The address resolves from the me-card, or by name if none is set
+    Given Contacts has either a "me" card OR a contact matching the account full name
     When `apple-do address` runs
     Then it returns the home-labelled postal address (falling back to the first address)
-    # cite: bin/me-address (AppleScript `my card` → home address); bin/apple-do "address)"
-    # untested: first run needs a one-time Automation→Contacts grant (GUI prompt)
+    And if no "me" card is designated it finds the contact whose name contains the first
+      and last word of `id -F` (e.g. "Esa Ruoho" → matches "Esa Juhani Ruoho")
+    # cite: bin/me-address (`my card`, else `people whose name contains f and l`); apple-do "address)"
+    # untested: needs the Automation→Contacts grant; my shell lacks it (only AppleBar has it)
 
   @built
   Scenario: The address reads through unstyled (whitelabel passthrough)

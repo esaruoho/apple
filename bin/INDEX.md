@@ -107,7 +107,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
 `mailgraph` — (no description) — `bin/mailgraph`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
-`me-address` — print the home postal address from your Contacts "me" card. — `bin/me-address`
+`me-address` — print the home postal address from Contacts. — `bin/me-address`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `ner-graph` — (no description) — `bin/ner-graph`

@@ -1,27 +1,45 @@
 #!/usr/bin/env bash
-# me-address — print the home postal address from your Contacts "me" card.
-# Apple-native: AppleScript → Contacts.app `my card`. No deps, no network.
-# First run prompts once for Automation access to Contacts (allow it).
+# me-address — print the home postal address from Contacts.
+# Primary: your "me" card (`my card`). Fallback: the contact matching your account
+# full name (from `id -F`, or $APPLE_OWNER) when no me-card is designated.
+# Apple-native: AppleScript → Contacts.app. No deps, no network. First run prompts
+# once for Automation access to Contacts (allow it).
 #
 # FEATURE-CARD >> features/me-address.feature
 set -uo pipefail
 
-osascript <<'OSA' 2>/dev/null
-tell application "Contacts"
-  try
-    set c to my card
-  on error
-    return "No \"me\" card is set in Contacts (Card ▸ Make This My Card)."
-  end try
-  set addrs to addresses of c
-  if (count of addrs) is 0 then return "Your Contacts me-card has no postal address."
-  set chosen to missing value
-  repeat with a in addrs
-    if (label of a) is "home" then set chosen to a
-  end repeat
-  if chosen is missing value then set chosen to item 1 of addrs
-  return formatted address of chosen
-end tell
+OWNER="${APPLE_OWNER:-$(id -F 2>/dev/null || true)}"
+
+osascript - "$OWNER" <<'OSA' 2>/dev/null
+on run argv
+  set ownerName to item 1 of argv
+  tell application "Contacts"
+    set theCard to missing value
+    try
+      set theCard to my card
+    end try
+    if theCard is missing value and ownerName is not "" then
+      set ws to words of ownerName
+      if (count of ws) ≥ 1 then
+        set f to item 1 of ws
+        set l to item -1 of ws
+        set hits to (every person whose name contains f and name contains l)
+        if (count of hits) > 0 then set theCard to item 1 of hits
+      end if
+    end if
+    if theCard is missing value then
+      return "No \"me\" card set and no contact matched \"" & ownerName & "\". In Contacts: select your card ▸ Card ▸ Make This My Card."
+    end if
+    set addrs to addresses of theCard
+    if (count of addrs) is 0 then return "That contact card has no postal address."
+    set chosen to missing value
+    repeat with a in addrs
+      if (label of a) is "home" then set chosen to a
+    end repeat
+    if chosen is missing value then set chosen to item 1 of addrs
+    return formatted address of chosen
+  end tell
+end run
 OSA
 rc=$?
 if [ $rc -ne 0 ]; then
