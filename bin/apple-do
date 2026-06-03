@@ -30,6 +30,16 @@ caps() {
 "dark	toggle dark / light mode" \
 "sleep	put the display to sleep" \
 "disk	disk space overview" \
+"mute	toggle audio mute" \
+"screenshot	screenshot to the clipboard" \
+"eject	eject removable disks" \
+"caffeinate	keep the Mac awake for an hour" \
+"report	this Mac's hardware report" \
+"mini	is the Mini/bridge reachable" \
+"uptime	system uptime" \
+"keywords	keywords from the clipboard text" \
+"entities	named entities in the clipboard text" \
+"sentiment	sentiment of the clipboard text" \
 "fleet	live status of the Mini's workers (heartbeats)" \
 "spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
 "search	semantic search of your notes (MiniLM, on the Mini) — apple-do search <query>" \
@@ -68,6 +78,20 @@ case "$cap" in
     [ "$m" = "true" ] && echo "Dark mode ON." || echo "Light mode ON." ;;
   sleep)  pmset displaysleepnow 2>/dev/null && echo "Display asleep." || echo "sleep: couldn't sleep the display." ;;
   disk)   exec "$HERE/disk-overview" ;;
+  mute)
+    osascript -e 'set volume output muted (not (output muted of (get volume settings)))' 2>/dev/null
+    [ "$(osascript -e 'output muted of (get volume settings)' 2>/dev/null)" = "true" ] && echo "Muted." || echo "Unmuted." ;;
+  screenshot) screencapture -c 2>/dev/null && echo "Screenshot copied to clipboard." || echo "screenshot: failed." ;;
+  eject)
+    osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)' 2>/dev/null \
+      && echo "Ejected removable disks." || echo "eject: nothing ejectable." ;;
+  caffeinate) nohup caffeinate -d -t 3600 >/dev/null 2>&1 & disown; echo "Staying awake for 1 hour." ;;
+  report)  timeout 25 "$HERE/apple-report" 2>/dev/null | head -24 || echo "report unavailable" ;;
+  mini)    timeout 15 "$HERE/bridge-doctor" 2>/dev/null | head -24 || echo "bridge check unavailable" ;;
+  uptime)  uptime ;;
+  keywords)  pbpaste 2>/dev/null | "$HERE/apple-keywords" 2>/dev/null | head -15 || echo "(nothing on the clipboard)" ;;
+  entities)  pbpaste 2>/dev/null | "$HERE/apple-ner" 2>/dev/null | head -15 || echo "(nothing on the clipboard)" ;;
+  sentiment) pbpaste 2>/dev/null | "$HERE/apple-sentiment" 2>/dev/null | head -10 || echo "(nothing on the clipboard)" ;;
   fleet)
     q="$HOME/work/comms/queue"; nowS=$(date +%s)
     for hb in "$q"/*-heartbeat.json; do

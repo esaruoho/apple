@@ -40,4 +40,14 @@ expect "auto-hide the dock"        dock
 expect "toggle dark mode"          dark
 expect "how much disk space"       disk
 expect "sleep the display"         sleep
+expect "mute the sound"            mute
+expect "take a screenshot"         screenshot
+expect "keep awake"                caffeinate
+expect "eject all disks"           eject
+expect "what mac do i have"        report
+expect "is the bridge ok"          mini
+expect "system uptime"             uptime
+expect "extract keywords"          keywords
+expect "who is mentioned"          entities
+expect "how positive is this"      sentiment
 [ $fail -eq 0 ] && { echo; echo "✅ ALL INTENT-ROUTING TESTS PASS"; } || { echo; echo "❌ routing failures"; exit 1; }
