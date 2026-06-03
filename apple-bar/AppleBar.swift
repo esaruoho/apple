@@ -34,12 +34,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     var micButton: NSButton!
     var hotKeyRef: EventHotKeyRef?
 
-    // Dictation (on-device Speech framework — no network, no Tahoe).
-    let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    var recognitionTask: SFSpeechRecognitionTask?
-    let audioEngine = AVAudioEngine()
-    var listening = false
+    // Dictation: the shared on-device engine (shared/Dictation.swift), not a
+    // re-roll. AppleBar just wires its callbacks to the text field + mic button.
+    let dictation = OnDeviceDictation()
 
     let panelWidth: CGFloat = 580
     let fieldRowHeight: CGFloat = 60
@@ -59,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         statusItem.menu = menu
 
         buildPanel()
+        wireDictation()
         registerHotKey()
 
         // ⌘↩ while the bar is open → rephrase the result via the LLM (FM on the Mini).
@@ -157,7 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     @objc func submit() { runQuery(speak: false) }
 
     func runQuery(speak: Bool) {
-        if listening { stopDictation() }   // ↩/⌘↩ stops the mic, then runs what was heard
+        if dictation.isRunning { dictation.stop() }   // ↩/⌘↩ stops the mic, then runs what was heard
         let q = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
         spinner.startAnimation(nil)
@@ -215,73 +213,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         }
     }
 
-    // ── dictation: on-device Speech framework (no network, no Tahoe) ──
-    @objc func toggleDictation() {
-        if listening { stopDictation(); return }
-        SFSpeechRecognizer.requestAuthorization { [weak self] sAuth in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                guard sAuth == .authorized else {
-                    self.showResult("Speech recognition isn't authorized.\nSystem Settings ▸ Privacy & Security ▸ Speech Recognition → enable AppleBar.")
-                    return
-                }
-                AVCaptureDevice.requestAccess(for: .audio) { micOK in
-                    DispatchQueue.main.async {
-                        guard micOK else {
-                            self.showResult("Microphone access denied.\nSystem Settings ▸ Privacy & Security ▸ Microphone → enable AppleBar.")
-                            return
-                        }
-                        self.startDictation()
-                    }
-                }
+    // ── dictation: wire the shared OnDeviceDictation engine to the UI ──
+    // The engine (shared/Dictation.swift) owns the mic + recognizer; AppleBar only
+    // decides what its three callbacks do. No SFSpeechRecognizer code lives here.
+    // FEATURE-CARD >> features/dictation-button.feature
+    func wireDictation() {
+        dictation.onText = { [weak self] text, _ in self?.field.stringValue = text }
+        dictation.onStateChange = { [weak self] running in
+            guard let self = self else { return }
+            self.micButton.title = running ? "⏹" : "🎙"
+            self.micButton.contentTintColor = running ? .systemRed : nil
+            if running {
+                self.field.stringValue = ""
+                self.field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)"
+            } else {
+                self.field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
+                self.panel.makeFirstResponder(self.field)
             }
         }
+        dictation.onError = { [weak self] msg in self?.showResult(msg) }
     }
 
-    func startDictation() {
-        guard let recognizer = recognizer, recognizer.isAvailable else {
-            showResult("Speech recognizer unavailable right now."); return
-        }
-        recognitionTask?.cancel(); recognitionTask = nil
-        let req = SFSpeechAudioBufferRecognitionRequest()
-        req.shouldReportPartialResults = true
-        if recognizer.supportsOnDeviceRecognition { req.requiresOnDeviceRecognition = true }  // keep it local
-        recognitionRequest = req
-
-        let input = audioEngine.inputNode
-        let fmt = input.outputFormat(forBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in req.append(buf) }
-        audioEngine.prepare()
-        do { try audioEngine.start() } catch {
-            showResult("Couldn't start the microphone: \(error.localizedDescription)"); return
-        }
-        listening = true
-        micButton.title = "⏹"
-        micButton.contentTintColor = .systemRed
-        field.stringValue = ""
-        field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)"
-        recognitionTask = recognizer.recognitionTask(with: req) { [weak self] result, error in
-            guard let self = self else { return }
-            if let r = result { self.field.stringValue = r.bestTranscription.formattedString }
-            if error != nil || (result?.isFinal ?? false) { self.stopDictation() }
-        }
-    }
-
-    func stopDictation() {
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-        recognitionRequest?.endAudio()
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionRequest = nil
-        listening = false
-        micButton.title = "🎙"
-        micButton.contentTintColor = nil
-        field.placeholderString = "Ask the toolbox…   ↩ run · ⌘↩ rephrase · 🎙 dictate"
-        panel.makeFirstResponder(field)
-    }
+    @objc func toggleDictation() { dictation.toggle() }
 
     func idealHeight(of text: String) -> CGFloat {
         let font = resultView.font ?? NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -325,7 +278,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 }
 
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.run()
+// @main entry point — required now that AppleBar.swift compiles alongside
+// shared/Dictation.swift (top-level statements aren't allowed across multiple files).
+@main
+enum AppleBarMain {
+    static let delegate = AppDelegate()   // strong-held so NSApplication's weak ref survives
+    static func main() {
+        let app = NSApplication.shared
+        app.delegate = delegate
+        app.run()
+    }
+}

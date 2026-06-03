@@ -37,7 +37,8 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
 PLIST
 
 echo "compiling …"
-xcrun swiftc -O -target arm64-apple-macos11.0 "$HERE/AppleBar.swift" \
+# Compile the shared dictation engine alongside the app (one source of truth).
+xcrun swiftc -O -target arm64-apple-macos11.0 "$HERE/AppleBar.swift" "$HERE/../shared/Dictation.swift" \
   -o "$BUNDLE/Contents/MacOS/$APP" \
   -framework Cocoa -framework Carbon -framework Speech -framework AVFoundation
 

@@ -8167,6 +8167,7 @@ class ChatInputTextView: NSTextView {
 // The two flavors of toggle (⌘D inside the --live panel, ⌃⌥⌘D global)
 // both end up calling `toggle(target:)` on a single instance owned by
 // LiveViewportDelegate. Hotkey wiring lives in the delegate.
+// FEATURE-CARD >> features/dictation-button.feature  (@todo: refactor onto shared/Dictation.swift OnDeviceDictation)
 class SpeechDictationController: NSObject {
     private let audioEngine = AVAudioEngine()
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
