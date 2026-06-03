@@ -4,9 +4,10 @@
 # your home address (from me-address, cached). Transport mode auto-detected from the
 # phrase ("walk"/"transit"/… → flag), default driving.
 #
-# Reuses the Apple Maps URL pattern proven in ~/work/ray-graph
+# Reuses the Apple Maps directions params proven in ~/work/ray-graph
 # (js/dashboard/dashboard-ui.js getDirectionsUrl): dirflg w=walking d=driving r=transit.
-# Apple-native: just `open` on a maps.apple.com URL. python3 stdlib for URL-encoding.
+# Apple-native: `open` on a maps:// URL → launches Maps.app (not the browser).
+# python3 stdlib for URL-encoding.
 #
 # FEATURE-CARD >> features/directions-home.feature
 set -uo pipefail
@@ -26,7 +27,9 @@ case "$addr" in
 esac
 
 enc=$(printf '%s' "$addr" | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read().strip()))')
-url="https://maps.apple.com/?daddr=${enc}&dirflg=${flg}"
+# maps:// is the scheme Maps.app owns — opens the app directly, not the browser
+# (https://maps.apple.com/ is a web URL the default browser claims). Same query params.
+url="maps://?daddr=${enc}&dirflg=${flg}"
 if open "$url" 2>/dev/null; then
   echo "Opening directions home in Maps ($mode) → $addr"
 else

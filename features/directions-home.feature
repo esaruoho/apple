@@ -55,14 +55,15 @@ Feature: Directions home via Apple Maps
     # cite: bin/apple-intent CATALOG "home" intent narrowed (~26); test shared/test-intent-routing.sh
 
   @built
-  Scenario: directions opens Maps from current location to home
+  Scenario: directions opens Maps.app (not the browser) from current location to home
     Given a resolved home address (me-address, cached)
     When `apple-do directions` runs
-    Then it opens https://maps.apple.com/?daddr=<home>&dirflg=<mode> in Maps,
+    Then it opens maps://?daddr=<home>&dirflg=<mode> — the maps:// SCHEME, so Maps.app
+      handles it directly (https://maps.apple.com/ would open the browser instead),
       with no saddr so Maps routes from the current location (giving distance + ETA)
     And the transport mode is auto-detected from the phrase: walk→w, transit→r, else driving→d
-    # cite: bin/maps-directions (mode case + open); door-code lines stripped from the address
-    # hand-verified 2026-06-03: built https://maps.apple.com/?daddr=Inkiväärikuja%206%20B20…&dirflg=d
+    # cite: bin/maps-directions (mode case + open of maps://); door-code lines stripped
+    # hand-verified 2026-06-03: `apple-do directions` → Maps.app running (pgrep ✓), no browser tab
 
   @note
   Scenario: The Maps URL pattern is reused from ray-graph, not re-invented
