@@ -1,4 +1,4 @@
-# CLI Tools Index — 194 tools in bin/
+# CLI Tools Index — 196 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -63,6 +63,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
 `convey` — (no description) — `bin/convey`
+`desktop-icons` — hide or show ALL icons on the Desktop. — `bin/desktop-icons`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
 `dictation-commands-port-audit.py` — (no description) — `bin/dictation-commands-port-audit.py`
@@ -70,6 +71,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `dictation-commands-vocal-shortcuts-import.py` — (no description) — `bin/dictation-commands-vocal-shortcuts-import.py`
 `disk-overview` — (no description) — `bin/disk-overview`
 `dock` — (no description) — `bin/dock`
+`dock-autohide` — hide the Dock (auto-hide) or keep it always shown. — `bin/dock-autohide`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `doi-harvest` — (no description) — `bin/doi-harvest`
 `embed` — (no description) — `bin/embed`

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# desktop-icons — hide or show ALL icons on the Desktop.
+# Apple-native: the Finder `CreateDesktop` default (false = no desktop icons),
+# applied by restarting Finder. Default action is HIDE; say "show"/"reveal" to
+# bring them back. No deps, no network.
+#
+# FEATURE-CARD >> features/desktop-icons.feature
+set -uo pipefail
+
+phrase="${*:-}"
+case "$phrase" in
+  *show*|*reveal*|*bring*|*unhide*|*restore*) state=true;  word="shown" ;;
+  *)                                          state=false; word="hidden" ;;
+esac
+
+defaults write com.apple.finder CreateDesktop -bool "$state"
+killall Finder 2>/dev/null || true
+echo "Desktop icons $word."

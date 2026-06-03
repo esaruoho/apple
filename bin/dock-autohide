@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# dock-autohide — hide the Dock (auto-hide) or keep it always shown.
+# Apple-native: the `com.apple.dock autohide` default, applied by restarting Dock.
+# Default action is HIDE (auto-hide on); say "show"/"always" to keep it visible.
+#
+# FEATURE-CARD >> features/shell-toggles.feature
+set -uo pipefail
+
+phrase="${*:-}"
+case "$phrase" in
+  *show*|*reveal*|*always*|*keep*) state=false; word="always shown" ;;
+  *)                               state=true;  word="auto-hidden" ;;
+esac
+
+defaults write com.apple.dock autohide -bool "$state"
+killall Dock 2>/dev/null || true
+echo "Dock $word."

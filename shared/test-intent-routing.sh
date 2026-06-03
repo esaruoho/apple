@@ -33,4 +33,8 @@ expect "how much battery do i have" battery
 expect "what wifi am i on"         wifi
 expect "what's on my clipboard"    clipboard
 expect "lock my screen"            lock
+expect "hide all icons on desktop" desktop
+expect "clean up my desktop"       desktop
+expect "hide the dock"             dock
+expect "auto-hide the dock"        dock
 [ $fail -eq 0 ] && { echo; echo "✅ ALL INTENT-ROUTING TESTS PASS"; } || { echo; echo "❌ routing failures"; exit 1; }

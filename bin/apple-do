@@ -25,6 +25,8 @@ caps() {
 "wifi	current Wi-Fi network" \
 "clipboard	what's on the clipboard" \
 "lock	lock the screen" \
+"desktop	hide/show all Desktop icons — apple-do desktop [show]" \
+"dock	hide the Dock (auto-hide) or show it — apple-do dock [show]" \
 "fleet	live status of the Mini's workers (heartbeats)" \
 "spotlight	find files by name via Spotlight — apple-do spotlight <query>" \
 "search	semantic search of your notes (MiniLM, on the Mini) — apple-do search <query>" \
@@ -55,6 +57,8 @@ case "$cap" in
   lock)
     "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession" -suspend 2>/dev/null \
       && echo "Screen locked." || echo "lock: couldn't lock the screen." ;;
+  desktop) exec "$HERE/desktop-icons" "$@" ;;
+  dock)    exec "$HERE/dock-autohide" "$@" ;;
   fleet)
     q="$HOME/work/comms/queue"; nowS=$(date +%s)
     for hb in "$q"/*-heartbeat.json; do
