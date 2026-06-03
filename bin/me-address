@@ -1,20 +1,38 @@
 #!/usr/bin/env bash
-# me-address — print the home postal address from Contacts.
-# Primary: your "me" card (`my card`). Fallback: the contact matching your account
-# full name (from `id -F`, or $APPLE_OWNER) when no me-card is designated.
-# Apple-native: AppleScript → Contacts.app. No deps, no network. First run prompts
-# once for Automation access to Contacts (allow it).
+# me-address — print your home postal address. Resolve-once, then cached, so
+# Contacts is touched at most ONCE (no repeated permission prompts — the Apple way).
 #
+# Resolution order:
+#   1. $APPLE_HOME_ADDRESS env (the ".env" override) — wins, never touches Contacts.
+#   2. cache file ~/.config/apple-bar/home-address.txt — written on first success.
+#   3. Contacts: your "me" card, else the contact matching your account full name
+#      (`id -F`, or $APPLE_OWNER). May prompt once; the result is then cached.
+#
+#   me-address            print the address (env → cache → Contacts)
+#   me-address --refresh  ignore env+cache, re-read Contacts, rewrite the cache
+#
+# Apple-native: AppleScript → Contacts.app. No deps, no network.
 # FEATURE-CARD >> features/me-address.feature
 set -uo pipefail
 
-# Pass the owner name to AppleScript via the environment (read with `system
-# attribute`) — a stdin heredoc script can't take `on run argv` arguments.
-export APPLE_OWNER_NAME="${APPLE_OWNER:-$(id -F 2>/dev/null || echo '')}"
+CACHE_DIR="$HOME/.config/apple-bar"
+CACHE="$CACHE_DIR/home-address.txt"
+REFRESH=0
+[ "${1:-}" = "--refresh" ] && REFRESH=1
 
+# 1) explicit env override (.env style) — no Contacts, ever.
+if [ "$REFRESH" -eq 0 ] && [ -n "${APPLE_HOME_ADDRESS:-}" ]; then
+  printf '%s\n' "$APPLE_HOME_ADDRESS"; exit 0
+fi
+# 2) cache hit — resolved before, no Contacts, no prompt.
+if [ "$REFRESH" -eq 0 ] && [ -s "$CACHE" ]; then
+  cat "$CACHE"; exit 0
+fi
+
+# 3) resolve via Contacts (may prompt ONCE), then cache the result.
+export APPLE_OWNER_NAME="${APPLE_OWNER:-$(id -F 2>/dev/null || echo '')}"
 # Contacts AppleScript queries need Contacts.app running, else -600. Launch it
-# HIDDEN + in the BACKGROUND (open -gj: no window, no focus steal) if it isn't
-# already up. Only wait when we actually had to start it.
+# HIDDEN + BACKGROUND (open -gj: no window, no focus steal) only if it isn't up.
 if ! pgrep -xq Contacts 2>/dev/null; then
   open -gja Contacts 2>/dev/null || true
   sleep 1
@@ -63,5 +81,5 @@ case "$out" in
   NOCARD:*) echo "No \"me\" card set and no contact matched \"${out#NOCARD:}\". In Contacts: select your card ▸ Card ▸ Make This My Card." ;;
   NOADDR)   echo "That contact card has no postal address." ;;
   "")       echo "me-address: Contacts returned nothing." ;;
-  *)        printf '%s\n' "$out" ;;
+  *)        mkdir -p "$CACHE_DIR"; printf '%s\n' "$out" > "$CACHE"; printf '%s\n' "$out" ;;  # cache on success
 esac

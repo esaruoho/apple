@@ -58,6 +58,17 @@ Feature: Home address from the Contacts me-card
     # hand-verified 2026-06-03: returned "Inkiväärikuja 6 B 20 …" cold + warm via the name fallback
     # (no headless test — needs Contacts data + a permission grant; verified on the real target)
 
+  @verified
+  Scenario: Resolve once, then serve from cache (no repeated Contacts prompts)
+    Given the address was resolved once into ~/.config/apple-bar/home-address.txt
+    When `apple-do address` runs again — even with Contacts quit
+    Then it returns the cached address without launching or prompting Contacts
+    And $APPLE_HOME_ADDRESS (a .env-style override) wins over both cache and Contacts
+    And `me-address --refresh` ignores env+cache and re-reads Contacts
+    # cite: bin/me-address resolution order (env → cache → Contacts), caches on success
+    # verified 2026-06-03: quit Contacts, re-ran via apple-intent, address returned,
+    # Contacts stayed closed (the fix for "asks 2 times for access to contacts")
+
   @built
   Scenario: The address reads through unstyled (whitelabel passthrough)
     Given the reports whitelabel
