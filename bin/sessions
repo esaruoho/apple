@@ -320,8 +320,9 @@ def list_converse(folder):
             st = os.stat(full)
         except OSError:
             continue
-        # uuid = the session name (what fm-converse --session expects)
-        rows.append(Row("converse", name[:-5], "~/work/converse", full, st.st_mtime, st.st_size))
+        # uuid = the session name (what fm-converse --session expects). cwd is
+        # filled lazily in load_converse_meta (read from the stored "cwd" field).
+        rows.append(Row("converse", name[:-5], "", full, st.st_mtime, st.st_size))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
@@ -331,6 +332,7 @@ def load_converse_meta(row):
     try:
         with open(row.path, "r", encoding="utf-8", errors="replace") as f:
             d = json.load(f)
+        row.cwd = d.get("cwd") or ""          # "where from" — folder the chat started in
         for entry in d.get("turns", []):
             if isinstance(entry, (list, tuple)) and len(entry) == 2 and entry[0] == "user":
                 turns += 1
@@ -582,6 +584,15 @@ def run_picker(stdscr, folder):
                 short_id = r.uuid[:6]
                 selected = (i == sel)
                 base = curses.color_pair(1) | curses.A_BOLD if selected else curses.A_NORMAL
+                # Converse chats are global (not folder-scoped) — underline the row
+                # so they stand out, and prefix "where from" (the folder it started in).
+                if r.provider == "converse":
+                    base = base | curses.A_UNDERLINE
+                    where = r.cwd or ""
+                    if where.startswith(HOME):
+                        where = "~" + where[len(HOME):]
+                    tag = os.path.basename(where.rstrip("/")) if where else "?"
+                    snippet = f"⟨{tag}⟩ {snippet}"
                 dim = base if selected else curses.color_pair(3)
                 title_attr = base if selected else (curses.color_pair(4) | curses.A_BOLD)
                 # Single-line, mixed attrs: prominent timestamp, dimmed hash trailer.
@@ -830,6 +841,10 @@ def cmd_ls(args):
         ensure_meta_for(r)
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
         snip = (r.snippet or "").replace("\n", " ")[:80]
+        # Converse chats are global — show "where from" (the folder it started in).
+        if r.provider == "converse" and r.cwd:
+            where = ("~" + r.cwd[len(HOME):]) if r.cwd.startswith(HOME) else r.cwd
+            snip = f"⟨{os.path.basename(where.rstrip('/'))}⟩ {snip}"[:80]
         print(f"{r.provider:8} {r.uuid[:24]:24} {when}  {r.turns:>4}t  {snip}")
 
 

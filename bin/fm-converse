@@ -183,12 +183,17 @@ def main() -> int:
 
     key = session or current_session_key()
     state = load(key)
+    # Record the folder this chat lives in (where from), so the `sessions` picker
+    # can show it. First write wins — a chat keeps the folder it started in even
+    # if you later resume it from elsewhere.
+    if not state.get("cwd"):
+        state["cwd"] = os.path.realpath(os.getcwd())
     if system_override is not None:
         state["system"] = system_override
         save(key, state)
 
     if do_reset:
-        save(key, {"system": "", "turns": []})
+        save(key, {"system": "", "turns": [], "cwd": state.get("cwd", "")})
         print(f"— conversation '{key}' cleared —")
         return 0
     if do_history:
