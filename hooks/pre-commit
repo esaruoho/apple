@@ -62,6 +62,10 @@ regen bin/gen-skill-indexes.py "skill indexes" \
   dictionaries/INDEX.md \
   wiki/compiled/EXPORTERS.md
 
+# AppleBar feature index — consolidated from features/*.feature (via `convey read`)
+# + shared/intents.json. Auto-generated; never hand-edited.
+regen bin/gen-features-index.py "features INDEX" features/INDEX.md
+
 # Stage any updated indexes into the in-flight commit.
 if [ ${#CHANGED_FILES[@]} -gt 0 ]; then
   git add -- "${CHANGED_FILES[@]}"
