@@ -1,0 +1,98 @@
+# Imported by convey from features/directions-home.feature on 2026-06-04.
+# Ungraded scenarios were defaulted to @untested (honest — not a pass).
+# Bind verify/steps.py to make scenarios runnable; until then they are UNRUN.
+
+# ============================================================================
+# REPORT CARD — "How do I get home" → Apple Maps directions  (a "Convey")
+# ============================================================================
+#
+# THE CONVEY
+#   Convey the human idea "how to get home / how far am I from home" by MAPPING it
+#   to the Apple mechanism that already answers it: Maps Directions. The idea is
+#   conveyed = routed to `directions`, which opens Maps with a route from your
+#   current location to your home address. Distance/ETA come for free from Maps.
+#
+# WHAT THIS CARD SPAWNS
+#   Codespace : bin/maps-directions   (builds the maps.apple.com URL, opens it)
+#               bin/apple-do          (capability `directions` → maps-directions)
+#               bin/apple-intent      (CATALOG "directions" intent; climate narrowed)
+#               shared/test-intent-routing.sh (the routing guard)
+#   Thinkspace: features/directions-home.session.md (+ the session's transcript)
+#   Areaspace : OWNS = turning "get home / how far home" into a Maps directions URL.
+#               MUST NOT TOUCH = the climate `home` action, the `address` action.
+#
+# WHY THIS CARD EXISTS
+#   "how far away am i from home" was returning the HOUSE TEMPERATURE — the climate
+#   `home` action was greedy on the word "home". Fix: (a) narrow climate to temp/heat/
+#   humidity ONLY, (b) add `directions` for the navigation sense. Three "home" senses
+#   now separate cleanly: thermostat (home), address (address), destination (directions).
+#
+# REPORT-CARD LEGEND
+#   @verified  passes shared/test-intent-routing.sh on a real Mac (headless)
+#   @built     wired + working, hand-verified
+#   @note      context, not a claim
+#
+# RESULT
+#   Direct-push to main, no PR. Files: bin/maps-directions (new), bin/apple-do
+#   (+directions), bin/apple-intent (+directions intent, climate narrowed, +template),
+#   shared/test-intent-routing.sh (+cases), this card + session.
+#   Reuse: the Maps URL pattern is lifted from ~/work/ray-graph
+#   (js/dashboard/dashboard-ui.js getDirectionsUrl) — not re-invented.
+# ============================================================================
+
+Feature: Directions home via Apple Maps
+  Asking how to get home (or how far it is) opens Maps with a route home.
+
+  @verified
+  Scenario: Navigation phrases route to directions, not the thermostat
+    Given the apple-intent catalog
+    When I ask "how far away am i from home" / "how do i get home" / "navigate home"
+    Then the matched action is `directions`
+    # cite: bin/apple-intent CATALOG "directions" intent (~34); test shared/test-intent-routing.sh
+
+  @verified
+  Scenario: Temperature words ONLY hit the climate sensor (narrowed)
+    Given the climate `home` intent now lists temp/heat/humidity phrasings only
+    When I ask "temperature" / "is it hot" / "how warm is it" / "humidity"
+    Then the matched action is `home`
+    And bare "home" location/destination phrases do NOT reach it
+    # cite: bin/apple-intent CATALOG "home" intent narrowed (~26); test shared/test-intent-routing.sh
+
+  @built
+  Scenario: directions opens Maps.app (not the browser) from current location to home
+    Given a resolved home address (me-address, cached)
+    When `apple-do directions` runs
+    Then it opens maps://?daddr=<home>&saddr=<here>&dirflg=<mode> — the maps:// SCHEME, so
+      Maps.app handles it directly (https://maps.apple.com/ would open the browser instead)
+    And the transport mode is auto-detected from the phrase: walk→w, transit→r, else driving→d
+    # cite: bin/maps-directions (mode case + open of maps://); door-code lines stripped
+    # hand-verified 2026-06-03: `apple-do directions` → Maps.app running (pgrep ✓), no browser tab
+
+  @built
+  Scenario: the SOURCE is deduced from device presence, not left to a GPS-less desktop
+    Given a desktop Mac on Ethernet has no location services (Maps can't fill the origin)
+    And bin/me-location resolves a named place from the live LAN fingerprint
+    When `apple-do directions` runs and me-location resolves "Workspace"
+    Then maps-directions pins saddr=<Workspace address> as the route origin
+    And if me-location resolves nothing, saddr is omitted (prior behaviour preserved)
+    # cite: bin/maps-directions (saddr block calls bin/me-location); see features/me-location.feature
+    # hand-verified 2026-06-04: route opened Workspace(Sahaajankatu)→home, gateway_mac match
+
+  @built
+  Scenario: the DESTINATION is clever — it's your OTHER anchor, not always "home"
+    Given each place declares a commute_to partner (Workspace↔Home) in places.json
+    When `apple-do directions` runs
+    Then daddr = the current place's commute partner: at Workspace → Home, at Home → Workspace
+    And saddr = the current place, so the whole route flips with where you stand
+    And an unknown place (or one with no partner) falls back to daddr=<home> (me-address)
+      so a plain "directions home" still works from anywhere
+    # cite: bin/maps-directions (--to/--to-name → daddr, me-address fallback)
+    # hand-verified 2026-06-04 at Home (router f0:99:bf:00:c2:5c): Maps opened
+    #   "Home → Workspace — Sahaajankatu 20-22 E"; and 2026-06-04 at Workspace: Workspace → Home
+
+  @note @untested
+  Scenario: The Maps URL pattern is reused from ray-graph, not re-invented
+    Given ~/work/ray-graph/js/dashboard/dashboard-ui.js getDirectionsUrl
+    Then maps-directions uses the same dirflg map (w=walking d=driving r=transit) and
+      maps.apple.com/?daddr=…&dirflg=… form
+    # cite: ray-graph getDirectionsUrl (~1841); honors the reuse-before-rerolling rule

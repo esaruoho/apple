@@ -71,6 +71,19 @@ if [ ${#CHANGED_FILES[@]} -gt 0 ]; then
   git add -- "${CHANGED_FILES[@]}"
 fi
 
+# Convey atlas — the principle board (atlas/INDEX.md), built from principles/.
+# Tolerant: only if the convey CLI + principles/ are present. Same zero-token idea.
+if [ -x bin/convey ] && [ -d principles ]; then
+  atlas_before=$(stat -f "%m" atlas/INDEX.md 2>/dev/null || echo 0)
+  if ./bin/convey atlas >/dev/null 2>&1; then
+    atlas_after=$(stat -f "%m" atlas/INDEX.md 2>/dev/null || echo 0)
+    if [ "$atlas_before" != "$atlas_after" ]; then
+      git add atlas/INDEX.md
+      echo "pre-commit: regen convey atlas → updated" >&2
+    fi
+  fi
+fi
+
 # gen-docs.py writes a variable number of files under docs/, so we can't
 # enumerate the watch list. Snapshot the whole docs/ dir state instead.
 if [ -d docs ] && [ -x bin/gen-docs.py ]; then
