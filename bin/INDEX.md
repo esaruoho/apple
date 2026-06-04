@@ -1,4 +1,4 @@
-# CLI Tools Index — 207 tools in bin/
+# CLI Tools Index — 209 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -63,8 +63,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
 `convey` — (no description) — `bin/convey`
-`convey-submit` — (no description) — `bin/convey-submit`
-`convey-worker` — (no description) — `bin/convey-worker`
 `desktop-icons` — hide or show ALL icons on the Desktop. — `bin/desktop-icons`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
@@ -84,6 +82,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
 `fleet` — (no description) — `bin/fleet`
+`fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
 `fm` — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps. — `bin/fm`
 `fm-chat` — (no description) — `bin/fm-chat`
 `fm-converse` — (no description) — `bin/fm-converse`
@@ -132,11 +131,14 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
+`photo-submit` — ask CloudcityMacMini to photograph EACH video input device. — `bin/photo-submit`
 `probe-vocal-shortcuts.sh` — Probe where Vocal Shortcuts stores its phrase→Shortcut mappings. — `bin/probe-vocal-shortcuts.sh`
 `process` — Send a local media file (or URL) to the Cloudcity whisp pipeline. — `bin/process`
 `process-router` — Dispatch a 'process'-tagged file to the right worker. — `bin/process-router`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
+`release-submit` — (no description) — `bin/release-submit`
+`release-worker` — (no description) — `bin/release-worker`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
 `rtfc` — Rich Text For Clipboard. Take a markdown file (or stdin), strip — `bin/rtfc`
 `sal-7-purpose-audit.py` — (no description) — `bin/sal-7-purpose-audit.py`

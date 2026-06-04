@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""release-worker — the fleet conveys a dictated Gumroad change through whatever's awake.
+
+The 7th instance of the trigger→worker chassis (Finder tag · Voice Memo · Stickies ·
+Mail flag · Panel · FM · now Release). Runs in a VISIBLE terminal on EVERY capable
+machine — never a hidden LaunchAgent. The fleet supports itself: a dictation lands in
+the shared Syncthing queue and whichever capable machine is awake claims it and returns
+the result. No single machine has to be up; the fleet does.
+
+"Convey through what's available":
+  • CAPABILITY GATE — a machine only claims a job it can actually finish: gumroad must be
+    logged in (`gumroad auth status`) AND release-set + its ledger must be present. An
+    incapable machine still runs visibly, but as a SPECTATOR — it claims nothing, so a
+    dictation is never swallowed by a machine that can't deliver it.
+  • CLAIM — taking a job is an atomic rename `<id>.json → <id>.taken.<host>`; Syncthing
+    carries the rename, so other workers see it's gone and skip.
+  • HOLD-BACK — order the fleet without a lock server: the primary (hold-back 0) claims at
+    once; a failover (e.g. the always-on Mini, `--holdback 90`) only claims a job left
+    untouched past its hold-back — i.e. the primary was asleep. Pass --holdback / set
+    RELEASE_WORKER_HOLDBACK; default 0 (primary).
+  • IDEMPOTENT — same pearl → same edit → publish-last → same state, so the rare
+    sync-race double-claim is harmless.
+
+SECURITY BOUNDARY (as fm-worker): a job carries DATA, never a shell command. This worker
+only ever execs ONE fixed program — release-set — which itself refuses any field outside
+{name, price, currency, tags}. A dictation can reprice or rename; it can never inject a
+build step, repoint the engine, or touch a file path / DSP / the download.
+
+Job in <queue>/release-inbox/<id>.json:
+    {"id": "...", "say": "set ParaEQ price to 99"}                 (dictated)
+    {"id": "...", "product": "paraeq", "field": "price", "value": "99"}   (structured)
+Result → release-outbox/<id>.json (Syncthing carries it back to whoever's watching).
+
+Usage:
+    release-worker                  watch forever in this terminal (primary; hold-back 0)
+    release-worker --holdback 90    failover: only claim jobs older than 90s (Mini)
+    release-worker --once           process what's claimable now, then exit
+    release-worker --status         capability + role + queue depth + heartbeat
+Env: RELEASE_QUEUE overrides the queue dir; RELEASE_WORKER_HOLDBACK sets the hold-back.
+
+Apple-native: python3 stdlib only. Syncthing is the sole transport; no network listener.
+"""
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+HOST = socket.gethostname().split(".")[0]
+RELEASE_SET = Path(os.environ.get(
+    "RELEASE_SET", Path.home() / "work" / "convey" / "release" / "release-set"))
+QUEUE = Path(os.environ.get("RELEASE_QUEUE", Path.home() / "work" / "comms" / "queue"))
+INBOX = QUEUE / "release-inbox"
+OUTBOX = QUEUE / "release-outbox"
+HEARTBEAT = QUEUE / "release-worker-heartbeat.json"
+POLL_SECONDS = 2.0
+HEARTBEAT_SECONDS = 30
+RUN_TIMEOUT = 300
+STALE_JOB_SECONDS = 3600
+
+
+def nudge(path: Path):
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def gumroad_authed() -> bool:
+    try:
+        return subprocess.run(["gumroad", "auth", "status", "--no-input"],
+                              capture_output=True, timeout=20).returncode == 0
+    except Exception:
+        return False
+
+
+def capability():
+    """(capable, reason) — only a capable machine claims jobs."""
+    if not RELEASE_SET.exists():
+        return False, f"release-set not present ({RELEASE_SET})"
+    if not gumroad_authed():
+        return False, "gumroad not logged in (run `gumroad auth login` on this machine)"
+    return True, "gumroad ok + release-set present"
+
+
+def run_set(job: dict) -> dict:
+    """Exec release-set with the job's structured fields or its dictation string.
+    Fixed argv + data — never a shell."""
+    cmd = [str(RELEASE_SET)]
+    if job.get("product") and job.get("field") and job.get("value") is not None:
+        cmd += ["--product", str(job["product"]), "--field", str(job["field"]),
+                "--value", str(job["value"])]
+    elif job.get("say"):
+        cmd += [str(job["say"])]
+    else:
+        return {"ok": False, "out": "", "err": "job has neither 'say' nor product/field/value"}
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=RUN_TIMEOUT)
+        return {"ok": p.returncode == 0, "rc": p.returncode,
+                "out": (p.stdout or "").rstrip("\n"), "err": (p.stderr or "").strip()}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "rc": None, "out": "", "err": f"timed out after {RUN_TIMEOUT}s"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "rc": None, "out": "", "err": str(e)}
+
+
+def write_result(job_id: str, payload: dict):
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    tmp = OUTBOX / f".{job_id}.tmp"
+    final = OUTBOX / f"{job_id}.json"
+    tmp.write_text(json.dumps(payload, ensure_ascii=False))
+    tmp.replace(final)
+    nudge(final)
+
+
+def claim(path: Path):
+    """Atomically take a job by renaming it to <id>.taken.<host>. Returns the new path,
+    or None if another worker already took it (the rename loses the race)."""
+    taken = path.with_suffix(path.suffix + f".taken.{HOST}")
+    try:
+        os.replace(path, taken)   # atomic on the local fs; Syncthing carries the rename
+        return taken
+    except OSError:
+        return None
+
+
+def process(path: Path, capable: bool, holdback: float) -> bool:
+    try:
+        job = json.loads(path.read_text())
+    except Exception:
+        return False
+    if not (job.get("say") or (job.get("product") and job.get("field"))):
+        try:
+            if time.time() - path.stat().st_mtime > STALE_JOB_SECONDS:
+                path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False
+    # hold-back: let a higher-priority (lower hold-back) worker claim first.
+    try:
+        if time.time() - path.stat().st_mtime < holdback:
+            return False
+    except OSError:
+        return False
+    if not capable:
+        return False                      # spectator: never claim
+    taken = claim(path)
+    if taken is None:
+        return False                      # another worker got it
+    job_id = job.get("id") or path.stem
+    res = run_set(job)
+    write_result(job_id, {
+        "id": job_id, "ok": res["ok"], "rc": res.get("rc"),
+        "out": res["out"], "err": res["err"],
+        "host": HOST, "ts": int(time.time()), "from": job.get("submitter_host"),
+    })
+    taken.unlink(missing_ok=True)         # consume
+    mark = "ok" if res["ok"] else "ERR"
+    preview = (res["out"] or res["err"]).replace("\n", " ")[:70]
+    print(f"[{time.strftime('%H:%M:%S')}] {job_id} -> {mark}  {preview}", flush=True)
+    return True
+
+
+def beat(capable: bool, holdback: float):
+    try:
+        HEARTBEAT.write_text(json.dumps({
+            "ts": int(time.time()), "host": HOST,
+            "capable": capable, "holdback": holdback}))
+    except Exception:
+        pass
+
+
+def scan(capable: bool, holdback: float) -> int:
+    if not INBOX.is_dir():
+        return 0
+    return sum(1 for p in sorted(INBOX.glob("*.json")) if process(p, capable, holdback))
+
+
+def status(holdback: float):
+    capable, reason = capability()
+    role = "primary" if holdback == 0 else f"failover (hold-back {holdback:.0f}s)"
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"release-worker · host {HOST} · {role}")
+    print(f"  capability: {'CAPABLE — will claim' if capable else 'SPECTATOR — will NOT claim'}  ({reason})")
+    print(f"  brain:  {RELEASE_SET}")
+    print(f"  inbox:  {INBOX}  ({pend} dictation(s) queued)")
+    print(f"  outbox: {OUTBOX}  ({done} result(s))")
+    if HEARTBEAT.exists():
+        try:
+            hb = json.loads(HEARTBEAT.read_text())
+            age = time.time() - hb.get("ts", 0)
+            print(f"  last heartbeat: {age:.0f}s ago on {hb.get('host', '?')}"
+                  + ("  ⚠ stale" if age > 120 else "  ✓"))
+        except Exception:
+            pass
+    else:
+        print("  last heartbeat: never")
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    holdback = float(os.environ.get("RELEASE_WORKER_HOLDBACK", "0"))
+    if "--holdback" in args:
+        holdback = float(args[args.index("--holdback") + 1])
+    if "--status" in args:
+        status(holdback)
+        return 0
+    INBOX.mkdir(parents=True, exist_ok=True)
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    capable, reason = capability()
+    role = "primary" if holdback == 0 else f"failover (hold-back {holdback:.0f}s)"
+    banner = "CAPABLE — claims jobs" if capable else "SPECTATOR — will not claim"
+    if "--once" in args:
+        n = scan(capable, holdback); beat(capable, holdback)
+        print(f"{HOST}: {banner} ({reason}); processed {n} dictation(s)")
+        return 0
+    print(f"release-worker on {HOST} · {role} · {banner}")
+    print(f"  {reason}")
+    print(f"  watching {INBOX}")
+    beat(capable, holdback)
+    last_beat = time.time()
+    while True:
+        try:
+            # re-check capability each loop: a machine becomes capable the moment
+            # gumroad is logged in, with no restart.
+            capable, reason = capability()
+            scan(capable, holdback)
+            if time.time() - last_beat >= HEARTBEAT_SECONDS:
+                beat(capable, holdback); last_beat = time.time()
+        except Exception as e:  # noqa: BLE001
+            print(f"  loop error: {e}", file=sys.stderr)
+        time.sleep(POLL_SECONDS)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

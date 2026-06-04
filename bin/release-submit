@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""convey-submit — dictate a Gumroad change into the convey bridge from anywhere.
+"""release-submit — dictate a Gumroad change into the release bridge from anywhere.
 
-Drops a job into ~/work/comms/queue/convey-inbox/, which Syncthing carries to the
-laptop where convey-worker runs it (edit the pearl → convey live → report). Works
-from any machine on the fleet; the change lands on the live store.
+Drops a job into ~/work/comms/queue/release-inbox/, which Syncthing carries to whatever
+capable machine is awake; its release-worker claims the job (edit the pearl → convey live
+→ report) and the result comes back via release-outbox. Works from any machine on the
+fleet — including one that itself can't release; the fleet does the work.
 
 This is also the seam for chat dictation. From Discord/Telegram, pakettibot runs:
-    !pk run --direct ~/work/apple/bin/convey-submit --no-wait "set ParaEQ price to 99"
-which (on the Mini) drops the same job into the Syncthing queue → the laptop worker
-conveys it. The dictation IS the instruction; the live page becomes what you said.
+    !pk run --direct ~/work/apple/bin/release-submit --no-wait "set ParaEQ price to 99"
+which drops the same job into the Syncthing queue → a capable worker conveys it. The
+dictation IS the instruction; the live page becomes what you said.
 
 Usage:
-    convey-submit "set ParaEQ price to 99"        submit and wait for the result
-    convey-submit --no-wait "rename slice to ..." fire-and-forget (just queue it)
-    convey-submit --id slug "..."                 name the job (else timestamp+hash)
-    convey-submit --timeout 90 "..."              how long to wait (default 180s)
-    convey-submit --status                        queue depth + worker heartbeat
+    release-submit "set ParaEQ price to 99"        submit and wait for the result
+    release-submit --no-wait "rename slice to ..." fire-and-forget (just queue it)
+    release-submit --id slug "..."                 name the job (else timestamp+hash)
+    release-submit --timeout 90 "..."              how long to wait (default 180s)
+    release-submit --status                        queue depth + worker heartbeat
+Env: RELEASE_QUEUE overrides the queue dir.
 
 Apple-native: python3 stdlib only.
 """
@@ -25,13 +27,14 @@ import socket
 import subprocess
 import sys
 import time
+import os
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-QUEUE = Path.home() / "work" / "comms" / "queue"
-INBOX = QUEUE / "convey-inbox"
-OUTBOX = QUEUE / "convey-outbox"
-HEARTBEAT = QUEUE / "convey-worker-heartbeat.json"
+QUEUE = Path(os.environ.get("RELEASE_QUEUE", Path.home() / "work" / "comms" / "queue"))
+INBOX = QUEUE / "release-inbox"
+OUTBOX = QUEUE / "release-outbox"
+HEARTBEAT = QUEUE / "release-worker-heartbeat.json"
 
 
 def nudge(path: Path):
@@ -89,7 +92,7 @@ def status():
         except Exception:
             pass
     else:
-        print("worker: no heartbeat yet (convey-worker not running on the laptop?)")
+        print("worker: no heartbeat yet (release-worker not running on the laptop?)")
 
 
 def main() -> int:
@@ -123,7 +126,7 @@ def main() -> int:
     if not say:
         say = sys.stdin.read().strip()
     if not say:
-        sys.stderr.write("convey-submit: nothing to say (pass a dictation, e.g. "
+        sys.stderr.write("release-submit: nothing to say (pass a dictation, e.g. "
                          "\"set ParaEQ price to 99\")\n")
         return 2
 
@@ -139,11 +142,11 @@ def main() -> int:
     result, rt = wait_for(job_id, timeout)
     if result is None:
         sys.stderr.write(f"timed out after {rt:.0f}s — job {job_id} still queued. "
-                         f"Is convey-worker running? (convey-submit --status)\n")
+                         f"Is release-worker running? (release-submit --status)\n")
         return 1
     print(result.get("out", ""))
     if not result.get("ok"):
-        sys.stderr.write(f"convey: {result.get('err', 'failed')}\n")
+        sys.stderr.write(f"release: {result.get('err', 'failed')}\n")
         return 1
     sys.stderr.write(f"  [{result.get('host', '?')} · round-trip {rt:.1f}s]\n")
     return 0
