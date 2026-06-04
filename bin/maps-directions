@@ -27,11 +27,25 @@ case "$addr" in
 esac
 
 enc=$(printf '%s' "$addr" | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read().strip()))')
+
+# Source (saddr): a desktop Mac has no GPS, so Maps can't fill "current location".
+# Deduce WHERE WE ARE from the LAN fingerprint (router MAC + peers like esarMBP) via
+# me-location. If it resolves a named place, pin it as the route's origin; otherwise
+# omit saddr and let Maps use whatever location it can (the prior behaviour).
+saddr_q=""; from=""
+src="$("$HERE/me-location" 2>/dev/null)"
+if [ -n "$src" ]; then
+  senc=$(printf '%s' "$src" | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read().strip()))')
+  saddr_q="&saddr=${senc}"
+  place="$("$HERE/me-location" --name 2>/dev/null)"
+  from=" from ${place:-$src}"
+fi
+
 # maps:// is the scheme Maps.app owns — opens the app directly, not the browser
 # (https://maps.apple.com/ is a web URL the default browser claims). Same query params.
-url="maps://?daddr=${enc}&dirflg=${flg}"
+url="maps://?daddr=${enc}${saddr_q}&dirflg=${flg}"
 if open "$url" 2>/dev/null; then
-  echo "Opening directions home in Maps ($mode) → $addr"
+  echo "Opening directions home in Maps ($mode)${from} → $addr"
 else
   echo "maps-directions: couldn't open Maps for $url"; exit 1
 fi

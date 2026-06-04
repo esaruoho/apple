@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# me-location — deduce WHERE I AM RIGHT NOW from device presence, print that place's
+# postal address. The desktop-Mac counterpart to GPS: a Mac on Ethernet has no
+# location services, but the LAN it sits on IS a location fingerprint — the router's
+# MAC, the subnet, and which peers (esarMBP, cloudcitymacmini, …) are reachable.
+#
+# Matches the live network against ~/.config/apple-bar/places.json (priority:
+# gateway_mac > peers_any > ssid) and prints the matched place's address. Prints
+# nothing + exits 1 when no place matches (caller then falls back to "current location").
+#
+#   me-location            print the current place's address (saddr-ready, one line)
+#   me-location --name     print just the place name (e.g. "Workspace")
+#   me-location --why      print name + which signal matched (diagnostics)
+#   me-location --signals  dump the live signals me-location sees right now
+#   me-location --learn N  append the current signature to place N (create if absent)
+#
+# Apple-native: route/arp/networksetup + python3 stdlib (json). No deps, no network calls.
+# FEATURE-CARD >> features/me-location.feature
+set -uo pipefail
+
+CONFIG="${APPLE_PLACES_CONFIG:-$HOME/.config/apple-bar/places.json}"
+
+# --- live signal collection -------------------------------------------------
+# normalize a MAC to zero-padded lowercase colon form (arp prints b0:a:d5:.. → b0:0a:d5:..).
+# Pure string left-pad — no hex math (macOS awk has no strtonum).
+norm_mac() { printf '%s' "$1" | tr 'A-Z' 'a-z' | awk -F: '{s="";for(i=1;i<=NF;i++){o=$i;if(length(o)==1)o="0" o;s=s (i>1?":":"") o}print s}'; }
+
+gw_ip="$(route -n get default 2>/dev/null | awk '/gateway/{print $2; exit}')"
+gw_mac=""
+if [ -n "$gw_ip" ]; then
+  raw="$(arp -n "$gw_ip" 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="at"){print $(i+1); exit}}')"
+  [ -n "$raw" ] && [ "$raw" != "(incomplete)" ] && gw_mac="$(norm_mac "$raw")"
+fi
+subnet="${gw_ip%.*}."   # e.g. 192.168.32.
+self="$(scutil --get LocalHostName 2>/dev/null | tr 'A-Z' 'a-z')"
+# named arp hosts, lowercased, minus self / broadcast / multicast
+peers="$(arp -a 2>/dev/null | awk '$1 !~ /^\?/ && $1 !~ /(mcast|mdns|\.255)/ {print $1}' | tr 'A-Z' 'a-z' | grep -v -x "$self" | sort -u | tr '\n' ' ')"
+ssid="$(networksetup -getairportnetwork en0 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p')"
+
+if [ "${1:-}" = "--signals" ]; then
+  printf 'gateway_ip:  %s\ngateway_mac: %s\nsubnet:      %s\nself:        %s\npeers:       %s\nssid:        %s\n' \
+    "$gw_ip" "$gw_mac" "$subnet" "$self" "$peers" "$ssid"
+  exit 0
+fi
+
+[ -s "$CONFIG" ] || { echo "me-location: no config at $CONFIG" >&2; exit 1; }
+
+# --- match (python stdlib does the json + priority logic) -------------------
+GW_MAC="$gw_mac" SUBNET="$subnet" PEERS="$peers" SSID="$ssid" MODE="${1:-}" ARG="${2:-}" \
+python3 - "$CONFIG" <<'PY'
+import json, os, sys
+
+cfg_path = sys.argv[1]
+cfg = json.load(open(cfg_path))
+places = cfg.get("places", [])
+
+gw_mac = os.environ.get("GW_MAC", "")
+subnet = os.environ.get("SUBNET", "")
+peers  = set(p for p in os.environ.get("PEERS", "").split() if p)
+ssid   = os.environ.get("SSID", "")
+mode   = os.environ.get("MODE", "")
+arg    = os.environ.get("ARG", "")
+
+def norm_mac(m):
+    parts = [x for x in m.replace("-", ":").lower().split(":") if x != ""]
+    try:    return ":".join("%02x" % int(x, 16) for x in parts)
+    except ValueError: return m.lower()
+
+# --learn: append current signature to a place (create if missing), then exit.
+if mode == "--learn":
+    if not arg:
+        print("me-location --learn needs a place name", file=sys.stderr); sys.exit(2)
+    place = next((p for p in places if p.get("name") == arg), None)
+    if place is None:
+        place = {"name": arg, "address": "", "match": {}}
+        places.append(place); cfg["places"] = places
+    m = place.setdefault("match", {})
+    if gw_mac: m["gateway_mac"] = gw_mac
+    if subnet: m["subnet"] = subnet
+    cur = set(m.get("peers_any", [])) | peers
+    if cur: m["peers_any"] = sorted(cur)
+    if ssid: m.setdefault("ssid", [])
+    if ssid and ssid not in m["ssid"]: m["ssid"].append(ssid)
+    json.dump(cfg, open(cfg_path, "w"), indent=2, ensure_ascii=False)
+    open(cfg_path, "a").write("\n")
+    addr = place.get("address") or "(no address set — edit places.json)"
+    print(f"learned signature into '{arg}': {addr}", file=sys.stderr)
+    sys.exit(0)
+
+def score(p):
+    m = p.get("match", {})
+    want_mac = norm_mac(m["gateway_mac"]) if m.get("gateway_mac") else ""
+    if want_mac and gw_mac and want_mac == gw_mac:
+        return (3, "gateway_mac")
+    hit = peers & set(x.lower() for x in m.get("peers_any", []))
+    if hit:
+        # corroborate with subnet when given, to avoid a same-named host elsewhere
+        if not m.get("subnet") or m["subnet"] == subnet:
+            return (2, "peer:" + ",".join(sorted(hit)))
+    if ssid and ssid in m.get("ssid", []):
+        return (1, "ssid:" + ssid)
+    return (0, "")
+
+best, best_p, why = 0, None, ""
+for p in places:
+    s, w = score(p)
+    if s > best:
+        best, best_p, why = s, p, w
+
+if not best_p:
+    sys.exit(1)
+
+if mode == "--name":
+    print(best_p.get("name", ""))
+elif mode == "--why":
+    print(f'{best_p.get("name","")}\t{why}\t{best_p.get("address","")}')
+else:
+    print(best_p.get("address", ""))
+PY

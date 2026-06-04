@@ -58,12 +58,22 @@ Feature: Directions home via Apple Maps
   Scenario: directions opens Maps.app (not the browser) from current location to home
     Given a resolved home address (me-address, cached)
     When `apple-do directions` runs
-    Then it opens maps://?daddr=<home>&dirflg=<mode> — the maps:// SCHEME, so Maps.app
-      handles it directly (https://maps.apple.com/ would open the browser instead),
-      with no saddr so Maps routes from the current location (giving distance + ETA)
+    Then it opens maps://?daddr=<home>&saddr=<here>&dirflg=<mode> — the maps:// SCHEME, so
+      Maps.app handles it directly (https://maps.apple.com/ would open the browser instead)
     And the transport mode is auto-detected from the phrase: walk→w, transit→r, else driving→d
     # cite: bin/maps-directions (mode case + open of maps://); door-code lines stripped
     # hand-verified 2026-06-03: `apple-do directions` → Maps.app running (pgrep ✓), no browser tab
+
+  @built
+  Scenario: the SOURCE is deduced from device presence, not left to a GPS-less desktop
+    Given a desktop Mac on Ethernet has no location services (Maps can't fill the origin)
+    And bin/me-location resolves a named place from the live LAN fingerprint
+    When `apple-do directions` runs and me-location resolves "Workspace"
+    Then maps-directions pins saddr=<Workspace address> as the route origin
+    And the echo reads "… (driving) from Workspace → <home>"
+    And if me-location resolves nothing, saddr is omitted (prior behaviour preserved)
+    # cite: bin/maps-directions (saddr block calls bin/me-location); see features/me-location.feature
+    # hand-verified 2026-06-04: route opened Workspace(Sahaajankatu)→home, gateway_mac match
 
   @note
   Scenario: The Maps URL pattern is reused from ray-graph, not re-invented
