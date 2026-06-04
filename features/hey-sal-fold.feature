@@ -63,7 +63,7 @@ Feature: Hey Sal folded into AppleBar — hands-free voice over the one routing 
     # cite: AppleBar.swift showPanelAndListen(); shared/Dictation.swift authorizeThenStart()
     # hand-verified 2026-06-04: log shows tccd + TextInputUI XPC engaging (recognizer + perm)
 
-  @built
+  @verified
   Scenario: speaking auto-runs through apple-intent after a silence gap (hands-free)
     Given listenMode is on and partial transcriptions are filling the field
     When ~1.6s passes with no new words (you stopped talking)
@@ -71,7 +71,8 @@ Feature: Hey Sal folded into AppleBar — hands-free voice over the one routing 
     And so "directions home" spoken == "directions home" typed (identical chain,
       including me-location saddr); ↩ still submits immediately as an override
     # cite: AppleBar.swift bumpSilenceTimer()/silenceSeconds; runQuery()/runIntent()
-    # NOT yet voice-verified end-to-end (needs a real spoken utterance) — graded @built
+    # VOICE-VERIFIED 2026-06-05: Esa fired applebar://listen, spoke, and the routed
+    #   zero-roundtrip actions were called end-to-end (the full spoken round-trip)
 
   @built
   Scenario: no speech at all → release the mic (no energy hog)
@@ -79,8 +80,18 @@ Feature: Hey Sal folded into AppleBar — hands-free voice over the one routing 
     When listenGiveUpSeconds (9s) elapse with the field still empty
     Then dictation.stop() releases the mic
     And ESC also aborts a listen cleanly (stops the mic, hides the panel)
-    # cite: AppleBar.swift showPanelAndListen() give-up timer; cancelOperation handler
+    # cite: AppleBar.swift startListening() give-up timer; cancelOperation handler
     # honors the global "no runaway mic / energy hog" rule
+
+  @built
+  Scenario: the mic BUTTON shares the same hands-free path (no listen-forever)
+    Given AppleBar's 🎙 mic button used to bypass listenMode → it never timed out
+    When you click the mic button (not just the applebar://listen wake)
+    Then toggleDictation calls startListening — the SAME path as the wake — so the
+      silence auto-submit AND the no-speech give-up both apply; it can't listen forever
+    And clicking the mic again stops it; ↩ submits immediately
+    # cite: AppleBar.swift toggleDictation() → startListening(); showPanelAndListen() reuses it
+    # fix for 2026-06-05 repro: after a run, clicking the mic kept listening with no timeout
 
   @verified
   Scenario: the fold adds NO second router — voice reuses the existing chain

@@ -112,15 +112,16 @@ chat/ask answers are banked to a FoundationModels Knowledgebank  —  4 scenario
   triad: .session✗  transcript✗  RESULT✓
   honesty: 3/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  6 scenarios   (features/hey-sal-fold.feature)
+Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat
-  - [@built] speaking auto-runs through apple-intent after a silence gap (han
+  - [@verified] speaking auto-runs through apple-intent after a silence gap (han
   - [@built] no speech at all → release the mic (no energy hog)
+  - [@built] the mic BUTTON shares the same hands-free path (no listen-foreve
   - [@verified] the fold adds NO second router — voice reuses the existing chain
   - [(no grade)] the Vocal Shortcut becomes a thin launcher (the user's one edit)
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 5/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Home address from the Contacts me-card  —  6 scenarios   (features/me-address.feature)
   - [@verified] "where is my home" routes to the address lookup, not the thermos

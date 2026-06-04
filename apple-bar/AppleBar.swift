@@ -418,7 +418,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         dictation.onError = { [weak self] msg in self?.showResult(msg) }
     }
 
-    @objc func toggleDictation() { dictation.toggle() }
+    // The mic button and the applebar://listen wake share ONE start path, so BOTH get
+    // the silence auto-submit + no-speech give-up. (Previously the button bypassed
+    // listenMode, so clicking it after a run left the mic listening forever.)
+    @objc func toggleDictation() {
+        if dictation.isRunning { dictation.stop() } else { startListening() }
+    }
+
+    // Enter hands-free listening: mark listenMode (so onText bumps the silence timer and
+    // the give-up timer arms), start the shared engine, guard against a mic left open
+    // when nothing is said.
+    func startListening() {
+        listenMode = true
+        field.placeholderString = "Listening…  speak, then pause — or ↩ / mic to stop"
+        dictation.authorizeThenStart()   // shared engine; same one the wake uses
+        listenGiveUpTimer?.invalidate()
+        listenGiveUpTimer = Timer.scheduledTimer(withTimeInterval: listenGiveUpSeconds, repeats: false) { [weak self] _ in
+            guard let self = self, self.listenMode, self.dictation.isRunning,
+                  self.field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+            self.dictation.stop()   // heard nothing → release the mic
+        }
+    }
 
     // The real macOS dictation glyph (SF Symbol mic.fill), template-tinted so it goes
     // red while listening — the same affordance as the system dictation button.
@@ -450,16 +470,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
     func showPanelAndListen() {
         showPanel()
-        listenMode = true
-        field.placeholderString = "Listening (Hey Sal)…  speak, then pause — or ↩"
-        dictation.authorizeThenStart()   // shared engine; same one the 🎙 button uses
-        // Safety: if no speech arrives at all, don't leave the mic open forever.
-        listenGiveUpTimer?.invalidate()
-        listenGiveUpTimer = Timer.scheduledTimer(withTimeInterval: listenGiveUpSeconds, repeats: false) { [weak self] _ in
-            guard let self = self, self.listenMode, self.dictation.isRunning,
-                  self.field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-            self.dictation.stop()   // heard nothing → release the mic
-        }
+        startListening()   // same hands-free path the mic button uses
     }
 
     // Reset on every partial result; fire after a quiet gap = "you stopped talking".
