@@ -1,0 +1,15 @@
+#!/bin/bash
+# mic-record — capture the default microphone to a WAV. Self-building Swift, no deps.
+# Usage: mic-record <output.wav> [--seconds N]            (fixed window, default 5s)
+#        mic-record <output.wav> --until-silence          (stops when you stop speaking)
+#                   [--silence S] [--max M] [--threshold D] [--onset T]
+# (Microphone is TCC-gated — grant it to this terminal/app once.)
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/mic-record.swift"
+CACHE="$HOME/.cache/apple"; BIN="$CACHE/mic-record"; mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" \
+        -framework AVFoundation -framework Foundation
+fi
+exec "$BIN" "$@"
