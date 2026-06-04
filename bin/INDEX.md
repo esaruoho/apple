@@ -1,4 +1,4 @@
-# CLI Tools Index — 209 tools in bin/
+# CLI Tools Index — 197 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -30,7 +30,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
-`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `auto-gen.py` — (no description) — `bin/auto-gen.py`
@@ -62,7 +61,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-index` — (no description) — `bin/cc-index`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
-`convey` — (no description) — `bin/convey`
 `desktop-icons` — hide or show ALL icons on the Desktop. — `bin/desktop-icons`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
@@ -82,7 +80,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
 `fleet` — (no description) — `bin/fleet`
-`fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
 `fm` — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps. — `bin/fm`
 `fm-chat` — (no description) — `bin/fm-chat`
 `fm-converse` — (no description) — `bin/fm-converse`
@@ -103,8 +100,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `install-mail-flag-mailboxes` — (no description) — `bin/install-mail-flag-mailboxes`
 `install-sal-demo-library.sh` — One-command Sal Demo library installer. — `bin/install-sal-demo-library.sh`
 `invert` — non-destructive darkmode -> lightmode for an image OR a folder of images. — `bin/invert`
-`iphone-import` — pull a full-resolution photo off a USB-tethered iPhone via — `bin/iphone-import`
-`iphone-photo` — thin wrapper that execs the in-bundle binary so Bundle.main — `bin/iphone-photo`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
@@ -131,7 +126,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
-`photo-submit` — ask CloudcityMacMini to photograph EACH video input device. — `bin/photo-submit`
 `probe-vocal-shortcuts.sh` — Probe where Vocal Shortcuts stores its phrase→Shortcut mappings. — `bin/probe-vocal-shortcuts.sh`
 `process` — Send a local media file (or URL) to the Cloudcity whisp pipeline. — `bin/process`
 `process-router` — Dispatch a 'process'-tagged file to the right worker. — `bin/process-router`
@@ -147,7 +141,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
-`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -155,10 +148,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
-`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
-`say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
 `sdef-extract.py` — (no description) — `bin/sdef-extract.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
@@ -166,7 +157,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
-`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
@@ -203,8 +193,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `vision-ocr` — on-device OCR via Apple's Vision framework (Neural Engine). — `bin/vision-ocr`
 `vocal-shortcuts-router-verify.py` — (no description) — `bin/vocal-shortcuts-router-verify.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
-`voicebox-clone` — build a Voicebox voice profile from a recording, via Syncthing. — `bin/voicebox-clone`
-`voicebox-clone-worker.py` — (no description) — `bin/voicebox-clone-worker.py`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
 `voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
 `why-no-mount` — (no description) — `bin/why-no-mount`
