@@ -106,8 +106,41 @@ if let q = converseQuestion {
     guard FileManager.default.isExecutableFile(atPath: fmPath) else { die("fm-submit not found at \(fmPath)") }
     let r = runCapture(fmPath, ["--wait", prompt], mergeErr: false)
     let said = r.out.trimmingCharacters(in: .whitespaces)
+    // Every real FoundationModels answer is banked — a durable, browsable record of
+    // what the on-device model has told you, so it can be recalled (and one day fed
+    // back as context, the way "?" reads learned.feature). Saved on success only.
+    if r.code == 0 && !said.isEmpty {
+        saveToKnowledgebank(question: q.isEmpty ? "(summarise my saved rules)" : q,
+                            mode: converseWithRules ? "ask" : "chat", answer: said)
+    }
     print(said.isEmpty ? "(no answer from the model)" : said)
     exit(r.code)
+}
+
+// ── FoundationModels knowledgebank ──────────────────────────────────────────
+// Append-only markdown bank of every chat/ask answer the on-device model gives.
+// Lives beside learned.feature in ~/.config/apple-bar/; override with FM_KNOWLEDGEBANK.
+// FEATURE-CARD >> features/fm-knowledgebank.feature
+func saveToKnowledgebank(question: String, mode: String, answer: String) {
+    let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
+    let path = ProcessInfo.processInfo.environment["FM_KNOWLEDGEBANK"]
+        ?? home + "/.config/apple-bar/foundationmodels-knowledgebank.md"
+    let dir = (path as NSString).deletingLastPathComponent
+    try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+    if !FileManager.default.fileExists(atPath: path) {
+        let head = "# FoundationModels Knowledgebank\n\n"
+            + "Every `chat`/`?` answer from the on-device model (fm-submit → the Mini), "
+            + "appended for recall.\n\n"
+        try? head.write(toFile: path, atomically: true, encoding: .utf8)
+    }
+    let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    let stamp = df.string(from: Date())
+    let entry = "## \(stamp) · \(mode)\n\n**Q:** \(question)\n\n\(answer)\n\n---\n\n"
+    if let fh = FileHandle(forWritingAtPath: path) {
+        fh.seekToEndOfFile()
+        if let d = entry.data(using: .utf8) { fh.write(d) }
+        try? fh.close()
+    }
 }
 
 struct Scored { let intent: Intent; let score: Double; let via: String }
