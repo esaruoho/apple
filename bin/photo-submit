@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# photo-submit — ask CloudcityMacMini to photograph EACH video input device.
+# Drops a request into the Syncthing-mirrored photo-requests dir; the mini's
+# photo-worker captures every camera and the PNGs return under photos/<name>/.
+#
+#   photo-submit [name]          submit (default name = timestamp)
+#   photo-submit [name] --wait   submit and block until photos return, then open
+#   photo-submit --status        show the mini photo-worker heartbeat
+#   photo-submit --list          list recent photo result folders
+set -euo pipefail
+REQ="${PHOTO_REQUESTS:-$HOME/work/comms/queue/photo-requests}"
+OUT="${PHOTO_RESULTS:-$HOME/work/comms/queue/photos}"
+mkdir -p "$REQ"
+
+case "${1:-}" in
+  --status) f="$HOME/work/comms/queue/photo-heartbeat.json"; [ -f "$f" ] && cat "$f" || echo "no photo-worker heartbeat yet"; exit 0;;
+  --list)   ls -dt "$OUT"/*/ 2>/dev/null | head -20; exit 0;;
+esac
+
+name="${1:-photo-$(date +%Y%m%d-%H%M%S)}"
+date -u +%FT%TZ > "$REQ/$name.req"
+echo "[photo-submit] requested '$name' → photos return at $OUT/$name/ (Syncthing carries them back)"
+
+if [ "${2:-}" = "--wait" ]; then
+  for i in $(seq 1 40); do
+    [ -f "$OUT/$name/_manifest.txt" ] && { echo "--- result ---"; cat "$OUT/$name/_manifest.txt"; open "$OUT/$name" 2>/dev/null || true; exit 0; }
+    sleep 2
+  done
+  echo "[photo-submit] timed out waiting (job still queued; results will appear when the mini processes it)"
+fi

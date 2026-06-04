@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# fleet-screenshot — a screenshot of EACH fleet computer, collected into one dir.
+#
+# Reads the fleet registry and, per machine, captures via the right channel
+# (interchangeable transport — Syncthing preferred, SSH as fallback):
+#   this Mac          -> screencapture directly
+#   CloudcityMacMini  -> drop a screencap-request (Syncthing); collect the PNG
+#   other peers       -> ssh screencapture + scp back (if reachable)
+# Honest: a machine with no reachable capture path is reported SKIPPED, not faked.
+#
+#   fleet-screenshot           capture every fleet machine into fleet-screenshots/<ts>/
+set -uo pipefail
+Q="$HOME/work/comms/queue"
+REG="$Q/fleet-registry.json"
+ts="$(date +%Y%m%d-%H%M%S)"
+OUT="$Q/fleet-screenshots/$ts"
+mkdir -p "$OUT" "$Q/screencap-requests"
+me="$(hostname -s)"
+[ -f "$REG" ] || { echo "no fleet-registry at $REG"; exit 1; }
+
+machines=$(python3 -c "import json;print('\n'.join(m['id'] for m in json.load(open('$REG'))['machines']))")
+echo "[fleet-screenshot] $ts (this machine: $me) → $OUT"
+got=0
+for m in $machines; do
+  if [ "$m" = "$me" ]; then
+    if screencapture -x "$OUT/$m.png" 2>/dev/null; then echo "  $m : local screencapture ✓"; got=$((got+1)); else echo "  $m : local FAILED"; fi
+  elif [ "$m" = "CloudcityMacMini" ]; then
+    rid="fleet-$ts"
+    date -u +%FT%TZ > "$Q/screencap-requests/$rid.req"
+    ok=0; for i in $(seq 1 60); do [ -f "$Q/screenshots/$rid.png" ] && { ok=1; break; }; sleep 1; done
+    if [ "$ok" = 1 ]; then cp "$Q/screenshots/$rid.png" "$OUT/$m.png"; echo "  $m : via screencap-worker (Syncthing) ✓"; got=$((got+1));
+    else echo "  $m : screencap-worker timeout (is it running?)"; fi
+  else
+    if timeout 14 ssh -o ConnectTimeout=6 -o BatchMode=yes "$m" 'screencapture -x /tmp/fleetshot.png' 2>/dev/null \
+       && timeout 14 scp -o ConnectTimeout=6 "$m":/tmp/fleetshot.png "$OUT/$m.png" 2>/dev/null; then
+      echo "  $m : via ssh ✓"; got=$((got+1))
+    else
+      echo "  $m : no reachable capture path (skipped)"
+    fi
+  fi
+done
+echo "[fleet-screenshot] collected $got screenshot(s) → $OUT"
+open "$OUT" 2>/dev/null || true

@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# voicebox-clone — build a Voicebox voice profile from a recording, via Syncthing.
+#
+# Mirrors voicebox-submit, but instead of TTS it CLONES a voice: it copies a
+# single-speaker recording + a job spec into ~/work/comms/queue/voicebox-clone-inbox/
+# which Syncthing mirrors to the Mac Mini. The voicebox-clone-worker daemon there
+# creates a profile (POST /profiles) and enrolls the recording as a sample
+# (POST /profiles/{id}/samples), then writes the new profile id/name to
+# ~/work/comms/queue/voicebox-clone-results/<id>.json which Syncthing carries back.
+#
+# Usage:
+#   voicebox-clone <recording> --name <ProfileName> --reference-text "what is said"
+#   voicebox-clone <recording> --name <ProfileName> --reference-file transcript.txt
+#   voicebox-clone --status
+#   voicebox-clone --list-results
+#
+# The reference text is what the speaker actually says in the recording —
+# Voicebox needs it to align the sample. (Auto-transcribe on the mini is a
+# future enhancement; today you supply it, honestly.)
+#
+# Environment overrides: VOICEBOX_CLONE_INBOX, VOICEBOX_CLONE_RESULTS
+
+set -euo pipefail
+
+INBOX="${VOICEBOX_CLONE_INBOX:-$HOME/work/comms/queue/voicebox-clone-inbox}"
+RESULTS="${VOICEBOX_CLONE_RESULTS:-$HOME/work/comms/queue/voicebox-clone-results}"
+HEARTBEAT="$HOME/work/comms/queue/voicebox-clone-heartbeat.json"
+
+log() { echo "[voicebox-clone] $*" >&2; }
+die() { echo "[voicebox-clone] ERROR: $*" >&2; exit 1; }
+
+mkdir -p "$INBOX" "$RESULTS"
+
+if [[ "${1:-}" == "--status" ]]; then
+  pending=$(find "$INBOX" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  done_count=$(find "$RESULTS" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  echo "clone inbox  : $INBOX  ($pending jobs awaiting Syncthing → worker)"
+  echo "clone results: $RESULTS  ($done_count profiles built)"
+  if [[ -f "$HEARTBEAT" ]]; then
+    age=$(($(date +%s) - $(stat -f %m "$HEARTBEAT" 2>/dev/null || echo 0)))
+    echo "heartbeat    : ${age}s ago"
+  else
+    echo "heartbeat    : never (clone worker has not started on the mini yet)"
+  fi
+  exit 0
+fi
+
+if [[ "${1:-}" == "--list-results" ]]; then
+  ls -lt "$RESULTS"/*.json 2>/dev/null | head -30
+  exit 0
+fi
+
+RECORDING=""
+PROFILE_NAME=""
+REFERENCE_TEXT=""
+REFERENCE_FILE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)            PROFILE_NAME="$2"; shift 2 ;;
+    --reference-text)  REFERENCE_TEXT="$2"; shift 2 ;;
+    --reference-file)  REFERENCE_FILE="$2"; shift 2 ;;
+    -h|--help)         sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+    -*)                die "unknown flag: $1" ;;
+    *)
+      if [[ -z "$RECORDING" && -f "$1" ]]; then RECORDING="$1"
+      else die "unexpected arg (or file not found): $1"
+      fi
+      shift ;;
+  esac
+done
+
+[[ -n "$RECORDING" ]]    || die "no recording — pass a single-speaker audio file"
+[[ -f "$RECORDING" ]]    || die "recording not found: $RECORDING"
+[[ -n "$PROFILE_NAME" ]] || die "no profile name — pass --name <ProfileName>"
+
+if [[ -n "$REFERENCE_FILE" ]]; then
+  [[ -f "$REFERENCE_FILE" ]] || die "reference file not found: $REFERENCE_FILE"
+  REFERENCE_TEXT="$(cat "$REFERENCE_FILE")"
+fi
+[[ -n "$REFERENCE_TEXT" ]] || die "no reference text — pass --reference-text or --reference-file (what the speaker says in the recording)"
+
+ext="${RECORDING##*.}"
+case "$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')" in
+  wav|mp3|m4a|ogg|flac|aac|webm|opus) : ;;
+  *) die "unsupported audio type .$ext (Voicebox accepts wav mp3 m4a ogg flac aac webm opus)" ;;
+esac
+
+ts="$(date +%Y%m%d-%H%M%S)"
+safe_name="$(printf '%s' "$PROFILE_NAME" | sed 's/[^A-Za-z0-9._-]/_/g')"
+job_id="${ts}-clone-${safe_name}"
+
+# Copy the recording INTO the synced inbox so Syncthing carries the audio to the
+# mini alongside the spec (atomic: stage with a dot-prefix, then rename).
+audio_name="${job_id}.${ext}"
+tmp_audio="$INBOX/.${audio_name}.tmp"
+cp "$RECORDING" "$tmp_audio"
+mv "$tmp_audio" "$INBOX/$audio_name"
+
+job_file="$INBOX/${job_id}.json"
+tmp="$INBOX/.${job_id}.json.tmp"
+REFERENCE_TEXT="$REFERENCE_TEXT" PROFILE_NAME="$PROFILE_NAME" \
+JOB_ID="$job_id" AUDIO_NAME="$audio_name" SOURCE="$RECORDING" \
+/usr/bin/python3 -c "
+import json, os, sys
+spec = {
+  'id': os.environ['JOB_ID'],
+  'kind': 'clone',
+  'profile_name': os.environ['PROFILE_NAME'],
+  'recording': os.environ['AUDIO_NAME'],      # relative to the clone-inbox dir
+  'reference_text': os.environ['REFERENCE_TEXT'],
+  'source_file': os.environ['SOURCE'],
+  'submitted_at': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+  'submitter_host': '$(hostname -s)',
+}
+json.dump(spec, sys.stdout, indent=2, ensure_ascii=False)
+" > "$tmp"
+mv "$tmp" "$job_file"
+
+log "submitted clone job: $job_file"
+log "recording staged:    $INBOX/$audio_name"
+log "result will appear:  $RESULTS/${job_id}.json (the new profile id + name)"
+log "then speak in it:     voicebox-submit --profile \"$PROFILE_NAME\" --text \"...\""

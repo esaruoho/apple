@@ -1,0 +1,11 @@
+#!/bin/bash
+# say-karaoke — speak text + emit each word's char range as spoken (karaoke highlight).
+# Self-building Swift, no deps. Usage: say-karaoke [--voice NAME] "text"  (or stdin)
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/say-karaoke.swift"
+CACHE="$HOME/.cache/apple"; BIN="$CACHE/say-karaoke"; mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" -framework AVFoundation -framework Foundation
+fi
+exec "$BIN" "$@"

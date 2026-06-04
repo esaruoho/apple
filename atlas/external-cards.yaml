@@ -1,0 +1,149 @@
+cards:
+  features/applebar-session.feature:
+    feature: "AppleBar \u2014 what the session accomplished"
+    scenarios: 8
+    grade_counts:
+      '@shipped': 6
+      '@verified': 3
+      '@built': 1
+    unverified_by_convey: 7
+    has_session: false
+    has_transcript: false
+    has_result: false
+    last_read: '2026-06-05T01:12:45'
+  features/dictation-button.feature:
+    feature: On-device dictation button
+    scenarios: 10
+    grade_counts:
+      '@verified': 3
+      '@built': 5
+      '@untested': 3
+      '@todo': 1
+    unverified_by_convey: 8
+    has_session: true
+    has_transcript: true
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/directions-home.feature:
+    feature: Directions home via Apple Maps
+    scenarios: 6
+    grade_counts:
+      '@verified': 2
+      '@built': 3
+    unverified_by_convey: 5
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/fm-converse.feature:
+    feature: "fm-converse \u2014 a remembering conversation with the on-device LLM"
+    scenarios: 8
+    grade_counts:
+      '@built': 8
+      '@untested': 2
+    unverified_by_convey: 8
+    has_session: false
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/hey-sal-fold.feature:
+    feature: "Hey Sal folded into AppleBar \u2014 hands-free voice over the one routing\
+      \ pipeline"
+    scenarios: 7
+    grade_counts:
+      '@verified': 3
+      '@built': 3
+    unverified_by_convey: 6
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/me-address.feature:
+    feature: Home address from the Contacts me-card
+    scenarios: 6
+    grade_counts:
+      '@verified': 3
+      '@built': 2
+    unverified_by_convey: 5
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/me-location.feature:
+    feature: "Where am I right now \u2014 device-presence geolocation for a desktop\
+      \ Mac"
+    scenarios: 9
+    grade_counts:
+      '@verified': 4
+      '@built': 3
+    unverified_by_convey: 7
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/shell-toggles.feature:
+    feature: Desktop & Dock visibility from the command bar
+    scenarios: 3
+    grade_counts:
+      '@verified': 1
+      '@built': 2
+    unverified_by_convey: 3
+    has_session: false
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/spotlight-suggestions.feature:
+    feature: Live Spotlight-style suggestions in AppleBar
+    scenarios: 5
+    grade_counts:
+      '@built': 1
+      '@verified': 3
+    unverified_by_convey: 4
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/find-my.feature:
+    feature: "Find My \u2014 open the right tab and surface the right person/device"
+    scenarios: 5
+    grade_counts:
+      '@verified': 3
+    unverified_by_convey: 3
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/fm-knowledgebank.feature:
+    feature: chat/ask answers are banked to a FoundationModels Knowledgebank
+    scenarios: 5
+    grade_counts:
+      '@verified': 3
+      '@built': 1
+    unverified_by_convey: 4
+    has_session: false
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/applebar-karaoke.feature:
+    feature: "AppleBar karaoke \u2014 the chat answer is revealed in sync with the\
+      \ spoken voice"
+    scenarios: 5
+    grade_counts:
+      '@verified': 1
+      '@built': 3
+    unverified_by_convey: 4
+    has_session: false
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'
+  features/markdown-attributed.feature:
+    feature: AppleBar parses markdown in its result pane
+    scenarios: 4
+    grade_counts:
+      '@verified': 1
+      '@built': 1
+    unverified_by_convey: 2
+    has_session: false
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-05T01:12:45'

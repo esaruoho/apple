@@ -1,0 +1,16 @@
+#!/bin/bash
+# iphone-photo — thin wrapper that execs the in-bundle binary so Bundle.main
+# resolves to iPhonePhoto.app (which carries NSCameraUseContinuityCameraDeviceType
+# and its own Camera TCC identity). Programmatic Continuity Camera still → file.
+#
+#   iphone-photo <out.(jpg|heic)> [--device <substr>] [--list] [--timeout S]
+#
+# FEATURE-CARD >> iphone-camera/iphone-photo.feature
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="$REPO/iphone-camera/iPhonePhoto.app/Contents/MacOS/iphone-photo"
+if [[ ! -x "$BIN" ]]; then
+  echo "iPhonePhoto.app not built — running build.sh…" >&2
+  bash "$REPO/iphone-camera/build.sh" >&2
+fi
+exec "$BIN" "$@"

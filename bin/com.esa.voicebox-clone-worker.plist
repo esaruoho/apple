@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent for voicebox-clone-worker on CloudcityMacMini.
+
+  Install (run ON the Mac Mini):
+    cp ~/work/apple/bin/com.esa.voicebox-clone-worker.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.esa.voicebox-clone-worker.plist
+    launchctl kickstart -k gui/$(id -u)/com.esa.voicebox-clone-worker
+
+  Tail logs:
+    tail -F ~/work/comms/queue/voicebox-clone-worker.stdout
+
+  Stop:
+    launchctl bootout gui/$(id -u)/com.esa.voicebox-clone-worker
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.esa.voicebox-clone-worker</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/esaruoho/work/apple/bin/voicebox-clone-worker.py</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/esaruoho/work/comms/queue/voicebox-clone-worker.stdout</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/esaruoho/work/comms/queue/voicebox-clone-worker.stderr</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>VOICEBOX_URL</key>
+        <string>http://127.0.0.1:17493</string>
+        <key>VOICEBOX_POLL_SECONDS</key>
+        <string>3</string>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

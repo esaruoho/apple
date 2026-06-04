@@ -117,31 +117,57 @@ def voicebox_synth(text: str, profile_id_or_name: str, engine: str, language: st
     if not gen_id:
         raise RuntimeError(f"no id in /speak response: {resp}")
 
-    deadline = time.time() + 300
+    # Hard wall-clock budget per generation. The status SSE streams "generating"
+    # every ~1s and only closes on completed/failed — so if a generation STALLS
+    # server-side (e.g. chatterbox stuck loading the model), the stream never
+    # ends. We MUST be able to escape an endless stream, or one stuck job freezes
+    # the whole queue (this is the hang we are fixing). Bounded + cancel + move on.
+    timeout_s = float(os.environ.get("VOICEBOX_SYNTH_TIMEOUT", "240"))
+    deadline = time.time() + timeout_s
     completed = False
+    last_status = None
     while time.time() < deadline:
         try:
-            with urllib.request.urlopen(f"{VB}/generate/{gen_id}/status", timeout=10) as r:
+            with urllib.request.urlopen(f"{VB}/generate/{gen_id}/status", timeout=15) as r:
                 for raw in r:
+                    if time.time() > deadline:      # escape a never-terminating stream
+                        break
                     line = raw.decode().strip()
-                    if line.startswith("data:"):
-                        ev = json.loads(line[5:].strip())
-                        st = ev.get("status")
-                        if st == "completed":
-                            completed = True
-                            break
-                        if st == "failed":
-                            raise RuntimeError(f"voicebox synth failed: {ev}")
-        except urllib.error.URLError as e:
-            raise RuntimeError(f"voicebox not reachable at {VB}: {e}")
+                    if not line.startswith("data:"):
+                        continue
+                    ev = json.loads(line[5:].strip())
+                    st = ev.get("status")
+                    last_status = st
+                    if st == "completed":
+                        completed = True
+                        break
+                    if st == "failed":
+                        raise RuntimeError(f"voicebox synth failed: {ev}")
+        # Py3.9: socket.timeout / TimeoutError are NOT URLError subclasses — catch all
+        # transient read failures and retry within the budget instead of dying.
+        except (urllib.error.URLError, socket.timeout, TimeoutError):
+            time.sleep(2)
+            continue
         if completed:
             break
         time.sleep(0.5)
     if not completed:
-        raise RuntimeError(f"synth timed out for {gen_id}")
+        _cancel_generation(gen_id)
+        raise RuntimeError(
+            f"synth timed out after {int(timeout_s)}s (last status: {last_status}); "
+            f"cancelled generation {gen_id} so the queue keeps moving")
 
     with urllib.request.urlopen(f"{VB}/audio/{gen_id}", timeout=60) as r:
         return r.read()
+
+
+def _cancel_generation(gen_id: str) -> None:
+    """Best-effort cancel of a stalled generation so Voicebox frees up. Never raises."""
+    try:
+        req = urllib.request.Request(f"{VB}/generate/{gen_id}/cancel", method="POST")
+        urllib.request.urlopen(req, timeout=10).read()
+    except Exception:
+        pass
 
 
 def process_one(job_path: Path):

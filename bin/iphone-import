@@ -1,0 +1,18 @@
+#!/bin/bash
+# iphone-import — pull a full-resolution photo off a USB-tethered iPhone via
+# ImageCaptureCore (the actual Camera.app file: 12MP / 48MP / HEIC). Runs the
+# in-bundle binary so it carries iPhonePhoto.app's stable TCC identity.
+#
+#   iphone-import --latest <destdir>   download the newest photo now
+#   iphone-import --watch  <destdir>   wait for the NEXT new photo, import it
+#   iphone-import --list               list cameras ImageCaptureCore sees
+#
+# FEATURE-CARD >> iphone-camera/iphone-photo.feature
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="$REPO/iphone-camera/iPhonePhoto.app/Contents/MacOS/iphone-import"
+if [[ ! -x "$BIN" ]]; then
+  echo "iPhonePhoto.app not built — running build.sh…" >&2
+  bash "$REPO/iphone-camera/build.sh" >&2
+fi
+exec "$BIN" "$@"

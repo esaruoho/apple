@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>iPhonePhoto</string>
+    <key>CFBundleDisplayName</key>
+    <string>iPhone Photo</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.esaruoho.apple.iphone-photo</string>
+    <key>CFBundleExecutable</key>
+    <string>iphone-photo</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <!-- Faceless: no Dock icon, no menu bar. -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- THE critical key: without this, AVFoundation will not enumerate the
+         iPhone as a Continuity Camera device. -->
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Capture a still from the tethered iPhone via Continuity Camera.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Capture short audio snippets from each audio input device.</string>
+</dict>
+</plist>

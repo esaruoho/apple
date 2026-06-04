@@ -1,0 +1,17 @@
+#!/bin/bash
+# audio-snippets — capture N short clips from every audio input device (or every
+# channel with --per-channel). Audio twin of the camera snapshot. Runs the
+# in-bundle binary so it carries the bundle's Microphone TCC identity.
+#
+#   audio-snippets <outdir> [--per-channel] [--device <substr>]
+#                  [--count 5] [--len 3] [--gap 3.75] [--list]
+#
+# FEATURE-CARD >> iphone-camera/iphone-photo.feature
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="$REPO/iphone-camera/iPhonePhoto.app/Contents/MacOS/audio-snippets"
+if [[ ! -x "$BIN" ]]; then
+  echo "iPhonePhoto.app not built — running build.sh…" >&2
+  bash "$REPO/iphone-camera/build.sh" >&2
+fi
+exec "$BIN" "$@"
