@@ -1,27 +1,22 @@
 #!/usr/bin/env bash
-# find-my — open Find My on a given tab and best-effort surface a named person/device.
+# find-my — open Find My on a given tab. That is the WHOLE job, and it is the whole job
+# on purpose: Find My accepts NO text input — there is no search field and no list
+# type-select — so the ONLY thing automation can drive is the tab (People/Devices/Items,
+# ⌘1/⌘2/⌘3). Once you're on the right tab the target is in the list; you pick the row.
+# There is no Apple-supported way to auto-select a specific person/device.
 #
-#   find-my people  [name]    People tab   (e.g. find-my people "Olga"  → the wife)
-#   find-my devices [name]    Devices tab  (e.g. find-my devices "iPhone 16 Pro")
-#   find-my items   [name]    Items tab    (AirTags etc.)
+#   find-my people  [label]    People tab   (label is cosmetic — for the echo only)
+#   find-my devices [label]    Devices tab
+#   find-my items   [label]    Items tab    (AirTags etc.)
 #
-# WHAT'S RELIABLE vs BEST-EFFORT (Find My has no person/device deep-link URL and no
-# AppleScript dictionary):
-#   • RELIABLE  — switching tab via the View menu (View ▸ People/Devices/Items). System
-#                 Events menu clicks work even though the sidebar AX tree is too slow to
-#                 traverse. So you always land on the right tab with the target listed.
-#   • BEST-EFFORT — selecting a SPECIFIC row. Done by list TYPE-SELECT: with Find My
-#                 deliberately frontmost, type the name so AppKit highlights the match.
-#                 Frontmost-guarded — if Find My isn't the active app we send NOTHING, so
-#                 keystrokes never leak into whatever you're typing in (the iTerm lesson).
-#                 If the list isn't focused, you still see the tab with the row one tap away.
+# We CLICK the View ▸ <tab> menu item rather than send the ⌘1/⌘2/⌘3 chord: the keystroke
+# gets swallowed when a device/person row has focus (so it failed when Find My was already
+# open on another tab), whereas the menu click invokes the tab action regardless of focus.
 #
 # FEATURE-CARD >> features/find-my.feature
 set -uo pipefail
 
-# Map the tab to its View-menu item. (Find My's equivalent shortcuts are ⌘1 People /
-# ⌘2 Devices / ⌘3 Items, but we CLICK the item rather than send the chord — see below.)
-tab="${1:-people}"; name="${2:-}"
+tab="${1:-people}"; label="${2:-}"
 case "$tab" in
   people)  menu="People"  ;;
   devices) menu="Devices" ;;
@@ -34,14 +29,11 @@ open -b com.apple.findmy 2>/dev/null || { echo "find-my: couldn't open Find My";
 # Wait (bounded) for the app to exist — don't drive a half-launched process.
 for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -xq FindMy 2>/dev/null && break; sleep 0.4; done
 
-# Switch tab by CLICKING the View ▸ <tab> menu item (deterministic — invokes the tab
-# action regardless of focus; the equivalent ⌘1/⌘2/⌘3 keystroke gets swallowed when a
-# device/person row is focused). Frontmost-guarded (no leak), hard-bounded (can't hang).
-timeout 10 osascript - "$menu" "$name" >/dev/null 2>&1 <<'AS' || true
+# Poll until Find My is truly frontmost (cold launch is slow), then click the tab item.
+# Frontmost-guarded (we click nothing if it never fronts), hard-bounded (can't hang).
+timeout 10 osascript - "$menu" >/dev/null 2>&1 <<'AS' || true
 on run argv
   set tabName to item 1 of argv
-  set personName to item 2 of argv
-  -- Bring Find My to the front and WAIT until it actually is (cold launch is slow).
   set isFront to false
   repeat 25 times
     tell application "FindMy" to activate
@@ -51,15 +43,13 @@ on run argv
     if isFront then exit repeat
     delay 0.2
   end repeat
-  if isFront is false then return                              -- still not front: do nothing
+  if isFront is false then return
   with timeout of 5 seconds
     tell application "System Events" to tell process "FindMy"
       click menu item tabName of menu 1 of menu bar item "View" of menu bar 1
-      delay 0.35
-      if personName is not "" then keystroke personName        -- type-select (best-effort)
     end tell
   end timeout
 end run
 AS
 
-echo "Find My → ${menu}${name:+ → $name}"
+echo "Find My → ${menu}${label:+  (look for: $label)}"

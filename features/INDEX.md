@@ -87,10 +87,10 @@ Find My — open the right tab and surface the right person/device  —  5 scena
   - [@verified] "find" and the wife phrasings all route to the wife (Olga)
   - [@verified] devices and phone phrasings route distinctly
   - [@verified] it RELIABLY switches tab even when Find My is already open on an
-  - [@built] selecting the specific row is best-effort type-select, frontmost
+  - [(no grade)] there is NO row selection — Find My takes no text input
   - [(no grade)] one tool, three bindings — DRY, not three near-copies
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 3/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 fm-converse — a remembering conversation with the on-device LLM  —  8 scenarios   (features/fm-converse.feature)
   - [@built] A follow-up question keeps the prior context

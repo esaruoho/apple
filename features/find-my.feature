@@ -9,7 +9,7 @@
 #   16 Pro. One tool, three thin capability bindings — not three copies (DRY).
 #
 # WHAT THIS CARD SPAWNS
-#   Codespace : bin/find-my                 (open Find My on a tab + best-effort select)
+#   Codespace : bin/find-my                 (open Find My on a tab — that's the whole job)
 #               bin/apple-do                (findwife / finddevices / findphone cases)
 #               shared/intents.json         (the three intents — NL routing + suggestions)
 #   Thinkspace: features/find-my.session.md (+ this session's transcript)
@@ -26,14 +26,16 @@
 #                   another tab. The menu click invokes the tab action regardless of focus.)
 #                   First WAIT (poll, re-activating) until Find My is truly frontmost, or a
 #                   slow cold launch makes the click no-op before the app is up.
-#     • BEST-EFFORT — selecting the SPECIFIC row, via list type-select (type the name with
-#                   Find My frontmost). Works when the list has focus; otherwise the row
-#                   is one tap away. Frontmost-guarded: if Find My isn't active we send NO
-#                   keystrokes (the 2026-05-26 iMessage/iTerm leak lesson).
+#     • IMPOSSIBLE — selecting a SPECIFIC row. Find My accepts NO text input: no search
+#                   field, no list type-select. So there is no Apple-supported way to
+#                   auto-highlight Olga or the phone. Tab is the whole job; you pick the
+#                   row. (An earlier build typed the name as "best-effort type-select" —
+#                   that was dead code, removed once confirmed Find My ignores keystrokes
+#                   beyond ⌘1/⌘2/⌘3.) The `label` arg is now cosmetic (echo hint only).
 #
 # REPORT-CARD LEGEND
 #   @verified  reproduced on a real Mac (screenshot/dry-run cited)
-#   @built     wired + runs; the row-highlight is inherently best-effort (see WHY)
+#   @built     wired + runs
 #   @note      context, not a claim
 #
 # RESULT
@@ -71,19 +73,17 @@ Feature: Find My — open the right tab and surface the right person/device
     # hand-verified 2026-06-04 (screenshots): Devices→"find wife"→People list shown;
     #   and the earlier keystroke build left it stuck on Devices (the bug this fixes)
 
-  @built
-  Scenario: selecting the specific row is best-effort type-select, frontmost-guarded
-    Given Find My has no API to select a person/device
-    When find-my has switched tab and Find My is frontmost
-    Then it types the name so AppKit list type-select highlights the match
-    And if Find My is NOT frontmost it sends nothing (no keystroke leak)
-    And it is hard-bounded (timeout + with-timeout) so it can never hang
-    # cite: bin/find-my (frontmost guard + keystroke; timeout 8 / with timeout 5)
-    # hand-verified 2026-06-04: ran in <4s, no hang, no osascript orphans
+  @note
+  Scenario: there is NO row selection — Find My takes no text input
+    Given Find My has no search field and no list type-select (only ⌘1/⌘2/⌘3 switch tabs)
+    Then find-my switches to the right tab and stops; the target is in the list, you pick it
+    And no keystrokes beyond the tab are sent (an earlier "type the name" build was dead code)
+    # cite: bin/find-my (click menu item only; no keystroke); confirmed by Esa 2026-06-04
+    # this is the honest ceiling — not a TODO; Apple exposes no person/device selection
 
   @note
   Scenario: one tool, three bindings — DRY, not three near-copies
     Given people/devices/items differ only by which View item to click
-    Then bin/find-my <tab> [name] is the single mechanism; findwife/finddevices/findphone
-      are thin apple-do bindings that pin the tab + the name (Olga / iPhone 16 Pro)
+    Then bin/find-my <tab> [label] is the single mechanism; findwife/finddevices/findphone
+      are thin apple-do bindings that pin the tab (label is a cosmetic echo hint)
     # echoes the reuse-before-rerolling rule raised earlier this session

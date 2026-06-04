@@ -80,7 +80,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `eppc-probe` — (no description) — `bin/eppc-probe`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
-`find-my` — open Find My on a given tab and best-effort surface a named person/device. — `bin/find-my`
+`find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
 `fleet` — (no description) — `bin/fleet`
 `fm` — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps. — `bin/fm`
 `fm-chat` — (no description) — `bin/fm-chat`
