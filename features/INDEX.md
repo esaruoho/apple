@@ -133,6 +133,14 @@ Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline 
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+AppleBar parses markdown in its result pane  —  4 scenarios   (features/markdown-attributed.feature)
+  - [@verified] headings, bold, code, and rules render (not raw markers)
+  - [@built] AppleBar shows the rendered markdown, not the raw text
+  - [(no grade)] the karaoke speak-back settles on the same render
+  - [(no grade)] it is the attributed sibling of the HTML renderer, not a duplica
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 2/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Home address from the Contacts me-card  —  6 scenarios   (features/me-address.feature)
   - [@verified] "where is my home" routes to the address lookup, not the thermos
   - [@verified] Climate questions still route to the HomePod sensor

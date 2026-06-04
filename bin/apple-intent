@@ -88,9 +88,9 @@ if query.hasPrefix("?") {
     // list in sync with AppleBar.isConverse(). "talk to me about chess" must talk, not search.
     let openers = ["talk to me about ", "tell me about ", "talk about ",
                    "let's talk about ", "lets talk about ", "let's chat about ", "what do you think about "]
-    for o in openers where lowerQ.hasPrefix(o) {
-        converseQuestion = String(query.dropFirst(o.count)).trimmingCharacters(in: .whitespaces); break
-    }
+    // Keep the FULL natural sentence as the question ("talk to me about chess"), not just
+    // the tail ("chess") — the LLM expounds instead of asking "what's your question?".
+    if openers.contains(where: { lowerQ.hasPrefix($0) }) { converseQuestion = query }
 }
 if let q = converseQuestion {
     if q.isEmpty && !converseWithRules {
