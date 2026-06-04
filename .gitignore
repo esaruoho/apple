@@ -107,3 +107,8 @@ panel-app/ApplePanel.app/
 # Runtime scratch / locks
 .claude/scheduled_tasks.lock
 .ocrloop.txt
+
+# Convey bundles the full session transcript beside each IMPORTED principle too —
+# keep those local (public repo; transcripts carry personal/infra context).
+principles/**/*.transcript.jsonl
+principles/**/*.transcript.md
