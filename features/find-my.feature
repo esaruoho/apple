@@ -20,9 +20,10 @@
 #   Find My has NO person/device deep-link URL (its schemes findmy://, fmf1://, … only
 #   open the app), NO AppleScript dictionary, and a sidebar AX tree too slow to traverse
 #   (repeated AppleEvent timeouts probing it). So the automation splits cleanly:
-#     • RELIABLE  — the View menu (View ▸ People / Devices / Items). System Events menu
-#                   clicks switch tabs every time. You always land on the right tab with
-#                   the target listed. This IS the route.
+#     • RELIABLE  — the tab keyboard shortcuts ⌘1 People / ⌘2 Devices / ⌘3 Items. A single
+#                   chord to the (deliberately) frontmost app switches tabs every time —
+#                   even more reliable than the View menu. You always land on the right
+#                   tab with the target listed. This IS the route.
 #     • BEST-EFFORT — selecting the SPECIFIC row, via list type-select (type the name with
 #                   Find My frontmost). Works when the list has focus; otherwise the row
 #                   is one tap away. Frontmost-guarded: if Find My isn't active we send NO
@@ -58,12 +59,13 @@ Feature: Find My — open the right tab and surface the right person/device
     # hand-verified 2026-06-04: dry-run → "apple-do finddevices" / "apple-do findphone"
 
   @verified
-  Scenario: it RELIABLY lands on the right tab with the target listed
-    Given Find My exposes View ▸ People/Devices/Items as menu items
-    When `apple-do findwife` runs
-    Then Find My opens, the View menu switches to People, and Olga is in the list
-    # cite: bin/find-my (click menu item of menu bar item "View"); never `entire contents`
-    # hand-verified 2026-06-04 (screenshot): People tab shown, "<family member>" row present
+  Scenario: it RELIABLY lands on the right tab via the ⌘1/⌘2/⌘3 shortcut
+    Given Find My's tabs are ⌘1 People, ⌘2 Devices, ⌘3 Items
+    When `apple-do findwife` runs (⌘1) / `findphone` runs (⌘2)
+    Then Find My opens, the matching tab is selected, and the target is listed
+    # cite: bin/find-my (keystroke <key> using command down; key=1/2/3); frontmost-guarded
+    # hand-verified 2026-06-04 (screenshots): findwife → People + "<family member>";
+    #   findphone → Devices (⌘2) + iPhone 16 Pro target
 
   @built
   Scenario: selecting the specific row is best-effort type-select, frontmost-guarded

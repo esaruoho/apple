@@ -28,6 +28,19 @@ final class CommandPanel: NSPanel {
     override var canBecomeMain: Bool { true }
 }
 
+/// NSTextField draws a single line of text toward the TOP of its cell, which with a
+/// 22pt font in a tall field reads as "slightly upper". This cell vertically centres
+/// the text (and the field editor, so typing stays centred too).
+final class VCenteredCell: NSTextFieldCell {
+    override func drawingRect(forBounds rect: NSRect) -> NSRect {
+        var r = super.drawingRect(forBounds: rect)
+        let textH = cellSize(forBounds: rect).height
+        let dy = r.height - textH
+        if dy > 0 { r.origin.y += dy / 2; r.size.height -= dy }
+        return r
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     var statusItem: NSStatusItem!
     var panel: CommandPanel!
@@ -167,12 +180,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         panel.contentView = root
 
         field = NSTextField(frame: NSRect(x: 18, y: 12, width: panelWidth - 36 - 84, height: 36))
+        let vcell = VCenteredCell(textCell: "")   // centre the text vertically (no more "slightly upper")
+        vcell.isEditable = true; vcell.isSelectable = true; vcell.isScrollable = true
+        vcell.wraps = false; vcell.usesSingleLineMode = true
+        field.cell = vcell
         field.font = NSFont.systemFont(ofSize: 22, weight: .regular)
         field.textColor = .white
         field.backgroundColor = .clear
         field.isBezeled = false
         field.focusRingType = .none
-        field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · 🎙 dictate"
+        field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · dictate"
         field.delegate = self
         field.target = self
         field.action = #selector(submit)
@@ -184,11 +201,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         spinner.controlSize = .small
         root.addSubview(spinner)
 
+        // The legit macOS dictation glyph (SF Symbol mic), not a cartoon emoji.
         micButton = NSButton(frame: NSRect(x: panelWidth - 50, y: 13, width: 36, height: 34))
-        micButton.title = "🎙"
+        micButton.image = micIcon(active: false)
+        micButton.imagePosition = .imageOnly
         micButton.bezelStyle = .rounded
         micButton.isBordered = false
-        micButton.font = NSFont.systemFont(ofSize: 18)
         micButton.toolTip = "Dictate (on-device speech recognition)"
         micButton.target = self
         micButton.action = #selector(toggleDictation)
@@ -373,11 +391,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         }
         dictation.onStateChange = { [weak self] running in
             guard let self = self else { return }
-            self.micButton.title = running ? "⏹" : "🎙"
+            self.micButton.image = self.micIcon(active: running)
             self.micButton.contentTintColor = running ? .systemRed : nil
             if running {
                 self.field.stringValue = ""
-                if !self.listenMode { self.field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)" }
+                if !self.listenMode { self.field.placeholderString = "Listening…  (tap mic or ↩ to stop)" }
             } else {
                 self.clearSilenceTimer()
                 self.listenMode = false   // a stop (manual or auto) leaves hands-free mode
@@ -389,6 +407,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 
     @objc func toggleDictation() { dictation.toggle() }
+
+    // The real macOS dictation glyph (SF Symbol mic.fill), template-tinted so it goes
+    // red while listening — the same affordance as the system dictation button.
+    func micIcon(active: Bool) -> NSImage? {
+        let cfg = NSImage.SymbolConfiguration(pointSize: 17, weight: .regular)
+        let img = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictate")?
+            .withSymbolConfiguration(cfg)
+        img?.isTemplate = true
+        return img
+    }
 
     // ── the "Hey Sal" fold: applebar://listen wakes the bar in hands-free voice mode ──
     // The Vocal Shortcut fires `open applebar://listen`; this handler brings the panel

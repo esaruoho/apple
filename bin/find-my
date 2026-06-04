@@ -19,11 +19,13 @@
 # FEATURE-CARD >> features/find-my.feature
 set -uo pipefail
 
+# Find My's tabs have keyboard shortcuts: ⌘1 People, ⌘2 Devices, ⌘3 Items. A single
+# chord to the frontmost app is more reliable than walking the View menu.
 tab="${1:-people}"; name="${2:-}"
 case "$tab" in
-  people)  menu="People"  ;;
-  devices) menu="Devices" ;;
-  items)   menu="Items"   ;;
+  people)  menu="People";  key=1 ;;
+  devices) menu="Devices"; key=2 ;;
+  items)   menu="Items";   key=3 ;;
   *) echo "find-my: tab must be people|devices|items (got '$tab')"; exit 2 ;;
 esac
 
@@ -32,21 +34,19 @@ open -b com.apple.findmy 2>/dev/null || { echo "find-my: couldn't open Find My";
 # Wait (bounded) for the app to exist — don't drive a half-launched process.
 for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -xq FindMy 2>/dev/null && break; sleep 0.4; done
 
-# Switch tab (reliable) + best-effort type-select (frontmost-guarded). Hard-bounded so it
-# can never hang: `timeout` wraps osascript; `with timeout` bounds the Apple Events.
-MENU="$menu" NAME="$name" timeout 8 osascript - "$menu" "$name" >/dev/null 2>&1 <<'AS' || true
+# Switch tab via ⌘<key> (⌘1/⌘2/⌘3) + best-effort type-select. Frontmost-guarded so a
+# keystroke can never leak elsewhere; hard-bounded (timeout + with-timeout) so it can't hang.
+timeout 8 osascript - "$key" "$name" >/dev/null 2>&1 <<'AS' || true
 on run argv
-  set menuName to item 1 of argv
+  set tabKey to item 1 of argv
   set personName to item 2 of argv
   tell application "FindMy" to activate
   delay 0.6
   with timeout of 5 seconds
     tell application "System Events" to tell process "FindMy"
       if frontmost is false then return                       -- never leak keystrokes
-      try
-        click menu item menuName of menu 1 of menu bar item "View" of menu bar 1
-        delay 0.35
-      end try
+      keystroke tabKey using command down                      -- ⌘1/⌘2/⌘3 → People/Devices/Items
+      delay 0.35
       if personName is not "" then keystroke personName        -- type-select (best-effort)
     end tell
   end timeout

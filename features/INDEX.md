@@ -59,9 +59,10 @@ AppleBar — what the session accomplished  —  8 scenarios   (features/appleba
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-On-device dictation button  —  9 scenarios   (features/dictation-button.feature)
+On-device dictation button  —  10 scenarios   (features/dictation-button.feature)
   - [@verified] A fresh engine is idle
   - [@verified] On-device recognition is preferred (audio stays local)
+  - [@built] AppleBar's button is the real dictation glyph, not a cartoon emo
   - [@verified] Stopping an idle engine is a safe no-op
   - [@built @untested] Tapping the mic authorises, listens, and streams text into the f
   - [@built @untested] Return stops the mic, then runs what was heard
@@ -70,7 +71,7 @@ On-device dictation button  —  9 scenarios   (features/dictation-button.featur
   - [@todo] AppleToolbox's SpeechDictationController sits on top of the shar
   - [(no grade)] Converse is a separate path, not a consumer
   triad: .session✓  transcript✓  RESULT✓
-  honesty: 7/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 8/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Directions home via Apple Maps  —  6 scenarios   (features/directions-home.feature)
   - [@verified] Navigation phrases route to directions, not the thermostat
@@ -85,7 +86,7 @@ Directions home via Apple Maps  —  6 scenarios   (features/directions-home.fea
 Find My — open the right tab and surface the right person/device  —  5 scenarios   (features/find-my.feature)
   - [@verified] "find" and the wife phrasings all route to the wife (Olga)
   - [@verified] devices and phone phrasings route distinctly
-  - [@verified] it RELIABLY lands on the right tab with the target listed
+  - [@verified] it RELIABLY lands on the right tab via the ⌘1/⌘2/⌘3 shortcut
   - [@built] selecting the specific row is best-effort type-select, frontmost
   - [(no grade)] one tool, three bindings — DRY, not three near-copies
   triad: .session✓  transcript✗  RESULT✓

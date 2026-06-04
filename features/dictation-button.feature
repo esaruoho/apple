@@ -52,6 +52,15 @@ Feature: On-device dictation button
     And start() sets requiresOnDeviceRecognition when the OS+hardware support it
     # cite: shared/Dictation.swift start() (~70, macOS 13 guard); test dictation-tests.swift
 
+  @built
+  Scenario: AppleBar's button is the real dictation glyph, not a cartoon emoji
+    Given the command bar's dictate affordance
+    Then it renders the SF Symbol "mic.fill" (template-tinted), going red while listening —
+      the system dictation look, not the "🎙" emoji
+    And the command field's text is vertically centred (VCenteredCell), not sitting "upper"
+    # cite: apple-bar/AppleBar.swift micIcon(active:) + VCenteredCell.drawingRect(forBounds:)
+    # hand-verified 2026-06-04 (screenshot): SF-Symbol mic at the field's right, centred text
+
   @verified
   Scenario: Stopping an idle engine is a safe no-op
     Given an engine that was never started
