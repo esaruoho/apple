@@ -45,7 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
     // Spotlight-style live suggestions, ranked in-process by NLEmbedding over the
     // shared catalog (shared/intents.json). No subprocess per keystroke.
-    struct CatItem { let action: String; let desc: String; let needsArg: Bool; let vecs: [[Double]] }
+    struct CatItem { let action: String; let desc: String; let needsArg: Bool; let examples: [String]; let vecs: [[Double]] }
     struct Sugg { let action: String; let desc: String; let needsArg: Bool; let score: Double }
     let sEmb = NLEmbedding.sentenceEmbedding(for: .english)
     var catalog: [CatItem] = []
@@ -98,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
             guard let a = d["action"] as? String, let ex = d["examples"] as? [String] else { return nil }
             let vecs = ex.compactMap { emb.vector(for: $0.lowercased()) }
             return CatItem(action: a, desc: (d["desc"] as? String) ?? a,
-                           needsArg: (d["needsArg"] as? Bool) ?? false, vecs: vecs)
+                           needsArg: (d["needsArg"] as? Bool) ?? false, examples: ex, vecs: vecs)
         }
     }
 
@@ -108,11 +108,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         return (na == 0 || nb == 0) ? 0 : d/(sqrt(na)*sqrt(nb))
     }
 
+    // Hybrid score: a literal prefix/substring match (Spotlight-style, so typing the
+    // start of a capability like "di" surfaces "directions"/"disk") blended with the
+    // semantic embedding (so "how warm is it" → home even with no shared word). The
+    // literal term dominates when present; embedding ranks the rest and breaks ties.
     func rank(_ text: String) {
-        guard let emb = sEmb, let qv = emb.vector(for: text.lowercased()) else { suggestions = []; return }
+        let t = text.lowercased()
+        guard !t.isEmpty else { suggestions = []; return }
+        let qv = sEmb?.vector(for: t)
         suggestions = catalog.map { item -> Sugg in
-            let best = item.vecs.map { cosine(qv, $0) }.max() ?? 0
-            return Sugg(action: item.action, desc: item.desc, needsArg: item.needsArg, score: best)
+            let a = item.action.lowercased()
+            var lit = 0.0
+            if a == t { lit = 1.2 }
+            else if a.hasPrefix(t) { lit = 1.0 }
+            else if a.contains(t) { lit = 0.7 }
+            else {
+                for e in item.examples {
+                    let el = e.lowercased()
+                    if el.hasPrefix(t) { lit = max(lit, 0.6) }
+                    else if el.contains(t) { lit = max(lit, 0.35) }
+                }
+            }
+            let emb = (qv != nil) ? (item.vecs.map { cosine(qv!, $0) }.max() ?? 0) : 0
+            return Sugg(action: item.action, desc: item.desc, needsArg: item.needsArg, score: emb + 2.0 * lit)
         }.sorted { $0.score > $1.score }
         if suggestions.count > 6 { suggestions = Array(suggestions.prefix(6)) }
         selected = 0
