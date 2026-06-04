@@ -51,9 +51,9 @@ anchors, voice and keyboard share one router, and Find My is one phrase away.
   I deliberately did not edit your Shortcut (it's a Shortcuts.app object).
 - **Hey Sal fold full spoken round-trip** — graded `@built`, not yet voice-verified
   end-to-end (speak → silence → auto-submit → action). Best confirmed by you saying it.
-- **Find My specific-row highlight** — tab is reliable; *selecting* Olga / the phone is
-  best-effort type-select (the list isn't always focused). Optional next step: focus the
-  list before typing. Find My has no person/device deep-link API to do better cleanly.
+- **Find My specific-row highlight** — CLOSED as *impossible*, not pending. Find My takes
+  no text input (no search, no list type-select; only ⌘1/⌘2/⌘3). find-my switches to the
+  right tab; you pick the row. The dead "type the name" code was removed (6f5e365).
 - **More learned places** — only Workspace + Home are in places.json. Stand somewhere new
   and run `me-location --learn "<name>"`, then add its address + `commute_to`.
 - **Optional, offered, not built**: a `curl`-able localhost HTTP trigger for AppleBar.
