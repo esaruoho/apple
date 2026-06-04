@@ -20,6 +20,9 @@ caps() {
 "home	current temperature + humidity at home (HomePod sensor)" \
 "address	your home address (Contacts me-card)" \
 "directions	open Apple Maps with directions home — apple-do directions [walk|transit]" \
+"findwife	open Find My on your wife (Olga) — \"find\" / \"where's my wife\"" \
+"finddevices	open Find My on the Devices tab" \
+"findphone	open Find My on your iPhone 16 Pro" \
 "now	current date, time, weekday, timezone" \
 "battery	battery level + charging state" \
 "wifi	current Wi-Fi network" \
@@ -58,6 +61,9 @@ case "$cap" in
   home)   exec "$HERE/homepod-now" ;;
   address) exec "$HERE/me-address" ;;
   directions) exec "$HERE/maps-directions" "$@" ;;
+  findwife)    exec "$HERE/find-my" people "Olga" ;;
+  finddevices) exec "$HERE/find-my" devices ;;
+  findphone)   exec "$HERE/find-my" devices "iPhone 16 Pro" ;;
   now)    date "+%A, %-d %B %Y, %H:%M %Z" ;;
   battery)
     pmset -g batt 2>/dev/null | grep -Eo '[0-9]+%; [a-z ]+' | head -1 || echo "battery info unavailable" ;;

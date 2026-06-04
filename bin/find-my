@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# find-my — open Find My on a given tab and best-effort surface a named person/device.
+#
+#   find-my people  [name]    People tab   (e.g. find-my people "Olga"  → the wife)
+#   find-my devices [name]    Devices tab  (e.g. find-my devices "iPhone 16 Pro")
+#   find-my items   [name]    Items tab    (AirTags etc.)
+#
+# WHAT'S RELIABLE vs BEST-EFFORT (Find My has no person/device deep-link URL and no
+# AppleScript dictionary):
+#   • RELIABLE  — switching tab via the View menu (View ▸ People/Devices/Items). System
+#                 Events menu clicks work even though the sidebar AX tree is too slow to
+#                 traverse. So you always land on the right tab with the target listed.
+#   • BEST-EFFORT — selecting a SPECIFIC row. Done by list TYPE-SELECT: with Find My
+#                 deliberately frontmost, type the name so AppKit highlights the match.
+#                 Frontmost-guarded — if Find My isn't the active app we send NOTHING, so
+#                 keystrokes never leak into whatever you're typing in (the iTerm lesson).
+#                 If the list isn't focused, you still see the tab with the row one tap away.
+#
+# FEATURE-CARD >> features/find-my.feature
+set -uo pipefail
+
+tab="${1:-people}"; name="${2:-}"
+case "$tab" in
+  people)  menu="People"  ;;
+  devices) menu="Devices" ;;
+  items)   menu="Items"   ;;
+  *) echo "find-my: tab must be people|devices|items (got '$tab')"; exit 2 ;;
+esac
+
+open -b com.apple.findmy 2>/dev/null || { echo "find-my: couldn't open Find My"; exit 1; }
+
+# Wait (bounded) for the app to exist — don't drive a half-launched process.
+for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -xq FindMy 2>/dev/null && break; sleep 0.4; done
+
+# Switch tab (reliable) + best-effort type-select (frontmost-guarded). Hard-bounded so it
+# can never hang: `timeout` wraps osascript; `with timeout` bounds the Apple Events.
+MENU="$menu" NAME="$name" timeout 8 osascript - "$menu" "$name" >/dev/null 2>&1 <<'AS' || true
+on run argv
+  set menuName to item 1 of argv
+  set personName to item 2 of argv
+  tell application "FindMy" to activate
+  delay 0.6
+  with timeout of 5 seconds
+    tell application "System Events" to tell process "FindMy"
+      if frontmost is false then return                       -- never leak keystrokes
+      try
+        click menu item menuName of menu 1 of menu bar item "View" of menu bar 1
+        delay 0.35
+      end try
+      if personName is not "" then keystroke personName        -- type-select (best-effort)
+    end tell
+  end timeout
+end run
+AS
+
+echo "Find My → ${menu}${name:+ → $name}"
