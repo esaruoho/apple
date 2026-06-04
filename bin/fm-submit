@@ -178,9 +178,10 @@ def main() -> int:
         age = st.get("heartbeat_age_s")
         host = st.get("worker_host") or "the worker"
         if age is None:
-            why = f"{host} has no heartbeat — fm-worker isn't running on it"
+            why = f"no heartbeat from {host} has ever reached this machine — it's down, or the sync between us has never run"
         elif not st.get("worker_alive"):
-            why = f"{host}'s fm-worker looks down (last heartbeat {age:.0f}s ago)"
+            why = (f"haven't heard from {host} in {age:.0f}s — it's either down, OR the Syncthing "
+                   f"channel carrying its heartbeats here is stalled (can't tell which from this side)")
         else:
             why = f"{host}'s fm-worker is alive ({age:.0f}s heartbeat) but didn't finish — busy or blocked"
         sys.stderr.write(f"timed out after {rt:.0f}s — {why}. "
