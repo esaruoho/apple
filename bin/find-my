@@ -36,15 +36,24 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -xq FindMy 2>/dev/null && break; sleep 0
 
 # Switch tab via ⌘<key> (⌘1/⌘2/⌘3) + best-effort type-select. Frontmost-guarded so a
 # keystroke can never leak elsewhere; hard-bounded (timeout + with-timeout) so it can't hang.
-timeout 8 osascript - "$key" "$name" >/dev/null 2>&1 <<'AS' || true
+timeout 10 osascript - "$key" "$name" >/dev/null 2>&1 <<'AS' || true
 on run argv
   set tabKey to item 1 of argv
   set personName to item 2 of argv
-  tell application "FindMy" to activate
-  delay 0.6
+  -- Bring Find My to the front and WAIT until it actually is (cold launch is slow).
+  -- Re-activate each loop; only proceed once frontmost so keystrokes can't leak.
+  set isFront to false
+  repeat 25 times
+    tell application "FindMy" to activate
+    try
+      tell application "System Events" to set isFront to frontmost of process "FindMy"
+    end try
+    if isFront then exit repeat
+    delay 0.2
+  end repeat
+  if isFront is false then return                              -- still not front: send nothing
   with timeout of 5 seconds
     tell application "System Events" to tell process "FindMy"
-      if frontmost is false then return                       -- never leak keystrokes
       keystroke tabKey using command down                      -- ⌘1/⌘2/⌘3 → People/Devices/Items
       delay 0.35
       if personName is not "" then keystroke personName        -- type-select (best-effort)

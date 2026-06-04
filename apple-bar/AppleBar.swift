@@ -29,15 +29,27 @@ final class CommandPanel: NSPanel {
 }
 
 /// NSTextField draws a single line of text toward the TOP of its cell, which with a
-/// 22pt font in a tall field reads as "slightly upper". This cell vertically centres
-/// the text (and the field editor, so typing stays centred too).
+/// 22pt font in a tall field reads as "slightly upper". Centre it by computing the line
+/// height from the FONT (not cellSize, which returns ~the full bounds for a scrollable
+/// single-line cell — why the drawingRect-only attempt did nothing) and overriding every
+/// rect the cell uses: the title (placeholder/value) AND the field editor (typing).
 final class VCenteredCell: NSTextFieldCell {
-    override func drawingRect(forBounds rect: NSRect) -> NSRect {
-        var r = super.drawingRect(forBounds: rect)
-        let textH = cellSize(forBounds: rect).height
-        let dy = r.height - textH
-        if dy > 0 { r.origin.y += dy / 2; r.size.height -= dy }
-        return r
+    private func centered(_ rect: NSRect) -> NSRect {
+        let f = font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        let lineH = ceil(f.ascender - f.descender + f.leading)
+        let dy = rect.height - lineH
+        guard dy > 0 else { return rect }
+        return NSRect(x: rect.origin.x, y: rect.origin.y + dy / 2, width: rect.width, height: lineH)
+    }
+    override func titleRect(forBounds rect: NSRect) -> NSRect { centered(super.titleRect(forBounds: rect)) }
+    override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
+        super.drawInterior(withFrame: centered(cellFrame), in: controlView)
+    }
+    override func edit(withFrame rect: NSRect, in controlView: NSView, editor: NSText, delegate: Any?, event: NSEvent?) {
+        super.edit(withFrame: centered(rect), in: controlView, editor: editor, delegate: delegate, event: event)
+    }
+    override func select(withFrame rect: NSRect, in controlView: NSView, editor: NSText, delegate: Any?, start selStart: Int, length selLength: Int) {
+        super.select(withFrame: centered(rect), in: controlView, editor: editor, delegate: delegate, start: selStart, length: selLength)
     }
 }
 
@@ -399,7 +411,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
             } else {
                 self.clearSilenceTimer()
                 self.listenMode = false   // a stop (manual or auto) leaves hands-free mode
-                self.field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · 🎙 dictate"
+                self.field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · dictate"
                 self.panel.makeFirstResponder(self.field)
             }
         }

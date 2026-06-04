@@ -63,7 +63,7 @@ case "$cap" in
   directions) exec "$HERE/maps-directions" "$@" ;;
   findwife)    exec "$HERE/find-my" people "Olga" ;;
   finddevices) exec "$HERE/find-my" devices ;;
-  findphone)   exec "$HERE/find-my" devices "iPhone 16 Pro" ;;
+  findphone)   exec "$HERE/find-my" devices "esaiPhone16Pro" ;;
   now)    date "+%A, %-d %B %Y, %H:%M %Z" ;;
   battery)
     pmset -g batt 2>/dev/null | grep -Eo '[0-9]+%; [a-z ]+' | head -1 || echo "battery info unavailable" ;;
