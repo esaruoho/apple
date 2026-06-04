@@ -104,13 +104,14 @@ fm-converse — a remembering conversation with the on-device LLM  —  8 scenar
   triad: .session✗  transcript✗  RESULT✓
   honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-chat/ask answers are banked to a FoundationModels Knowledgebank  —  4 scenarios   (features/fm-knowledgebank.feature)
+chat/ask answers are banked to a FoundationModels Knowledgebank  —  5 scenarios   (features/fm-knowledgebank.feature)
   - [@verified] a chat answer from the on-device model is appended to the bank
   - [@verified] the bank is append-only with a one-time header
   - [@built] only real answers are banked
+  - [@verified] the chat answer is spoken back in Zoe (talk, like convey talk)
   - [(no grade)] the bank location is conventional and overridable
   triad: .session✗  transcript✗  RESULT✓
-  honesty: 3/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle

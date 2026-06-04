@@ -114,7 +114,34 @@ if let q = converseQuestion {
                             mode: converseWithRules ? "ask" : "chat", answer: said)
     }
     print(said.isEmpty ? "(no answer from the model)" : said)
+    // "chat"/"talk to me" should TALK: speak the answer back in Zoe (like `convey talk`).
+    // Detached so it keeps speaking after this process exits — AppleBar waits for our
+    // exit before showing the result, so a blocking `say` would freeze the panel until
+    // speech ended. Opt out with FM_CHAT_SPEAK=0 (e.g. headless/piped callers).
+    if r.code == 0 && !said.isEmpty && ProcessInfo.processInfo.environment["FM_CHAT_SPEAK"] != "0" {
+        speakDetached(said)
+    }
     exit(r.code)
+}
+
+// Speak text via Apple-native `say` (Zoe (Premium) by default), without waiting —
+// the process is reparented to launchd when we exit and keeps talking.
+func speakDetached(_ text: String) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+    var args: [String] = []
+    if let v = zoeVoice() { args += ["-v", v] }
+    args.append(text)
+    p.arguments = args
+    try? p.run()   // intentionally NOT waitUntilExit — detach and let it speak
+}
+
+// Zoe (Premium) if installed (Apple's best built-in voice), else the system default;
+// CONVEY_VOICE overrides. Mirrors convey's _default_say_voice so talk/chat sound alike.
+func zoeVoice() -> String? {
+    if let v = ProcessInfo.processInfo.environment["CONVEY_VOICE"], !v.isEmpty { return v }
+    let r = runCapture("/usr/bin/say", ["-v", "?"])
+    return r.out.contains("Zoe (Premium)") ? "Zoe (Premium)" : nil
 }
 
 // ── FoundationModels knowledgebank ──────────────────────────────────────────

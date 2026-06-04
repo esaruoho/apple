@@ -13,9 +13,11 @@
 #   Codespace : bin/apple-intent  (converse block: save on success; saveToKnowledgebank())
 #   Thinkspace: this card + the spawning session (Esa: "the result being saved to
 #               foundationmodels knowledgebank")
-#   Areaspace : OWNS = persisting chat/ask answers. MUST NOT TOUCH = the routing/answer
-#               logic (apple-intent/fm-submit own that), nor AppleBar.swift (it shells
-#               out to the interpreted apple-intent script live — no recompile needed).
+#   Areaspace : OWNS = what happens to a chat/ask answer once the model returns it —
+#               persisting it (the bank) AND speaking it (Zoe, like `convey talk`).
+#               MUST NOT TOUCH = the routing/answer logic (apple-intent/fm-submit own
+#               that), nor AppleBar.swift (it shells out to the interpreted apple-intent
+#               script live — no recompile needed).
 #
 # WHY THIS CARD EXISTS
 #   "chat hello hello tell me about chess" worked end-to-end already — the gap was only
@@ -59,6 +61,18 @@ Feature: chat/ask answers are banked to a FoundationModels Knowledgebank
     When the converse block finishes
     Then nothing is written to the bank (no empty/failed entries)
     # cite: bin/apple-intent  `if r.code == 0 && !said.isEmpty`
+
+  @verified
+  Scenario: the chat answer is spoken back in Zoe (talk, like convey talk)
+    Given a chat/ask run returns a real answer
+    When the converse block finishes
+    Then `say` speaks the answer in Zoe (Premium), launched DETACHED so it keeps
+      talking after apple-intent exits (AppleBar waits for exit before showing the
+      result — a blocking say would freeze the panel until speech ended)
+    And FM_CHAT_SPEAK=0 opts out (headless/piped callers); CONVEY_VOICE overrides voice
+    # cite: bin/apple-intent speakDetached()/zoeVoice(); converse block speak guard
+    # hand-verified 2026-06-05: a live `apple-intent "chat …"` returned fast while a
+    #   detached `/usr/bin/say -v Zoe (Premium) …` kept speaking (pgrep-confirmed)
 
   @note
   Scenario: the bank location is conventional and overridable
