@@ -17,6 +17,9 @@
 #   gdrive <URL> --label <name>                    custom result folder name
 #   gdrive <URL> --force                            re-download even if present
 #   gdrive <URL> --no-open                          don't open; just report/submit
+#   gdrive <URL> --ingest                           after fetch, hand each file to
+#                                                   its Reconvey (convey ingest:
+#                                                   PDF→OCR, audio/video→whisper, …)
 #   gdrive --status                                show queue / results counts
 #   gdrive --help                                  this help
 #
@@ -42,7 +45,7 @@ log() { echo "[gdrive] $*" >&2; }
 die() { echo "[gdrive] ERROR: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -93,6 +96,7 @@ has_content() {
 label=""
 force=0
 no_open=0
+ingest=0
 urls=()
 extra=()
 while [[ $# -gt 0 ]]; do
@@ -102,12 +106,25 @@ while [[ $# -gt 0 ]]; do
       label="$2"; extra+=(--label "$2"); shift 2 ;;
     --force|-f) force=1; shift ;;
     --no-open)  no_open=1; shift ;;
+    --ingest)   ingest=1; shift ;;
     http://*|https://*)
       urls+=("$1"); shift ;;
     *)
       die "unexpected argument: $1  (URLs must start with http(s)://)" ;;
   esac
 done
+
+# Convey ingestion: after a fetch lands, hand each file to its Reconvey (flip+run
+# by format). The files must be present locally (open/already-have path); a brand-
+# new download arrives async, so re-run with --ingest once synced, or point
+# `convey ingest --watch` at the result dir.
+CONVEY_BIN="${CONVEY_BIN:-$HOME/work/convey/bin/convey}"
+maybe_ingest() {  # $1 = result dir
+  [[ "$ingest" == "1" ]] || return 0
+  [[ -x "$CONVEY_BIN" ]] || { log "convey not found ($CONVEY_BIN) — skipping ingest"; return 0; }
+  log "ingesting (Reconvey by format): $1"
+  "$CONVEY_BIN" ingest "$1" || log "ingest reported issues (see above)"
+}
 
 [[ ${#urls[@]} -ge 1 ]] || die "no URL given. usage: gdrive <drive.google.com URL> [--label <name>]"
 
@@ -127,6 +144,7 @@ if [[ "$force" == "0" ]]; then
       if [[ "$no_open" == "0" ]]; then
         open "$dir" && log "opened in Finder."
       fi
+      maybe_ingest "$dir"
     else
       pending+=("$u")
     fi
