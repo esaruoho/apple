@@ -2,22 +2,27 @@
 # me-location — deduce WHERE I AM RIGHT NOW from device presence, print that place's
 # postal address. The desktop-Mac counterpart to GPS: a Mac on Ethernet has no
 # location services, but the LAN it sits on IS a location fingerprint — the router's
-# MAC, the subnet, and which peers (esarMBP, cloudcitymacmini, …) are reachable.
+# MAC, the subnet, which peers (esarMBP, cloudcitymacmini, …) are reachable, and which
+# named Bonjour devices (e.g. a Time Capsule "Oletko Helikopteri") are advertising.
 #
-# Matches the live network against ~/.config/apple-bar/places.json (priority:
-# gateway_mac > peers_any > ssid) and prints the matched place's address. Prints
-# nothing + exits 1 when no place matches (caller then falls back to "current location").
+# Matches the live network against ~/.config/apple-bar/places.json. Signal priority:
+#   gateway_mac (a specific router = strongest) > peers_any (arp host) ≈ bonjour_any
+#   (named Bonjour device) > ssid (Wi-Fi only). Prints nothing + exits 1 when no place
+#   matches. The Bonjour browse is LAZY — only run when the instant signals miss — so
+#   the common case (router MAC match) stays instant and does no network I/O.
 #
 #   me-location            print the current place's address (saddr-ready, one line)
 #   me-location --name     print just the place name (e.g. "Workspace")
 #   me-location --to       print the COMMUTE destination's address (Directions daddr —
 #                          the place you head to FROM here; at Home → Workspace, etc.)
 #   me-location --to-name  print the commute destination's name
+#   me-location --route    here_addr⇥here_name⇥there_addr⇥there_name (one call, for
+#                          maps-directions: origin + commute destination in one shot)
 #   me-location --why      print name + which signal matched (diagnostics)
 #   me-location --signals  dump the live signals me-location sees right now
-#   me-location --learn N  append the current signature to place N (create if absent)
+#   me-location --learn N  append the current signature (incl. Bonjour devices) to place N
 #
-# Apple-native: route/arp/networksetup + python3 stdlib (json). No deps, no network calls.
+# Apple-native: route/arp/networksetup + dns-sd (lazy) + python3 stdlib (json). No deps.
 # FEATURE-CARD >> features/me-location.feature
 set -uo pipefail
 
@@ -40,29 +45,44 @@ self="$(scutil --get LocalHostName 2>/dev/null | tr 'A-Z' 'a-z')"
 peers="$(arp -a 2>/dev/null | awk '$1 !~ /^\?/ && $1 !~ /(mcast|mdns|\.255)/ {print $1}' | tr 'A-Z' 'a-z' | grep -v -x "$self" | sort -u | tr '\n' ' ')"
 ssid="$(networksetup -getairportnetwork en0 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p')"
 
-if [ "${1:-}" = "--signals" ]; then
-  printf 'gateway_ip:  %s\ngateway_mac: %s\nsubnet:      %s\nself:        %s\npeers:       %s\nssid:        %s\n' \
-    "$gw_ip" "$gw_mac" "$subnet" "$self" "$peers" "$ssid"
+# Bonjour device names (lazy — only called when instant signals miss, or on --learn).
+# Bounded by `timeout` so dns-sd (which never self-exits) can't hang; orphan-safe.
+# Output is NEWLINE-separated — device names can contain spaces ("Oletko Helikopteri").
+bonjour_devices() {
+  { timeout 2 dns-sd -B _airport._tcp    local 2>/dev/null
+    timeout 2 dns-sd -B _afpovertcp._tcp local 2>/dev/null; } \
+    | grep -E ' Add ' | sed -E 's/.*_tcp\.? +//' \
+    | tr 'A-Z' 'a-z' | grep -v -x "$self" | grep -v '^$' | sort -u
+}
+
+mode="${1:-}"; arg="${2:-}"
+
+if [ "$mode" = "--signals" ]; then
+  printf 'gateway_ip:  %s\ngateway_mac: %s\nsubnet:      %s\nself:        %s\npeers:       %s\nssid:        %s\nbonjour:     %s\n' \
+    "$gw_ip" "$gw_mac" "$subnet" "$self" "$peers" "$ssid" "$(bonjour_devices | paste -sd ', ' -)"
   exit 0
 fi
 
 [ -s "$CONFIG" ] || { echo "me-location: no config at $CONFIG" >&2; exit 1; }
 
 # --- match (python stdlib does the json + priority logic) -------------------
-GW_MAC="$gw_mac" SUBNET="$subnet" PEERS="$peers" SSID="$ssid" MODE="${1:-}" ARG="${2:-}" \
-python3 - "$CONFIG" <<'PY'
+# Run the matcher with an optional set of Bonjour device names.
+run_match() {  # $1 = space-separated bonjour device names
+  GW_MAC="$gw_mac" SUBNET="$subnet" PEERS="$peers" SSID="$ssid" BONJOUR="$1" MODE="$mode" ARG="$arg" \
+  python3 - "$CONFIG" <<'PY'
 import json, os, sys
 
 cfg_path = sys.argv[1]
 cfg = json.load(open(cfg_path))
 places = cfg.get("places", [])
 
-gw_mac = os.environ.get("GW_MAC", "")
-subnet = os.environ.get("SUBNET", "")
-peers  = set(p for p in os.environ.get("PEERS", "").split() if p)
-ssid   = os.environ.get("SSID", "")
-mode   = os.environ.get("MODE", "")
-arg    = os.environ.get("ARG", "")
+gw_mac  = os.environ.get("GW_MAC", "")
+subnet  = os.environ.get("SUBNET", "")
+peers   = set(p for p in os.environ.get("PEERS", "").split() if p)
+ssid    = os.environ.get("SSID", "")
+devices = set(d.strip() for d in os.environ.get("BONJOUR", "").split("\n") if d.strip())
+mode    = os.environ.get("MODE", "")
+arg     = os.environ.get("ARG", "")
 
 def norm_mac(m):
     parts = [x for x in m.replace("-", ":").lower().split(":") if x != ""]
@@ -80,10 +100,13 @@ if mode == "--learn":
     m = place.setdefault("match", {})
     if gw_mac: m["gateway_mac"] = gw_mac
     if subnet: m["subnet"] = subnet
-    cur = set(m.get("peers_any", [])) | peers
-    if cur: m["peers_any"] = sorted(cur)
-    if ssid: m.setdefault("ssid", [])
-    if ssid and ssid not in m["ssid"]: m["ssid"].append(ssid)
+    pa = set(m.get("peers_any", [])) | peers
+    if pa: m["peers_any"] = sorted(pa)
+    ba = set(m.get("bonjour_any", [])) | devices
+    if ba: m["bonjour_any"] = sorted(ba)
+    if ssid:
+        m.setdefault("ssid", [])
+        if ssid not in m["ssid"]: m["ssid"].append(ssid)
     json.dump(cfg, open(cfg_path, "w"), indent=2, ensure_ascii=False)
     open(cfg_path, "a").write("\n")
     addr = place.get("address") or "(no address set — edit places.json)"
@@ -96,10 +119,11 @@ def score(p):
     if want_mac and gw_mac and want_mac == gw_mac:
         return (3, "gateway_mac")
     hit = peers & set(x.lower() for x in m.get("peers_any", []))
-    if hit:
-        # corroborate with subnet when given, to avoid a same-named host elsewhere
-        if not m.get("subnet") or m["subnet"] == subnet:
-            return (2, "peer:" + ",".join(sorted(hit)))
+    if hit and (not m.get("subnet") or m["subnet"] == subnet):
+        return (2, "peer:" + ",".join(sorted(hit)))
+    hitb = devices & set(x.lower() for x in m.get("bonjour_any", []))
+    if hitb:
+        return (2, "bonjour:" + ",".join(sorted(hitb)))
     if ssid and ssid in m.get("ssid", []):
         return (1, "ssid:" + ssid)
     return (0, "")
@@ -115,7 +139,7 @@ if not best_p:
 
 # commute partner: the place named by best_p.commute_to. This is the CLEVER bit —
 # Directions routes to where you head FROM here (at Workspace → Home, at Home →
-# Workspace), instead of always "home". Exit 1 if there's no partner configured.
+# Workspace), instead of always "home". None if there's no partner configured.
 def commute_place():
     name = best_p.get("commute_to")
     if not name: return None
@@ -133,6 +157,26 @@ elif mode == "--to-name":      # name of the commute destination
     cp = commute_place()
     if not cp: sys.exit(1)
     print(cp.get("name", ""))
+elif mode == "--route":        # one call: origin + commute destination, tab-separated
+    cp = commute_place()
+    print("\t".join([best_p.get("address",""), best_p.get("name",""),
+                     (cp.get("address","") if cp else ""), (cp.get("name","") if cp else "")]))
 else:
     print(best_p.get("address", ""))
 PY
+}
+
+# --learn always records Bonjour devices into the signature.
+if [ "$mode" = "--learn" ]; then
+  run_match "$(bonjour_devices)"; exit $?
+fi
+
+# Phase 1: instant signals only (no network browse) — the fast, common path.
+out="$(run_match "")"; rc=$?
+# Phase 2: instant signals missed → bounded Bonjour browse for named devices, re-score.
+if [ "$rc" -ne 0 ]; then
+  bj="$(bonjour_devices)"
+  [ -n "$bj" ] && { out="$(run_match "$bj")"; rc=$?; }
+fi
+[ -n "$out" ] && printf '%s\n' "$out"
+exit "$rc"

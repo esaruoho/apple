@@ -91,6 +91,26 @@ Feature: Where am I right now — device-presence geolocation for a desktop Mac
     # cite: places.json Home + commute_to; bin/me-location commute_place()/--to/--to-name
     # hand-verified 2026-06-04: --why → "Home  gateway_mac  Inkiväärikuja…"; --to → Workspace
 
+  @verified
+  Scenario: a named Bonjour device (Time Capsule) is a location signal — lazily browsed
+    Given Home also lists bonjour_any ["Oletko Helikopteri"] (the home Time Capsule)
+    And the Bonjour browse is LAZY — only run when the instant signals (gateway_mac…) miss
+    When the instant signals match (the common case) me-location returns instantly, no browse
+    But when they miss, a bounded `dns-sd` browse (_airport._tcp/_afpovertcp._tcp, 2s each,
+      orphan-safe) discovers "Oletko Helikopteri" and matches Home by device name alone
+    And multi-word device names work (names are newline-delimited, not space-split)
+    # cite: bin/me-location bonjour_devices()/two-phase run_match; places.json Home bonjour_any
+    # hand-verified 2026-06-04: fast path 0.69s gateway_mac (no browse); stripped-signals
+    #   config matched "HomeByBonjour  bonjour:oletko helikopteri"; no dns-sd orphans
+
+  @verified
+  Scenario: --route resolves the whole route in one call (origin + destination)
+    Given maps-directions needs both ends and any Bonjour cost should be paid once
+    When `me-location --route` runs
+    Then it prints here_addr⇥here_name⇥there_addr⇥there_name (tab-separated, one invocation)
+    # cite: bin/me-location --route; bin/maps-directions reads it with one `read`
+    # hand-verified 2026-06-04: "Inkiväärikuja…⇥Home⇥Sahaajankatu…⇥Workspace"
+
   @note
   Scenario: commute_to makes "here" generate "there" — the clever-Directions seam
     Given each place names the place you head to FROM it (Workspace→Home, Home→Workspace)

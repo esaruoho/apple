@@ -24,10 +24,13 @@ case "$phrase" in
   *)                      flg=d; mode=driving ;;
 esac
 
-# Destination (daddr): the commute partner of where we are. Empty → fall back to home.
-dst="$("$HERE/me-location" --to 2>/dev/null)"
-dstname="$("$HERE/me-location" --to-name 2>/dev/null)"
-if [ -z "$dst" ]; then
+# One call to me-location resolves the whole route: origin (where we are) + the
+# commute destination (where we head from here). Tab-separated so a single invocation
+# pays any lazy Bonjour cost once, not four times.
+IFS=$'\t' read -r src srcname dst dstname < <("$HERE/me-location" --route 2>/dev/null) || true
+
+# Destination (daddr): the commute partner. Empty → fall back to the home address.
+if [ -z "${dst:-}" ]; then
   dst="$("$HERE/me-address" 2>/dev/null | grep -vi 'door' | paste -sd ', ' -)"
   dstname="home"
   case "$dst" in
@@ -39,10 +42,8 @@ fi
 # Source (saddr): a desktop Mac has no GPS, so Maps can't fill "current location".
 # Pin the deduced current place as the origin; if unknown, omit saddr (Maps decides).
 saddr_q=""; from=""
-src="$("$HERE/me-location" 2>/dev/null)"
-if [ -n "$src" ]; then
+if [ -n "${src:-}" ]; then
   saddr_q="&saddr=$(urlenc "$src")"
-  srcname="$("$HERE/me-location" --name 2>/dev/null)"
   from="${srcname:-$src} → "
 fi
 
