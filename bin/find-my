@@ -19,13 +19,13 @@
 # FEATURE-CARD >> features/find-my.feature
 set -uo pipefail
 
-# Find My's tabs have keyboard shortcuts: ⌘1 People, ⌘2 Devices, ⌘3 Items. A single
-# chord to the frontmost app is more reliable than walking the View menu.
+# Map the tab to its View-menu item. (Find My's equivalent shortcuts are ⌘1 People /
+# ⌘2 Devices / ⌘3 Items, but we CLICK the item rather than send the chord — see below.)
 tab="${1:-people}"; name="${2:-}"
 case "$tab" in
-  people)  menu="People";  key=1 ;;
-  devices) menu="Devices"; key=2 ;;
-  items)   menu="Items";   key=3 ;;
+  people)  menu="People"  ;;
+  devices) menu="Devices" ;;
+  items)   menu="Items"   ;;
   *) echo "find-my: tab must be people|devices|items (got '$tab')"; exit 2 ;;
 esac
 
@@ -34,14 +34,14 @@ open -b com.apple.findmy 2>/dev/null || { echo "find-my: couldn't open Find My";
 # Wait (bounded) for the app to exist — don't drive a half-launched process.
 for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -xq FindMy 2>/dev/null && break; sleep 0.4; done
 
-# Switch tab via ⌘<key> (⌘1/⌘2/⌘3) + best-effort type-select. Frontmost-guarded so a
-# keystroke can never leak elsewhere; hard-bounded (timeout + with-timeout) so it can't hang.
-timeout 10 osascript - "$key" "$name" >/dev/null 2>&1 <<'AS' || true
+# Switch tab by CLICKING the View ▸ <tab> menu item (deterministic — invokes the tab
+# action regardless of focus; the equivalent ⌘1/⌘2/⌘3 keystroke gets swallowed when a
+# device/person row is focused). Frontmost-guarded (no leak), hard-bounded (can't hang).
+timeout 10 osascript - "$menu" "$name" >/dev/null 2>&1 <<'AS' || true
 on run argv
-  set tabKey to item 1 of argv
+  set tabName to item 1 of argv
   set personName to item 2 of argv
   -- Bring Find My to the front and WAIT until it actually is (cold launch is slow).
-  -- Re-activate each loop; only proceed once frontmost so keystrokes can't leak.
   set isFront to false
   repeat 25 times
     tell application "FindMy" to activate
@@ -51,10 +51,10 @@ on run argv
     if isFront then exit repeat
     delay 0.2
   end repeat
-  if isFront is false then return                              -- still not front: send nothing
+  if isFront is false then return                              -- still not front: do nothing
   with timeout of 5 seconds
     tell application "System Events" to tell process "FindMy"
-      keystroke tabKey using command down                      -- ⌘1/⌘2/⌘3 → People/Devices/Items
+      click menu item tabName of menu 1 of menu bar item "View" of menu bar 1
       delay 0.35
       if personName is not "" then keystroke personName        -- type-select (best-effort)
     end tell

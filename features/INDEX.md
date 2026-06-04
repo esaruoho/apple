@@ -86,7 +86,7 @@ Directions home via Apple Maps  —  6 scenarios   (features/directions-home.fea
 Find My — open the right tab and surface the right person/device  —  5 scenarios   (features/find-my.feature)
   - [@verified] "find" and the wife phrasings all route to the wife (Olga)
   - [@verified] devices and phone phrasings route distinctly
-  - [@verified] it RELIABLY lands on the right tab via the ⌘1/⌘2/⌘3 shortcut
+  - [@verified] it RELIABLY switches tab even when Find My is already open on an
   - [@built] selecting the specific row is best-effort type-select, frontmost
   - [(no grade)] one tool, three bindings — DRY, not three near-copies
   triad: .session✓  transcript✗  RESULT✓

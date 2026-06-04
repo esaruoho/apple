@@ -20,10 +20,12 @@
 #   Find My has NO person/device deep-link URL (its schemes findmy://, fmf1://, … only
 #   open the app), NO AppleScript dictionary, and a sidebar AX tree too slow to traverse
 #   (repeated AppleEvent timeouts probing it). So the automation splits cleanly:
-#     • RELIABLE  — the tab keyboard shortcuts ⌘1 People / ⌘2 Devices / ⌘3 Items. A single
-#                   chord to the (deliberately) frontmost app switches tabs every time —
-#                   even more reliable than the View menu. You always land on the right
-#                   tab with the target listed. This IS the route.
+#     • RELIABLE  — CLICK the View ▸ People/Devices/Items menu item. (The equivalent
+#                   ⌘1/⌘2/⌘3 chord gets SWALLOWED when a device/person row has focus —
+#                   it switched on a cold launch but not when Find My was already open on
+#                   another tab. The menu click invokes the tab action regardless of focus.)
+#                   First WAIT (poll, re-activating) until Find My is truly frontmost, or a
+#                   slow cold launch makes the click no-op before the app is up.
 #     • BEST-EFFORT — selecting the SPECIFIC row, via list type-select (type the name with
 #                   Find My frontmost). Works when the list has focus; otherwise the row
 #                   is one tap away. Frontmost-guarded: if Find My isn't active we send NO
@@ -59,13 +61,15 @@ Feature: Find My — open the right tab and surface the right person/device
     # hand-verified 2026-06-04: dry-run → "apple-do finddevices" / "apple-do findphone"
 
   @verified
-  Scenario: it RELIABLY lands on the right tab via the ⌘1/⌘2/⌘3 shortcut
-    Given Find My's tabs are ⌘1 People, ⌘2 Devices, ⌘3 Items
-    When `apple-do findwife` runs (⌘1) / `findphone` runs (⌘2)
-    Then Find My opens, the matching tab is selected, and the target is listed
-    # cite: bin/find-my (keystroke <key> using command down; key=1/2/3); frontmost-guarded
-    # hand-verified 2026-06-04 (screenshots): findwife → People + "<family member>";
-    #   findphone → Devices (⌘2) + iPhone 16 Pro target
+  Scenario: it RELIABLY switches tab even when Find My is already open on another tab
+    Given Find My's View menu has People/Devices/Items (⌘1/⌘2/⌘3)
+    When `apple-do finddevices` runs, then `apple-do findwife` runs
+    Then find-my polls until Find My is frontmost, then CLICKS the View ▸ <tab> item
+    And the tab switches both ways: People→Devices→People (the keystroke did NOT — it was
+      swallowed by the focused device row; the click is focus-independent)
+    # cite: bin/find-my (click menu item <menu> of menu bar item "View"; frontmost poll)
+    # hand-verified 2026-06-04 (screenshots): Devices→"find wife"→People list shown;
+    #   and the earlier keystroke build left it stuck on Devices (the bug this fixes)
 
   @built
   Scenario: selecting the specific row is best-effort type-select, frontmost-guarded
