@@ -13,6 +13,7 @@ Usage:
     fm-submit --no-wait "prompt"           fire-and-forget (just queue it)
     fm-submit --id slug "prompt"           name the job (else timestamp+hash)
     fm-submit --status                     show queue depth + worker heartbeat
+    fm-submit --status --json              same, machine-readable (for tooling)
     fm-submit --timeout 60 "prompt"        how long to wait for the answer (default 120s)
 
 For an interactive conversation, use `fm-chat`.
@@ -88,19 +89,38 @@ def humanize_err(err: str) -> str:
     return e or "unknown"
 
 
-def status():
+STALE_AFTER = 120.0  # a heartbeat older than this means the worker is not alive
+
+
+def probe() -> dict:
+    """Read the worker's true state from the queue — the source of truth that
+    Syncthing mirrors here. No SSH, no asking: the answer is on disk."""
     pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
     done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
-    print(f"inbox:  {INBOX}  ({pend} queued)")
-    print(f"outbox: {OUTBOX}  ({done} answers)")
+    state = {"inbox_queued": pend, "outbox_answers": done,
+             "worker_host": None, "heartbeat_age_s": None, "worker_alive": False}
     if HEARTBEAT.exists():
         try:
-            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
-            host = json.loads(HEARTBEAT.read_text()).get("host", "?")
-            print(f"worker: {host}, last heartbeat {age:.0f}s ago"
-                  + ("  ⚠ stale" if age > 120 else "  ✓"))
+            hb = json.loads(HEARTBEAT.read_text())
+            age = time.time() - hb.get("ts", 0)
+            state["worker_host"] = hb.get("host", "?")
+            state["heartbeat_age_s"] = round(age, 0)
+            state["worker_alive"] = age <= STALE_AFTER
         except Exception:
             pass
+    return state
+
+
+def status(as_json: bool = False):
+    st = probe()
+    if as_json:
+        print(json.dumps(st))
+        return
+    print(f"inbox:  {INBOX}  ({st['inbox_queued']} queued)")
+    print(f"outbox: {OUTBOX}  ({st['outbox_answers']} answers)")
+    if st["heartbeat_age_s"] is not None:
+        print(f"worker: {st['worker_host']}, last heartbeat {st['heartbeat_age_s']:.0f}s ago"
+              + ("  ✓" if st["worker_alive"] else "  ⚠ stale"))
     else:
         print("worker: no heartbeat yet (fm-worker not running on the Mini?)")
 
@@ -111,7 +131,7 @@ def main() -> int:
         print(__doc__)
         return 0 if args else 2
     if args[0] == "--status":
-        status()
+        status(as_json="--json" in args)
         return 0
 
     system = ""
@@ -153,8 +173,18 @@ def main() -> int:
 
     result, rt = wait_for(job_id, timeout)
     if result is None:
-        sys.stderr.write(f"timed out after {rt:.0f}s — job {job_id} still queued. "
-                         f"Is fm-worker running on the Mini? (fm-submit --status)\n")
+        # Don't ask a question we can answer: probe the worker's true state and say it.
+        st = probe()
+        age = st.get("heartbeat_age_s")
+        host = st.get("worker_host") or "the worker"
+        if age is None:
+            why = f"{host} has no heartbeat — fm-worker isn't running on it"
+        elif not st.get("worker_alive"):
+            why = f"{host}'s fm-worker looks down (last heartbeat {age:.0f}s ago)"
+        else:
+            why = f"{host}'s fm-worker is alive ({age:.0f}s heartbeat) but didn't finish — busy or blocked"
+        sys.stderr.write(f"timed out after {rt:.0f}s — {why}. "
+                         f"Job {job_id} stays queued and runs when the worker is back.\n")
         return 1
     if not result.get("ok"):
         sys.stderr.write(f"fm: {humanize_err(result.get('err', ''))}\n")
