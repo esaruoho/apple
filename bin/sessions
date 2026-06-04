@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 sessions — TUI session picker for Claude Code, GitHub Copilot CLI, OpenAI Codex CLI,
-and FoundationModels (the fm-chat on-device LLM).
+FoundationModels (the fm-chat on-device LLM), and Converse (the stateful fm-converse
+FoundationModels chats).
 
 Upstream: https://github.com/esaruoho/sessions
 This file is the apple-repo copy; the standalone repo above is the canonical
@@ -14,7 +15,7 @@ Run inside (or pass) a project folder. Lists every session any of the four
 agents has for that folder, newest-first. Cursor up/down to select, Enter
 resumes with the right CLI + flags, n starts a new claude session, c starts
 a new copilot, x starts a new codex, f starts a new fm-chat (FoundationModels),
-q/Esc/Ctrl-C quits. Auto-refreshes every ~1.5 s.
+v starts a new Converse chat, q/Esc/Ctrl-C quits. Auto-refreshes every ~1.5 s.
 
 Per-provider mapping:
   • Claude   ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl
@@ -28,6 +29,10 @@ Per-provider mapping:
   • fm-chat  ~/.fm-chat/sessions/<uuid>.jsonl  (FoundationModels on-device LLM)
              first line session_meta with cwd+uuid, then {role,content} messages
              resume: fm-chat --resume <uuid>
+  • converse ~/.cache/fm-converse/<name>.json  (stateful fm-converse FM chats)
+             {system, turns:[[role,text],...]}. Global (not folder-scoped) — these
+             are named conversations, shown for every folder.
+             resume: drop into an fm-converse REPL bound to that --session <name>
 
 Apple-native: stdlib only. No Homebrew, no pip.
 """
@@ -40,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from shlex import quote as sh_quote
 
 
 HOME = os.path.expanduser("~")
@@ -294,6 +300,48 @@ def list_fmchat(folder):
     return rows
 
 
+# ─────────────────────────── Converse ────────────────────────────────
+# Stateful fm-converse chats with the on-device Foundation Models. Unlike the
+# others these are NOT folder-scoped — they're named conversations under
+# ~/.cache/fm-converse/<name>.json — so they're shown for every folder.
+
+CONVERSE_ROOT = f"{HOME}/.cache/fm-converse"
+
+
+def list_converse(folder):
+    if not os.path.isdir(CONVERSE_ROOT):
+        return []
+    rows = []
+    for name in os.listdir(CONVERSE_ROOT):
+        if not name.endswith(".json"):
+            continue
+        full = os.path.join(CONVERSE_ROOT, name)
+        try:
+            st = os.stat(full)
+        except OSError:
+            continue
+        # uuid = the session name (what fm-converse --session expects)
+        rows.append(Row("converse", name[:-5], "~/work/converse", full, st.st_mtime, st.st_size))
+    rows.sort(key=lambda r: r.mtime, reverse=True)
+    return rows
+
+
+def load_converse_meta(row):
+    snippet, turns = None, 0
+    try:
+        with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+            d = json.load(f)
+        for entry in d.get("turns", []):
+            if isinstance(entry, (list, tuple)) and len(entry) == 2 and entry[0] == "user":
+                turns += 1
+                if snippet is None:
+                    snippet = (entry[1] or "").strip().replace("\n", " ")
+    except Exception:
+        pass
+    row.turns = turns
+    row.snippet = (snippet or "(empty)")[:200]
+
+
 def load_fmchat_meta(row):
     snippet, turns = None, 0
     try:
@@ -320,6 +368,7 @@ LOAD = {
     "copilot":  load_copilot_meta,
     "codex":    load_codex_meta,
     "fm-chat":  load_fmchat_meta,
+    "converse": load_converse_meta,
 }
 
 
@@ -329,6 +378,7 @@ def list_all(folder):
     rows.extend(list_copilot(folder))
     rows.extend(list_codex(folder))
     rows.extend(list_fmchat(folder))
+    rows.extend(list_converse(folder))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
@@ -385,7 +435,7 @@ def human_size(n):
     return f"{n/1024/1024:.1f}M"
 
 
-PROVIDER_GLYPH = {"claude": "C", "copilot": "G", "codex": "X", "fm-chat": "F"}
+PROVIDER_GLYPH = {"claude": "C", "copilot": "G", "codex": "X", "fm-chat": "F", "converse": "V"}
 
 
 def find_bin(name, extra_paths=()):
@@ -410,6 +460,18 @@ def resume_argv(provider, uuid, path=None):
         return [find_bin("codex"), "resume", uuid]
     if provider == "fm-chat":
         return [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",)), "--resume", uuid]
+    if provider == "converse":
+        # fm-converse is one-shot + stateful; "resume" = print history, then a
+        # read-loop that sends each line to the same --session. Blank line quits.
+        fmc = find_bin("fm-converse", (f"{HOME}/work/apple/bin/fm-converse",))
+        script = (
+            f'printf "\\n── Converse session: %s ──\\n" {sh_quote(uuid)}; '
+            f'{sh_quote(fmc)} --session {sh_quote(uuid)} --history; '
+            f'printf -- "── continue this FoundationModels chat (blank line to quit) ──\\n"; '
+            f'while IFS= read -r -e -p "you> " q; do [ -z "$q" ] && break; '
+            f'{sh_quote(fmc)} --session {sh_quote(uuid)} "$q"; done'
+        )
+        return ["/bin/bash", "-c", script]
     raise ValueError(provider)
 
 
@@ -422,6 +484,15 @@ def new_argv(provider):
         return [find_bin("codex")]
     if provider == "fm-chat":
         return [find_bin("fm-chat", (f"{HOME}/work/apple/bin/fm-chat",))]
+    if provider == "converse":
+        fmc = find_bin("fm-converse", (f"{HOME}/work/apple/bin/fm-converse",))
+        script = (
+            'S="picker-$(date +%Y%m%d-%H%M%S)"; '
+            f'printf -- "── new Converse chat: %s (blank line to quit) ──\\n" "$S"; '
+            f'while IFS= read -r -e -p "you> " q; do [ -z "$q" ] && break; '
+            f'{sh_quote(fmc)} --session "$S" "$q"; done'
+        )
+        return ["/bin/bash", "-c", script]
     raise ValueError(provider)
 
 
@@ -478,9 +549,10 @@ def run_picker(stdscr, folder):
         gn = sum(1 for r in rows if r.provider == "copilot")
         xn = sum(1 for r in rows if r.provider == "codex")
         fn = sum(1 for r in rows if r.provider == "fm-chat")
+        vn = sum(1 for r in rows if r.provider == "converse")
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
-        header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn} F:{fn}"
-        footer = " ↑/↓ select · ⏎ resume · n claude · c copilot · x codex · f fm-chat · q quit · auto-refresh"
+        header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn} F:{fn} V:{vn}"
+        footer = " ↑/↓ · ⏎ resume · n claude · c copilot · x codex · f fm-chat · v converse · q quit"
         try:
             stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
@@ -488,7 +560,7 @@ def run_picker(stdscr, folder):
             pass
 
         if not rows:
-            msg = "No sessions for this folder. n=claude  c=copilot  x=codex  f=fm-chat  q=quit"
+            msg = "No sessions for this folder. n=claude  c=copilot  x=codex  f=fm-chat  v=converse  q=quit"
             try:
                 stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, w)
             except curses.error:
@@ -588,6 +660,8 @@ def run_picker(stdscr, folder):
             return ("new", "codex", None, None)
         elif k in (ord('f'), ord('F')):
             return ("new", "fm-chat", None, None)
+        elif k in (ord('v'), ord('V')):
+            return ("new", "converse", None, None)
         elif k in (ord('q'), ord('Q'), 27):
             return ("quit", None, None, None)
 
@@ -651,6 +725,8 @@ def all_rows_global():
                         rows.append(Row("codex", sid, "(unknown)", full, st.st_mtime, st.st_size))
     except FileNotFoundError:
         pass
+    # Converse (fm-converse) — global by nature, so the same list everywhere.
+    rows.extend(list_converse("."))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
@@ -732,6 +808,14 @@ def render_session(row):
                         c = d.get("content", "")
                         if str(c).strip():
                             out.append(f"\n## {role.upper()}\n{str(c).strip()}")
+        elif row.provider == "converse":
+            with open(row.path, "r", encoding="utf-8", errors="replace") as f:
+                d = json.load(f)
+            for entry in d.get("turns", []):
+                if isinstance(entry, (list, tuple)) and len(entry) == 2:
+                    role, c = entry
+                    if str(c).strip():
+                        out.append(f"\n## {str(role).upper()}\n{str(c).strip()}")
     except FileNotFoundError:
         out.append(f"(file not found: {row.path})")
     return "\n".join(out)
