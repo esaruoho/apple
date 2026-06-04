@@ -25,10 +25,21 @@
 #   other devices = I'm at Workspace = Sahaajankatu 20-22 E, 00880 Helsinki. me-location
 #   makes that deduction explicit and reusable, and Directions pins it as saddr.
 #
+# WHAT THE LOCATION IS USED FOR (the consumers — why "where am I" matters)
+#   1. Directions origin (saddr) — maps-directions pins the deduced place as the route's
+#      start, because a desktop Mac has no GPS for Maps to fill.
+#   2. Directions destination (daddr) — via each place's commute_to partner, the route's
+#      END flips with where you are: at Workspace → Home, at Home → Workspace.
+#   So one fact ("which named place is this Mac at") drives BOTH ends of a clever route.
+#   It is a reusable primitive: any future context-aware automation (which printer, which
+#   greeting, which calendar, on/off-site behaviour) can ask me-location the same question.
+#
 # THE SIGNAL PRIORITY (strongest first)
 #   gateway_mac  the default router's MAC — one physical box = one place. Survives DHCP
-#                lease changes, survives Wi-Fi-off/Ethernet. The anchor signal.
-#   peers_any    any listed Bonjour/arp host present (corroborated by subnet when given)
+#                lease changes, survives Wi-Fi-off/Ethernet. The anchor signal. INSTANT.
+#   peers_any    any listed arp host present (corroborated by subnet when given)
+#   bonjour_any  a named Bonjour device present (e.g. the Time Capsule "Oletko Helikopteri")
+#                — LAZY: only browsed when the instant signals miss, so the hot path is free
 #   ssid         the Wi-Fi network name (only meaningful when on Wi-Fi)
 #
 # REPORT-CARD LEGEND
