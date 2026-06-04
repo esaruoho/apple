@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""convey-worker — turn dictated Gumroad changes that arrive in the Syncthing
+convey-inbox into live store updates, via the convey release engine.
+
+The 7th instance of the trigger→worker chassis (Finder tag, Voice Memo, Stickies,
+Mail flag, Panel, FM, now Convey). The one difference: this worker runs on the
+LAPTOP, not the Mini — because that is where the gumroad CLI is authenticated and
+where convey + the pearls live. A phone dictation reaches it the same way everything
+else reaches the fleet: Discord/Telegram → pakettibot drops a job into the Syncthing
+queue → it syncs here → this worker picks it up.
+
+A job in ~/work/comms/queue/convey-inbox/<id>.json is EITHER dictated or structured:
+    {"id": "...", "say": "set ParaEQ price to 99"}
+    {"id": "...", "product": "paraeq", "field": "price", "value": "99"}
+
+SECURITY BOUNDARY (same as fm-worker): a job NEVER carries a shell command. This
+worker only ever execs one fixed program — convey-say — and convey-say itself refuses
+any field outside {name, price, currency, tags}. So a dictation can change a price or
+a name; it can never run a build step, repoint the engine, or touch DSP/source.
+
+Result → convey-outbox/<id>.json, carried back by Syncthing:
+    {"id": "...", "ok": true, "out": "...live before → after...", "host": "...", "ts": ...}
+
+Usage:
+    convey-worker            watch the inbox forever (the daemon)
+    convey-worker --once     process whatever is queued now, then exit
+    convey-worker --status   queue depth + last heartbeat, then exit
+
+Apple-native: python3 stdlib only. Syncthing is the sole transport; no network listener.
+"""
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+# convey-say lives with the release engine in the convey repo.
+CONVEY_SAY = Path(os.environ.get(
+    "CONVEY_SAY", Path.home() / "work" / "convey" / "release" / "convey-say"))
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "convey-inbox"
+OUTBOX = QUEUE / "convey-outbox"
+HEARTBEAT = QUEUE / "convey-worker-heartbeat.json"
+POLL_SECONDS = 2.0
+HEARTBEAT_SECONDS = 30
+RUN_TIMEOUT = 300
+STALE_JOB_SECONDS = 3600
+
+
+def nudge(path: Path):
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def run_say(job: dict) -> dict:
+    """Exec convey-say with the job's structured fields or its dictation string.
+    Never builds a shell command — argv is fixed + data, exec'd without a shell."""
+    if not CONVEY_SAY.exists():
+        return {"ok": False, "out": "", "err": f"convey-say not found at {CONVEY_SAY}"}
+    cmd = [str(CONVEY_SAY)]
+    if job.get("product") and job.get("field") and job.get("value") is not None:
+        cmd += ["--product", str(job["product"]), "--field", str(job["field"]),
+                "--value", str(job["value"])]
+    elif job.get("say"):
+        cmd += [str(job["say"])]
+    else:
+        return {"ok": False, "out": "", "err": "job has neither 'say' nor product/field/value"}
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=RUN_TIMEOUT)
+        return {"ok": p.returncode == 0, "rc": p.returncode,
+                "out": (p.stdout or "").rstrip("\n"), "err": (p.stderr or "").strip()}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "rc": None, "out": "", "err": f"timed out after {RUN_TIMEOUT}s"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "rc": None, "out": "", "err": str(e)}
+
+
+def write_result(job_id: str, payload: dict):
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    tmp = OUTBOX / f".{job_id}.tmp"
+    final = OUTBOX / f"{job_id}.json"
+    tmp.write_text(json.dumps(payload, ensure_ascii=False))
+    tmp.replace(final)
+    nudge(final)
+
+
+def process_one(path: Path) -> bool:
+    try:
+        job = json.loads(path.read_text())
+    except Exception:
+        return False
+    if not (job.get("say") or (job.get("product") and job.get("field"))):
+        try:
+            if time.time() - path.stat().st_mtime > STALE_JOB_SECONDS:
+                path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False
+    job_id = job.get("id") or path.stem
+    res = run_say(job)
+    write_result(job_id, {
+        "id": job_id, "ok": res["ok"], "rc": res.get("rc"),
+        "out": res["out"], "err": res["err"],
+        "host": socket.gethostname().split(".")[0], "ts": int(time.time()),
+        "from": job.get("submitter_host"),
+    })
+    path.unlink(missing_ok=True)
+    mark = "ok" if res["ok"] else "ERR"
+    preview = (res["out"] or res["err"]).replace("\n", " ")[:70]
+    print(f"[{time.strftime('%H:%M:%S')}] {job_id} → {mark}  {preview}", flush=True)
+    return True
+
+
+def beat():
+    try:
+        HEARTBEAT.write_text(json.dumps({"ts": int(time.time()),
+                                         "host": socket.gethostname().split(".")[0]}))
+    except Exception:
+        pass
+
+
+def scan() -> int:
+    if not INBOX.is_dir():
+        return 0
+    return sum(1 for p in sorted(INBOX.glob("*.json")) if process_one(p))
+
+
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"convey-worker · host {socket.gethostname().split('.')[0]}")
+    print(f"  brain:  {CONVEY_SAY}  {'✓' if CONVEY_SAY.exists() else 'MISSING'}")
+    print(f"  inbox:  {INBOX}  ({pend} dictation(s) queued)")
+    print(f"  outbox: {OUTBOX}  ({done} result(s))")
+    auth = subprocess.run(["gumroad", "auth", "status", "--no-input"],
+                          capture_output=True, text=True)
+    print(f"  gumroad auth: {'✓' if auth.returncode == 0 else 'NOT LOGGED IN'}")
+    if HEARTBEAT.exists():
+        try:
+            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
+            print(f"  last heartbeat: {age:.0f}s ago" + ("  ⚠ stale" if age > 120 else "  ✓"))
+        except Exception:
+            pass
+    else:
+        print("  last heartbeat: never (worker not running)")
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    if "--status" in args:
+        status()
+        return 0
+    INBOX.mkdir(parents=True, exist_ok=True)
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    if "--once" in args:
+        n = scan(); beat()
+        print(f"processed {n} dictation(s)")
+        return 0
+    print(f"convey-worker watching {INBOX}")
+    beat()
+    last_beat = time.time()
+    while True:
+        try:
+            scan()
+            if time.time() - last_beat >= HEARTBEAT_SECONDS:
+                beat(); last_beat = time.time()
+        except Exception as e:  # noqa: BLE001
+            print(f"  loop error: {e}", file=sys.stderr)
+        time.sleep(POLL_SECONDS)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

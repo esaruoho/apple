@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""convey-submit — dictate a Gumroad change into the convey bridge from anywhere.
+
+Drops a job into ~/work/comms/queue/convey-inbox/, which Syncthing carries to the
+laptop where convey-worker runs it (edit the pearl → convey live → report). Works
+from any machine on the fleet; the change lands on the live store.
+
+This is also the seam for chat dictation. From Discord/Telegram, pakettibot runs:
+    !pk run --direct ~/work/apple/bin/convey-submit --no-wait "set ParaEQ price to 99"
+which (on the Mini) drops the same job into the Syncthing queue → the laptop worker
+conveys it. The dictation IS the instruction; the live page becomes what you said.
+
+Usage:
+    convey-submit "set ParaEQ price to 99"        submit and wait for the result
+    convey-submit --no-wait "rename slice to ..." fire-and-forget (just queue it)
+    convey-submit --id slug "..."                 name the job (else timestamp+hash)
+    convey-submit --timeout 90 "..."              how long to wait (default 180s)
+    convey-submit --status                        queue depth + worker heartbeat
+
+Apple-native: python3 stdlib only.
+"""
+import hashlib
+import json
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "convey-inbox"
+OUTBOX = QUEUE / "convey-outbox"
+HEARTBEAT = QUEUE / "convey-worker-heartbeat.json"
+
+
+def nudge(path: Path):
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def submit(say: str, job_id: str) -> Path:
+    INBOX.mkdir(parents=True, exist_ok=True)
+    spec = {"id": job_id, "say": say,
+            "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "submitter_host": socket.gethostname().split(".")[0]}
+    tmp = INBOX / f".{job_id}.tmp"
+    final = INBOX / f"{job_id}.json"
+    tmp.write_text(json.dumps(spec, ensure_ascii=False))
+    tmp.replace(final)
+    nudge(final)
+    return final
+
+
+def wait_for(job_id: str, timeout: float):
+    result_path = OUTBOX / f"{job_id}.json"
+    t0 = time.time()
+    spin = "|/-\\"
+    i = 0
+    while time.time() - t0 < timeout:
+        if result_path.exists():
+            try:
+                return json.loads(result_path.read_text()), time.time() - t0
+            except Exception:
+                pass
+        i += 1
+        sys.stderr.write(f"\r  waiting {spin[i % 4]} {time.time() - t0:4.1f}s")
+        sys.stderr.flush()
+        nudge(OUTBOX)
+        time.sleep(1.0)
+    sys.stderr.write("\r" + " " * 24 + "\r")
+    return None, time.time() - t0
+
+
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"inbox:  {INBOX}  ({pend} queued)")
+    print(f"outbox: {OUTBOX}  ({done} results)")
+    if HEARTBEAT.exists():
+        try:
+            hb = json.loads(HEARTBEAT.read_text())
+            age = time.time() - hb.get("ts", 0)
+            print(f"worker: {hb.get('host', '?')}, last heartbeat {age:.0f}s ago"
+                  + ("  ⚠ stale" if age > 120 else "  ✓"))
+        except Exception:
+            pass
+    else:
+        print("worker: no heartbeat yet (convey-worker not running on the laptop?)")
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0 if args else 2
+    if args[0] == "--status":
+        status()
+        return 0
+
+    job_id = None
+    wait = True
+    timeout = 180.0
+    rest = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--id":
+            job_id = args[i + 1]; i += 2
+        elif a == "--timeout":
+            timeout = float(args[i + 1]); i += 2
+        elif a == "--no-wait":
+            wait = False; i += 1
+        elif a == "-":
+            rest.append(sys.stdin.read()); i += 1
+        else:
+            rest.append(a); i += 1
+
+    say = " ".join(rest).strip()
+    if not say:
+        say = sys.stdin.read().strip()
+    if not say:
+        sys.stderr.write("convey-submit: nothing to say (pass a dictation, e.g. "
+                         "\"set ParaEQ price to 99\")\n")
+        return 2
+
+    if not job_id:
+        h = hashlib.sha1(say.encode()).hexdigest()[:8]
+        job_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{h}"
+
+    submit(say, job_id)
+    if not wait:
+        print(f"queued: {job_id}  ({say!r})")
+        return 0
+
+    result, rt = wait_for(job_id, timeout)
+    if result is None:
+        sys.stderr.write(f"timed out after {rt:.0f}s — job {job_id} still queued. "
+                         f"Is convey-worker running? (convey-submit --status)\n")
+        return 1
+    print(result.get("out", ""))
+    if not result.get("ok"):
+        sys.stderr.write(f"convey: {result.get('err', 'failed')}\n")
+        return 1
+    sys.stderr.write(f"  [{result.get('host', '?')} · round-trip {rt:.1f}s]\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
