@@ -83,6 +83,14 @@ if query.hasPrefix("?") {
     converseQuestion = String(query.dropFirst(5)).trimmingCharacters(in: .whitespaces)
 } else if lowerQ.hasPrefix("converse ") {
     converseQuestion = String(query.dropFirst(9)).trimmingCharacters(in: .whitespaces)
+} else {
+    // Conversational openers → general chat (NOT a capability/notes search). Keep this
+    // list in sync with AppleBar.isConverse(). "talk to me about chess" must talk, not search.
+    let openers = ["talk to me about ", "tell me about ", "talk about ",
+                   "let's talk about ", "lets talk about ", "let's chat about ", "what do you think about "]
+    for o in openers where lowerQ.hasPrefix(o) {
+        converseQuestion = String(query.dropFirst(o.count)).trimmingCharacters(in: .whitespaces); break
+    }
 }
 if let q = converseQuestion {
     if q.isEmpty && !converseWithRules {
@@ -133,6 +141,12 @@ func speakDetached(_ text: String) {
     if let v = zoeVoice() { args += ["-v", v] }
     args.append(text)
     p.arguments = args
+    // CRITICAL: give say its OWN null stdio. If it inherits our stdout pipe, a parent
+    // that reads with readDataToEndOfFile() blocks until say finishes (the pipe's write
+    // end stays open while say talks) — which would hide the answer until speech ended.
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try? p.run()   // intentionally NOT waitUntilExit — detach and let it speak
 }
 

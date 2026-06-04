@@ -53,7 +53,7 @@ final class VCenteredCell: NSTextFieldCell {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, AVSpeechSynthesizerDelegate {
     var statusItem: NSStatusItem!
     var panel: CommandPanel!
     var field: NSTextField!
@@ -92,6 +92,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     let panelWidth: CGFloat = 580
     let fieldRowHeight: CGFloat = 60
 
+    // ── karaoke speak-back: AppleBar drives speech itself (AVSpeechSynthesizer) so it
+    // can reveal the answer IN SYNC with the voice — the whole answer is shown at once
+    // (readable immediately, no resize jank), brightening word-by-word as it's spoken,
+    // current word highlighted. apple-intent is told FM_CHAT_SPEAK=0 so it doesn't also
+    // speak (no double audio). FEATURE-CARD >> features/applebar-karaoke.feature
+    let synth = AVSpeechSynthesizer()
+    var karaokePlain = ""     // the spoken/displayed text — AVSpeech ranges index into THIS
+    var karaokeFinal = ""     // the original answer, markdown-rendered once speech ends
+    let karaokeFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+
     func applicationDidFinishLaunching(_ note: Notification) {
         NSApp.setActivationPolicy(.accessory)   // menu-bar agent, no Dock icon
 
@@ -111,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         loadCatalog()
         registerHotKey()
         registerURLScheme()   // applebar://listen — the "Hey Sal" voice wake
+        synth.delegate = self   // karaoke: willSpeakRange drives the in-sync reveal
 
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             guard let self = self, self.panel.isVisible else { return e }
@@ -241,6 +252,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     }
 
     @objc func showPanel() {
+        synth.stopSpeaking(at: .immediate)   // a fresh open silences any prior karaoke
         collapseBody()              // open clean: just the field, no stale result/suggestions
         field.stringValue = ""
         let screen = NSScreen.main ?? NSScreen.screens.first
@@ -284,6 +296,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         // there are no suggestions, pass nil → apple-intent routes/answers itself.
         let action: String? = (suggesting && !isConverse(q) && selected < suggestions.count)
             ? suggestions[selected].action : nil
+        let chat = isConverse(q)   // chat/? answers get the karaoke speak-back
         spinner.startAnimation(nil)
         showResult(speak ? "… (asking the model on the Mini)" : "…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -291,7 +304,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
             let output = self.runIntent(q, speak: speak, action: action)
             DispatchQueue.main.async {
                 self.spinner.stopAnimation(nil)
-                self.showResult(output.isEmpty ? "(no output)" : output)
+                let text = output.isEmpty ? "(no output)" : output
+                if chat && !output.isEmpty { self.speakKaraoke(text) }
+                else { self.showResult(text) }
             }
         }
     }
@@ -308,6 +323,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         var env = ProcessInfo.processInfo.environment
         let extra = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"
         env["PATH"] = extra + ":" + (env["PATH"] ?? "")
+        env["FM_CHAT_SPEAK"] = "0"   // AppleBar does its OWN karaoke speak — don't let the CLI also speak
         p.environment = env
         let pipe = Pipe()
         p.standardOutput = pipe
@@ -344,9 +360,85 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
     func showResult(_ text: String) {
         suggesting = false
-        setBody(NSAttributedString(string: text, attributes: [
-            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
-            .foregroundColor: NSColor(calibratedWhite: 0.92, alpha: 1)]))
+        // Render markdown — tool/model output is markdown, and the rule is that anything
+        // showing markdown must parse it (no raw ###, **, `code`, --- on screen).
+        setBody(MarkdownAttributed.render(text))
+    }
+
+    // ── karaoke: speak the answer and reveal it in sync ──────────────────────
+    // Show the whole answer at once (readable immediately, stable size), spoken words
+    // bright and the current word highlighted, the rest dimmed — so the text tracks the
+    // voice instead of waiting for it. When speech ends, swap to the markdown render.
+    func speakKaraoke(_ text: String) {
+        synth.stopSpeaking(at: .immediate)
+        karaokeFinal = text
+        karaokePlain = plainForSpeech(text)   // AVSpeech ranges index into this exact string
+        renderKaraoke(spokenUpTo: 0, current: NSRange(location: 0, length: 0))
+        let utt = AVSpeechUtterance(string: karaokePlain)
+        if let v = zoeAVVoice() { utt.voice = v }
+        synth.speak(utt)
+    }
+
+    // Zoe (Premium) if downloaded (Apple's best built-in voice), else any Zoe, else nil
+    // (system default). CONVEY_VOICE picks an exact voice name if you set it.
+    func zoeAVVoice() -> AVSpeechSynthesisVoice? {
+        let voices = AVSpeechSynthesisVoice.speechVoices()
+        if let want = ProcessInfo.processInfo.environment["CONVEY_VOICE"],
+           let v = voices.first(where: { $0.name == want || want.hasPrefix($0.name) }) { return v }
+        // Prefer the Premium Zoe when the OS can tell quality (macOS 13+); else any Zoe.
+        if #available(macOS 13.0, *) {
+            if let v = voices.first(where: { $0.name == "Zoe" && $0.quality == .premium }) { return v }
+        }
+        return voices.first(where: { $0.name == "Zoe" }) ?? voices.first(where: { $0.name.contains("Zoe") })
+    }
+
+    func renderKaraoke(spokenUpTo: Int, current: NSRange) {
+        let full = karaokePlain as NSString
+        let attr = NSMutableAttributedString(string: full as String, attributes: [
+            .font: karaokeFont,
+            .foregroundColor: NSColor(calibratedWhite: 0.42, alpha: 1)])   // dim = not yet spoken
+        if spokenUpTo > 0 {
+            attr.addAttribute(.foregroundColor, value: NSColor(calibratedWhite: 0.95, alpha: 1),
+                              range: NSRange(location: 0, length: min(spokenUpTo, full.length)))
+        }
+        if current.length > 0, current.location + current.length <= full.length {
+            attr.addAttribute(.foregroundColor, value: NSColor.white, range: current)
+            attr.addAttribute(.backgroundColor,
+                              value: NSColor(calibratedRed: 0.04, green: 0.30, blue: 0.55, alpha: 1),
+                              range: current)
+        }
+        setBody(attr)
+    }
+
+    // Strip markdown markers so the spoken/displayed karaoke string is clean prose AND
+    // AVSpeech's character ranges line up with what's shown (the final render re-adds
+    // formatting via showResult). Mirrors convey's _strip_md.
+    func plainForSpeech(_ s: String) -> String {
+        var t = s
+        let subs: [(String, String)] = [
+            ("```[^\n]*", ""), ("`([^`]+)`", "$1"),
+            ("\\*\\*([^*]+)\\*\\*", "$1"), ("__([^_]+)__", "$1"),
+            ("(?<!\\*)\\*([^*\n]+)\\*(?!\\*)", "$1"),
+            ("^#{1,6}\\s+", ""), ("^\\s*[-*+]\\s+", ""), ("^>\\s?", "")]
+        for (pat, rep) in subs {
+            if let re = try? NSRegularExpression(pattern: pat, options: [.anchorsMatchLines]) {
+                t = re.stringByReplacingMatches(in: t, range: NSRange(t.startIndex..., in: t), withTemplate: rep)
+            }
+        }
+        return t.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // AVSpeechSynthesizerDelegate — drive the reveal off the synth's word boundaries.
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+        DispatchQueue.main.async {
+            self.renderKaraoke(spokenUpTo: characterRange.location + characterRange.length, current: characterRange)
+        }
+    }
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        DispatchQueue.main.async { self.showResult(self.karaokeFinal) }   // settle on the markdown render
+    }
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        DispatchQueue.main.async { if !self.karaokeFinal.isEmpty { self.showResult(self.karaokeFinal) } }
     }
 
     // Spotlight-style ranked list; the selected row is highlighted. ↑/↓ move it.
@@ -378,6 +470,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     // A query that goes to the LLM rather than an action: "?" / "chat …" / "converse …"
     func isConverse(_ q: String) -> Bool {
         let l = q.lowercased()
+        // Conversational openers route to the LLM, not a capability/notes search.
+        // Keep in sync with bin/apple-intent's converse openers.
+        let openers = ["talk to me about ", "tell me about ", "talk about ",
+                       "let's talk about ", "lets talk about ", "let's chat about ", "what do you think about "]
+        if openers.contains(where: { l.hasPrefix($0) }) { return true }
         return q.hasPrefix("?") || l == "chat" || l == "converse"
             || l.hasPrefix("chat ") || l.hasPrefix("converse ")
     }
@@ -493,6 +590,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.cancelOperation(_:)) {
             if dictation.isRunning { dictation.stop() }   // abort a hands-free listen too
+            synth.stopSpeaking(at: .immediate)            // ESC also stops karaoke speech
             panel.orderOut(nil)
             return true
         }

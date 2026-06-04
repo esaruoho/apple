@@ -47,6 +47,15 @@ Plus LLM prefixes: `? <q>` (grounded in your learned rules), `chat <q>` / `conve
 ## Behaviour cards — graded Gherkin (parsed by `convey read features/*.feature`)
 
 ```
+AppleBar karaoke — the chat answer is revealed in sync with the spoken voice  —  5 scenarios   (features/applebar-karaoke.feature)
+  - [@verified] AppleBar compiles and launches with the synth wired
+  - [@built] a chat answer is shown whole, then brightens word-by-word as spo
+  - [@built] the result appears WITHOUT waiting for speech (the original bug,
+  - [@built] speech stops when the bar is dismissed or reopened
+  - [(no grade)] voice + markdown handling
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 AppleBar — what the session accomplished  —  8 scenarios   (features/applebar-session.feature)
   - [@shipped @verified] Headless Markdown renderer test (stop screenshotting render bugs
   - [@shipped] FoundationModelsChat exports the conversation
