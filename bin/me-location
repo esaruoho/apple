@@ -10,6 +10,9 @@
 #
 #   me-location            print the current place's address (saddr-ready, one line)
 #   me-location --name     print just the place name (e.g. "Workspace")
+#   me-location --to       print the COMMUTE destination's address (Directions daddr —
+#                          the place you head to FROM here; at Home → Workspace, etc.)
+#   me-location --to-name  print the commute destination's name
 #   me-location --why      print name + which signal matched (diagnostics)
 #   me-location --signals  dump the live signals me-location sees right now
 #   me-location --learn N  append the current signature to place N (create if absent)
@@ -110,10 +113,26 @@ for p in places:
 if not best_p:
     sys.exit(1)
 
+# commute partner: the place named by best_p.commute_to. This is the CLEVER bit —
+# Directions routes to where you head FROM here (at Workspace → Home, at Home →
+# Workspace), instead of always "home". Exit 1 if there's no partner configured.
+def commute_place():
+    name = best_p.get("commute_to")
+    if not name: return None
+    return next((p for p in places if p.get("name") == name), None)
+
 if mode == "--name":
     print(best_p.get("name", ""))
 elif mode == "--why":
     print(f'{best_p.get("name","")}\t{why}\t{best_p.get("address","")}')
+elif mode == "--to":           # address of the commute destination (Directions daddr)
+    cp = commute_place()
+    if not cp or not cp.get("address"): sys.exit(1)
+    print(cp["address"])
+elif mode == "--to-name":      # name of the commute destination
+    cp = commute_place()
+    if not cp: sys.exit(1)
+    print(cp.get("name", ""))
 else:
     print(best_p.get("address", ""))
 PY

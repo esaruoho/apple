@@ -110,7 +110,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
 `mailgraph` — (no description) — `bin/mailgraph`
-`maps-directions` — open Apple Maps with directions to your home. — `bin/maps-directions`
+`maps-directions` — open Apple Maps with a route to your OTHER anchor. — `bin/maps-directions`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
 `me-address` — print your home postal address. Resolve-once, then cached, so — `bin/me-address`
 `me-location` — deduce WHERE I AM RIGHT NOW from device presence, print that place's — `bin/me-location`

@@ -70,10 +70,21 @@ Feature: Directions home via Apple Maps
     And bin/me-location resolves a named place from the live LAN fingerprint
     When `apple-do directions` runs and me-location resolves "Workspace"
     Then maps-directions pins saddr=<Workspace address> as the route origin
-    And the echo reads "… (driving) from Workspace → <home>"
     And if me-location resolves nothing, saddr is omitted (prior behaviour preserved)
     # cite: bin/maps-directions (saddr block calls bin/me-location); see features/me-location.feature
     # hand-verified 2026-06-04: route opened Workspace(Sahaajankatu)→home, gateway_mac match
+
+  @built
+  Scenario: the DESTINATION is clever — it's your OTHER anchor, not always "home"
+    Given each place declares a commute_to partner (Workspace↔Home) in places.json
+    When `apple-do directions` runs
+    Then daddr = the current place's commute partner: at Workspace → Home, at Home → Workspace
+    And saddr = the current place, so the whole route flips with where you stand
+    And an unknown place (or one with no partner) falls back to daddr=<home> (me-address)
+      so a plain "directions home" still works from anywhere
+    # cite: bin/maps-directions (--to/--to-name → daddr, me-address fallback)
+    # hand-verified 2026-06-04 at Home (router f0:99:bf:00:c2:5c): Maps opened
+    #   "Home → Workspace — Sahaajankatu 20-22 E"; and 2026-06-04 at Workspace: Workspace → Home
 
   @note
   Scenario: The Maps URL pattern is reused from ray-graph, not re-invented

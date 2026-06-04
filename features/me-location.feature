@@ -80,8 +80,25 @@ Feature: Where am I right now — device-presence geolocation for a desktop Mac
     And I then fill in its postal address by hand (the one thing the network can't know)
     # cite: bin/me-location (--learn block writes places.json)
 
+  @verified
+  Scenario: the Home LAN fingerprint resolves to Home, and the commute partner flips
+    Given the Mac is at Home on Ethernet (gateway f0:99:bf:00:c2:5c, subnet 10.0.1., Wi-Fi off)
+    And Home also records ssid "Oletko Helikopteri" so Wi-Fi devices match too
+    When `me-location` runs
+    Then it prints "Inkiväärikuja 6 B 20, 00990 Helsinki, Finland" (gateway_mac match)
+    And `me-location --to` prints the commute partner "Sahaajankatu 20-22 E…" (Workspace)
+    And `me-location --to-name` prints "Workspace"
+    # cite: places.json Home + commute_to; bin/me-location commute_place()/--to/--to-name
+    # hand-verified 2026-06-04: --why → "Home  gateway_mac  Inkiväärikuja…"; --to → Workspace
+
+  @note
+  Scenario: commute_to makes "here" generate "there" — the clever-Directions seam
+    Given each place names the place you head to FROM it (Workspace→Home, Home→Workspace)
+    Then Directions reads me-location for saddr (here) and me-location --to for daddr (there)
+    And the route flips automatically with the matched place — no hardcoded "home"
+
   @note
   Scenario: home is a constant, here is a variable — they are different questions
-    Given me-address answers "what is my HOME address" (the Directions destination)
-    Then me-location answers "what place am I AT right now" (the Directions origin)
+    Given me-address answers "what is my HOME address" (the plain fallback destination)
+    Then me-location answers "what place am I AT right now" (origin) and where to next (--to)
     And conflating them is the bug this card fixes
