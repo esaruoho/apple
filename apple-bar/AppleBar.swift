@@ -43,6 +43,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     // re-roll. AppleBar just wires its callbacks to the text field + mic button.
     let dictation = OnDeviceDictation()
 
+    // "Hey Sal" fold: hands-free voice. listenMode is set when AppleBar is woken by
+    // applebar://listen (the Vocal Shortcut). In that mode the silence timer auto-runs
+    // the heard phrase once you stop speaking — so voice routes through the SAME
+    // apple-intent → apple-do pipeline as typing, no separate sal-siri-match path.
+    // FEATURE-CARD >> features/hey-sal-fold.feature
+    var listenMode = false
+    var silenceTimer: Timer?
+    var listenGiveUpTimer: Timer?
+    let silenceSeconds: TimeInterval = 1.6     // quiet gap AFTER speech = "I'm done talking"
+    let listenGiveUpSeconds: TimeInterval = 9  // no speech at all by now → stop the mic (energy)
+
     // Spotlight-style live suggestions, ranked in-process by NLEmbedding over the
     // shared catalog (shared/intents.json). No subprocess per keystroke.
     struct CatItem { let action: String; let desc: String; let needsArg: Bool; let examples: [String]; let vecs: [[Double]] }
@@ -74,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         wireDictation()
         loadCatalog()
         registerHotKey()
+        registerURLScheme()   // applebar://listen — the "Hey Sal" voice wake
 
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             guard let self = self, self.panel.isVisible else { return e }
@@ -354,15 +366,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     // decides what its three callbacks do. No SFSpeechRecognizer code lives here.
     // FEATURE-CARD >> features/dictation-button.feature
     func wireDictation() {
-        dictation.onText = { [weak self] text, _ in self?.field.stringValue = text }
+        dictation.onText = { [weak self] text, _ in
+            guard let self = self else { return }
+            self.field.stringValue = text
+            if self.listenMode { self.bumpSilenceTimer() }   // each word resets the "done?" clock
+        }
         dictation.onStateChange = { [weak self] running in
             guard let self = self else { return }
             self.micButton.title = running ? "⏹" : "🎙"
             self.micButton.contentTintColor = running ? .systemRed : nil
             if running {
                 self.field.stringValue = ""
-                self.field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)"
+                if !self.listenMode { self.field.placeholderString = "Listening…  (🎙/⏹ or ↩ to stop)" }
             } else {
+                self.clearSilenceTimer()
+                self.listenMode = false   // a stop (manual or auto) leaves hands-free mode
                 self.field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · 🎙 dictate"
                 self.panel.makeFirstResponder(self.field)
             }
@@ -372,9 +390,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
     @objc func toggleDictation() { dictation.toggle() }
 
+    // ── the "Hey Sal" fold: applebar://listen wakes the bar in hands-free voice mode ──
+    // The Vocal Shortcut fires `open applebar://listen`; this handler brings the panel
+    // up and starts dictation. Speaking fills the field; silenceTimer auto-runs it.
+    // applebar://open just shows the bar (keyboard mode), for symmetry.
+    func registerURLScheme() {
+        NSAppleEventManager.shared().setEventHandler(
+            self, andSelector: #selector(handleGetURL(_:withReply:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL))
+    }
+
+    @objc func handleGetURL(_ event: NSAppleEventDescriptor, withReply reply: NSAppleEventDescriptor) {
+        let s = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue ?? ""
+        let host = URL(string: s)?.host ?? ""
+        NSLog("AppleBar: handleGetURL '\(s)' host='\(host)'")
+        if host == "listen" { showPanelAndListen() } else { showPanel() }
+    }
+
+    func showPanelAndListen() {
+        showPanel()
+        listenMode = true
+        field.placeholderString = "Listening (Hey Sal)…  speak, then pause — or ↩"
+        dictation.authorizeThenStart()   // shared engine; same one the 🎙 button uses
+        // Safety: if no speech arrives at all, don't leave the mic open forever.
+        listenGiveUpTimer?.invalidate()
+        listenGiveUpTimer = Timer.scheduledTimer(withTimeInterval: listenGiveUpSeconds, repeats: false) { [weak self] _ in
+            guard let self = self, self.listenMode, self.dictation.isRunning,
+                  self.field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+            self.dictation.stop()   // heard nothing → release the mic
+        }
+    }
+
+    // Reset on every partial result; fire after a quiet gap = "you stopped talking".
+    func bumpSilenceTimer() {
+        silenceTimer?.invalidate()
+        silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceSeconds, repeats: false) { [weak self] _ in
+            guard let self = self, self.listenMode, self.dictation.isRunning else { return }
+            let heard = self.field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !heard.isEmpty else { return }   // never auto-run on silence-only
+            self.runQuery(speak: false)            // routes via apple-intent → apple-do
+        }
+    }
+
+    func clearSilenceTimer() {
+        silenceTimer?.invalidate(); silenceTimer = nil
+        listenGiveUpTimer?.invalidate(); listenGiveUpTimer = nil
+    }
+
     // ESC closes; Enter submits (handled by field.action).
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.cancelOperation(_:)) {
+            if dictation.isRunning { dictation.stop() }   // abort a hands-free listen too
             panel.orderOut(nil)
             return true
         }

@@ -32,6 +32,13 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>NSMicrophoneUsageDescription</key><string>AppleBar uses the microphone to dictate your request.</string>
   <key>NSSpeechRecognitionUsageDescription</key><string>AppleBar transcribes your speech on-device to fill the command bar.</string>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>com.applebar.commandbar</string>
+      <key>CFBundleURLSchemes</key><array><string>applebar</string></array>
+    </dict>
+  </array>
 </dict>
 </plist>
 PLIST
