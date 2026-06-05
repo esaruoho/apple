@@ -174,6 +174,26 @@ def _sp(*datatypes: str) -> dict:
         return {}
 
 
+def _io_ports() -> dict:
+    """The full physical I/O-port face — cameras, audio in/out, USB, external
+    storage, Thunderbolt — from `convey av card` (single source of truth, so this
+    tool and `convey av card` never drift). Best-effort: if convey is absent the
+    card is still valid, just without the extra port registers."""
+    import shutil
+    convey = shutil.which("convey") or str(Path.home() / "work" / "apple" / "bin" / "convey")
+    try:
+        out = subprocess.run([convey, "av", "card", "--json"],
+                             capture_output=True, text=True, timeout=40)
+        if out.returncode == 0 and out.stdout.strip():
+            d = json.loads(out.stdout)
+            return {k: d.get(k, []) for k in
+                    ("cameras", "audio_inputs", "audio_outputs",
+                     "usb", "external_storage", "thunderbolt")}
+    except Exception:
+        pass
+    return {}
+
+
 def compute_shape() -> dict:
     # ── Native, portable shape via system_profiler -json ──
     sp = _sp("SPHardwareDataType", "SPDisplaysDataType", "SPStorageDataType")
@@ -240,6 +260,9 @@ def compute_shape() -> dict:
     fit = {f"{c['params_billions']}b_{c['quant']}": c["fits"]
            for c in ai_src.get("headline_fit_checks", [])}
 
+    # ── Full physical I/O-port face (convey av card) — every port, not just displays ──
+    io = _io_ports()
+
     return {
         # ── stable + public (green quadrant) ──
         "chip": chip,
@@ -253,6 +276,13 @@ def compute_shape() -> dict:
         "gpu_cores": gpu0.get("sppci_cores"),
         "ssd_gb": ssd_gb,
         "displays": displays,
+        # full I/O-port face (from `convey av card`) — the fleet knows every port
+        "cameras": io.get("cameras", []),
+        "audio_inputs": io.get("audio_inputs", []),
+        "audio_outputs": io.get("audio_outputs", []),
+        "usb": io.get("usb", []),
+        "external_storage": io.get("external_storage", []),
+        "thunderbolt": io.get("thunderbolt", []),
         "macos_version": macos_version or None,
         "macos_build": macos_build or None,
         "ai": {
