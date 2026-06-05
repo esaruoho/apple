@@ -6,10 +6,10 @@
 > - **Areaspace:** OWNS capturing local sensors (Mac + USB-tethered iPhone) to files. Does NOT touch Photos library writes, does NOT UI-hijack, does NOT run anything on the iPhone itself.
 
 ## RESULT
-- **Status:** built this session; pending verification noted per-claim below.
-- **Delivery:** working-tree (uncommitted at time of writing — direct-push to `main` intended, no PR).
-- **Files:** `sensor-snapshot/{iphone-photo,iphone-import,audio-snippets,iphone-screen}.swift`, `sensor-snapshot/{Info.plist,build.sh}`, `bin/{iphone-photo,iphone-import,audio-snippets,iphone-screen,snapshot}`.
-- **Bundle:** `Snapshot.app` (id `com.esaruoho.apple.snapshot`), 4 faceless binaries.
+- **Status:** built + shipped; two `@blocked-physical` claims pending phone USB-trust/unlock.
+- **Delivery:** feature commit `d6031ca` on `main` (direct-push, no PR); indexes auto-regen `211be7c`.
+- **Files:** `sensor-snapshot/{iphone-photo,iphone-import,audio-snippets,iphone-screen}.swift`, `sensor-snapshot/{Info.plist,build.sh,.gitignore}`, `bin/{iphone-photo,iphone-import,audio-snippets,iphone-screen,snapshot}`, `wiki/concepts/sensor-snapshot.md`.
+- **Bundle:** `Snapshot.app` (id `com.esaruoho.apple.snapshot`), 4 faceless binaries (gitignored build artifact).
 
 ## Grades legend
 `@verified` ran live, observed the artifact · `@built` compiles + runs, not fully exercised · `@blocked-physical` correct, gated on phone state · `@impossible` architecturally unavailable
@@ -22,7 +22,8 @@ Feature: Every camera → a file
     Given a Mac with FaceTime + virtual cameras (and an iPhone Continuity Camera when eligible)
     When I run `iphone-photo --all <dir>`
     Then one JPEG per device is written into <dir>
-    # innards: sensor-snapshot/iphone-photo.swift capture()+--all loop; verified 3/3 cameras
+    # innards: sensor-snapshot/iphone-photo.swift capture()+--all loop; verified 5/5 cameras
+    # (FaceTime + 2 virtual + iPhone rear 1920x1440 + iPhone Desk View) with phone present
 
   @verified
   Scenario: Rear iPhone camera via Continuity
@@ -80,7 +81,8 @@ Feature: One automated snapshot
     When I run `snapshot [<dir>] [--quick] [--per-channel]`
     Then cameras/, screen/, audio/ and manifest.md are produced under snapshot-<timestamp>/
     And missing sensors (locked phone) are recorded in the manifest, not fatal
-    # innards: bin/snapshot orchestrator; verified end-to-end (3 cameras, 12 clips, screen skipped)
+    # innards: bin/snapshot orchestrator; verified end-to-end (5 cameras incl. iPhone rear,
+    # 12 clips across 6 inputs, screen gracefully skipped while phone untrusted-over-USB)
 
 ## Two known truths (the honest grades)
 - The **AVCapture*Output KVO landmine** recurs across PhotoOutput AND FileOutput in a `swiftc` binary, even inside a bundle. Both camera and audio paths avoid it (VideoDataOutput frame-grab; file-polling instead of the recording delegate).
