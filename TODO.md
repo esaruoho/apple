@@ -12,6 +12,29 @@ Working state. Cross items off as they land. Updated 2026-05-11.
 blocked on physical action (UI clicks, voice tests, sending an email) or
 is a focused next deliverable I can pick up unattended.
 
+### 2026-06-05 — sensor-snapshot + companion iOS app
+
+**Shipped** (committed `d6031ca` → `ce4cb6b`): `sensor-snapshot/` package + `bin/snapshot`
+— one command captures every camera + every audio input (per-device or `--per-channel`)
++ best-effort iPhone screen into a timestamped folder. Card: `sensor-snapshot/snapshot.feature`;
+concept: `wiki/concepts/sensor-snapshot.md`.
+
+**Open — blocked on you (phone USB-data trust):**
+- [ ] Grant **"Trust This Computer"** (replug → tap Trust + passcode; set Auto-Lock → Never),
+  then I re-run `iphone-import --latest` + `iphone-screen` to flip both from
+  `@blocked-physical` → `@verified`. Both currently hit `-9943 Please unlock`.
+
+**Open — focused deliverable (developer build):**
+- [ ] **Companion iOS app for front-camera + iPhone-screen capture.** Continuity Camera is
+  Apple-locked to the *rear* camera and exposes no screen/front/full-res API to the Mac
+  (verified via direct CoreMediaIO enumeration — no iPhone-screen device is published).
+  The only developer route is code running **on the iPhone**: a small iOS app using
+  `AVFoundation` (front camera) + **ReplayKit** (programmatic screen capture, one-time
+  consent), shipping results back to the Mac over local network / AirDrop / iCloud.
+  Trade-off: on-device launch (Mac can't remote-trigger it); free dev account sideloads
+  to Esa's own phone. Would complete the "truly automated snapshot" front+screen gaps.
+  Context: `sensor-snapshot/snapshot.feature` (`@impossible` front-cam scenario).
+
 ### 2026-06-01 — recently shipped + open follow-ups
 
 **Shipped this session** (all committed): Fleet × Panel runner (`bin/panel-worker`,
