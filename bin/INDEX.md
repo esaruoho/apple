@@ -1,4 +1,4 @@
-# CLI Tools Index — 205 tools in bin/
+# CLI Tools Index — 212 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -30,6 +30,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `audio-snippets` — capture N short clips from every audio input device (or every — `bin/audio-snippets`
@@ -62,6 +63,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-index` — (no description) — `bin/cc-index`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
+`convey` — (no description) — `bin/convey`
 `desktop-icons` — hide or show ALL icons on the Desktop. — `bin/desktop-icons`
 `dictation-commands-compile-post-install.sh` — Run AFTER bin/dictation-commands-install.sh — compile all loupedeck-button .applescript — `bin/dictation-commands-compile-post-install.sh`
 `dictation-commands-install.sh` — Phase 3 Path A — Install Sal's CitrusPeel libraries + helpers on current macOS. — `bin/dictation-commands-install.sh`
@@ -104,6 +106,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `invert` — non-destructive darkmode -> lightmode for an image OR a folder of images. — `bin/invert`
 `iphone-import` — pull a full-resolution photo off a USB-tethered iPhone via — `bin/iphone-import`
 `iphone-photo` — thin wrapper that execs the in-bundle binary so Bundle.main — `bin/iphone-photo`
+`iphone-screen` — grab a still of a USB-tethered iPhone's SCREEN via CoreMediaIO — `bin/iphone-screen`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
@@ -146,6 +149,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
+`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -153,6 +157,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
+`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
@@ -163,11 +168,13 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
+`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
 `smart` — (no description) — `bin/smart`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
+`snapshot` — one automated sensor snapshot of this Mac (+ tethered iPhone) into a — `bin/snapshot`
 `speech-transcribe` — on-device speech-to-text via Apple's Speech framework. — `bin/speech-transcribe`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
 `stickies-claude-install.sh` — stickies-claude-install — install/uninstall the stickies → claude watcher — `bin/stickies-claude-install.sh`
