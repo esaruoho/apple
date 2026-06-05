@@ -1,0 +1,16 @@
+#!/bin/bash
+# iphone-screen — grab a still of a USB-tethered iPhone's SCREEN via CoreMediaIO
+# + AVFoundation (QuickTime "New Movie Recording → iPhone" mechanism). Best
+# effort: needs the phone unlocked + trusted; exits non-zero cleanly if absent.
+#
+#   iphone-screen <out.jpg> [--device <substr>] [--list] [--timeout S]
+#
+# FEATURE-CARD >> sensor-snapshot/snapshot.feature
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="$REPO/sensor-snapshot/Snapshot.app/Contents/MacOS/iphone-screen"
+if [[ ! -x "$BIN" ]]; then
+  echo "Snapshot.app not built — running build.sh…" >&2
+  bash "$REPO/sensor-snapshot/build.sh" >&2
+fi
+exec "$BIN" "$@"

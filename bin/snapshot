@@ -1,0 +1,78 @@
+#!/bin/bash
+# snapshot — one automated sensor snapshot of this Mac (+ tethered iPhone) into a
+# single timestamped folder: every camera, the iPhone screen (best-effort), and
+# audio snippets from every input. Apple-native; orchestrates the sensor-snapshot
+# tools. No third-party deps.
+#
+#   snapshot [<dir>] [--audio-count N] [--audio-len S] [--audio-gap S]
+#            [--per-channel] [--no-audio] [--no-screen] [--quick]
+#
+#   <dir>          parent dir for the snapshot (default: ~/Snapshots)
+#   --quick        fast audio sample (2×1s, no gap) instead of 5×3s/~30s
+#   --per-channel  split multichannel audio inputs into mono-per-channel
+#
+# FEATURE-CARD >> sensor-snapshot/snapshot.feature
+set -uo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="$REPO/bin"
+
+PARENT="$HOME/Snapshots"
+ACOUNT=5; ALEN=3; AGAP=3.75; PERCH=""; DO_AUDIO=1; DO_SCREEN=1
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --audio-count) ACOUNT="$2"; shift 2;;
+    --audio-len)   ALEN="$2";   shift 2;;
+    --audio-gap)   AGAP="$2";   shift 2;;
+    --per-channel) PERCH="--per-channel"; shift;;
+    --no-audio)    DO_AUDIO=0; shift;;
+    --no-screen)   DO_SCREEN=0; shift;;
+    --quick)       ACOUNT=2; ALEN=1; AGAP=0; shift;;
+    --*)           echo "unknown flag: $1" >&2; shift;;
+    *)             PARENT="$1"; shift;;
+  esac
+done
+
+TS="$(date +%Y-%m-%dT%H-%M-%S)"
+DIR="$PARENT/snapshot-$TS"
+mkdir -p "$DIR/cameras" "$DIR/audio" "$DIR/screen"
+echo "📸 snapshot → $DIR"
+
+MANIFEST="$DIR/manifest.md"
+{
+  echo "# Sensor snapshot — $TS"
+  echo
+  echo "Host: $(scutil --get ComputerName 2>/dev/null || hostname)"
+  echo
+} > "$MANIFEST"
+
+# 1. Every camera
+echo "→ cameras"
+"$BIN/iphone-photo" --all "$DIR/cameras" 2>&1 | sed 's/^/   /'
+echo "## Cameras" >> "$MANIFEST"
+for f in "$DIR"/cameras/*.jpg; do [[ -e "$f" ]] && echo "- $(basename "$f")" >> "$MANIFEST"; done
+echo >> "$MANIFEST"
+
+# 2. iPhone screen (best-effort)
+if [[ "$DO_SCREEN" == 1 ]]; then
+  echo "→ iPhone screen (best-effort)"
+  if "$BIN/iphone-screen" "$DIR/screen/iphone-screen.jpg" 2>&1 | sed 's/^/   /'; then :; fi
+  echo "## iPhone screen" >> "$MANIFEST"
+  if [[ -e "$DIR/screen/iphone-screen.jpg" ]]; then
+    echo "- iphone-screen.jpg" >> "$MANIFEST"
+  else
+    echo "- (not captured — phone locked/asleep or not tethered)" >> "$MANIFEST"
+  fi
+  echo >> "$MANIFEST"
+fi
+
+# 3. Audio snippets from every input
+if [[ "$DO_AUDIO" == 1 ]]; then
+  echo "→ audio (${ACOUNT}×${ALEN}s, gap ${AGAP}s${PERCH:+, per-channel})"
+  "$BIN/audio-snippets" "$DIR/audio" --count "$ACOUNT" --len "$ALEN" --gap "$AGAP" $PERCH 2>&1 | sed 's/^/   /'
+  echo "## Audio" >> "$MANIFEST"
+  echo "- $(find "$DIR/audio" -name '*.caf' | wc -l | tr -d ' ') clip(s) across $(find "$DIR/audio" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') input device(s)" >> "$MANIFEST"
+  echo >> "$MANIFEST"
+fi
+
+echo "✅ snapshot complete: $DIR"
+open "$DIR" 2>/dev/null || true
