@@ -29,6 +29,7 @@
 #   GDRIVE_OUTBOX   override reply folder  (default: ~/work/comms/queue/pakettibot-outbox)
 #   GDRIVE_RESULTS  override result folder (default: ~/work/comms/queue/gdrive-results)
 #   GDRIVE_WAIT     seconds to wait for the bot's confirmation (default: 60; 0 = don't wait)
+#   GDRIVE_DOWNLOAD_WAIT  seconds to wait for the download to LAND then open it (default: 1800)
 
 set -euo pipefail
 
@@ -45,7 +46,7 @@ log() { echo "[gdrive] $*" >&2; }
 die() { echo "[gdrive] ERROR: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -190,13 +191,36 @@ while [[ $(date +%s) -lt $deadline ]]; do
     echo "----- bot reply -----"
     cat "$reply"
     echo "---------------------"
-    log "Download lands in: $RESULTS/${label:-<gdrive-id>}/ (Syncthing-mirrored)"
-    exit 0
+    break
   fi
   sleep 2
 done
+[[ -f "$reply" ]] || log "no confirmation within ${WAIT}s (bot busy / Mini asleep) — still waiting for the download."
 
-log "no confirmation within ${WAIT}s — the bot may be busy or the Mini asleep."
-log "Check later: cat $reply"
-log "Or run: gdrive --status"
+# Open-when-done (DEFAULT): the download runs async on the Mini; wait for it to
+# land via Syncthing, then open it — so `gdrive <url>` ends with the folder on
+# screen whether you already had it or just fetched it. Suppress with --no-open.
+if [[ "$no_open" == "1" ]]; then
+  log "Download lands in: $RESULTS/${label:-<gdrive-id>}/ (Syncthing-mirrored). (--no-open)"
+  exit 0
+fi
+dlwait="${GDRIVE_DOWNLOAD_WAIT:-1800}"
+log "waiting up to ${dlwait}s for the download to land, then opening…"
+ddl=$(( $(date +%s) + dlwait ))
+for u in "${urls[@]}"; do
+  id="$(gdrive_id "$u")"
+  dir="$RESULTS/${label:-gdrive-$id}"
+  opened=0
+  while [[ $(date +%s) -lt $ddl ]]; do
+    if has_content "$dir"; then
+      log "downloaded: $dir"
+      open "$dir" && log "opened in Finder."
+      [[ "$ingest" == "1" ]] && maybe_ingest "$dir"
+      opened=1
+      break
+    fi
+    sleep 5
+  done
+  [[ "$opened" == "1" ]] || log "not landed within ${dlwait}s: $dir (re-run \`gdrive <url>\` later to open)"
+done
 exit 0
