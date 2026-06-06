@@ -100,11 +100,16 @@ if let q = converseQuestion {
     if converseWithRules {
         var context = ""
         if let d = FileManager.default.contents(atPath: learnedPath), let s = String(data: d, encoding: .utf8) {
-            context = String(s.suffix(3000))
+            context = "SAVED RULES:\n" + String(s.suffix(2000))
+        }
+        // "?" is grounded in what the model has ALREADY told you: fold the FoundationModels
+        // knowledgebank (saved chat/ask exchanges) in as context, so follow-ups build on it.
+        if let kb = FileManager.default.contents(atPath: knowledgebankPath()), let s = String(data: kb, encoding: .utf8) {
+            context += "\n\nPRIOR ANSWERS (knowledgebank):\n" + String(s.suffix(3000))
         }
         prompt = q.isEmpty
-            ? "Summarise concisely what these saved rules say:\n\n\(context)"
-            : "Answer concisely, using these saved rules as context. Add no facts not supported by them or general knowledge.\n\nSAVED RULES:\n\(context)\n\nQUESTION: \(q)"
+            ? "Summarise concisely what these saved rules and prior answers say:\n\n\(context)"
+            : "Answer concisely, using this context (saved rules + prior answers). Add no facts not supported by it or general knowledge.\n\n\(context)\n\nQUESTION: \(q)"
     } else {
         prompt = "Answer concisely and helpfully.\n\nQUESTION: \(q)"
     }
@@ -112,22 +117,27 @@ if let q = converseQuestion {
     // memory but currently hangs; swap it back here once that's fixed.
     let fmPath = scriptDir + "/fm-submit"
     guard FileManager.default.isExecutableFile(atPath: fmPath) else { die("fm-submit not found at \(fmPath)") }
-    let r = runCapture(fmPath, ["--wait", prompt], mergeErr: false)
+    let r = runFM(fmPath, ["--wait", prompt])   // stdout (answer) + stderr (the reason) captured separately
     let said = r.out.trimmingCharacters(in: .whitespaces)
-    // Every real FoundationModels answer is banked — a durable, browsable record of
-    // what the on-device model has told you, so it can be recalled (and one day fed
-    // back as context, the way "?" reads learned.feature). Saved on success only.
+    // Every real FoundationModels answer is banked — a durable, browsable record of what
+    // the on-device model has told you (recalled by "?"). Saved on success only.
     if r.code == 0 && !said.isEmpty {
         saveToKnowledgebank(question: q.isEmpty ? "(summarise my saved rules)" : q,
                             mode: converseWithRules ? "ask" : "chat", answer: said)
     }
-    print(said.isEmpty ? "(no answer from the model)" : said)
-    // "chat"/"talk to me" should TALK: speak the answer back in Zoe (like `convey talk`).
-    // Detached so it keeps speaking after this process exits — AppleBar waits for our
-    // exit before showing the result, so a blocking `say` would freeze the panel until
-    // speech ended. Opt out with FM_CHAT_SPEAK=0 (e.g. headless/piped callers).
-    if r.code == 0 && !said.isEmpty && ProcessInfo.processInfo.environment["FM_CHAT_SPEAK"] != "0" {
-        speakDetached(said)
+    let speakOn = r.code == 0 && !said.isEmpty && ProcessInfo.processInfo.environment["FM_CHAT_SPEAK"] != "0"
+    let isTTY = isatty(FileHandle.standardOutput.fileDescriptor) != 0
+    if speakOn && isTTY {
+        // Direct terminal: KARAOKE — `say --interactive` prints the answer and highlights
+        // each word as it's spoken (the CLI twin of AppleBar / convey talk). No pre-print.
+        stopPriorSpeech()
+        karaokeSay(said)
+    } else {
+        // Don't be vague when the model is silent: say WHAT happened and WHY so you can
+        // move on (fm-submit's stderr holds it — worker down, timeout, or guardrail).
+        print(said.isEmpty ? "(no answer — \(noAnswerReason(r.err)))" : said)
+        // Speak detached (piped callers like AppleBar set FM_CHAT_SPEAK=0 and do their own).
+        if speakOn { stopPriorSpeech(); speakDetached(said) }
     }
     exit(r.code)
 }
@@ -156,6 +166,62 @@ func zoeVoice() -> String? {
     if let v = ProcessInfo.processInfo.environment["CONVEY_VOICE"], !v.isEmpty { return v }
     let r = runCapture("/usr/bin/say", ["-v", "?"])
     return r.out.contains("Zoe (Premium)") ? "Zoe (Premium)" : nil
+}
+
+// The FoundationModels knowledgebank (saved chat/ask exchanges). Override FM_KNOWLEDGEBANK.
+func knowledgebankPath() -> String {
+    let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
+    return ProcessInfo.processInfo.environment["FM_KNOWLEDGEBANK"]
+        ?? home + "/.config/apple-bar/foundationmodels-knowledgebank.md"
+}
+
+// Run fm-submit capturing stdout (the answer) and stderr (the reason) SEPARATELY —
+// fm-submit puts the answer on stdout and its spinner+diagnosis on stderr.
+func runFM(_ path: String, _ a: [String]) -> (out: String, err: String, code: Int32) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: path)
+    p.arguments = a
+    var env = ProcessInfo.processInfo.environment
+    env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
+    p.environment = env
+    let outPipe = Pipe(); let errPipe = Pipe()
+    p.standardOutput = outPipe; p.standardError = errPipe
+    do { try p.run() } catch { return ("", "couldn't run fm-submit: \(error.localizedDescription)", 1) }
+    let od = outPipe.fileHandleForReading.readDataToEndOfFile()
+    let ed = errPipe.fileHandleForReading.readDataToEndOfFile()
+    p.waitUntilExit()
+    return (String(data: od, encoding: .utf8) ?? "", String(data: ed, encoding: .utf8) ?? "", p.terminationStatus)
+}
+
+// Turn fm-submit's stderr into one plain reason — strip the \r spinner, take the last
+// meaningful line (its self-diagnosis: "worker looks down…", "guardrail blocked…", etc.).
+func noAnswerReason(_ stderr: String) -> String {
+    let cleaned = stderr.replacingOccurrences(of: "\r", with: "\n")
+    let lines = cleaned.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty && !$0.hasPrefix("waiting") }
+    return lines.last ?? "the model didn't respond — the worker may be down (fm-submit --status)"
+}
+
+// Stop any in-flight CLI `say` from a previous chat so answers don't overlap. AppleBar's
+// AVSpeech is in-process and unaffected; this only stops /usr/bin/say processes.
+func stopPriorSpeech() {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+    p.arguments = ["say"]
+    p.standardError = FileHandle.nullDevice
+    try? p.run(); p.waitUntilExit()
+}
+
+// Foreground `say --interactive`: prints the answer and highlights each word as spoken,
+// inheriting the terminal so the karaoke lands here. Used only when stdout is a TTY.
+func karaokeSay(_ text: String) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+    var args = ["--interactive=/green"]
+    if let v = zoeVoice() { args += ["-v", v] }
+    args.append(text)
+    p.arguments = args
+    try? p.run(); p.waitUntilExit()
 }
 
 // ── FoundationModels knowledgebank ──────────────────────────────────────────

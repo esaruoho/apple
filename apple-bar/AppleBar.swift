@@ -100,6 +100,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     let synth = AVSpeechSynthesizer()
     var karaokePlain = ""     // the spoken/displayed text — AVSpeech ranges index into THIS
     var karaokeFinal = ""     // the original answer, markdown-rendered once speech ends
+    var karaokeLive = false   // true only while THIS bar should paint the karaoke. Re-opening
+                              // the bar sets it false so the highlight stops repainting (the
+                              // panel opens clean) while the AUDIO keeps playing to the end.
     let karaokeFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
 
     func applicationDidFinishLaunching(_ note: Notification) {
@@ -252,7 +255,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     }
 
     @objc func showPanel() {
-        synth.stopSpeaking(at: .immediate)   // a fresh open silences any prior karaoke
+        // Re-opening the bar should open CLEAN, but must NOT cut off speech that's still
+        // playing (dismiss-keeps-talking is intended). So we stop the karaoke's VISUAL
+        // repaints (karaokeLive = false) without stopping the audio — the prior answer
+        // finishes speaking while the fresh bar shows just the field.
+        karaokeLive = false
         collapseBody()              // open clean: just the field, no stale result/suggestions
         field.stringValue = ""
         let screen = NSScreen.main ?? NSScreen.screens.first
@@ -370,7 +377,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     // bright and the current word highlighted, the rest dimmed — so the text tracks the
     // voice instead of waiting for it. When speech ends, swap to the markdown render.
     func speakKaraoke(_ text: String) {
-        synth.stopSpeaking(at: .immediate)
+        synth.stopSpeaking(at: .immediate)   // stop any prior answer's speech before the new one
+        karaokeLive = true                   // this bar now owns the karaoke paint
         karaokeFinal = text
         karaokePlain = plainForSpeech(text)   // AVSpeech ranges index into this exact string
         renderKaraoke(spokenUpTo: 0, current: NSRange(location: 0, length: 0))
@@ -431,14 +439,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     // AVSpeechSynthesizerDelegate — drive the reveal off the synth's word boundaries.
     func speechSynthesizer(_ s: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         DispatchQueue.main.async {
+            guard self.karaokeLive else { return }   // a re-opened bar doesn't repaint old speech
             self.renderKaraoke(spokenUpTo: characterRange.location + characterRange.length, current: characterRange)
         }
     }
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async { self.showResult(self.karaokeFinal) }   // settle on the markdown render
+        DispatchQueue.main.async {
+            guard self.karaokeLive else { return }   // don't repaint into a freshly-cleared bar
+            self.showResult(self.karaokeFinal)        // settle on the markdown render
+            self.karaokeLive = false
+        }
     }
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async { if !self.karaokeFinal.isEmpty { self.showResult(self.karaokeFinal) } }
+        DispatchQueue.main.async { self.karaokeLive = false }   // never repaint the old answer on cancel
     }
 
     // Spotlight-style ranked list; the selected row is highlighted. ↑/↓ move it.
