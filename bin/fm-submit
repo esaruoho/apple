@@ -89,6 +89,26 @@ def humanize_err(err: str) -> str:
     return e or "unknown"
 
 
+def is_guardrail(err: str) -> bool:
+    e = (err or "").lower()
+    return "guardrail" in e or "unsafe content" in e
+
+
+def rephrase(prompt: str, timeout: float):
+    """Ask FoundationModels to reword a question so it won't trip Apple's (aggressive)
+    safety guardrail, keeping the meaning. Returns the reworded text, or None if FM also
+    blocked/failed. One shot — the caller retries the reworded version exactly once."""
+    rw_prompt = ("Reword the following question to be neutral and factual, keeping its "
+                 "meaning, so it will not trip an automated content filter. Reply with ONLY "
+                 "the reworded question — no preamble, no quotes.\n\nQUESTION: " + prompt)
+    jid = "rw-" + hashlib.sha1(prompt.encode()).hexdigest()[:8] + "-" + time.strftime("%H%M%S")
+    submit(rw_prompt, "", jid)
+    r, _ = wait_for(jid, timeout)
+    if r and r.get("ok"):
+        return (r.get("out", "") or "").strip()
+    return None
+
+
 STALE_AFTER = 120.0  # a heartbeat older than this means the worker is not alive
 
 
@@ -188,7 +208,22 @@ def main() -> int:
                          f"Job {job_id} stays queued and runs when the worker is back.\n")
         return 1
     if not result.get("ok"):
-        sys.stderr.write(f"fm: {humanize_err(result.get('err', ''))}\n")
+        err = result.get("err", "")
+        # Auto-rephrase + retry ONCE on a guardrail block: ask FM to reword the question
+        # neutrally, then re-send the reworded version (the guardrail over-blocks benign
+        # prompts, and a neutral rewording usually passes). The reworded question is shown
+        # so the answer is transparent. Only the original send retries — no loop.
+        if is_guardrail(err):
+            rw = rephrase(prompt, timeout)
+            if rw and rw.lower() != prompt.lower() and not is_guardrail(rw):
+                sys.stderr.write("  ↻ guardrail blocked it — retrying a reworded version…\n")
+                submit(rw, system, job_id + "-rw")
+                r2, rt2 = wait_for(job_id + "-rw", timeout)
+                if r2 and r2.get("ok"):
+                    print(f"_(reworded past the guardrail: {rw})_\n\n{r2.get('out', '')}")
+                    sys.stderr.write(f"  [reworded · {r2.get('host', '?')} · round-trip {rt2:.1f}s]\n")
+                    return 0
+        sys.stderr.write(f"fm: {humanize_err(err)}\n")
         return 1
     print(result.get("out", ""))
     model_ms = result.get("model_ms", 0)
