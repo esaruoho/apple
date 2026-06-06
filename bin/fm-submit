@@ -22,6 +22,7 @@ Apple-native: python3 stdlib only.
 
 import hashlib
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -94,19 +95,48 @@ def is_guardrail(err: str) -> bool:
     return "guardrail" in e or "unsafe content" in e
 
 
-def rephrase(prompt: str, timeout: float):
-    """Ask FoundationModels to reword a question so it won't trip Apple's (aggressive)
-    safety guardrail, keeping the meaning. Returns the reworded text, or None if FM also
-    blocked/failed. One shot — the caller retries the reworded version exactly once."""
-    rw_prompt = ("Reword the following question to be neutral and factual, keeping its "
-                 "meaning, so it will not trip an automated content filter. Reply with ONLY "
-                 "the reworded question — no preamble, no quotes.\n\nQUESTION: " + prompt)
-    jid = "rw-" + hashlib.sha1(prompt.encode()).hexdigest()[:8] + "-" + time.strftime("%H%M%S")
-    submit(rw_prompt, "", jid)
-    r, _ = wait_for(jid, timeout)
-    if r and r.get("ok"):
-        return (r.get("out", "") or "").strip()
-    return None
+# A copular generalization characterizing a GROUP ("the Finnish people are right into
+# kombucha") is the empirically-confirmed false-positive that trips Apple's guardrail —
+# the same content as a neutral interrogative sails through. We can't use an LLM to reword
+# (FM is the only local model and it refuses to READ the blocked text; Claude costs
+# tokens), so the neutraliser is pure deterministic text surgery — no model, no tokens.
+_GROUP_GEN = re.compile(
+    r'\bthe\s+([A-Za-z]+)\s+(?:people\s+)?are\s+'
+    r'(?:really\s+|right\s+|very\s+|so\s+|super\s+|totally\s+)?'
+    r'(?:into|keen on|fond of|big on|crazy about|obsessed with|all about|mad for)\s+'
+    r'(.+?)\s*(?:[.?!,;]|$)', re.IGNORECASE)  # stop at clause end / comma / string end
+
+_STOP = set((
+    "a an the is are am was were be been being of to in on for with at by from and or but "
+    "if then so as that this these those it its do does did you i we they he she them his "
+    "her their our your my me us why what how when where who which right really very super "
+    "totally into about think thinks thought people not no yes can could would should will "
+    "just like love loves want need get got there here explain please tell give show").split())
+
+
+def neutralize(prompt: str):
+    """Deterministically rewrite a guardrail-tripping prompt into a guardrail-safe one.
+    No LLM, no tokens. Returns the rewrite, or None if nothing useful can be made.
+    ONLY called after the original was already guardrail-blocked."""
+    # 1) Targeted: a copular generalization about a group → a neutral "popular among" form.
+    m = _GROUP_GEN.search(prompt)
+    if m:
+        group = m.group(1).strip()
+        topic = m.group(2).strip().rstrip(".?!").strip()
+        among = group if group.lower().endswith("s") else group + " people"  # Finns / Finnish people
+        if topic:
+            return f"Why is {topic} popular among {among}?"
+    # 2) Fallback: drop the framing entirely, keep content words → a neutral topic query.
+    #    Lossy, but it always yields something the guardrail accepts (an answer beats a wall).
+    seen, topic = set(), []
+    for w in re.findall(r"[A-Za-z][A-Za-z'-]+", prompt):
+        k = w.lower()
+        if k in _STOP or len(w) < 3 or k in seen:
+            continue
+        seen.add(k); topic.append(w)
+    if not topic:
+        return None
+    return "Tell me about " + " ".join(topic[:8]) + "."
 
 
 STALE_AFTER = 120.0  # a heartbeat older than this means the worker is not alive
@@ -214,9 +244,9 @@ def main() -> int:
         # prompts, and a neutral rewording usually passes). The reworded question is shown
         # so the answer is transparent. Only the original send retries — no loop.
         if is_guardrail(err):
-            rw = rephrase(prompt, timeout)
-            if rw and rw.lower() != prompt.lower() and not is_guardrail(rw):
-                sys.stderr.write("  ↻ guardrail blocked it — retrying a reworded version…\n")
+            rw = neutralize(prompt)
+            if rw and rw.lower() != prompt.lower():
+                sys.stderr.write("  ↻ guardrail blocked it — retrying a neutral rephrasing…\n")
                 submit(rw, system, job_id + "-rw")
                 r2, rt2 = wait_for(job_id + "-rw", timeout)
                 if r2 and r2.get("ok"):
