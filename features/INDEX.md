@@ -133,6 +133,18 @@ Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline 
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+image-playground — on-device pictures, locally, as the prose's twin  —  8 scenarios   (features/image-playground.feature)
+  - [@built] The CLI generates an image from a prompt
+  - [@built] A question phrase still yields the subject
+  - [@built] --check reports availability and the styles this Mac supports
+  - [@built] Headless generation is impossible by Apple's design
+  - [@built] /image draws a one-off picture inside Converse, no model call
+  - [@built @untested] Illustrate ON pairs every reply with a picture
+  - [@built] A picture can't be drawn while Converse is in the background
+  - [@built] Images embed without file-system access
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 AppleBar parses markdown in its result pane  —  4 scenarios   (features/markdown-attributed.feature)
   - [@verified] headings, bold, code, and rules render (not raw markers)
   - [@built] AppleBar shows the rendered markdown, not the raw text

@@ -276,8 +276,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
         // repaints (karaokeLive = false) without stopping the audio — the prior answer
         // finishes speaking while the fresh bar shows just the field.
         karaokeLive = false
+        synth.delegate = self       // ensure no stale delegate paints into this fresh panel
         collapseBody()              // open clean: just the field, no stale result/suggestions
         field.stringValue = ""
+        field.placeholderString = "Ask…   ↩ run · ? ask · ⌘↩ rephrase · dictate"
+        field.isHidden = false
         let screen = NSScreen.main ?? NSScreen.screens.first
         if let vf = screen?.visibleFrame {
             let x = vf.midX - panel.frame.width / 2
@@ -429,6 +432,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     func runTreatment(_ name: String, capture: Bool) {
         let q = lastChatQ, a = lastChatA
         guard !a.isEmpty else { return }
+        // Choosing a treatment ends the current answer's speech immediately — you've moved
+        // on from it, so it shouldn't keep talking while the treatment runs.
+        karaokeLive = false
+        synth.stopSpeaking(at: .immediate)
         func conveyProcess() -> Process {
             let p = Process()
             p.executableURL = URL(fileURLWithPath: CONVEY_BIN)
