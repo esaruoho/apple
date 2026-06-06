@@ -1,4 +1,4 @@
-# CLI Tools Index — 213 tools in bin/
+# CLI Tools Index — 215 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -83,6 +83,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
 `fleet` — (no description) — `bin/fleet`
+`fleet-montage` — combine every PNG in a directory into one labeled "fleet space" — `bin/fleet-montage`
 `fleet-photo` — snapshot EVERY available video input device across the fleet, — `bin/fleet-photo`
 `fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
 `fm` — Apple's on-device LLM (FoundationModels). Self-building Swift, no deps. — `bin/fm`
@@ -130,6 +131,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `notify-iphone` — (no description) — `bin/notify-iphone`
 `ocr-pdf-rebuild` — (no description) — `bin/ocr-pdf-rebuild`
 `ocr-triage` — (no description) — `bin/ocr-triage`
+`ocr-vision` — vision-ocr — on-device OCR via Apple's Vision framework (Neural Engine). — `bin/ocr-vision`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`

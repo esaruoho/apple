@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# fleet-montage — combine every PNG in a directory into one labeled "fleet space"
+# image. The ONE shared montage step, used by both fleet-screenshot (screens) and
+# fleet-photo (cameras). imagemagick `montage` is a guaranteed fleet-worker
+# dependency (brew install imagemagick) — so this is imagemagick-only, one tested
+# path, no fallbacks. Each tile is labeled with its filename (<machine>[__device]).
+#
+#   fleet-montage <dir> [title]   →  <dir>/_fleet-space.png
+set -euo pipefail
+DIR="${1:?usage: fleet-montage <dir> [title]}"
+TITLE="${2:-fleet space $(basename "$DIR")}"
+OUT="$DIR/_fleet-space.png"
+
+command -v montage >/dev/null 2>&1 || {
+  echo "[fleet-montage] imagemagick 'montage' missing — brew install imagemagick" >&2
+  exit 1
+}
+
+shopt -s nullglob
+imgs=()
+for f in "$DIR"/*.png; do
+  [ "$(basename "$f")" = "_fleet-space.png" ] || imgs+=("$f")   # never tile a prior montage
+done
+[ "${#imgs[@]}" -gt 0 ] || { echo "[fleet-montage] no PNGs in $DIR — nothing to montage"; exit 0; }
+
+# Default: NATIVE resolution per tile (no downscale) so screens stay readable.
+# Override with a max tile size, e.g. FLEET_TILE=1920x1200 to cap a huge fleet.
+if [ -n "${FLEET_TILE:-}" ]; then GEOM="${FLEET_TILE}>+8+8"; else GEOM="+8+8"; fi
+
+montage -label '%f' "${imgs[@]}" \
+  -geometry "$GEOM" -background black -fill white -title "$TITLE" "$OUT"
+dim="$(identify -format '%wx%h' "$OUT" 2>/dev/null)"
+echo "[fleet-montage] $OUT  (${#imgs[@]} tiles, ${dim:-?})"

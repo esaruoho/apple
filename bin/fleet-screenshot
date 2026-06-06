@@ -40,4 +40,6 @@ for m in $machines; do
   fi
 done
 echo "[fleet-screenshot] collected $got screenshot(s) → $OUT"
+# One shared, imagemagick-based montage step (DRY — the same one fleet-photo uses).
+"$(dirname "$0")/fleet-montage" "$OUT" "fleet screens $ts" || true
 open "$OUT" 2>/dev/null || true

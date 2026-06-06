@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# fleet-photo — snapshot EVERY available video input device across the fleet,
+# one PNG per device, then montage them into a single "fleet space" image.
+#
+# Robust by design: it captures only the devices that actually respond. A machine
+# that is offline, has no camera, or has no capture path contributes 0 and is
+# reported — never faked. 30 cameras -> 30 snapshots; 2 cameras with 3 machines
+# offline -> 2 snapshots.
+#
+# Per-machine channel (interchangeable transport, Syncthing-preferred):
+#   this Mac          -> imagesnap -l then -d each, locally
+#   CloudcityMacMini  -> photo-request (Syncthing); photo-worker captures; collect
+#   other peers       -> ssh imagesnap (best-effort; needs imagesnap + Camera TCC)
+set -uo pipefail
+Q="$HOME/work/comms/queue"
+REG="$Q/fleet-registry.json"
+ts="$(date +%Y%m%d-%H%M%S)"
+OUT="$Q/fleet-photos/$ts"
+mkdir -p "$OUT" "$Q/photo-requests"
+me="$(hostname -s)"
+IMAGESNAP="$(command -v imagesnap || echo /opt/homebrew/bin/imagesnap)"
+[ -f "$REG" ] || { echo "no fleet-registry at $REG"; exit 1; }
+machines=$(python3 -c "import json;print('\n'.join(m['id'] for m in json.load(open('$REG'))['machines']))")
+
+snap_local() {  # $1=machine ; captures each local device ; prints count
+  local machine="$1" n=0 dev safe
+  [ -x "$IMAGESNAP" ] || { echo 0; return; }
+  while IFS= read -r dev; do
+    [ -z "$dev" ] && continue
+    safe="$(printf '%s' "$dev" | tr -c 'A-Za-z0-9._-' '_')"
+    "$IMAGESNAP" -q -w 1 -d "$dev" "$OUT/${machine}__${safe}.png" 2>/dev/null && n=$((n+1))
+  done < <("$IMAGESNAP" -l 2>/dev/null | sed -n 's/^=> //p')
+  echo "$n"
+}
+
+echo "[fleet-photo] $ts (this machine: $me) → $OUT"
+total=0
+for m in $machines; do
+  if [ "$m" = "$me" ]; then
+    c=$(snap_local "$m"); echo "  $m : $c local camera snapshot(s)"; total=$((total+c))
+  elif [ "$m" = "CloudcityMacMini" ]; then
+    rid="fleetphoto-$ts"
+    date -u +%FT%TZ > "$Q/photo-requests/$rid.req"
+    ok=0; for i in $(seq 1 40); do [ -f "$Q/photos/$rid/_manifest.txt" ] && { ok=1; break; }; sleep 1; done
+    if [ "$ok" = 1 ]; then
+      c=0; for f in "$Q/photos/$rid"/*.png; do [ -e "$f" ] || continue; cp "$f" "$OUT/${m}__$(basename "$f")"; c=$((c+1)); done
+      echo "  $m : $c camera snapshot(s) via photo-worker"; total=$((total+c))
+    else
+      echo "  $m : photo-worker not responding (pane live? camera attached?) — skipped"
+    fi
+  else
+    if timeout 12 ssh -o ConnectTimeout=6 -o BatchMode=yes "$m" 'command -v imagesnap >/dev/null 2>&1' 2>/dev/null; then
+      c=0
+      while IFS= read -r dev; do
+        [ -z "$dev" ] && continue
+        safe="$(printf '%s' "$dev" | tr -c 'A-Za-z0-9._-' '_')"
+        if timeout 25 ssh -o ConnectTimeout=6 "$m" "imagesnap -q -w 1 -d '$dev' /tmp/fp.png" 2>/dev/null \
+           && timeout 14 scp -o ConnectTimeout=6 "$m":/tmp/fp.png "$OUT/${m}__${safe}.png" 2>/dev/null; then c=$((c+1)); fi
+      done < <(timeout 12 ssh -o ConnectTimeout=6 "$m" 'imagesnap -l 2>/dev/null | sed -n "s/^=> //p"' 2>/dev/null)
+      echo "  $m : $c camera snapshot(s) via ssh"; total=$((total+c))
+    else
+      echo "  $m : no reachable camera path (offline / no imagesnap) — skipped"
+    fi
+  fi
+done
+
+# One shared, imagemagick-based montage step (DRY — the same one fleet-screenshot uses).
+"$(dirname "$0")/fleet-montage" "$OUT" "fleet cameras $ts" || true
+echo "[fleet-photo] $total camera snapshot(s) across the fleet → $OUT"
+open "$OUT" 2>/dev/null || true
