@@ -53,6 +53,16 @@ LOG       = QUEUE / "voicebox-log.jsonl"
 VB = os.environ.get("VOICEBOX_URL", "http://127.0.0.1:17493")
 POLL_SECONDS = float(os.environ.get("VOICEBOX_POLL_SECONDS", "2"))
 
+# A job is renamed <name>.inflight while it is being synthed (so Syncthing won't
+# reflow it). If the worker dies mid-synth (crash, or the guardian kickstarts it
+# because a hung synth starved the heartbeat), that .inflight is stranded — it is
+# never re-scanned. recover_inflight() re-queues such orphans at boot, capped so a
+# poison input that crashes/hangs synth EVERY time can't wedge the queue in an
+# endless boot→claim→die→boot loop; after the cap it goes to voicebox-failed/.
+INFLIGHT_SUFFIX = ".inflight"
+RECOVERY_STATE = QUEUE / "voicebox-inbox" / ".inflight-recoveries.json"
+MAX_INFLIGHT_RECOVERIES = int(os.environ.get("VOICEBOX_MAX_INFLIGHT_RECOVERIES", "2"))
+
 
 def log_event(event: dict):
     event["ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -244,6 +254,72 @@ def status_report():
         print("heartbeat: never")
 
 
+def recover_inflight():
+    """Re-queue jobs orphaned as <name>.inflight by a worker that died mid-synth.
+
+    Runs once at boot. Any .inflight present at startup is by definition orphaned
+    (a fresh worker is starting, so nothing is actively processing it). Each is
+    re-queued to its original name so it's retried — but a per-job recovery count
+    (persisted in .inflight-recoveries.json, auto-pruned to only currently-orphaned
+    jobs) caps retries at MAX_INFLIGHT_RECOVERIES. Past the cap the job is moved to
+    voicebox-failed/ with an error, so one poison input can't restart the worker
+    forever and freeze the whole queue.
+    """
+    if not INBOX.exists():
+        return
+    orphans = sorted(p for p in INBOX.glob("*" + INFLIGHT_SUFFIX) if not p.name.startswith("."))
+    if not orphans:
+        return
+    try:
+        old_counts = json.loads(RECOVERY_STATE.read_text()) if RECOVERY_STATE.exists() else {}
+    except Exception:
+        old_counts = {}
+    new_counts = {}  # only keys still orphaned survive → auto-prunes succeeded jobs
+    for p in orphans:
+        original = p.with_name(p.name[: -len(INFLIGHT_SUFFIX)])  # foo.json.inflight -> foo.json
+        key = original.name
+        n = int(old_counts.get(key, 0)) + 1
+        job_id = original.stem
+        try:
+            spec = json.loads(p.read_text())
+            job_id = spec.get("id") or job_id
+        except Exception:
+            spec = None  # not JSON (e.g. a .txt job) — never rewrite its content
+        if n > MAX_INFLIGHT_RECOVERIES:
+            FAILED.mkdir(parents=True, exist_ok=True)
+            if spec is not None:
+                spec["_worker_error"] = (
+                    f"orphaned in-flight {n}x — the worker died mid-synth every time "
+                    f"(likely a poison input that hangs or crashes Voicebox). Given up "
+                    f"so the queue keeps moving; fix the input and resubmit.")
+                try:
+                    p.write_text(json.dumps(spec, indent=2, ensure_ascii=False))
+                except Exception:
+                    pass
+            try:
+                p.rename(FAILED / original.name)
+                log_event({"event": "inflight_giveup", "id": job_id, "recoveries": n,
+                           "detail": "moved to voicebox-failed to keep the queue moving"})
+            except Exception as e:
+                log_event({"event": "recover_move_failed", "id": job_id, "error": str(e)})
+                new_counts[key] = n  # keep it; try again next boot
+        else:
+            try:
+                p.rename(original)
+                new_counts[key] = n
+                log_event({"event": "inflight_recovered", "id": job_id, "recoveries": n,
+                           "detail": "re-queued after the worker died mid-synth"})
+            except Exception as e:
+                log_event({"event": "recover_move_failed", "id": job_id, "error": str(e)})
+    try:
+        if new_counts:
+            RECOVERY_STATE.write_text(json.dumps(new_counts, indent=2))
+        elif RECOVERY_STATE.exists():
+            RECOVERY_STATE.unlink()
+    except Exception:
+        pass
+
+
 def main():
     once = "--once" in sys.argv
     if "--status" in sys.argv:
@@ -255,6 +331,7 @@ def main():
 
     ensure_dirs()
     log_event({"event": "boot", "voicebox": VB, "queue": str(QUEUE)})
+    recover_inflight()  # re-queue jobs an earlier worker died on (capped)
 
     while True:
         jobs = claim_jobs()
