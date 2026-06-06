@@ -180,6 +180,16 @@ Live Spotlight-style suggestions in AppleBar  —  5 scenarios   (features/spotl
   triad: .session✓  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+voicebox-worker — a TTS queue that survives the worker dying mid-job  —  6 scenarios   (features/voicebox-worker.feature)
+  - [@built] A job the worker died on mid-synth is re-queued at boot
+  - [@built] A poison input that orphans every time is capped, never wedges t
+  - [@built] A non-JSON (.txt) job's content is preserved on recovery
+  - [@built] A stalled generation is bounded and cancelled so one job can't f
+  - [@built] pending counts only UNCLAIMED jobs — an orphan reads as done unt
+  - [@built] The guardian can kickstart the worker before its own synth budge
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Indexed in atlas → /Users/esaruoho/work/apple/atlas/INDEX.md
 ```
 

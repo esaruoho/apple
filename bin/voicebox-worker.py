@@ -28,6 +28,7 @@ After processing each job:
   - One line appended to voicebox-log.jsonl
   - On failure: job spec moved to voicebox-failed/<id>.json with error appended
 """
+# FEATURE-CARD >> features/voicebox-worker.feature  (spec + grades + session)
 import json
 import os
 import shutil
