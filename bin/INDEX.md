@@ -1,4 +1,4 @@
-# CLI Tools Index — 215 tools in bin/
+# CLI Tools Index — 214 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -131,7 +131,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `notify-iphone` — (no description) — `bin/notify-iphone`
 `ocr-pdf-rebuild` — (no description) — `bin/ocr-pdf-rebuild`
 `ocr-triage` — (no description) — `bin/ocr-triage`
-`ocr-vision` — vision-ocr — on-device OCR via Apple's Vision framework (Neural Engine). — `bin/ocr-vision`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`

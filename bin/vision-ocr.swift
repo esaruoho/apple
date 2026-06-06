@@ -22,9 +22,10 @@ import CoreGraphics
 import ImageIO
 
 func supportedLanguages() -> [String] {
-    let req = VNRecognizeTextRequest()
-    req.recognitionLevel = .accurate
-    return (try? req.supportedRecognitionLanguages()) ?? []
+    // The deprecated instance method returns [] on recent macOS; the static
+    // per-revision API is the current one.
+    return (try? VNRecognizeTextRequest.supportedRecognitionLanguages(
+        for: .accurate, revision: VNRecognizeTextRequest.currentRevision)) ?? []
 }
 
 func cgImage(fromImageFile url: URL) -> CGImage? {
@@ -81,6 +82,14 @@ func detectBarcodes(_ image: CGImage) -> String {
     }.joined(separator: "\n")
 }
 
+func classify(_ image: CGImage) -> String {
+    let req = VNClassifyImageRequest()               // "what is this image" labels
+    let handler = VNImageRequestHandler(cgImage: image, options: [:])
+    do { try handler.perform([req]) } catch { return "" }
+    let obs = (req.results ?? []).filter { $0.confidence > 0.1 }.prefix(12)
+    return obs.map { String(format: "%@\t%.2f", $0.identifier, $0.confidence) }.joined(separator: "\n")
+}
+
 // ── args ──
 var args = Array(CommandLine.arguments.dropFirst())
 func popValue(_ flag: String) -> String? {
@@ -90,6 +99,7 @@ func popValue(_ flag: String) -> String? {
 let wantLangs = args.contains("--langs"); args.removeAll { $0 == "--langs" }
 let fast = args.contains("--fast"); args.removeAll { $0 == "--fast" }
 let wantBarcodes = args.contains("--barcodes") || args.contains("--qr"); args.removeAll { $0 == "--barcodes" || $0 == "--qr" }
+let wantClassify = args.contains("--classify"); args.removeAll { $0 == "--classify" }
 let langs = (popValue("--lang") ?? "").split(separator: ",").map { String($0) }
 let maxPages = Int(popValue("--pages") ?? "") ?? 0
 
@@ -98,7 +108,7 @@ if wantLangs {
     exit(0)
 }
 guard let path = args.first else {
-    FileHandle.standardError.write(Data("usage: vision-ocr <file> [--lang en,fi] [--fast] [--pages N] [--langs] [--barcodes]\n".utf8))
+    FileHandle.standardError.write(Data("usage: vision-ocr <file> [--lang en,fi] [--fast] [--pages N] [--langs] [--barcodes] [--classify]\n".utf8))
     exit(2)
 }
 let url = URL(fileURLWithPath: path)
@@ -119,5 +129,9 @@ var pageNo = 0
 for img in images {
     pageNo += 1
     if images.count > 1 { print("──── page \(pageNo) ────") }
-    print(wantBarcodes ? detectBarcodes(img) : recognize(img, languages: langs, fast: fast))
+    let out: String
+    if wantClassify { out = classify(img) }
+    else if wantBarcodes { out = detectBarcodes(img) }
+    else { out = recognize(img, languages: langs, fast: fast) }
+    print(out)
 }
