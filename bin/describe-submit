@@ -1,0 +1,32 @@
+#!/bin/bash
+# describe-submit — scene-describe an image via the Mac Mini's local VLM (Ollama),
+# over Syncthing. Drops the image into describe-inbox; the Mini's describe-worker
+# captions it and returns describe-results/<stem>.txt. No cloud, no SSH.
+#
+#   describe-submit <image>            drop it; return immediately
+#   describe-submit <image> --wait     drop it, then poll for the result text
+#   describe-submit --status           show the worker heartbeat
+set -euo pipefail
+QUEUE="$HOME/work/comms/queue"
+INBOX="$QUEUE/describe-inbox"
+RESULTS="$QUEUE/describe-results"
+HB="$QUEUE/describe-worker-heartbeat.json"
+mkdir -p "$INBOX" "$RESULTS"
+
+if [ "${1:-}" = "--status" ]; then
+  [ -f "$HB" ] && cat "$HB" || echo "no describe-worker heartbeat yet"; echo; exit 0
+fi
+SRC="${1:?usage: describe-submit <image> [--wait] | --status}"
+[ -f "$SRC" ] || { echo "no such file: $SRC" >&2; exit 1; }
+stem="$(basename "${SRC%.*}")"
+cp "$SRC" "$INBOX/"
+echo "dropped $(basename "$SRC") → describe-inbox (model: ${DESCRIBE_MODEL:-moondream})"
+
+if [ "${2:-}" = "--wait" ]; then
+  echo "waiting for $RESULTS/$stem.txt …"
+  for _ in $(seq 1 120); do
+    if [ -f "$RESULTS/$stem.txt" ]; then echo "---"; cat "$RESULTS/$stem.txt"; exit 0; fi
+    sleep 2
+  done
+  echo "timed out (is the Mini's describe-worker running? describe-submit --status)" >&2; exit 2
+fi

@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""describe-worker — scene-describe an image via a LOCAL vision model (Ollama), no cloud.
+
+The "describe" port the Convey belt (media.filerule, Cluster Image) routes to when
+on-device Apple Vision cannot: Vision OCRs the TEXT in an image and reads barcodes,
+but it does not CAPTION a scene. There is no public Apple captioning API — so this is
+the "not here? → Mac Mini" fallback. On the fleet that's the Mac Mini (macOS 26).
+
+A laptop drops an image into ~/work/comms/queue/describe-inbox/; this worker captions
+it with a local Ollama vision model and writes the text to describe-results/<stem>.txt,
+which Syncthing carries back. NO ChatGPT, NO cloud — a local open VLM on-device.
+
+Engine: Ollama (127.0.0.1:11434) + a small vision model (default: moondream, ~1.7GB).
+Override with DESCRIBE_MODEL / DESCRIBE_PROMPT / OLLAMA_URL.
+
+Usage:
+    describe-worker            watch the inbox forever (the daemon)
+    describe-worker --once     process whatever is queued now, then exit
+    describe-worker --status   show queue depth + heartbeat, then exit
+
+Security boundary: a job is just an image file; the worker only ever POSTs it to the
+local Ollama HTTP API. Syncthing is the sole transport; no network listener here.
+"""
+import base64
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "describe-inbox"
+RESULTS = QUEUE / "describe-results"
+HEARTBEAT = QUEUE / "describe-worker-heartbeat.json"
+MODEL = os.environ.get("DESCRIBE_MODEL", "moondream")
+OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+PROMPT = os.environ.get(
+    "DESCRIBE_PROMPT",
+    "Describe this image in 1-3 plain sentences for someone who cannot see it. "
+    "If it contains text, briefly say what the text is about.")
+IMG_EXTS = {".png", ".jpg", ".jpeg", ".heic", ".heif", ".gif", ".tiff", ".tif", ".bmp", ".webp"}
+POLL_SECONDS = 1.0
+HEARTBEAT_SECONDS = 30
+RUN_TIMEOUT = 300
+
+
+def nudge(path: Path):
+    """Best-effort: make Syncthing scan + announce this path now (sibling helper)."""
+    try:
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)], capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def ensure_model():
+    """Pull the vision model on first run if it isn't present (lazy bootstrap)."""
+    try:
+        out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=20).stdout
+        if MODEL.split(":")[0] not in out:
+            print(f"[describe] pulling {MODEL} (first run)…", file=sys.stderr)
+            subprocess.run(["ollama", "pull", MODEL], timeout=1800)
+    except Exception as exc:
+        print(f"[describe] model check failed: {exc}", file=sys.stderr)
+
+
+def describe(img: Path) -> str:
+    b64 = base64.b64encode(img.read_bytes()).decode()
+    body = json.dumps({"model": MODEL, "prompt": PROMPT, "images": [b64], "stream": False}).encode()
+    req = urllib.request.Request(OLLAMA + "/api/generate", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=RUN_TIMEOUT) as resp:
+        return json.loads(resp.read()).get("response", "").strip()
+
+
+def heartbeat(status: str, detail: str = ""):
+    HEARTBEAT.parent.mkdir(parents=True, exist_ok=True)
+    HEARTBEAT.write_text(json.dumps({
+        "schema": "describe-worker/1", "host": socket.gethostname(),
+        "ts": int(time.time()), "status": status, "detail": detail, "model": MODEL,
+    }))
+    nudge(HEARTBEAT)
+
+
+def queued():
+    if not INBOX.exists():
+        return []
+    return sorted(p for p in INBOX.iterdir() if p.is_file() and p.suffix.lower() in IMG_EXTS)
+
+
+def process_one(img: Path):
+    out = RESULTS / f"{img.stem}.txt"
+    try:
+        text = describe(img)
+        out.write_text((text or "(no description)") + "\n")
+        nudge(out)
+        print(f"[describe] {img.name} -> {out.name} ({len(text)} chars)")
+    except Exception as exc:
+        out.write_text(f"describe error: {exc}\n")
+        nudge(out)
+        print(f"[describe] {img.name} FAILED: {exc}", file=sys.stderr)
+    finally:
+        try:
+            img.unlink()
+        except Exception:
+            pass
+
+
+def main():
+    INBOX.mkdir(parents=True, exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    if "--status" in sys.argv:
+        hb = HEARTBEAT.read_text() if HEARTBEAT.exists() else "none"
+        print(f"queue: {len(queued())} pending · model: {MODEL} · heartbeat: {hb}")
+        return
+    once = "--once" in sys.argv
+    ensure_model()
+    heartbeat("ready")
+    last_hb = time.time()
+    while True:
+        for img in queued():
+            heartbeat("busy", img.name)
+            process_one(img)
+            heartbeat("ready")
+            last_hb = time.time()
+        if once:
+            break
+        if time.time() - last_hb >= HEARTBEAT_SECONDS:
+            heartbeat("ready")
+            last_hb = time.time()
+        time.sleep(POLL_SECONDS)
+
+
+if __name__ == "__main__":
+    main()
