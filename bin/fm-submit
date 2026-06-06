@@ -114,10 +114,23 @@ _STOP = set((
     "just like love loves want need get got there here explain please tell give show").split())
 
 
-def neutralize(prompt: str):
-    """Deterministically rewrite a guardrail-tripping prompt into a guardrail-safe one.
-    No LLM, no tokens. Returns the rewrite, or None if nothing useful can be made.
-    ONLY called after the original was already guardrail-blocked."""
+def _topic_query(prompt: str):
+    """Drop the framing, keep content words → a neutral topic query. Lossy but the guardrail
+    always accepts it (an answer beats a wall)."""
+    seen, topic = set(), []
+    for w in re.findall(r"[A-Za-z][A-Za-z'-]+", prompt):
+        k = w.lower()
+        if k in _STOP or len(w) < 3 or k in seen:
+            continue
+        seen.add(k); topic.append(w)
+    return ("Tell me about " + " ".join(topic[:8]) + ".") if topic else None
+
+
+def neutralize_candidates(prompt: str):
+    """Ordered guardrail-safe rephrasings to try, best first — no LLM, no tokens. ONLY used
+    after the original was blocked OR the model soft-refused. The caller tries each until one
+    yields a real (non-refusal) answer."""
+    cands = []
     # 1) Targeted: a copular generalization about a group → a neutral "popular among" form.
     m = _GROUP_GEN.search(prompt)
     if m:
@@ -125,18 +138,37 @@ def neutralize(prompt: str):
         topic = m.group(2).strip().rstrip(".?!").strip()
         among = group if group.lower().endswith("s") else group + " people"  # Finns / Finnish people
         if topic:
-            return f"Why is {topic} popular among {among}?"
-    # 2) Fallback: drop the framing entirely, keep content words → a neutral topic query.
-    #    Lossy, but it always yields something the guardrail accepts (an answer beats a wall).
-    seen, topic = set(), []
-    for w in re.findall(r"[A-Za-z][A-Za-z'-]+", prompt):
-        k = w.lower()
-        if k in _STOP or len(w) < 3 or k in seen:
-            continue
-        seen.add(k); topic.append(w)
-    if not topic:
-        return None
-    return "Tell me about " + " ".join(topic[:8]) + "."
+            cands.append(f"Why is {topic} popular among {among}?")
+    # 2) Fallback: a neutral topic query built from the content words.
+    tq = _topic_query(prompt)
+    if tq:
+        cands.append(tq)
+    # de-dup, drop any equal to the original
+    out = []
+    for c in cands:
+        if c and c.lower() != prompt.lower() and c not in out:
+            out.append(c)
+    return out
+
+
+# Soft refusal = the model returned OK but the *content* declines ("I'm sorry, I can't
+# assist…"). Distinct from the guardrail ERROR. Conservative: match refusal openers, or a
+# short reply containing a refusal phrase — so long genuine answers aren't misread.
+_REFUSAL_OPENERS = (
+    "i'm sorry, but i can", "i'm sorry, i can", "i am sorry, but i can", "sorry, i can",
+    "i can't assist", "i cannot assist", "i can't help with", "i cannot help with",
+    "i can't comply", "i'm unable to", "i am unable to", "i won't be able to")
+_REFUSAL_PHRASES = ("can't assist", "cannot assist", "can't help with", "cannot help with",
+                    "unable to assist", "unable to help", "can't comply")
+
+
+def looks_refused(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return True
+    if any(t.startswith(o) for o in _REFUSAL_OPENERS):
+        return True
+    return len(t) < 200 and any(p in t for p in _REFUSAL_PHRASES)
 
 
 STALE_AFTER = 120.0  # a heartbeat older than this means the worker is not alive
@@ -237,28 +269,40 @@ def main() -> int:
         sys.stderr.write(f"timed out after {rt:.0f}s — {why}. "
                          f"Job {job_id} stays queued and runs when the worker is back.\n")
         return 1
-    if not result.get("ok"):
-        err = result.get("err", "")
-        # Auto-rephrase + retry ONCE on a guardrail block: ask FM to reword the question
-        # neutrally, then re-send the reworded version (the guardrail over-blocks benign
-        # prompts, and a neutral rewording usually passes). The reworded question is shown
-        # so the answer is transparent. Only the original send retries — no loop.
-        if is_guardrail(err):
-            rw = neutralize(prompt)
-            if rw and rw.lower() != prompt.lower():
-                sys.stderr.write("  ↻ guardrail blocked it — retrying a neutral rephrasing…\n")
-                submit(rw, system, job_id + "-rw")
-                r2, rt2 = wait_for(job_id + "-rw", timeout)
-                if r2 and r2.get("ok"):
-                    print(f"_(reworded past the guardrail: {rw})_\n\n{r2.get('out', '')}")
-                    sys.stderr.write(f"  [reworded · {r2.get('host', '?')} · round-trip {rt2:.1f}s]\n")
-                    return 0
-        sys.stderr.write(f"fm: {humanize_err(err)}\n")
+    ok = result.get("ok")
+    out = result.get("out", "") if ok else ""
+    blocked = (not ok) and is_guardrail(result.get("err", ""))
+    refused = ok and looks_refused(out)
+
+    # Happy path: a real answer to the original prompt.
+    if ok and not refused:
+        print(out)
+        sys.stderr.write(f"  [{result.get('host', '?')} · model {result.get('model_ms', 0)/1000:.1f}s · "
+                         f"round-trip {rt:.1f}s]\n")
+        return 0
+
+    # Recover from a guardrail BLOCK or a soft REFUSAL by deterministically rephrasing —
+    # no LLM, no tokens. Try each candidate (targeted form, then topic query) until one
+    # yields a real, non-refusal answer. The rephrasing is shown, so it's transparent.
+    if blocked or refused:
+        reason = "guardrail blocked it" if blocked else "the model declined"
+        for i, rw in enumerate(neutralize_candidates(prompt), 1):
+            sys.stderr.write(f"  ↻ {reason} — retrying a neutral rephrasing…\n")
+            jid = f"{job_id}-rw{i}"
+            submit(rw, system, jid)
+            r2, rt2 = wait_for(jid, timeout)
+            if r2 and r2.get("ok") and not looks_refused(r2.get("out", "")):
+                print(f"_(reworded past the guardrail: {rw})_\n\n{r2.get('out', '')}")
+                sys.stderr.write(f"  [reworded · {r2.get('host', '?')} · round-trip {rt2:.1f}s]\n")
+                return 0
+            reason = "still declined" if (r2 and r2.get("ok")) else "still blocked"
+
+    # Nothing recovered: surface the truth.
+    if not ok:
+        sys.stderr.write(f"fm: {humanize_err(result.get('err', ''))}\n")
         return 1
-    print(result.get("out", ""))
-    model_ms = result.get("model_ms", 0)
-    sys.stderr.write(f"  [{result.get('host', '?')} · model {model_ms/1000:.1f}s · "
-                     f"round-trip {rt:.1f}s]\n")
+    print(out)   # model declined and the neutral rephrasings did too — show its words
+    sys.stderr.write("  [model declined; neutral rephrasings also declined]\n")
     return 0
 
 
