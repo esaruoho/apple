@@ -21,6 +21,19 @@ let INTENT_BIN = ProcessInfo.processInfo.environment["APPLE_INTENT"]
 // The shared capability catalog (same file apple-intent routes over).
 let INTENTS_JSON = (INTENT_BIN as NSString).deletingLastPathComponent
     .replacingOccurrences(of: "/bin", with: "/shared") + "/intents.json"
+// The convey shim — clicking a chat answer routes it to `convey treat` (principle 0046).
+let CONVEY_BIN = ProcessInfo.processInfo.environment["CONVEY_BIN"]
+    ?? "/Users/esaruoho/work/apple/bin/convey"
+
+/// The result view, made clickable: a click on a shown chat answer pops the treatment
+/// menu (continue in Converse / argue …). Returns true from onClick to consume the click.
+final class ClickableTextView: NSTextView {
+    var onClick: ((NSEvent) -> Bool)?
+    override func mouseDown(with event: NSEvent) {
+        if let h = onClick, h(event) { return }
+        super.mouseDown(with: event)
+    }
+}
 
 /// A borderless panel that will accept key focus so the text field is typable.
 final class CommandPanel: NSPanel {
@@ -57,7 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     var statusItem: NSStatusItem!
     var panel: CommandPanel!
     var field: NSTextField!
-    var resultView: NSTextView!
+    var resultView: ClickableTextView!
     var resultScroll: NSScrollView!
     var spinner: NSProgressIndicator!
     var micButton: NSButton!
@@ -100,6 +113,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     let synth = AVSpeechSynthesizer()
     var karaokePlain = ""     // the spoken/displayed text — AVSpeech ranges index into THIS
     var karaokeFinal = ""     // the original answer, markdown-rendered once speech ends
+    var lastChatQ = ""        // the last chat question + answer shown — what a click conveys
+    var lastChatA = ""        // via `convey treat` (continue in Converse / argue). Empty = no menu.
     var karaokeLive = false   // true only while THIS bar should paint the karaoke. Re-opening
                               // the bar sets it false so the highlight stops repainting (the
                               // panel opens clean) while the AUDIO keeps playing to the end.
@@ -243,7 +258,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
         resultScroll.hasVerticalScroller = true
         resultScroll.drawsBackground = false
         resultScroll.borderType = .noBorder
-        resultView = NSTextView(frame: resultScroll.bounds)
+        resultView = ClickableTextView(frame: resultScroll.bounds)
+        resultView.onClick = { [weak self] e in self?.showTreatmentsMenu(e) ?? false }
         resultView.isEditable = false
         resultView.drawsBackground = false
         resultView.textColor = NSColor(calibratedWhite: 0.92, alpha: 1)
@@ -312,8 +328,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
             DispatchQueue.main.async {
                 self.spinner.stopAnimation(nil)
                 let text = output.isEmpty ? "(no output)" : output
-                if chat && !output.isEmpty { self.speakKaraoke(text) }
-                else { self.showResult(text) }
+                if chat && !output.isEmpty {
+                    self.lastChatQ = q; self.lastChatA = output   // clickable → convey treat
+                    self.speakKaraoke(text)
+                } else {
+                    self.lastChatA = ""   // non-chat results aren't conveyable exchanges
+                    self.showResult(text)
+                }
             }
         }
     }
@@ -385,6 +406,81 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
         let utt = AVSpeechUtterance(string: karaokePlain)
         if let v = zoeAVVoice() { utt.voice = v }
         synth.speak(utt)
+    }
+
+    // ── click a chat answer → convey treat (principle 0046) ───────────────────
+    // The answer (Q+A) is a conveyable unit: clicking it offers the whitelabeled
+    // treatments. AppleBar's bank differs from convey's kb, so we pass the held Q+A
+    // straight to `convey treat … --ask --answer` (no kb id needed).
+    func showTreatmentsMenu(_ event: NSEvent) -> Bool {
+        guard !lastChatA.isEmpty else { return false }   // only when a chat answer is shown
+        let menu = NSMenu()
+        let conv = NSMenuItem(title: "Continue in Converse", action: #selector(treatConverse), keyEquivalent: "")
+        conv.target = self; menu.addItem(conv)
+        let arg = NSMenuItem(title: "Argue against this", action: #selector(treatArgue), keyEquivalent: "")
+        arg.target = self; menu.addItem(arg)
+        NSMenu.popUpContextMenu(menu, with: event, for: resultView)
+        return true
+    }
+
+    @objc func treatConverse() { runTreatment("converse", capture: false) }
+    @objc func treatArgue() { runTreatment("argue", capture: true) }
+
+    func runTreatment(_ name: String, capture: Bool) {
+        let q = lastChatQ, a = lastChatA
+        guard !a.isEmpty else { return }
+        func conveyProcess() -> Process {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: CONVEY_BIN)
+            var env = ProcessInfo.processInfo.environment
+            env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
+            p.environment = env
+            return p
+        }
+        if !capture {
+            // converse: fire-and-forget — it seeds + opens Converse, which takes over.
+            let p = conveyProcess()
+            p.arguments = ["treat", name, "--ask", q, "--answer", a]
+            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
+            try? p.run()
+            panel.orderOut(nil)
+            return
+        }
+        // argue: capture the counter-answer and karaoke it HERE (it becomes the new
+        // conveyable exchange, so you can argue against the argument by clicking again).
+        spinner.startAnimation(nil)
+        showResult("… (arguing against this on the Mini)")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let p = self.conveyProcessFor(name: name, q: q, a: a)
+            let pipe = Pipe(); p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+            var out = ""
+            do {
+                try p.run()
+                let d = pipe.fileHandleForReading.readDataToEndOfFile()
+                p.waitUntilExit()
+                out = String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            } catch { out = "" }
+            DispatchQueue.main.async {
+                self.spinner.stopAnimation(nil)
+                if out.isEmpty { self.showResult("(no counter-argument — is the worker up?)") }
+                else {
+                    self.lastChatQ = "argue: \(q)"; self.lastChatA = out   // conveyable again
+                    self.speakKaraoke(out)
+                }
+            }
+        }
+    }
+
+    // Build the `convey treat … --no-speak` process (AppleBar karaokes the captured output).
+    func conveyProcessFor(name: String, q: String, a: String) -> Process {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: CONVEY_BIN)
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
+        p.environment = env
+        p.arguments = ["treat", name, "--ask", q, "--answer", a, "--no-speak"]
+        return p
     }
 
     // Zoe (Premium) if downloaded (Apple's best built-in voice), else any Zoe, else nil
