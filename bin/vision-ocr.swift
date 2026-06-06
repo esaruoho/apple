@@ -8,7 +8,9 @@
 // xcrun swiftc (see the `vision-ocr` wrapper). macOS 13+.
 //
 // Usage:
-//   vision-ocr <file> [--lang en,fi,…] [--fast] [--pages N] [--langs]
+//   vision-ocr <file> [--lang en,fi,…] [--fast] [--pages N] [--langs] [--barcodes]
+//     --barcodes  detect QR / barcodes (VNDetectBarcodes) instead of text; prints
+//                 "<symbology>\t<payload>" per code. Same owned Vision capability.
 //     --lang    comma-separated recognition languages (default: auto)
 //     --fast    recognitionLevel .fast (default .accurate)
 //     --pages N OCR only the first N pages of a PDF
@@ -68,6 +70,17 @@ func recognize(_ image: CGImage, languages: [String], fast: Bool) -> String {
     return obs.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
 }
 
+func detectBarcodes(_ image: CGImage) -> String {
+    let req = VNDetectBarcodesRequest()              // all symbologies (QR, EAN, Code128, …)
+    let handler = VNImageRequestHandler(cgImage: image, options: [:])
+    do { try handler.perform([req]) } catch { return "" }
+    return (req.results ?? []).compactMap { b -> String? in
+        guard let payload = b.payloadStringValue else { return nil }
+        let sym = b.symbology.rawValue.replacingOccurrences(of: "VNBarcodeSymbology", with: "")
+        return "\(sym)\t\(payload)"
+    }.joined(separator: "\n")
+}
+
 // ── args ──
 var args = Array(CommandLine.arguments.dropFirst())
 func popValue(_ flag: String) -> String? {
@@ -76,6 +89,7 @@ func popValue(_ flag: String) -> String? {
 }
 let wantLangs = args.contains("--langs"); args.removeAll { $0 == "--langs" }
 let fast = args.contains("--fast"); args.removeAll { $0 == "--fast" }
+let wantBarcodes = args.contains("--barcodes") || args.contains("--qr"); args.removeAll { $0 == "--barcodes" || $0 == "--qr" }
 let langs = (popValue("--lang") ?? "").split(separator: ",").map { String($0) }
 let maxPages = Int(popValue("--pages") ?? "") ?? 0
 
@@ -84,7 +98,7 @@ if wantLangs {
     exit(0)
 }
 guard let path = args.first else {
-    FileHandle.standardError.write(Data("usage: vision-ocr <file> [--lang en,fi] [--fast] [--pages N] [--langs]\n".utf8))
+    FileHandle.standardError.write(Data("usage: vision-ocr <file> [--lang en,fi] [--fast] [--pages N] [--langs] [--barcodes]\n".utf8))
     exit(2)
 }
 let url = URL(fileURLWithPath: path)
@@ -105,5 +119,5 @@ var pageNo = 0
 for img in images {
     pageNo += 1
     if images.count > 1 { print("──── page \(pageNo) ────") }
-    print(recognize(img, languages: langs, fast: fast))
+    print(wantBarcodes ? detectBarcodes(img) : recognize(img, languages: langs, fast: fast))
 }
