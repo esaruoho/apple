@@ -10,7 +10,8 @@ A laptop drops an image into ~/work/comms/queue/describe-inbox/; this worker cap
 it with a local Ollama vision model and writes the text to describe-results/<stem>.txt,
 which Syncthing carries back. NO ChatGPT, NO cloud — a local open VLM on-device.
 
-Engine: Ollama (127.0.0.1:11434) + a small vision model (default: moondream, ~1.7GB).
+Engine: Ollama (127.0.0.1:11434) + a local vision model (default: glm-ocr — already resident for the OCR fleet,
+proven on this Ollama; moondream hangs on ollama 0.20.4/macOS 26).
 Override with DESCRIBE_MODEL / DESCRIBE_PROMPT / OLLAMA_URL.
 
 Usage:
@@ -36,7 +37,7 @@ QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "describe-inbox"
 RESULTS = QUEUE / "describe-results"
 HEARTBEAT = QUEUE / "describe-worker-heartbeat.json"
-MODEL = os.environ.get("DESCRIBE_MODEL", "moondream")
+MODEL = os.environ.get("DESCRIBE_MODEL", "glm-ocr")
 OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 PROMPT = os.environ.get(
     "DESCRIBE_PROMPT",
@@ -67,8 +68,24 @@ def ensure_model():
         print(f"[describe] model check failed: {exc}", file=sys.stderr)
 
 
+def _b64_downscaled(img: Path) -> str:
+    """Downscale large images (long edge <= 1024) so the VLM stays fast — sips is
+    native on macOS. Falls back to the original bytes if sips is unavailable."""
+    import tempfile
+    try:
+        tmp = Path(tempfile.gettempdir()) / f"describe-{img.stem}.png"
+        subprocess.run(["sips", "-Z", "1024", str(img), "--out", str(tmp)],
+                       capture_output=True, timeout=30)
+        if tmp.exists():
+            data = tmp.read_bytes(); tmp.unlink(missing_ok=True)
+            return base64.b64encode(data).decode()
+    except Exception:
+        pass
+    return base64.b64encode(img.read_bytes()).decode()
+
+
 def describe(img: Path) -> str:
-    b64 = base64.b64encode(img.read_bytes()).decode()
+    b64 = _b64_downscaled(img)
     body = json.dumps({"model": MODEL, "prompt": PROMPT, "images": [b64], "stream": False}).encode()
     req = urllib.request.Request(OLLAMA + "/api/generate", data=body,
                                  headers={"Content-Type": "application/json"})
