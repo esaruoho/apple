@@ -133,9 +133,14 @@ Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline 
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-image-playground — on-device pictures, locally, as the prose's twin  —  11 scenarios   (features/image-playground.feature)
+image-playground — on-device pictures, locally, as the prose's twin  —  16 scenarios   (features/image-playground.feature)
   - [@built] The CLI generates an image from a prompt
-  - [@built] --open shows the result when it's done
+  - [@built] Bare prompt → derived filename, auto-open
+  - [@built] A failed run never opens a stale same-named file
+  - [@built] Transient "image creation failed" is retried, not surrendered
+  - [@built] Image Playground distills — it does not honor detailed prompts
+  - [@built] Illustrate Selection in Converse (⌘2) inserts a picture inline
+  - [@built] The image loop — every message in Converse also draws a picture
   - [@built] A relative -o path lands in the user's cwd, not "/"
   - [@built] Apple's content guardrail is explained, not echoed
   - [@built] A question phrase still yields the subject
@@ -146,7 +151,7 @@ image-playground — on-device pictures, locally, as the prose's twin  —  11 s
   - [@built] A picture can't be drawn while Converse is in the background
   - [@built] Images embed without file-system access
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 11/11 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 16/16 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 AppleBar parses markdown in its result pane  —  4 scenarios   (features/markdown-attributed.feature)
   - [@verified] headings, bold, code, and rules render (not raw markers)

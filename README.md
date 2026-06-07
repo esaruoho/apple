@@ -1389,4 +1389,28 @@ Inspired by **Sal Soghoian** — Apple's Product Manager of Automation Technolog
 
 ---
 
+## Apple NLEmbedding — on-device semantic vectors (2026-06-07)
+
+`NLEmbedding.sentenceEmbedding(for: .english)` ships in every Mac since macOS 10.15. It maps a string
+to a **512-dimensional vector on the Neural Engine** — no API, no key, no token, no network. High
+cosine similarity between two vectors ≈ similar meaning. It's how a Mac does "semantic" with no LLM and
+no cost. A *light* model: great for ranking and grouping, weak on very short strings — confirm by hand.
+
+| tool (`bin/`) | does | I/O |
+|---|---|---|
+| [`apple-embed`](bin/apple-embed) | the primitive: Swift CLI over NLEmbedding | stdin lines → `{"t","v":[512]}` per line |
+| [`apple-semantic-match`](bin/apple-semantic-match) | rank folder/file/query by cosine | `--dir` / `--from --to` / `--query` |
+| [`apple-cluster-docs`](bin/apple-cluster-docs) | group a folder by semantic similarity | `--root --k` |
+| [`embed`](bin/embed) | warm the shared cache (`~/.vault-embeds/`), visibly | `embed <dir>` |
+
+**Cosine guide:** >0.8 strong · 0.6–0.8 maybe · <0.6 noise. **Recipe that works:** partition by a known
+field first, then embedding-cluster *within* the partition, using **leader clustering** (an item joins a
+cluster only if ≥threshold to its leader) so single-linkage chaining can't fuse everything into one blob.
+
+**Downstream:** Convey's DreamGraph dedups 11,237 Renoise-forum feature-requests into ~1,965 semantic
+groups with `convey graph dedup` — entirely via `apple-embed`, cached, zero token. The most-requested
+groups with no matching Paketti binding become the roadmap.
+
+---
+
 *The power of the computer should reside in the hands of the one using it.*

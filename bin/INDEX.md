@@ -1,4 +1,4 @@
-# CLI Tools Index — 217 tools in bin/
+# CLI Tools Index — 218 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -64,6 +64,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
 `convey` — (no description) — `bin/convey`
+`create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
 `describe-worker` — (no description) — `bin/describe-worker`
 `desktop-icons` — hide or show ALL icons on the Desktop. — `bin/desktop-icons`
