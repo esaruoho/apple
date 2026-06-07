@@ -115,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     var karaokeFinal = ""     // the original answer, markdown-rendered once speech ends
     var lastChatQ = ""        // the last chat question + answer shown — what a click conveys
     var lastChatA = ""        // via `convey treat` (continue in Converse / argue). Empty = no menu.
+    var karaokeSpokenUpTo = 0 // char offset reached in karaokePlain — handed to Converse to resume
     var karaokeLive = false   // true only while THIS bar should paint the karaoke. Re-opening
                               // the bar sets it false so the highlight stops repainting (the
                               // panel opens clean) while the AUDIO keeps playing to the end.
@@ -426,40 +427,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
         return true
     }
 
-    @objc func treatConverse() { runTreatment("converse", capture: false) }
-    @objc func treatArgue() { runTreatment("argue", capture: true) }
+    @objc func treatConverse() {
+        // Capture the karaoke position BEFORE stopping, so Converse RESUMES from this word
+        // (the voice carries across the app boundary, not restarts). Pass the exact spoken
+        // string (karaokePlain) so the offset lines up with what Converse will speak.
+        let off = karaokeLive ? karaokeSpokenUpTo : 0
+        let answer = (karaokeLive && !karaokePlain.isEmpty) ? karaokePlain : lastChatA
+        karaokeLive = false
+        synth.stopSpeaking(at: .immediate)   // AppleBar stops; Converse picks the voice up
+        guard !answer.isEmpty else { return }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: CONVEY_BIN)
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
+        p.environment = env
+        p.arguments = ["treat", "converse", "--ask", lastChatQ, "--answer", answer, "--speak-from", String(off)]
+        p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
+        try? p.run()
+        panel.orderOut(nil)
+    }
 
-    func runTreatment(_ name: String, capture: Bool) {
+    @objc func treatArgue() {
         let q = lastChatQ, a = lastChatA
         guard !a.isEmpty else { return }
-        // Choosing a treatment ends the current answer's speech immediately — you've moved
-        // on from it, so it shouldn't keep talking while the treatment runs.
+        // You've moved on from this answer — stop its speech while the counter is fetched.
         karaokeLive = false
         synth.stopSpeaking(at: .immediate)
-        func conveyProcess() -> Process {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: CONVEY_BIN)
-            var env = ProcessInfo.processInfo.environment
-            env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "")
-            p.environment = env
-            return p
-        }
-        if !capture {
-            // converse: fire-and-forget — it seeds + opens Converse, which takes over.
-            let p = conveyProcess()
-            p.arguments = ["treat", name, "--ask", q, "--answer", a]
-            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
-            try? p.run()
-            panel.orderOut(nil)
-            return
-        }
         // argue: capture the counter-answer and karaoke it HERE (it becomes the new
         // conveyable exchange, so you can argue against the argument by clicking again).
         spinner.startAnimation(nil)
         showResult("… (arguing against this on the Mini)")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let p = self.conveyProcessFor(name: name, q: q, a: a)
+            let p = self.conveyProcessFor(name: "argue", q: q, a: a)
             let pipe = Pipe(); p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
             var out = ""
             do {
@@ -543,6 +543,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, A
     func speechSynthesizer(_ s: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         DispatchQueue.main.async {
             guard self.karaokeLive else { return }   // a re-opened bar doesn't repaint old speech
+            self.karaokeSpokenUpTo = characterRange.location   // resume point if conveyed to Converse
             self.renderKaraoke(spokenUpTo: characterRange.location + characterRange.length, current: characterRange)
         }
     }
