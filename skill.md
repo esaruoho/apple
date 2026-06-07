@@ -33,6 +33,15 @@ When a task needs code, pick in this order:
 
 **Hard rule:** Before naming any Cocoa class in a proposal, run `bin/cocoa-class-probe NSXxxx`. PUBLIC verdict required. ABSENT means the name is wrong. See project memory `feedback_probe_before_naming_cocoa_classes.md`.
 
+## Apple NLEmbedding & FoundationModels — the on-device intelligence layer (zero-token, zero-cloud)
+
+Two Apple-native models ship in the OS — no download, no key, no network, no token:
+
+- **`NLEmbedding.sentenceEmbedding(for:)`** (macOS 10.15+) → a **512-dim Neural-Engine vector** per string. High cosine ≈ similar meaning. This is how a Mac does "semantic" with no LLM. **Clustering is not a model — it's arithmetic on the vectors** (cosine + leader clustering; no sklearn, no third-party anything). Tools: [`bin/apple-embed`](bin/apple-embed) (stdin lines → `{"t","v":[512]}`), [`bin/apple-semantic-match`](bin/apple-semantic-match), [`bin/apple-cluster-docs`](bin/apple-cluster-docs), [`bin/embed`](bin/embed) (warm the shared `~/.vault-embeds/` cache). Cosine guide: >0.8 strong · 0.6–0.8 maybe · <0.6 noise. It's a *light* model: weak on very short strings → **partition first, then embedding-cluster within the partition; use leader clustering** so single-linkage can't chain everything into one blob.
+- **FoundationModels** (the on-device Apple-Intelligence LLM, macOS 26 / Tahoe only) → [`bin/fm`](bin/fm) locally, or [`bin/fm-submit`](bin/fm-submit) to run it on the **Mini** via Syncthing (`fm-inbox`/`fm-outbox`) from any machine. **It is NON-DETERMINISTIC and rationalises both ways** — a single call is not a judge. **Always majority-vote** (N samples, take the majority, report `5/5` vs `3/5`, flag ties).
+
+**The division of labour:** NLEmbedding = the *scalpel that selects* (cheap, deterministic, instant); FoundationModels = the *pen that decides* (language understanding, stable only in aggregate). Embed-to-narrow, vote-to-judge. Convey's DreamGraph uses exactly this to dedup 11k Renoise-forum requests and judge them against Paketti (`convey graph dedup` / `judge`).
+
 ## Boot Protocol
 
 This skill is a thin index. Section bodies live in `wiki/` and are loaded only when relevant.
