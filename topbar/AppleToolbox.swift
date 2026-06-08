@@ -2342,10 +2342,6 @@ struct MailFlagStatus {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var refreshTimer: Timer?
-    // Convey OCR conveyor, supervised as a child of the always-on menu-bar (NOT a
-    // LaunchAgent/daemon — the convey rule). See the extension at end of file.
-    var ocrWatchProcess: Process?
-    var ocrWatchQuitting = false
     // Carbon hotkey ref retained so the system holds the registration alive
     // for the lifetime of the menu-bar process (which IS the lifetime — the
     // LaunchAgent re-spawns the menu-bar if it ever dies).
@@ -2407,11 +2403,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // the "no handler" blink error. Only ⌃⌥⌘D (dictate) stays in
         // LiveViewportDelegate because it needs the panel.
         registerMenuBarHotKeys()
-        // The Convey OCR conveyor: supervise `convey ocr-watch` so files dropped into the
-        // archive get auto-submitted to CCOCR and homed back — no command per drop. Runs as
-        // a managed child of this always-on menu-bar (never a LaunchAgent). merlib-dump is
-        // Syncthing-synced, so homing works on whichever machine runs AppleToolbox.
-        startOcrWatch()
         // Stickies → Claude trigger. Runs the bash watcher every 3 sec.
         // Bash is spawned by AppleToolbox.app, so it inherits AppleToolbox's
         // TCC identity — meaning when the user grants AppleToolbox Full Disk
@@ -9277,57 +9268,5 @@ enum SnapEngine {
         let base = n / r
         let extra = n % r
         return (0..<r).map { $0 < extra ? base + 1 : base }
-    }
-}
-
-// ─── Convey OCR conveyor supervisor ─────────────────────────────────────────
-// Spawn + crash-restart `convey ocr-watch` as a managed child of the always-on
-// menu-bar. This is the apple-native, never-a-LaunchAgent way to keep the OCR
-// conveyor running: drop files into the archive → they get OCR'd via Convey and
-// homed back into their folders, with no command per drop. The child inherits
-// AppleToolbox's TCC identity and dies with the app (clean, visible, supervised).
-extension AppDelegate {
-    func startOcrWatch() {
-        if ocrWatchQuitting { return }
-        let conveyBin = "\(HOME)/work/convey/bin/convey"
-        guard FileManager.default.fileExists(atPath: conveyBin) else {
-            NSLog("AppleToolbox: convey not found at \(conveyBin) — ocr-watch not started")
-            return
-        }
-        let logDir = "\(HOME)/work/convey/logs"
-        try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
-        let logPath = "\(logDir)/ocr-watch.log"
-        if !FileManager.default.fileExists(atPath: logPath) {
-            FileManager.default.createFile(atPath: logPath, contents: nil)
-        }
-        let logHandle = FileHandle(forWritingAtPath: logPath)
-        logHandle?.seekToEndOfFile()
-
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        p.arguments = ["python3", conveyBin, "ocr-watch", "--interval", "120"]
-        if let h = logHandle {
-            p.standardOutput = h
-            p.standardError = h
-        }
-        p.terminationHandler = { [weak self] proc in
-            guard let self = self, !self.ocrWatchQuitting else { return }
-            NSLog("AppleToolbox: ocr-watch exited (rc=\(proc.terminationStatus)) — restarting in 10s")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-                self?.startOcrWatch()
-            }
-        }
-        do {
-            try p.run()
-            ocrWatchProcess = p
-            NSLog("AppleToolbox: ocr-watch started (pid \(p.processIdentifier)) → \(logPath)")
-        } catch {
-            NSLog("AppleToolbox: failed to start ocr-watch: \(error)")
-        }
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        ocrWatchQuitting = true
-        ocrWatchProcess?.terminate()
     }
 }
