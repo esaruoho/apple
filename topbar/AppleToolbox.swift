@@ -923,7 +923,8 @@ enum LauncherSlots {
 final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
 
     // ── config ─────────────────────────────────────────────────────────────
-    private let triggerTag    = "#process"
+    private let triggerTag    = "#process"      // → whisp transcription
+    private let audioTag      = "#audio"        // → transcode to .wav sample
     private let pollSeconds   = 30.0
     private let dbPath: String
     private let inboxDir: String
@@ -931,6 +932,8 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
     private let stateFile: String
     private let logFile: String
     private let hostname: String
+    private let samplesDir: String              // ~/Music/samples/VoiceMemos
+    private let audioStateFile: String          // dedup for #audio exports
 
     // ── state (uniqueid -> Submission) ─────────────────────────────────────
     private struct Submission: Codable {
@@ -945,6 +948,7 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
         var resultDir:        String?
     }
     private var submissions: [String: Submission] = [:]   // ZUNIQUEID → Submission
+    private var audioExports: [String: String] = [:]      // ZUNIQUEID → exported .wav path (#audio dedup)
 
     // ── lifecycle handles ──────────────────────────────────────────────────
     private var pollTimer: Timer?
@@ -964,9 +968,12 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
         self.stateFile  = "\(home)/work/mediabank/state/voicememo-pipeline.state.json"
         self.logFile    = "\(home)/work/mediabank/var/log/voicememo-pipeline.log"
         self.hostname   = ProcessInfo.processInfo.hostName
+        self.samplesDir = "\(home)/Music/samples/VoiceMemos"
+        self.audioStateFile = "\(home)/work/mediabank/state/voicememo-audio-exports.json"
         super.init()
         ensureDirs()
         loadState()
+        loadAudioState()
     }
 
     // ── public entry point — call from applicationDidFinishLaunching ──────
@@ -1146,11 +1153,16 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
         // returned zero rows for ~30 minutes of confusion.
         let needle = triggerTag.lowercased()
             .replacingOccurrences(of: "'", with: "''")  // belt + braces
+        let audioNeedle = audioTag.lowercased()
+            .replacingOccurrences(of: "'", with: "''")
         let titleExpr = "COALESCE(ZENCRYPTEDTITLE, ZCUSTOMLABELFORSORTING, ZCUSTOMLABEL, '')"
+        // Match EITHER tag — #process (→ whisp) or #audio (→ .wav sample). A
+        // memo carrying both fires both branches in the row loop below.
         let sql = """
         SELECT Z_PK, ZUNIQUEID, ZPATH, \(titleExpr), ZDATE, ZDURATION
           FROM ZCLOUDRECORDING
          WHERE lower(\(titleExpr)) LIKE '%\(needle)%'
+            OR lower(\(titleExpr)) LIKE '%\(audioNeedle)%'
         """
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
@@ -1161,16 +1173,29 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
 
         var newCount = 0
         var seenCount = 0
+        var audioCount = 0
         while sqlite3_step(stmt) == SQLITE_ROW {
             seenCount += 1
             let uniqueid = stmt.flatMap { sqlite3_column_text($0, 1) }.flatMap { String(cString: $0) } ?? ""
             guard !uniqueid.isEmpty else { continue }
-            if submissions[uniqueid] != nil { continue }   // already submitted
             let zpath = stmt.flatMap { sqlite3_column_text($0, 2) }.flatMap { String(cString: $0) } ?? ""
             let label = stmt.flatMap { sqlite3_column_text($0, 3) }.flatMap { String(cString: $0) } ?? ""
+            let zdate = stmt.flatMap { sqlite3_column_double($0, 4) } ?? 0
             let duration = stmt.flatMap { sqlite3_column_double($0, 5) } ?? 0
-            if submit(uniqueid: uniqueid, zpath: zpath, label: label, durationSeconds: duration) {
-                newCount += 1
+            let lowerLabel = label.lowercased()
+
+            // #process → whisp transcription (dedup on `submissions`).
+            if lowerLabel.contains(triggerTag) && submissions[uniqueid] == nil {
+                if submit(uniqueid: uniqueid, zpath: zpath, label: label, durationSeconds: duration) {
+                    newCount += 1
+                }
+            }
+            // #audio → transcode to a .wav sample (dedup on `audioExports`).
+            // Independent of #process; a memo carrying both fires both.
+            if lowerLabel.contains(audioTag) && audioExports[uniqueid] == nil {
+                if exportAudio(uniqueid: uniqueid, zpath: zpath, label: label, dateCoreData: zdate) {
+                    audioCount += 1
+                }
             }
         }
         if newCount > 0 {
@@ -1184,8 +1209,12 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
                 loggedPollOnce = true
             }
         } else if !loggedPollOnce {
-            log("poll: matched=0 (nothing tagged \(triggerTag) yet)")
+            log("poll: matched=0 (nothing tagged \(triggerTag)/\(audioTag) yet)")
             loggedPollOnce = true
+        }
+        if audioCount > 0 {
+            saveAudioState()
+            log("poll: audio-exported=\(audioCount) (#audio → wav)")
         }
     }
     private var loggedPollOnce = false
@@ -1274,6 +1303,121 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
             userInfo: [:]
         )
         return true
+    }
+
+    // ── #audio → transcode to a .wav sample in ~/Music/samples/VoiceMemos ──
+    // Output name: <yyyy-MM-dd-HH-mm-ss>-<slug>.wav, timestamp from the
+    // recording's OWN date (local time). Returns false (retried next poll) when
+    // the audio is iCloud-only and not yet downloaded locally — never an error.
+    private func exportAudio(uniqueid: String, zpath: String, label: String, dateCoreData: Double) -> Bool {
+        let dbDir = (dbPath as NSString).deletingLastPathComponent
+        guard !zpath.isEmpty else { return false }   // ZPATH empty = not downloaded yet → defer
+        let audioSrc = "\(dbDir)/\(zpath)"
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: audioSrc, isDirectory: &isDir), !isDir.boolValue else {
+            return false   // not downloaded from iCloud yet — try again next poll
+        }
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: audioSrc),
+           let size = attrs[.size] as? Int, size <= 0 {
+            return false   // 0-byte iCloud placeholder
+        }
+
+        // Clean name: strip ALL hashtags so "#audio"/"#process" don't leak into
+        // the filename, then slugify.
+        let nameRaw = stripHashtags(label)
+        let slug = slugify(nameRaw.isEmpty ? (zpath as NSString).deletingPathExtension : nameRaw)
+        let ts = timestampStamp(fromCoreData: dateCoreData)
+
+        try? FileManager.default.createDirectory(atPath: samplesDir, withIntermediateDirectories: true)
+        let outPath = "\(samplesDir)/\(ts)-\(slug).wav"
+        if FileManager.default.fileExists(atPath: outPath) {   // idempotent
+            audioExports[uniqueid] = outPath
+            return true
+        }
+        let partial = "\(outPath).partial.wav"
+        try? FileManager.default.removeItem(atPath: partial)
+
+        guard let ff = ffmpegPath() else {
+            log("ERROR: #audio export needs ffmpeg but none found (brew install ffmpeg)")
+            return false
+        }
+        // m4a → 16-bit PCM WAV, preserving sample rate + channels (sampler-ready).
+        let rc = runProcess(ff, ["-y", "-hide_banner", "-loglevel", "error",
+                                 "-i", audioSrc, "-c:a", "pcm_s16le", partial])
+        guard rc == 0, FileManager.default.fileExists(atPath: partial) else {
+            log("ERROR: ffmpeg #audio export failed (rc=\(rc)) for \(slug)")
+            try? FileManager.default.removeItem(atPath: partial)
+            return false
+        }
+        do {
+            try FileManager.default.moveItem(atPath: partial, toPath: outPath)
+        } catch {
+            log("ERROR: moving #audio wav into place failed: \(error.localizedDescription)")
+            try? FileManager.default.removeItem(atPath: partial)
+            return false
+        }
+
+        audioExports[uniqueid] = outPath
+        log("AUDIO-EXPORTED \((outPath as NSString).lastPathComponent)")
+        deliver(
+            id: "vm-audio-\(uniqueid)",
+            title: "🎚 Audio sample saved",
+            subtitle: slug,
+            body: "~/Music/samples/VoiceMemos/\((outPath as NSString).lastPathComponent)",
+            categoryID: nil,
+            userInfo: [:]
+        )
+        return true
+    }
+
+    // Strip every #hashtag from a label.
+    private func stripHashtags(_ s: String) -> String {
+        var out = ""
+        var inTag = false
+        for ch in s {
+            if ch == "#" { inTag = true; continue }
+            if inTag {
+                if ch.isLetter || ch.isNumber || ch == "_" || ch == "-" { continue }
+                inTag = false
+            }
+            out.append(ch)
+        }
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // Core Data epoch (2001-01-01) → "yyyy-MM-dd-HH-mm-ss" in LOCAL time.
+    private func timestampStamp(fromCoreData cd: Double) -> String {
+        let unix = cd > 0 ? cd + 978307200.0 : Date().timeIntervalSince1970
+        let date = Date(timeIntervalSince1970: unix)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        return f.string(from: date)
+    }
+
+    private func ffmpegPath() -> String? {
+        for p in ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"] {
+            if FileManager.default.isExecutableFile(atPath: p) { return p }
+        }
+        return nil
+    }
+
+    @discardableResult
+    private func runProcess(_ launchPath: String, _ args: [String]) -> Int32 {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: launchPath)
+        p.arguments = args
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        do {
+            try p.run()
+            p.waitUntilExit()
+            return p.terminationStatus
+        } catch {
+            log("ERROR: failed to launch \(launchPath): \(error.localizedDescription)")
+            return -1
+        }
     }
 
     // ── reconcile: find transcripts for in-flight submissions ─────────────
@@ -1390,6 +1534,30 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
             try FileManager.default.moveItem(atPath: tmp, toPath: stateFile)
         } catch {
             log("ERROR: saveState failed: \(error.localizedDescription)")
+        }
+    }
+
+    // #audio export dedup — kept in its own file so it never collides with the
+    // Submission schema in voicememo-pipeline.state.json.
+    private func loadAudioState() {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: audioStateFile)) else { return }
+        if let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            self.audioExports = decoded
+        }
+    }
+    private func saveAudioState() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(audioExports) else { return }
+        try? FileManager.default.createDirectory(atPath: (audioStateFile as NSString).deletingLastPathComponent,
+                                                 withIntermediateDirectories: true)
+        let tmp = audioStateFile + ".tmp"
+        do {
+            try data.write(to: URL(fileURLWithPath: tmp), options: .atomic)
+            try? FileManager.default.removeItem(atPath: audioStateFile)
+            try FileManager.default.moveItem(atPath: tmp, toPath: audioStateFile)
+        } catch {
+            log("ERROR: saveAudioState failed: \(error.localizedDescription)")
         }
     }
 

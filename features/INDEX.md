@@ -210,6 +210,14 @@ voicebox-worker — a TTS queue that survives the worker dying mid-job  —  6 s
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+A Voice Memo tagged #audio becomes a .wav sample on disk  —  4 scenarios   (features/voicememo-audio-tag-to-wav.feature)
+  - [@hw-verified] a downloaded memo tagged #audio is exported to WAV
+  - [@built] the export fires automatically once a deferred memo downloads
+  - [@built] #audio and #process on the same memo both fire
+  - [@built] idempotent + atomic
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Indexed in atlas → /Users/esaruoho/work/apple/atlas/INDEX.md
 ```
 
