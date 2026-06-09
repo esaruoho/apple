@@ -949,6 +949,7 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
     }
     private var submissions: [String: Submission] = [:]   // ZUNIQUEID → Submission
     private var audioExports: [String: String] = [:]      // ZUNIQUEID → exported .wav path (#audio dedup)
+    private var notifiedNeedsDownload: Set<String> = []   // tagged-but-iCloud-only memos already flagged (per launch)
 
     // ── lifecycle handles ──────────────────────────────────────────────────
     private var pollTimer: Timer?
@@ -1036,6 +1037,11 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         defer { completionHandler() }
         let info = response.notification.request.content.userInfo
+        if info["open_voicememos"] != nil {
+            // "waiting on iCloud" notification → open Voice Memos so Esa can tap it.
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/VoiceMemos.app"))
+            return
+        }
         guard let path = info["transcript_path"] as? String else { return }
         let fileURL = URL(fileURLWithPath: path)
         let folderURL = fileURL.deletingLastPathComponent()
@@ -1183,6 +1189,38 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
             let zdate = stmt.flatMap { sqlite3_column_double($0, 4) } ?? 0
             let duration = stmt.flatMap { sqlite3_column_double($0, 5) } ?? 0
             let lowerLabel = label.lowercased()
+            let isTagged = lowerLabel.contains(triggerTag) || lowerLabel.contains(audioTag)
+
+            // Surface the iCloud-only blocker. A tagged memo whose audio hasn't
+            // downloaded from iCloud (empty ZPATH, or the file isn't there yet)
+            // CANNOT be processed — there is no API to force the CloudKit fetch.
+            // Rather than defer silently forever, notify Esa ONCE (per launch) so
+            // he can open Voice Memos and tap it. (2026-06-09: the Vuosaaren
+            // kartano #audio + Perheneuvola #process memos sat invisibly stuck.)
+            if isTagged {
+                let dbDir2 = (dbPath as NSString).deletingLastPathComponent
+                var d: ObjCBool = false
+                let downloaded = !zpath.isEmpty
+                    && FileManager.default.fileExists(atPath: "\(dbDir2)/\(zpath)", isDirectory: &d)
+                    && !d.boolValue
+                if !downloaded {
+                    if !notifiedNeedsDownload.contains(uniqueid) {
+                        notifiedNeedsDownload.insert(uniqueid)
+                        let clean = stripHashtags(label)
+                        let kind = lowerLabel.contains(audioTag) ? "#audio → WAV" : "#process → transcript"
+                        deliver(
+                            id: "vm-needdl-\(uniqueid)",
+                            title: "☁️ Voice memo waiting on iCloud",
+                            subtitle: clean.isEmpty ? "(untitled)" : clean,
+                            body: "Tagged \(kind) but still in iCloud. Open Voice Memos and play it once — it auto-processes after it downloads.",
+                            categoryID: nil,
+                            userInfo: ["open_voicememos": true]
+                        )
+                        log("NEEDS-DOWNLOAD \(uniqueid) \(clean) (\(kind))")
+                    }
+                    continue   // can't process until it's local
+                }
+            }
 
             // #process → whisp transcription (dedup on `submissions`).
             if lowerLabel.contains(triggerTag) && submissions[uniqueid] == nil {
