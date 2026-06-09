@@ -1223,9 +1223,15 @@ final class VoiceMemoPipeline: NSObject, UNUserNotificationCenterDelegate {
     // ── submit (copy m4a + write .url sidecar) ────────────────────────────
     private func submit(uniqueid: String, zpath: String, label: String, durationSeconds: Double) -> Bool {
         let dbDir = (dbPath as NSString).deletingLastPathComponent
+        // ZPATH empty = audio not downloaded from iCloud yet. DEFER — do NOT
+        // proceed: audioSrc would resolve to the Recordings DIRECTORY itself and
+        // copyItem would try to copy gigabytes into the inbox. (2026-06-09: this
+        // is exactly the Perheneuvola failure mode — an iCloud-only memo.)
+        guard !zpath.isEmpty else { return false }
         let audioSrc = "\(dbDir)/\(zpath)"
-        guard FileManager.default.fileExists(atPath: audioSrc) else {
-            log("WARN: audio missing on disk for uniqueid=\(uniqueid) zpath=\(zpath)")
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: audioSrc, isDirectory: &isDir), !isDir.boolValue else {
+            log("WARN: audio missing/not-a-file on disk for uniqueid=\(uniqueid) zpath=\(zpath)")
             return false
         }
 
