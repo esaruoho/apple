@@ -194,6 +194,20 @@ def _io_ports() -> dict:
     return {}
 
 
+def _login_items() -> list:
+    """The machine's GUI login items — what autostarts at login. This is FLEET
+    STATE, not trivia: adding/removing a login item changes which services come
+    back up on a peer after a reboot/logout (e.g. the Mini autostarts
+    Cloudcity-Boot, the sole service launcher — so a stale-looking .app build date
+    is NEVER a reason to think it shouldn't run). The card carries it so the fleet
+    KNOWS each peer's autostart set and a change there is a visible fleet change.
+    Best-effort: needs Automation permission for System Events; [] if denied."""
+    out = sh(["osascript", "-e",
+              'tell application "System Events" to get the name of every login item'],
+             timeout=10)
+    return [n.strip() for n in out.split(",") if n.strip()] if out else []
+
+
 def compute_shape() -> dict:
     # ── Native, portable shape via system_profiler -json ──
     sp = _sp("SPHardwareDataType", "SPDisplaysDataType", "SPStorageDataType")
@@ -276,6 +290,8 @@ def compute_shape() -> dict:
         "gpu_cores": gpu0.get("sppci_cores"),
         "ssd_gb": ssd_gb,
         "displays": displays,
+        # what autostarts at login — fleet state (adding one is a fleet change)
+        "login_items": _login_items(),
         # full I/O-port face (from `convey av card`) — the fleet knows every port
         "cameras": io.get("cameras", []),
         "audio_inputs": io.get("audio_inputs", []),
