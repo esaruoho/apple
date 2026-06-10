@@ -151,6 +151,40 @@ def build_replay(turns: list, new_user: str) -> str:
     return "\n".join(lines)
 
 
+# ── MLX brain port (the Mini's mlx_lm.server, OpenAI-compatible, over Tailscale) ──
+# Unlike fm-submit (one flat prompt to FoundationModels), the MLX server takes a real
+# messages[] array — so multi-turn is native: we just hand it the whole dialogue.
+MLX_HOST = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini:8080")
+MLX_BUDGET = 20000        # chars of prior dialogue to send (Qwen3-4B has the room)
+
+
+def call_mlx(turns, system, user_turn, timeout):
+    """POST the conversation to the Mini's MLX server; return (reply, error_message)."""
+    import urllib.request, urllib.error
+    msgs = []
+    if system:
+        msgs.append({"role": "system", "content": system})
+    kept, budget = [], MLX_BUDGET           # keep the most-recent turns that fit the budget
+    for role, text in reversed(turns):
+        budget -= len(text)
+        if budget < 0:
+            break
+        kept.append({"role": role, "content": text})
+    msgs.extend(reversed(kept))
+    msgs.append({"role": "user", "content": user_turn})
+    body = json.dumps({"messages": msgs}).encode()
+    req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=float(timeout)) as r:
+            d = json.loads(r.read().decode())
+        return d["choices"][0]["message"]["content"].strip(), None
+    except urllib.error.URLError as e:
+        return "", f"MLX server unreachable ({getattr(e, 'reason', e)}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
+    except Exception as e:
+        return "", f"MLX error: {e}"
+
+
 def main() -> int:
     args = sys.argv[1:]
     if args and args[0] in ("-h", "--help"):
@@ -162,6 +196,7 @@ def main() -> int:
     timeout = "120"
     do_reset = False
     do_history = False
+    use_mlx = False
     rest = []
     i = 0
     while i < len(args):
@@ -176,6 +211,8 @@ def main() -> int:
             do_reset = True; i += 1
         elif a == "--history":
             do_history = True; i += 1
+        elif a == "--mlx":
+            use_mlx = True; i += 1
         elif a == "-":
             rest.append(sys.stdin.read()); i += 1
         else:
@@ -225,31 +262,38 @@ def main() -> int:
         cmd.append(replay_text)
         return subprocess.run(cmd, capture_output=True, text=True)
 
-    replay = build_replay(state["turns"], user_turn)
-    # Hard ceiling: trim from the front (drop oldest dialogue) until it fits.
-    if len(replay) > MAX_INPUT_CHARS:
-        replay = build_replay([], user_turn)        # history doesn't fit → just the question
+    if use_mlx:
+        # MLX brain: send the real multi-turn message history to the Mini's mlx_lm.server.
+        reply, mlx_err = call_mlx(state["turns"], state.get("system", ""), user_turn, timeout)
+        if not reply:
+            print(f"[MLX-on-Mini] {mlx_err or 'no reply'}")
+            return 1
+    else:
+        replay = build_replay(state["turns"], user_turn)
+        # Hard ceiling: trim from the front (drop oldest dialogue) until it fits.
+        if len(replay) > MAX_INPUT_CHARS:
+            replay = build_replay([], user_turn)        # history doesn't fit → just the question
 
-    proc = call_fm(replay)
-    # Self-heal: if FM still rejects for context-window size, retry once with NO
-    # history (just this turn). A trivial question must never fail because the
-    # backlog grew too large.
-    overflow_markers = ("exceededContextWindowSize", "exceeds the maximum", "context size")
-    if proc.returncode != 0 and any(m in proc.stderr for m in overflow_markers):
-        sys.stderr.write("fm-converse: context overflow — retrying without history\n")
-        proc = call_fm(build_replay([], user_turn))
+        proc = call_fm(replay)
+        # Self-heal: if FM still rejects for context-window size, retry once with NO
+        # history (just this turn). A trivial question must never fail because the
+        # backlog grew too large.
+        overflow_markers = ("exceededContextWindowSize", "exceeds the maximum", "context size")
+        if proc.returncode != 0 and any(m in proc.stderr for m in overflow_markers):
+            sys.stderr.write("fm-converse: context overflow — retrying without history\n")
+            proc = call_fm(build_replay([], user_turn))
 
-    reply = proc.stdout.strip()
-    # the model sometimes echoes the "Assistant:" cue — strip it
-    if reply.lower().startswith("assistant:"):
-        reply = reply.split(":", 1)[1].strip()
+        reply = proc.stdout.strip()
+        # the model sometimes echoes the "Assistant:" cue — strip it
+        if reply.lower().startswith("assistant:"):
+            reply = reply.split(":", 1)[1].strip()
 
-    if proc.returncode != 0 or not reply:
-        # surface fm-submit's stderr (guardrail / timeout / worker-down) as the reply
-        err = proc.stderr.strip().splitlines()
-        msg = err[-1] if err else "no reply (is fm-worker running? `fm-submit --status`)"
-        print(f"[FM-on-Mini] {msg}")
-        return 1
+        if proc.returncode != 0 or not reply:
+            # surface fm-submit's stderr (guardrail / timeout / worker-down) as the reply
+            err = proc.stderr.strip().splitlines()
+            msg = err[-1] if err else "no reply (is fm-worker running? `fm-submit --status`)"
+            print(f"[FM-on-Mini] {msg}")
+            return 1
 
     # Persist the turn. For files we keep the (capped) content so follow-up
     # questions about the file still have it in context; replay-budget clipping
