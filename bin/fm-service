@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""fm-service — stateful, streaming FoundationModels worker built on apple-fm-sdk.
+
+The successor to `fm-worker`. Where `fm-worker` exec'd the Swift `bin/fm` CLI once
+per job (stateless: every turn re-sent the whole transcript, blocked until the full
+reply, no memory), this service holds the on-device model **in-process** via Apple's
+Python bindings (apple-fm-sdk) and keeps **persistent LanguageModelSession objects**
+keyed by conversation. That buys three things the CLI bridge couldn't:
+
+  1. STATEFUL  — one session per `session` key keeps its own transcript; a follow-up
+                 doesn't replay history, and the KV cache stays warm across turns.
+  2. STREAMING — token snapshots are written to fm-outbox/<id>.partial.json as they
+                 generate, so a reader (the wall / karaoke) sees progress live instead
+                 of waiting for the whole reply.
+  3. TYPED     — context-overflow / guardrail / refusal arrive as real exceptions, so
+                 overflow auto-resets the session and retries once on a fresh one
+                 (the roundtable "reset when context fills", now native) instead of
+                 grepping stderr strings.
+
+Transport is unchanged: the same Syncthing queue as fm-worker, so existing
+fm-submit / fm-converse clients keep working. The protocol is a backward-compatible
+superset.
+
+INBOX  ~/work/comms/queue/fm-inbox/<id>.json
+    {"id": "...", "prompt": "...",
+     "system":  "...optional... (only used when CREATING a session)",
+     "session": "...optional... (conversation key; omit => one-shot, like today)",
+     "stream":  true|false  (optional; emit partial snapshots, default true),
+     "reset":   true|false  (optional; drop+recreate the session first)}
+
+OUTBOX ~/work/comms/queue/fm-outbox/<id>.json   (final; superset of fm-worker's shape)
+    {"id", "ok", "out", "err", "model_ms", "host", "ts", "from",
+     "session", "turns", "streamed", "error_type", "reset"}
+PARTIAL ~/work/comms/queue/fm-outbox/<id>.partial.json   (while streaming)
+    {"id", "out": "<cumulative text so far>", "done": false, "ts"}
+
+Security boundary: a job carries a prompt + optional system instruction and a session
+key. It never carries a shell command — this service only ever calls the on-device
+model. Syncthing is the sole transport; there is no network listener.
+
+Usage:
+    fm-service              watch the inbox forever (the daemon)
+    fm-service --once       process whatever is queued right now, then exit
+    fm-service --status     show queue depth, live sessions, last heartbeat
+    fm-service --selftest   in-process proof of stateful memory + streaming (no queue)
+
+Runs under the apple-fm-sdk venv interpreter; if launched with a plain python3 it
+re-execs itself under that venv automatically.
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# --- Ensure we run under the interpreter that has apple_fm_sdk installed ---------
+VENV_PY = Path.home() / "work" / "python-apple-fm-sdk" / ".venv" / "bin" / "python3"
+try:
+    import apple_fm_sdk as fm  # noqa: F401
+except ImportError:
+    if VENV_PY.exists() and Path(sys.executable).resolve() != VENV_PY.resolve():
+        os.execv(str(VENV_PY), [str(VENV_PY), os.path.abspath(__file__), *sys.argv[1:]])
+    sys.stderr.write(
+        "fm-service: apple_fm_sdk not importable and no venv at "
+        f"{VENV_PY}\n  build it: cd ~/work/python-apple-fm-sdk && "
+        "python3.12 -m venv .venv && .venv/bin/pip install -e .\n"
+    )
+    sys.exit(2)
+
+import asyncio
+import json
+import socket
+import time
+import traceback
+
+import apple_fm_sdk as fm
+
+HERE = Path(__file__).resolve().parent
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "fm-inbox"
+OUTBOX = QUEUE / "fm-outbox"
+HEARTBEAT = QUEUE / "fm-service-heartbeat.json"
+# Compat: the existing fm-worker-guardian.sh watches this file. Stamping it too
+# keeps the guardian satisfied so it never spawns a competing legacy fm-worker.
+WORKER_HB_COMPAT = QUEUE / "fm-worker-heartbeat.json"
+
+POLL_SECONDS = 1.0           # snappy inbox pickup
+HEARTBEAT_SECONDS = 30       # but only churn the Syncthing queue folder this often
+STALE_JOB_SECONDS = 3600     # sweep a malformed job nobody could answer in an hour
+PARTIAL_MIN_INTERVAL = 0.25  # throttle streamed partial writes (s) to bound Syncthing churn
+MAX_SESSIONS = 32            # cap live sessions
+SESSION_TTL = 1800           # evict a session idle longer than this (s)
+
+HOST = socket.gethostname().split(".")[0]
+
+
+# --------------------------------------------------------------------------------
+# Session registry — persistent LanguageModelSession objects keyed by conversation
+# --------------------------------------------------------------------------------
+class SessionEntry:
+    __slots__ = ("session", "instructions", "turns", "last_used")
+
+    def __init__(self, session, instructions):
+        self.session = session
+        self.instructions = instructions
+        self.turns = 0
+        self.last_used = time.time()
+
+
+SESSIONS: "dict[str, SessionEntry]" = {}
+
+
+def _new_session(instructions: str):
+    return (fm.LanguageModelSession(instructions=instructions)
+            if instructions else fm.LanguageModelSession())
+
+
+def get_session(key: str, instructions: str, reset: bool) -> SessionEntry:
+    """Return the persistent session for `key`, creating (or resetting) as needed.
+    `instructions` only takes effect when a session is first created for the key."""
+    if reset and key in SESSIONS:
+        del SESSIONS[key]
+    entry = SESSIONS.get(key)
+    if entry is None:
+        entry = SessionEntry(_new_session(instructions), instructions)
+        SESSIONS[key] = entry
+        _evict_if_needed()
+    entry.last_used = time.time()
+    return entry
+
+
+def _evict_if_needed():
+    now = time.time()
+    for k in [k for k, e in SESSIONS.items() if now - e.last_used > SESSION_TTL]:
+        del SESSIONS[k]
+    while len(SESSIONS) > MAX_SESSIONS:                 # LRU
+        oldest = min(SESSIONS, key=lambda k: SESSIONS[k].last_used)
+        del SESSIONS[oldest]
+
+
+# Only one generation may run against the single on-device model at a time
+# (concurrent calls raise ConcurrentRequestsError). Serialize them.
+GEN_LOCK = asyncio.Lock()
+
+
+# --------------------------------------------------------------------------------
+# Generation — streaming, with native typed-error handling
+# --------------------------------------------------------------------------------
+async def _stream_once(session, prompt, on_snapshot):
+    """Stream a single turn; returns the final (cumulative) text. Calls
+    on_snapshot(text) for each progressive snapshot (already throttled by caller)."""
+    final = ""
+    async for snapshot in session.stream_response(prompt):
+        final = snapshot
+        on_snapshot(final)
+    return final
+
+
+async def generate(job: dict) -> dict:
+    """Run one job against its (persistent or one-shot) session. Streams partials
+    when asked; auto-resets and retries once on context overflow."""
+    job_id = job.get("id") or "anon"
+    prompt = job.get("prompt", "")
+    system = job.get("system", "") or ""
+    key = job.get("session")                  # None => ephemeral one-shot
+    stream = job.get("stream", True)
+    reset = bool(job.get("reset", False))
+
+    # partial-snapshot writer (throttled)
+    last_write = [0.0]
+
+    def emit(text):
+        if not stream:
+            return
+        now = time.time()
+        if now - last_write[0] < PARTIAL_MIN_INTERVAL:
+            return
+        last_write[0] = now
+        _write_partial(job_id, text)
+
+    t0 = time.perf_counter()
+    did_reset = False
+    async with GEN_LOCK:
+        if key:
+            entry = get_session(key, system, reset)
+        else:
+            entry = SessionEntry(_new_session(system), system)   # not stored
+        try:
+            out = await _stream_once(entry.session, prompt, emit)
+        except fm.ExceededContextWindowSizeError:
+            # native equivalent of roundtable's "reset when context fills": drop the
+            # session, start fresh with just this prompt, retry once.
+            did_reset = True
+            if key:
+                entry = get_session(key, system, reset=True)
+            else:
+                entry = SessionEntry(_new_session(system), system)
+            try:
+                out = await _stream_once(entry.session, prompt, emit)
+            except Exception as e:  # noqa: BLE001
+                return _err(job_id, key, e, t0, reset_done=True)
+        except (fm.GuardrailViolationError, fm.RefusalError,
+                fm.RateLimitedError, fm.FoundationModelsError) as e:
+            return _err(job_id, key, e, t0)
+        except Exception as e:  # noqa: BLE001
+            return _err(job_id, key, e, t0)
+
+        entry.turns += 1
+        ms = int((time.perf_counter() - t0) * 1000)
+        return {
+            "id": job_id, "ok": True, "out": out.rstrip("\n"), "err": "",
+            "model_ms": ms, "host": HOST, "ts": int(time.time()),
+            "from": job.get("submitter_host"), "session": key,
+            "turns": entry.turns if key else 1,
+            "streamed": bool(stream), "error_type": None, "reset": did_reset,
+        }
+
+
+def _err(job_id, key, exc, t0, reset_done=False):
+    ms = int((time.perf_counter() - t0) * 1000)
+    return {
+        "id": job_id, "ok": False, "out": "", "err": str(exc),
+        "model_ms": ms, "host": HOST, "ts": int(time.time()),
+        "from": None, "session": key, "turns": None, "streamed": False,
+        "error_type": type(exc).__name__, "reset": reset_done,
+    }
+
+
+# --------------------------------------------------------------------------------
+# Queue I/O
+# --------------------------------------------------------------------------------
+def _atomic_write(path: Path, payload: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False))
+    tmp.replace(path)                                   # atomic: Syncthing ships whole files
+
+
+def _write_partial(job_id: str, text: str):
+    _atomic_write(OUTBOX / f"{job_id}.partial.json",
+                  {"id": job_id, "out": text, "done": False, "ts": int(time.time())})
+
+
+def nudge(path: Path):
+    """Best-effort: make Syncthing scan + announce this path now."""
+    try:
+        import subprocess
+        subprocess.run([str(HERE / "syncthing-nudge"), str(path)],
+                       capture_output=True, timeout=8)
+    except Exception:
+        pass
+
+
+def write_result(job_id: str, payload: dict):
+    final = OUTBOX / f"{job_id}.json"
+    _atomic_write(final, payload)
+    (OUTBOX / f"{job_id}.partial.json").unlink(missing_ok=True)   # supersede the stream
+    nudge(final)
+
+
+async def process_one(path: Path) -> bool:
+    try:
+        job = json.loads(path.read_text())
+    except Exception:
+        return False
+    if not job.get("prompt"):
+        try:
+            if time.time() - path.stat().st_mtime > STALE_JOB_SECONDS:
+                path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False
+    job_id = job.get("id") or path.stem
+    job.setdefault("id", job_id)
+    res = await generate(job)
+    write_result(job_id, res)
+    path.unlink(missing_ok=True)
+    mark = "ok" if res["ok"] else f"ERR:{res['error_type']}"
+    sess = res.get("session") or "-"
+    preview = (res["out"] or res["err"] or "").replace("\n", " ")[:60]
+    rst = " [reset]" if res.get("reset") else ""
+    print(f"[{time.strftime('%H:%M:%S')}] {job_id} (sess={sess} t{res.get('turns')}) "
+          f"→ {mark} ({res['model_ms']}ms){rst} {preview}", flush=True)
+    return True
+
+
+async def scan() -> int:
+    if not INBOX.is_dir():
+        return 0
+    handled = 0
+    for p in sorted(INBOX.glob("*.json")):
+        if await process_one(p):
+            handled += 1
+    return handled
+
+
+def beat():
+    payload = json.dumps({
+        "ts": int(time.time()), "host": HOST,
+        "sessions": len(SESSIONS), "service": "fm-service",
+    })
+    for p in (HEARTBEAT, WORKER_HB_COMPAT):
+        try:
+            p.write_text(payload)
+        except Exception:
+            pass
+
+
+# --------------------------------------------------------------------------------
+# Entry points
+# --------------------------------------------------------------------------------
+def status():
+    pend = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    done = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"fm-service · host {HOST}")
+    print(f"  inbox:    {INBOX}  ({pend} queued)")
+    print(f"  outbox:   {OUTBOX}  ({done} answer(s))")
+    print(f"  sessions: {len(SESSIONS)} live (cap {MAX_SESSIONS}, ttl {SESSION_TTL}s)")
+    ok, reason = fm.SystemLanguageModel().is_available()
+    print(f"  model:    {'available' if ok else 'UNAVAILABLE: ' + str(reason)}")
+    if HEARTBEAT.exists():
+        try:
+            age = time.time() - json.loads(HEARTBEAT.read_text()).get("ts", 0)
+            print(f"  heartbeat: {age:.0f}s ago")
+        except Exception:
+            pass
+    else:
+        print("  heartbeat: never (service not running)")
+
+
+async def selftest():
+    """Prove stateful memory + streaming without touching the queue."""
+    ok, reason = fm.SystemLanguageModel().is_available()
+    print(f"model available: {ok} {reason or ''}")
+    if not ok:
+        return 1
+    snaps = []
+    j1 = {"id": "selftest-1", "session": "selftest", "stream": True,
+          "prompt": "My name is Esa and my favourite tracker is Renoise. Reply in one short sentence."}
+    r1 = await generate(j1)
+    print(f"\nturn1 ({r1['model_ms']}ms, turns={r1['turns']}): {r1['out']}")
+    # turn 2 must remember turn 1 WITHOUT us resending it → proves stateful session
+    j2 = {"id": "selftest-2", "session": "selftest", "stream": True,
+          "prompt": "What is my name and my favourite tracker? One sentence."}
+
+    # capture that streaming actually yields progressive snapshots
+    sess = SESSIONS["selftest"].session
+    async for snapshot in sess.stream_response("Count from 1 to 5 slowly."):
+        snaps.append(snapshot)
+    r2 = await generate(j2)
+    print(f"turn2 ({r2['model_ms']}ms, turns={r2['turns']}): {r2['out']}")
+    remembered = ("esa" in r2["out"].lower()) and ("renoise" in r2["out"].lower())
+    progressive = len(snaps) >= 2 and len(snaps[0]) < len(snaps[-1])
+    print(f"\nSTATEFUL memory across turns: {'PASS' if remembered else 'FAIL'}")
+    print(f"STREAMING progressive snapshots ({len(snaps)} frames): "
+          f"{'PASS' if progressive else 'FAIL'}")
+    return 0 if (remembered and progressive) else 1
+
+
+async def daemon():
+    INBOX.mkdir(parents=True, exist_ok=True)
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    print(f"fm-service watching {INBOX} (stateful + streaming, apple-fm-sdk)")
+    beat()
+    last_beat = time.time()
+    while True:
+        try:
+            await scan()
+            now = time.time()
+            if now - last_beat >= HEARTBEAT_SECONDS:
+                _evict_if_needed()
+                beat()
+                last_beat = now
+        except Exception as e:  # noqa: BLE001
+            print(f"  loop error: {e}\n{traceback.format_exc()}", file=sys.stderr)
+        await asyncio.sleep(POLL_SECONDS)
+
+
+def main() -> int:
+    args = set(sys.argv[1:])
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return 0
+    if "--status" in args:
+        status()
+        return 0
+    if "--selftest" in args:
+        return asyncio.run(selftest())
+    if "--once" in args:
+        async def _once():
+            INBOX.mkdir(parents=True, exist_ok=True)
+            OUTBOX.mkdir(parents=True, exist_ok=True)
+            n = await scan()
+            beat()
+            print(f"processed {n} prompt(s)")
+        asyncio.run(_once())
+        return 0
+    asyncio.run(daemon())
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

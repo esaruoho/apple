@@ -51,6 +51,7 @@ xcrun swiftc -O -target arm64-apple-macos14.0 "$HERE/main.swift" "$HERE/Markdown
   -o "$BUNDLE/Contents/MacOS/$APP" \
   -framework AppKit -framework WebKit -framework FoundationModels \
   -framework PDFKit -framework Vision -framework UniformTypeIdentifiers \
+  -framework ImageIO -framework ImagePlayground \
   -framework Foundation
 
 codesign -s - --force --deep "$BUNDLE" >/dev/null 2>&1 || true

@@ -15,6 +15,10 @@ import Vision
 import ImageIO
 import UniformTypeIdentifiers
 import NaturalLanguage
+#if canImport(ImagePlayground)
+import ImagePlayground   // on-device Image Playground (macOS 15.4+) — the prose's
+                         // visual twin: prose from FoundationModels, picture here.
+#endif
 
 // Markdown renderer (escapeHTML/regexReplace/latexToMathML/renderMessageHTML/inlineMD)
 // lives in Markdown.swift — compiled together; testable headlessly via markdown-tests.swift.
@@ -993,6 +997,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     var newChatDisplay: String?      // its display label (for file-ingest prompts)
     var newChatMsgIndex: Int?        // which bubble carries the button
 
+    // ── Image Playground (Illustrate) ──
+    // When on, every model reply is paired with an on-device Image Playground
+    // picture drawn from the same prompt — so "what does a tiger look like?" gives
+    // you the prose AND the tiger. The picture renders right here in this app
+    // (a foreground window); ImageCreator refuses to run in a background process.
+    var illustrate = false           // toggle (⌘I / Image menu)
+    var illustrateStyle = "illustration"   // animation | illustration | sketch
+    var illustrateItem: NSMenuItem?  // menu item whose checkmark mirrors `illustrate`
+    var illustratorBox: AnyObject?   // cached ImageCreator (typed via #available)
+
     func applicationDidFinishLaunching(_ note: Notification) {
         let frame = NSRect(x: 0, y: 0, width: 820, height: 720)
         window = NSWindow(contentRect: frame,
@@ -1245,6 +1259,134 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
 
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { true }
 
+    // ─────────────────────── Image Playground (Illustrate) ──────────────────
+    // The visual twin of the prose path. FoundationModels (possibly on the Mini)
+    // answers in words; Image Playground (always local — it needs THIS foreground
+    // window) draws the same subject. They run concurrently.
+    // FEATURE-CARD >> features/image-playground.feature
+
+    @objc func toggleIllustrate() {
+        illustrate.toggle()
+        illustrateItem?.state = illustrate ? .on : .off
+        appendAssistant(illustrate
+            ? "🖼 **Illustrate is ON** — each reply now comes with an Image Playground picture drawn from your prompt. (Style: \(illustrateStyle). Keep this window in front while it draws.)"
+            : "🖼 Illustrate is OFF.")
+    }
+
+    @objc func setIllustrateStyle(_ sender: NSMenuItem) {
+        illustrateStyle = sender.title.lowercased()
+        if let menu = sender.menu {
+            for it in menu.items where it.action == #selector(setIllustrateStyle(_:)) {
+                it.state = (it === sender) ? .on : .off
+            }
+        }
+    }
+
+    /// Encode a CGImage as a self-contained PNG data: URI so it renders in the
+    /// WebView without file-system read access (the transcript loads with baseURL nil).
+    func pngDataURI(_ cg: CGImage) -> String? {
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(
+            data as CFMutableData, UTType.png.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, cg, nil)
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return "data:image/png;base64," + (data as Data).base64EncodedString()
+    }
+
+    func illustrateFriendly(_ error: Error) -> String {
+        let s = "\(error)".lowercased()
+        if s.contains("background") || s.contains("hidden") {
+            return "Bring this window to the front — Image Playground won't draw while the app is in the background."
+        }
+        if s.contains("notsupported") || s.contains("unavailable") || s.contains("not available") {
+            return "Image Playground isn't available here — enable Apple Intelligence and download its model (Settings ▸ Apple Intelligence & Siri)."
+        }
+        // Apple returns a vague "The image creation failed." for content-policy
+        // blocks — it won't admit it's filtering. Treat the generic failure as a
+        // likely blocked word (e.g. "pussycat" trips on the substring) and say so.
+        if s.contains("guardrail") || s.contains("unsafe") || s.contains("sensitive")
+            || s.contains("creation failed") {
+            return "Image Playground declined that prompt — Apple's on-device content filter is aggressive and can trip on an innocent word or substring (e.g. \"pussycat\"). Try rephrasing."
+        }
+        return "Couldn't draw that — \((error as NSError).localizedDescription)"
+    }
+
+    /// Replace the placeholder image bubble at `imageIdx` with a rendered picture
+    /// (or a reason it couldn't). Runs concurrently with the prose stream.
+    func startIllustration(prompt: String, into imageIdx: Int) {
+        #if canImport(ImagePlayground)
+        guard #available(macOS 15.4, *) else {
+            setImageBubble(imageIdx, html: "🖼 Image Playground needs macOS 15.4+.")
+            return
+        }
+        Task {
+            var html = "🖼 No image was produced."
+            do {
+                if let cg = try await self.makeIllustration(prompt: prompt, style: self.illustrateStyle),
+                   let uri = self.pngDataURI(cg) {
+                    html = "<img src=\"\(uri)\" alt=\"Image Playground illustration\" "
+                         + "style=\"max-width:100%;border-radius:10px;display:block;\">"
+                }
+            } catch {
+                html = "🖼 " + self.illustrateFriendly(error)
+            }
+            await MainActor.run { self.setImageBubble(imageIdx, html: html) }
+        }
+        #else
+        setImageBubble(imageIdx, html: "🖼 This build lacks the ImagePlayground framework.")
+        #endif
+    }
+
+    func setImageBubble(_ idx: Int, html: String) {
+        guard idx >= 0, idx < messages.count else { return }
+        messages[idx] = ("image", html)
+        render()
+    }
+
+    #if canImport(ImagePlayground)
+    @available(macOS 15.4, *)
+    func makeIllustration(prompt: String, style: String) async throws -> CGImage? {
+        let creator: ImageCreator
+        if let c = illustratorBox as? ImageCreator { creator = c }
+        else { creator = try await ImageCreator(); illustratorBox = creator }
+        let styles = creator.availableStyles
+        let chosen = styles.first { "\($0.id)".lowercased().contains(style.lowercased()) }
+            ?? styles.first ?? .animation
+        // The generator intermittently throws a vague "The image creation failed."
+        // for the same prompt — it's transient, so retry several times before giving up.
+        let retries = 8
+        var lastError: Error?
+        for attempt in 1...retries {
+            do {
+                for try await img in creator.images(for: [.text(prompt)], style: chosen, limit: 1) {
+                    return img.cgImage
+                }
+                return nil
+            } catch {
+                let s = "\(error) \(error.localizedDescription)".lowercased()
+                if s.contains("background") || s.contains("hidden") { throw error }  // won't self-heal
+                lastError = error
+                if attempt < retries {
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 600_000_000)
+                }
+            }
+        }
+        if let lastError { throw lastError }
+        return nil
+    }
+    #endif
+
+    /// "/image …", "draw: …", "draw me …", "picture of …" → the subject to draw
+    /// (a one-off picture, no model call). Returns nil for ordinary messages.
+    func imageCommand(_ text: String) -> String? {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lower = t.lowercased()
+        for p in ["/image ", "/draw ", "draw: ", "draw me ", "picture of "] {
+            if lower.hasPrefix(p) { return String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespaces) }
+        }
+        return nil
+    }
+
     func buildMenu() {
         let mainMenu = NSMenu()
 
@@ -1314,6 +1456,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         em.target = self
         promptMenu.addItem(em)
         promptItem.submenu = promptMenu
+
+        // ── Image menu — pair each reply with an on-device Image Playground picture ──
+        let imgItem = NSMenuItem(); mainMenu.addItem(imgItem)
+        let imgMenu = NSMenu(title: "Image")
+        let ill = NSMenuItem(title: "Illustrate Replies", action: #selector(toggleIllustrate), keyEquivalent: "i")
+        ill.target = self
+        ill.state = illustrate ? .on : .off
+        ill.toolTip = "Draw a picture (Apple Image Playground) alongside each model reply"
+        imgMenu.addItem(ill)
+        illustrateItem = ill
+        imgMenu.addItem(.separator())
+        let styleHeader = NSMenuItem(title: "Style", action: nil, keyEquivalent: "")
+        styleHeader.isEnabled = false
+        imgMenu.addItem(styleHeader)
+        for name in ["Animation", "Illustration", "Sketch"] {
+            let it = NSMenuItem(title: name, action: #selector(setIllustrateStyle(_:)), keyEquivalent: "")
+            it.target = self
+            it.state = (name.lowercased() == illustrateStyle) ? .on : .off
+            imgMenu.addItem(it)
+        }
+        imgItem.submenu = imgMenu
 
         // ── Window menu — Minimize (⌘M), Zoom, standard window list ──
         let winItem = NSMenuItem(); mainMenu.addItem(winItem)
@@ -1428,6 +1591,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
             appendAssistant("🧠 Memory cleared.")
             return
         }
+        // "/image tiger" / "draw: tiger" — a one-off picture, no model call.
+        if let subject = imageCommand(userText) {
+            messages.append(("user", display ?? userText))
+            store.log(role: "user", text: userText)
+            let imageIdx = messages.count
+            messages.append(("image", "🖼 drawing…"))
+            render()
+            startIllustration(prompt: subject, into: imageIdx)
+            return
+        }
         // Pre-LLM fast path: known intents run a script, no model — instant, can't hang.
         if let direct = directAnswer(userText) {
             messages.append(("user", display ?? userText))
@@ -1452,9 +1625,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
         messages.append(("user", display ?? userText))
         convo.append(("user", userText))
         store.log(role: "user", text: userText)
-        messages.append(("assistant", "…"))   // live streaming target
+        // When Illustrate is on, insert the picture bubble BEFORE the assistant
+        // bubble so the assistant stays the LAST bubble — updateLastBubble (which
+        // targets the last bubble during streaming) must not hit the image.
+        var imageIdx = -1
+        if illustrate {
+            messages.append(("image", "🖼 drawing…"))
+            imageIdx = messages.count - 1
+        }
+        messages.append(("assistant", "…"))   // live streaming target (stays last)
         render()
         let idx = messages.count - 1
+        if illustrate { startIllustration(prompt: userText, into: imageIdx) }
         dlog("SEND userText=\(userText.replacingOccurrences(of: "\n", with: "⏎").prefix(200))")
         fm.askStreaming(latest: userText, history: convo,
             onPartial: { [weak self] partial in
@@ -1572,6 +1754,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     func conversationMarkdown() -> String {
         var out = "# FoundationModels Chat — \(store.stamp)\n\n"
         for m in messages {
+            if m.role == "image" {
+                out += "**Image Playground:**\n\n*(generated illustration)*\n\n"
+                continue
+            }
             let who = m.role == "user" ? "You" : "FoundationModels"
             out += "**\(who):**\n\n\(m.text)\n\n"
         }
@@ -1583,6 +1769,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     func conversationExportHTML() -> String {
         var body = ""
         for m in messages {
+            if m.role == "image" {
+                body += "<div class=\"msg bot\"><div class=\"who\">Image Playground</div>"
+                      + "<div class=\"bubble\">\(m.text)</div></div>"
+                continue
+            }
             let who = m.role == "user" ? "You" : "FoundationModels"
             body += "<div class=\"msg \(m.role)\"><div class=\"who\">\(who)</div>"
                   + "<div class=\"bubble\">\(renderMessageHTML(m.text))</div></div>"
@@ -1688,6 +1879,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate, WK
     func render() {
         var body = ""
         for (i, m) in messages.enumerated() {
+            // Image bubbles carry ready-made HTML (an <img> data URI or a status
+            // line) — inject it raw, never through the Markdown escaper.
+            if m.role == "image" {
+                body += "<div class=\"msg bot\"><div class=\"who\">Image Playground</div>"
+                      + "<div class=\"bubble\">\(m.text)</div></div>"
+                continue
+            }
             let cls = m.role == "user" ? "user" : "bot"
             let who = m.role == "user" ? "You" : "FoundationModels"
             var inner = "<div class=\"who\">\(who)</div><div class=\"bubble\">\(renderMessageHTML(m.text))</div>"

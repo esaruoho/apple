@@ -1,0 +1,101 @@
+#!/bin/bash
+# image-create — generate an image with Apple's on-device Image Playground.
+#
+# Apple's ImageCreator refuses to render unless its host is a genuine foreground
+# .app (a bare CLI is always "background" to the WindowServer). So this wrapper
+# drives ImageCreate.app via `open -W` and reads the result back through a sidecar
+# file (open detaches stdout/stderr). Apple-native: bash + open only.
+#
+#   image-create robot                    → robot.png in the cwd, then opens it
+#   image-create "a tiger" -o tiger.png   pick the filename
+#   image-create "a tiger" -s sketch      pick a style (animation|illustration|sketch)
+#   image-create "a tiger" --no-open      don't auto-open the result
+#   image-create --check                  availability + styles
+#
+# Default behaviour: with no -o, the filename is derived from the prompt; the
+# result auto-opens (disable with --no-open). A failed generation NEVER opens a
+# stale same-named file — it only opens an image actually written THIS run.
+#
+# Runtime: macOS 15.4+, Apple Silicon, Apple Intelligence on + Image Playground
+# model downloaded (Settings ▸ Apple Intelligence & Siri).
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+APP="$HERE/../image-create/build/ImageCreate.app"
+[ -d "$APP" ] || APP="/Applications/ImageCreate.app"
+if [ ! -d "$APP" ]; then
+  echo "image-create: ImageCreate.app not built — run ~/work/apple/image-create/build.sh" >&2
+  exit 3
+fi
+
+RESULT="$(mktemp -t image-create)"
+trap 'rm -f "$RESULT"' EXIT
+
+# `open` launches the app with cwd "/", so a relative -o would resolve to an
+# unwritable "/x.png". Absolutize -o against the wrapper's real cwd.
+abspath() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    "~/"*) printf '%s' "$HOME/${1#\~/}" ;;
+    *) printf '%s' "$PWD/$1" ;;
+  esac
+}
+# prompt → safe filename stem ("a feral cat!" → "a-feral-cat"), capped.
+slugify() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' | cut -c1-50
+}
+
+IS_CHECK=0
+DO_OPEN=1            # auto-open by default; --no-open turns it off
+OUT=""
+PROMPT=""
+ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o|--output)
+      OUT="$(abspath "${2:-image-create-output.png}")"
+      ARGS+=("-o" "$OUT"); shift 2 ;;
+    --check)
+      IS_CHECK=1; ARGS+=("$1"); shift ;;
+    --open|-O)
+      DO_OPEN=1; shift ;;          # wrapper-only flags — not forwarded to the app
+    --no-open)
+      DO_OPEN=0; shift ;;
+    -s|--style|-n|--limit|--retries)
+      ARGS+=("$1" "${2:-}"); shift 2 ;;
+    -*)
+      ARGS+=("$1"); shift ;;       # any other flag → app
+    *)
+      PROMPT="${PROMPT:+$PROMPT }$1"; ARGS+=("$1"); shift ;;
+  esac
+done
+
+# Generation with no -o → derive the filename from the prompt (land in the cwd).
+if [ "$IS_CHECK" -eq 0 ] && [ -z "$OUT" ]; then
+  stem="$(slugify "$PROMPT")"; [ -z "$stem" ] && stem="image-create-output"
+  OUT="$PWD/$stem.png"
+  ARGS+=("-o" "$OUT")
+fi
+
+open -W "$APP" --args "${ARGS[@]}" --result-file "$RESULT" || true
+
+# --check (and errors) come back through the result file.
+if [ "$IS_CHECK" -eq 1 ]; then
+  cat "$RESULT"
+  exit 0
+fi
+
+# Success signal: the app prints the absolute output path on its own line ONLY when
+# it actually wrote the image. This is independent of any stale same-named file
+# (mtime checks are unreliable at 1-second granularity), so a failed run never
+# matches — and we never open a file that wasn't written this run.
+if [ -n "$OUT" ] && grep -Fxq "$OUT" "$RESULT" 2>/dev/null; then
+  cat "$RESULT"
+  [ "$DO_OPEN" -eq 1 ] && open "$OUT"
+  exit 0
+fi
+
+# No fresh output → surface whatever the app reported. Do NOT open anything.
+[ -s "$RESULT" ] && cat "$RESULT" >&2 || echo "image-create: no image produced" >&2
+exit 1
