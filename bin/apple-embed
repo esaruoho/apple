@@ -3,6 +3,8 @@
 //
 // Reads UTF-8 text on stdin (one sentence per line) and writes one JSON
 // object per line on stdout:  {"t":"the sentence","v":[0.123, ...]}
+// In --lang auto mode each object also carries "l":"<lang>" (the detected
+// language whose model produced the vector).
 //
 // Uses NLEmbedding.sentenceEmbedding (built into macOS 10.15+), Neural-
 // Engine accelerated. 512-dim float vectors. No third-party deps.
@@ -12,22 +14,85 @@
 // then runs in pure-Python cosine for every subsequent query.
 //
 // Usage:
-//   cat corpus.txt | apple-embed > corpus.embed.jsonl
-//   echo "query"   | apple-embed                  # one-shot for a query
+//   cat corpus.txt | apple-embed > corpus.embed.jsonl     # default: English model
+//   echo "query"   | apple-embed                          # one-shot for a query
+//   apple-embed --lang de < corpus.txt                    # German model (Schauberger etc.)
+//   apple-embed --lang auto < mixed.txt                   # detect per line, model per language
+//
+// NOTE: vectors from DIFFERENT language models are NOT comparable — cosine only
+// means anything within one language. For cross-language work, embed the query
+// in the same language as the spans (or translate first). --lang auto is for
+// embedding a multilingual corpus each in its own space, not for cross-lang search.
 
 import Foundation
 import NaturalLanguage
 
-guard let emb = NLEmbedding.sentenceEmbedding(for: .english) else {
-    FileHandle.standardError.write("apple-embed: no English NLEmbedding model\n".data(using: .utf8)!)
+// ---- arg parse -------------------------------------------------------------
+var langArg = "en"
+do {
+    let a = CommandLine.arguments
+    if let i = a.firstIndex(of: "--lang"), i + 1 < a.count { langArg = a[i + 1].lowercased() }
+}
+
+// map a short code (or an NLLanguage rawValue like "en") to NLLanguage
+func nlLanguage(_ code: String) -> NLLanguage {
+    switch code {
+    case "en", "english":            return .english
+    case "de", "german":             return .german
+    case "fr", "french":             return .french
+    case "es", "spanish":            return .spanish
+    case "it", "italian":            return .italian
+    case "pt", "portuguese":         return .portuguese
+    case "nl", "dutch":              return .dutch
+    case "sv", "swedish":            return .swedish
+    case "ru", "russian":            return .russian
+    case "ja", "japanese":           return .japanese
+    case "zh", "zh-hans", "chinese": return .simplifiedChinese
+    case "ko", "korean":             return .korean
+    case "fi", "finnish":            return .finnish
+    default:                         return NLLanguage(rawValue: code)
+    }
+}
+
+// lazily-built, cached embedders keyed by NLLanguage; nil = no model for that language
+var cache: [NLLanguage: NLEmbedding?] = [:]
+func embedder(for lang: NLLanguage) -> NLEmbedding? {
+    if let hit = cache[lang] { return hit }
+    let e = NLEmbedding.sentenceEmbedding(for: lang)
+    cache[lang] = e
+    return e
+}
+
+let auto = (langArg == "auto")
+let fixedLang = auto ? .english : nlLanguage(langArg)   // .english only used as fallback in auto
+
+// In fixed-language mode, fail loudly if that one model is missing (old behaviour).
+if !auto && embedder(for: fixedLang) == nil {
+    FileHandle.standardError.write("apple-embed: no NLEmbedding sentence model for '\(langArg)'\n".data(using: .utf8)!)
     exit(1)
 }
+
+let recognizer = NLLanguageRecognizer()
 
 while let raw = readLine() {
     let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     if line.isEmpty { continue }
-    guard let v = emb.vector(for: line) else { continue }
-    let obj: [String: Any] = ["t": line, "v": v]
+
+    var lang = fixedLang
+    if auto {
+        recognizer.reset()
+        recognizer.processString(line)
+        lang = recognizer.dominantLanguage ?? .english
+    }
+
+    // pick the model for this line's language; fall back to English if unavailable
+    var used = lang
+    var emb = embedder(for: lang)
+    if emb == nil { used = .english; emb = embedder(for: .english) }
+    guard let model = emb, let v = model.vector(for: line) else { continue }
+
+    var obj: [String: Any] = ["t": line, "v": v]
+    if auto { obj["l"] = used.rawValue }
     if let data = try? JSONSerialization.data(withJSONObject: obj, options: []),
        let s = String(data: data, encoding: .utf8) {
         print(s)
