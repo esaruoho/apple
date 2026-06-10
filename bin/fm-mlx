@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# fm-mlx — ask the CloudcityMacMini's MLX server (Qwen3-4B) over Tailscale.
+#
+#   fm-mlx hello                          # prompt as args
+#   fm-mlx "summarise this in 5 words"    # quote multi-word prompts
+#   echo "long prompt..." | fm-mlx        # or pipe it in
+#
+# Talks to mlx_lm.server on the Mini via Tailscale Serve (tailnet-only, encrypted).
+# Override the endpoint with FM_MLX_HOST if needed.
+set -uo pipefail
+
+HOST="${FM_MLX_HOST:-http://cloudcitymacmini:8080}"
+
+prompt="$*"
+if [ -z "$prompt" ] && [ ! -t 0 ]; then prompt="$(cat)"; fi
+if [ -z "$prompt" ]; then
+  echo "usage: fm-mlx \"your prompt\"   (or pipe text in)" >&2
+  exit 1
+fi
+
+body=$(python3 -c 'import json,sys; print(json.dumps({"messages":[{"role":"user","content":sys.argv[1]}]}))' "$prompt")
+
+curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
+  -H "Content-Type: application/json" -d "$body" \
+| python3 -c '
+import sys, json
+raw = sys.stdin.read()
+if not raw.strip():
+    sys.exit("fm-mlx: no response — is the MLX server up on the Mini? (first call after a reboot waits ~30s for model load)")
+try:
+    d = json.loads(raw)
+    print(d["choices"][0]["message"]["content"])
+except Exception:
+    sys.exit("fm-mlx: unexpected response:\n" + raw[:500])
+'
