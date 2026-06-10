@@ -122,6 +122,15 @@ chat/ask answers are banked to a FoundationModels Knowledgebank  —  5 scenario
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+fm-mlx reuses Say, Karaoke, and Markdown (DRY)  —  5 scenarios   (features/fm-mlx-dry.feature)
+  - [(no grade)] a prompt comes back rendered (Markdown not re-implemented)
+  - [(no grade)] --say speaks the reply with karaoke highlight, in the say voice
+  - [(no grade)] --voice overrides the spoken voice
+  - [(no grade)] the Markdown renderer is no longer duplicated
+  - [(no grade)] md_to_plain strips markers for speech; md_to_ansi styles for the
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 0/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat

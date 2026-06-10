@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# bbs — open the BBS Convey dashboard.
+#   bbs            open/focus BBS
+#   bbs editor     open BBS (then the editor tab via the omnibar 'editor' deep-link, already wired)
+# The Media Editor reads from `convey serve` (the spine); adding a URL/search result ingests into Convey.
+open -a BBS 2>/dev/null || open -a "BBS.app" 2>/dev/null || {
+  echo "BBS.app not found in /Applications — build it: cd ~/work/bbs-app && ./build.sh --install" >&2
+  exit 1
+}
+case "${1:-}" in
+  editor|clip|media-editor) echo "BBS opening — type 'editor' in the omnibar (or it restores your editor tab)." ;;
+esac
