@@ -577,6 +577,38 @@ func whispQueueRead() -> String {
     }
 }
 
+func linkHealthRead() -> String {
+    // Mini-link health, the way the 2026-06-10 stall actually presented: Syncthing's
+    // PROCESS was up the whole time, but the laptop↔Mini PEER link dropped for ~3.5h, so
+    // no heartbeats arrived. The honest signal is therefore end-to-end liveness, not
+    // "is syncthingd alive" — we measure the freshest Mini heartbeat the laptop has
+    // RECEIVED (newest comms/queue/*heartbeat*.json mtime). Pure file I/O, no spawn.
+    let dir = "\(HOME)/work/comms/queue"
+    let fm = FileManager.default
+    guard let files = try? fm.contentsOfDirectory(atPath: dir) else { return "—" }
+    var newest: Date? = nil
+    for f in files where f.hasSuffix("heartbeat.json") && !f.contains("sync-conflict") {
+        if let a = try? fm.attributesOfItem(atPath: "\(dir)/\(f)"),
+           let m = a[.modificationDate] as? Date {
+            if newest == nil || m > newest! { newest = m }
+        }
+    }
+    guard let n = newest else { return "🔴 no heartbeats" }
+    let age = Date().timeIntervalSince(n)
+    func human(_ s: Double) -> String {
+        let i = Int(s)
+        if i < 60 { return "\(i)s" }
+        if i < 3600 { return "\(i/60)m" }
+        return "\(i/3600)h\((i % 3600)/60)m"
+    }
+    // syncthingd up locally? (cheap secondary detail; primary signal is freshness)
+    let stOn = !run("/usr/bin/pgrep", ["-x", "syncthing"]).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    let stTag = stOn ? "" : " · ⚠ syncthingd OFF"
+    if age < 300  { return "🟢 Mini linked · \(human(age)) ago\(stTag)" }
+    if age < 1800 { return "🟠 stalled · last \(human(age)) ago\(stTag)" }
+    return "🔴 link down · last \(human(age)) ago\(stTag)"
+}
+
 func mirrorQueueRead() -> String? {
     // MERLib mirror-worker heartbeat (written every loop tick on the Mini,
     // Syncthing-mirrored to the laptop). Shape:
@@ -3707,6 +3739,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let b = body, !b.isEmpty, b != "—" else { return }
             menu.addItem(statusRow(title, body: b, open: open, args: args, symbol: symbol))
         }
+        // Mini link health FIRST — a stalled laptop↔Mini Syncthing link silently breaks
+        // FM, OCR, whisp, roundtable… so surface it at the top, clickable to fix.
+        let link = linkHealthRead()
+        if !link.isEmpty, link != "—" {
+            var linkItems: [NSMenuItem] = []
+            linkItems.append(action("🌐 Open Syncthing GUI", cmd: "/usr/bin/open", args: ["http://127.0.0.1:8384/"]))
+            linkItems.append(action("🔄 Restart Syncthing", cmd: "/opt/homebrew/bin/brew", args: ["services", "restart", "syncthing"]))
+            linkItems.append(NSMenuItem.separator())
+            linkItems.append(action("📁 Open queue (heartbeats)", cmd: "/usr/bin/open", args: ["\(HOME)/work/comms/queue"]))
+            menu.addItem(statusSubmenu("🔗 Mini link", body: link, items: linkItems))
+        }
         addIf("🌡 Climate", climateRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/homepod-watcher/climate-graph.html"])
         addIf("🔋 Battery", batteryRead(),
@@ -5725,6 +5768,8 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             guard let b = body, !b.isEmpty, b != "—" else { return }
             rows.append(Row(title: title, body: b, cmd: cmd, args: args, icons: icons, kind: kind, symbol: symbol))
         }
+        add("Mini link", linkHealthRead(),
+            "/usr/bin/open", ["http://127.0.0.1:8384/"], symbol: "link")
         add("Climate", climateRead(),
             "/usr/bin/open", ["\(HOME)/work/homepod-watcher/climate-graph.html"], kind: "climate",
             symbol: "thermometer.medium")

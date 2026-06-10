@@ -9,7 +9,9 @@ Conversation context is kept on THIS side: each turn replays the dialogue so far
 to the (otherwise stateless) worker, so the model remembers what you said. Short
 test chats stay well inside the model's ~65k-token window.
 
-    fm-chat                      start chatting
+    fm-chat                      start chatting (FoundationModels brain)
+    fm-chat --mlx                 chat with the Mini's MLX brain (Qwen3-4B) — speaks each
+                                  reply aloud (karaoke); --quiet to mute, --voice NAME to pick
     fm-chat --system "..."        open with a system instruction (a persona/role)
 
 In-chat commands:
@@ -32,6 +34,8 @@ import uuid as uuidlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from fm_render import format_reply, md_to_plain  # noqa: E402  (shared richtext framing + speech text)
 QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
@@ -162,6 +166,43 @@ def ask(prompt: str, system: str, timeout: float = 180.0):
     return None, time.time() - t0
 
 
+def ask_mlx(prompt: str, system: str, timeout: float = 180.0):
+    """--mlx backend: same contract as ask() but the brain is the Mini's MLX server,
+    reached through `fm-mlx --raw` (the one shared MLX transport — DRY). Returns
+    (res_dict | None, round_trip). A live spinner runs while fm-mlx is out."""
+    cmd = [str(HERE / "fm-mlx"), "--raw"]
+    if system:
+        cmd += ["--system", system]
+    cmd.append(prompt)
+    t0 = time.time()
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            stdin=subprocess.DEVNULL, text=True)
+    spin, i = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", 0
+    while proc.poll() is None:
+        i += 1
+        sys.stdout.write(f"\r{DIM}  {spin[i % len(spin)]} thinking… {time.time()-t0:4.1f}s{RESET}")
+        sys.stdout.flush()
+        time.sleep(0.1)
+    out, err = proc.communicate()
+    sys.stdout.write("\r" + " " * 40 + "\r")
+    rt = time.time() - t0
+    if proc.returncode != 0 or not (out or "").strip():
+        return {"ok": False, "err": (err or "").strip() or "no reply"}, rt
+    return {"ok": True, "out": out.strip(), "host": "cloudcitymacmini", "model_ms": 0}, rt
+
+
+def speak_reply(text: str, voice: str = "Eddy"):
+    """Speak a reply the same way fm-mlx does: plain text (markers stripped) through
+    say-karaoke, in the `say` skill's Eddy voice. DRY — same renderer, same speaker."""
+    try:
+        sk = subprocess.Popen([str(HERE / "say-karaoke"), "--voice", voice],
+                              stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, text=True)
+        sk.communicate(md_to_plain(text))
+    except Exception:
+        pass
+
+
 def humanize_err(err: str) -> str:
     e = (err or "").strip()
     if "guardrail" in e.lower() or "unsafe content" in e.lower():
@@ -199,9 +240,20 @@ def main() -> int:
     do_list = "--list" in args
     if do_list:
         args.remove("--list")
+    use_mlx = "--mlx" in args
+    if use_mlx:
+        args.remove("--mlx")
+    quiet = "--quiet" in args or "--no-speak" in args
+    for f in ("--quiet", "--no-speak"):
+        while f in args:
+            args.remove(f)
+    voice = _pop(args, "--voice") or os.environ.get("FM_MLX_VOICE", "Eddy")
     resume = _pop(args, "--resume")
     cwd = _pop(args, "--cwd") or os.getcwd()
     system = _pop(args, "--system") or ""
+    # --mlx speaks each reply by default (the live "keeps printing and saying" REPL);
+    # --quiet turns speech off. FM mode stays text-only unless that changes later.
+    speak = use_mlx and not quiet
 
     if do_list:
         list_sessions(cwd); return 0
@@ -215,8 +267,12 @@ def main() -> int:
         uid, meta = new_session(cwd, system)
         history = []
 
-    print(f"{BOLD}fm-chat{RESET} — Apple FoundationModels on the Mini  "
-          f"{DIM}(worker: {worker_alive()}){RESET}")
+    if use_mlx:
+        print(f"{BOLD}fm-chat{RESET} — MLX/Qwen3-4B on the Mini  "
+              f"{DIM}(via fm-mlx; speaks aloud{' — --quiet to mute' if speak else ', muted'}){RESET}")
+    else:
+        print(f"{BOLD}fm-chat{RESET} — Apple FoundationModels on the Mini  "
+              f"{DIM}(worker: {worker_alive()}){RESET}")
     print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
           f"resume later: fm-chat --resume {uid}{RESET}")
     print(f"{DIM}commands: /reset  /system TEXT  /history  /exit{RESET}")
@@ -255,21 +311,26 @@ def main() -> int:
             continue
 
         prompt = render(history, line)
-        res, rt = ask(prompt, system)
+        res, rt = (ask_mlx if use_mlx else ask)(prompt, system)
         if res is None:
             print(f"{YELLOW}  (timed out after {rt:.0f}s — is fm-worker running on the Mini? "
                   f"`fm-submit --status`){RESET}")
             continue
         if not res.get("ok"):
-            print(f"{YELLOW}  ⚠ {humanize_err(res.get('err',''))}{RESET}\n")
+            hint = ("is mlx_lm.server up on the Mini? try `fm-mlx hello`"
+                    if use_mlx else "fm-worker")
+            print(f"{YELLOW}  ⚠ {humanize_err(res.get('err','')) } ({hint}){RESET}\n")
             continue
         answer = res.get("out", "").strip()
         # the model may echo a leading "Assistant:" from the cue — strip it
         if answer.lower().startswith("assistant:"):
             answer = answer.split(":", 1)[1].strip()
-        print(f"{GREEN}{BOLD}fm  ›{RESET} {answer}")
-        mm = res.get("model_ms", 0) / 1000
-        print(f"{DIM}     [{res.get('host','?')} · model {mm:.1f}s · round-trip {rt:.1f}s]{RESET}\n")
+        # shared formatter (same as fm-mlx): green `fm ›` label + Markdown richtext + stats
+        print(format_reply(answer, host=res.get("host", "?"),
+                           model_ms=res.get("model_ms", 0), round_trip=rt))
+        print()
+        if speak:
+            speak_reply(answer, voice)   # keeps printing AND saying — the live REPL
         history.append(("user", line))
         history.append(("assistant", answer))
         append_turn(meta, "user", line)           # persist → resumable in `sessions`
