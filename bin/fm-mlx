@@ -4,23 +4,49 @@
 #   fm-mlx hello                          # prompt as args
 #   fm-mlx "summarise this in 5 words"    # quote multi-word prompts
 #   echo "long prompt..." | fm-mlx        # or pipe it in
+#   fm-mlx --say "explain RBI in 2 lines" # speak the reply aloud (karaoke)
+#   fm-mlx --say --voice Zoe "..."        # pick the spoken voice
 #
 # Talks to mlx_lm.server on the Mini via Tailscale Serve (tailnet-only, encrypted).
 # Override the endpoint with FM_MLX_HOST if needed.
+#
+# DRY — this tool OWNS the MLX round-trip only; it reuses, not re-implements:
+#   • Markdown   → bin/fm_render.py   (ANSI on a TTY, plain when piped; shared w/ fm-converse)
+#   • Karaoke    → bin/say-karaoke    (speak + per-word highlight; AVSpeechSynthesizer)
+#   • Say voice  → Eddy               (the `say` skill's chosen voice; ~/.claude/skills/say)
+# FEATURE-CARD >> features/fm-mlx-dry.feature
 set -uo pipefail
 
+HERE="$(cd "$(dirname "$0")" && pwd)"
 HOST="${FM_MLX_HOST:-http://cloudcitymacmini:8080}"
 
-prompt="$*"
+say=0
+voice="${FM_MLX_VOICE:-Eddy}"   # reuse the `say` skill's voice by default
+system=""                       # --system: an optional system instruction (used by the MLX roundtable)
+rest=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s|--say)   say=1; shift ;;
+    --voice)    voice="$2"; shift 2 ;;
+    --system)   system="$2"; shift 2 ;;
+    -h|--help)  sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)          rest+=("$1"); shift ;;
+  esac
+done
+
+prompt="${rest[*]:-}"
 if [ -z "$prompt" ] && [ ! -t 0 ]; then prompt="$(cat)"; fi
 if [ -z "$prompt" ]; then
-  echo "usage: fm-mlx \"your prompt\"   (or pipe text in)" >&2
+  echo "usage: fm-mlx [--say] [--voice NAME] \"your prompt\"   (or pipe text in)" >&2
   exit 1
 fi
 
-body=$(python3 -c 'import json,sys; print(json.dumps({"messages":[{"role":"user","content":sys.argv[1]}]}))' "$prompt")
+body=$(python3 -c 'import json,sys
+sysmsg, user = sys.argv[1], sys.argv[2]
+msgs = ([{"role":"system","content":sysmsg}] if sysmsg else []) + [{"role":"user","content":user}]
+print(json.dumps({"messages": msgs}))' "$system" "$prompt")
 
-curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
+reply=$(curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
   -H "Content-Type: application/json" -d "$body" \
 | python3 -c '
 import sys, json
@@ -32,4 +58,15 @@ try:
     print(d["choices"][0]["message"]["content"])
 except Exception:
     sys.exit("fm-mlx: unexpected response:\n" + raw[:500])
-'
+') || exit 1
+
+# Render the reply once (shared with fm-converse): ANSI Markdown on a TTY, plain when piped.
+printf '%s\n' "$reply" | python3 "$HERE/fm_render.py"
+
+# --say: speak the plain-text reply via say-karaoke (karaoke highlight + Eddy voice).
+# md_to_plain strips the markers so it doesn't read "asterisk asterisk" aloud; the
+# per-word JSON highlight stream goes to /dev/null (no UI to consume it on the CLI).
+if [ "$say" -eq 1 ]; then
+  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --plain \
+    | "$HERE/say-karaoke" --voice "$voice" >/dev/null
+fi
