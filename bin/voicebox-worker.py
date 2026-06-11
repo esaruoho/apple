@@ -196,7 +196,7 @@ def process_one(job_path: Path):
     # name comes from env so the worker can be moved between Voicebox installs
     # without per-job edits.
     profile_id = spec.get("profile_id") or spec.get("profile") or os.environ.get("VOICEBOX_DEFAULT_PROFILE", "default")
-    engine = spec.get("engine") or os.environ.get("VOICEBOX_DEFAULT_ENGINE", "qwen")
+    engine = spec.get("engine") or os.environ.get("VOICEBOX_DEFAULT_ENGINE", "kokoro")
     language = spec.get("language") or "en"
 
     log_event({"event": "start", "id": job_id, "chars": len(text),
