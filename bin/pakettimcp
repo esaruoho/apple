@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# pakettimcp "<english>" — type plain English; the Mini's local Qwen3-4B reasons
+# and drives Renoise here via PakettiMCP. Zero Claude, zero Anthropic tokens.
+#
+#   pakettimcp "set the tempo to 155.2 bpm"
+#   pakettimcp "set tempo to 140, then start playback"
+#   pakettimcp "shrink the pattern and tell me the song info"
+#
+# Thin front-end to mlx-drive-renoise (MLX on the Mini over Tailscale, PakettiMCP
+# on localhost). Prints each tool step the model chooses.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+MCP="${PAKETTIMCP_URL:-http://localhost:19714/mcp}"
+HEALTH="${MCP%/mcp}/health"
+
+if [ $# -lt 1 ]; then
+  echo 'usage: pakettimcp "set the tempo to 155.2 bpm"' >&2
+  exit 2
+fi
+
+if ! curl -s -m 3 "$HEALTH" >/dev/null 2>&1; then
+  echo "PakettiMCP server is not running in Renoise." >&2
+  echo "Enable it once:  Main Menu ▸ Options ▸ Auto-Start PakettiMCP" >&2
+  echo "(or open  Tools ▸ Paketti ▸ !Preferences ▸ MCP Server Dialog)." >&2
+  exit 1
+fi
+
+exec "$HERE/mlx-drive-renoise" "$@"

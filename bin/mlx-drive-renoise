@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+# mlx-drive-renoise — zero-token English -> Renoise agent loop.
+#
+# The Mini's local Qwen3-4B (MLX) reasons over multiple steps, each step
+# choosing ONE PakettiMCP tool; results are fed back so it can chain actions
+# until it decides it's done. NO Anthropic tokens, no Claude — all reasoning is
+# on-device on the Mini.
+#
+#   you (English) -> [ MLX picks a tool -> PakettiMCP executes -> result back ]* -> done
+#
+# Usage:   mlx-drive-renoise "set the tempo to 150 and start playback"
+# Env:     FM_MLX_HOST          (default http://cloudcitymacmini:8080)
+#          PAKETTIMCP_URL       (default http://localhost:19714/mcp)
+#          MLX_RENOISE_MAX_STEPS(default 6)
+#          MLX_RENOISE_QUIET=1  (suppress the per-step stderr progress)
+#
+# Notes:
+#   • mlx_lm.server serializes (one request at a time). If it's mid-request the
+#     call waits — this tool reports that clearly instead of hanging silently.
+#   • Do NOT send a "model" field: the server treats it as a HF repo to load.
+#   • Hit :8080 by hostname, not bare IP (it routes by Host header).
+import json, os, sys, re, signal, urllib.request, urllib.error, socket
+
+MLX = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini:8080").rstrip("/") + "/v1/chat/completions"
+MCP = os.environ.get("PAKETTIMCP_URL", "http://localhost:19714/mcp")
+MAX_STEPS = int(os.environ.get("MLX_RENOISE_MAX_STEPS", "6"))
+QUIET = os.environ.get("MLX_RENOISE_QUIET") == "1"
+
+# Curated subset of PakettiMCP's 79 tools the model may use. Real input schemas
+# are fetched live from the server, so arg names are never guessed.
+CURATED = [
+    "transport_get_bpm", "transport_set_bpm", "transport_set_lpb",
+    "transport_play", "transport_stop", "transport_panic",
+    "song_get_info", "song_undo",
+    "track_set_volume", "track_set_mute", "track_set_solo",
+    "paketti_groovebox", "paketti_pattern_shrink", "paketti_pattern_expand",
+]
+
+def note(msg):
+    if not QUIET:
+        print(msg, file=sys.stderr, flush=True)
+
+def post(url, payload, timeout, what):
+    req = urllib.request.Request(url, json.dumps(payload).encode(),
+                                 {"Content-Type": "application/json"})
+    try:
+        return json.load(urllib.request.urlopen(req, timeout=timeout))
+    except (socket.timeout, TimeoutError):
+        sys.exit(f"\n{what} timed out after {timeout}s. The Mini's MLX serializes "
+                 "one request at a time — it may be busy. Try again in a moment.")
+    except urllib.error.URLError as e:
+        sys.exit(f"\n{what} unreachable: {e.reason}. "
+                 f"(MLX up on the Mini? PakettiMCP server running in Renoise?)")
+
+def mcp_rpc(method, params, timeout=15):
+    r = post(MCP, {"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+             timeout, "PakettiMCP")
+    if "error" in r:
+        return {"error": r["error"]}
+    return r.get("result", {})
+
+def load_menu():
+    tools = mcp_rpc("tools/list", {}).get("tools", [])
+    by_name = {t["name"]: t for t in tools}
+    menu = []
+    for n in CURATED:
+        t = by_name.get(n)
+        if t:
+            menu.append({"name": n, "description": t.get("description", ""),
+                         "inputSchema": t.get("inputSchema", {})})
+    menu.append({"name": "done", "description": "Call this when the request is fully handled.",
+                 "inputSchema": {"type": "object",
+                                 "properties": {"summary": {"type": "string"}},
+                                 "required": ["summary"]}})
+    return menu
+
+def mlx_step(messages, timeout=180):
+    # No "model" field on purpose (see header note).
+    r = post(MLX, {"temperature": 0, "max_tokens": 256, "messages": messages},
+             timeout, "Mini MLX")
+    return r["choices"][0]["message"]["content"]
+
+def extract_call(raw):
+    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.S)        # drop Qwen thinking
+    raw = re.sub(r"```(?:json)?|```", "", raw)                       # drop fences
+    m = (re.search(r'\{[^{}]*"tool"[^{}]*\{[^{}]*\}[^{}]*\}', raw, re.S)
+         or re.search(r'\{.*\}', raw, re.S))
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return None
+
+def run(intent):
+    menu = load_menu()
+    system = ("You drive Renoise (a DAW) by calling tools, one per turn. "
+              "Reply with ONLY a raw JSON object, no prose/markdown/thinking: "
+              '{"tool":"<name>","arguments":{...}}. After each tool result you may '
+              "call another tool, or call done when the user's request is fully "
+              "handled. Tools (with JSON schemas): " + json.dumps(menu))
+    messages = [{"role": "system", "content": system},
+                {"role": "user", "content": intent + " /no_think"}]
+    print(f"  intent : {intent}")
+    for step in range(1, MAX_STEPS + 1):
+        note(f"  · step {step}: asking the Mini's Qwen…")
+        raw = mlx_step(messages)
+        call = extract_call(raw)
+        if not call or "tool" not in call:
+            print(f"  step {step}: MLX gave no tool call — stopping.\n    raw: {raw.strip()[:200]}")
+            return
+        tool, args = call["tool"], call.get("arguments", {}) or {}
+        if tool == "done":
+            print(f"  done   : {args.get('summary', '(no summary)')}")
+            return
+        res = mcp_rpc("tools/call", {"name": tool, "arguments": args})
+        if "error" in res:
+            out = "ERROR: " + json.dumps(res["error"])
+        else:
+            out = res.get("content", [{}])[0].get("text", json.dumps(res))
+        print(f"  step {step}: {tool}({json.dumps(args)}) -> {out}")
+        messages.append({"role": "assistant", "content": raw})
+        messages.append({"role": "user",
+                         "content": f"OBSERVATION: {out}\nCall the next tool, or done if finished."})
+    print(f"  (reached max {MAX_STEPS} steps)")
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit('usage: mlx-drive-renoise "set the tempo to 150 and play"')
+    try:
+        run(" ".join(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print("\n  (interrupted)", file=sys.stderr)
+        sys.exit(130)
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL) if hasattr(signal, "SIGPIPE") else None
+    main()
