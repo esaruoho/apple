@@ -1,4 +1,4 @@
-# CLI Tools Index — 216 tools in bin/
+# CLI Tools Index — 223 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -30,6 +30,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
+`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
 `audio-snippets` — capture N short clips from every audio input device (or every — `bin/audio-snippets`
@@ -63,6 +64,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-index` — (no description) — `bin/cc-index`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
+`convey` — (no description) — `bin/convey`
 `create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
 `describe-worker` — (no description) — `bin/describe-worker`
@@ -131,6 +133,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
+`mlx-drive-renoise` — zero-token English -> Renoise bridge. — `bin/mlx-drive-renoise`
+`morning-digest` — (no description) — `bin/morning-digest`
 `ner-graph` — (no description) — `bin/ner-graph`
 `ner-graph-svg` — (no description) — `bin/ner-graph-svg`
 `notify-iphone` — (no description) — `bin/notify-iphone`
@@ -156,6 +160,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
+`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -163,6 +168,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
+`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
@@ -173,6 +179,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
+`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`

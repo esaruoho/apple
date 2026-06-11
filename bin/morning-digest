@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""morning-digest — "you woke up; here's what the Mac Mini cooked up overnight."
+
+Gathers what changed since yesterday — new Readings in the catalog (the Mini's MLX
+wrote them), overnight commits, the nightly read-batch log — hands the facts to the
+Mini's Qwen3-4B to write a warm briefing, then SAVES it, SPEAKS it, and prints it.
+
+DRY: the brain is fm-mlx (--raw), the readings come from the convey catalog, the voice
+is `say`. Run it any morning, or schedule it ~7:30am after the 3am nightly read-batch.
+
+    morning-digest            # build + speak + print today's digest
+    morning-digest --quiet    # don't speak
+"""
+import json
+import os
+import subprocess
+import sys
+from datetime import date, timedelta
+from pathlib import Path
+
+HOME = Path.home()
+ANALYSES = HOME / "work" / "convey" / "analyses"
+FM_MLX = HOME / "work" / "apple" / "bin" / "fm-mlx"
+quiet = "--quiet" in sys.argv or "-q" in sys.argv
+
+today = date.today().isoformat()
+recent = {today, (date.today() - timedelta(days=1)).isoformat()}
+
+facts = []
+
+# 1) New Readings since yesterday (the overnight catch) — grouped by lens, with top concepts.
+idx = ANALYSES / "readings-index.jsonl"
+new = []
+if idx.exists():
+    for line in idx.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if line.strip():
+            try:
+                r = json.loads(line)
+                if r.get("date") in recent:
+                    new.append(r)
+            except Exception:
+                pass
+by_realm = {}
+for r in new:
+    by_realm.setdefault(r["realm"], []).append(r)
+for realm, rs in by_realm.items():
+    concepts = []
+    for r in rs:
+        concepts += (r.get("concepts") or [])
+    top = list(dict.fromkeys(concepts))[:8]
+    facts.append(f"{len(rs)} new readings in the lens '{realm}'; standout concepts: {', '.join(top) or '—'}")
+
+# 2) Overnight commits across the working repos.
+for repo in ("convey", "comms", "apple", "converse"):
+    g = HOME / "work" / repo
+    if (g / ".git").exists():
+        try:
+            out = subprocess.run(["git", "-C", str(g), "log", "--since=18 hours ago", "--oneline"],
+                                 capture_output=True, text=True, timeout=10).stdout.strip()
+            if out:
+                facts.append(f"{repo}: {len(out.splitlines())} commits overnight")
+        except Exception:
+            pass
+
+# 3) Nightly read-batch log tail (did it run?).
+log = ANALYSES / "read-batch-nightly.log"
+if log.exists():
+    tail = [l for l in log.read_text(encoding="utf-8", errors="ignore").splitlines() if l.strip()][-2:]
+    if tail:
+        facts.append("nightly read-batch log: " + " / ".join(tail))
+
+if not new and not any("commits" in f for f in facts):
+    facts.append("A quiet night — nothing new in the catalog or repos since yesterday.")
+
+blob = "Facts about what happened overnight:\n" + "\n".join(f"- {f}" for f in facts)
+
+# 4) The Mini's Qwen3-4B writes the briefing (its own voice — it did the work).
+system = ("You are the Cloudcity Mac Mini — a warm, capable, slightly proud overnight assistant. "
+          "Esa just woke up. In 4-6 short spoken sentences, greet him by name and tell him what you "
+          "cooked up overnight, based ONLY on the facts below. Be specific and concrete (name the "
+          "lenses and concepts), warm, and brief. No markdown, no lists, no headers — just speech.")
+try:
+    briefing = subprocess.run([str(FM_MLX), "--raw", "--system", system, blob],
+                              capture_output=True, text=True, timeout=180).stdout.strip()
+except Exception as e:
+    briefing = ""
+if not briefing:
+    briefing = ("Good morning, Esa. I couldn't reach my own brain this time — the MLX server may be "
+                "down (try `fm-mlx hello`). Here's the raw overnight tally instead:\n" + blob)
+
+# 5) Save, print, speak.
+out = ANALYSES / f"morning-digest-{today}.md"
+out.write_text(f"# ☕ Morning digest — {today}\n\n{briefing}\n\n---\n\n{blob}\n", encoding="utf-8")
+print("\n☕ " + briefing + "\n")
+print(f"   (saved → {out})")
+if not quiet:
+    try:
+        subprocess.run(["say", "-v", "Eddy", briefing], timeout=120)
+    except Exception:
+        pass
