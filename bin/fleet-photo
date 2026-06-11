@@ -9,14 +9,14 @@
 #
 # Per-machine channel (interchangeable transport, Syncthing-preferred):
 #   this Mac          -> imagesnap -l then -d each, locally
-#   CloudcityMacMini  -> photo-request (Syncthing); photo-worker captures; collect
+#   CloudcityMacMini  -> webcam-photo-request (Syncthing); webcam-capture-worker captures; collect
 #   other peers       -> ssh imagesnap (best-effort; needs imagesnap + Camera TCC)
 set -uo pipefail
 Q="$HOME/work/comms/queue"
 REG="$Q/fleet-registry.json"
 ts="$(date +%Y%m%d-%H%M%S)"
 OUT="$Q/fleet-photos/$ts"
-mkdir -p "$OUT" "$Q/photo-requests"
+mkdir -p "$OUT" "$Q/webcam-photo-requests"
 me="$(hostname -s)"
 IMAGESNAP="$(command -v imagesnap || echo /opt/homebrew/bin/imagesnap)"
 [ -f "$REG" ] || { echo "no fleet-registry at $REG"; exit 1; }
@@ -39,14 +39,18 @@ for m in $machines; do
   if [ "$m" = "$me" ]; then
     c=$(snap_local "$m"); echo "  $m : $c local camera snapshot(s)"; total=$((total+c))
   elif [ "$m" = "CloudcityMacMini" ]; then
+    # Route through the WORKING ffmpeg-by-index path (webcam-capture-worker serves
+    # webcam-photo-requests/), NOT the retired imagesnap photo-worker that captured 0
+    # devices on macOS 26. Same channel cloudcityphoto uses. Results are .jpg.
     rid="fleetphoto-$ts"
-    date -u +%FT%TZ > "$Q/photo-requests/$rid.req"
-    ok=0; for i in $(seq 1 40); do [ -f "$Q/photos/$rid/_manifest.txt" ] && { ok=1; break; }; sleep 1; done
+    mkdir -p "$Q/webcam-photo-requests"
+    date -u +%FT%TZ > "$Q/webcam-photo-requests/$rid.req"
+    ok=0; for i in $(seq 1 40); do [ -f "$Q/webcam-photos/$rid/_manifest.txt" ] && { ok=1; break; }; sleep 1; done
     if [ "$ok" = 1 ]; then
-      c=0; for f in "$Q/photos/$rid"/*.png; do [ -e "$f" ] || continue; cp "$f" "$OUT/${m}__$(basename "$f")"; c=$((c+1)); done
-      echo "  $m : $c camera snapshot(s) via photo-worker"; total=$((total+c))
+      c=0; for f in "$Q/webcam-photos/$rid"/*.jpg; do [ -e "$f" ] || continue; cp "$f" "$OUT/${m}__$(basename "$f")"; c=$((c+1)); done
+      echo "  $m : $c camera snapshot(s) via webcam-capture-worker"; total=$((total+c))
     else
-      echo "  $m : photo-worker not responding (pane live? camera attached?) — skipped"
+      echo "  $m : Webcam Capture not responding (pane live? camera attached?) — skipped"
     fi
   else
     if timeout 12 ssh -o ConnectTimeout=6 -o BatchMode=yes "$m" 'command -v imagesnap >/dev/null 2>&1' 2>/dev/null; then

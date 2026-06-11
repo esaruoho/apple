@@ -795,6 +795,47 @@ func fileerataQueueRead() -> String? {
     return parts.joined(separator: " · ")
 }
 
+// Webcam timelapse arrivals. The Mini's webcam-timelapse-worker renders a per-day (and
+// corpus) MP4 every ~3rd day into queue/webcam-timelapses/ and Syncthing carries it here.
+// This row shows the newest video + its age, and — the point of the feature — fires a
+// macOS notification when a NEW one appears since we last looked. Last-seen mtime is
+// persisted in ~/.config/appletoolbox/ so it survives the app's stat-poll→execv reload
+// (no false banner after a rebuild, no missed arrival). Returns nil to hide the row when
+// no timelapse exists yet. Called from rebuildMenu() each refresh tick.
+func webcamTimelapseRead() -> String? {
+    let dir = "\(HOME)/work/comms/queue/webcam-timelapses"
+    let fm = FileManager.default
+    guard let files = try? fm.contentsOfDirectory(atPath: dir) else { return nil }
+    let mp4s = files.filter { $0.hasSuffix(".mp4") }
+    guard !mp4s.isEmpty else { return nil }
+    func mtime(_ name: String) -> Double {
+        let attrs = try? fm.attributesOfItem(atPath: "\(dir)/\(name)")
+        return (attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+    }
+    let sorted = mp4s.sorted { mtime($0) > mtime($1) }
+    let newest = sorted[0]
+    let newestMtime = mtime(newest)
+
+    // Notify once per new arrival. Persist last-seen mtime across reloads; don't banner on
+    // the very first run (lastSeen==0) so installing the feature doesn't fire on old videos.
+    let storeDir = "\(HOME)/.config/appletoolbox"
+    let store = "\(storeDir)/webcam-timelapse-last-mtime"
+    let lastSeen = Double((try? String(contentsOfFile: store, encoding: .utf8))?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? "") ?? 0
+    if newestMtime > lastSeen + 1 {
+        if lastSeen > 0 { notify("🎬 New webcam timelapse", newest) }
+        try? fm.createDirectory(atPath: storeDir, withIntermediateDirectories: true)
+        try? String(format: "%.0f", newestMtime).write(toFile: store, atomically: true, encoding: .utf8)
+    }
+
+    let age = Date().timeIntervalSince1970 - newestMtime
+    let ageStr: String
+    if age < 3600        { ageStr = "\(max(1, Int(age/60)))m ago" }
+    else if age < 86400  { ageStr = "\(Int(age/3600))h ago" }
+    else                 { ageStr = "\(Int(age/86400))d ago" }
+    return "\(newest) · \(ageStr) · \(mp4s.count) total"
+}
+
 // ─── inline-detail data readers ───────────────────────────────────────────
 //
 // These return rich detail strings (multi-line, monospaced) that the live
@@ -3818,6 +3859,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/segment-outbox"])
         addIf("🌐 Mirror",   mirrorQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/gdrive-results"])
+        addIf("🎬 Timelapse", webcamTimelapseRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/webcam-timelapses"])
         menu.addItem(.separator())
 
         // Quick actions
