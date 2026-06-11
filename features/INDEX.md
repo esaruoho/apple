@@ -101,6 +101,17 @@ Find My — open the right tab and surface the right person/device  —  5 scena
   triad: .session✓  transcript✗  RESULT✓
   honesty: 3/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Read & control Finder Settings from the command line  —  7 scenarios   (features/finder-settings.feature)
+  - [@built] show prints the live state of every known toggle  (ran live)
+  - [@built] apply sets Esa's preset and relaunches Finder  (ran live)
+  - [@built] set flips any one boolean toggle on or off
+  - [@built] search selects the "When performing a search" scope
+  - [@built] every checkbox change is invisible until Finder relaunches  (ran
+  - [@built] the same capability is reachable as a zero-roundtrip slash
+  - [(no grade)] the Sidebar pane is out of scope
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 fm-converse — a remembering conversation with the on-device LLM  —  8 scenarios   (features/fm-converse.feature)
   - [@built] A follow-up question keeps the prior context
   - [@built] Replay stays inside the 4096-token FoundationModels window
