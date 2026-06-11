@@ -94,7 +94,18 @@ out.write_text(f"# ☕ Morning digest — {today}\n\n{briefing}\n\n---\n\n{blob}
 print("\n☕ " + briefing + "\n")
 print(f"   (saved → {out})")
 if not quiet:
-    try:
-        subprocess.run(["say", "-v", "Eddy", briefing], timeout=120)
-    except Exception:
-        pass
+    voice = os.environ.get("MORNING_VOICE", "Zoe (Premium)")   # the good local voice (NOT Eddy)
+    spoke = False
+    if "--voicebox" in sys.argv:                               # the Mini's AI voice studio, if you want it
+        try:
+            r = subprocess.run([str(HOME / "work/apple/bin/voicebox-submit"),
+                                "--id", f"morning-{today}", "--text", briefing, "--wait", f"morning-{today}"],
+                               timeout=240)
+            spoke = (r.returncode == 0)
+        except Exception:
+            spoke = False
+    if not spoke:
+        try:
+            subprocess.run(["say", "-v", voice, briefing], timeout=180)
+        except Exception:
+            pass
