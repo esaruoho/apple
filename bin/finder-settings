@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# finder-settings — read & control Finder Settings (Preferences) via `defaults`.
+#
+# Every checkbox in Finder ▸ Settings maps to a key in `com.apple.finder`
+# (or `NSGlobalDomain` for the extensions toggle). No UI scripting needed —
+# this is the Apple way: drive the preference domain, then `killall Finder`.
+#
+# Usage:
+#   finder-settings                      show current state of every known toggle
+#   finder-settings show                 (same)
+#   finder-settings set <name> on|off    flip a boolean toggle
+#   finder-settings search <scope>       scope = current | thismac | previous
+#   finder-settings apply                apply Esa's preferred preset
+#   finder-settings help                 list every toggle name
+#
+# After any change Finder is relaunched so the new value takes effect.
+
+set -euo pipefail
+
+FINDER=com.apple.finder
+GLOBAL=NSGlobalDomain
+
+# name -> "domain key"  (boolean toggles only)
+declare -a NAMES=(
+  show-extensions
+  warn-extension-change
+  warn-remove-icloud
+  warn-empty-bin
+  remove-bin-30days
+  folders-on-top
+  folders-on-top-desktop
+  open-in-tabs
+  show-hard-disks
+  show-external-disks
+  show-removable-media
+  show-connected-servers
+)
+key_for() {
+  case "$1" in
+    show-extensions)        echo "$GLOBAL AppleShowAllExtensions" ;;
+    warn-extension-change)  echo "$FINDER FXEnableExtensionChangeWarning" ;;
+    warn-remove-icloud)     echo "$FINDER FXEnableRemoveFromICloudDriveWarning" ;;
+    warn-empty-bin)         echo "$FINDER WarnOnEmptyTrash" ;;
+    remove-bin-30days)      echo "$FINDER FXRemoveOldTrashItems" ;;
+    folders-on-top)         echo "$FINDER _FXSortFoldersFirst" ;;
+    folders-on-top-desktop) echo "$FINDER _FXSortFoldersFirstOnDesktop" ;;
+    open-in-tabs)           echo "$FINDER FinderSpawnTab" ;;
+    show-hard-disks)        echo "$FINDER ShowHardDrivesOnDesktop" ;;
+    show-external-disks)    echo "$FINDER ShowExternalHardDrivesOnDesktop" ;;
+    show-removable-media)   echo "$FINDER ShowRemovableMediaOnDesktop" ;;
+    show-connected-servers) echo "$FINDER ShowMountedServersOnDesktop" ;;
+    *) return 1 ;;
+  esac
+}
+
+read_bool() { # domain key -> 1/0/(unset)
+  defaults read "$1" "$2" 2>/dev/null || echo "(unset)"
+}
+
+scope_label() {
+  case "$1" in
+    SCcf) echo "Search the Current Folder" ;;
+    SCsp) echo "Use the Previous Search Scope" ;;
+    SCev|*) echo "Search This Mac" ;;
+  esac
+}
+
+relaunch() {
+  echo "→ relaunching Finder…"
+  killall Finder 2>/dev/null || true
+}
+
+show() {
+  printf '%-24s %-7s %s\n' "TOGGLE" "STATE" "(domain key)"
+  for n in "${NAMES[@]}"; do
+    read -r d k <<<"$(key_for "$n")"
+    v="$(read_bool "$d" "$k")"
+    case "$v" in
+      1) s="ON" ;;
+      0) s="OFF" ;;
+      *) s="-default-" ;;
+    esac
+    printf '%-24s %-7s %s %s\n' "$n" "$s" "$d" "$k"
+  done
+  echo
+  sc="$(read_bool "$FINDER" FXDefaultSearchScope)"
+  [ "$sc" = "(unset)" ] && sc="SCev"
+  printf '%-24s %-7s %s\n' "search-scope" "$sc" "($(scope_label "$sc"))"
+}
+
+case "${1:-show}" in
+  show|"")
+    show
+    ;;
+  set)
+    name="${2:?usage: finder-settings set <name> on|off}"
+    val="${3:?usage: finder-settings set <name> on|off}"
+    pair="$(key_for "$name")" || { echo "unknown toggle: $name (run 'finder-settings help')" >&2; exit 1; }
+    read -r d k <<<"$pair"
+    case "$val" in
+      on|ON|true|1)  b=true ;;
+      off|OFF|false|0) b=false ;;
+      *) echo "value must be on|off" >&2; exit 1 ;;
+    esac
+    defaults write "$d" "$k" -bool "$b"
+    echo "set $name = $b  ($d $k)"
+    relaunch
+    ;;
+  search)
+    case "${2:?usage: finder-settings search current|thismac|previous}" in
+      current|currentfolder|folder) sc=SCcf ;;
+      thismac|mac|all)              sc=SCev ;;
+      previous|prev|last)           sc=SCsp ;;
+      *) echo "scope must be current|thismac|previous" >&2; exit 1 ;;
+    esac
+    defaults write "$FINDER" FXDefaultSearchScope -string "$sc"
+    echo "set search-scope = $sc ($(scope_label "$sc"))"
+    relaunch
+    ;;
+  apply)
+    # Esa's preferred Finder Settings preset.
+    defaults write "$GLOBAL" AppleShowAllExtensions -bool true        # Show all filename extensions
+    defaults write "$FINDER" _FXSortFoldersFirst   -bool true         # Keep folders on top in windows
+    defaults write "$FINDER" FXDefaultSearchScope  -string SCcf       # Search the Current Folder
+    echo "applied preset: show-extensions=ON, folders-on-top=ON, search-scope=SCcf (current folder)"
+    relaunch
+    ;;
+  help|-h|--help)
+    echo "Boolean toggles (use: finder-settings set <name> on|off):"
+    for n in "${NAMES[@]}"; do echo "  $n"; done
+    echo
+    echo "Search scope (use: finder-settings search <scope>):"
+    echo "  current | thismac | previous"
+    echo
+    echo "Preset:  finder-settings apply"
+    ;;
+  *)
+    echo "unknown command: $1 (try: show | set | search | apply | help)" >&2
+    exit 1
+    ;;
+esac
