@@ -293,7 +293,28 @@ async def scan() -> int:
     return handled
 
 
+OUTBOX_TTL = 1800   # prune outbox results older than this (s)
+
+
+def prune_outbox():
+    """Fire-and-forget (--no-wait) callers leave their results in the outbox forever —
+    2,160 stale files accumulated once and clogged the Syncthing folder, making the queue
+    look broken. A WAITING fm-submit reads + deletes its own result within seconds, long
+    before the TTL, so dropping anything older is safe and keeps the queue (and sync) light."""
+    cutoff = time.time() - OUTBOX_TTL
+    try:
+        for p in list(OUTBOX.glob("*.json")) + list(OUTBOX.glob("*.partial.json")):
+            try:
+                if p.stat().st_mtime < cutoff:
+                    p.unlink()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def beat():
+    prune_outbox()   # keep the outbox from clogging (every heartbeat)
     payload = json.dumps({
         "ts": int(time.time()), "host": HOST,
         "sessions": len(SESSIONS), "service": "fm-service",
