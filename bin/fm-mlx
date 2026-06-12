@@ -72,27 +72,27 @@ except Exception:
 ') || exit 1
 rt=$(python3 -c "import time; print(f'{time.time()-$t0:.1f}')")
 
-# --raw: the brain interface. Just the reply text — no framing, no speech — so callers
-# (fm-chat --mlx, `convey roundtable` with the MLX brain) get clean text to render/speak
-# themselves. DRY: every MLX consumer shares this one transport.
-if [ "$raw" -eq 1 ]; then
+# Output mode — behave like a proper Unix tool:
+#   • --raw, OR stdout is NOT a terminal (piped into a program) → RAW reply text only.
+#     A program reading fm-mlx (fm-chat --mlx, convey roundtable, any subprocess) must
+#     never get the "fm ›" label or [host · round-trip] stats leaking into its data.
+#   • interactive terminal → the fm-chat-style richtext (label + Markdown→ANSI + stats).
+if [ "$raw" -eq 1 ] || [ ! -t 1 ]; then
   printf '%s\n' "$reply"
-  exit 0
+else
+  host="${HOST#*://}"; host="${host%%:*}"
+  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --chat --host "$host" --model "MLX/Qwen3-4B" --rt "$rt"
 fi
 
-# Show the reply the SAME way as fm-chat (shared formatter): green `fm ›` label,
-# Markdown rendered as richtext on a TTY, dim [host · round-trip] stats line.
-host="${HOST#*://}"; host="${host%%:*}"
-printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --chat --host "$host" --model "MLX/Qwen3-4B" --rt "$rt"
-
-# Speak by default (auto = only on an interactive terminal). md_to_plain strips the
-# markers so say-karaoke doesn't read "asterisk asterisk" aloud; the per-word JSON
-# highlight stream goes to /dev/null (no UI to consume it on the CLI).
+# Speak: --say forces (even piped); --raw/--quiet never speak; auto speaks only on a
+# terminal. md_to_plain strips markers so it doesn't read "asterisk asterisk" aloud.
 speak=0
-case "$say" in
-  1) speak=1 ;;
-  auto) [ -t 1 ] && speak=1 ;;
-esac
+if [ "$raw" -eq 0 ]; then
+  case "$say" in
+    1) speak=1 ;;
+    auto) [ -t 1 ] && speak=1 ;;
+  esac
+fi
 if [ "$speak" -eq 1 ]; then
   printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --plain \
     | "$HERE/say-karaoke" --voice "$voice" >/dev/null
