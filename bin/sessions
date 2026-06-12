@@ -625,7 +625,7 @@ def run_picker(stdscr, folder):
         try:
             k = stdscr.getch()
         except KeyboardInterrupt:
-            return ("quit", None, None)
+            return ("quit", None, None, None)
 
         if k == -1:
             # timeout tick → refresh if at least REFRESH_MS elapsed
