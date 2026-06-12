@@ -2,6 +2,19 @@
 
 Project-specific instructions for sessions in `/Users/esaruoho/work/apple/`. **Skill loader is `skill.md`**; **wiki index is `wiki/INDEX.md`**; **rules from `~/.claude/CLAUDE.md`** also apply.
 
+---
+
+## 🔴🔴🔴 GROUND RULE: NEVER USE NOHUP. NEVER USE A DAEMON. ALWAYS USE CLOUDCITY-BOOT.app + SYSTEMS.yaml 🔴🔴🔴
+
+**On the Mac Mini (`cloudcity`), the ONLY acceptable way to RUN any long-lived process is Cloudcity-Boot.app driven by `systems.yaml` (`convey/systems.yaml`).**
+
+- **NEVER** `nohup` anything — not a worker (e.g. `fm-worker`/`fm-service`), not a daemon, not a "bounded probe," not as a `timeout` substitute. macOS lacking `timeout` is NOT an excuse.
+- **NEVER** start a background daemon, `launchd`/LaunchAgent, SSH-launched `&` process, or any "leave it running" process. SSH-launched daemons don't persist — proof it's the wrong tool.
+- **ALWAYS** run via **Cloudcity-Boot.app** (visible iTerm panes, crash-only `while-true` wrappers + guardians) generated from **`systems.yaml`**. Add/change a service: edit `systems.yaml`, regenerate/edit the applet, restart via **`!pk cloudcity restart`** (Discord / file-drop `~/work/comms/queue/pakettibot-inbox/`). Never `open Cloudcity-Boot.app` over SSH. Restart a wedged worker the same way — let Boot relaunch its pane.
+- **Acceptable Mini commands are exactly two kinds:** (1) Cloudcity-Boot + `systems.yaml` to run/restart; (2) client calls + read-only inspection (`fm-submit`, `convey`, `cat`, `ls`, `ps`, `git -C <abs>`) — **no `&`, no `nohup`**; bound any probe *inside the process* (`asyncio.wait_for`), never a backgrounded killer loop.
+
+**Why (2026-06-12):** while debugging wedged FM I repeatedly `nohup`'d `fm-worker`/`fm-service` and bounded read-only probes with `nohup … & kill`. Robust wins over brittle. Companions: `~/.claude/CLAUDE.md`, `comms/CLAUDE.md`, `convey/CLAUDE.md`, `~/.claude/skills/cloudcity/skill.md`.
+
 ## Session start
 
 On the first turn in this repo, invoke the `apple` skill via the Skill tool before responding.
