@@ -74,6 +74,20 @@ let cpuT = cpu.isEmpty ? dieAvg : avg(cpu)
 let gpuT = avg(gpu), avgT = avg(all), maxT = all.max() ?? 0
 let headline = dieMax > 0 ? dieMax : maxT
 
+// Thermal pressure — the OS's own coarse verdict (the "Thermal Pressure:
+// Nominal" line Hot.app shows). ProcessInfo gives this for free, no sudo,
+// and it's the same value the kernel uses to decide whether to throttle.
+func thermalPressure() -> String {
+    switch ProcessInfo.processInfo.thermalState {
+    case .nominal:    return "nominal"
+    case .fair:       return "fair"
+    case .serious:    return "serious"
+    case .critical:   return "critical"
+    @unknown default: return "unknown"
+    }
+}
+let pressure = thermalPressure()
+
 let json = ProcessInfo.processInfo.arguments.contains("--json")
 if json {
     let items = sensors.sorted { $0.c > $1.c }.prefix(20).map {
@@ -85,9 +99,11 @@ if json {
         + "\"die_avg\":\(String(format: "%.1f", dieAvg)),"
         + "\"cpu\":\(String(format: "%.1f", cpuT)),"
         + "\"gpu\":\(String(format: "%.1f", gpuT)),"
+        + "\"pressure\":\"\(pressure)\","
         + "\"count\":\(sensors.count),\"sensors\":[\(items)]}")
 } else {
-    print(String(format: "\n  🌡  %d sensors · avg %.1f°C · max %.1f°C", sensors.count, avgT, maxT))
+    print(String(format: "\n  🌡  %d sensors · avg %.1f°C · max %.1f°C · pressure %@",
+                 sensors.count, avgT, maxT, pressure as NSString))
     if cpuT > 0 { print(String(format: "      CPU ~%.1f°C", cpuT)) }
     if gpuT > 0 { print(String(format: "      GPU ~%.1f°C", gpuT)) }
     print()

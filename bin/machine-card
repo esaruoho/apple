@@ -546,11 +546,34 @@ def compute_running() -> dict:
         out["battery_pct"] = int(bm.group(1))
     out["power_source"] = "AC" if "AC Power" in bat else ("battery" if bat else None)
 
-    # Thermal pressure.
+    # Thermal pressure (throttle indicator from pmset).
     therm = sh(["pmset", "-g", "therm"])
     tm = re.search(r"CPU_Speed_Limit\s*=\s*(\d+)", therm)
     if tm:
         out["cpu_speed_limit_pct"] = int(tm.group(1))
+
+    # Actual sensor temperatures (°C) — the "how hot is it" face. Reuses
+    # bin/mac-temps (IOHIDEventSystemClient reader, no sudo); the Mini and
+    # every peer publish this so Fleet can answer "how hot is the Mini?"
+    # remotely. Non-fatal: a machine whose model exposes no HID temp sensors
+    # (or where the one-time swiftc compile times out) simply omits the block.
+    temps = sh([str(HERE / "mac-temps"), "--json"], timeout=20)
+    if temps:
+        try:
+            td = json.loads(temps)
+            if td.get("ok"):
+                out["thermal"] = {
+                    "headline_c": td.get("headline"),
+                    "max_c": td.get("max"),
+                    "avg_c": td.get("avg"),
+                    "cpu_c": td.get("cpu"),
+                    "gpu_c": td.get("gpu"),
+                    "pressure": td.get("pressure"),
+                    "sensor_count": td.get("count"),
+                    "top_sensors": (td.get("sensors") or [])[:5],
+                }
+        except Exception:
+            pass
 
     # Top 3 processes by CPU.
     ps = sh(["ps", "-Ao", "pcpu,comm", "-r"])

@@ -313,6 +313,56 @@ func batteryRead() -> String {
     return s
 }
 
+/// One CPU usage sample: process basename + %CPU. The "why is it hot" data —
+/// the kernel heats the die because something is running it hard.
+struct ProcUsage { let cmd: String; let cpu: Double }
+
+/// Top processes by CPU, hottest first — `ps -Ao pcpu,comm -r`. This is the
+/// answer to "what's making this computer so hot": the busiest processes.
+func topCPUProcesses(limit: Int = 6) -> [ProcUsage] {
+    let out = run("/bin/ps", ["-Ao", "pcpu,comm", "-r"], timeout: 3)
+    var res: [ProcUsage] = []
+    for line in out.split(separator: "\n").dropFirst() {
+        let parts = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        guard parts.count == 2, let cpu = Double(parts[0]) else { continue }
+        let comm = String(parts[1]).trimmingCharacters(in: .whitespaces)
+        let base = (comm as NSString).lastPathComponent
+        res.append(ProcUsage(cmd: base, cpu: cpu))
+        if res.count >= limit { break }
+    }
+    return res
+}
+
+/// One read of the Mac's die temperature sensors + thermal pressure, from
+/// bin/mac-temps (the IOHIDEventSystemClient sensor reader — no sudo, the same
+/// data Hot.app shows). ONE source of truth, shared with machine-card → Fleet.
+/// Pre-warmed at launch (see applicationDidFinishLaunching) so the menu never
+/// blocks on the one-time swiftc compile. Returns nil if unavailable.
+func temperatureSnapshot() -> (headline: Double, pressure: String, sensors: [(String, Double)])? {
+    let out = run("\(APPLE_DIR)/bin/mac-temps", ["--json"], timeout: 4)
+    guard let data = out.data(using: .utf8),
+          let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          j["ok"] as? Bool == true,
+          let h = j["headline"] as? Double else { return nil }
+    let pRaw = (j["pressure"] as? String) ?? ""
+    let pressure = pRaw.isEmpty ? "" : pRaw.prefix(1).uppercased() + pRaw.dropFirst()
+    var sensors: [(String, Double)] = []
+    if let arr = j["sensors"] as? [[String: Any]] {
+        for s in arr {
+            if let n = s["name"] as? String, let c = s["c"] as? Double { sensors.append((n, c)) }
+        }
+    }
+    return (h, pressure, sensors)
+}
+
+/// "63°C · Nominal" — headline die temp + thermal-pressure label. "—" if the
+/// model exposes no HID temp sensors or the reader isn't warm yet.
+func temperatureRead() -> String {
+    guard let s = temperatureSnapshot() else { return "—" }
+    return s.pressure.isEmpty ? String(format: "%.0f°C", s.headline)
+                              : String(format: "%.0f°C · %@", s.headline, s.pressure)
+}
+
 func diskRead() -> String {
     // APFS makes `df -h /` lie about Use%: it divides the visible Used by
     // Size, ignoring that other volumes in the same container (Data, VM,
@@ -2678,6 +2728,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         rebuildMenu()
+        // Pre-warm the temperature reader off the main thread: bin/mac-temps
+        // compiles its Swift helper to a cached binary on first run (~3-4 s).
+        // Doing it now means the 🔥 Temperature row is instant when the menu
+        // is first opened, instead of timing out on the one-time compile.
+        DispatchQueue.global(qos: .utility).async {
+            _ = run("\(APPLE_DIR)/bin/mac-temps", ["--json"], timeout: 30)
+        }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.rebuildMenu()
         }
@@ -3793,6 +3850,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         addIf("🌡 Climate", climateRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/homepod-watcher/climate-graph.html"])
+        // 🔥 This Mac's die temperature — Hot.app-style headline + per-sensor
+        // breakdown, plus the "why": the top CPU processes heating it. One
+        // mac-temps read feeds both the row label and the sensor list.
+        if let snap = temperatureSnapshot() {
+            let body = snap.pressure.isEmpty ? String(format: "%.0f°C", snap.headline)
+                                             : String(format: "%.0f°C · %@", snap.headline, snap.pressure)
+            var tempItems: [NSMenuItem] = []
+            for (name, c) in snap.sensors.prefix(16) {
+                tempItems.append(header("🌡 \(name)", body: String(format: "%.1f°C", c)))
+            }
+            tempItems.append(NSMenuItem.separator())
+            let why = NSMenuItem(title: "🔥 What's making it hot", action: nil, keyEquivalent: "")
+            why.isEnabled = false
+            tempItems.append(why)
+            for p in topCPUProcesses(limit: 6) {
+                tempItems.append(header("    \(p.cmd)", body: String(format: "%.0f%% CPU", p.cpu)))
+            }
+            tempItems.append(NSMenuItem.separator())
+            tempItems.append(action("📊 Open Activity Monitor",
+                cmd: "/usr/bin/open", args: ["-a", "Activity Monitor"]))
+            tempItems.append(action("🌬 Fans & die temps (powermetrics, sudo)",
+                cmd: "\(APPLE_DIR)/bin/mac-thermals", args: []))
+            menu.addItem(statusSubmenu("🔥 Temperature", body: body, items: tempItems))
+        }
         addIf("🔋 Battery", batteryRead(),
               open: "/usr/bin/open", args: ["x-apple.systempreferences:com.apple.preference.battery"])
         let disk = diskRead()
@@ -5816,6 +5897,8 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
         add("Climate", climateRead(),
             "/usr/bin/open", ["\(HOME)/work/homepod-watcher/climate-graph.html"], kind: "climate",
             symbol: "thermometer.medium")
+        add("Temperature", temperatureRead(),
+            "/usr/bin/open", ["-a", "Activity Monitor"], symbol: "flame")
         add("Battery", batteryRead(),
             "/usr/bin/open", ["x-apple.systempreferences:com.apple.preference.battery"],
             symbol: "battery.100")

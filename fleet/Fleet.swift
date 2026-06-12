@@ -143,6 +143,26 @@ struct Running: Codable {
     var uptime: String?
     var top: [TopProc]?
     var queues: [String: [String: Int]]?
+    var thermal: Thermal?
+}
+
+// Sensor temperatures (°C) + thermal pressure, published by each machine via
+// bin/machine-card (which reads bin/mac-temps). This is how Fleet answers
+// "how hot is the Mini?" for a peer it can't touch directly.
+struct Thermal: Codable {
+    var headline_c: Double?
+    var max_c: Double?
+    var avg_c: Double?
+    var cpu_c: Double?
+    var gpu_c: Double?
+    var pressure: String?
+    var sensor_count: Int?
+    var top_sensors: [TempSensor]?
+}
+
+struct TempSensor: Codable {
+    var name: String?
+    var c: Double?
 }
 
 // ─────────────────────── Config (whitelabel) ───────────────────────
@@ -873,6 +893,13 @@ struct CardView: View {
                 kv("Battery", "\(b)%\(r?.power_source.map { " · \($0)" } ?? "")")
             } else if let ps = r?.power_source { kv("Power", ps) }
             if let lim = r?.cpu_speed_limit_pct, lim < 100 { kv("Thermal", "CPU @ \(lim)%") }
+            if let th = r?.thermal, let h = th.headline_c {
+                let press = th.pressure.map { " · \($0.prefix(1).uppercased() + $0.dropFirst())" } ?? ""
+                kv("Temp", String(format: "%.0f°C%@", h, press))
+                if let s = th.top_sensors?.first, let n = s.name, let c = s.c {
+                    kv("Hottest", String(format: "%@ %.0f°C", n, c))
+                }
+            }
             if let top = r?.top, let first = top.first, let cmd = first.cmd {
                 kv("Top", String(format: "%@ %.0f%%", cmd, first.cpu ?? 0))
             }
