@@ -10,7 +10,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: false
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/dictation-button.feature:
     feature: On-device dictation button
     scenarios: 10
@@ -23,7 +23,7 @@ cards:
     has_session: true
     has_transcript: true
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/directions-home.feature:
     feature: Directions home via Apple Maps
     scenarios: 6
@@ -34,7 +34,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/fm-converse.feature:
     feature: "fm-converse \u2014 a remembering conversation with the on-device LLM"
     scenarios: 8
@@ -45,7 +45,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/hey-sal-fold.feature:
     feature: "Hey Sal folded into AppleBar \u2014 hands-free voice over the one routing\
       \ pipeline"
@@ -57,7 +57,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/me-address.feature:
     feature: Home address from the Contacts me-card
     scenarios: 6
@@ -68,7 +68,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/me-location.feature:
     feature: "Where am I right now \u2014 device-presence geolocation for a desktop\
       \ Mac"
@@ -80,7 +80,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/shell-toggles.feature:
     feature: Desktop & Dock visibility from the command bar
     scenarios: 3
@@ -91,7 +91,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/spotlight-suggestions.feature:
     feature: Live Spotlight-style suggestions in AppleBar
     scenarios: 5
@@ -102,7 +102,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/find-my.feature:
     feature: "Find My \u2014 open the right tab and surface the right person/device"
     scenarios: 5
@@ -112,7 +112,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/fm-knowledgebank.feature:
     feature: chat/ask answers are banked to a FoundationModels Knowledgebank
     scenarios: 5
@@ -123,7 +123,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/applebar-karaoke.feature:
     feature: "AppleBar karaoke \u2014 the chat answer is revealed in sync with the\
       \ spoken voice"
@@ -135,7 +135,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/markdown-attributed.feature:
     feature: AppleBar parses markdown in its result pane
     scenarios: 4
@@ -146,7 +146,7 @@ cards:
     has_session: false
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/voicebox-worker.feature:
     feature: "voicebox-worker \u2014 a TTS queue that survives the worker dying mid-job"
     scenarios: 6
@@ -156,7 +156,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/image-playground.feature:
     feature: "image-playground \u2014 on-device pictures, locally, as the prose's\
       \ twin"
@@ -168,7 +168,7 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
   features/voicememo-audio-tag-to-wav.feature:
     feature: 'A Voice Memo tagged #audio becomes a .wav sample on disk'
     scenarios: 4
@@ -179,4 +179,23 @@ cards:
     has_session: true
     has_transcript: false
     has_result: true
-    last_read: '2026-06-10T16:20:14'
+    last_read: '2026-06-12T08:15:03'
+  features/fm-mlx-dry.feature:
+    feature: fm-mlx reuses Say, Karaoke, and Markdown (DRY)
+    scenarios: 8
+    grade_counts: {}
+    unverified_by_convey: 0
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-12T08:15:03'
+  features/finder-settings.feature:
+    feature: Read & control Finder Settings from the command line
+    scenarios: 7
+    grade_counts:
+      '@built': 6
+    unverified_by_convey: 6
+    has_session: true
+    has_transcript: false
+    has_result: true
+    last_read: '2026-06-12T08:15:03'
