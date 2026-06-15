@@ -1,0 +1,19 @@
+#!/bin/sh
+# Cloudcity-Boot pane worker — maintains the LAN-only-peer bridge.
+# NO nohup, NO daemon: Boot owns this visible pane with its crash-only wrapper.
+#
+# Cadence: cheap IP-map every 10 min (keeps ProxyJump alive even when the Mini's
+# mDNSResponder is choked); full catalog walk only every 6th cycle (~hourly) and
+# only when the Mini's load is low (the refresh self-gates).
+HERE="$(cd "$(dirname "$0")" && pwd)"
+i=0
+while true; do
+  date "+%Y-%m-%d %H:%M:%S  fleet-files-refresh (cycle $i)"
+  if [ $((i % 6)) -eq 0 ]; then
+    "$HERE/fleet-files-refresh" --index || echo "  (refresh errored; continuing)"
+  else
+    "$HERE/fleet-files-refresh"         || echo "  (refresh errored; continuing)"
+  fi
+  i=$((i + 1))
+  sleep 600
+done

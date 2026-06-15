@@ -64,7 +64,33 @@ legacy-rsa, alias `hertsi`). Add more peers by extending `PEERS`.
 - **Queryable** = search without waking the peer: the published catalog
   (`~/work/comms/queue/fleet-index/<peer>.tsv`) syncs to every tailnet machine.
 
-To keep the catalog fresh, re-run `index … --publish` (one-shot, on demand). A
-periodic refresh belongs in the Mini's **Cloudcity-Boot `systems.yaml`** (NOT a
-nohup/daemon — see the repo ground rule), reading Hertsi over the LAN it already
-shares.
+## Maintained fabric — convey / comms / cloudcity-boot
+
+The bridge is kept alive by a Mini service, not by hand:
+
+- **comms** carries the state: `comms/queue/fleet-index/peers.json` (live IP +
+  up/down + OS per peer) and `<host>.tsv` catalogs — Syncthing-distributed to
+  every machine.
+- **`bin/fleet-files-refresh`** (one-shot, runs on the Mini): resolves each
+  peer's current LAN IP **locally** (dscacheutil/arp/ping — no SSH, no mDNS
+  round-trip) and publishes `peers.json`; `--index` also rebuilds catalogs
+  (load-gated: skipped when 1-min loadavg > 4 so it never piles onto a busy Mini).
+- **`bin/fleet-files-refresh-loop`** is the Cloudcity-Boot pane worker: cheap
+  IP-map every 10 min, full catalog ~hourly. Crash-only while-true, NO nohup.
+- **`convey/systems.yaml`** registers it as service `fleet-files-refresh`
+  (pane "Fleet Files Refresh"). Deploy = Mini pulls apple+convey, then
+  `!pk cloudcity restart` **when the Mini is free** (a restart relaunches panes —
+  don't do it mid-render or you kill in-flight convey jobs).
+- **`fleet-files setup`** consumes `peers.json` and pins each ssh-config
+  `HostName` to the live IP (falls back to bare hostname if the map is absent or
+  the peer is down).
+
+**Why the IP-pin matters (2026-06-15):** while the Mini ran a 2-hour convey
+splice, its `mDNSResponder` pegged at 99% and `ProxyJump hertsimacpro` failed with
+"nodename nor servname… not known". Pinning the jump to the map's IP fixed it
+instantly — `ssh hertsi` reached Hertsi at Mini load **6.57**. The cheap IP-map is
+the thing that keeps the bridge alive exactly when the Mini is busiest.
+
+The index step needs the **Mini's own key** on each peer (one-time
+`ssh-copy-id esaruoho@<peer>` from the Mini); the IP-map needs neither SSH nor
+mDNS, so it always works.

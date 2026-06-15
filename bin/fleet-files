@@ -19,7 +19,7 @@ Verbs:
 Known peers (host is resolved on the JUMP side, so DHCP churn doesn't matter):
   hertsimacpro  user=esaruoho  via=cloudcity  legacy-rsa sshd
 """
-import argparse, os, subprocess, sys
+import argparse, json, os, subprocess, sys
 
 HOME = os.path.expanduser("~")
 INDEX_DIR = os.path.join(HOME, ".fleet-index")
@@ -28,10 +28,16 @@ SSH_CONFIG = os.path.join(HOME, ".ssh/config")
 BEGIN = "# >>> fleet-files managed >>>"
 END = "# <<< fleet-files managed <<<"
 
-# A LAN-only peer reached via a jump host that's on both the LAN and the tailnet.
+# LAN-only peers reached via a jump host that's on both the LAN and the tailnet.
+# These Macs can't run Tailscale themselves (macOS < 10.15), so the Mini bridges
+# them. host is resolved on the JUMP side (router DNS), so DHCP churn is fine.
 PEERS = {
     "hertsimacpro": {"user": "esaruoho", "host": "hertsimacpro", "via": "cloudcity",
                      "legacy_rsa": True, "alias": "hertsi"},
+    "esarmbp": {"user": "esaruoho", "host": "esarmbp", "via": "cloudcity",
+                "legacy_rsa": True, "alias": "esarmbp"},
+    "olgas-mbp": {"user": "esaruoho", "host": "olgas-mbp", "via": "cloudcity",
+                  "legacy_rsa": True, "alias": "olga"},
 }
 
 
@@ -60,36 +66,62 @@ def run_remote(peer, cmd, timeout=120):
                           capture_output=True, text=True, timeout=timeout)
 
 
-def cmd_setup(args):
-    peer = resolve(args.peer)
-    alias = peer.get("alias", args.peer)
-    block = [BEGIN,
+def _mapped_ip(alias):
+    """Live IP for a peer from the Mini-maintained map (comms queue). Pinning to
+    this survives the Mini's mDNSResponder choking under load — the failure mode
+    that breaks ProxyJump-by-hostname. Falls back to the bare hostname if absent."""
+    for d in (PUBLISH_DIR, INDEX_DIR):
+        f = os.path.join(d, "peers.json")
+        if os.path.exists(f):
+            try:
+                rec = json.load(open(f)).get("peers", {}).get(alias)
+                if rec and rec.get("ip") and rec.get("up"):
+                    return rec["ip"]
+            except Exception:
+                pass
+    return None
+
+
+def _write_one(name):
+    """Idempotently install a per-peer jump block in ~/.ssh/config."""
+    peer = resolve(name)
+    alias = peer.get("alias", name)
+    hostname = _mapped_ip(alias) or peer["host"]
+    begin, end = f"# >>> fleet-files:{alias} >>>", f"# <<< fleet-files:{alias} <<<"
+    block = [begin,
              f"Host {alias} {peer['host']}",
-             f"    HostName {peer['host']}",
+             f"    HostName {hostname}",
              f"    User {peer['user']}",
              f"    ProxyJump {peer['via']}",
              "    StrictHostKeyChecking accept-new"]
     if peer.get("legacy_rsa"):
         block.append("    PubkeyAcceptedAlgorithms +ssh-rsa")
-    block.append(END)
+    block.append(end)
     block = "\n".join(block) + "\n"
 
     existing = ""
     if os.path.exists(SSH_CONFIG):
         with open(SSH_CONFIG) as f:
             existing = f.read()
-    # replace any prior managed block for idempotency
-    if BEGIN in existing and END in existing:
-        pre = existing.split(BEGIN)[0].rstrip("\n")
-        post = existing.split(END, 1)[1].lstrip("\n")
-        existing = (pre + "\n" + post).strip("\n") + "\n"
+    # drop only THIS peer's prior block (per-peer markers → blocks coexist)
+    if begin in existing and end in existing:
+        pre = existing.split(begin)[0].rstrip("\n")
+        post = existing.split(end, 1)[1].lstrip("\n")
+        existing = (pre + "\n" + post).strip("\n")
+        existing = (existing + "\n") if existing else ""
     os.makedirs(os.path.dirname(SSH_CONFIG), exist_ok=True)
-    with open(SSH_CONFIG, "a" if not existing else "w") as f:
+    with open(SSH_CONFIG, "w") as f:
         f.write((existing + "\n" if existing else "") + block)
     os.chmod(SSH_CONFIG, 0o600)
-    print(f"  ✓ wrote jump block: `ssh {alias}` now reaches {peer['host']} via "
-          f"{peer['via']} over Tailscale, from anywhere on the tailnet.")
-    print(f"    also: sftp {alias} · rsync -e ssh {alias}:… · sshfs {alias}:")
+    print(f"  ✓ ssh {alias} → {peer['host']} via {peer['via']} (Tailscale)")
+    return alias
+
+
+def cmd_setup(args):
+    names = list(PEERS) if args.peer in ("all", None) else [args.peer]
+    for n in names:
+        _write_one(n)
+    print(f"  also per peer: sftp <alias> · rsync -e ssh <alias>:… · sshfs <alias>:")
     return 0
 
 
@@ -183,7 +215,8 @@ def cmd_mount(args):
 def main():
     ap = argparse.ArgumentParser(prog="fleet-files")
     sub = ap.add_subparsers(dest="verb", required=True)
-    s = sub.add_parser("setup"); s.add_argument("peer"); s.set_defaults(func=cmd_setup)
+    s = sub.add_parser("setup"); s.add_argument("peer", nargs="?", default="all")
+    s.set_defaults(func=cmd_setup)
     l = sub.add_parser("ls"); l.add_argument("peer"); l.add_argument("path", nargs="?")
     l.set_defaults(func=cmd_ls)
     i = sub.add_parser("index"); i.add_argument("peer"); i.add_argument("path", nargs="?")

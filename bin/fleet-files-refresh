@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""fleet-files-refresh — the maintenance heartbeat for the LAN-only-peer bridge.
+
+Runs ON the Mini (it's on the LAN with the old Macs, always-on). Two jobs:
+
+  1. IP-MAP  — resolve each bridged peer's CURRENT LAN IP locally (dscacheutil /
+     arp / ping). Needs no SSH and no mDNS round-trip, so it keeps working even
+     when the Mini's mDNSResponder is pegged (the exact failure that breaks
+     `ProxyJump hertsimacpro`). Published as comms/queue/fleet-index/peers.json.
+     Clients pin their ssh-config HostName to this IP → bridge survives Mini load.
+
+  2. CATALOG — best-effort re-index of each reachable peer (find+stat over SSH)
+     so files stay queryable tailnet-wide even when a peer is asleep. Skipped for
+     a peer the runner has no key on (logged, not fatal).
+
+Output lands in the comms Syncthing queue → distributed to every machine.
+NO daemon: this is a one-shot. Cloudcity-Boot/systems.yaml runs it on a timer.
+"""
+import json, os, subprocess, sys, time
+
+PEERS = [
+    {"alias": "hertsi",  "host": "hertsimacpro", "user": "esaruoho", "legacy_rsa": True},
+    {"alias": "esarmbp", "host": "esarmbp",      "user": "esaruoho", "legacy_rsa": True},
+    {"alias": "olga",    "host": "olgas-mbp",    "user": "esaruoho", "legacy_rsa": True},
+]
+QUEUE = os.path.expanduser("~/work/comms/queue/fleet-index")
+SSH_OPTS = ["-o", "ConnectTimeout=8", "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=accept-new"]
+
+
+def resolve_ip(host):
+    r = subprocess.run(["dscacheutil", "-q", "host", "-a", "name", host],
+                       capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        if line.startswith("ip_address:"):
+            return line.split(":", 1)[1].strip()
+    return None
+
+
+def is_up(ip):
+    return subprocess.run(["ping", "-c1", "-t1", ip],
+                          capture_output=True).returncode == 0
+
+
+def peer_os(p, ip):
+    opts = list(SSH_OPTS)
+    if p["legacy_rsa"]:
+        opts += ["-o", "PubkeyAcceptedAlgorithms=+ssh-rsa"]
+    r = subprocess.run(["ssh", *opts, f'{p["user"]}@{ip}', "sw_vers -productVersion"],
+                       capture_output=True, text=True, timeout=20)
+    return r.stdout.strip() or None
+
+
+def index(p, ip):
+    opts = list(SSH_OPTS)
+    if p["legacy_rsa"]:
+        opts += ["-o", "PubkeyAcceptedAlgorithms=+ssh-rsa"]
+    remote = ('find "$HOME" -type f -not -path "*/Library/Caches/*" '
+              '-not -path "*/.Trash/*" -print0 2>/dev/null | '
+              'xargs -0 stat -f "%N\t%z\t%Sm" 2>/dev/null')
+    r = subprocess.run(["ssh", *opts, f'{p["user"]}@{ip}', remote],
+                       capture_output=True, text=True, timeout=600)
+    return [l for l in r.stdout.splitlines() if l.strip()]
+
+
+def load_too_high(threshold=4.0):
+    """1-min loadavg gate — never launch a heavy file-walk on a busy Mini."""
+    try:
+        return os.getloadavg()[0] > threshold
+    except Exception:
+        return False
+
+
+def main(stamp, do_index):
+    os.makedirs(QUEUE, exist_ok=True)
+    out = {"ts": stamp, "peers": {}}
+    # the heavy catalog walk is skipped entirely if the host is under load —
+    # the cheap IP-map (no SSH, no mDNS) still refreshes so the bridge stays alive.
+    index_ok = do_index and not load_too_high()
+    if do_index and not index_ok:
+        print("  (load high — IP-map only this cycle, skipping catalog walk)")
+    for p in PEERS:
+        ip = resolve_ip(p["host"])
+        rec = {"host": p["host"], "user": p["user"], "ip": ip,
+               "legacy_rsa": p["legacy_rsa"], "up": False, "os": None}
+        if ip and is_up(ip):
+            rec["up"] = True
+            try: rec["os"] = peer_os(p, ip)
+            except Exception: pass
+            if index_ok:
+                try:
+                    lines = index(p, ip)
+                    if lines:
+                        with open(os.path.join(QUEUE, f'{p["host"]}.tsv'), "w") as f:
+                            f.write("\n".join(lines) + "\n")
+                        rec["files"] = len(lines)
+                except Exception as e:
+                    rec["index_skipped"] = str(e)[:80]
+        print(f"  {p['alias']:8s} ip={ip or '?':15s} "
+              f"up={rec['up']} os={rec['os'] or '-'} files={rec.get('files','-')}")
+        out["peers"][p["alias"]] = rec
+    with open(os.path.join(QUEUE, "peers.json"), "w") as f:
+        json.dump(out, f, indent=2)
+    print(f"  ✓ published {QUEUE}/peers.json")
+    return 0
+
+
+if __name__ == "__main__":
+    # IP-map by default (cheap, every cycle); --index also rebuilds catalogs.
+    args = [a for a in sys.argv[1:]]
+    do_index = "--index" in args
+    args = [a for a in args if a != "--index"]
+    stamp = int(args[0]) if args else int(time.time())
+    sys.exit(main(stamp, do_index))

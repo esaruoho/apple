@@ -1,4 +1,4 @@
-# CLI Tools Index — 241 tools in bin/
+# CLI Tools Index — 243 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -91,6 +91,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fleet` — (no description) — `bin/fleet`
 `fleet-app` — (no description) — `bin/fleet-app`
 `fleet-files` — (no description) — `bin/fleet-files`
+`fleet-files-refresh` — (no description) — `bin/fleet-files-refresh`
+`fleet-files-refresh-loop` — Cloudcity-Boot pane worker — maintains the LAN-only-peer bridge. — `bin/fleet-files-refresh-loop`
 `fleet-montage` — combine every PNG in a directory into one labeled "fleet space" — `bin/fleet-montage`
 `fleet-photo` — snapshot EVERY available video input device across the fleet, — `bin/fleet-photo`
 `fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
