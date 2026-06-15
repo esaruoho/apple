@@ -24,26 +24,32 @@ launch it elsewhere.
   — **QC 4.6.2 (build 154)**, 35 MB, arch `x86_64 + i386`.
 - HertsiMacPro (10.11.6) does **not** have the app (only OS framework stubs).
 
-## The hard OS-compat gate
+## The hard OS-compat gate — TWO bounds, not one
 
-`Quartz Composer.app` links:
+This build of QC 4.6.2 (from Mojave's tools, dated 2017-08-08) runs only inside a
+**window**, and a deploy must check both ends:
 
-```
-/System/Library/Frameworks/Quartz.framework/Versions/A/Frameworks/QuartzComposer.framework
-```
+| Bound | Value | Source of truth | Failure mode |
+|---|---|---|---|
+| **lower** | macOS **≥ 10.12.1** | Mach-O `minos` load command (NOT `LSMinimumSystemVersion`, which is absent) | "You can't use this version… requires OS X 10.12.1 or later" |
+| **upper** | macOS **≤ 10.15** | links `Quartz.framework/.../QuartzComposer`, removed in macOS 11 | dyld can't find the framework |
 
-Apple **removed** that sub-framework in **macOS 11 Big Sur**. Therefore a *copied*
-QC.app launches only on a target whose OS still ships it:
+So the runnable window is **10.12.1 … 10.15, Intel**.
 
-| Target macOS | Copied QC.app runs? |
-|---|---|
-| 10.6 – 10.15 (Intel) | ✅ yes — OS ships the framework |
-| 11+ Intel | ❌ no — framework gone from the OS |
-| 11+ Apple Silicon | ❌ no — needs Rosetta **and** the missing framework |
+| Node | macOS | In window? |
+|---|---|---|
+| esarMBP | 10.14.6 | ✅ — the fleet's QC node |
+| HertsiMacPro | 10.11.6 | ❌ **below floor** — and a Mac Pro 3,1 (Xeon E5462) caps at 10.11.6, so it can *never* run this build |
+| 11+ / Apple Silicon | — | ❌ above ceiling |
 
-**Decision rule:** if the target is ≤ 10.15 Intel → deploy-the-app. Otherwise →
-don't copy; run QC *on the node that has it* (esarMBP) and treat that node as the
-fleet's QC service.
+**Lesson (2026-06-15):** the first gate only checked the upper bound and gave a
+**false green** for HertsiMacPro — the deploy "succeeded" but the app showed
+Apple's incompatibility dialog on launch. `fleet-app` now reads the binary's
+`minos` (via `otool -l … LC_VERSION_MIN_MACOSX/LC_BUILD_VERSION`) and refuses a
+too-old target. Read the app's REAL minimum from the Mach-O, not the plist.
+
+**Decision rule:** deploy only if `app.minos ≤ target.os ≤ framework-removal`.
+Otherwise run QC *on the node already in-window* (esarMBP) and Screen Share in.
 
 ## The deploy pipeline (peer → peer)
 

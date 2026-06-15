@@ -95,26 +95,46 @@ def cmd_find(args):
     return 0 if any_found else 1
 
 
-def gate(app, ver, arch):
-    """Return (ok, message) for deploying app to a target on macOS ver/arch."""
+def _vtuple(s):
+    out = []
+    for x in (s or "").split("."):
+        try: out.append(int(x))
+        except ValueError: break
+    return tuple(out) or (0,)
+
+
+def gate(app, ver, arch, min_os=None):
+    """Return (ok, message) for deploying app to a target on macOS ver/arch.
+
+    Checks BOTH bounds:
+      lower = the app's own LSMinimumSystemVersion (min_os) — too-old target
+      upper = a known OS-framework removal (FRAGILE) — too-new target
+    """
     base = (app[:-4] if app.endswith(".app") else app).strip()
-    if base not in FRAGILE:
-        return True, ""
-    maj_ok, min_ok, why = FRAGILE[base]
-    try:
-        parts = [int(x) for x in ver.split(".")[:2]]
-        tmaj = parts[0]
-        tmin = parts[1] if len(parts) > 1 else 0
-    except Exception:
-        return True, f"(could not parse target OS {ver}; proceeding)"
-    too_new = (tmaj, tmin) > (maj_ok, min_ok)
-    if tmaj >= 11 or too_new:
-        return False, (f"{base} needs macOS ≤ {maj_ok}.{min_ok} — target is {ver}. "
-                       f"{why}. A copied .app will not launch here.")
-    if arch == "arm64":
+    tv = _vtuple(ver)
+
+    # lower bound: the app refuses to launch below its LSMinimumSystemVersion.
+    if min_os:
+        if tv < _vtuple(min_os):
+            return False, (f"{base} requires macOS ≥ {min_os} — target is {ver} "
+                           f"(too old). Apple's own gate will refuse to launch it.")
+
+    # upper bound: app links an OS framework removed in a later macOS.
+    if base in FRAGILE:
+        maj_ok, min_ok, why = FRAGILE[base]
+        if tv[:2] and tv[:2] > (maj_ok, min_ok) or (tv and tv[0] >= 11):
+            return False, (f"{base} needs macOS ≤ {maj_ok}.{min_ok} — target is "
+                           f"{ver}. {why}. A copied .app will not launch here.")
+
+    if arch == "arm64" and base in FRAGILE:
         return False, (f"{base} is Intel-only and needs a framework Apple Silicon "
                        f"lacks even under Rosetta.")
-    return True, f"target macOS {ver} {arch} — within {base}'s support window"
+
+    win = []
+    if min_os: win.append(f"≥ {min_os}")
+    if base in FRAGILE: win.append(f"≤ {FRAGILE[base][0]}.{FRAGILE[base][1]}")
+    w = (" (" + ", ".join(win) + ")") if win else ""
+    return True, f"target macOS {ver} {arch} — within {base}'s window{w}"
 
 
 def cmd_deploy(args):
@@ -126,8 +146,22 @@ def cmd_deploy(args):
         print(f"  ✗ {app} not found on {src}", file=sys.stderr); return 1
     print(f"  source: {sp}")
 
+    # the app's own minimum OS (Apple's gate). LSMinimumSystemVersion is often
+    # absent — the real floor is the Mach-O minimum-OS load command
+    # (LC_VERSION_MIN_MACOSX on old binaries, LC_BUILD_VERSION on newer). Read
+    # the plist first, then fall back to the binary's minos via otool.
+    exe = ssh(src, f'defaults read "{sp}/Contents/Info" CFBundleExecutable 2>/dev/null').stdout.strip()
+    minr = ssh(src, f'defaults read "{sp}/Contents/Info" LSMinimumSystemVersion 2>/dev/null')
+    min_os = minr.stdout.strip()
+    if not min_os and exe:
+        ot = ssh(src, f'otool -l "{sp}/Contents/MacOS/{exe}" 2>/dev/null | '
+                      f'awk \'/LC_VERSION_MIN_MACOSX/||/LC_BUILD_VERSION/{{f=1}} '
+                      f'f&&($1=="version"||$1=="minos"){{print $2; exit}}\'')
+        min_os = ot.stdout.strip()
+    min_os = min_os or None
     ver, arch = host_os(dst)
-    ok, msg = gate(app, ver, arch)
+    ok, msg = gate(app, ver, arch, min_os)
+    print(f"  source needs: macOS ≥ {min_os or '(unspecified)'}")
     print(f"  target: {dst}  macOS {ver} {arch}")
     if msg:
         print(f"  gate:   {msg}")
