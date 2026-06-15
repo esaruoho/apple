@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""mlx-agent — the on-device agentic TOOL-CALLING LOOP (the WWDC26 thesis).
+
+The gap mlx-here had: it was retrieve-then-prepend-then-ONE-completion (RAG). The
+MLX-LM Server already speaks the OpenAI tool-calling protocol, and convey already
+has a verb catalog — they just weren't wired into a loop. This wires them:
+
+    model reasons  →  calls a convey/apple verb as a TOOL  →  reads the result
+                   →  decides the next step  →  repeats  →  final answer
+
+So the on-device model DRIVES the conveyor belt instead of a human wiring each step.
+
+  mlx-agent "what is research.pdf about and how does it relate to my other files?"
+  cd ~/work/impulse-tracker && mlx-agent "where is F8 clock handled?"   # skill-armed
+  mlx-agent --dry-run                     # list the registered tools and exit
+  mlx-agent --trace "..."                 # show every tool call (default on a TTY)
+  mlx-agent --raw "..."                   # final answer text only (no framing/speech)
+
+Identity + per-turn knowledge come from the folder you stand in, exactly like
+mlx-here: arm_apple.build_system(cwd) sets who the agent is (the governing
+SKILL.md). The NEW part is that the model can then CALL tools mid-answer.
+
+TOOLS are SAFE by construction: read-only / idempotent verbs only (no writes, no
+rm), args passed as argv arrays (never a shell string), paths sandboxed under
+$HOME, every tool's output bounded. The loop is capped (--max-iters).
+
+Talks to mlx_lm.server (Qwen3-4B, a tool-calling model) at FM_MLX_HOST, the same
+endpoint fm-mlx uses. Final answer is shown via the ONE shared presenter
+(fm_render.py --present) — rich markdown + karaoke speech — so this never re-rolls
+render/speak.
+
+FEATURE-CARD >> features/mlx-agent-tool-loop.feature
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+HOME = Path.home()
+
+try:
+    import arm_apple  # the same skill-arming mlx-here/fm-chat use
+except Exception:
+    arm_apple = None
+
+HOST = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini:8080")
+MODEL = os.environ.get("FM_MLX_MODEL", "")          # "" → let the server pick its loaded model
+TOOL_OUTPUT_CAP = 4000                               # bound every tool result
+HTTP_TIMEOUT = 180
+
+
+# ── tool sandbox helpers ─────────────────────────────────────────────────────
+def _safe_path(p: str) -> Path:
+    """Resolve p and refuse anything outside $HOME. Tools are read-only, but we
+    still keep the model from reading /etc/* or wandering off the home tree."""
+    rp = Path(p).expanduser()
+    if not rp.is_absolute():
+        rp = Path.cwd() / rp
+    rp = rp.resolve()
+    if HOME not in rp.parents and rp != HOME:
+        raise ValueError(f"refused: {rp} is outside {HOME}")
+    return rp
+
+
+def _run(argv: list[str], cap: int = TOOL_OUTPUT_CAP) -> str:
+    """Run a verb as an argv array (NO shell), bounded output, never raises out."""
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        return f"[tool timed out after 120s: {' '.join(argv[:2])}]"
+    except FileNotFoundError:
+        return f"[tool not found: {argv[0]}]"
+    out = (r.stdout or "") + (("\n[stderr] " + r.stderr) if r.returncode and r.stderr else "")
+    out = out.strip() or "[no output]"
+    return out[:cap] + ("\n…[truncated]" if len(out) > cap else "")
+
+
+CONVEY = str(HERE / "convey")
+
+
+# ── the tool registry: SAFE, read-only/idempotent convey + apple verbs ───────
+def t_list_dir(path="."):
+    p = _safe_path(path)
+    if not p.is_dir():
+        return f"[not a directory: {p}]"
+    items = sorted(e.name + ("/" if e.is_dir() else "") for e in p.iterdir()
+                   if not e.name.startswith("."))
+    return f"{p} ({len(items)} entries):\n" + "\n".join(items[:200])
+
+
+def t_read_file(path, max_bytes=4000):
+    p = _safe_path(path)
+    if not p.is_file():
+        return f"[not a file: {p}]"
+    try:
+        return p.read_text(encoding="utf-8", errors="replace")[: int(max_bytes)]
+    except Exception as e:
+        return f"[unreadable: {e}]"
+
+
+def t_search_notes(query, dir="."):
+    # NLEmbedding semantic search — the model now DRIVES the embedding cache.
+    return _run([str(HERE / "vault-grep"), query, "--root", str(_safe_path(dir))])
+
+
+def t_molecule(path):
+    # The file's typed bonds (part_of / produces / derived_from / associated_with).
+    return _run([CONVEY, "molecule", str(_safe_path(path))])
+
+
+def t_ask_file(path, question):
+    # convey ask <file> — answer grounded in the file's molecule context.
+    return _run([CONVEY, "ask", str(_safe_path(path)), question])
+
+
+def t_vision_ocr(path):
+    return _run([str(HERE / "vision-ocr"), str(_safe_path(path))])
+
+
+def t_folder_memory(dir="."):
+    return _run([str(HERE / "folder-memory"), str(_safe_path(dir)), "--show"])
+
+
+def t_tag_find(name, scope=None):
+    argv = [str(HERE / "tag"), "find", name]
+    if scope:
+        argv += ["--scope", str(_safe_path(scope))]
+    return _run(argv)
+
+
+# name → (python fn, OpenAI function schema)
+TOOLS: dict = {
+    "list_dir": (t_list_dir, {
+        "description": "List the non-hidden entries of a directory (under $HOME).",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string", "description": "directory path (default '.')"}}},
+    }),
+    "read_file": (t_read_file, {
+        "description": "Read a text file's first bytes (under $HOME).",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "description": "default 4000"}},
+            "required": ["path"]},
+    }),
+    "search_notes": (t_search_notes, {
+        "description": "On-device semantic search (Apple NLEmbedding) over a folder's "
+                       "text files. Returns the most relevant passages with file paths.",
+        "parameters": {"type": "object", "properties": {
+            "query": {"type": "string"},
+            "dir": {"type": "string", "description": "folder to search (default '.')"}},
+            "required": ["query"]},
+    }),
+    "molecule": (t_molecule, {
+        "description": "Show a file's molecule — its typed bonds to other files "
+                       "(part_of, produces, derived_from, associated_with).",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}}, "required": ["path"]},
+    }),
+    "ask_file": (t_ask_file, {
+        "description": "Answer a question about a specific file, grounded in its "
+                       "molecule context (the file plus its bonds).",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}, "question": {"type": "string"}},
+            "required": ["path", "question"]},
+    }),
+    "vision_ocr": (t_vision_ocr, {
+        "description": "Extract text from an image or PDF with Apple Vision (on-device).",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}}, "required": ["path"]},
+    }),
+    "folder_memory": (t_folder_memory, {
+        "description": "Show a folder's .memory.md — its auto-formulated understanding "
+                       "(subsystems, hub files). Builds it if missing.",
+        "parameters": {"type": "object", "properties": {
+            "dir": {"type": "string", "description": "default '.'"}}},
+    }),
+    "tag_find": (t_tag_find, {
+        "description": "Find files carrying a given Finder tag (via Spotlight/mdfind).",
+        "parameters": {"type": "object", "properties": {
+            "name": {"type": "string"},
+            "scope": {"type": "string", "description": "optional folder to scope to"}},
+            "required": ["name"]},
+    }),
+}
+
+
+def _openai_tools() -> list:
+    return [{"type": "function", "function": {"name": n, **schema}}
+            for n, (_fn, schema) in TOOLS.items()]
+
+
+def _exec_tool(name: str, args: dict) -> str:
+    fn = TOOLS.get(name, (None, None))[0]
+    if fn is None:
+        return f"[unknown tool: {name}]"
+    try:
+        return fn(**(args or {}))
+    except TypeError as e:
+        return f"[bad arguments for {name}: {e}]"
+    except ValueError as e:
+        return f"[{e}]"
+    except Exception as e:
+        return f"[tool {name} error: {e}]"
+
+
+# ── the loop ─────────────────────────────────────────────────────────────────
+def _post(messages: list) -> dict:
+    body = {"messages": messages, "tools": _openai_tools(), "tool_choice": "auto"}
+    if MODEL:
+        body["model"] = MODEL
+    req = urllib.request.Request(
+        f"{HOST}/v1/chat/completions",
+        data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
+        return json.loads(resp.read().decode())
+
+
+def run_loop(task: str, system: str, max_iters: int, trace: bool) -> str:
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": task})
+
+    for i in range(max_iters):
+        try:
+            data = _post(messages)
+        except Exception as e:
+            return (f"mlx-agent: could not reach the MLX server at {HOST} "
+                    f"({e}). Is the Qwen3-4B chat model served there? "
+                    f"(set FM_MLX_HOST / FM_MLX_MODEL).")
+        msg = data["choices"][0]["message"]
+        calls = msg.get("tool_calls") or []
+        if not calls:
+            return (msg.get("content") or "").strip() or "[empty reply]"
+
+        # record the assistant's tool-call turn, then answer each call
+        messages.append({"role": "assistant", "content": msg.get("content") or "",
+                         "tool_calls": calls})
+        for c in calls:
+            fn = c.get("function", {})
+            name = fn.get("name", "")
+            try:
+                args = json.loads(fn.get("arguments") or "{}")
+            except Exception:
+                args = {}
+            if trace:
+                a = ", ".join(f"{k}={v!r}" for k, v in args.items())
+                sys.stderr.write(f"\033[2m  → {name}({a})\033[0m\n")
+            result = _exec_tool(name, args)
+            messages.append({"role": "tool", "tool_call_id": c.get("id", name),
+                             "name": name, "content": result})
+    return ("mlx-agent: hit the tool-call cap "
+            f"(--max-iters {max_iters}) without a final answer. "
+            "Raise the cap or narrow the task.")
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("task", nargs="*")
+    ap.add_argument("--cwd", default=None)
+    ap.add_argument("--max-iters", type=int, default=6)
+    ap.add_argument("--raw", action="store_true")
+    ap.add_argument("--say", action="store_true")
+    ap.add_argument("--quiet", "--no-say", dest="quiet", action="store_true")
+    ap.add_argument("--voice", default=os.environ.get("FM_MLX_VOICE", "Zoe (Premium)"))
+    ap.add_argument("--no-arm", action="store_true", help="skip skill arming")
+    ap.add_argument("--dry-run", action="store_true", help="list tools and exit")
+    ap.add_argument("--no-trace", action="store_true")
+    ap.add_argument("-h", "--help", action="store_true")
+    a = ap.parse_args()
+
+    if a.help:
+        print(__doc__)
+        return
+    if a.dry_run:
+        print(f"mlx-agent → {HOST}\nRegistered tools ({len(TOOLS)}):")
+        for n, (_fn, s) in TOOLS.items():
+            print(f"  • {n:14} {s['description']}")
+        return
+
+    task = " ".join(a.task).strip()
+    if not task and not sys.stdin.isatty():
+        task = sys.stdin.read().strip()
+    if not task:
+        print('usage: mlx-agent "your task"   (or pipe it in)   [--dry-run] [--trace]',
+              file=sys.stderr)
+        sys.exit(1)
+
+    cwd = a.cwd or os.getcwd()
+    system = ""
+    if not a.no_arm and arm_apple is not None:
+        try:
+            system = arm_apple.build_system(cwd)
+            # let the model lean on tools rather than only the prepended snapshot
+            system += ("\n\nYou have TOOLS that read this machine's filesystem on "
+                       "demand (list_dir, read_file, search_notes [semantic], "
+                       "molecule, ask_file, vision_ocr, folder_memory, tag_find). "
+                       "Prefer calling a tool to verify a path or pull a file's "
+                       "real content over guessing. Call tools, then answer.")
+        except Exception:
+            system = ""
+
+    trace = (not a.no_trace) and sys.stderr.isatty()
+    t0 = time.time()
+    answer = run_loop(task, system, a.max_iters, trace)
+    rt = f"{time.time() - t0:.1f}"
+
+    # Present via the ONE shared presenter (DRY with fm-mlx/fm-chat), unless raw/piped.
+    if a.raw or not sys.stdout.isatty():
+        print(answer)
+        return
+    nospeak = "--no-speak"
+    if a.say or (not a.quiet):
+        nospeak = ""
+    host = HOST.split("://", 1)[-1].split(":", 1)[0]
+    p = subprocess.run(
+        ["python3", str(HERE / "fm_render.py"), "--present",
+         "--host", host, "--model", "MLX/Qwen3-4B (agent)", "--rt", rt,
+         "--voice", a.voice] + ([nospeak] if nospeak else []),
+        input=answer + "\n", text=True)
+    sys.exit(p.returncode)
+
+
+if __name__ == "__main__":
+    main()

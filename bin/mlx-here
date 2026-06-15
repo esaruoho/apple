@@ -9,10 +9,14 @@
 #   mlx-here --fm                        # same, but the FoundationModels brain instead
 #   mlx-here --quiet                     # don't speak the replies aloud
 #   mlx-here --system "be terse"         # add an extra instruction on top of the skill
+#   mlx-here --agent "what is X about?"  # the TOOL-CALLING LOOP: the model drives the
+#                                        # convey verbs (search_notes, molecule, vision_ocr…)
+#                                        # instead of one retrieve-then-answer pass → mlx-agent
 #
 # Equivalent to: fm-chat --mlx --apple --cwd "$PWD"  (or --apple alone with --fm).
+# --agent/--tools routes to bin/mlx-agent (the on-device agentic loop, MLX-only).
 # `mlx-chat` is a symlink to this — same idea.
-# FEATURE-CARD >> features/arm-apple-skill.feature
+# FEATURE-CARD >> features/arm-apple-skill.feature  (loop: features/mlx-agent-tool-loop.feature)
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -22,7 +26,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --fm)   brain="" ; shift ;;          # FoundationModels brain (drop --mlx)
     --mlx)  brain="--mlx" ; shift ;;
-    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --agent|--tools)                     # the tool-calling loop (mlx-agent), MLX-only
+      shift
+      exec "$HERE/mlx-agent" --cwd "$PWD" "${@}" ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)      rest+=("$1"); shift ;;
   esac
 done
