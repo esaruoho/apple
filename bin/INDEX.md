@@ -1,4 +1,4 @@
-# CLI Tools Index — 233 tools in bin/
+# CLI Tools Index — 236 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -85,6 +85,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `eppc-probe` — (no description) — `bin/eppc-probe`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
+`filee` — launch Filee.app into a folder (the files-as-boxes viewer, convey ladder rung 1). — `bin/filee`
 `find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
 `finder-settings` — read & control Finder Settings (Preferences) via `defaults`. — `bin/finder-settings`
 `fleet` — (no description) — `bin/fleet`
@@ -190,6 +191,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `smart` — (no description) — `bin/smart`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
 `snapshot` — one automated sensor snapshot of this Mac (+ tethered iPhone) into a — `bin/snapshot`
+`speech-toggle` — pause ⇄ resume the speech currently being read aloud by — `bin/speech-toggle`
 `speech-transcribe` — on-device speech-to-text via Apple's Speech framework. — `bin/speech-transcribe`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
 `stickies-claude-install.sh` — stickies-claude-install — install/uninstall the stickies → claude watcher — `bin/stickies-claude-install.sh`
@@ -225,6 +227,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `voicebox-clone-worker.py` — (no description) — `bin/voicebox-clone-worker.py`
 `voicebox-off` — Release the Voicebox active-speaker gate AND cut anything currently playing. — `bin/voicebox-off`
 `voicebox-on` — Designate THIS shell's Claude as the only allowed Voicebox speaker. — `bin/voicebox-on`
+`voicebox-say` — (no description) — `bin/voicebox-say`
 `voicebox-speak` — the ONE switch for "Claude talks to me" on THIS Mac. — `bin/voicebox-speak`
 `voicebox-start` — boot the local voicebox API server (backend only, no Tauri GUI) — `bin/voicebox-start`
 `voicebox-status` — Voicebox TTS health + queue, visually consistent with — `bin/voicebox-status`

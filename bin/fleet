@@ -210,12 +210,27 @@ def discover_targets():
 
     # Extra LAN hosts the user named that aren't on the tailnet (best-effort).
     # An entry may carry an explicit "user@host" when the account differs.
-    for extra in ("esaRMBP.local", "esaruoho@HertsiMacPro.local"):
-        host = extra.split("@")[-1]            # strip optional user@
-        base = host.split(".")[0].lower()
-        if base not in seen:
-            seen.add(base)
-            targets.append({"label": host.split(".")[0], "kind": "ssh", "ssh": extra, "lan": True})
+    # Robust > brittle: mDNS .local is dead on wired/VLAN subnets, but the
+    # router's DNS resolves the bare hostname — so try bare first, then .local,
+    # and only target the form that actually resolves right now.
+    def _resolvable_form(user, base):
+        for form in (base, base + ".local"):
+            try:
+                socket.gethostbyname(form)
+                return (user + "@" + form) if user else form
+            except OSError:
+                continue
+        return None
+
+    for extra in ("esaRMBP", "esaruoho@HertsiMacPro"):
+        user = extra.split("@")[0] if "@" in extra else ""
+        base = extra.split("@")[-1].split(".")[0]
+        if base.lower() in seen:
+            continue
+        seen.add(base.lower())
+        target = _resolvable_form(user, base.lower())
+        if target:
+            targets.append({"label": base, "kind": "ssh", "ssh": target, "lan": True})
     return targets
 
 
