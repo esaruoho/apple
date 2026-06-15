@@ -222,7 +222,7 @@ def discover_targets():
                 continue
         return None
 
-    for extra in ("esaRMBP", "esaruoho@HertsiMacPro"):
+    for extra in ("esaRMBP", "esaruoho@HertsiMacPro", "esaruoho@olgas-mbp"):
         user = extra.split("@")[0] if "@" in extra else ""
         base = extra.split("@")[-1].split(".")[0]
         if base.lower() in seen:
