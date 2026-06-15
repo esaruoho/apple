@@ -1,0 +1,19 @@
+#!/bin/bash
+# filee — launch Filee.app into a folder (the files-as-boxes viewer, convey ladder rung 1).
+# "Filee" (Finnish): a fish fillet AND "lots of files".
+#
+# Usage:
+#   filee                 # boot into the current directory
+#   filee ~/work/convey   # boot into a folder
+#
+# We launch via `open -n` (a fresh window per call, so the folder arg is always honored)
+# rather than the bare Mach-O: launching the bare binary from a non-GUI shell is flaky
+# for window creation. Verify a window with CGWindowList, never System Events
+# `count windows` (focus-dependent → false 0).
+APP="/Users/esaruoho/work/apple/filee/Filee.app"
+if [ ! -d "$APP" ]; then
+    echo "Filee.app not built. Run: /Users/esaruoho/work/apple/filee/build.sh" >&2
+    exit 1
+fi
+DIR="${1:-$PWD}"
+exec open -n "$APP" --args "$DIR"

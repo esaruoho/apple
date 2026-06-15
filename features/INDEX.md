@@ -165,6 +165,18 @@ fm-mlx reuses Say, Karaoke, and Markdown (DRY)  —  8 scenarios   (features/fm-
   triad: .session✓  transcript✗  RESULT✓
   honesty: 0/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Give a folder a voice — the per-folder sidecar triad  —  8 scenarios   (features/folder-memory.feature)
+  - [@built @verified] Build the triad for one folder
+  - [@built @verified] Auto-formulate the architecture with the on-device model
+  - [@built @verified] Talk to the folder
+  - [@built @verified] Vibe diff across time
+  - [@built @verified] Fold into an Obsidian vault
+  - [@built @verified] Understand a whole repository
+  - [@todo] Self-refresh on commit
+  - [(no grade)] Clustering of topically-homogeneous prose is weak
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat
