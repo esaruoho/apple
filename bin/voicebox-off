@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Release the Voicebox active-speaker gate AND cut anything currently playing.
+set -euo pipefail
+curl -fsS -X POST http://localhost:17493/speak/release
+echo

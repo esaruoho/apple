@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Stop whatever Voicebox is currently playing.
+#
+# Two playback paths exist and we kill both:
+#   1. The Claude Code stop hook (~/.claude/hooks/voicebox_speak.py) spawns
+#      `afplay` and stores its PID in /tmp/voicebox-speak.pid. That's what
+#      actually makes sound in the current setup.
+#   2. The backend /speak/stop endpoint cancels any in-flight generation and
+#      tells any subscribed frontend (Tauri pill) to dismiss. Belt + braces.
+
+if [[ -f /tmp/voicebox-speak.pid ]]; then
+  pid=$(cat /tmp/voicebox-speak.pid 2>/dev/null || true)
+  if [[ -n "$pid" ]]; then
+    kill "$pid" 2>/dev/null || true
+  fi
+fi
+
+curl -fsS -X POST http://localhost:17493/speak/stop -o /dev/null 2>/dev/null || true

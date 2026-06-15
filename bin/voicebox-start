@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# voicebox-start — boot the local voicebox API server (backend only, no Tauri GUI)
+#
+# The persona CLIs (bearden, rob, milton, esa) need voicebox running on
+# 127.0.0.1:17493. If voicebox isn't running, those commands print
+# "voicebox not reachable" and exit. Run this once after boot.
+#
+# To stop: kill the uvicorn process (see `voicebox-status`).
+set -e
+
+if curl -sf http://127.0.0.1:17493/health >/dev/null 2>&1; then
+    echo "voicebox already running ✓"
+    curl -s http://127.0.0.1:17493/health | python3 -m json.tool
+    exit 0
+fi
+
+cd "$HOME/work/voicebox"
+nohup backend/venv/bin/uvicorn backend.main:app --port 17493 \
+    > /tmp/voicebox-server.log 2>&1 &
+disown
+PID=$!
+echo "voicebox booting (pid $PID), waiting for health..."
+
+for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:17493/health >/dev/null 2>&1; then
+        echo "voicebox ready ✓"
+        curl -s http://127.0.0.1:17493/health | python3 -m json.tool
+        echo
+        echo "log: /tmp/voicebox-server.log"
+        echo "stop: kill $PID  (or use voicebox-status to find it)"
+        exit 0
+    fi
+    sleep 2
+done
+
+echo "voicebox didn't come up in 60s. Check /tmp/voicebox-server.log"
+tail -20 /tmp/voicebox-server.log
+exit 1

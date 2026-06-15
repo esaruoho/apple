@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# voicebox-status — Voicebox TTS health + queue, visually consistent with
+# ocr-status / whisp-status.
+#
+# Sections:
+#   header        🔊 Voicebox TTS  +  separator
+#   ▶ NOW         current runtime state (healthy / not running)
+#   🩺 HEALTH     model loaded, GPU, backend
+#   👤 PROFILES   voice profiles + sample counts
+#   📊 QUEUE      inbox / processed / failed / results counts
+#   ⏳ PENDING    submissions awaiting synthesis (if any)
+#   📦 RESULTS    last 5 WAVs produced
+#   📋 EVENTS     last 3 log lines (start/done/failed)
+#   footer        heartbeat ts + PID
+#
+# Usage:
+#   voicebox-status           # one-shot
+#   voicebox-status --watch   # live updates every 10s
+
+if [[ -z "${COL_W:-}" ]]; then
+  _c=$(stty size </dev/tty 2>/dev/null | awk '{print $2}')
+  COL_W="${_c:-${COLUMNS:-$(tput cols 2>/dev/null || echo 100)}}"
+fi
+SEP_LEN="${SEP_LEN:-$(( COL_W - 4 ))}"
+(( SEP_LEN < 20 )) && SEP_LEN=20
+INNER_W=$(( COL_W - 18 ))
+(( INNER_W < 15 )) && INNER_W=15
+
+ENDPOINT="${VOICEBOX_ENDPOINT:-http://127.0.0.1:17493}"
+PORT="${ENDPOINT##*:}"   # port the server listens on (derived from ENDPOINT)
+HEARTBEAT="$HOME/work/comms/queue/voicebox-heartbeat.json"
+INBOX="$HOME/work/comms/queue/voicebox-inbox"
+PROCESSED="$HOME/work/comms/queue/voicebox-processed"
+FAILED="$HOME/work/comms/queue/voicebox-failed"
+RESULTS="$HOME/work/comms/queue/voicebox-results"
+LOGFILE="$HOME/work/comms/queue/voicebox-log.jsonl"
+
+sep() { printf '  %s\n' "$(printf '─%.0s' $(seq 1 "$SEP_LEN" 2>/dev/null))"; }
+
+fmt_bytes() {
+  awk -v b="$1" 'BEGIN{
+    if(b>=1048576) printf "%.1fM", b/1048576;
+    else if(b>=1024) printf "%dK", b/1024;
+    else printf "%dB", b;
+  }'
+}
+
+show_status() {
+  echo ""
+  echo "  🔊 Voicebox TTS"
+  sep
+
+  # ── Runtime ────────────────────────────────────────────────────────────
+  local health_json=""
+  local running=false
+  if curl -sf --max-time 1 "$ENDPOINT/health" >/dev/null 2>&1; then
+    running=true
+    health_json="$(curl -s --max-time 1 "$ENDPOINT/health" 2>/dev/null)"
+  fi
+
+  echo ""
+  if $running; then
+    local model_loaded
+    model_loaded="$(printf '%s' "$health_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status","?"))' 2>/dev/null)"
+    echo "  ▶ NOW: voicebox is $model_loaded  ($ENDPOINT)"
+  else
+    echo "  💤 NOT running on $ENDPOINT (start with: voicebox-start)"
+  fi
+
+  # ── Health ─────────────────────────────────────────────────────────────
+  if $running && [[ -n "$health_json" ]]; then
+    echo ""
+    echo "  🩺 HEALTH"
+    printf '%s' "$health_json" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+fields = [
+    ('model_loaded',     'model loaded'),
+    ('model_downloaded', 'model on disk'),
+    ('model_size',       'model size'),
+    ('backend_type',     'backend'),
+    ('backend_variant',  'variant'),
+    ('gpu_available',    'GPU'),
+    ('gpu_type',         'GPU type'),
+    ('vram_used_mb',     'VRAM used'),
+]
+for key, label in fields:
+    if key in d and d[key] not in (None, ''):
+        v = d[key]
+        if isinstance(v, bool): v = '✓' if v else '✗'
+        print(f'    {label:<16s} {v}')
+warn = d.get('gpu_compatibility_warning')
+if warn:
+    print(f'    ⚠ {warn}')
+"
+  fi
+
+  # ── Profiles ───────────────────────────────────────────────────────────
+  if $running; then
+    local profiles_json
+    profiles_json="$(curl -s --max-time 1 "$ENDPOINT/profiles" 2>/dev/null)"
+    if [[ -n "$profiles_json" ]]; then
+      echo ""
+      echo "  👤 PROFILES"
+      printf '%s' "$profiles_json" | python3 -c "
+import json, sys
+try: ps = json.load(sys.stdin)
+except Exception: sys.exit(0)
+for p in ps:
+    short = (p.get('id') or '?')[:8]
+    n     = p.get('sample_count', 0)
+    name  = (p.get('name') or '')[:34]
+    print(f'    {short}  samples={n:>4}  {name}')
+"
+    fi
+  fi
+
+  # ── Queue ──────────────────────────────────────────────────────────────
+  local inbox_count processed_count failed_count results_count
+  inbox_count=$(ls "$INBOX"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  processed_count=$(ls "$PROCESSED"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  failed_count=$(ls "$FAILED"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  results_count=$(ls "$RESULTS"/*.wav 2>/dev/null | wc -l | tr -d ' ')
+
+  echo ""
+  echo "  📊 QUEUE  inbox: $inbox_count   processed: $processed_count   failed: $failed_count   results: $results_count"
+
+  # ── Pending list ───────────────────────────────────────────────────────
+  if [[ "$inbox_count" -gt 0 ]]; then
+    echo ""
+    echo "  ⏳ PENDING ($inbox_count)"
+    local i=0
+    for f in "$INBOX"/*.json; do
+      [[ -f "$f" ]] || continue
+      i=$((i + 1))
+      python3 - "$f" "$i" <<'PYEOF'
+import json, sys
+try: d = json.load(open(sys.argv[1]))
+except Exception: sys.exit(0)
+idx = sys.argv[2]
+id_   = (d.get("id") or "?")[:40]
+prof  = (d.get("profile") or d.get("profile_id") or "?")[:18]
+chars = len(d.get("text") or "")
+print(f"    {idx:>2}. {id_:<40s}  {prof:<18s}  {chars}ch")
+PYEOF
+      [[ "$i" -ge 6 ]] && break
+    done
+  fi
+
+  # ── Recent results ─────────────────────────────────────────────────────
+  if [[ "$results_count" -gt 0 ]]; then
+    echo ""
+    echo "  📦 RESULTS (last 5 of $results_count)"
+    local recent
+    recent=$(find "$RESULTS" -name '*.wav' -exec stat -f '%m %z %N' {} + 2>/dev/null | sort -rn | head -5)
+    while IFS=' ' read -r mtime size path; do
+      [[ -z "$path" ]] && continue
+      local name; name="$(basename "$path" .wav)"
+      printf "    ✓ %-*s  %s\n" "$INNER_W" "${name:0:$INNER_W}" "$(fmt_bytes "$size")"
+    done <<< "$recent"
+  fi
+
+  # ── Recent events ──────────────────────────────────────────────────────
+  if [[ -f "$LOGFILE" ]]; then
+    echo ""
+    echo "  📋 RECENT EVENTS"
+    tail -3 "$LOGFILE" 2>/dev/null | python3 -c "
+import json, sys
+for line in sys.stdin:
+    try: d = json.loads(line)
+    except Exception: continue
+    ev = d.get('event','?')
+    ts = (d.get('ts') or '')[-9:-1]
+    id_ = (d.get('id') or '')[:40]
+    extra = ''
+    if ev == 'done':
+        b = d.get('bytes') or 0
+        e = d.get('elapsed_s') or 0
+        extra = f'  ({b//1024}K, {e:.0f}s)' if b else f'  ({e:.0f}s)'
+    elif ev == 'start':
+        extra = f'  ({d.get(\"chars\") or 0}ch)'
+    elif ev == 'failed':
+        extra = '  ' + (d.get('error','') or '')[:40]
+    print(f'    {ts}  {ev:<7s}  {id_}{extra}')
+"
+  fi
+
+  # ── Footer ─────────────────────────────────────────────────────────────
+  echo ""
+  sep
+  local hb_ts=""
+  if [[ -f "$HEARTBEAT" ]]; then
+    hb_ts="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('ts',''))" "$HEARTBEAT" 2>/dev/null)"
+  fi
+  # Find the server PID by whoever holds the listening port — authoritative
+  # regardless of how it was launched (--host/--reload/python -m all vary the
+  # cmdline, so a `pgrep -f 'uvicorn …'` substring match is brittle and misses
+  # the common `--host 127.0.0.1 --port` and `just dev --reload` forms).
+  local pid=""
+  pid="$(lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t 2>/dev/null | head -1)"
+  echo "  Heartbeat: ${hb_ts:-?}${pid:+   PID $pid}"
+  echo ""
+}
+
+if [[ "$1" == "--watch" || "$1" == "-w" ]]; then
+  while true; do
+    clear
+    show_status
+    sleep 10
+  done
+else
+  show_status
+fi

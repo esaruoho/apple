@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Designate THIS shell's Claude as the only allowed Voicebox speaker.
+# Identifies the client via $VOICEBOX_CLIENT_ID — set that to a stable
+# name per Claude session (e.g. claude-mainmac, claude-laptop).
+set -euo pipefail
+: "${VOICEBOX_CLIENT_ID:?Set VOICEBOX_CLIENT_ID in this shell first (e.g. export VOICEBOX_CLIENT_ID=claude-mainmac)}"
+curl -fsS -X POST \
+  -H "X-Voicebox-Client-Id: ${VOICEBOX_CLIENT_ID}" \
+  http://localhost:17493/speak/claim
+echo
