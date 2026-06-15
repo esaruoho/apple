@@ -122,8 +122,40 @@ final class FolderModel: ObservableObject {
             if ($0.kind == .file) != ($1.kind == .file) { return $0.kind != .file }
             return $0.title.localizedStandardCompare($1.title) == .orderedAscending
         }
-        // Select the first box so the keyboard highlight has a starting point.
-        selection = items.first?.id
+        // Keep the current selection if it's still here (so a live reload doesn't jump);
+        // else select the first box so the keyboard highlight has a starting point.
+        if let k = selection, items.contains(where: { $0.id == k }) { /* keep */ }
+        else { selection = items.first?.id }
+        watchDir()   // (re)arm the live watcher on the folder now shown
+    }
+
+    // ── live folder watch: when the belt drops a .txt / .analysis.md / _ocr.pdf beside
+    //    a file, those boxes APPEAR here as they land — you watch the change happen.
+    private var dirWatch: DispatchSourceFileSystemObject?
+    private var watchedPath = ""
+    private var reloadPending = false
+
+    func watchDir() {
+        if watchedPath == dir.path && dirWatch != nil { return }
+        dirWatch?.cancel(); dirWatch = nil
+        let fd = open(dir.path, O_EVTONLY)
+        guard fd >= 0 else { watchedPath = ""; return }
+        watchedPath = dir.path
+        let src = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd, eventMask: [.write, .extend, .rename, .delete], queue: .main)
+        src.setEventHandler { [weak self] in self?.scheduleReload() }
+        src.setCancelHandler { close(fd) }
+        src.resume()
+        dirWatch = src
+    }
+
+    private func scheduleReload() {           // debounce a burst of FS events into one reload
+        if reloadPending { return }
+        reloadPending = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            self?.reloadPending = false
+            self?.load()
+        }
     }
 
     func enter(_ box: BoxItem) {
@@ -223,6 +255,7 @@ final class FolderModel: ObservableObject {
             DispatchQueue.main.async {
                 self.conveyOutput = text.isEmpty ? "(no output)" : text
                 self.conveyRunning = false
+                self.load()   // a verb may have produced files (OCR .txt, .molecule.json) → show them now
             }
         }
     }
@@ -358,6 +391,10 @@ struct FileeView: View {
             Button("convey belt (plan)") {
                 model.runConvey(["belt", box.url?.path ?? box.id],
                                 title: "convey belt · \(box.title)")
+            }
+            Button("convey belt — RUN ▶  (OCR a PDF, etc.)") {
+                model.runConvey(["belt", box.url?.path ?? box.id, "--run"],
+                                title: "convey belt --run · \(box.title)")
             }
         }
     }

@@ -107,6 +107,18 @@ Feature: A folder's files are boxes on a screen
     # verified live: folder ~/work/apple/filee shown; `convey molecule Filee.swift` → its bonds
     # This is the Filee↔convey bridge: the folder is where you SEE files AND act on them.
 
+  @built @verified
+  Scenario: OCR a PDF from the widget and watch the result appear, live
+    Given a PDF box and "convey belt — RUN ▶"
+    When chosen
+    # cite: Filee.swift widget(for:) → runConvey(["belt", path, "--run"])
+    Then convey runs the belt for real: small PDF → Apple Vision (vision-ocr) on-device,
+         large PDF → Cloudcity OCR worker (per media.filerule routing — never local tesseract)
+    And the produced <stem>.txt (and .analysis.md / _ocr.pdf when the chain completes)
+        appear as new boxes beside the source — LIVE, no manual refresh
+    # cite: Filee.swift FolderModel.watchDir()/scheduleReload() (DispatchSource on the dir fd)
+    # verified live: /tmp/ocrdemo scan.pdf → "belt --run" → scan.txt box appeared (1→2 filees)
+
   @stock
   Scenario: Built Apple-native, no Homebrew, no Xcode
     Given build.sh
