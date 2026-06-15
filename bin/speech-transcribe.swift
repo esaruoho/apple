@@ -52,30 +52,57 @@ if !recognizer.supportsOnDeviceRecognition {
     err("speech-transcribe: on-device recognition not supported for \(locale) (would need network — refusing)."); exit(1)
 }
 
-let req = SFSpeechURLRecognitionRequest(url: URL(fileURLWithPath: path))
-req.requiresOnDeviceRecognition = true
-req.shouldReportPartialResults = false
-
 let timeout = Double(popValue("--timeout") ?? "120") ?? 120
+let maxAttempts = Int(popValue("--retries") ?? "3") ?? 3
 
-// SFSpeechRecognizer delivers its callbacks to the MAIN run loop, so we must
-// spin it (not block on a semaphore) or the handler never fires. Exit from
-// inside the handler; a main-queue timer bounds the wait.
+// COLD-START RETRY (the real fix). Apple's on-device speech model returns an
+// empty result — or error 1110 "No speech detected" — on the FIRST recognition
+// call after it's been idle, then works once warm. A single attempt therefore
+// looks like "no text captured" on clean, loud speech. So we retry on an
+// empty/no-speech outcome (with a short delay to let the model load) before
+// giving up. SFSpeechRecognizer delivers callbacks to the MAIN run loop, so we
+// spin it and exit from inside the handler; a main-queue timer bounds the wait.
 var latest = ""
-let task = recognizer.recognitionTask(with: req) { result, error in
-    if let e = error {
-        if latest.isEmpty { err("speech-transcribe error: \(e)"); exit(1) }
-        print(latest); exit(0)
-    }
-    if let r = result {
-        latest = r.bestTranscription.formattedString
-        if r.isFinal { print(latest); exit(0) }
+var attempt = 0
+var currentTask: SFSpeechRecognitionTask?
+
+func retryOrFail(_ what: String) {
+    if attempt < maxAttempts {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { startAttempt() }
+    } else {
+        if !latest.isEmpty { print(latest); exit(0) }
+        err("speech-transcribe: recognized no words after \(attempt) attempt(s) " +
+            "(\(what), locale \(locale)). The speech may be unclear, or the on-device " +
+            "model for \(locale) is cold/missing.")
+        exit(4)
     }
 }
+
+func startAttempt() {
+    attempt += 1
+    let req = SFSpeechURLRecognitionRequest(url: URL(fileURLWithPath: path))
+    req.requiresOnDeviceRecognition = true
+    req.shouldReportPartialResults = false
+    currentTask = recognizer.recognitionTask(with: req) { result, error in
+        if let r = result, r.isFinal {
+            let text = r.bestTranscription.formattedString
+            if !text.isEmpty { print(text); exit(0) }
+            retryOrFail("empty result")           // cold-start empty → retry
+            return
+        }
+        if let e = error {
+            retryOrFail((e as NSError).localizedDescription)   // e.g. 1110 No speech detected
+            return
+        }
+        if let r = result { latest = r.bestTranscription.formattedString }
+    }
+}
+
 DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
-    task.cancel()
+    currentTask?.cancel()
     if !latest.isEmpty { print(latest); exit(0) }
-    err("speech-transcribe: timed out after \(Int(timeout))s with no result (the on-device speech model may not be installed for \(locale)).")
+    err("speech-transcribe: timed out after \(Int(timeout))s with no result.")
     exit(2)
 }
+startAttempt()
 RunLoop.main.run()
