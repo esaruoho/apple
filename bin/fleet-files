@@ -54,11 +54,14 @@ def target(peer):
 
 
 def resolve(name):
-    p = PEERS.get(name)
-    if not p:
-        print(f"  unknown peer '{name}' (known: {', '.join(PEERS)})", file=sys.stderr)
-        sys.exit(2)
-    return p
+    if name in PEERS:
+        return PEERS[name]
+    for p in PEERS.values():          # also accept the friendly alias
+        if p.get("alias") == name:
+            return p
+    known = ", ".join(sorted({*PEERS, *(p.get("alias", "") for p in PEERS.values())}))
+    print(f"  unknown peer '{name}' (known: {known})", file=sys.stderr)
+    sys.exit(2)
 
 
 def run_remote(peer, cmd, timeout=120):
@@ -212,6 +215,60 @@ def cmd_mount(args):
     return rc
 
 
+JUMP_RELAY = "cloudcity"   # the node on both the LAN and Tailscale
+# kind -> (local port, remote port, url scheme, human label)
+TUN = {"screen": (5901, 5900, "vnc", "Screen Sharing"),
+       "finder": (1445, 445, "smb", "File Sharing (Finder + Quick Look)")}
+
+
+def _peer_ip(name):
+    """(ip, up) for a peer from the Mini-maintained map."""
+    peer = resolve(name)
+    alias = peer.get("alias", name)
+    for d in (PUBLISH_DIR, INDEX_DIR):
+        f = os.path.join(d, "peers.json")
+        if os.path.exists(f):
+            try:
+                rec = json.load(open(f)).get("peers", {}).get(alias, {})
+                if rec.get("ip"):
+                    return rec["ip"], rec.get("up", False)
+            except Exception:
+                pass
+    return None, False
+
+
+def cmd_tunnel(args):
+    """VNC/SMB to a LAN-only peer from anywhere — forwarded through the Mini over
+    Tailscale. VNC/SMB aren't SSH, so ProxyJump can't carry them; an `ssh -L`
+    port-forward through the relay does."""
+    kind = args.kind
+    lport, rport, scheme, label = TUN[kind]
+    name = args.peer
+    if args.stop:
+        subprocess.run(["pkill", "-f", f"ssh -f -N -L {lport}:"], capture_output=True)
+        print(f"  ✓ stopped {label} tunnel"); return 0
+    ip, up = _peer_ip(name)
+    if not ip:
+        print(f"  no live IP for {name} — run: fleet-files-refresh", file=sys.stderr); return 1
+    if not up:
+        print(f"  ⚠ {name} is marked DOWN in the map — it must be awake on the LAN "
+              f"for this to connect.", file=sys.stderr)
+    inuse = subprocess.run(["lsof", "-ti", f"tcp:{lport}"], capture_output=True,
+                           text=True).stdout.strip()
+    if not inuse:
+        rc = subprocess.run(["ssh", "-f", "-N", "-o", "ExitOnForwardFailure=yes",
+                             "-L", f"{lport}:{ip}:{rport}", JUMP_RELAY]).returncode
+        if rc != 0:
+            print(f"  ✗ tunnel failed (is {JUMP_RELAY} reachable?)", file=sys.stderr); return 1
+    url = f"{scheme}://localhost:{lport}"
+    print(f"  ✓ {label}: {url}")
+    print(f"    (localhost:{lport} → {JUMP_RELAY} over Tailscale → {name} {ip}:{rport})")
+    if not args.no_open:
+        subprocess.run(["open", url])
+    print(f"    stop: fleet-files {kind} {name} --stop")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(prog="fleet-files")
     sub = ap.add_subparsers(dest="verb", required=True)
@@ -225,6 +282,11 @@ def main():
     f.set_defaults(func=cmd_find)
     m = sub.add_parser("mount"); m.add_argument("peer"); m.add_argument("path", nargs="?")
     m.set_defaults(func=cmd_mount)
+    for k in ("screen", "finder"):
+        t = sub.add_parser(k); t.add_argument("peer")
+        t.add_argument("--stop", action="store_true")
+        t.add_argument("--no-open", action="store_true")
+        t.set_defaults(func=cmd_tunnel, kind=k)
     args = ap.parse_args()
     return args.func(args)
 

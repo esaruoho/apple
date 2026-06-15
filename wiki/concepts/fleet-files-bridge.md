@@ -47,6 +47,15 @@ breaks the alias.
 | `index <peer> [path] [--publish]` | build a `path⇥size⇥mtime` catalog; `--publish` drops it in the Syncthing queue (`fleet-index/<peer>.tsv`) so **every** tailnet machine can search it even when the peer is asleep |
 | `find <term> [--peer P]` | fixed-string (`grep -iF`, backtracking-safe) search of the catalog(s) |
 | `mount <peer> [path]` | sshfs-mount locally, or print the `sftp://` Finder route |
+| `screen <peer>` | Screen Sharing from anywhere — `ssh -L 5901→peer:5900` through the Mini, opens `vnc://localhost:5901` (`--stop` to tear down) |
+| `finder <peer>` | File Sharing + Quick Look from anywhere — `ssh -L 1445→peer:445`, opens `smb://localhost:1445` (mounts in Finder; spacebar Quick Look works) |
+
+`screen`/`finder` exist because **VNC and SMB aren't SSH** — ProxyJump (which
+carries `ssh hertsi`/`sftp`/`rsync`) can't forward them, so a port-forward tunnel
+through the Mini does. Peer accepted by registry key *or* friendly alias. Both use
+the live IP from `peers.json`. Dependency: Mini up + peer awake on the LAN.
+Verified 2026-06-15: `Hertsi:5900` and `:445` both OPEN from the Mini; tunnels
+forward localhost→Mini→Hertsi over Tailscale.
 
 Known peer registry in the script: `hertsimacpro` (user esaruoho, via cloudcity,
 legacy-rsa, alias `hertsi`). Add more peers by extending `PEERS`.
