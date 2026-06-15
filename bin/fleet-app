@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+"""fleet-app — federate a macOS .app from the fleet node that has it to one that
+needs it, and launch it remotely.
+
+The fleet's gain made operational: an old Mac that still runs software the new
+Macs can't (e.g. Quartz Composer, removed from macOS 11+) becomes a deployable
+asset for the rest of the fleet.
+
+Transport: a .app is moved as a `ditto` zip (preserves resource forks, xattrs,
+code signing — what plain scp/rsync of a bundle would mangle), relayed through
+THIS Mac's /tmp so each leg uses our own key. Legacy sshd (OpenSSH 6.9 on 10.11)
+needs PubkeyAcceptedAlgorithms=+ssh-rsa to verify a modern RSA key.
+
+Usage:
+  fleet-app find  <app>            [--on <peer> | --all]
+  fleet-app deploy <app> --from <peer> --to <peer> [--launch] [--force]
+  fleet-app launch <app> --on <peer>
+
+<peer> is a fleet host: bare hostname (router DNS resolves it) or user@host.
+Default user is the current user. Examples:
+  fleet-app deploy "Quartz Composer" --from esarmbp --to hertsimacpro --launch
+"""
+import argparse, getpass, os, subprocess, sys, tempfile
+
+SSH_OPTS = ["-o", "ConnectTimeout=8", "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
+            "-o", "PubkeyAcceptedAlgorithms=+ssh-rsa"]
+
+# Apps that link OS frameworks removed in a later macOS. The app only launches on
+# a target at or below max_major.minor. (Quartz Composer's QuartzComposer.framework
+# was removed in macOS 11 Big Sur.)
+FRAGILE = {
+    "Quartz Composer": (10, 15, "QuartzComposer.framework removed in macOS 11"),
+}
+
+SEARCH_DIRS = ["/Applications", "/Applications/Utilities",
+               "/Applications/Xcode Additional Tools/Graphics",
+               "/Developer/Applications", "~/Applications"]
+
+
+def peer(p):
+    return p if "@" in p else f"{getpass.getuser()}@{p}"
+
+
+def ssh(p, cmd, timeout=120, capture=True):
+    return subprocess.run(["ssh", *SSH_OPTS, peer(p), cmd],
+                          capture_output=capture, text=True, timeout=timeout)
+
+
+def host_os(p):
+    r = ssh(p, "sw_vers -productVersion 2>/dev/null; uname -m")
+    lines = [l for l in r.stdout.splitlines() if l.strip()]
+    ver = lines[0] if lines else "?"
+    arch = lines[1] if len(lines) > 1 else "?"
+    return ver, arch
+
+
+def app_basename(app):
+    b = os.path.basename(app.rstrip("/"))
+    return b if b.endswith(".app") else b + ".app"
+
+
+def find_app(p, app):
+    """Return the absolute path to <app>.app on peer p, or None."""
+    name = app[:-4] if app.endswith(".app") else app
+    bn = name + ".app"
+    # 1) known dirs
+    probe = "; ".join(
+        f'[ -d "{d}/{bn}" ] && echo "{d}/{bn}"' for d in SEARCH_DIRS
+    ).replace("~", "$HOME")
+    r = ssh(p, probe)
+    for line in r.stdout.splitlines():
+        if line.strip().endswith(".app"):
+            return line.strip()
+    # 2) spotlight
+    r = ssh(p, f'mdfind "kMDItemFSName == \'{bn}\'" 2>/dev/null | head -1')
+    hit = r.stdout.strip().splitlines()
+    if hit and hit[0].endswith(".app"):
+        return hit[0]
+    return None
+
+
+def cmd_find(args):
+    name = args.app
+    peers = args.peer_list
+    any_found = False
+    for p in peers:
+        path = find_app(p, name)
+        if path:
+            ver, arch = host_os(p)
+            print(f"  ✓ {p:18s} {path}   (macOS {ver}, {arch})")
+            any_found = True
+        else:
+            print(f"  ✗ {p:18s} (not found)")
+    return 0 if any_found else 1
+
+
+def gate(app, ver, arch):
+    """Return (ok, message) for deploying app to a target on macOS ver/arch."""
+    base = (app[:-4] if app.endswith(".app") else app).strip()
+    if base not in FRAGILE:
+        return True, ""
+    maj_ok, min_ok, why = FRAGILE[base]
+    try:
+        parts = [int(x) for x in ver.split(".")[:2]]
+        tmaj = parts[0]
+        tmin = parts[1] if len(parts) > 1 else 0
+    except Exception:
+        return True, f"(could not parse target OS {ver}; proceeding)"
+    too_new = (tmaj, tmin) > (maj_ok, min_ok)
+    if tmaj >= 11 or too_new:
+        return False, (f"{base} needs macOS ≤ {maj_ok}.{min_ok} — target is {ver}. "
+                       f"{why}. A copied .app will not launch here.")
+    if arch == "arm64":
+        return False, (f"{base} is Intel-only and needs a framework Apple Silicon "
+                       f"lacks even under Rosetta.")
+    return True, f"target macOS {ver} {arch} — within {base}'s support window"
+
+
+def cmd_deploy(args):
+    src, dst, app = args.from_peer, args.to_peer, args.app
+    print(f"  fleet-app deploy: {app}  {src} → {dst}")
+
+    sp = find_app(src, app)
+    if not sp:
+        print(f"  ✗ {app} not found on {src}", file=sys.stderr); return 1
+    print(f"  source: {sp}")
+
+    ver, arch = host_os(dst)
+    ok, msg = gate(app, ver, arch)
+    print(f"  target: {dst}  macOS {ver} {arch}")
+    if msg:
+        print(f"  gate:   {msg}")
+    if not ok and not args.force:
+        print(f"  ✗ OS-compat gate failed. Use --force to override (will likely "
+              f"not launch).", file=sys.stderr)
+        return 2
+
+    bn = app_basename(sp)
+    remote_zip = f"/tmp/fleet-app-{bn}.zip"
+    local_zip = os.path.join(tempfile.gettempdir(), f"fleet-app-{bn}.zip")
+
+    print("  [1/4] packing on source (ditto, preserves bundle metadata)…")
+    r = ssh(src, f'ditto -c -k --sequesterRsrc --keepParent "{sp}" "{remote_zip}" '
+                 f'&& du -h "{remote_zip}" | cut -f1', timeout=300)
+    if r.returncode != 0:
+        print(f"  ✗ pack failed: {r.stderr.strip()}", file=sys.stderr); return 1
+    print(f"        packed ({r.stdout.strip()})")
+
+    print("  [2/4] pulling to relay (this Mac)…")
+    r = subprocess.run(["scp", *SSH_OPTS, f"{peer(src)}:{remote_zip}", local_zip],
+                       capture_output=True, text=True, timeout=300)
+    if r.returncode != 0:
+        print(f"  ✗ pull failed: {r.stderr.strip()}", file=sys.stderr); return 1
+
+    print("  [3/4] pushing to target…")
+    r = subprocess.run(["scp", *SSH_OPTS, local_zip, f"{peer(dst)}:{remote_zip}"],
+                       capture_output=True, text=True, timeout=300)
+    if r.returncode != 0:
+        print(f"  ✗ push failed: {r.stderr.strip()}", file=sys.stderr); return 1
+
+    print("  [4/4] unpacking into /Applications on target…")
+    r = ssh(dst, f'ditto -x -k "{remote_zip}" "/Applications/" '
+                 f'&& [ -d "/Applications/{bn}" ] && echo OK', timeout=300)
+    if "OK" not in r.stdout:
+        print(f"  ✗ unpack failed: {r.stderr.strip()}", file=sys.stderr); return 1
+    print(f"  ✓ installed: /Applications/{bn} on {dst}")
+
+    # cleanup transit artifacts
+    ssh(src, f'rm -f "{remote_zip}"'); ssh(dst, f'rm -f "{remote_zip}"')
+    try: os.remove(local_zip)
+    except OSError: pass
+
+    if args.launch:
+        return launch(dst, app)
+    print(f"  → launch with: fleet-app launch \"{app}\" --on {dst}")
+    return 0
+
+
+LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+              "LaunchServices.framework/Support/lsregister")
+
+
+def launch(p, app):
+    base = app[:-4] if app.endswith(".app") else app
+    path = find_app(p, app)
+    if not path:
+        print(f"  ✗ {app} not installed on {p}", file=sys.stderr); return 1
+    # Launch Services caches aggressively and does not know a freshly-copied
+    # bundle until registered — so `open -a <name>` fails right after a deploy.
+    # Register, strip any quarantine, then open by full PATH (name-independent).
+    ssh(p, f'{LSREGISTER} -f "{path}" 2>/dev/null; '
+           f'xattr -dr com.apple.quarantine "{path}" 2>/dev/null; true')
+    who = ssh(p, "stat -f%Su /dev/console 2>/dev/null; stat -f%u /dev/console 2>/dev/null")
+    wl = who.stdout.split()
+    console_user = wl[0] if wl else ""
+    console_uid = wl[1] if len(wl) > 1 else ""
+    if not console_user or console_user == "root" or console_uid in ("", "0"):
+        print(f"  ⚠ no Aqua login session on {p} (console user: "
+              f"'{console_user or 'none'}') — GUI launch may not show a window.")
+    # An SSH session is in a different bootstrap namespace than the desktop's
+    # Aqua session, so a bare `open` gets LSServerCommunicationErr (-10825).
+    # `launchctl asuser <uid> open` injects the launch into the console user's
+    # GUI domain. It prints a benign "could not switch audit session" warning
+    # without root — harmless, the open still reaches the session. So we judge
+    # success by whether the PROCESS actually comes up, not launchctl's rc.
+    exe = f'{path}/Contents/MacOS'
+    if console_uid and console_uid != "0":
+        ssh(p, f'launchctl asuser {console_uid} open "{path}" >/dev/null 2>&1; '
+               f'open "{path}" >/dev/null 2>&1; true', timeout=40)
+    else:
+        ssh(p, f'open "{path}" >/dev/null 2>&1; true', timeout=40)
+    chk = ssh(p, f'sleep 2; pgrep -f "{exe}" >/dev/null && echo UP || echo DOWN')
+    if "UP" in chk.stdout:
+        print(f"  ✓ launched {base} on {p}"
+              + (f" (running on {console_user}'s desktop)"
+                 if console_user and console_user != "root" else " (process up, headless)"))
+        return 0
+    print(f"  ✗ {base} did not come up on {p}", file=sys.stderr)
+    return 1
+
+
+def cmd_launch(args):
+    return launch(args.on, args.app)
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="fleet-app", add_help=True)
+    sub = ap.add_subparsers(dest="verb", required=True)
+
+    f = sub.add_parser("find"); f.add_argument("app")
+    g = f.add_mutually_exclusive_group()
+    g.add_argument("--on"); g.add_argument("--all", action="store_true")
+    f.set_defaults(func=cmd_find)
+
+    d = sub.add_parser("deploy"); d.add_argument("app")
+    d.add_argument("--from", dest="from_peer", required=True)
+    d.add_argument("--to", dest="to_peer", required=True)
+    d.add_argument("--launch", action="store_true")
+    d.add_argument("--force", action="store_true")
+    d.set_defaults(func=cmd_deploy)
+
+    l = sub.add_parser("launch"); l.add_argument("app")
+    l.add_argument("--on", required=True); l.set_defaults(func=cmd_launch)
+
+    args = ap.parse_args()
+    if args.verb == "find":
+        if args.all:
+            args.peer_list = ["esarmbp", "hertsimacpro", "cloudcity"]
+        elif args.on:
+            args.peer_list = [args.on]
+        else:
+            print("  specify --on <peer> or --all", file=sys.stderr); return 2
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

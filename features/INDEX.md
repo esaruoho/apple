@@ -68,11 +68,13 @@ AppleBar — what the session accomplished  —  8 scenarios   (features/appleba
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Arm the Apple skill into the Mini's on-device chat brain  —  17 scenarios   (features/arm-apple-skill.feature)
-  - [@built @hw-verified] mlx-here arms the skill from the current folder
+Arm the Apple skill into the Mini's on-device chat brain  —  20 scenarios   (features/arm-apple-skill.feature)
+  - [@built @hw-verified] mlx-here arms the skill that GOVERNS the current folder, not alw
+  - [@built @hw-verified] standing in a project repo arms THAT project's skill
   - [@built @hw-verified] identity is set once, knowledge is retrieved per turn
   - [@built @hw-verified] retrieval pulls real content, not the catalog
   - [@built] --apple works on the FoundationModels brain too
+  - [@built @hw-verified] /copy lands a reply on the clipboard as plain markdown (draft-lo
   - [@built] graceful degrade when convey is absent
   - [@built @hw-verified] the spoken reply uses Voicebox, not macOS say
   - [@built] voicebox-say integrates with the existing stop paths
@@ -83,11 +85,12 @@ Arm the Apple skill into the Mini's on-device chat brain  —  17 scenarios   (f
   - [@built @hw-verified] the spoken reading can be stopped, paused, and resumed
   - [@built @hw-verified] AppleToolbox's ~/bin helper symlink must exist
   - [@built @hw-verified] showing a reply is ONE shared call, never re-rolled (DRY)
+  - [@built @hw-verified] the armed system prompt echo is richtext, not raw dark-grey mark
   - [(no grade)] the controls act only on a live reading
   - [@built] DispatchSource signal sources must be retained
   - [(no grade)] Qwen3-4B thinking mode is verbose
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 15/17 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 18/20 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 On-device dictation button  —  10 scenarios   (features/dictation-button.feature)
   - [@verified] A fresh engine is idle
