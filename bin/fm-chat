@@ -35,7 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from fm_render import format_reply, md_to_plain  # noqa: E402  (shared richtext framing + speech text)
+from fm_render import present  # noqa: E402  (THE shared "show a reply" call — render + speak)
 QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
@@ -191,29 +191,6 @@ def ask_mlx(prompt: str, system: str, timeout: float = 180.0):
     return {"ok": True, "out": out.strip(), "host": "cloudcitymacmini", "model_ms": 0}, rt
 
 
-def speak_reply(text: str, voice: str = "Zoe (Premium)"):
-    """Speak a reply with say-karaoke (AVSpeechSynthesizer + per-word highlight) in
-    the premium voice — Zoe (Premium), the same voice convey's roundtable uses —
-    NOT Eddy (the `say` skill's "friendly robot"). Ctrl-C terminates the speaker so
-    playback stops cleanly and the REPL returns to the prompt (the caller catches
-    KeyboardInterrupt)."""
-    proc = None
-    try:
-        proc = subprocess.Popen([str(HERE / "say-karaoke"), "--voice", voice],
-                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL, text=True)
-        proc.communicate(md_to_plain(text))
-    except KeyboardInterrupt:
-        if proc and proc.poll() is None:
-            try:
-                proc.terminate()       # stops say-karaoke → stops speech
-            except Exception:
-                pass
-        print(f"\n{DIM}  (speech stopped){RESET}")
-    except Exception:
-        pass
-
-
 def humanize_err(err: str) -> str:
     e = (err or "").strip()
     if "guardrail" in e.lower() or "unsafe content" in e.lower():
@@ -363,12 +340,12 @@ def main() -> int:
         # the model may echo a leading "Assistant:" from the cue — strip it
         if answer.lower().startswith("assistant:"):
             answer = answer.split(":", 1)[1].strip()
-        # shared formatter (same as fm-mlx): green `fm ›` label + Markdown richtext + stats
-        print(format_reply(answer, host=res.get("host", "?"),
-                           model_ms=res.get("model_ms", 0), round_trip=rt))
+        # ONE shared call: rich-markdown render + speak (karaoke/voice). present()
+        # is the family contract (bin/fm_render.py) — fm-chat does not re-roll either.
+        present(answer, host=res.get("host", "?"),
+                model_ms=res.get("model_ms", 0), round_trip=rt,
+                speak_aloud=speak, voice=voice)
         print()
-        if speak:
-            speak_reply(answer, voice)   # keeps printing AND saying — the live REPL
         history.append(("user", line))
         history.append(("assistant", answer))
         append_turn(meta, "user", line)           # persist → resumable in `sessions`

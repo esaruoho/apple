@@ -154,6 +154,17 @@ Feature: Arm the Apple skill into the Mini's on-device chat brain
     Then topbar/build.sh links voicebox-stop + speech-toggle into ~/bin every build
     And a missing link no longer makes a hotkey fire into nothing
 
+  @built @hw-verified
+  Scenario: showing a reply is ONE shared call, never re-rolled (DRY)
+    # MECHANISM: fm_render.present() bundles rich-markdown render + karaoke speech +
+    # voice. fm-chat calls present(); fm-mlx calls `fm_render.py --present`. The
+    # speak act used to be re-rolled per tool (the 9th-tool complaint) — now owned once.
+    Given a tool needs to show a model reply
+    When it calls present() / `fm_render.py --present`
+    Then the reply renders as rich markdown (ANSI on a TTY) AND is spoken in Zoe (Premium)
+    And no tool re-implements format_reply or wires its own say-karaoke/voicebox
+    And the contract is documented in wiki/concepts/reply-presentation.md
+
   @observed
   Scenario: the controls act only on a live reading
     # Expected: when the spoken reply finishes, say-karaoke exits and removes its

@@ -1,23 +1,36 @@
 #!/usr/bin/env python3
 """fm_render — the ONE place fm-* tools turn a model's Markdown reply into output.
 
-DRY home for what used to live inline in fm-converse. Three consumers share it:
-  • the terminal  — md_to_ansi(): **bold**/#headings/-bullets/`code` → ANSI styling
-  • the speaker   — md_to_plain(): strip the markers so `say`/`say-karaoke` doesn't
-                    read "asterisk asterisk bold" aloud
-  • piping        — emit_reply(): ANSI on a TTY, plain text when captured/piped
+A model reply is SHOWN through exactly one call — present() — which bundles the
+three cross-cutting concerns so no tool ever re-rolls them or has to be asked:
+  1. rich markdown   — md_to_ansi(): **bold**/#headings/-bullets/`code` → ANSI
+  2. karaoke speech  — speak(): say-karaoke (per-word engine) in the premium voice
+  3. voice/say choice— backend "say" (say-karaoke + Zoe) or "voicebox" (Kokoro/Heart)
 
-So "render the reply" is written once and reused by fm-converse, fm-mlx, and any
-future fm-* sibling — instead of each re-implementing Markdown handling.
+Lower-level pieces are exposed too (md_to_ansi / md_to_plain / format_reply / speak)
+but present() is THE contract: any tool that emits a model reply calls present()
+(python) or `fm_render.py --present` (bash). See wiki/concepts/reply-presentation.md.
 
-As a CLI (reads stdin):
-    fm-mlx ... | fm_render.py            # ANSI on a TTY, plain when piped
-    fm-mlx ... | fm_render.py --plain    # always plain (for speech / capture)
+As a CLI (reads the reply text on stdin):
+    fm-mlx ... | fm_render.py --present --host H --rt 1.2   # render rich + speak
+    fm-mlx ... | fm_render.py --present --no-speak          # render only
+    fm-mlx ... | fm_render.py                               # ANSI on TTY, plain when piped
+    fm-mlx ... | fm_render.py --plain                       # always plain (speech/capture)
 
 Apple-native: python3 stdlib only.
 """
+import os
 import re
+import subprocess
 import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+# The premium voice the whole family speaks in (the one convey's roundtable uses).
+DEFAULT_VOICE = os.environ.get("FM_MLX_VOICE", "Zoe (Premium)")
+# "say" = say-karaoke (per-word karaoke engine, AVSpeechSynthesizer, Zoe);
+# "voicebox" = bin/voicebox-say (local Voicebox Kokoro/Heart). Override per-call or via env.
+DEFAULT_BACKEND = os.environ.get("FM_SPEAK_BACKEND", "say")
 
 # ── Markdown → ANSI (terminal) ───────────────────────────────────────────────
 _B, _I, _U, _DIM, _CODE, _R = "\033[1m", "\033[3m", "\033[4m", "\033[2m", "\033[96m", "\033[0m"
@@ -103,15 +116,69 @@ def format_reply(answer: str, *, host=None, model=None, model_ms=None,
     return out
 
 
+# ── the speaker — say-karaoke (karaoke engine) or voicebox, one home ──────────
+def speak(text: str, voice: str = None, backend: str = None):
+    """Speak `text` aloud the family's way. backend "say" → say-karaoke (per-word
+    karaoke engine) in the premium voice; "voicebox" → bin/voicebox-say (Kokoro/
+    Heart). Speaks md_to_plain(text) so markers aren't read aloud. The speaker
+    writes /tmp/say-karaoke.pid (or the voicebox pid file) so ⌃⌥⌘. (stop) and ⌃⌥⌘,
+    (pause/resume) control it. On Ctrl-C, stop playback and RE-RAISE so the caller
+    can return to its prompt. Silent on any other error."""
+    voice = voice or DEFAULT_VOICE
+    backend = backend or DEFAULT_BACKEND
+    cmd = ([str(HERE / "voicebox-say")] if backend == "voicebox"
+           else [str(HERE / "say-karaoke"), "--voice", voice])
+    proc = None
+    try:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, text=True)
+        proc.communicate(md_to_plain(text))
+    except KeyboardInterrupt:
+        if proc and proc.poll() is None:
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+        raise
+    except Exception:
+        pass
+
+
+def present(answer: str, *, host=None, model=None, model_ms=None, round_trip=None,
+            label="fm", speak_aloud=True, voice=None, backend=None, tty=None):
+    """THE one call to SHOW a model reply: rich-markdown render to the terminal AND
+    speak it aloud (karaoke voice). Every reply-emitting tool uses this so rich
+    markdown + karaoke + voice are never re-rolled or forgotten. Ctrl-C during
+    speech stops playback and returns cleanly (prints '(speech stopped)')."""
+    print(format_reply(answer, host=host, model=model, model_ms=model_ms,
+                       round_trip=round_trip, label=label, tty=tty))
+    if speak_aloud:
+        try:
+            speak(answer, voice=voice, backend=backend)
+        except KeyboardInterrupt:
+            print(f"\n{_DIM}  (speech stopped){_R}")
+
+
 def main() -> int:
     argv = sys.argv[1:]
     text = sys.stdin.read()
+
+    def opt(name):
+        return argv[argv.index(name) + 1] if name in argv else None
+
     if "--plain" in argv:
         sys.stdout.write(md_to_plain(text) + "\n")
         return 0
+    if "--present" in argv:
+        rt = opt("--rt")
+        # Speak unless told not to; render rich on a TTY, plain when piped (format_reply handles it).
+        present(text.rstrip("\n"),
+                host=opt("--host"), model=opt("--model"),
+                round_trip=float(rt) if rt else None,
+                speak_aloud=("--no-speak" not in argv),
+                voice=opt("--voice"), backend=opt("--backend"))
+        return 0
     if "--chat" in argv:
-        def opt(name):
-            return argv[argv.index(name) + 1] if name in argv else None
         rt = opt("--rt")
         sys.stdout.write(format_reply(
             text.rstrip("\n"),

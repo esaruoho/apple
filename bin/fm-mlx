@@ -17,10 +17,11 @@
 # Auto-talk is gated to an interactive terminal, so when a script captures fm-mlx
 # (e.g. the MLX roundtable) it stays silent; pass --say to force speech when piped.
 #
-# DRY — this tool OWNS the MLX round-trip only; it reuses, not re-implements:
-#   • Richtext   → bin/fm_render.py   (format_reply: fm-chat framing + Markdown→ANSI; shared w/ fm-chat & fm-converse)
-#   • Karaoke    → bin/say-karaoke    (speak + per-word highlight; AVSpeechSynthesizer)
-#   • Say voice  → Zoe (Premium)      (the premium voice convey's roundtable uses; override with FM_MLX_VOICE)
+# DRY — this tool OWNS the MLX round-trip only. Showing the reply is ONE shared
+# call, `fm_render.py --present`, which bundles all three concerns so fm-mlx never
+# re-rolls them: rich Markdown→ANSI render + karaoke speech (say-karaoke) + the
+# premium voice (Zoe (Premium); FM_MLX_VOICE / FM_SPEAK_BACKEND override). See
+# wiki/concepts/reply-presentation.md.
 # FEATURE-CARD >> features/fm-mlx-dry.feature
 set -uo pipefail
 
@@ -76,27 +77,19 @@ rt=$(python3 -c "import time; print(f'{time.time()-$t0:.1f}')")
 #   • --raw, OR stdout is NOT a terminal (piped into a program) → RAW reply text only.
 #     A program reading fm-mlx (fm-chat --mlx, convey roundtable, any subprocess) must
 #     never get the "fm ›" label or [host · round-trip] stats leaking into its data.
-#   • interactive terminal → the fm-chat-style richtext (label + Markdown→ANSI + stats).
+#   • interactive terminal → present(): rich-markdown render + speak, in ONE call.
 if [ "$raw" -eq 1 ] || [ ! -t 1 ]; then
   printf '%s\n' "$reply"
 else
-  host="${HOST#*://}"; host="${host%%:*}"
-  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --chat --host "$host" --model "MLX/Qwen3-4B" --rt "$rt"
-fi
-
-# Speak: --say forces (even piped); --raw/--quiet never speak; auto speaks only on a
-# terminal. md_to_plain strips markers so it doesn't read "asterisk asterisk" aloud.
-speak=0
-if [ "$raw" -eq 0 ]; then
+  # Decide whether to speak: --say forces, --quiet/--raw mute, auto = speak on a TTY.
+  nospeak="--no-speak"
   case "$say" in
-    1) speak=1 ;;
-    auto) [ -t 1 ] && speak=1 ;;
+    1) nospeak="" ;;
+    auto) [ -t 1 ] && nospeak="" ;;
   esac
-fi
-if [ "$speak" -eq 1 ]; then
-  # Speak with say-karaoke in the premium voice (Zoe (Premium)) — the one convey's
-  # roundtable uses — NOT Eddy. md_to_plain strips markers so it doesn't read
-  # "asterisk asterisk" aloud.
-  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --plain \
-    | "$HERE/say-karaoke" --voice "$voice" >/dev/null
+  host="${HOST#*://}"; host="${host%%:*}"
+  # The ONE shared "show a reply" call (bin/fm_render.py --present): rich markdown
+  # + karaoke speech in the premium voice. fm-mlx no longer re-rolls render or speak.
+  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --present \
+    --host "$host" --model "MLX/Qwen3-4B" --rt "$rt" --voice "$voice" $nospeak
 fi
