@@ -14,10 +14,15 @@ through the Mini.
 ## Why NOT a subnet router
 
 The textbook answer is `tailscale up --advertise-routes=192.168.32.169/32` on the
-Mini. **Blocked here:** the Mini runs the **App Store / GUI Tailscale**
-(sandboxed — no `tailscale` CLI in PATH, no route advertising), and IP forwarding
-is off. macOS subnet routers are brittle even when available. Robust wins over
-brittle → don't route, **jump**.
+Mini. **Blocked here:** the Mini runs the **App Store / GUI Tailscale**, which is
+sandboxed and can't advertise routes; IP forwarding is off. macOS subnet routers
+are brittle even when available. Robust wins over brittle → don't route, **jump**.
+
+(The Mini's `tailscale` CLI *is* now in PATH for status/ping/netcheck — a wrapper
+at `/opt/homebrew/bin/tailscale` calling the bundle's **lowercase** `tailscale`
+binary, mirroring RayMac. NB the bundle also has a capital-`Tailscale` GUI binary
+that fatals with "bundleIdentifier unknown to the registry" if invoked as a CLI —
+wrap the lowercase one. Route advertising stays blocked regardless.)
 
 ## The mechanism — SSH ProxyJump (zero new infra)
 
