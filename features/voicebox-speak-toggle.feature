@@ -119,3 +119,17 @@ Feature: One button for "Claude talks to me" (server + speech together)
     Then those POST /speak/claim and /speak/release (which client may speak)
     And this switch is the independent end-to-end "should Claude speak at all" control
     # cite: ~/bin/voicebox-on, ~/bin/voicebox-off vs ~/.config/voicebox/speak.state
+
+  @verified
+  Scenario: Server detection is by listening port, not a brittle cmdline match
+    Given the Voicebox server may be launched as `uvicorn backend.main:app --port`,
+      `--host 127.0.0.1 --port`, `--reload --port`, or `python -m uvicorn …`
+    Then both this switch and ~/bin/voicebox-status find the server by /health and
+      by whoever holds the listening port (lsof -iTCP:PORT -sTCP:LISTEN), never by a
+      `pgrep -f 'uvicorn backend.main:app --port 17493'` substring (which misses every
+      form that puts a flag between "app" and "--port")
+    # PROVEN 2026-06-15: relaunched the server with --host -> old pgrep MISS,
+    #   new lsof-by-port found PID 33252; voicebox-status footer now correct.
+    # COMPANION FIX (lives in ~/bin, not this repo, so not in the commit):
+    #   ~/bin/voicebox-status now derives PORT from ENDPOINT and uses lsof.
+    # cite: bin/voicebox-speak server_up(); ~/bin/voicebox-status footer

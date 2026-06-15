@@ -74,3 +74,23 @@ PROVEN live this session:
   booted in ~4s → status "WILL SPEAK".
 - fired the Stop hook → afplay PID 19405 played the WAV. Full chain confirmed.
 - Left state ON, server up (Esa's normal setup).
+
+## v3 — companion fix: robust server PID detection (2026-06-15)
+Esa: "fix the PGREP thing … robust, functional, no leftovers or dead code … like a human
+being would do it when they respect the person they are delivering the fix to."
+
+Audited every place that detects the Voicebox server process:
+- `~/bin/voicebox-status:195` — used `pgrep -f 'uvicorn backend.main:app --port 17493'`.
+  Brittle: misses `--host 127.0.0.1 --port`, `--reload --port`, `python -m uvicorn` forms.
+  FIXED: derive `PORT="${ENDPOINT##*:}"` and find the PID via
+  `lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t | head -1` (whoever holds the port IS the server).
+- `~/bin/voicebox-start` — already detects via /health and prints its own `$!`; stop-hint
+  "use voicebox-status to find it" now resolves correctly. No change needed.
+- `~/work/voicebox/justfile` `pkill -f "uvicorn backend.main:app"` — upstream repo, broad
+  match works for all forms; left untouched to avoid upstream merge conflicts.
+- `bin/voicebox-speak` (this feature) — already used /health + lsof; correct.
+
+PROVEN: relaunched the server in the `--host 127.0.0.1 --port 17493` form → old pgrep MISS
+(no PID), new lsof method found PID 33252; full `voicebox-status` runs clean (exit 0) with the
+correct PID. Caveat surfaced honestly: `~/bin` is NOT a git repo, so the voicebox-status fix
+is live on disk but not version-controlled — only the report-card note here records it.

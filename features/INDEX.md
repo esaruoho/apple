@@ -223,7 +223,7 @@ Live Spotlight-style suggestions in AppleBar  —  5 scenarios   (features/spotl
   triad: .session✓  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-One button for "Claude talks to me" (server + speech together)  —  8 scenarios   (features/voicebox-speak-toggle.feature)
+One button for "Claude talks to me" (server + speech together)  —  9 scenarios   (features/voicebox-speak-toggle.feature)
   - [@verified] Default is ON when no state file exists
   - [@verified] Enabling starts the server if it is down, then sets Claude talki
   - [@verified] Enabling when the server is already up just sets the flag
@@ -232,8 +232,9 @@ One button for "Claude talks to me" (server + speech together)  —  8 scenarios
   - [@verified] toggle does the sensible thing from any state
   - [@built] The AppleToolbox row shows the COMBINED truth in three states
   - [(no grade)] This is NOT the server-side speaker-claim gate
+  - [@verified] Server detection is by listening port, not a brittle cmdline mat
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 8/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 voicebox-worker — a TTS queue that survives the worker dying mid-job  —  6 scenarios   (features/voicebox-worker.feature)
   - [@built] A job the worker died on mid-synth is re-queued at boot
