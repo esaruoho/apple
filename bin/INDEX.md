@@ -1,4 +1,4 @@
-# CLI Tools Index — 239 tools in bin/
+# CLI Tools Index — 241 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -90,6 +90,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `finder-settings` — read & control Finder Settings (Preferences) via `defaults`. — `bin/finder-settings`
 `fleet` — (no description) — `bin/fleet`
 `fleet-app` — (no description) — `bin/fleet-app`
+`fleet-files` — (no description) — `bin/fleet-files`
 `fleet-montage` — combine every PNG in a directory into one labeled "fleet space" — `bin/fleet-montage`
 `fleet-photo` — snapshot EVERY available video input device across the fleet, — `bin/fleet-photo`
 `fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
@@ -137,6 +138,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
+`mlx` — (no description) — `bin/mlx`
 `mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
 `mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-here`

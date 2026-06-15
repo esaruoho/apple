@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""fleet-files — make a LAN-only fleet peer's files available + queryable from
+anywhere on the tailnet, by hopping through an always-on node that is on BOTH
+the LAN and Tailscale (the Mac Mini).
+
+No subnet router, no IP forwarding, no daemon. Pure SSH ProxyJump + an on-demand
+file catalog. The Mini's App Store Tailscale can't advertise routes, so we use it
+as a jump host instead — robust wins over brittle.
+
+  RayMac ──(Tailscale)──▶ cloudcity ──(LAN)──▶ hertsimacpro
+
+Verbs:
+  fleet-files setup  <peer>            write a ~/.ssh/config jump block for <peer>
+  fleet-files ls     <peer> [path]     list files under path (default: $HOME)
+  fleet-files index  <peer> [path]     build a searchable catalog [--publish]
+  fleet-files find   <term> [--peer P] grep the catalog(s) (fixed-string, safe)
+  fleet-files mount  <peer> [path]     sshfs-mount locally (or print sftp howto)
+
+Known peers (host is resolved on the JUMP side, so DHCP churn doesn't matter):
+  hertsimacpro  user=esaruoho  via=cloudcity  legacy-rsa sshd
+"""
+import argparse, os, subprocess, sys
+
+HOME = os.path.expanduser("~")
+INDEX_DIR = os.path.join(HOME, ".fleet-index")
+PUBLISH_DIR = os.path.join(HOME, "work/comms/queue/fleet-index")
+SSH_CONFIG = os.path.join(HOME, ".ssh/config")
+BEGIN = "# >>> fleet-files managed >>>"
+END = "# <<< fleet-files managed <<<"
+
+# A LAN-only peer reached via a jump host that's on both the LAN and the tailnet.
+PEERS = {
+    "hertsimacpro": {"user": "esaruoho", "host": "hertsimacpro", "via": "cloudcity",
+                     "legacy_rsa": True, "alias": "hertsi"},
+}
+
+
+def base_ssh_opts(peer):
+    o = ["-o", "ConnectTimeout=12", "-o", "BatchMode=yes",
+         "-o", "StrictHostKeyChecking=accept-new", "-J", peer["via"]]
+    if peer.get("legacy_rsa"):
+        o += ["-o", "PubkeyAcceptedAlgorithms=+ssh-rsa"]
+    return o
+
+
+def target(peer):
+    return f'{peer["user"]}@{peer["host"]}'
+
+
+def resolve(name):
+    p = PEERS.get(name)
+    if not p:
+        print(f"  unknown peer '{name}' (known: {', '.join(PEERS)})", file=sys.stderr)
+        sys.exit(2)
+    return p
+
+
+def run_remote(peer, cmd, timeout=120):
+    return subprocess.run(["ssh", *base_ssh_opts(peer), target(peer), cmd],
+                          capture_output=True, text=True, timeout=timeout)
+
+
+def cmd_setup(args):
+    peer = resolve(args.peer)
+    alias = peer.get("alias", args.peer)
+    block = [BEGIN,
+             f"Host {alias} {peer['host']}",
+             f"    HostName {peer['host']}",
+             f"    User {peer['user']}",
+             f"    ProxyJump {peer['via']}",
+             "    StrictHostKeyChecking accept-new"]
+    if peer.get("legacy_rsa"):
+        block.append("    PubkeyAcceptedAlgorithms +ssh-rsa")
+    block.append(END)
+    block = "\n".join(block) + "\n"
+
+    existing = ""
+    if os.path.exists(SSH_CONFIG):
+        with open(SSH_CONFIG) as f:
+            existing = f.read()
+    # replace any prior managed block for idempotency
+    if BEGIN in existing and END in existing:
+        pre = existing.split(BEGIN)[0].rstrip("\n")
+        post = existing.split(END, 1)[1].lstrip("\n")
+        existing = (pre + "\n" + post).strip("\n") + "\n"
+    os.makedirs(os.path.dirname(SSH_CONFIG), exist_ok=True)
+    with open(SSH_CONFIG, "a" if not existing else "w") as f:
+        f.write((existing + "\n" if existing else "") + block)
+    os.chmod(SSH_CONFIG, 0o600)
+    print(f"  ✓ wrote jump block: `ssh {alias}` now reaches {peer['host']} via "
+          f"{peer['via']} over Tailscale, from anywhere on the tailnet.")
+    print(f"    also: sftp {alias} · rsync -e ssh {alias}:… · sshfs {alias}:")
+    return 0
+
+
+def cmd_ls(args):
+    peer = resolve(args.peer)
+    path = args.path or "$HOME"
+    r = run_remote(peer, f'ls -lah "{path}" 2>&1 | head -200')
+    sys.stdout.write(r.stdout)
+    return r.returncode
+
+
+def cmd_index(args):
+    peer = resolve(args.peer)
+    path = args.path or "$HOME"
+    print(f"  indexing {args.peer}:{path} through {peer['via']}… (this reads the "
+          f"peer's tree over the jump; large trees take a moment)")
+    # path<TAB>size<TAB>mtime ; bounded to files, skip the noisy caches.
+    remote = (f'find "{path}" -type f '
+              f'-not -path "*/Library/Caches/*" -not -path "*/.Trash/*" '
+              f'-print0 2>/dev/null | xargs -0 stat -f "%N\t%z\t%Sm" 2>/dev/null')
+    r = run_remote(peer, remote, timeout=600)
+    lines = [l for l in r.stdout.splitlines() if l.strip()]
+    os.makedirs(INDEX_DIR, exist_ok=True)
+    cat = os.path.join(INDEX_DIR, f"{args.peer}.tsv")
+    with open(cat, "w") as f:
+        f.write("\n".join(lines) + ("\n" if lines else ""))
+    print(f"  ✓ catalog: {cat}  ({len(lines)} files)")
+    if args.publish:
+        os.makedirs(PUBLISH_DIR, exist_ok=True)
+        pub = os.path.join(PUBLISH_DIR, f"{args.peer}.tsv")
+        with open(pub, "w") as f:
+            f.write("\n".join(lines) + ("\n" if lines else ""))
+        print(f"  ✓ published to Syncthing queue: {pub}")
+        print(f"    → searchable from every tailnet machine, even when "
+              f"{args.peer} is asleep.")
+    return 0
+
+
+def cmd_find(args):
+    term = args.term
+    cats = []
+    if args.peer:
+        cats = [os.path.join(INDEX_DIR, f"{args.peer}.tsv")]
+    else:
+        for d in (INDEX_DIR, PUBLISH_DIR):
+            if os.path.isdir(d):
+                cats += [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".tsv")]
+    cats = [c for c in cats if os.path.exists(c)]
+    if not cats:
+        print("  no catalog yet — run: fleet-files index <peer> --publish", file=sys.stderr)
+        return 1
+    hits = 0
+    for c in cats:
+        name = os.path.splitext(os.path.basename(c))[0]
+        # fixed-string match on the path column — safe (no regex backtracking).
+        r = subprocess.run(["grep", "-iF", term, c], capture_output=True, text=True)
+        for line in r.stdout.splitlines():
+            parts = line.split("\t")
+            p = parts[0]
+            sz = parts[1] if len(parts) > 1 else "?"
+            mt = parts[2] if len(parts) > 2 else "?"
+            print(f"  [{name}] {p}\t({sz}B, {mt})")
+            hits += 1
+    print(f"  — {hits} match(es) for '{term}'")
+    return 0 if hits else 1
+
+
+def cmd_mount(args):
+    peer = resolve(args.peer)
+    alias = peer.get("alias", args.peer)
+    path = args.path or f'/Users/{peer["user"]}'
+    mnt = os.path.join(HOME, "mnt", args.peer)
+    if subprocess.run(["which", "sshfs"], capture_output=True).returncode != 0:
+        print("  sshfs not installed. Either install macFUSE+sshfs, or use sftp:")
+        print(f"    sftp {alias}            # then `get`/`put` interactively")
+        print(f"    open 'sftp://{alias}/'  # Finder mount via SFTP")
+        return 1
+    os.makedirs(mnt, exist_ok=True)
+    jump = peer["via"]
+    opts = "-o reconnect,ProxyJump=%s" % jump
+    if peer.get("legacy_rsa"):
+        opts += ",PubkeyAcceptedAlgorithms=+ssh-rsa"
+    cmd = f'sshfs {target(peer)}:{path} "{mnt}" {opts}'
+    print(f"  mounting: {cmd}")
+    rc = subprocess.run(cmd, shell=True).returncode
+    if rc == 0:
+        print(f"  ✓ {args.peer} files at {mnt}  (unmount: umount {mnt})")
+    return rc
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="fleet-files")
+    sub = ap.add_subparsers(dest="verb", required=True)
+    s = sub.add_parser("setup"); s.add_argument("peer"); s.set_defaults(func=cmd_setup)
+    l = sub.add_parser("ls"); l.add_argument("peer"); l.add_argument("path", nargs="?")
+    l.set_defaults(func=cmd_ls)
+    i = sub.add_parser("index"); i.add_argument("peer"); i.add_argument("path", nargs="?")
+    i.add_argument("--publish", action="store_true"); i.set_defaults(func=cmd_index)
+    f = sub.add_parser("find"); f.add_argument("term"); f.add_argument("--peer")
+    f.set_defaults(func=cmd_find)
+    m = sub.add_parser("mount"); m.add_argument("peer"); m.add_argument("path", nargs="?")
+    m.set_defaults(func=cmd_mount)
+    args = ap.parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
