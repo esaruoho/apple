@@ -167,7 +167,8 @@ def cmd_find(args):
     term = args.term
     cats = []
     if args.peer:
-        cats = [os.path.join(INDEX_DIR, f"{args.peer}.tsv")]
+        host = resolve(args.peer)["host"]      # accept alias OR key
+        cats = [os.path.join(d, f"{host}.tsv") for d in (PUBLISH_DIR, INDEX_DIR)]
     else:
         for d in (INDEX_DIR, PUBLISH_DIR):
             if os.path.isdir(d):
@@ -176,7 +177,7 @@ def cmd_find(args):
     if not cats:
         print("  no catalog yet — run: fleet-files index <peer> --publish", file=sys.stderr)
         return 1
-    hits = 0
+    hits, seen = 0, set()
     for c in cats:
         name = os.path.splitext(os.path.basename(c))[0]
         # fixed-string match on the path column — safe (no regex backtracking).
@@ -184,6 +185,9 @@ def cmd_find(args):
         for line in r.stdout.splitlines():
             parts = line.split("\t")
             p = parts[0]
+            if (name, p) in seen:          # same catalog mirrored in two dirs
+                continue
+            seen.add((name, p))
             sz = parts[1] if len(parts) > 1 else "?"
             mt = parts[2] if len(parts) > 2 else "?"
             print(f"  [{name}] {p}\t({sz}B, {mt})")

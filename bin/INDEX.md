@@ -1,4 +1,4 @@
-# CLI Tools Index — 244 tools in bin/
+# CLI Tools Index — 248 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -83,6 +83,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `eml-to-views` — (no description) — `bin/eml-to-views`
 `eppc-auth` — (no description) — `bin/eppc-auth`
 `eppc-probe` — (no description) — `bin/eppc-probe`
+`esarmbp` — (no description) — `bin/esarmbp`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `filee` — launch Filee.app into a folder (the files-as-boxes viewer, convey ladder rung 1). — `bin/filee`
@@ -93,6 +94,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fleet-files` — (no description) — `bin/fleet-files`
 `fleet-files-refresh` — (no description) — `bin/fleet-files-refresh`
 `fleet-files-refresh-loop` — Cloudcity-Boot pane worker — maintains the LAN-only-peer bridge. — `bin/fleet-files-refresh-loop`
+`fleet-host` — (no description) — `bin/fleet-host`
 `fleet-montage` — combine every PNG in a directory into one labeled "fleet space" — `bin/fleet-montage`
 `fleet-photo` — snapshot EVERY available video input device across the fleet, — `bin/fleet-photo`
 `fleet-screenshot` — a screenshot of EACH fleet computer, collected into one dir. — `bin/fleet-screenshot`
@@ -110,6 +112,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
 `git-feature-wall` — ZERO-TOKEN Apple-keynote "feature wall" from ANY git repo. — `bin/git-feature-wall`
+`hertsi` — (no description) — `bin/hertsi`
 `hey-sal` — (no description) — `bin/hey-sal`
 `homepod-now` — (no description) — `bin/homepod-now`
 `icloud-drop` — (no description) — `bin/icloud-drop`
@@ -152,6 +155,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `notify-iphone` — (no description) — `bin/notify-iphone`
 `ocr-pdf-rebuild` — (no description) — `bin/ocr-pdf-rebuild`
 `ocr-triage` — (no description) — `bin/ocr-triage`
+`olga` — (no description) — `bin/olga`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
 `pakettimcp` — pakettimcp "<english>" — type plain English; the Mini's local Qwen3-4B reasons — `bin/pakettimcp`
 `panel-worker` — (no description) — `bin/panel-worker`
