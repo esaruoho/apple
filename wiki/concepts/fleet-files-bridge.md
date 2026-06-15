@@ -77,8 +77,19 @@ The bridge is kept alive by a Mini service, not by hand:
   (load-gated: skipped when 1-min loadavg > 4 so it never piles onto a busy Mini).
 - **`bin/fleet-files-refresh-loop`** is the Cloudcity-Boot pane worker: cheap
   IP-map every 10 min, full catalog ~hourly. Crash-only while-true, NO nohup.
-- **`convey/systems.yaml`** registers it as service `fleet-files-refresh`
-  (pane "Fleet Files Refresh"). Deploy = Mini pulls apple+convey, then
+- **The Mini's `systems.yaml`** registers it as a service. `systems.yaml` is the
+  gitignored private per-machine instance config (companion-mac-fabric), so this
+  entry is added to the **Mini's own copy**, not committed. Paste:
+
+  ```yaml
+  - name: fleet-files-refresh
+    does: maintain the LAN-only-peer Tailscale bridge — live IP-map (10m) + catalogs (~1h)
+    kind: service
+    worker: apple/bin/fleet-files-refresh-loop
+    launch: pane "Fleet Files Refresh"   # crash-only while-true; IP-map cheap, catalog load-gated
+  ```
+
+  Deploy = Mini pulls apple, add the entry to the Mini's `systems.yaml`, then
   `!pk cloudcity restart` **when the Mini is free** (a restart relaunches panes —
   don't do it mid-render or you kill in-flight convey jobs).
 - **`fleet-files setup`** consumes `peers.json` and pins each ssh-config
