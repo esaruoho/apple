@@ -215,7 +215,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `vocal-shortcuts-suggest.py` — (no description) — `bin/vocal-shortcuts-suggest.py`
 `voicebox-clone` — build a Voicebox voice profile from a recording, via Syncthing. — `bin/voicebox-clone`
 `voicebox-clone-worker.py` — (no description) — `bin/voicebox-clone-worker.py`
-`voicebox-speak` — local ON/OFF switch for Claude speaking aloud on THIS Mac. — `bin/voicebox-speak`
+`voicebox-speak` — the ONE switch for "Claude talks to me" on THIS Mac. — `bin/voicebox-speak`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
 `voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
 `why-no-mount` — (no description) — `bin/why-no-mount`

@@ -1,105 +1,121 @@
 # ============================================================================
-# REPORT CARD — Voicebox speak toggle (local "let Claude talk to me / don't")
+# REPORT CARD — Voicebox speak toggle (one button: "Claude talks to me")
 # ============================================================================
 #
 # WHAT THIS CARD SPAWNS
 #   Codespace : bin/voicebox-speak                 (the switch: enable/disable/toggle/status)
 #               ~/.claude/hooks/voicebox_speak.py  (the chokepoint: bails when off)
-#               topbar/AppleToolbox.swift          (the menu row + claudeSpeechEnabled())
+#               topbar/AppleToolbox.swift          (menu row + probe + toggleClaudeSpeech)
 #               commands/voicebox-speak.md         (the /voicebox-speak slash)
 #   Thinkspace: features/voicebox-speak-toggle.session.md
-#   Areaspace : OWNS = the local on/off state at ~/.config/voicebox/speak.state and
-#               every reader/writer of it. MUST NOT TOUCH = the server-side
-#               speaker-claim gate (voicebox-on/voicebox-off → /speak/claim,
-#               /speak/release), the TTS synthesis path, profile/engine choice,
-#               or voicebox-stop's kill behaviour (it only CALLS voicebox-stop).
+#   Areaspace : OWNS = the local on/off intent at ~/.config/voicebox/speak.state,
+#               and "make speech work" = ensuring the Voicebox API server is up via
+#               ~/bin/voicebox-start. MUST NOT TOUCH = the server-side speaker-claim
+#               gate (voicebox-on/voicebox-off -> /speak/claim, /speak/release), the
+#               TTS synthesis internals, or profile/engine choice.
 #
 # WHY THIS CARD EXISTS
-#   Esa wanted to set Voicebox up when he wants it and "shut it up" when he doesn't
-#   want Claude speaking. The Claude Code Stop hook (voicebox_speak.py) is the single
-#   point all spoken responses flow through, so the kill-switch lives THERE, fed by a
-#   state file that a one-line CLI and an AppleToolbox menu row both flip. Default
-#   (state file absent) == ON, preserving the prior always-speak behaviour.
+#   Esa wanted ONE control: enabling Claude speech in AppleToolbox must mean it both
+#   WORKS and is ON — he should never have to think about whether the Voicebox server
+#   is running. So "enable" is a single source of truth: it flips the intent flag ON
+#   AND starts the Voicebox server if it's down (waits for health). Two conditions gate
+#   actual speech: (1) server up, (2) flag on. The Claude Code Stop hook
+#   (voicebox_speak.py) is the single point all spoken responses flow through; it
+#   checks the flag (server-up is implied by enable, and the hook no-ops if the
+#   server is unreachable). The menu row shows the COMBINED truth. Default (state
+#   file absent) == ON, preserving the prior always-speak behaviour.
+#
+#   v2 (2026-06-15): the first cut only flipped a flag and lied "ON" when the server
+#   was down. Corrected so enable GUARANTEES the server, the CLI/menu report the real
+#   end-to-end state, and the menu has a 3rd "ON but server down" state.
 #
 # REPORT-CARD LEGEND (grade tags in use)
-#   @verified  exercised on this Mac and observed to behave as written
+#   @verified  exercised on this Mac this session and observed to behave as written
 #   @built     compiled + wired into the running app, not separately auto-tested
-#   @untested  needs a live Voicebox + a real Claude turn to confirm end-to-end audio
 #   @note      context, not a claim
 #
 # RESULT
 #   Direct-push to main (no PR). Files:
-#     bin/voicebox-speak                (new — the CLI)
-#     ~/.claude/hooks/voicebox_speak.py (patched — speech_enabled() gate; lives in
-#                                        ~/.claude, NOT this repo, so not in the commit)
-#     topbar/AppleToolbox.swift         (claudeSpeechEnabled() + toggle menu row)
-#     commands/voicebox-speak.md        (new — slash)
+#     bin/voicebox-speak                (CLI — enable starts the server)
+#     ~/.claude/hooks/voicebox_speak.py (speech_enabled() gate; lives in ~/.claude,
+#                                        NOT this repo, so not in the commit)
+#     topbar/AppleToolbox.swift         (voiceboxServerUp cache, probeVoiceboxServer,
+#                                        toggleClaudeSpeech, 3-state menu row)
+#     commands/voicebox-speak.md        (slash)
 #     features/voicebox-speak-toggle.{feature,session.md} (this card)
 #   AppleToolbox rebuilt + relaunched via topbar/build.sh.
 # ============================================================================
 
-Feature: Local on/off switch for Claude speaking aloud
-  As Esa, I can silence Claude's spoken responses on this Mac when I don't want it
-  talking, and switch speech back on when I do — from a CLI, a slash, or the 🧰 menu.
-  The switch is a single state file; the Stop hook is the one place that honours it.
+Feature: One button for "Claude talks to me" (server + speech together)
+  As Esa, when I enable Claude speech in AppleToolbox it both works and is on — the
+  Voicebox server is started for me if it was down, and Claude is set to talk. I never
+  have to check whether the server is running. Disabling silences Claude.
 
   @verified
   Scenario: Default is ON when no state file exists
     Given ~/.config/voicebox/speak.state does not exist
-    When the Stop hook checks speech_enabled()
-    Then it returns true and Claude speech behaves exactly as before
-    # cite: ~/.claude/hooks/voicebox_speak.py speech_enabled() (~90); bin/voicebox-speak current()
+    Then the intent flag reads ON and Claude speech behaves exactly as before
+    # cite: bin/voicebox-speak flag(); ~/.claude/hooks/voicebox_speak.py speech_enabled()
 
   @verified
-  Scenario: Disabling silences future responses and cuts current playback
+  Scenario: Enabling starts the server if it is down, then sets Claude talking
+    Given the Voicebox server is down and the flag is OFF
+    When I run `voicebox-speak enable` (or click the AppleToolbox row)
+    Then ~/bin/voicebox-start is invoked and we wait for /health
+    And the flag is set ON
+    And status reports "flag ON | server up | Effective: WILL SPEAK"
+    # PROVEN 2026-06-15: killed server (PID 15784) -> enable booted a new server in
+    # ~4s -> a subsequent Stop-hook fire played audio (afplay PID 19405).
+    # cite: bin/voicebox-speak enable()/start_server()
+
+  @verified
+  Scenario: Enabling when the server is already up just sets the flag
+    Given the Voicebox server is up and the flag is OFF
+    When I run `voicebox-speak enable`
+    Then the flag is set ON and no second server is started
+    # cite: bin/voicebox-speak start_server() early-returns when server_up
+
+  @verified
+  Scenario: Disabling silences Claude and cuts current playback
     Given Claude speech is ON
-    When I run `voicebox-speak disable` (or click "Claude Speech: ON" in 🧰)
-    Then the state file holds "off"
-    And voicebox-stop is invoked so anything playing right now goes quiet
-    And the next Stop hook fire returns early without synthesising
-    # cite: bin/voicebox-speak disable(); ~/.claude/hooks/voicebox_speak.py main() early-return
+    When I run `voicebox-speak disable` (or click the row when it shows ON)
+    Then the flag is OFF, voicebox-stop cuts anything playing, and the next Stop
+      hook fire returns early without synthesising
+    And the server is left running (re-enabling is then instant)
+    # cite: bin/voicebox-speak disable()/stop_playback(); hook main() early-return
 
   @verified
-  Scenario: Enabling restores spoken responses
-    Given Claude speech is OFF
-    When I run `voicebox-speak enable` (or click "Claude Speech: OFF" in 🧰)
-    Then the state file holds "on"
-    And the next Stop hook fire proceeds to synthesise + play
-    # cite: bin/voicebox-speak enable(); speech_enabled() returns true
+  Scenario: status reports both halves and the effective outcome
+    When I run `voicebox-speak status`
+    Then it prints the flag, the server up/down, and Effective WILL SPEAK/SILENT,
+      exiting 0 only when speech will actually happen
+    # cite: bin/voicebox-speak status()
 
   @verified
-  Scenario: Toggle flips whichever state is current
-    Given any current state
+  Scenario: toggle does the sensible thing from any state
+    Given any state
     When I run `voicebox-speak toggle`
-    Then ON becomes OFF and OFF becomes ON
+    Then effective-ON (flag on AND server up) -> disable; anything else -> enable
+      (which flips the flag on and boots the server if needed)
     # cite: bin/voicebox-speak toggle case
 
-  @verified
-  Scenario: status reports state and exit code
-    When I run `voicebox-speak status`
-    Then it prints ON/OFF and exits 0 when on, 1 when off
-    # cite: bin/voicebox-speak status case
-
   @built
-  Scenario: The 🧰 menu shows a live, self-relabelling toggle row
-    Given AppleToolbox is running
-    When I open the 🧰 menu under "Stop Voicebox"
-    Then I see "🗣️ Claude Speech: ON — click to disable" when speech is on,
-      or "🤫 Claude Speech: OFF — click to enable" when off
-    And clicking it runs `bin/voicebox-speak toggle --quiet`
-    And the label updates on the next menu refresh tick
-    # cite: topbar/AppleToolbox.swift claudeSpeechEnabled() + rebuildMenu() row (~3806)
+  Scenario: The AppleToolbox row shows the COMBINED truth in three states
+    Given AppleToolbox is running and probes the server off the main thread
+    When I open the menu under "Stop Voicebox"
+    Then I see one of:
+      "🗣️ Claude Speech: ON — click to disable"          (flag on + server up)
+      "⚠️ Claude Speech: ON but server down — click to start" (flag on + server down)
+      "🤫 Claude Speech: OFF — click to enable"            (flag off)
+    And clicking runs `voicebox-speak disable` when effectively on, else `enable`
+    And after a click the app re-probes a few times so the label catches the
+      server coming up
+    # cite: topbar/AppleToolbox.swift rebuildMenu() row (~3825), toggleClaudeSpeech(),
+    #       probeVoiceboxServer(), voiceboxServerUp cache
 
   @note
   Scenario: This is NOT the server-side speaker-claim gate
     Given ~/bin/voicebox-on and ~/bin/voicebox-off already exist
     Then those POST /speak/claim and /speak/release (which client may speak)
-    And this switch is independent: a purely local "should Claude speak at all" flag
+    And this switch is the independent end-to-end "should Claude speak at all" control
     # cite: ~/bin/voicebox-on, ~/bin/voicebox-off vs ~/.config/voicebox/speak.state
-
-  @untested
-  Scenario: End-to-end audio confirmation
-    Given Voicebox is running and speech is ON
-    When Claude finishes a turn
-    Then a WAV is synthesised and played; disabling mid-turn stops it
-    # verifiable only with a live Voicebox backend + a real Claude turn

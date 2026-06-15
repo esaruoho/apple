@@ -50,3 +50,27 @@ read by the Stop hook. A one-line CLI flips it; AppleToolbox shows a live toggle
 ## Not verified (honest grade)
 - End-to-end live audio (synthesise → play → disable-mid-turn-stops) needs a running Voicebox
   backend and a real Claude turn. Graded `@untested` on the card.
+
+## v2 — Esa corrected the spec (2026-06-15)
+Esa: the toggle isn't enough. "by saying it is on I define that it both works and is on" —
+enabling in AppleToolbox must CHECK whether the Voicebox server is on/off and START it if
+it's off, then set Claude talking. He shouldn't have to think about the server at all.
+
+Rebuilt:
+- `bin/voicebox-speak enable` now calls `~/bin/voicebox-start` when the server is down and
+  waits for `/health`. `status` reports flag + server + effective (WILL SPEAK / SILENT).
+  `disable` leaves the server running (fast re-enable). `toggle` = effective-on → disable,
+  else enable.
+- AppleToolbox: added `voiceboxServerUp` cache + `probeVoiceboxServer()` (off-main-thread
+  localhost health curl), a `toggleClaudeSpeech` selector that fires enable/disable then
+  re-probes a few times, and a 3-state menu row (ON / ON-but-server-down / OFF).
+
+PROVEN live this session:
+- killed the real server (was `uvicorn … --host 127.0.0.1 --port 17493`, PID 15784; note the
+  `--host` is why `voicebox-status`/`voicebox-start`'s `pgrep 'uvicorn backend.main:app
+  --port 17493'` pattern misses it — my detection uses the HTTP /health endpoint, which is
+  robust to that). status → "server down / SILENT".
+- ran exactly what the toolbox Enable click runs (`voicebox-speak enable --quiet`) → server
+  booted in ~4s → status "WILL SPEAK".
+- fired the Stop hook → afplay PID 19405 played the WAV. Full chain confirmed.
+- Left state ON, server up (Esa's normal setup).

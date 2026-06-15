@@ -2677,6 +2677,11 @@ struct MailFlagStatus {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var refreshTimer: Timer?
+    // Cached Voicebox API server reachability, refreshed off-main-thread by
+    // probeVoiceboxServer(). The Claude-speech menu row reads this so its label
+    // can show the TRUE end-to-end state (flag ON *and* server up) without doing
+    // a blocking localhost curl on the main thread during menu rebuilds.
+    var voiceboxServerUp = false
     // Carbon hotkey ref retained so the system holds the registration alive
     // for the lifetime of the menu-bar process (which IS the lifetime — the
     // LaunchAgent re-spawns the menu-bar if it ever dies).
@@ -2735,7 +2740,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.global(qos: .utility).async {
             _ = run("\(APPLE_DIR)/bin/mac-temps", ["--json"], timeout: 30)
         }
+        // Prime the Voicebox server-up state so the Claude-speech row is accurate
+        // on first open, and re-probe on each refresh tick.
+        probeVoiceboxServer()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            self?.probeVoiceboxServer()
             self?.rebuildMenu()
         }
         // Register every UI-independent global hotkey HERE (in the menu-bar
@@ -3637,13 +3646,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
-    /// Whether Claude is allowed to speak responses aloud on this Mac.
-    /// Mirrors the Stop hook + `bin/voicebox-speak`: the state file at
+    /// Whether the user's intent flag allows Claude to speak (the "talking"
+    /// half). Mirrors the Stop hook + `bin/voicebox-speak`: the state file at
     /// ~/.config/voicebox/speak.state holds "on"/"off"; missing == on (default).
+    /// NOTE: this is intent only — speech also needs the server up. Use
+    /// `voiceboxServerUp` for the other half and the menu row for the combined
+    /// truth.
     func claudeSpeechEnabled() -> Bool {
         let path = "\(HOME)/.config/voicebox/speak.state"
         guard let raw = try? String(contentsOfFile: path, encoding: .utf8) else { return true }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "off"
+    }
+
+    /// Probe the Voicebox API server off the main thread and cache the result in
+    /// `voiceboxServerUp`, then rebuild the menu so the Claude-speech row relabels.
+    /// Cheap localhost curl with a short timeout; never blocks the UI.
+    func probeVoiceboxServer() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let task = Process()
+            task.launchPath = "/usr/bin/curl"
+            task.arguments = ["-sf", "--max-time", "1", "http://127.0.0.1:17493/health"]
+            task.standardOutput = Pipe(); task.standardError = Pipe()
+            var up = false
+            do { try task.run(); task.waitUntilExit(); up = (task.terminationStatus == 0) }
+            catch { up = false }
+            DispatchQueue.main.async {
+                let changed = self.voiceboxServerUp != up
+                self.voiceboxServerUp = up
+                if changed { self.rebuildMenu() }
+            }
+        }
+    }
+
+    /// The one Claude-speech switch the menu row drives. Effective-ON means the
+    /// intent flag is ON *and* the server is up. Clicking when effective-ON
+    /// disables (silences); clicking otherwise enables — which both flips the
+    /// flag ON and starts the server if it's down (`bin/voicebox-speak enable`).
+    /// After firing, re-probe a few times so the label catches the server coming
+    /// up (server start takes a few seconds).
+    @objc func toggleClaudeSpeech(_ sender: Any?) {
+        let effectiveOn = claudeSpeechEnabled() && voiceboxServerUp
+        let sub = effectiveOn ? "disable" : "enable"
+        runDetached("\(APPLE_DIR)/bin/voicebox-speak", [sub, "--quiet"])
+        for delay in [1.0, 3.0, 6.0, 9.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.probeVoiceboxServer()
+            }
+        }
     }
 
     func header(_ title: String, body: String) -> NSMenuItem {
@@ -3813,14 +3863,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // symbols like ⏹/⚙ to force emoji presentation — never raw
         // symbol-presentation glyphs, they render visibly smaller).
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
-        // Claude-speech ON/OFF switch. Reads ~/.config/voicebox/speak.state (the
-        // same file the Stop hook consults). Label reflects current state and the
-        // click flips it via `bin/voicebox-speak toggle`. Menu relabels on the
-        // next refresh tick. See features/voicebox-speak-toggle.feature.
-        let speechOn = claudeSpeechEnabled()
-        let speechTitle = speechOn ? "🗣️ Claude Speech: ON — click to disable"
-                                   : "🤫 Claude Speech: OFF — click to enable"
-        menu.addItem(action(speechTitle, cmd: "\(HOME)/bin/voicebox-speak", args: ["toggle", "--quiet"]))
+        // Claude-speech switch — the ONE control for "Claude talks to me". Truth
+        // = intent flag (~/.config/voicebox/speak.state) AND server reachable
+        // (cached voiceboxServerUp). Enabling guarantees BOTH: it flips the flag
+        // on and starts the Voicebox server if it's down. Three states:
+        //   flag ON + server up    -> ON, click disables (silences)
+        //   flag ON + server down  -> needs starting, click enables (boots server)
+        //   flag OFF               -> OFF, click enables (flag on + boot if needed)
+        // See features/voicebox-speak-toggle.feature.
+        let speechFlagOn = claudeSpeechEnabled()
+        let speechTitle: String
+        if speechFlagOn && voiceboxServerUp {
+            speechTitle = "🗣️ Claude Speech: ON — click to disable"
+        } else if speechFlagOn && !voiceboxServerUp {
+            speechTitle = "⚠️ Claude Speech: ON but server down — click to start"
+        } else {
+            speechTitle = "🤫 Claude Speech: OFF — click to enable"
+        }
+        menu.addItem(customAction(speechTitle, selector: #selector(toggleClaudeSpeech(_:))))
         menu.addItem(customAction("🎥 Start Recording Current Screen",
                                   selector: #selector(startScreenRecording(_:))))
         menu.addItem(customAction("⏹\u{FE0F} Stop Recording (save dialog)",

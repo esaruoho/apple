@@ -1,28 +1,36 @@
 #!/usr/bin/env bash
-# voicebox-speak — local ON/OFF switch for Claude speaking aloud on THIS Mac.
+# voicebox-speak — the ONE switch for "Claude talks to me" on THIS Mac.
 #
-# This is NOT the server-side speaker-claim gate (that's voicebox-on/voicebox-off,
-# which call /speak/claim + /speak/release). This is a simple local kill-switch
-# the Claude Code Stop hook (~/.claude/hooks/voicebox_speak.py) consults before
-# it synthesises + plays anything. Turn it off when you don't want Claude talking
-# to you; turn it back on when you do.
+# Enabling here is a single source of truth: it guarantees BOTH that the Voicebox
+# server is running AND that Claude is set to speak. You never have to think about
+# whether the server is up — saying ON makes it on AND working.
 #
-# State file: ~/.config/voicebox/speak.state  — contains "on" or "off".
-#   MISSING == on (default preserves the prior always-speak behavior).
+# This is NOT the server-side speaker-claim gate (voicebox-on / voicebox-off, which
+# POST /speak/claim + /speak/release). It is the user-facing "should Claude speak
+# at all, end to end" control that AppleToolbox's menu row drives.
+#
+# Two things make Claude speech happen:
+#   1. The Voicebox API server (uvicorn on 127.0.0.1:17493) must be UP.
+#   2. The intent flag ~/.config/voicebox/speak.state must be "on" (missing == on).
+# The Claude Code Stop hook (~/.claude/hooks/voicebox_speak.py) checks the flag, then
+# the server health, then synthesises + plays. `enable` ensures BOTH conditions.
 #
 # Usage:
 #   voicebox-speak                # alias for `status`
-#   voicebox-speak status         # print on|off (exit 0 if on, 1 if off)
-#   voicebox-speak enable|on      # allow Claude speech
-#   voicebox-speak disable|off    # silence Claude speech + cut current playback
-#   voicebox-speak toggle         # flip current state
-#   voicebox-speak --quiet ...    # suppress the human-readable line
+#   voicebox-speak status         # report flag + server + whether speech will happen
+#   voicebox-speak enable|on      # flag ON  + start the server if it's down (waits)
+#   voicebox-speak disable|off    # flag OFF + cut current playback (server left running)
+#   voicebox-speak toggle         # flip: if speech is effectively ON -> disable, else enable
+#   voicebox-speak --quiet ...    # suppress the human-readable line(s)
 #
 # FEATURE-CARD >> features/voicebox-speak-toggle.feature
 set -euo pipefail
 
 STATE_DIR="$HOME/.config/voicebox"
 STATE_FILE="$STATE_DIR/speak.state"
+ENDPOINT="${VOICEBOX_ENDPOINT:-http://127.0.0.1:17493}"
+START_BIN="$HOME/bin/voicebox-start"
+STOP_BIN="$HOME/bin/voicebox-stop"
 
 quiet=false
 args=()
@@ -33,51 +41,77 @@ for a in "$@"; do
   esac
 done
 set -- "${args[@]:-}"
-
 cmd="${1:-status}"
-
-current() {
-  # Missing/empty/unrecognised == on (default).
-  local v="on"
-  if [[ -f "$STATE_FILE" ]]; then
-    v="$(tr -d '[:space:]' < "$STATE_FILE" 2>/dev/null || echo on)"
-  fi
-  [[ "$v" == "off" ]] && echo off || echo on
-}
-
-write_state() {
-  mkdir -p "$STATE_DIR"
-  printf '%s\n' "$1" > "$STATE_FILE"
-}
 
 say() { $quiet || echo "$@"; }
 
+flag() {
+  # Missing/empty/unrecognised == on (default).
+  local v="on"
+  [[ -f "$STATE_FILE" ]] && v="$(tr -d '[:space:]' < "$STATE_FILE" 2>/dev/null || echo on)"
+  [[ "$v" == "off" ]] && echo off || echo on
+}
+
+write_flag() { mkdir -p "$STATE_DIR"; printf '%s\n' "$1" > "$STATE_FILE"; }
+
+server_up() { curl -sf --max-time 2 "$ENDPOINT/health" >/dev/null 2>&1; }
+
+start_server() {
+  # Returns 0 if the server is up afterward, 1 otherwise.
+  if server_up; then return 0; fi
+  if [[ ! -x "$START_BIN" ]]; then
+    say "⚠️  Voicebox server is down and $START_BIN is missing — cannot start it."
+    return 1
+  fi
+  say "⏳ Voicebox server is down — starting it…"
+  "$START_BIN" >/dev/null 2>&1 || true
+  # voicebox-start waits internally, but re-poll to be sure.
+  for _ in $(seq 1 30); do
+    if server_up; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+stop_playback() {
+  if [[ -x "$STOP_BIN" ]]; then "$STOP_BIN" >/dev/null 2>&1 || true
+  elif command -v voicebox-stop >/dev/null 2>&1; then voicebox-stop >/dev/null 2>&1 || true; fi
+}
+
 enable() {
-  write_state on
-  say "🔊 Claude speech ENABLED — Voicebox will speak responses."
+  write_flag on
+  if start_server; then
+    say "🔊 Claude speech ENABLED — server is UP and Claude will speak responses."
+    return 0
+  else
+    say "🔊 Flag is ON, but the Voicebox server did not come up. Check /tmp/voicebox-server.log"
+    return 1
+  fi
 }
 
 disable() {
-  write_state off
-  # Cut anything currently playing so it goes quiet immediately.
-  if command -v voicebox-stop >/dev/null 2>&1; then
-    voicebox-stop >/dev/null 2>&1 || true
-  elif [[ -x "$HOME/bin/voicebox-stop" ]]; then
-    "$HOME/bin/voicebox-stop" >/dev/null 2>&1 || true
-  fi
-  say "🔇 Claude speech DISABLED — Voicebox will stay silent."
+  write_flag off
+  stop_playback
+  say "🔇 Claude speech DISABLED — Claude will stay silent. (Voicebox server left running.)"
+}
+
+status() {
+  local f s eff
+  f="$(flag)"
+  if server_up; then s="up"; else s="down"; fi
+  if [[ "$f" == "on" && "$s" == "up" ]]; then eff="WILL SPEAK"; else eff="SILENT"; fi
+  say "Claude speech flag: $(printf '%s' "$f" | tr a-z A-Z)   |   Voicebox server: $s   |   Effective: $eff"
+  [[ "$eff" == "WILL SPEAK" ]] && return 0 || return 1
 }
 
 case "$cmd" in
-  status|"")
-    s="$(current)"
-    say "Claude speech is $(printf '%s' "$s" | tr '[:lower:]' '[:upper:]')."
-    [[ "$s" == "on" ]] && exit 0 || exit 1
-    ;;
+  status|"")   status ;;
   enable|on)   enable ;;
   disable|off) disable ;;
   toggle)
-    if [[ "$(current)" == "on" ]]; then disable; else enable; fi
+    # Effective-ON = flag on AND server up. Anything else -> enable (which fixes
+    # both: flips the flag on and starts the server if it's down).
+    if [[ "$(flag)" == "on" ]] && server_up; then disable; else enable; fi
     ;;
   *)
     echo "voicebox-speak: unknown command '$cmd'" >&2
