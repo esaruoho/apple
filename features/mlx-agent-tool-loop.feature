@@ -22,10 +22,11 @@
 #               folder-memory, tag) — it consumes all of them.
 #
 # RESULT
-#   feature commit(s): <pending — same motion as the build>
+#   feature commit(s): fa003ff (bin/mlx-agent + mlx-here route + this card + .session)
 #   PR: direct-push, no PR
 #   files changed: bin/mlx-agent (new), bin/mlx-here (+--agent route),
-#                  features/mlx-agent-tool-loop.feature (+ .session.md)
+#                  features/mlx-agent-tool-loop.feature (+ .session.md),
+#                  bin/INDEX.md + features/INDEX.md (auto-regen by pre-commit)
 # =============================================================================
 
 Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
