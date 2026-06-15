@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Stop whatever Voicebox is currently playing.
 #
-# Two playback paths exist and we kill both:
+# Playback paths exist and we kill all of them (the global ⌃⌥⌘. stop runs this):
 #   1. The Claude Code stop hook (~/.claude/hooks/voicebox_speak.py) spawns
 #      `afplay` and stores its PID in /tmp/voicebox-speak.pid. That's what
 #      actually makes sound in the current setup.
-#   2. The backend /speak/stop endpoint cancels any in-flight generation and
+#   2. say-karaoke (AVSpeechSynthesizer) is what fm-chat / fm-mlx speak through;
+#      it stores its PID in /tmp/say-karaoke.pid and stops cleanly on SIGTERM.
+#   3. The backend /speak/stop endpoint cancels any in-flight generation and
 #      tells any subscribed frontend (Tauri pill) to dismiss. Belt + braces.
 
 if [[ -f /tmp/voicebox-speak.pid ]]; then
@@ -14,5 +16,11 @@ if [[ -f /tmp/voicebox-speak.pid ]]; then
     kill "$pid" 2>/dev/null || true
   fi
 fi
+
+if [[ -f /tmp/say-karaoke.pid ]]; then
+  spid=$(cat /tmp/say-karaoke.pid 2>/dev/null || true)
+  [[ -n "$spid" ]] && kill "$spid" 2>/dev/null || true
+fi
+pkill -f "$HOME/.cache/apple/say-karaoke" 2>/dev/null || true
 
 curl -fsS -X POST http://localhost:17493/speak/stop -o /dev/null 2>/dev/null || true

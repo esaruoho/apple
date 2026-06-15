@@ -144,6 +144,15 @@ if [ -d "$INSTALL_DIR" ]; then
     LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
     "$LSREG" -f "$INSTALL_APP" >/dev/null 2>&1 || true
 
+    # The global hotkeys shell out to $HOME/bin/<tool>; guarantee those symlinks
+    # exist (they are easy to forget on a fresh clone — a missing link makes the
+    # hotkey fire into nothing). Idempotent.
+    echo "==> Linking AppleToolbox helper scripts into ~/bin..."
+    mkdir -p "$HOME/bin"
+    for tool in voicebox-stop speech-toggle; do
+        ln -sf "$HOME/work/apple/bin/$tool" "$HOME/bin/$tool"
+    done
+
     echo "==> Relaunching menu-bar..."
     /usr/bin/open "$INSTALL_APP"
     echo "    🧰 menu-bar is up with the new binary."

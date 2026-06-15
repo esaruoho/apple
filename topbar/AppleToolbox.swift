@@ -2688,6 +2688,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var gotoFinderHotKeyRef: EventHotKeyRef?
     var stopVoiceboxHotKeyRef: EventHotKeyRef?
     var snapFrontmostHotKeyRef: EventHotKeyRef?
+    var speechToggleHotKeyRef: EventHotKeyRef?
     var renoiseHotKeyRef: EventHotKeyRef?
     var pdHotKeyRef: EventHotKeyRef?
     var abletonHotKeyRef: EventHotKeyRef?
@@ -2974,7 +2975,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Carbon RegisterEventHotKey for the menu-bar-owned keyboard shortcuts:
-    ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + ping /speak/stop)
+    ///   id=2  ⌃⌥⌘.  → stopVoicebox (kill afplay + say-karaoke + ping /speak/stop)
+    ///   id=8  ⌃⌥⌘,  → toggleSpeech (pause ⇄ resume the say-karaoke reading)
     ///   id=3  ⌃⌥⌘T  → fireGotoFinderSelection (shells out to toolbox-goto)
     ///   id=4  ⌃⌥⌘S  → snapFrontmostApp (SnapEngine.tileAllWindows)
     ///   id=5  ⌃⌥⌘C  → activate Renoise (launch if not running)
@@ -3002,6 +3004,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async {
                 switch hkID.id {
                 case 2: me.stopVoiceboxGlobal()
+                case 8: me.toggleSpeechGlobal()
                 case 3: me.fireGotoFinderSelection()
                 case 4: me.snapFrontmostApp()
                 case 5: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "C"))
@@ -3024,6 +3027,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("AppleToolbox: ⌃⌥⌘. registration failed with OSStatus \(stopStatus)")
         }
         stopVoiceboxHotKeyRef = stopRef
+
+        // id=8 — ⌃⌥⌘, — 'ATBP' — pause/resume the spoken reading (say-karaoke)
+        var pauseRef: EventHotKeyRef?
+        let pauseID = EventHotKeyID(signature: OSType(0x41544250), id: 8)
+        let pauseStatus = RegisterEventHotKey(UInt32(kVK_ANSI_Comma), mods, pauseID,
+                                              GetApplicationEventTarget(), 0, &pauseRef)
+        if pauseStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘, registration failed with OSStatus \(pauseStatus)")
+        }
+        speechToggleHotKeyRef = pauseRef
 
         // id=3 — ⌃⌥⌘T — 'ATBG'
         var gotoRef: EventHotKeyRef?
@@ -3121,6 +3134,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let task = Process()
         task.launchPath = "\(HOME)/bin/voicebox-stop"
         do { try task.run() } catch { NSLog("stopVoiceboxGlobal: \(error)") }
+    }
+
+    /// Pause ⇄ resume the speech currently being read aloud by say-karaoke
+    /// (the voice fm-chat / fm-mlx use). Companion to ⌃⌥⌘. (stop): ⌃⌥⌘, toggles.
+    @objc func toggleSpeechGlobal() {
+        let task = Process()
+        task.launchPath = "\(HOME)/bin/speech-toggle"
+        do { try task.run() } catch { NSLog("toggleSpeechGlobal: \(error)") }
     }
 
     /// Tile the frontmost app's windows via SnapEngine (in-process

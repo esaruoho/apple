@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# speech-toggle — pause ⇄ resume the speech currently being read aloud by
+# say-karaoke (the voice fm-chat / fm-mlx use). Sends SIGUSR1 to the live
+# AVSpeechSynthesizer process, which pauses at the next word boundary, or
+# resumes from where it left off ("continue later").
+#
+# Bind it to a global hotkey in AppleToolbox (companion to ⌃⌥⌘. = stop) so you
+# can halt the reading and pick it up again without losing your place.
+#
+#   speech-toggle            # toggle pause/resume
+#
+# To STOP outright (not pause), use voicebox-stop (the ⌃⌥⌘. hotkey).
+# FEATURE-CARD >> features/arm-apple-skill.feature
+if [[ -f /tmp/say-karaoke.pid ]]; then
+  spid=$(cat /tmp/say-karaoke.pid 2>/dev/null || true)
+  if [[ -n "$spid" ]] && kill -0 "$spid" 2>/dev/null; then
+    kill -USR1 "$spid" 2>/dev/null && exit 0
+  fi
+fi
+# Nothing speaking — nothing to toggle. Silent success.
+exit 0
