@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""fleet-wake — wake a sleeping fleet peer with a Wake-on-LAN magic packet.
+
+MUST run on a machine on the peer's OWN LAN segment — i.e. the Mini. WoL is a
+link-local broadcast; it does not route over Tailscale. So from elsewhere you
+trigger it through the Mini:  ssh cloudcity '~/work/apple/bin/fleet-wake hertsi'
+
+The peer's MAC comes from the Mini-maintained map (comms/queue/fleet-index/
+peers.json), which carries the last-known MAC forward even while the peer is
+asleep — exactly when you need it. You can also pass a raw MAC.
+
+The peer must have "Wake for network access" on (pmset womp 1) and be asleep
+(not powered off) on a wired link. Desktops (Mac Pro) wake reliably; laptops on
+battery / lid-closed often won't.
+
+Usage:
+  fleet-wake <peer|MAC> [--wait] [--bcast 192.168.32.255]
+"""
+import argparse, json, os, re, socket, subprocess, sys, time
+
+QUEUES = [os.path.expanduser("~/work/comms/queue/fleet-index"),
+          os.path.expanduser("~/.fleet-index")]
+
+
+def lookup(name):
+    """Return (mac, ip) for a peer alias/host from the maintained map."""
+    for d in QUEUES:
+        f = os.path.join(d, "peers.json")
+        if os.path.exists(f):
+            try:
+                peers = json.load(open(f)).get("peers", {})
+            except Exception:
+                continue
+            for alias, rec in peers.items():
+                if name in (alias, rec.get("host")) and rec.get("mac"):
+                    return rec["mac"], rec.get("ip")
+    return None, None
+
+
+def magic(mac):
+    b = bytes.fromhex(mac.replace(":", "").replace("-", ""))
+    if len(b) != 6:
+        raise ValueError(f"bad MAC: {mac}")
+    return b"\xff" * 6 + b * 16
+
+
+def send(mac, bcast):
+    pkt = magic(mac)
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sent = []
+    for tgt in {bcast, "255.255.255.255"}:
+        for port in (9, 7):
+            try:
+                s.sendto(pkt, (tgt, port)); sent.append(f"{tgt}:{port}")
+            except Exception as e:
+                print(f"  fail {tgt}:{port} {e}", file=sys.stderr)
+    s.close()
+    return sent
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="fleet-wake")
+    ap.add_argument("peer", help="peer alias/host (from the map) or a raw MAC")
+    ap.add_argument("--wait", action="store_true", help="poll until it pings (≤60s)")
+    ap.add_argument("--bcast", default=None, help="subnet broadcast (else derived)")
+    a = ap.parse_args()
+
+    if re.fullmatch(r"[0-9a-fA-F:.-]{12,17}", a.peer) and ":" in a.peer:
+        mac, ip = a.peer, None
+    else:
+        mac, ip = lookup(a.peer)
+        if not mac:
+            print(f"  no MAC for '{a.peer}' in the map — run fleet-files-refresh "
+                  f"while it was last awake, or pass a raw MAC.", file=sys.stderr)
+            return 1
+
+    bcast = a.bcast or (re.sub(r"\d+$", "255", ip) if ip else "255.255.255.255")
+    sent = send(mac, bcast)
+    print(f"  ✓ magic packet → {mac}  via {', '.join(sent)}")
+
+    if a.wait and ip:
+        for i in range(20):
+            if subprocess.run(["ping", "-c1", "-t1", ip], capture_output=True).returncode == 0:
+                print(f"  ✓ {a.peer} is up ({ip}) after ~{i*3}s"); return 0
+            time.sleep(3)
+        print(f"  ⚠ {a.peer} did not respond within 60s — may be powered off "
+              f"(WoL only wakes from sleep), on battery, or wired-link down.")
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

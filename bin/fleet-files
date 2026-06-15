@@ -237,6 +237,25 @@ def _peer_ip(name):
     return None, False
 
 
+def _wake_via_mini(host):
+    """Wake-on-LAN is link-local — it can't route over Tailscale, so the Mini
+    (on the peer's LAN) sends the magic packet on our behalf."""
+    print(f"  {host} is asleep — asking the Mini to Wake-on-LAN it…")
+    try:
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+                            JUMP_RELAY, f"~/work/apple/bin/fleet-wake {host} --wait"],
+                           capture_output=True, text=True, timeout=90)
+        sys.stdout.write("    " + r.stdout.replace("\n", "\n    ").rstrip() + "\n")
+        return "is up" in r.stdout
+    except Exception as e:
+        print(f"    wake failed: {e}", file=sys.stderr)
+        return False
+
+
+def cmd_wake(args):
+    return 0 if _wake_via_mini(resolve(args.peer)["host"]) else 2
+
+
 def cmd_tunnel(args):
     """VNC/SMB to a LAN-only peer from anywhere — forwarded through the Mini over
     Tailscale. VNC/SMB aren't SSH, so ProxyJump can't carry them; an `ssh -L`
@@ -248,11 +267,14 @@ def cmd_tunnel(args):
         subprocess.run(["pkill", "-f", f"ssh -f -N -L {lport}:"], capture_output=True)
         print(f"  ✓ stopped {label} tunnel"); return 0
     ip, up = _peer_ip(name)
+    if not up and not args.no_wake:
+        if _wake_via_mini(resolve(name)["host"]):
+            ip, up = _peer_ip(name)        # re-read after the wake
     if not ip:
         print(f"  no live IP for {name} — run: fleet-files-refresh", file=sys.stderr); return 1
     if not up:
-        print(f"  ⚠ {name} is marked DOWN in the map — it must be awake on the LAN "
-              f"for this to connect.", file=sys.stderr)
+        print(f"  ⚠ {name} is still DOWN — it must be awake on the LAN for this to "
+              f"connect (WoL only wakes from sleep, not power-off).", file=sys.stderr)
     inuse = subprocess.run(["lsof", "-ti", f"tcp:{lport}"], capture_output=True,
                            text=True).stdout.strip()
     if not inuse:
@@ -286,7 +308,9 @@ def main():
         t = sub.add_parser(k); t.add_argument("peer")
         t.add_argument("--stop", action="store_true")
         t.add_argument("--no-open", action="store_true")
+        t.add_argument("--no-wake", action="store_true", help="don't auto-WoL if asleep")
         t.set_defaults(func=cmd_tunnel, kind=k)
+    w = sub.add_parser("wake"); w.add_argument("peer"); w.set_defaults(func=cmd_wake)
     args = ap.parse_args()
     return args.func(args)
 

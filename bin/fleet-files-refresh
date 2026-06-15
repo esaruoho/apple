@@ -16,7 +16,7 @@ Runs ON the Mini (it's on the LAN with the old Macs, always-on). Two jobs:
 Output lands in the comms Syncthing queue → distributed to every machine.
 NO daemon: this is a one-shot. Cloudcity-Boot/systems.yaml runs it on a timer.
 """
-import json, os, subprocess, sys, time
+import json, os, re, subprocess, sys, time
 
 PEERS = [
     {"alias": "hertsi",  "host": "hertsimacpro", "user": "esaruoho", "legacy_rsa": True},
@@ -40,6 +40,17 @@ def resolve_ip(host):
 def is_up(ip):
     return subprocess.run(["ping", "-c1", "-t1", ip],
                           capture_output=True).returncode == 0
+
+
+def mac_for(ip):
+    """Peer's MAC from the local ARP table (needs a recent packet exchange, so we
+    ping first). Normalised to zero-padded octets for the Wake-on-LAN packet."""
+    subprocess.run(["ping", "-c1", "-t1", ip], capture_output=True)
+    r = subprocess.run(["arp", "-n", ip], capture_output=True, text=True)
+    m = re.search(r" at ([0-9a-fA-F:]+) ", r.stdout)
+    if not m or "incomplete" in r.stdout:
+        return None
+    return ":".join(p.zfill(2) for p in m.group(1).split(":"))
 
 
 def peer_os(p, ip):
@@ -73,6 +84,11 @@ def load_too_high(threshold=4.0):
 
 def main(stamp, do_index):
     os.makedirs(QUEUE, exist_ok=True)
+    mapfile = os.path.join(QUEUE, "peers.json")
+    prev = {}
+    if os.path.exists(mapfile):
+        try: prev = json.load(open(mapfile)).get("peers", {})
+        except Exception: pass
     out = {"ts": stamp, "peers": {}}
     # the heavy catalog walk is skipped entirely if the host is under load —
     # the cheap IP-map (no SSH, no mDNS) still refreshes so the bridge stays alive.
@@ -81,7 +97,10 @@ def main(stamp, do_index):
         print("  (load high — IP-map only this cycle, skipping catalog walk)")
     for p in PEERS:
         ip = resolve_ip(p["host"])
-        rec = {"host": p["host"], "user": p["user"], "ip": ip,
+        # carry forward the last-known MAC so we can still Wake-on-LAN a peer that
+        # is currently asleep (and thus absent from ARP / has no live IP).
+        mac = (mac_for(ip) if ip else None) or prev.get(p["alias"], {}).get("mac")
+        rec = {"host": p["host"], "user": p["user"], "ip": ip, "mac": mac,
                "legacy_rsa": p["legacy_rsa"], "up": False, "os": None}
         if ip and is_up(ip):
             rec["up"] = True

@@ -67,6 +67,27 @@ legacy-rsa, alias `hertsi`). Add more peers by extending `PEERS`.
 - `fleet-files find ".pdf" --peer hertsimacpro` → 73 hits; `.jpg` → 29,573 — all
   answered from the **local published catalog, no live connection to Hertsi**.
 
+## Waking a sleeping peer — the Mini as alarm clock
+
+Wake-on-LAN is a link-local broadcast; it does **not** route over Tailscale. So
+the Mini (on the peer's LAN) sends the magic packet on your behalf.
+
+- **`bin/fleet-wake <peer|MAC> [--wait]`** — sends the WoL packet. Runs on the
+  Mini; from elsewhere: `ssh cloudcity '~/work/apple/bin/fleet-wake hertsi --wait'`.
+- The peer's **MAC** is captured + carried forward in `peers.json` by
+  `fleet-files-refresh` (kept even while the peer is asleep — exactly when needed).
+- **Auto-wake:** `fleet-files screen/finder <peer>` checks the map; if the peer is
+  down it asks the Mini to WoL it first, waits, then opens the tunnel
+  (`--no-wake` to skip). `fleet-files wake <peer>` does just the wake.
+
+Requirements on the peer: `pmset womp 1` (Wake for network access) + asleep, not
+powered off, on a wired link. Verified 2026-06-15: Hertsi already has `womp 1`
+**and `sleep 0`** (never sleeps — display-only), so it's effectively always-on;
+the wake path is insurance + the real win for laptops like olgas-mbp (capture its
+MAC once while awake; note laptops on battery/lid-closed often ignore WoL).
+"Keep it open" = `sudo pmset -a sleep 0 disksleep 0` on the peer (needs its sudo;
+Hertsi is already there).
+
 ## Available vs queryable — two layers
 
 - **Available** = byte access on demand: `ssh/sftp/rsync/sshfs hertsi` via the jump.
