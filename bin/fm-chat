@@ -191,14 +191,25 @@ def ask_mlx(prompt: str, system: str, timeout: float = 180.0):
     return {"ok": True, "out": out.strip(), "host": "cloudcitymacmini", "model_ms": 0}, rt
 
 
-def speak_reply(text: str, voice: str = "Eddy"):
-    """Speak a reply the same way fm-mlx does: plain text (markers stripped) through
-    say-karaoke, in the `say` skill's Eddy voice. DRY — same renderer, same speaker."""
+def speak_reply(text: str, voice: str = "Zoe (Premium)"):
+    """Speak a reply with say-karaoke (AVSpeechSynthesizer + per-word highlight) in
+    the premium voice — Zoe (Premium), the same voice convey's roundtable uses —
+    NOT Eddy (the `say` skill's "friendly robot"). Ctrl-C terminates the speaker so
+    playback stops cleanly and the REPL returns to the prompt (the caller catches
+    KeyboardInterrupt)."""
+    proc = None
     try:
-        sk = subprocess.Popen([str(HERE / "say-karaoke"), "--voice", voice],
-                              stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL, text=True)
-        sk.communicate(md_to_plain(text))
+        proc = subprocess.Popen([str(HERE / "say-karaoke"), "--voice", voice],
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, text=True)
+        proc.communicate(md_to_plain(text))
+    except KeyboardInterrupt:
+        if proc and proc.poll() is None:
+            try:
+                proc.terminate()       # stops say-karaoke → stops speech
+            except Exception:
+                pass
+        print(f"\n{DIM}  (speech stopped){RESET}")
     except Exception:
         pass
 
@@ -243,11 +254,14 @@ def main() -> int:
     use_mlx = "--mlx" in args
     if use_mlx:
         args.remove("--mlx")
+    arm_apple = "--apple" in args
+    if arm_apple:
+        args.remove("--apple")
     quiet = "--quiet" in args or "--no-speak" in args
     for f in ("--quiet", "--no-speak"):
         while f in args:
             args.remove(f)
-    voice = _pop(args, "--voice") or os.environ.get("FM_MLX_VOICE", "Eddy")
+    voice = _pop(args, "--voice") or os.environ.get("FM_MLX_VOICE", "Zoe (Premium)")
     resume = _pop(args, "--resume")
     cwd = _pop(args, "--cwd") or os.getcwd()
     system = _pop(args, "--system") or ""
@@ -267,12 +281,28 @@ def main() -> int:
         uid, meta = new_session(cwd, system)
         history = []
 
+    # --apple: arm the Apple skill. The identity (skill.md + this folder) becomes
+    # the system instruction; relevant wiki passages are retrieved per turn.
+    armer = None
+    if arm_apple:
+        try:
+            import arm_apple as armer  # bin/arm_apple.py (sys.path has HERE)
+        except Exception as e:
+            print(f"{YELLOW}  ⚠ could not arm Apple skill: {e}{RESET}")
+            armer = None
+        if armer is not None:
+            system = armer.build_system(cwd, extra=system)
+            meta["system"] = system
+
     if use_mlx:
         print(f"{BOLD}fm-chat{RESET} — MLX/Qwen3-4B on the Mini  "
               f"{DIM}(via fm-mlx; speaks aloud{' — --quiet to mute' if speak else ', muted'}){RESET}")
     else:
         print(f"{BOLD}fm-chat{RESET} — Apple FoundationModels on the Mini  "
               f"{DIM}(worker: {worker_alive()}){RESET}")
+    if armer is not None:
+        retr = "wiki retrieval ON" if armer.available() else "identity only (convey not found → no retrieval)"
+        print(f"{GREEN}  🍎 Apple skill armed{RESET} {DIM}— {os.path.basename(cwd)} context loaded · {retr}{RESET}")
     print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
           f"resume later: fm-chat --resume {uid}{RESET}")
     print(f"{DIM}commands: /reset  /system TEXT  /history  /exit{RESET}")
@@ -311,7 +341,15 @@ def main() -> int:
             continue
 
         prompt = render(history, line)
-        res, rt = (ask_mlx if use_mlx else ask)(prompt, system)
+        if armer is not None:
+            prompt = armer.augment_prompt(prompt, line)
+        try:
+            res, rt = (ask_mlx if use_mlx else ask)(prompt, system)
+        except KeyboardInterrupt:
+            # Ctrl-C while waiting on the Mini → drop this turn, back to the prompt.
+            sys.stdout.write("\r" + " " * 40 + "\r")
+            print(f"{DIM}  (cancelled — back to the prompt; Ctrl-C again or /exit to quit){RESET}")
+            continue
         if res is None:
             print(f"{YELLOW}  (timed out after {rt:.0f}s — is fm-worker running on the Mini? "
                   f"`fm-submit --status`){RESET}")

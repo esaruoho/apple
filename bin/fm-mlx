@@ -13,14 +13,14 @@
 #
 # The reply is shown the SAME way as fm-chat — green `fm  ›` label, Markdown
 # rendered as richtext, dim [host · round-trip] stats line — and SPOKEN aloud by
-# default (karaoke highlight, Eddy voice). Auto-talk is gated to an interactive
-# terminal, so when a script captures fm-mlx (e.g. the MLX roundtable) it stays
-# silent; pass --say to force speech even when piped.
+# default (karaoke highlight, Zoe (Premium) voice — the premium voice, not Eddy).
+# Auto-talk is gated to an interactive terminal, so when a script captures fm-mlx
+# (e.g. the MLX roundtable) it stays silent; pass --say to force speech when piped.
 #
 # DRY — this tool OWNS the MLX round-trip only; it reuses, not re-implements:
 #   • Richtext   → bin/fm_render.py   (format_reply: fm-chat framing + Markdown→ANSI; shared w/ fm-chat & fm-converse)
 #   • Karaoke    → bin/say-karaoke    (speak + per-word highlight; AVSpeechSynthesizer)
-#   • Say voice  → Eddy               (the `say` skill's chosen voice; ~/.claude/skills/say)
+#   • Say voice  → Zoe (Premium)      (the premium voice convey's roundtable uses; override with FM_MLX_VOICE)
 # FEATURE-CARD >> features/fm-mlx-dry.feature
 set -uo pipefail
 
@@ -29,7 +29,7 @@ HOST="${FM_MLX_HOST:-http://cloudcitymacmini:8080}"
 
 say="auto"                      # auto = talk on an interactive terminal; --say forces, --quiet disables
 raw=0                           # --raw = reply text ONLY (no fm-chat framing, no speech) — the brain interface
-voice="${FM_MLX_VOICE:-Eddy}"   # reuse the `say` skill's voice by default
+voice="${FM_MLX_VOICE:-Zoe (Premium)}"   # premium voice (the one convey's roundtable uses), not Eddy
 system=""                       # --system: an optional system instruction (used by the MLX roundtable)
 rest=()
 while [ $# -gt 0 ]; do
@@ -94,6 +94,9 @@ if [ "$raw" -eq 0 ]; then
   esac
 fi
 if [ "$speak" -eq 1 ]; then
+  # Speak with say-karaoke in the premium voice (Zoe (Premium)) — the one convey's
+  # roundtable uses — NOT Eddy. md_to_plain strips markers so it doesn't read
+  # "asterisk asterisk" aloud.
   printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --plain \
     | "$HERE/say-karaoke" --voice "$voice" >/dev/null
 fi

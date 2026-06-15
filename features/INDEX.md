@@ -68,7 +68,7 @@ AppleBar — what the session accomplished  —  8 scenarios   (features/appleba
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Arm the Apple skill into the Mini's on-device chat brain  —  14 scenarios   (features/arm-apple-skill.feature)
+Arm the Apple skill into the Mini's on-device chat brain  —  16 scenarios   (features/arm-apple-skill.feature)
   - [@built @hw-verified] mlx-here arms the skill from the current folder
   - [@built @hw-verified] identity is set once, knowledge is retrieved per turn
   - [@built @hw-verified] retrieval pulls real content, not the catalog
@@ -81,10 +81,12 @@ Arm the Apple skill into the Mini's on-device chat brain  —  14 scenarios   (f
   - [@built @hw-verified] live-data routing is precise
   - [@built @hw-verified] the spoken voice is the premium voice, not Eddy
   - [@built @hw-verified] the spoken reading can be stopped, paused, and resumed
+  - [@built @hw-verified] AppleToolbox's ~/bin helper symlink must exist
+  - [(no grade)] the controls act only on a live reading
   - [@built] DispatchSource signal sources must be retained
   - [(no grade)] Qwen3-4B thinking mode is verbose
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 14/16 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 On-device dictation button  —  10 scenarios   (features/dictation-button.feature)
   - [@verified] A fresh engine is idle

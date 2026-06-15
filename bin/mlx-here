@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple
+# skill + the folder you're standing in. The "What would the Apple skill say"
+# button: identity from skill.md, this folder's context, and per-turn retrieval
+# from wiki/ (135 pages) — so you're not spinning your wheels re-explaining the
+# repo to a stateless model.
+#
+#   cd ~/work/apple && mlx-here          # MLX brain, Apple skill armed, this folder
+#   mlx-here --fm                        # same, but the FoundationModels brain instead
+#   mlx-here --quiet                     # don't speak the replies aloud
+#   mlx-here --system "be terse"         # add an extra instruction on top of the skill
+#
+# Equivalent to: fm-chat --mlx --apple --cwd "$PWD"  (or --apple alone with --fm).
+# `mlx-chat` is a symlink to this — same idea.
+# FEATURE-CARD >> features/arm-apple-skill.feature
+set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+brain="--mlx"
+rest=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fm)   brain="" ; shift ;;          # FoundationModels brain (drop --mlx)
+    --mlx)  brain="--mlx" ; shift ;;
+    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)      rest+=("$1"); shift ;;
+  esac
+done
+
+exec "$HERE/fm-chat" $brain --apple --cwd "$PWD" "${rest[@]+"${rest[@]}"}"
