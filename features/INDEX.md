@@ -223,6 +223,18 @@ Live Spotlight-style suggestions in AppleBar  —  5 scenarios   (features/spotl
   triad: .session✓  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Local on/off switch for Claude speaking aloud  —  8 scenarios   (features/voicebox-speak-toggle.feature)
+  - [@verified] Default is ON when no state file exists
+  - [@verified] Disabling silences future responses and cuts current playback
+  - [@verified] Enabling restores spoken responses
+  - [@verified] Toggle flips whichever state is current
+  - [@verified] status reports state and exit code
+  - [@built] The 🧰 menu shows a live, self-relabelling toggle row
+  - [(no grade)] This is NOT the server-side speaker-claim gate
+  - [@untested] End-to-end audio confirmation
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 voicebox-worker — a TTS queue that survives the worker dying mid-job  —  6 scenarios   (features/voicebox-worker.feature)
   - [@built] A job the worker died on mid-synth is re-queued at boot
   - [@built] A poison input that orphans every time is capped, never wedges t

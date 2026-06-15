@@ -3637,6 +3637,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
+    /// Whether Claude is allowed to speak responses aloud on this Mac.
+    /// Mirrors the Stop hook + `bin/voicebox-speak`: the state file at
+    /// ~/.config/voicebox/speak.state holds "on"/"off"; missing == on (default).
+    func claudeSpeechEnabled() -> Bool {
+        let path = "\(HOME)/.config/voicebox/speak.state"
+        guard let raw = try? String(contentsOfFile: path, encoding: .utf8) else { return true }
+        return raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "off"
+    }
+
     func header(_ title: String, body: String) -> NSMenuItem {
         let item = NSMenuItem(title: "\(title): \(body)", action: nil, keyEquivalent: "")
         item.isEnabled = false
@@ -3804,6 +3813,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // symbols like ⏹/⚙ to force emoji presentation — never raw
         // symbol-presentation glyphs, they render visibly smaller).
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
+        // Claude-speech ON/OFF switch. Reads ~/.config/voicebox/speak.state (the
+        // same file the Stop hook consults). Label reflects current state and the
+        // click flips it via `bin/voicebox-speak toggle`. Menu relabels on the
+        // next refresh tick. See features/voicebox-speak-toggle.feature.
+        let speechOn = claudeSpeechEnabled()
+        let speechTitle = speechOn ? "🗣️ Claude Speech: ON — click to disable"
+                                   : "🤫 Claude Speech: OFF — click to enable"
+        menu.addItem(action(speechTitle, cmd: "\(HOME)/bin/voicebox-speak", args: ["toggle", "--quiet"]))
         menu.addItem(customAction("🎥 Start Recording Current Screen",
                                   selector: #selector(startScreenRecording(_:))))
         menu.addItem(customAction("⏹\u{FE0F} Stop Recording (save dialog)",

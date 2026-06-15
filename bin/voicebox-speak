@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# voicebox-speak — local ON/OFF switch for Claude speaking aloud on THIS Mac.
+#
+# This is NOT the server-side speaker-claim gate (that's voicebox-on/voicebox-off,
+# which call /speak/claim + /speak/release). This is a simple local kill-switch
+# the Claude Code Stop hook (~/.claude/hooks/voicebox_speak.py) consults before
+# it synthesises + plays anything. Turn it off when you don't want Claude talking
+# to you; turn it back on when you do.
+#
+# State file: ~/.config/voicebox/speak.state  — contains "on" or "off".
+#   MISSING == on (default preserves the prior always-speak behavior).
+#
+# Usage:
+#   voicebox-speak                # alias for `status`
+#   voicebox-speak status         # print on|off (exit 0 if on, 1 if off)
+#   voicebox-speak enable|on      # allow Claude speech
+#   voicebox-speak disable|off    # silence Claude speech + cut current playback
+#   voicebox-speak toggle         # flip current state
+#   voicebox-speak --quiet ...    # suppress the human-readable line
+#
+# FEATURE-CARD >> features/voicebox-speak-toggle.feature
+set -euo pipefail
+
+STATE_DIR="$HOME/.config/voicebox"
+STATE_FILE="$STATE_DIR/speak.state"
+
+quiet=false
+args=()
+for a in "$@"; do
+  case "$a" in
+    --quiet|-q) quiet=true ;;
+    *) args+=("$a") ;;
+  esac
+done
+set -- "${args[@]:-}"
+
+cmd="${1:-status}"
+
+current() {
+  # Missing/empty/unrecognised == on (default).
+  local v="on"
+  if [[ -f "$STATE_FILE" ]]; then
+    v="$(tr -d '[:space:]' < "$STATE_FILE" 2>/dev/null || echo on)"
+  fi
+  [[ "$v" == "off" ]] && echo off || echo on
+}
+
+write_state() {
+  mkdir -p "$STATE_DIR"
+  printf '%s\n' "$1" > "$STATE_FILE"
+}
+
+say() { $quiet || echo "$@"; }
+
+enable() {
+  write_state on
+  say "🔊 Claude speech ENABLED — Voicebox will speak responses."
+}
+
+disable() {
+  write_state off
+  # Cut anything currently playing so it goes quiet immediately.
+  if command -v voicebox-stop >/dev/null 2>&1; then
+    voicebox-stop >/dev/null 2>&1 || true
+  elif [[ -x "$HOME/bin/voicebox-stop" ]]; then
+    "$HOME/bin/voicebox-stop" >/dev/null 2>&1 || true
+  fi
+  say "🔇 Claude speech DISABLED — Voicebox will stay silent."
+}
+
+case "$cmd" in
+  status|"")
+    s="$(current)"
+    say "Claude speech is $(printf '%s' "$s" | tr '[:lower:]' '[:upper:]')."
+    [[ "$s" == "on" ]] && exit 0 || exit 1
+    ;;
+  enable|on)   enable ;;
+  disable|off) disable ;;
+  toggle)
+    if [[ "$(current)" == "on" ]]; then disable; else enable; fi
+    ;;
+  *)
+    echo "voicebox-speak: unknown command '$cmd'" >&2
+    echo "usage: voicebox-speak [status|enable|on|disable|off|toggle] [--quiet]" >&2
+    exit 2
+    ;;
+esac

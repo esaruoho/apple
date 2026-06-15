@@ -1,0 +1,52 @@
+# Session — Voicebox speak toggle
+
+Faithful record of the conversation that spawned `features/voicebox-speak-toggle.feature`.
+
+## How to get back
+- Transcript: `file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/b69cc0bd-6106-4ea0-b3a1-d270e860ee6c.jsonl`
+- Session ID: `b69cc0bd-6106-4ea0-b3a1-d270e860ee6c`
+- Resume: `claude --resume b69cc0bd-6106-4ea0-b3a1-d270e860ee6c`
+- Date: 2026-06-15
+
+## The request
+Esa: "boot up apple skill. now, please add 'voicebox enable / voicebox disable', onto this
+computer, onto apple toolbox, so that i can set it up when i want to and shut it up when i
+dont want claude speaking to me. okay?"
+
+## What I found before building
+- Claude's spoken responses are produced by the **Claude Code Stop hook**
+  `~/.claude/hooks/voicebox_speak.py` (registered in `~/.claude/settings.json`). It grabs the
+  last assistant message, POSTs to local Voicebox `:17493`, polls, downloads the WAV, plays it
+  with `afplay`. That hook is the single chokepoint for ALL of Claude's speech.
+- `~/bin/voicebox-on` / `voicebox-off` already exist but are a **different concept**: the
+  server-side speaker-claim gate (`/speak/claim` + `/speak/release`, keyed on
+  `VOICEBOX_CLIENT_ID`). Not what Esa asked for — he wants a simple local "talk to me / don't".
+- `~/bin/voicebox-stop` cuts whatever is currently playing (kills the afplay PID + POSTs
+  `/speak/stop`). AppleToolbox already exposes it as "🔇 Stop Voicebox".
+
+## Decision
+Put the switch where the speech actually flows: a state file
+`~/.config/voicebox/speak.state` ("on"/"off", missing == on to preserve current behaviour),
+read by the Stop hook. A one-line CLI flips it; AppleToolbox shows a live toggle row.
+
+## What I built
+1. `bin/voicebox-speak` — `enable|on / disable|off / toggle / status` (+`--quiet`). Disable
+   also calls `voicebox-stop` so it goes quiet immediately. status exits 0=on / 1=off.
+2. Patched `voicebox_speak.py`: added `speech_enabled()` + an early return in `main()` before
+   the health probe. Verified by importing the module and checking both states.
+3. AppleToolbox: `claudeSpeechEnabled()` reads the state file; a self-relabelling menu row
+   ("🗣️ Claude Speech: ON …" / "🤫 Claude Speech: OFF …") placed under "Stop Voicebox",
+   click runs `bin/voicebox-speak toggle --quiet`. Rebuilt + relaunched via `topbar/build.sh`
+   (clean compile; warnings present were pre-existing).
+4. `commands/voicebox-speak.md` slash + `commands/install.sh` (52 slashes).
+
+## Verification done this session
+- CLI: status→ON(rc0), disable→OFF(rc1), toggle→ON, state file contents correct.
+- Hook: `python3 -c ast.parse` OK; module import shows `speech_enabled()` False when off,
+  True when on.
+- Swift: `topbar/build.sh` compiled my additions cleanly, menu-bar relaunched.
+- Left state = ON at end of session.
+
+## Not verified (honest grade)
+- End-to-end live audio (synthesise → play → disable-mid-turn-stops) needs a running Voicebox
+  backend and a real Claude turn. Graded `@untested` on the card.
