@@ -68,7 +68,7 @@ AppleBar — what the session accomplished  —  8 scenarios   (features/appleba
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Arm the Apple skill into the Mini's on-device chat brain  —  23 scenarios   (features/arm-apple-skill.feature)
+Arm the Apple skill into the Mini's on-device chat brain  —  26 scenarios   (features/arm-apple-skill.feature)
   - [@built @hw-verified] mlx-here arms the skill that GOVERNS the current folder, not alw
   - [@built @hw-verified] standing in a project repo arms THAT project's skill
   - [@built @hw-verified] identity is set once, knowledge is retrieved per turn
@@ -77,6 +77,9 @@ Arm the Apple skill into the Mini's on-device chat brain  —  23 scenarios   (f
   - [@built @verified] fm-converse --apple arms, and the arm is STICKY to the session
   - [@built @verified] `mlx` opens a named, resumable, armed Converse discussion
   - [@todo] per-response one-gesture copy inside Converse
+  - [@built @verified] relay an MLX answer to Claude to GRADE how well it did
+  - [@built] relay an MLX answer to Claude to APPLY the change
+  - [@built] relay via clipboard for a supervised paste
   - [@built @hw-verified] /copy lands a reply on the clipboard as plain markdown (draft-lo
   - [@built] graceful degrade when convey is absent
   - [@built @hw-verified] the spoken reply uses Voicebox, not macOS say
@@ -93,7 +96,7 @@ Arm the Apple skill into the Mini's on-device chat brain  —  23 scenarios   (f
   - [@built] DispatchSource signal sources must be retained
   - [(no grade)] Qwen3-4B thinking mode is verbose
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 20/23 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 23/26 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 On-device dictation button  —  10 scenarios   (features/dictation-button.feature)
   - [@verified] A fresh engine is idle

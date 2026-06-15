@@ -1,4 +1,4 @@
-# CLI Tools Index — 248 tools in bin/
+# CLI Tools Index — 249 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -148,6 +148,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
 `mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-here`
+`mlx-relay` — (no description) — `bin/mlx-relay`
 `morning-digest` — (no description) — `bin/morning-digest`
 `musicmouse` — launch Laurie Spiegel's 1989 Music Mouse inside Mini vMac — `bin/musicmouse`
 `ner-graph` — (no description) — `bin/ner-graph`

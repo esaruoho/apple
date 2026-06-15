@@ -59,6 +59,12 @@ final class FolderModel: ObservableObject {
     @Published var showHidden = false
     @Published var selection: String? = nil   // id of the selected box (arrow-key nav)
 
+    // Running a convey verb ON a file from the box's widget — the folder becomes a place
+    // where you DO something to files with convey, not just look at them.
+    @Published var conveyOutput: String? = nil   // non-nil → the output sheet is shown
+    @Published var conveyRunning = false
+    @Published var conveyTitle = ""
+
     init() {
         // Keep the App-level @StateObject initializer trivial; defer listing to boot().
         self.dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -187,6 +193,59 @@ final class FolderModel: ObservableObject {
             }
         }
     }
+
+    // ── do something with a file, using convey ──────────────────────────────────
+    // The box's widget runs a convey verb on the file and shows the output in a sheet.
+    private let conveyBin = "/Users/esaruoho/work/apple/bin/convey"
+    private let conveyCwd = "/Users/esaruoho/work/convey"   // so `belt --spec media.filerule` resolves
+
+    func runConvey(_ args: [String], title: String) {
+        conveyTitle = title
+        conveyOutput = ""          // non-nil → sheet appears immediately
+        conveyRunning = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: self.conveyBin)
+            p.arguments = args
+            p.currentDirectoryURL = URL(fileURLWithPath: self.conveyCwd)
+            let pipe = Pipe()
+            p.standardOutput = pipe; p.standardError = pipe
+            var text = ""
+            do {
+                try p.run()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                p.waitUntilExit()
+                text = String(data: data, encoding: .utf8) ?? ""
+            } catch {
+                text = "couldn't run convey: \(error.localizedDescription)"
+            }
+            DispatchQueue.main.async {
+                self.conveyOutput = text.isEmpty ? "(no output)" : text
+                self.conveyRunning = false
+            }
+        }
+    }
+
+    /// Prompt for a question, then `convey ask <file> "<q>"` — the file's molecule is the
+    /// context; convey prints the answer (and speaks it Apple-natively).
+    func askConvey(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let alert = NSAlert()
+        alert.messageText = "Ask convey about \(box.title)"
+        alert.informativeText = "Your question — the file's molecule (its bonds) is the context:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 340, height: 24))
+        field.placeholderString = "What is this and how does it relate to the files around it?"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Ask")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            let q = field.stringValue.isEmpty
+                ? "What is this file and how does it relate to the files around it?"
+                : field.stringValue
+            runConvey(["ask", url.path, q], title: "convey ask · \(box.title)")
+        }
+    }
 }
 
 // ───────────────────────────── Views ─────────────────────────────
@@ -229,6 +288,11 @@ struct FileeView: View {
         }
         .frame(minWidth: 480, minHeight: 360)
         .onAppear { model.installKeyMonitor() }   // arrow keys + Return, via AppKit
+        .sheet(isPresented: Binding(
+            get: { model.conveyOutput != nil },
+            set: { if !$0 { model.conveyOutput = nil } })) {
+            ConveyOutputView().environmentObject(model)
+        }
     }
 
     // The breadcrumb / boot-into-a-folder bar.
@@ -278,6 +342,52 @@ struct FileeView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(box.url?.path ?? box.id, forType: .string)
         }
+        Divider()
+        // Do something with this filee, using convey.
+        if box.kind == .folder || box.kind == .repo {
+            Button("convey changed") {
+                model.runConvey(["changed", box.url?.path ?? "", "--no-html"],
+                                title: "convey changed · \(box.title)")
+            }
+        } else {
+            Button("convey molecule") {
+                model.runConvey(["molecule", box.url?.path ?? box.id],
+                                title: "convey molecule · \(box.title)")
+            }
+            Button("convey ask…") { model.askConvey(box) }
+            Button("convey belt (plan)") {
+                model.runConvey(["belt", box.url?.path ?? box.id],
+                                title: "convey belt · \(box.title)")
+            }
+        }
+    }
+}
+
+/// The result of running a convey verb on a filee — shown right in the folder window.
+struct ConveyOutputView: View {
+    @EnvironmentObject var model: FolderModel
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "fish").foregroundColor(.accentColor)
+                Text(model.conveyTitle).font(.headline).lineLimit(1)
+                if model.conveyRunning {
+                    ProgressView().scaleEffect(0.6)
+                    Text("running…").font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Button("Done") { model.conveyOutput = nil }.keyboardShortcut(.defaultAction)
+            }
+            ScrollView {
+                Text(model.conveyOutput ?? "")
+                    .font(.system(.callout, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(NSColor.textBackgroundColor))
+        }
+        .padding(16)
+        .frame(width: 660, height: 460)
     }
 }
 

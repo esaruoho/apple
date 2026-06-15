@@ -95,6 +95,18 @@ Feature: A folder's files are boxes on a screen
     # The Finder-level target: a smart folder whose contents auto-convey. Reuses
     # convey's existing belt (0007/0049) + trustees (0029) — Filee is the visible surface.
 
+  @built @verified
+  Scenario: Do something with a filee, using convey (the widget runs convey verbs)
+    Given a box's right-click widget
+    When "convey molecule" / "convey ask…" / "convey belt (plan)" is chosen on a file,
+         or "convey changed" on a folder
+    # cite: Filee.swift FileeView.widget(for:); FolderModel.runConvey()/askConvey()
+    Then Filee runs ~/work/apple/bin/convey <verb> <path> (async, cwd=~/work/convey)
+    And shows the output in a ConveyOutputView sheet (spinner while running, selectable text)
+    # cite: Filee.swift ConveyOutputView ; "convey ask…" prompts for the question via NSAlert
+    # verified live: folder ~/work/apple/filee shown; `convey molecule Filee.swift` → its bonds
+    # This is the Filee↔convey bridge: the folder is where you SEE files AND act on them.
+
   @stock
   Scenario: Built Apple-native, no Homebrew, no Xcode
     Given build.sh
