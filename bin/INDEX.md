@@ -145,9 +145,9 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
 `mlx` — (no description) — `bin/mlx`
-`mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-chat`
+`mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
-`mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with whichever skill — `bin/mlx-here`
+`mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-here`
 `mlx-relay` — (no description) — `bin/mlx-relay`
 `morning-digest` — (no description) — `bin/morning-digest`
 `musicmouse` — launch Laurie Spiegel's 1989 Music Mouse inside Mini vMac — `bin/musicmouse`
