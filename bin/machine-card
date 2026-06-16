@@ -123,26 +123,70 @@ def sh(cmd: list[str], timeout: float = 8.0) -> str:
 
 _IDENTITY_CACHE: dict | None = None
 
+# A Bonjour name-conflict storm can corrupt the machine's live identity: macOS
+# appends a " (2)" collision suffix to ComputerName, and socket.gethostname()
+# can return a garbled kernel hostname (seen 2026-06-16: "CloudciyMacMini",
+# the "t" dropped). Both feed the card `id` (the Fleet dedup key) and the
+# displayed name, so a single Mac split into two stale/fresh cards both titled
+# "CloudcityMacMini (2)". Canonicalise to a stable name so the card is immune
+# to that churn. Strip any trailing " (N)" collision suffix everywhere.
+_SUFFIX_RE = re.compile(r"\s*\(\d+\)\s*$")
+
+
+def _strip_suffix(name: str) -> str:
+    return _SUFFIX_RE.sub("", name).strip()
+
+
+def _canonical_name() -> str:
+    """Stable machine name, immune to DHCP/Bonjour churn. First sane hit wins:
+      1. fleet config  "id" / "name"      — explicit whitelabel override
+      2. scutil ComputerName, " (N)" off  — admin-set friendly name
+      3. scutil HostName, if actually set — admin-pinned, no DHCP fallback
+      4. socket.gethostname(), suffix off — last resort (can be garbled)
+    """
+    cfg = _CFG.get("id") or _CFG.get("name")
+    if cfg:
+        return _strip_suffix(str(cfg))
+    cn = _strip_suffix(sh(["scutil", "--get", "ComputerName"]))
+    if cn:
+        return cn
+    hn = sh(["scutil", "--get", "HostName"])
+    if hn and "not set" not in hn.lower():
+        return _strip_suffix(hn.split(".")[0])
+    return _strip_suffix(socket.gethostname().split(".")[0])
+
 
 def identity() -> dict:
     # Memoised — scutil is a subprocess and identity is asked for repeatedly
     # (ownership checks, card id, tailscale port). Stable for the process life.
     global _IDENTITY_CACHE
     if _IDENTITY_CACHE is None:
+        canonical = _canonical_name()
+        raw_host = socket.gethostname().split(".")[0]
+        raw_cname = sh(["scutil", "--get", "ComputerName"]) or raw_host
         _IDENTITY_CACHE = {
-            "hostname": socket.gethostname().split(".")[0],
-            "computer_name": sh(["scutil", "--get", "ComputerName"]) or socket.gethostname(),
+            # Canonical drives the card `id` (dedup key) AND the display name,
+            # so churn never splits or mislabels a machine.
+            "hostname": canonical,
+            "computer_name": canonical,
             "local_hostname": sh(["scutil", "--get", "LocalHostName"]),
             "user": os.environ.get("USER", ""),
             "platform": "macOS",
         }
+        # Keep the raw values for diagnostics when they differ from canonical
+        # (a non-empty _raw_* is the fingerprint of a name-conflict storm).
+        if raw_host != canonical:
+            _IDENTITY_CACHE["hostname_raw"] = raw_host
+        if _strip_suffix(raw_cname) != raw_cname or raw_cname != canonical:
+            _IDENTITY_CACHE["computer_name_raw"] = raw_cname
     return _IDENTITY_CACHE
 
 
 def _my_names() -> set[str]:
     ident = identity()
     return {n.lower() for n in (ident.get("hostname"), ident.get("computer_name"),
-                                ident.get("local_hostname")) if n}
+                                ident.get("local_hostname"), ident.get("hostname_raw"),
+                                ident.get("computer_name_raw")) if n}
 
 
 # ───────────────────────── shape (cached) ─────────────────────────
