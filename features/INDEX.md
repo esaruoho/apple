@@ -166,6 +166,18 @@ fm-mlx reuses Say, Karaoke, and Markdown (DRY)  —  8 scenarios   (features/fm-
   triad: .session✓  transcript✗  RESULT✓
   honesty: 0/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Give a folder a voice — the per-folder sidecar triad  —  8 scenarios   (features/folder-memory.feature)
+  - [@built @verified] Build the triad for one folder
+  - [@built @verified] Auto-formulate the architecture with the on-device model
+  - [@built @verified] Talk to the folder
+  - [@built @verified] Vibe diff across time
+  - [@built @verified] Fold into an Obsidian vault
+  - [@built @verified] Understand a whole repository
+  - [@todo] Self-refresh on commit
+  - [(no grade)] Clustering of topically-homogeneous prose is weak
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat
@@ -176,6 +188,17 @@ Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline 
   - [(no grade)] the Vocal Shortcut becomes a thin launcher (the user's one edit)
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Read HomePod temperature + humidity from the laptop, live and on demand  —  7 scenarios   (features/homepod-live-climate.feature)
+  - [(no grade)] Default read returns the latest synced reading, offline
+  - [(no grade)] --live polls the sensor directly via the local Shortcut
+  - [(no grade)] --live persists the fresh reading so the default read reflects i
+  - [@built @runtime-untested] --live falls back to the synced file when it can't read live
+  - [(no grade)] /climate in mlx-here surfaces a live reading with zero LLM token
+  - [(no grade)] quit leaves mlx-here, with or without a slash
+  - [@built] `homepod` in the terminal shows the climate (alias repaired)
+  triad: .session✓  transcript✓  RESULT✓
+  honesty: 2/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 image-playground — on-device pictures, locally, as the prose's twin  —  16 scenarios   (features/image-playground.feature)
   - [@built] The CLI generates an image from a prompt

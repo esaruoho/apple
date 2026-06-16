@@ -35,7 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from fm_render import present  # noqa: E402  (THE shared "show a reply" call — render + speak)
+from fm_render import present, md_to_ansi  # noqa: E402  (shared reply call + markdown→richtext)
 QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
@@ -109,6 +109,15 @@ def list_sessions(folder):
 
 BOLD = "\033[1m"; DIM = "\033[2m"; CYAN = "\033[36m"; GREEN = "\033[32m"
 YELLOW = "\033[33m"; RESET = "\033[0m"
+
+
+def _echo_turn(role: str, text: str) -> str:
+    """One history/transcript line. The assistant's text is Markdown → render it
+    as richtext (the same rule present() follows); the user's line stays plain."""
+    if role == "user":
+        return f"{CYAN}you{RESET} › {text}"
+    body = md_to_ansi(text) if sys.stdout.isatty() else text
+    return f"{GREEN}fm{RESET} › {body}"
 
 
 def nudge(path: Path):
@@ -265,7 +274,7 @@ def main() -> int:
         try:
             import arm_apple as armer  # bin/arm_apple.py (sys.path has HERE)
         except Exception as e:
-            print(f"{YELLOW}  ⚠ could not arm Apple skill: {e}{RESET}")
+            print(f"{YELLOW}  ⚠ could not arm skill: {e}{RESET}")
             armer = None
         if armer is not None:
             system = armer.build_system(cwd, extra=system)
@@ -278,18 +287,26 @@ def main() -> int:
         print(f"{BOLD}fm-chat{RESET} — Apple FoundationModels on the Mini  "
               f"{DIM}(worker: {worker_alive()}){RESET}")
     if armer is not None:
-        retr = "wiki retrieval ON" if armer.available() else "identity only (convey not found → no retrieval)"
-        print(f"{GREEN}  🍎 Apple skill armed{RESET} {DIM}— {os.path.basename(cwd)} context loaded · {retr}{RESET}")
+        label = armer.active_label() if hasattr(armer, "active_label") else "Apple skill"
+        icon = "🍎" if label == "Apple skill" else "🧠"
+        retr = "retrieval ON" if armer.available() else "identity only (convey not found → no retrieval)"
+        print(f"{GREEN}  {icon} {label} armed{RESET} {DIM}— {os.path.basename(cwd)} context loaded · {retr}{RESET}")
     print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
           f"resume later: fm-chat --resume {uid}{RESET}")
     print(f"{DIM}commands: /reset  /system TEXT  /history  /exit{RESET}")
+    # The armed system prompt is Markdown (skill.md + folder context). Per the rule
+    # "if you show Markdown, it must be rich Markdown" — render it through the shared
+    # renderer, not dumped raw in dark grey. Plain when piped.
     if system:
-        print(f"{DIM}system: {system}{RESET}")
+        if sys.stdout.isatty():
+            print(f"{DIM}system ▾{RESET}")
+            print(md_to_ansi(system))
+        else:
+            print(f"system: {system}")
     if history:
         print(f"{DIM}— replaying {len(history)//2} prior exchanges —{RESET}")
         for role, text in history:
-            who = f"{CYAN}you{RESET}" if role == "user" else f"{GREEN}fm{RESET}"
-            print(f"{who} › {text}")
+            print(_echo_turn(role, text))
     print()
 
     while True:
@@ -309,8 +326,7 @@ def main() -> int:
             continue
         if line == "/history":
             for role, text in history:
-                who = f"{CYAN}you{RESET}" if role == "user" else f"{GREEN}fm{RESET}"
-                print(f"{who}: {text}")
+                print(_echo_turn(role, text))
             continue
         if line.startswith("/system"):
             system = line[len("/system"):].strip()

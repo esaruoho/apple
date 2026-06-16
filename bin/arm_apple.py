@@ -1,19 +1,19 @@
-"""arm_apple — load the Apple skill's knowledge into a chat brain (FM or MLX).
+"""arm_apple — load the GOVERNING skill's knowledge into a chat brain (FM or MLX).
 
-This is the "What would Bearden say" move, applied to the Apple skill. A small
-on-device model (Qwen3-4B / FoundationModels) does NOT know the Apple skill from
-its weights. So we hand it the knowledge at turn time, exactly the way Convey's
-roundtable grounds a persona:
+This is the "What would Bearden say" move, applied to whichever skill governs the
+folder you launched from. A small on-device model (Qwen3-4B / FoundationModels)
+does NOT know a skill from its weights. So we hand it the knowledge at turn time,
+exactly the way Convey's roundtable grounds a persona:
 
-  • IDENTITY (set once, the system prompt)  — who the skill is, the default tool
-    order, the hard rules, plus the folder you launched from (cwd context).
-  • RETRIEVAL (per turn)                     — the few wiki/ passages most relevant
-    to THIS question, pulled by convey.knows.retrieve (lexical overlap, cached).
+  • IDENTITY (set once, the system prompt)  — who the skill is, plus the folder you
+    launched from (cwd context). Apple is only the FALLBACK; standing in another
+    project arms THAT project's skill.
+  • RETRIEVAL (per turn)                     — the few passages most relevant to THIS
+    question, pulled by convey.knows.retrieve (lexical overlap, cached).
 
 DRY: the retrieval engine is convey.knows.retrieve — the same function that
 grounds the roundtable personas. We do not re-roll it. If convey isn't importable
-the chat still works; it just loses per-turn retrieval and leans on the identity
-block + the model's own reasoning.
+the chat still works; it just loses per-turn retrieval.
 
 FEATURE-CARD >> features/arm-apple-skill.feature
 """
@@ -26,6 +26,7 @@ from pathlib import Path
 APPLE = Path(__file__).resolve().parent.parent      # ~/work/apple
 WIKI = APPLE / "wiki"
 SKILL_MD = APPLE / "skill.md"
+SKILLS_DIR = Path.home() / ".claude" / "skills"     # installed Claude skills
 
 # Reuse convey.knows.retrieve — the engine that grounds the roundtable personas.
 _retrieve = None
@@ -37,6 +38,87 @@ for _cand in (Path.home() / "work" / "convey", APPLE.parent / "convey"):
         except Exception:
             _retrieve = None
         break
+
+
+# ── which skill governs the folder you launched from ────────────────────────
+_ACTIVE: dict | None = None   # set by build_system(); read by retrieve_context()
+
+
+def _name_tokens(name: str):
+    """Candidate skill names from a folder name, longest first. Handles symlink
+    targets like 'org.lackluster.Paketti.xrnx' → 'paketti' (strip .xrnx, split on
+    dots/dashes/spaces/underscores), so a repo symlinked to a bundle still maps to
+    its skill."""
+    toks = {name}
+    base = name
+    for ext in (".xrnx", ".app", ".bundle", ".git"):
+        if base.lower().endswith(ext):
+            base = base[: -len(ext)]
+    toks.add(base)
+    for sep in (".", " ", "-", "_"):
+        for part in base.split(sep):
+            if len(part) > 2:
+                toks.add(part)
+    return sorted({t for t in toks if t}, key=len, reverse=True)
+
+
+def _installed_skill(name: str) -> "Path | None":
+    """~/.claude/skills/<name>/SKILL.md if that skill is installed, else None.
+    Tries the name as-is and lowercased (skills use lowercase-kebab)."""
+    for n in (name, name.lower()):
+        sp = SKILLS_DIR / n / "SKILL.md"
+        if sp.exists():
+            return sp
+    return None
+
+
+def detect_skill(cwd: str) -> dict:
+    """Find the governing skill of `cwd`. Returns {root, skill_md, name, is_apple,
+    corpus}. Resolution order:
+      1. an in-repo SKILL.md / skill.md (walk up)            — e.g. impulse-tracker
+      2. the folder name matching an installed Claude skill  — e.g. ~/work/paketti
+         → ~/.claude/skills/paketti/SKILL.md (skill lives OUTSIDE the repo). Checks
+         the symlink name AND the resolved target's tokens (.xrnx bundle → paketti).
+      3. Apple (the fallback).
+    `corpus` is the list of dirs to retrieve from per turn."""
+    raw = Path(cwd)
+    real = Path(cwd).resolve()
+    home = Path.home()
+    # 1. in-repo SKILL.md / skill.md — check raw (symlink) and resolved ancestors.
+    seen: set = set()
+    for base in (raw, real):
+        for d in [base, *base.parents]:
+            if d in seen:
+                continue
+            seen.add(d)
+            for fname in ("SKILL.md", "skill.md"):
+                sp = d / fname
+                if sp.exists():
+                    return {"root": d, "skill_md": sp, "name": d.name,
+                            "is_apple": d == APPLE, "corpus": [d]}
+            if d == home:
+                break
+    # 2. folder name → an installed Claude skill (paketti repo → paketti skill).
+    for base in (raw, real):
+        for d in [base, *base.parents]:
+            if d == home:
+                break
+            for tok in _name_tokens(d.name):
+                sp = _installed_skill(tok)
+                if sp:
+                    return {"root": d, "skill_md": sp, "name": tok.lower(),
+                            "is_apple": False, "corpus": [d, sp.parent]}
+    # 3. Apple fallback
+    return {"root": APPLE, "skill_md": SKILL_MD, "name": "apple",
+            "is_apple": True, "corpus": None}
+
+
+def active_label() -> str:
+    """Human label for the currently-armed skill (for the chat banner)."""
+    s = _ACTIVE or {}
+    if s.get("is_apple", True):
+        return "Apple skill"
+    return f"{s.get('name', 'project')} skill"
 
 
 def _first_chars(path: Path, n: int) -> str:
@@ -72,8 +154,53 @@ def _folder_context(cwd: str, max_entries: int = 40) -> str:
 
 
 def build_system(cwd: str | None = None, extra: str = "") -> str:
-    """The identity block — set ONCE as the chat's system instruction."""
+    """The identity block — set ONCE as the chat's system instruction. Detects
+    which skill governs `cwd` and arms THAT one (Apple is the fallback)."""
+    global _ACTIVE
     cwd = cwd or os.getcwd()
+    _ACTIVE = detect_skill(cwd)
+    if _ACTIVE["is_apple"]:
+        return _build_apple_system(cwd, extra)
+    return _build_generic_system(cwd, _ACTIVE, extra)
+
+
+def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
+    """Identity for any non-Apple project skill: the project's own SKILL.md is
+    the identity, its tree is the per-turn retrieval corpus."""
+    name = skill["name"]
+    skill_core = _first_chars(skill["skill_md"], 6000)
+    parts = [
+        f"You are the {name} skill — the development assistant for the \"{name}\" "
+        f"project. You help Esa Ruoho work on THIS specific repository. Ground "
+        f"every answer in this project's own conventions, build pipeline, source "
+        f"files and docs — do NOT give generic advice, and do NOT talk about Apple "
+        f"or macOS automation unless this project is actually about that.",
+        "",
+        "HARD RULES: Never invent file names, functions, build steps, flags or "
+        "APIs. Cite only ones that appear in THE SKILL below or in the RELEVANT "
+        "KNOWLEDGE retrieved each turn, or that you are certain of. If you don't "
+        "know, say so plainly. Be concise and concrete; prefer a real file path "
+        "or command over prose.",
+        "",
+        f"--- THE SKILL ({skill['skill_md'].name}, abridged) ---",
+        skill_core,
+        "",
+        "--- WHERE YOU ARE ---",
+        _folder_context(cwd),
+    ]
+    if extra:
+        parts += ["", extra.strip()]
+    parts += [
+        "",
+        "Each turn you may be given RELEVANT KNOWLEDGE retrieved from this "
+        "project's docs. Ground your answer in it and cite the file path when you "
+        "use one.",
+    ]
+    return "\n".join(parts)
+
+
+def _build_apple_system(cwd: str, extra: str = "") -> str:
+    """The Apple skill identity — the original hand-crafted block (with live data)."""
     skill_core = _first_chars(SKILL_MD, 6000)
     parts = [
         "You are the Apple skill — \"Product Manager of Automation Technologies\", "
@@ -116,8 +243,7 @@ def build_system(cwd: str | None = None, extra: str = "") -> str:
 
 # Content lives in these subdirs (real prose). INDEX.md and compiled/ are
 # auto-generated catalogs — they over-match lexically and crowd out content, so
-# we retrieve from the content dirs directly. (k, cap) tuned to weight the
-# "how X works" concepts highest while still surfacing entity/lesson pages.
+# we retrieve from the content dirs directly.
 _CORPORA = [
     ("concepts", 4),
     ("entities", 2),
@@ -128,15 +254,20 @@ _CORPORA = [
 
 
 def retrieve_context(query: str, cap: int = 2400) -> str:
-    """Per-turn: the wiki passages most relevant to `query`, drawn from the
-    content subdirs (not the auto-generated INDEX/compiled catalogs). '' if
+    """Per-turn: the passages most relevant to `query`. For Apple, drawn from the
+    wiki content subdirs; for any other project skill, from that project's own
+    tree (+ the skill's reference dir when it lives outside the repo). '' if
     retrieval is unavailable or nothing matched. Reuses convey.knows.retrieve."""
     if _retrieve is None or not query:
         return ""
+    skill = _ACTIVE or detect_skill(os.getcwd())
+    if skill["is_apple"]:
+        corpora = [(WIKI / sub, k) for sub, k in _CORPORA]
+    else:
+        corpora = [(d, 6) for d in (skill.get("corpus") or [skill["root"]])]
     blocks, total = [], 0
-    for sub, k in _CORPORA:
-        d = WIKI / sub
-        if not d.is_dir():
+    for d, k in corpora:
+        if not Path(d).is_dir():
             continue
         try:
             b = _retrieve(str(d), query, k=k, cap=cap)
@@ -153,11 +284,9 @@ def retrieve_context(query: str, cap: int = 2400) -> str:
 
 
 def augment_prompt(prompt: str, query: str) -> str:
-    """Prepend LIVE DATA (real sensor/state readings) and retrieved wiki knowledge
-    to a turn's prompt. The query is the raw user line; the prompt is the replayed
-    dialogue fm-chat already built. Live data goes first — it's the answer to
-    'how hot is the Mini' / 'room temperature' questions a stateless model can't
-    otherwise know."""
+    """Prepend LIVE DATA (real sensor/state readings) and retrieved knowledge to a
+    turn's prompt. Live data goes first — it's the answer to 'how hot is the Mini'
+    questions a stateless model can't otherwise know."""
     head = []
     try:
         import live_data                      # bin/live_data.py (sys.path has HERE)
@@ -168,8 +297,9 @@ def augment_prompt(prompt: str, query: str) -> str:
         pass
     ctx = retrieve_context(query)
     if ctx:
-        head.append("RELEVANT KNOWLEDGE (from the Apple wiki — ground your answer "
-                    "in this, cite the page paths):\n" + ctx)
+        src = "the Apple wiki" if (_ACTIVE or {}).get("is_apple", True) else "this project's docs"
+        head.append(f"RELEVANT KNOWLEDGE (from {src} — ground your answer "
+                    "in this, cite the file paths):\n" + ctx)
     if not head:
         return prompt
     return "\n\n".join(head) + "\n\n" + prompt
