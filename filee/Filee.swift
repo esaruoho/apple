@@ -363,7 +363,31 @@ final class FolderModel: ObservableObject {
         currentProc?.terminate()
         currentProc = nil
         conveyRunning = false
+        stopVoicebox()                 // and stop any speech that was reading the answer
     }
+
+    // ── speak the answer in YOUR cloned voice (local Voicebox :17493), stoppable ──────
+    private func voiceboxPost(_ path: String, _ body: [String: Any]?) {
+        guard let url = URL(string: "http://127.0.0.1:17493\(path)") else { return }
+        var req = URLRequest(url: url); req.httpMethod = "POST"
+        if let body = body {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        }
+        URLSession.shared.dataTask(with: req).resume()
+    }
+    /// Strip convey's status-wrapper lines + markdown markers so the ear hears the answer.
+    private func speakable(_ s: String) -> String {
+        var t = s.replacingOccurrences(of: #"(?m)^(asking |remembered:).*$"#, with: "", options: .regularExpression)
+        t = t.replacingOccurrences(of: #"[*`#_>]"#, with: "", options: .regularExpression)
+        return t.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    func speakViaVoicebox() {
+        let text = speakable(conveyOutput ?? "")
+        guard !text.isEmpty else { return }
+        voiceboxPost("/speak", ["text": text, "profile": "Heart", "engine": "kokoro"])
+    }
+    func stopVoicebox() { voiceboxPost("/speak/stop", nil) }
 
     /// Run any executable, capture stdout+stderr into the sheet, then reload (a verb may
     /// have produced files — OCR .txt, .molecule.json, .memory.md — show them now).
@@ -795,6 +819,10 @@ struct ConveyOutputView: View {
                     Text("running…").font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
+                Button { model.speakViaVoicebox() } label: { Image(systemName: "speaker.wave.2") }
+                    .help("Speak the answer in your cloned voice (Voicebox)")
+                Button { model.stopVoicebox() } label: { Image(systemName: "stop.fill") }
+                    .help("Stop speaking")
                 Button("Done") { model.stopConvey(); model.conveyOutput = nil }.keyboardShortcut(.defaultAction)
             }
             ScrollView {
