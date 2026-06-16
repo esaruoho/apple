@@ -11,25 +11,30 @@
 #
 # RESULT (as of 2026-06-16)
 #   Files     : apple/filee/Filee.swift, apple/filee/build.sh, apple/bin/filee (launcher).
-#               Built: Filee.app (signed, 456K). Convey side: convey/molecule.py mark_from_url()
+#               Built: Filee.app (signed, 536K). Convey side: convey/molecule.py mark_from_url()
 #               + cli.py `molecule --from-url URL` (the online `references` bond).
 #   Delivery  : working tree, UNCOMMITTED (awaiting Esa's "commit"). apple + convey repos.
 #   Verified  : (orig) 820x600 window live; ~/work/convey as file/folder boxes; arrow-key nav.
 #               (bonds) /tmp/filee-demo — research.pdf & research.txt wear "⋈ N" chips.
-#               (auto-convey) LIVE through the running app 2026-06-16: dropped a file into an
-#               armed folder → its .molecule.json appeared in ~1s (cheap molecule --json only).
+#               (auto-convey) LIVE: dropped a file into an armed folder → .molecule.json in ~1s.
 #               (url-bond) convey molecule --from-url → `references` bond persisted + reloaded.
-#               Render of url rows + folder-memory/commits sheets are code-verified (Spaces +
-#               context-menu make headless screenshots unreliable; argv/data all verified).
+#               (skill boxes) LIVE screenshot: ~/.claude/skills → "skill · bbs/corum/cpp/…" boxes.
+#               (search) field renders (screenshot); Spotlight returns 22 "molecule" hits in convey.
+#               (fancier history) composed git script ran live on convey: status+graph+contributors.
+#               Render of url rows, skill-insides sheet, live search-grid population, folder-memory
+#               sheets = code-verified (Spaces + context-menu + text-field make headless shots hard).
 #
 # THE LADDER (same box primitive, bigger noun each rung)
 #   rung 1  file   ← THIS CARD (@built @verified)
 #   rung 2  folder ← THIS CARD (@built @verified — folders are boxes you enter)
-#   rung 3  repo   (@built — BoxKind.repo + badge + "git repo" subtitle + "Show commits"
-#                   widget (git log → sheet); richer commits/gates/architecture view still @todo)
-#   rung 4  skill+memory (@built-seed — folder box "Folder memory" widget: build/show .memory.md
-#                   + "Talk to this folder" (mlx-here in Terminal); BoxKind.skill reader still @todo)
+#   rung 3  repo   (@built @verified — BoxKind.repo + badge + "Show history": multi-section
+#                   git status+graph+churn+contributors (+ h5i provenance if present) → sheet)
+#   rung 4  skill+memory (@built @verified — a SKILL.md/skill.md folder → BoxKind.skill box,
+#                   subtitle "skill · <desc>"; "Show skill (insides)" reads frontmatter + layout.
+#                   Plus folder-memory widget: build/show .memory.md + "Talk to folder" (mlx-here))
 #   rung 5  machine (@built ELSEWHERE — Fleet.app already renders peers-as-boxes)
+#   search  the magic search-folder (@built — header query box → live NSMetadataQuery grid of
+#                   matching boxes (Spotlight); armed → fresh matches auto-convey. rung-spanning)
 #   edges   molecule bonds (@built @verified — load() decodes <name>.molecule.json → ⋈ chip +
 #                   Bonds▸ submenu navigates target_path/opens URLs; LOCAL + ONLINE (references) edges)
 #   auto    smart-folder-that-conveys (@built @verified — ⚡ arm → new files auto-get molecule --json,
@@ -140,13 +145,41 @@ Feature: A folder's files are boxes on a screen
     #   Sheet/Terminal display is code-verified (heavy embed run not triggered, to spare CPU).
 
   @built @verified
-  Scenario: A repo box opens into its commits (rung 3 interior)
+  Scenario: A repo box opens into its FANCIER history (rung 3 interior)
     Given a .git folder box (BoxKind.repo)
-    When "Show commits (git log)" is chosen
-    # cite: Filee.swift widget(for:) repo branch; FolderModel.showCommits() → git -C <repo> log --oneline --decorate -40
-    Then the commit list renders in the ConveyOutputView sheet
-    # VERIFIED 2026-06-16: argv produces real output on ~/work/convey. Sheet display reuses the
-    #   verified ConveyOutputView path. The richer commits/gates/architecture view is still @todo.
+    When "Show history (graph + provenance)" is chosen
+    # cite: Filee.swift FolderModel.showCommits() → sh -c composing several `git -c color.ui=never -C` calls
+    Then the sheet shows: HEAD+status, an ASCII commit GRAPH (hash·date·author·refs·subject),
+         recent file churn (--stat), top contributors, AND h5i AI-provenance log if the repo has refs/h5i
+    # VERIFIED 2026-06-16: the composed script run on ~/work/convey produced all sections live
+    #   (status showing molecule.py/cli.py modified; graph with dates/authors; shortlog).
+    # single-quote-safe path; h5i section guarded by `for-each-ref refs/h5i` + `command -v h5i`.
+
+  @built @verified
+  Scenario: A skill folder is a box whose INSIDES you can read (rung 4)
+    Given a folder containing SKILL.md or skill.md
+    When the folder list loads
+    # cite: Filee.swift makeBox() isSkill → BoxKind.skill; skillDescription() reads frontmatter
+    Then its box reads "skill · <description>" (not "N items")
+    # VERIFIED 2026-06-16 (screenshot): ~/.claude/skills rendered — bbs/corum/cpp/… each "skill · <name>".
+    And right-click "Show skill (insides)" renders SKILL.md frontmatter + the skill's file layout
+    # cite: Filee.swift FolderModel.showSkill() → frontmatter (--- fences) + 📁/📄 listing → sheet
+    # sheet content built in-Swift (no subprocess); display reuses the verified ConveyOutputView.
+
+  @built @verified
+  Scenario: The magic search-folder — a query rendered as a LIVE grid of boxes
+    Given the header search box, type a query and press Return
+    # cite: Filee.swift FileeView header TextField .onSubmit → FolderModel.startSearch()
+    When NSMetadataQuery (Spotlight) gathers matches under the current folder
+    # cite: Filee.swift startSearch() predicate (DisplayName/TextContent CONTAINS) scoped to dir;
+    #   searchUpdated() maps result paths → makeBox(); load() is suppressed in search mode.
+    Then matching files appear as boxes (with their ⋈ bonds), footer shows "🔍 N matches … live"
+    And a NEW file that matches APPEARS by itself (NSMetadataQueryDidUpdate); if the folder is
+        armed for auto-convey, each fresh match auto-grows its molecule
+    # VERIFIED 2026-06-16: search FIELD renders (screenshot); Spotlight engine returns 22 matches
+    #   for "molecule" under ~/work/convey (mdfind -onlyin, same engine). Live in-grid population +
+    #   the DidUpdate auto-appear are code-verified (driving the field headless isn't scriptable).
+    # "x" clears search → stopSearch() → back to the real folder listing.
 
   @built @verified
   Scenario: Do something with a filee, using convey (the widget runs convey verbs)

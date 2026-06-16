@@ -136,3 +136,30 @@ spine:
 - auto-convey rung: attach a convey trustee/belt-rule to a (smart) folder.
 - rung 3 interior: open a repo box into commits/gates.
 - a `/filee` skill mirroring `/fleet`.
+
+---
+
+## Increments 2026-06-15/16 — bet end-to-end + four designed items + last three
+## (ran from ~/work/h5i; same Filee codebase. The .feature card is the source of truth.)
+
+1. **Connect the eye:** BoxItem.bonds decoded from <name>.molecule.json in makeBox(); ⋈N chip;
+   "⋈ Bonds" submenu follows edges (goToBond). VERIFIED screenshot.
+2. **Online edges:** convey molecule.py mark_from_url() + cli `molecule --from-url` → `references`
+   bond (target = URL). Filee opens URL in browser. VERIFIED (research.txt youtube bond).
+3. **Auto-convey (SAFE):** ⚡ arms .filee-autoconvey; load() delta → cheap quietConvey
+   (molecule --json only; OCR/belt manual). VERIFIED LIVE: dropped file → sidecar in ~1s.
+4. **Folder voice:** widget "Folder memory" build/show .memory.md + "Talk to folder" (mlx-here).
+5. **Magic search-folder:** header query → NSMetadataQuery (Spotlight) scoped to folder → live
+   grid via shared makeBox(); new matches self-appear; armed → auto-convey. VERIFIED: field
+   renders (screenshot), Spotlight 22 hits for "molecule" in convey.
+6. **Skill insides:** makeBox detects SKILL.md → BoxKind.skill "skill · <desc>"; "Show skill
+   (insides)" = frontmatter + 📁/📄 layout. VERIFIED LIVE screenshot (~/.claude/skills).
+7. **Fancier history:** showCommits = status+graph+churn+contributors(+h5i) via sh -c. VERIFIED
+   live on convey.
+
+Refactor: makeBox() is the single box-builder (listing + search share it).
+Verified by screenshot/live: bonds, auto-convey, search field, skill boxes, history.
+Code-verified (headless can't drive menus/fields across Spaces): url-row render, Bonds nav,
+live search fill, skill-insides sheet, folder-memory/commits sheets.
+Still @todo: a SAVED .savedSearch file; gates/architecture repo view; nested sub-skill expand.
+Uncommitted: apple (Filee.swift/.feature/.session) + convey (molecule.py/cli.py).

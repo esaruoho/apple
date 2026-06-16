@@ -145,7 +145,63 @@ final class FolderModel: ObservableObject {
         load()
     }
 
+    /// Build one box from a path — shared by directory listing AND search results, so a found
+    /// file looks and behaves exactly like a listed one (icon, ⋈ bonds, kind). A folder that
+    /// carries SKILL.md/skill.md becomes a `.skill` box (rung 4); else `.git` → `.repo`.
+    func makeBox(_ url: URL) -> BoxItem {
+        let fm = FileManager.default
+        let ws = NSWorkspace.shared
+        let keys: Set<URLResourceKey> = [.isDirectoryKey, .fileSizeKey, .localizedTypeDescriptionKey]
+        let vals = try? url.resourceValues(forKeys: keys)
+        let isDir = vals?.isDirectory ?? false
+        let isSkill = isDir && (fm.fileExists(atPath: url.appendingPathComponent("SKILL.md").path)
+                                || fm.fileExists(atPath: url.appendingPathComponent("skill.md").path))
+        let kind: BoxKind = isDir
+            ? (isSkill ? .skill
+               : (fm.fileExists(atPath: url.appendingPathComponent(".git").path) ? .repo : .folder))
+            : .file
+        let sub: String
+        if isSkill {
+            sub = "skill · " + (skillDescription(url) ?? "SKILL.md")
+        } else if isDir {
+            let n = (try? fm.contentsOfDirectory(atPath: url.path).count) ?? 0
+            sub = kind == .repo ? "git repo · \(n) items" : "\(n) items"
+        } else if let bytes = vals?.fileSize {
+            sub = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+        } else {
+            sub = vals?.localizedTypeDescription ?? "file"
+        }
+        var bonds: [Bond] = []
+        let sidecar = URL(fileURLWithPath: url.path + ".molecule.json")
+        if let data = try? Data(contentsOf: sidecar),
+           let mol = try? JSONDecoder().decode(MoleculeSidecar.self, from: data) {
+            bonds = mol.bonds
+        }
+        return BoxItem(id: url.path, url: url, title: url.lastPathComponent,
+                       subtitle: sub, kind: kind,
+                       icon: imageThumb(url) ?? ws.icon(forFile: url.path),
+                       bonds: bonds,
+                       links: bonds.map { URL(fileURLWithPath: $0.targetPath) })
+    }
+
+    /// The one-line `description:`/`name:` from a skill's SKILL.md frontmatter (for the subtitle).
+    private func skillDescription(_ dir: URL) -> String? {
+        let md = [dir.appendingPathComponent("SKILL.md"), dir.appendingPathComponent("skill.md")]
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+        guard let md = md, let text = try? String(contentsOf: md, encoding: .utf8) else { return nil }
+        for line in text.split(separator: "\n").prefix(20) {
+            let l = line.trimmingCharacters(in: .whitespaces).lowercased()
+            for key in ["description:", "name:"] where l.hasPrefix(key) {
+                let raw = line.trimmingCharacters(in: .whitespaces)
+                let v = raw.dropFirst(key.count).trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
+                if !v.isEmpty { return String(v.prefix(60)) }
+            }
+        }
+        return nil
+    }
+
     func load() {
+        if searchQuery != nil { return }   // in search mode the NSMetadataQuery drives `items`
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isDirectoryKey, .fileSizeKey, .contentTypeKey, .localizedTypeDescriptionKey]
         guard let urls = try? fm.contentsOfDirectory(at: dir,
@@ -153,38 +209,7 @@ final class FolderModel: ObservableObject {
                                                      options: showHidden ? [] : [.skipsHiddenFiles]) else {
             items = []; selection = nil; return
         }
-        let ws = NSWorkspace.shared
-        let mapped: [BoxItem] = urls.map { url in
-            let vals = try? url.resourceValues(forKeys: Set(keys))
-            let isDir = vals?.isDirectory ?? false
-            let kind: BoxKind = isDir
-                ? (fm.fileExists(atPath: url.appendingPathComponent(".git").path) ? .repo : .folder)
-                : .file
-            let sub: String
-            if isDir {
-                let n = (try? fm.contentsOfDirectory(atPath: url.path).count) ?? 0
-                sub = kind == .repo ? "git repo · \(n) items" : "\(n) items"
-            } else if let bytes = vals?.fileSize {
-                sub = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
-            } else {
-                sub = vals?.localizedTypeDescription ?? "file"
-            }
-            // The bet: read the molecule sidecar sitting BESIDE this box. `convey molecule`
-            // wrote `<name>.molecule.json` next to the file; we just look down and see it.
-            var bonds: [Bond] = []
-            let sidecar = URL(fileURLWithPath: url.path + ".molecule.json")
-            if let data = try? Data(contentsOf: sidecar),
-               let mol = try? JSONDecoder().decode(MoleculeSidecar.self, from: data) {
-                bonds = mol.bonds
-            }
-            // An IMAGE box shows the image itself (a wordcloud.png box IS the wordcloud),
-            // not a generic file-type icon. Falls back to the Finder icon otherwise.
-            return BoxItem(id: url.path, url: url, title: url.lastPathComponent,
-                           subtitle: sub, kind: kind,
-                           icon: imageThumb(url) ?? ws.icon(forFile: url.path),
-                           bonds: bonds,
-                           links: bonds.map { URL(fileURLWithPath: $0.targetPath) })
-        }
+        let mapped: [BoxItem] = urls.map { makeBox($0) }
         items = mapped.sorted {
             if ($0.kind == .file) != ($1.kind == .file) { return $0.kind != .file }
             return $0.title.localizedStandardCompare($1.title) == .orderedAscending
@@ -244,7 +269,8 @@ final class FolderModel: ObservableObject {
 
     func enter(_ box: BoxItem) {
         guard let url = box.url else { return }
-        if box.kind == .folder || box.kind == .repo {
+        if box.kind == .folder || box.kind == .repo || box.kind == .skill {
+            stopSearch(reload: false)        // leaving any active search to walk a real folder
             dir = url; load()
         } else {
             NSWorkspace.shared.open(url)   // a filee opens in its default app
@@ -404,10 +430,28 @@ final class FolderModel: ObservableObject {
     }
 
     // ── rung 3: open a repo box into its commits ─────────────────────────────────
+    /// The fancier history view: a multi-section read of the repo — status + branch, an ASCII
+    /// commit GRAPH (hash · date · author · refs · subject), recent file churn (--stat), and
+    /// top contributors. If the repo also has h5i, append its AI-provenance log. Composed via
+    /// `sh -c` so several git invocations land in one capture sheet.
     func showCommits(_ box: BoxItem) {
         guard let url = box.url else { return }
-        runProcess("/usr/bin/git", ["-C", url.path, "log", "--oneline", "--decorate", "-40"],
-                   cwd: url.path, title: "git log · \(box.title)")
+        let p = url.path.replacingOccurrences(of: "'", with: "'\\''")   // single-quote-safe
+        let g = "git -c color.ui=never -C '\(p)'"
+        let script = [
+            "echo '══ HEAD & status ══'",
+            "\(g) status -sb | head -20",
+            "echo; echo '══ history (graph · date · author · refs) ══'",
+            "\(g) log --graph --date=short --pretty=format:'%h %ad %an%d %s' -30",
+            "echo; echo; echo '══ recent file churn (last commit) ══'",
+            "\(g) show --stat --oneline -1 | head -25",
+            "echo; echo '══ top contributors ══'",
+            "\(g) shortlog -sn --all --no-merges | head -10",
+            // h5i AI provenance, if this repo uses it (who/why/model per commit)
+            "if \(g) for-each-ref --count=1 refs/h5i >/dev/null 2>&1 && command -v h5i >/dev/null; then "
+                + "echo; echo '══ h5i AI provenance ══'; (cd '\(p)' && h5i recall log --limit 10 2>/dev/null); fi"
+        ].joined(separator: "\n")
+        runProcess("/bin/sh", ["-c", script], cwd: url.path, title: "history · \(box.title)")
     }
 
     // ── auto-convey: a folder armed to molecule new files as they LAND ───────────
@@ -443,6 +487,97 @@ final class FolderModel: ObservableObject {
             try? p.run(); p.waitUntilExit()
             DispatchQueue.main.async { self.conveyingIds.remove(id); self.load() }
         }
+    }
+
+    // ── the magic search-folder: a saved Spotlight query rendered as a LIVE box grid ─────
+    // A new file that matches APPEARS as a box on its own (NSMetadataQueryDidUpdate). If the
+    // folder is also armed for auto-convey, each fresh match auto-grows its molecule. This is
+    // the "smart-folder-that-conveys" at the Finder level — a virtual folder of results.
+    @Published var searchQuery: String? = nil   // non-nil ⇒ search mode (items = query results)
+    private var mdQuery: NSMetadataQuery?
+
+    func startSearch(_ raw: String) {
+        let query = raw.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { stopSearch(); return }
+        stopSearch(reload: false)
+        searchQuery = query
+        let q = NSMetadataQuery()
+        // filename OR file-content contains the words — Spotlight does the heavy lifting.
+        q.predicate = NSPredicate(format: "kMDItemDisplayName CONTAINS[cd] %@ OR kMDItemTextContent CONTAINS[cd] %@",
+                                  query, query)
+        q.searchScopes = [dir]    // scoped to the folder you're standing in (its whole subtree)
+        q.sortDescriptors = [NSSortDescriptor(key: NSMetadataItemFSContentChangeDateKey, ascending: false)]
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(searchUpdated(_:)), name: .NSMetadataQueryDidFinishGathering, object: q)
+        nc.addObserver(self, selector: #selector(searchUpdated(_:)), name: .NSMetadataQueryDidUpdate, object: q)
+        mdQuery = q
+        q.start()
+    }
+
+    @objc private func searchUpdated(_ note: Notification) {
+        guard let q = mdQuery else { return }
+        q.disableUpdates()
+        var paths: [String] = []
+        for i in 0..<q.resultCount {
+            if let item = q.result(at: i) as? NSMetadataItem,
+               let p = item.value(forAttribute: NSMetadataItemPathKey) as? String { paths.append(p) }
+        }
+        q.enableUpdates()
+        // new matches since last refresh → if armed, auto-convey them (cheap molecule only)
+        let fresh = paths.filter { !knownIds.contains($0) }
+        items = paths.map { makeBox(URL(fileURLWithPath: $0)) }
+        if let s = selection, !items.contains(where: { $0.id == s }) { selection = items.first?.id }
+        else if selection == nil { selection = items.first?.id }
+        if autoConvey {
+            for p in fresh where !conveyingIds.contains(p)
+                && !p.hasSuffix(".molecule.json")
+                && FileManager.default.fileExists(atPath: p + ".molecule.json") == false {
+                quietConvey(p)
+            }
+        }
+        knownIds = Set(paths)
+    }
+
+    func stopSearch(reload: Bool = true) {
+        if let q = mdQuery { q.stop(); NotificationCenter.default.removeObserver(self, name: nil, object: q) }
+        mdQuery = nil
+        searchQuery = nil
+        knownIds = []; knownIdsDir = ""    // force a clean reseed of the real folder
+        if reload { load() }
+    }
+
+    // ── rung 4: read the INSIDES of a skill into the sheet (name, description, layout) ───
+    func showSkill(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let fm = FileManager.default
+        var out = "SKILL: \(url.lastPathComponent)\n\(url.path)\n"
+        let md = [url.appendingPathComponent("SKILL.md"), url.appendingPathComponent("skill.md")]
+            .first { fm.fileExists(atPath: $0.path) }
+        if let md = md, let text = try? String(contentsOf: md, encoding: .utf8) {
+            // frontmatter (between the first pair of --- fences), else the first dozen lines
+            let lines = text.components(separatedBy: "\n")
+            out += "\n── frontmatter ──\n"
+            if lines.first?.trimmingCharacters(in: .whitespaces) == "---",
+               let end = lines.dropFirst().firstIndex(of: "---") {
+                out += lines[1..<end].joined(separator: "\n") + "\n"
+            } else {
+                out += lines.prefix(12).joined(separator: "\n") + "\n"
+            }
+        } else {
+            out += "\n(no SKILL.md found)\n"
+        }
+        // the insides: what the skill is made of (scripts, references, sub-skills)
+        if let kids = try? fm.contentsOfDirectory(atPath: url.path).sorted() {
+            out += "\n── insides (\(kids.count) items) ──\n"
+            for k in kids where !k.hasPrefix(".") {
+                var isDir: ObjCBool = false
+                fm.fileExists(atPath: url.appendingPathComponent(k).path, isDirectory: &isDir)
+                out += (isDir.boolValue ? "  📁 " : "  📄 ") + k + "\n"
+            }
+        }
+        conveyTitle = "skill · \(url.lastPathComponent)"
+        conveyRunning = false
+        conveyOutput = out
     }
 
     /// Prompt for a question, then `convey ask <file> "<q>"` — the file's molecule is the
@@ -482,6 +617,7 @@ struct FileeApp: App {
 
 struct FileeView: View {
     @EnvironmentObject var model: FolderModel
+    @State private var searchText = ""    // the magic search-folder query box
 
     // Adaptive grid; cell footprint ~148 (width 130 + padding 8·2 + spacing). The key
     // monitor uses the same 148 stride to compute columns for up/down navigation.
@@ -524,6 +660,21 @@ struct FileeView: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1).truncationMode(.head)
             Spacer()
+            // the magic search-folder: type a query → a LIVE grid of matching boxes (Spotlight)
+            HStack(spacing: 4) {
+                Image(systemName: "magnifyingglass").foregroundColor(.secondary).font(.caption)
+                TextField("search this folder…", text: $searchText)
+                    .textFieldStyle(.plain).font(.caption)
+                    .frame(width: 140)
+                    .onSubmit { model.startSearch(searchText) }
+                if model.searchQuery != nil {
+                    Button { searchText = ""; model.stopSearch() } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.borderless).foregroundColor(.secondary)
+                        .help("Clear search, back to the folder")
+                }
+            }
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color(NSColor.controlBackgroundColor)))
             Button { model.toggleAutoConvey() } label: {
                 Image(systemName: model.autoConvey ? "bolt.fill" : "bolt.slash")
                     .foregroundColor(model.autoConvey ? .accentColor : .secondary)
@@ -543,7 +694,12 @@ struct FileeView: View {
     // The connected-data thesis, stated honestly — boxes today, edges next.
     private var footer: some View {
         HStack {
-            Text("\(model.items.count) filee\(model.items.count == 1 ? "" : "s")")
+            if let q = model.searchQuery {
+                Text("🔍 \(model.items.count) match\(model.items.count == 1 ? "" : "es") for “\(q)” — live")
+                    .foregroundColor(.accentColor)
+            } else {
+                Text("\(model.items.count) filee\(model.items.count == 1 ? "" : "s")")
+            }
             Spacer()
             Text("file → repo → skill → machine · same box, bigger noun")
                 .foregroundColor(.secondary)
@@ -555,7 +711,7 @@ struct FileeView: View {
 
     @ViewBuilder
     private func widget(for box: BoxItem) -> some View {
-        if box.kind == .folder || box.kind == .repo {
+        if box.kind == .folder || box.kind == .repo || box.kind == .skill {
             Button("Enter") { model.enter(box) }
         } else {
             Button("Open") { if let u = box.url { NSWorkspace.shared.open(u) } }
@@ -582,9 +738,12 @@ struct FileeView: View {
         }
         Divider()
         // Do something with this box.
-        if box.kind == .folder || box.kind == .repo {
+        if box.kind == .folder || box.kind == .repo || box.kind == .skill {
+            if box.kind == .skill {                                 // rung 4: read the skill's insides
+                Button("Show skill (insides)") { model.showSkill(box) }
+            }
             if box.kind == .repo {                                  // rung 3: the repo's interior
-                Button("Show commits (git log)") { model.showCommits(box) }
+                Button("Show history (graph + provenance)") { model.showCommits(box) }
             }
             Menu("Folder memory") {                                 // give the folder a voice
                 Button("Build / refresh (.memory.md)") { model.buildFolderMemory(box) }
