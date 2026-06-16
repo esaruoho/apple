@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""
+build-screen-app — Generate a clickable "Screen <Peer>.app" that opens a
+Screen Sharing (VNC) session to a LAN-only fleet peer, tunneled through the
+Mini over Tailscale.
+
+Usage:
+  bin/build-screen-app <peer> [screen|finder]
+  bin/build-screen-app hertsi
+  bin/build-screen-app hertsi finder      # SMB file-sharing instead of VNC
+
+Output:
+  /Applications/AppleToolbox/Fleet-Apps/Screen <Peer>.app
+  (or "Files <Peer>.app" for the finder/SMB variant)
+
+Double-click it (or ⌘-drag onto Finder's toolbar / pin to the Dock) and it
+runs `fleet-files <kind> <peer>`: brings up the `ssh -L` port-forward through
+cloudcity (waking the peer over Wake-on-LAN if asleep) and opens the
+vnc://localhost:5901 (or smb://localhost:1445) URL. One click = screen share.
+
+Why an .app and not a .vncloc: a plain Screen Sharing location file points
+straight at a host:port, but a LAN-only Mac (e.g. the 2008 Mac Pro on 10.11,
+no Tailscale) is only reachable AFTER the SSH tunnel is up. The .app does the
+tunnel first, then opens the viewer. See wiki/concepts/fleet-files-bridge.md
+and wiki/concepts/finder-toolbar-locked.md (why .app, not a Shortcut).
+
+Apple-native: /usr/bin/osacompile, no deps.
+"""
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+FLEET_FILES = REPO / "bin" / "fleet-files"
+OUT_DIR = Path("/Applications/AppleToolbox/Fleet-Apps")
+KINDS = {"screen": ("Screen", "Screen Sharing (VNC)"),
+         "finder": ("Files", "File Sharing (SMB)")}
+
+
+def die(msg):
+    sys.stderr.write(f"error: {msg}\n")
+    sys.exit(1)
+
+
+def build(peer, kind):
+    if kind not in KINDS:
+        die(f"unknown kind {kind!r}; valid: {', '.join(KINDS)}")
+    verb_label, human = KINDS[kind]
+
+    ff_lit = str(FLEET_FILES).replace("\\", "\\\\").replace('"', '\\"')
+    peer_lit = peer.replace("\\", "\\\\").replace('"', '\\"')
+    kind_lit = kind
+
+    # do shell script runs with a minimal PATH; fleet-files is python3
+    # (#!/usr/bin/env python3) and shells out to ssh/open, so seed a sane PATH
+    # that includes Homebrew (python3) and the system binaries.
+    script = f'''-- Screen/Files {peer}.app — {human} to "{peer}" through the Mini relay.
+-- on run : open the tunnel + viewer (one-click / Dock / toolbar).
+-- on open: same, ignoring any dropped items.
+
+on connectNow()
+	set ff to "{ff_lit}"
+	set thePeer to "{peer_lit}"
+	set theKind to "{kind_lit}"
+	set pathPrefix to "export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin; "
+	try
+		do shell script pathPrefix & quoted form of ff & " " & theKind & " " & quoted form of thePeer
+	on error errMsg
+		display alert "{verb_label} {peer} — could not connect" message errMsg as warning
+	end try
+end connectNow
+
+on run
+	connectNow()
+end run
+
+on open theItems
+	connectNow()
+end open
+'''
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    app_name = f"{verb_label} {peer}.app"
+    app_path = OUT_DIR / app_name
+    if app_path.exists():
+        shutil.rmtree(app_path)
+
+    result = subprocess.run(
+        ["/usr/bin/osacompile", "-o", str(app_path), "-e", script],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        die(f"osacompile failed: {result.stderr}")
+
+    # Touch + re-register with Launch Services so Finder/Spotlight see it now
+    # (see wiki: lsregister after .app bundle changes).
+    subprocess.run(["/usr/bin/touch", str(app_path / "Contents" / "Info.plist")])
+    subprocess.run(["/usr/bin/touch", str(app_path)])
+    subprocess.run(
+        ["/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+         "LaunchServices.framework/Support/lsregister", "-f", str(app_path)],
+        capture_output=True,
+    )
+    return app_path
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+    peer = sys.argv[1]
+    kind = sys.argv[2] if len(sys.argv) > 2 else "screen"
+    app = build(peer, kind)
+    print(f"Built: {app}")
+    print()
+    print("Double-click it, or for one-click access:")
+    print(f"  • Drag it into the Dock")
+    print(f"  • ⌘-drag it onto a Finder window's toolbar")
+    print(f"  • Keep the {OUT_DIR} folder in your Finder sidebar")
+
+
+if __name__ == "__main__":
+    main()
