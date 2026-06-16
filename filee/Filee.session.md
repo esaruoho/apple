@@ -163,3 +163,23 @@ Code-verified (headless can't drive menus/fields across Spaces): url-row render,
 live search fill, skill-insides sheet, folder-memory/commits sheets.
 Still @todo: a SAVED .savedSearch file; gates/architecture repo view; nested sub-skill expand.
 Uncommitted: apple (Filee.swift/.feature/.session) + convey (molecule.py/cli.py).
+
+## Increment 2026-06-16 (c) — the ARCHITECTURE repo view (Esa: "most important")
+
+showArchitecture() — a repo box's "Show architecture (modules + wiring)" → sh -c over
+git ls-files / git grep, language-agnostic, for ANY repo:
+- composition (tracked files by extension)
+- top-level modules (dir · count)
+- entry points (main/index/app/cli/lib/__main__ across common langs)
+- structural HUBS: unique module stems ranked by import-line references = the wiring backbone
+  (boilerplate dropped: steps/__init__/conftest/…); the load-bearing modules everything hangs off
+- orientation docs (README/atlas MAP/UNDERSTANDING/CLAUDE/AGENTS)
+SAFE: anchored import regex + `grep -wFc` fixed-string whole-word counts (no catastrophic
+backtracking, per the global rule), stems<3 skipped, bounded 2000 files, async off main thread.
+VERIFIED 2026-06-16: exact logic on ~/work/convey → composition 2713 md/139 py; modules
+analyses/principles/kb/convey; hubs fleet 17, graph 15, canvaslive, dynamic, yamlish, relay,
+roster, principle (convey's real load-bearing modules). Built 564K.
+@todo deeper: explicit module→module edge graph + a gates/health view (tests/CI).
+Also re-demoed bonds live (full-screen shot): research.pdf/research.txt/dropped-note.txt wear
+⋈ chips; notes.md + the .molecule.json files don't.
+UNCOMMITTED: this increment (Filee.swift + Filee.feature + Filee.session).

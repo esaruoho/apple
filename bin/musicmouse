@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# musicmouse — launch Laurie Spiegel's 1989 Music Mouse inside Mini vMac
+#              (Macintosh II variation, System 7.5.5).
+#
+#   musicmouse           midivmac build (x86_64 via Rosetta) WITH MIDI — exposes
+#                        CoreMIDI ports "Mini vMac modem" / "Mini vMac printer"
+#                        so the emulated app can sync to MIDI clock + send notes.
+#   musicmouse --plain   native arm64 build, no MIDI (faster, mouse-played only)
+#
+# Setup lives in $MUSICMOUSE_HOME (default ~/Applications/MusicMouse-MiniVMac).
+# Both builds share disk1.dsk (boot) + disk2.dsk (MusicMouse), so only ONE can
+# run at a time. Clean shutdown: Special ▸ Shut Down inside the Mac, then ⌘Q.
+
+set -euo pipefail
+
+ROOT="${MUSICMOUSE_HOME:-$HOME/Applications/MusicMouse-MiniVMac}"
+REPO="$ROOT/repo"
+APP_PLAIN="$REPO/M1 Mini vMac II 512x384 BW.app"
+APP_MIDI="$REPO/midivmac.app"
+
+die() { printf 'musicmouse: %s\n' "$1" >&2; exit 1; }
+
+MODE=midi
+case "${1:-}" in
+  --plain|--native|-p) MODE=plain ;;
+  --midi|-m) MODE=midi ;;
+  "" ) ;;
+  -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+  *) die "unknown option: $1  (try --plain)" ;;
+esac
+
+[ -f "$REPO/disk1.dsk" ] || die "boot disk missing: $REPO/disk1.dsk"
+[ -f "$REPO/disk2.dsk" ] || die "MusicMouse disk missing: $REPO/disk2.dsk"
+
+plain_pid() { pgrep -f "512x384 BW.app/Contents/MacOS/minivmac" 2>/dev/null || true; }
+midi_pid()  { pgrep -f "midivmac.app/Contents/MacOS/minivmac"   2>/dev/null || true; }
+
+if [ "$MODE" = midi ]; then
+  [ -d "$APP_MIDI" ] || die "midivmac not installed at: $APP_MIDI"
+  if [ -n "$(midi_pid)" ]; then echo "🎹  midivmac already running — bringing it forward."; open "$APP_MIDI"; exit 0; fi
+  [ -z "$(plain_pid)" ] || die "the non-MIDI build is running and shares the disks. Quit it first (Special ▸ Shut Down)."
+  echo "🎹  Music Mouse — midivmac (MIDI, x86_64 via Rosetta)"
+  open "$APP_MIDI"
+  cat <<'EOF'
+   CoreMIDI ports now live on the host:
+     • send TO   "Mini vMac modem"   ← route your DAW's MIDI clock / notes here
+     • receive   "Mini vMac modem"   ← Music Mouse's MIDI output comes back here
+   Inside the Mac: point Music Mouse's MIDI at the Modem port; enable external
+   sync for clock. (Incoming notes sync the clock / pass Thru — they do NOT
+   play Music Mouse; it's mouse-played.)
+   1. If you see "…not shut down properly", press Return.
+   2. Open the MusicMouse disk → double-click "Music Mouse™".
+   3. Quit cleanly: Special ▸ Shut Down, then ⌘Q.
+EOF
+  exit 0
+fi
+
+# plain (native arm64) mode
+[ -d "$APP_PLAIN" ] || die "emulator not found at: $APP_PLAIN"
+if [ -n "$(plain_pid)" ]; then echo "🎹  Music Mouse already running — bringing it forward."; open "$APP_PLAIN"; exit 0; fi
+[ -z "$(midi_pid)" ] || die "the --midi build is running and shares the disks. Quit it first (Special ▸ Shut Down)."
+echo "🎹  Music Mouse — Mini vMac (Macintosh II · System 7.5.5)"
+open "$APP_PLAIN"
+cat <<'EOF'
+   1. If you see "…not shut down properly", press Return.
+   2. Open the MusicMouse disk on the desktop → double-click "Music Mouse™".
+   3. Quit cleanly: Special ▸ Shut Down inside the Mac, then ⌘Q.
+   (For MIDI clock-sync + MIDI-out, use:  musicmouse --midi )
+EOF

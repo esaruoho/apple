@@ -11,9 +11,10 @@
 #
 # RESULT (as of 2026-06-16)
 #   Files     : apple/filee/Filee.swift, apple/filee/build.sh, apple/bin/filee (launcher).
-#               Built: Filee.app (signed, 536K). Convey side: convey/molecule.py mark_from_url()
+#               Built: Filee.app (signed, 564K). Convey side: convey/molecule.py mark_from_url()
 #               + cli.py `molecule --from-url URL` (the online `references` bond).
-#   Delivery  : working tree, UNCOMMITTED (awaiting Esa's "commit"). apple + convey repos.
+#   Delivery  : Filee.swift/.feature/.session COMMITTED (apple 061cdda); convey molecule --from-url
+#               COMMITTED (852a85f). The architecture-view increment is UNCOMMITTED (awaiting commit).
 #   Verified  : (orig) 820x600 window live; ~/work/convey as file/folder boxes; arrow-key nav.
 #               (bonds) /tmp/filee-demo — research.pdf & research.txt wear "⋈ N" chips.
 #               (auto-convey) LIVE: dropped a file into an armed folder → .molecule.json in ~1s.
@@ -21,14 +22,17 @@
 #               (skill boxes) LIVE screenshot: ~/.claude/skills → "skill · bbs/corum/cpp/…" boxes.
 #               (search) field renders (screenshot); Spotlight returns 22 "molecule" hits in convey.
 #               (fancier history) composed git script ran live on convey: status+graph+contributors.
+#               (architecture) exact logic ran live on convey: composition (2713 md/139 py), modules
+#               (analyses/principles/kb/convey), real hubs (fleet 17, graph 15, relay, roster, yamlish).
 #               Render of url rows, skill-insides sheet, live search-grid population, folder-memory
 #               sheets = code-verified (Spaces + context-menu + text-field make headless shots hard).
 #
 # THE LADDER (same box primitive, bigger noun each rung)
 #   rung 1  file   ← THIS CARD (@built @verified)
 #   rung 2  folder ← THIS CARD (@built @verified — folders are boxes you enter)
-#   rung 3  repo   (@built @verified — BoxKind.repo + badge + "Show history": multi-section
-#                   git status+graph+churn+contributors (+ h5i provenance if present) → sheet)
+#   rung 3  repo   (@built @verified — BoxKind.repo + badge + "Show architecture" (composition +
+#                   modules + entry points + structural HUBS/wiring) AND "Show history" (status +
+#                   graph + churn + contributors + h5i provenance) → sheet. THE rung-3 interior.)
 #   rung 4  skill+memory (@built @verified — a SKILL.md/skill.md folder → BoxKind.skill box,
 #                   subtitle "skill · <desc>"; "Show skill (insides)" reads frontmatter + layout.
 #                   Plus folder-memory widget: build/show .memory.md + "Talk to folder" (mlx-here))
@@ -90,7 +94,7 @@ Feature: A folder's files are boxes on a screen
     Given a folder that contains .git
     Then its box uses BoxKind.repo, shows a connection badge, and a "git repo" subtitle
     # cite: Filee.swift FolderModel.load() (.repo when .git exists); BoxView repo badge
-    But a commits/gates/architecture view inside the repo is NOT yet built  # @todo
+    And the repo's interior is now openable: "Show architecture" + "Show history"  # see below
 
   @built @verified
   Scenario: A box carries molecule bonds as visible, navigable edges
@@ -154,6 +158,25 @@ Feature: A folder's files are boxes on a screen
     # VERIFIED 2026-06-16: the composed script run on ~/work/convey produced all sections live
     #   (status showing molecule.py/cli.py modified; graph with dates/authors; shortlog).
     # single-quote-safe path; h5i section guarded by `for-each-ref refs/h5i` + `command -v h5i`.
+
+  @built @verified
+  Scenario: A repo box opens into its ARCHITECTURE (rung 3 interior — the shape, not the log)
+    Given a .git folder box (BoxKind.repo)
+    When "Show architecture (modules + wiring)" is chosen
+    # cite: Filee.swift FolderModel.showArchitecture() → sh -c over git ls-files / git grep
+    Then the sheet shows, for ANY repo (language-agnostic):
+         · composition — tracked files by extension (what the repo is made of)
+         · top-level modules — each dir + its file count
+         · entry points — main/index/app/cli/lib/__main__ across common languages
+         · structural HUBS — unique module stems ranked by how many import lines reference them
+           (the wiring backbone: the load-bearing modules everything hangs off), boilerplate dropped
+         · orientation docs — README / atlas/MAP.md / UNDERSTANDING.md / CLAUDE.md / AGENTS.md
+    # VERIFIED 2026-06-16: the exact logic run on ~/work/convey gave composition (2713 md, 139 py),
+    #   modules (analyses/principles/kb/convey), and real hubs (fleet 17, graph 15, relay, roster,
+    #   yamlish…) — convey's actual load-bearing modules. Distinct modules, not 58× steps.py.
+    # SAFE: anchored import regex + `grep -wFc` FIXED-STRING whole-word counts (no catastrophic
+    #   backtracking), stems<3 chars skipped, bounded to 2000 files, run off-main-thread (async).
+    # @todo deeper: an explicit module→module edge graph + a gates/health view (tests, CI) beyond this.
 
   @built @verified
   Scenario: A skill folder is a box whose INSIDES you can read (rung 4)

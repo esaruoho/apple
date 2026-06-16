@@ -487,6 +487,46 @@ final class FolderModel: ObservableObject {
         runProcess("/bin/sh", ["-c", script], cwd: url.path, title: "history · \(box.title)")
     }
 
+    /// The ARCHITECTURE view (rung 3, the most important): read a repo's SHAPE, not its log.
+    /// Composition (languages) → top-level modules → entry points → the structural HUBS (the
+    /// most-imported code files — the wiring backbone everything hangs off) → orientation docs.
+    /// All via `git grep`/`git ls-files` with ANCHORED, FIXED-STRING matching (no catastrophic
+    /// backtracking), bounded to 500 files, run off the main thread (runProcess is async).
+    func showArchitecture(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let p = url.path.replacingOccurrences(of: "'", with: "'\\''")
+        // language globs reused for both the import scan and the hub-candidate list
+        let exts = "'*.py' '*.swift' '*.js' '*.ts' '*.jsx' '*.tsx' '*.rs' '*.lua' '*.c' '*.h' '*.cc' '*.cpp' '*.hpp' '*.go' '*.rb'"
+        let script = """
+        cd '\(p)' || exit 1
+        echo '══ ARCHITECTURE · '"$(basename '\(p)')"' ══'
+        echo
+        echo '── composition (tracked files by type) ──'
+        git ls-files | awk -F. 'NF>1{print $NF}' | grep -E '^[A-Za-z0-9]+$' | sort | uniq -c | sort -rn | head -12
+        echo
+        echo '── top-level modules (file count · dir) ──'
+        git ls-files | awk -F/ 'NF>1{print $1}' | sort | uniq -c | sort -rn | head -15
+        echo
+        echo '── entry points ──'
+        git ls-files | grep -iE '(^|/)(main|index|app|cli|__main__|server|lib|mod)\\.(swift|py|js|ts|jsx|tsx|rs|lua|c|cc|cpp|go|rb)$' | head -12
+        echo
+        echo '── structural hubs (refs · module — the most-imported = wiring backbone) ──'
+        imports=$(git grep -hI -E '^[[:space:]]*(import|from|#include|#import|require|use|@import|include)[[:space:](]' -- \(exts) 2>/dev/null)
+        git ls-files -- \(exts) 2>/dev/null | head -2000 | while IFS= read -r f; do b=$(basename "$f"); echo "${b%.*}"; done \\
+          | grep -vE '^(steps|__init__|conftest|setup|index|mod|lib|test|tests|main)$' \\
+          | sort -u | while IFS= read -r stem; do
+              [ ${#stem} -lt 3 ] && continue
+              n=$(printf '%s\\n' "$imports" | grep -wFc -- "$stem" 2>/dev/null)
+              [ "${n:-0}" -gt 0 ] && printf '%5d  %s\\n' "$n" "$stem"
+          done | sort -rn | head -15
+        echo
+        echo '── orientation docs ──'
+        ls README* readme* atlas/MAP.md UNDERSTANDING.md .memory.md CLAUDE.md AGENTS.md 2>/dev/null | head -8
+        if git for-each-ref --count=1 refs/h5i >/dev/null 2>&1; then echo; echo '(repo carries h5i AI-provenance — see "Show history")'; fi
+        """
+        runProcess("/bin/sh", ["-c", script], cwd: url.path, title: "architecture · \(box.title)")
+    }
+
     // ── auto-convey: a folder armed to molecule new files as they LAND ───────────
     // SAFE by design: auto-runs only the CHEAP `convey molecule --json` (writes a sidecar,
     // no OCR, no CPU burn). The heavy belt --run stays manual. Marker: `.filee-autoconvey`.
@@ -776,6 +816,7 @@ struct FileeView: View {
                 Button("Show skill (insides)") { model.showSkill(box) }
             }
             if box.kind == .repo {                                  // rung 3: the repo's interior
+                Button("Show architecture (modules + wiring)") { model.showArchitecture(box) }
                 Button("Show history (graph + provenance)") { model.showCommits(box) }
             }
             Menu("Folder memory") {                                 // give the folder a voice

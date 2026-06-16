@@ -842,14 +842,22 @@ struct CardView: View {
                     Text(originLabel).font(.caption2).foregroundColor(.secondary)
                 }
                 // VIEW — one-click Screen Sharing to this peer (not to self).
+                // screenShare() → fleet-files screen → cmd_tunnel already
+                // Wake-on-LANs an asleep peer through the Mini before connecting.
+                // When the card is stale (machine not open), say so honestly:
+                // the click wakes it FIRST, then views — so label it WAKE & VIEW.
                 if card.origin != .local {
                     Spacer()
+                    let peerName = card.identity?.computer_name ?? card.id
                     Button { model.screenShare(on: card) } label: {
-                        Label("VIEW", systemImage: "display")
+                        Label(live ? "VIEW" : "WAKE & VIEW",
+                              systemImage: live ? "display" : "powersleep")
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
-                    .help("Open Screen Sharing to \(card.identity?.computer_name ?? card.id)")
+                    .help(live
+                        ? "Open Screen Sharing to \(peerName)"
+                        : "Wake \(peerName) over the LAN (via the Mini), then open Screen Sharing. Laptops on battery / lid-closed may not wake.")
                 }
             }
             Divider()

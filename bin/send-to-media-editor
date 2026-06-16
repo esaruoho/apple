@@ -5,14 +5,17 @@ Flow:
     1. Resolve the input path:
          - argv[1] if given
          - else the first item of the Finder selection
-    2. Find a matching video in ray-graph via GET /api/list_videos
+    2. Find a matching video via GET /api/list_videos on the LIVE backend(s):
+         - convey serve (:8675, convey-packs) is preferred; ray-graph (:8000) is the fallback
          - match by absolute path, then by filename, then by stem (YouTube-ID)
+         - each video remembers which backend served it (v["_base"]) so we never
+           hardcode a dead port
     3. Dispatch into the Media Editor:
          - If BBS-app (Tauri "bbs-app") is running:
-             UI-script the omnibar with `editor:<id>` + Return
-         - Else fall back to opening
-             http://localhost:8000/editor.html?video=<id>
-           in the default browser
+             UI-script the omnibar with `editor:<id>` + Return (BBS resolves against
+             its own configured backend)
+         - Else open  <live-base>/editor.html?video=<id>  in the default browser,
+           on the SAME backend that served the video (never a hardcoded :8000)
 
 Apple-native only: stdlib + open(1) + osascript(1) + curl(1).
 """
@@ -64,20 +67,25 @@ CONVEY_BASE = "http://localhost:8675"   # `convey serve` — scans ~/work/convey
 def _videos_from(base: str) -> list[dict]:
     with urllib.request.urlopen(f"{base}/api/list_videos", timeout=5) as r:
         data = json.load(r)
-    return data.get("videos", []) if data.get("success") else []
+    vids = data.get("videos", []) if data.get("success") else []
+    for v in vids:
+        v["_base"] = base          # remember WHICH live backend served this video
+    return vids
 
 
 def list_videos() -> list[dict]:
-    """Merge ray-graph's registry (media/) with `convey serve`'s (convey-packs/), so a
-    video conveyed into a pack is deliverable to MediaEditor. Either source may be down."""
+    """Merge `convey serve`'s registry (convey-packs/) with ray-graph's (media/), so a
+    video conveyed into a pack is deliverable to MediaEditor. Either source may be down.
+    Convey spine FIRST so it wins the de-dupe — it's the current canonical backend, and
+    :8000 is frequently down."""
     videos, errs = [], []
-    for base in (RAY_BASE, CONVEY_BASE):
+    for base in (CONVEY_BASE, RAY_BASE):
         try:
             videos += _videos_from(base)
         except Exception as e:
             errs.append(f"{base}: {e}")
     if not videos:
-        die("could not reach ray-graph (8000) or convey serve (8675) — is either running?  "
+        die("could not reach convey serve (8675) or ray-graph (8000) — is either running?  "
             + " · ".join(errs))
     # de-dupe by id (convey + ray-graph can both list the same stem)
     seen, out = set(), []
@@ -166,11 +174,12 @@ end tell
     subprocess.run(["osascript", "-e", script], check=False)
 
 
-def open_editor_url(video_id: str, t_sec: str | None = None) -> str:
-    qs = [f"video={urllib.parse.quote(video_id)}"]
+def open_editor_url(video: dict, t_sec: str | None = None) -> str:
+    base = video.get("_base") or CONVEY_BASE      # the LIVE backend that served this video, never a hardcoded dead port
+    qs = [f"video={urllib.parse.quote(video['id'])}"]
     if t_sec:
         qs.append(f"t={urllib.parse.quote(t_sec)}")
-    url = f"{RAY_BASE}/editor.html?{'&'.join(qs)}"
+    url = f"{base}/editor.html?{'&'.join(qs)}"
     subprocess.run(["open", url], check=True)
     return url
 
@@ -214,24 +223,25 @@ def main(argv: list[str]) -> int:
             "Ingest the file into ray-graph first, then retry."
         )
     video_id = video["id"]
-    print(f"resolved      : {video_id} — {video.get('title', '?')[:60]}")
+    base = video.get("_base") or CONVEY_BASE
+    print(f"resolved      : {video_id} — {video.get('title', '?')[:60]}  (served by {base})")
 
     if os.environ.get("DRY_RUN"):
-        print(f"would open    : {RAY_BASE}/editor.html?video={video_id}" +
+        print(f"would open    : {base}/editor.html?video={video_id}" +
               (f"&t={t_sec}" if t_sec else ""))
         return 0
 
     # ── dispatch ─────────────────────────────────────────────────────────────
     if force_browser:
-        url = open_editor_url(video_id, t_sec)
+        url = open_editor_url(video, t_sec)
         print(f"dispatch      : default browser  →  {url}")
         return 0
 
     if not bbs_running():
         if not launch_bbs():
-            url = open_editor_url(video_id, t_sec)
+            url = open_editor_url(video, t_sec)
             print(f"dispatch      : default browser  →  {url}")
-            print("                (BBS.app not found — install it or pass --browser)")
+            print("                (BBS.app not found — opened the live editor instead)")
             return 0
 
     verb = f"editor:{video_id}" + (f"@{t_sec}" if t_sec else "")
