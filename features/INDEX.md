@@ -133,6 +133,20 @@ Read & control Finder Settings from the command line  —  7 scenarios   (featur
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Fleet shows each Mac once, correctly named, and one click screen-shares to it  —  10 scenarios   (features/fleet-identity-and-view.feature)
+  - [(no grade)] A churned hostname no longer splits a Mac into two Fleet cards
+  - [(no grade)] Pinning a static HostName ends the mDNSResponder name-conflict s
+  - [(no grade)] Fleet forgets a card whose file was deleted
+  - [(no grade)] The Mini probes Hertsi over a static IP, immune to mDNS breakage
+  - [(no grade)] Hertsi's card is always titled HertsiMacPro, never MacPro
+  - [(no grade)] The Mac Pro is genuinely renamed to HertsiMacPro
+  - [(no grade)] fleet-files screen accepts a Machine Card id and picks the right
+  - [(no grade)] A clickable app screen-shares to a peer in one double-click
+  - [@build-verified] Fleet shows a VIEW button on every peer card
+  - [(no grade)] AppleToolbox lists a VIEW item per peer under a Screen Share men
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 1/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 fm-converse — a remembering conversation with the on-device LLM  —  8 scenarios   (features/fm-converse.feature)
   - [@built] A follow-up question keeps the prior context
   - [@built] Replay stays inside the 4096-token FoundationModels window
