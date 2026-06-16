@@ -20,6 +20,7 @@ FEATURE-CARD >> features/arm-apple-skill.feature
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -281,33 +282,87 @@ _CORPORA = [
 ]
 
 
-def retrieve_context(query: str, cap: int = 2400) -> str:
-    """Per-turn: the passages most relevant to `query`. For Apple, drawn from the
-    wiki content subdirs; for any other project skill, from that project's own
-    tree (+ the skill's reference dir when it lives outside the repo). '' if
-    retrieval is unavailable or nothing matched. Reuses convey.knows.retrieve."""
-    if _retrieve is None or not query:
+# Plain-text feature/keybinding manifests a project ships — the GROUND TRUTH that
+# .md retrieval (convey.knows reads only *.md) never sees. For Paketti this is the
+# authoritative "what features exist" list, e.g.
+#   Paketti:Set Pattern Length to 016 (010)|||CTRL + 3
+_FEATURE_MANIFESTS = ("autocomplete_shortcuts.txt", "action_selector_settings.txt")
+
+
+def _feature_lines(query: str, roots, cap: int = 2200) -> str:
+    """Ground-truth feature/keybinding lines from the project's shortcut manifests,
+    ranked by how many query terms they contain. This is what makes "does Paketti
+    have pattern length?" answer correctly — the keybindings live in .txt/.lua, not
+    the .md docs the lexical retriever reads."""
+    terms = {t for t in re.split(r"[^a-z0-9]+", (query or "").lower()) if len(t) > 2}
+    if not terms:
         return ""
+    scored, seen = [], set()
+    for root in roots:
+        for name in _FEATURE_MANIFESTS:
+            fp = Path(root) / name
+            if not fp.is_file():
+                continue
+            try:
+                lines = fp.read_text(encoding="utf-8", errors="replace").splitlines()
+            except Exception:
+                continue
+            for s in (ln.strip() for ln in lines):
+                if not s or s in seen:
+                    continue
+                low = s.lower()
+                score = sum(1 for t in terms if t in low)
+                if score:
+                    seen.add(s)
+                    scored.append((score, s))
+    scored.sort(key=lambda x: -x[0])
+    out, total = [], 0
+    for _score, line in scored:
+        if total + len(line) + 2 > cap:
+            break
+        out.append("- " + line)
+        total += len(line) + 2
+    return "\n".join(out)
+
+
+def retrieve_context(query: str, cap: int = 2400) -> str:
+    """Per-turn: the passages most relevant to `query`. For Apple, the wiki content
+    subdirs; for any project skill, the keybinding/feature MANIFESTS first (ground
+    truth) then the project's .md docs. '' if nothing matched."""
     skill = _ACTIVE or detect_skill(os.getcwd())
-    if skill["is_apple"]:
-        corpora = [(WIKI / sub, k) for sub, k in _CORPORA]
-    else:
-        corpora = [(d, 6) for d in (skill.get("corpus") or [skill["root"]])]
     blocks, total = [], 0
-    for d, k in corpora:
-        if not Path(d).is_dir():
-            continue
-        try:
-            b = _retrieve(str(d), query, k=k, cap=cap)
-        except Exception:
-            b = ""
-        if not b:
-            continue
-        for line in b.splitlines():
-            if total + len(line) > cap:
-                break
-            blocks.append(line)
-            total += len(line)
+
+    # Project skills: lead with the authoritative feature/keybinding lines.
+    if not skill.get("is_apple", True):
+        roots = skill.get("corpus") or [skill["root"]]
+        feat = _feature_lines(query, roots)
+        if feat:
+            blocks.append("EXACT FEATURES / KEYBINDINGS (authoritative — answer FROM "
+                          "these; a feature's absence from the prose below does NOT "
+                          "mean it doesn't exist):")
+            for line in feat.splitlines():
+                blocks.append(line)
+                total += len(line)
+        corpora = [(d, 6) for d in roots]
+    else:
+        corpora = [(WIKI / sub, k) for sub, k in _CORPORA]
+
+    # Then the lexical .md retrieval (convey.knows), if available.
+    if _retrieve is not None and query:
+        for d, k in corpora:
+            if not Path(d).is_dir():
+                continue
+            try:
+                b = _retrieve(str(d), query, k=k, cap=cap)
+            except Exception:
+                b = ""
+            if not b:
+                continue
+            for line in b.splitlines():
+                if total + len(line) > cap + 2200:   # extra room for the manifest lines
+                    break
+                blocks.append(line)
+                total += len(line)
     return "\n".join(blocks)
 
 

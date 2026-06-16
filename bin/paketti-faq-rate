@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""paketti-faq-rate — certify drafted answers. The human-in-the-loop "are we sure?"
+
+Walks each UNVETTED vault entry and asks you to rate it:
+    u = useful   → vetted (servable by paketti-ask)
+    f = fix      → edit the answer, then vetted
+    w = wrong    → rejected (never served)
+    s = skip · q = quit
+"""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paketti_faq as F  # noqa: E402
+
+BOLD, GREEN, DIM, CYAN, YELLOW, RED, RESET = (
+    "\033[1m", "\033[32m", "\033[2m", "\033[36m", "\033[33m", "\033[31m", "\033[0m")
+
+
+def _render(answer: str):
+    try:
+        from fm_render import md_to_ansi
+        return md_to_ansi(answer) if sys.stdout.isatty() else answer
+    except Exception:
+        return answer
+
+
+def main() -> int:
+    entries = F.load()
+    todo = [e for e in entries if e.get("status") == "unvetted"]
+    if not todo:
+        n_vet = sum(1 for e in entries if e.get("status") == "vetted")
+        print(f"{DIM}Nothing to rate. Vault: {len(entries)} total, {n_vet} vetted. "
+              f"Run `paketti-faq-gen` to draft more.{RESET}")
+        return 0
+
+    print(f"{BOLD}Rating {len(todo)} drafted answer(s).{RESET} "
+          f"{DIM}u=useful  f=fix  w=wrong  s=skip  q=quit{RESET}\n")
+    for i, e in enumerate(todo, 1):
+        print(f"{CYAN}{BOLD}Q{RESET} {e['q']}  {DIM}(id {e['id']}){RESET}")
+        print(_render(e["a"]))
+        if e.get("citations"):
+            print(f"{DIM}cites: {', '.join(e['citations'])}{RESET}")
+        try:
+            choice = input(f"{GREEN}[{i}/{len(todo)}] rate (u/f/w/s/q) › {RESET}").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nbye."); return 0
+        if choice == "q":
+            break
+        if choice == "u":
+            F.update(e["id"], status="vetted")
+            print(f"{GREEN}  ✓ vetted{RESET}\n")
+        elif choice == "w":
+            F.update(e["id"], status="rejected")
+            print(f"{RED}  ✗ rejected{RESET}\n")
+        elif choice == "f":
+            print(f"{DIM}  type/paste the corrected answer, end with a single '.' on its own line:{RESET}")
+            lines = []
+            while True:
+                try:
+                    ln = input()
+                except (EOFError, KeyboardInterrupt):
+                    break
+                if ln.strip() == ".":
+                    break
+                lines.append(ln)
+            fixed = "\n".join(lines).strip()
+            if fixed:
+                F.update(e["id"], a=fixed, citations=F._citations(fixed), status="vetted")
+                print(f"{GREEN}  ✓ fixed + vetted{RESET}\n")
+            else:
+                print(f"{DIM}  (no edit — left unvetted){RESET}\n")
+        else:
+            print(f"{DIM}  skipped{RESET}\n")
+
+    n_vet = sum(1 for e in F.load() if e.get("status") == "vetted")
+    print(f"{GREEN}Done.{RESET} {DIM}{n_vet} vetted answer(s) ready — try `paketti-ask \"...\"`.{RESET}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

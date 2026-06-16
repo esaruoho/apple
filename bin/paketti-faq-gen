@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""paketti-faq-gen — draft grounded answers to Paketti feature questions.
+
+Runs the next N unanswered seed questions through the paketti+renoise-armed MLX
+brain and saves each as an UNVETTED vault entry. Then `paketti-faq-rate` to
+certify, `paketti-ask` to use.
+
+    paketti-faq-gen            # draft the next 3 unanswered seed questions
+    paketti-faq-gen --n 5      # draft 5
+    paketti-faq-gen "custom question?"   # draft one specific question
+"""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paketti_faq as F  # noqa: E402
+
+GREEN, DIM, YELLOW, RESET = "\033[32m", "\033[2m", "\033[33m", "\033[0m"
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    n = 3
+    custom = None
+    if "--n" in args:
+        i = args.index("--n"); n = int(args[i + 1]); del args[i:i + 2]
+    if args and not args[0].startswith("--"):
+        custom = " ".join(args)
+
+    entries = F.load()
+    questions = [custom] if custom else F.unanswered_seeds(entries)[:n]
+    if not questions:
+        print(f"{DIM}All seed questions already drafted ({len(entries)} in the vault). "
+              f"Use a custom question, or `paketti-faq-rate`.{RESET}")
+        return 0
+
+    print(f"{DIM}Drafting {len(questions)} answer(s) with the paketti+renoise MLX brain "
+          f"(~15-40s each)…{RESET}\n")
+    for i, q in enumerate(questions, 1):
+        print(f"{GREEN}[{i}/{len(questions)}]{RESET} {q}")
+        ans = F.generate_answer(q)
+        if not ans:
+            print(f"{YELLOW}  ⚠ no answer (MLX timeout/down) — skipped{RESET}\n")
+            continue
+        e = F.new_entry(q, ans)
+        F.add(e)
+        preview = ans.replace("\n", " ")[:160]
+        cites = ", ".join(e["citations"][:4]) or "—"
+        print(f"{DIM}  → {preview}…{RESET}")
+        print(f"{DIM}  cites: {cites}  ·  id {e['id']}  ·  status unvetted{RESET}\n")
+
+    print(f"{GREEN}Done.{RESET} {DIM}Now: `paketti-faq-rate` to certify them.{RESET}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
