@@ -58,15 +58,36 @@ end tell
     return out or None
 
 
+CONVEY_BASE = "http://localhost:8675"   # `convey serve` — scans ~/work/convey-packs/
+
+
+def _videos_from(base: str) -> list[dict]:
+    with urllib.request.urlopen(f"{base}/api/list_videos", timeout=5) as r:
+        data = json.load(r)
+    return data.get("videos", []) if data.get("success") else []
+
+
 def list_videos() -> list[dict]:
-    try:
-        with urllib.request.urlopen(f"{RAY_BASE}/api/list_videos", timeout=5) as r:
-            data = json.load(r)
-    except Exception as e:
-        die(f"could not reach ray-graph at {RAY_BASE} — is it running?  ({e})")
-    if not data.get("success"):
-        die("ray-graph /api/list_videos returned success=false")
-    return data.get("videos", [])
+    """Merge ray-graph's registry (media/) with `convey serve`'s (convey-packs/), so a
+    video conveyed into a pack is deliverable to MediaEditor. Either source may be down."""
+    videos, errs = [], []
+    for base in (RAY_BASE, CONVEY_BASE):
+        try:
+            videos += _videos_from(base)
+        except Exception as e:
+            errs.append(f"{base}: {e}")
+    if not videos:
+        die("could not reach ray-graph (8000) or convey serve (8675) — is either running?  "
+            + " · ".join(errs))
+    # de-dupe by id (convey + ray-graph can both list the same stem)
+    seen, out = set(), []
+    for v in videos:
+        k = v.get("id") or v.get("filename")
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(v)
+    return out
 
 
 def resolve(path: str, videos: list[dict]) -> dict | None:
