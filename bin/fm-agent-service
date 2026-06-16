@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""fm-agent-service — the Mini-resident agentic tool-loop worker (Comms/Syncthing).
+
+The queue twin of bin/mlx-agent. Drains fm-agent-inbox/, runs the SAME loop
+(mlx_agent_core.run_loop) ON THE MINI against the Mini's files, and returns the
+answer through fm-agent-outbox/ — no Tailscale, no live connection. Streams the
+running tool-call trace to <id>.partial.json so the laptop SEES the loop progress
+over Syncthing (the way fm-service streams tokens).
+
+GROUND RULE: this runs as a VISIBLE Cloudcity-Boot iTerm pane via systems.yaml —
+never nohup, never a daemon. (convey/CLAUDE.md)
+
+Queue:
+  INBOX     ~/work/comms/queue/fm-agent-inbox/<id>.json
+  INFLIGHT  ~/work/comms/queue/fm-agent-inbox/<id>.inflight   (crash-safe; re-queued at boot)
+  OUTBOX    ~/work/comms/queue/fm-agent-outbox/<id>.json       (final)
+  PARTIAL   ~/work/comms/queue/fm-agent-outbox/<id>.partial.json (running trace)
+  HEARTBEAT ~/work/comms/queue/fm-agent-heartbeat.json
+
+Job:    {"id","task","cwd","max_iters"?,"tools"?(allowlist subset),"system"?,"stream"?}
+Result: {"id","ok","answer","trace":[{name,args,result_len}],"iters","model_ms","host","err"}
+
+Safety: AGENT_ROOT defaults to ~/work (tighter than the CLI's $HOME); the registry
+is read-only; jobs may only NARROW the toolset, never widen it; max_iters is clamped.
+
+FEATURE-CARD >> features/mlx-agent-tool-loop.feature  (queue twin)
+"""
+from __future__ import annotations
+
+import json
+import os
+import socket
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+# tighten the sandbox BEFORE importing the core (core reads AGENT_ROOT at import).
+os.environ.setdefault("AGENT_ROOT", str(Path.home() / "work"))
+# the worker calls the Mini's OWN server — localhost, no Tailscale hop.
+os.environ.setdefault("FM_MLX_HOST", "http://localhost:8080")
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import mlx_agent_core as core          # the shared loop + registry  # noqa: E402
+try:
+    import arm_apple                   # skill-arming (same as the CLI)  # noqa: E402
+except Exception:
+    arm_apple = None
+
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "fm-agent-inbox"
+OUTBOX = QUEUE / "fm-agent-outbox"
+HEARTBEAT = QUEUE / "fm-agent-heartbeat.json"
+POLL_SECONDS = 1.0
+PARTIAL_MIN_INTERVAL = 0.4
+MAX_ITERS_CAP = 8
+HOST = os.environ["FM_MLX_HOST"]
+HOSTNAME = socket.gethostname().split(".")[0]
+
+
+def _atomic_write(path: Path, payload: dict):
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False))
+    tmp.replace(path)
+
+
+def _nudge(path: Path):
+    """Touch the file so Syncthing scans + carries it back immediately."""
+    try:
+        os.utime(path, None)
+    except Exception:
+        pass
+
+
+def _model_loaded() -> bool:
+    """True if a chat (non-TTS/OCR) model is served — the prerequisite for the loop."""
+    try:
+        req = urllib.request.Request(f"{HOST}/v1/models")
+        with urllib.request.urlopen(req, timeout=6) as r:
+            ids = [m.get("id", "") for m in json.loads(r.read()).get("data", [])]
+        return any(("instruct" in i.lower() or "qwen3-4b" in i.lower())
+                   and "tts" not in i.lower() and "ocr" not in i.lower() for i in ids)
+    except Exception:
+        return False
+
+
+def heartbeat():
+    _atomic_write(HEARTBEAT, {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "host": HOSTNAME,
+        "service": "fm-agent-service",
+        "inflight": len(list(INBOX.glob("*.inflight"))),
+        "queued": len(list(INBOX.glob("*.json"))),
+        "model_loaded": _model_loaded(),
+    })
+
+
+def requeue_inflight():
+    """Crash recovery: a job left .inflight (worker died mid-run) → back to .json once."""
+    for f in INBOX.glob("*.inflight"):
+        tgt = f.with_suffix(".json")
+        if not tgt.exists():
+            f.rename(tgt)
+            sys.stderr.write(f"[fm-agent] re-queued stranded {tgt.name}\n")
+
+
+def build_system(job: dict) -> str:
+    if job.get("system"):
+        return job["system"]
+    if arm_apple is None:
+        return ""
+    try:
+        s = arm_apple.build_system(job.get("cwd") or str(Path.home() / "work"))
+        return s + ("\n\nYou have read-only TOOLS over this machine's files (list_dir, "
+                    "read_file [paged], search_notes [semantic], molecule, ask_file, "
+                    "vision_ocr, folder_memory, tag_find). Call a tool to verify rather "
+                    "than guess; page read_file when it says truncated; then answer.")
+    except Exception:
+        return ""
+
+
+def process(job_path: Path):
+    job_id = job_path.stem
+    inflight = job_path.with_suffix(".inflight")
+    try:
+        job = json.loads(job_path.read_text())
+    except Exception as e:
+        _atomic_write(OUTBOX / f"{job_id}.json",
+                      {"id": job_id, "ok": False, "err": f"bad job json: {e}"})
+        job_path.unlink(missing_ok=True)
+        return
+    job_path.rename(inflight)                       # crash-safe marker
+
+    task = (job.get("task") or "").strip()
+    cwd = job.get("cwd")
+    if cwd:                                          # run tools relative to the job's folder
+        try:
+            os.chdir(cwd)
+        except Exception:
+            pass
+    max_iters = min(int(job.get("max_iters", 6)), MAX_ITERS_CAP)
+    allow = job.get("tools")                         # None = full read-only set; list = narrow
+    stream = job.get("stream", True)
+    system = build_system(job)
+
+    last_emit = [0.0]
+    trace_live = []
+
+    def on_tool(name, args, result):
+        trace_live.append({"name": name, "args": args, "result_len": len(result)})
+        if stream and (time.time() - last_emit[0]) >= PARTIAL_MIN_INTERVAL:
+            last_emit[0] = time.time()
+            p = OUTBOX / f"{job_id}.partial.json"
+            _atomic_write(p, {"id": job_id, "ok": None, "trace": trace_live})
+            _nudge(p)
+
+    t0 = time.time()
+    if not _model_loaded():
+        res = {"ok": False, "answer": "", "trace": [], "iters": 0,
+               "err": "no chat model served at " + HOST + " (only TTS/OCR?)"}
+    else:
+        res = core.run_loop(task, system, max_iters, on_tool=on_tool,
+                            host=HOST, allow=allow, retries=5)
+    out = {"id": job_id, "ok": res["ok"], "answer": res["answer"],
+           "trace": res["trace"], "iters": res["iters"],
+           "model_ms": int((time.time() - t0) * 1000), "host": HOSTNAME,
+           "err": res["err"]}
+    final = OUTBOX / f"{job_id}.json"
+    _atomic_write(final, out)
+    (OUTBOX / f"{job_id}.partial.json").unlink(missing_ok=True)
+    inflight.unlink(missing_ok=True)
+    _nudge(final)
+    sys.stderr.write(f"[fm-agent] {job_id}: ok={out['ok']} iters={out['iters']} "
+                     f"tools={len(out['trace'])} {out['model_ms']}ms\n")
+
+
+def main():
+    INBOX.mkdir(parents=True, exist_ok=True)
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    if "--status" in sys.argv:
+        heartbeat()
+        print(HEARTBEAT.read_text())
+        return
+    requeue_inflight()
+    sys.stderr.write(f"[fm-agent] watching {INBOX} (root={core.ROOT}, host={HOST})\n")
+    last_hb = 0.0
+    while True:
+        if time.time() - last_hb >= 5:
+            heartbeat()
+            last_hb = time.time()
+        jobs = sorted(INBOX.glob("*.json"))
+        if not jobs:
+            time.sleep(POLL_SECONDS)
+            continue
+        for jp in jobs:
+            try:
+                process(jp)
+            except Exception as e:
+                sys.stderr.write(f"[fm-agent] error on {jp.name}: {e}\n")
+                jp.with_suffix(".inflight").rename(jp) if jp.with_suffix(".inflight").exists() else None
+
+
+if __name__ == "__main__":
+    main()

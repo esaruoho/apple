@@ -7,8 +7,9 @@
 # SESSION >> features/mlx-agent-tool-loop.session.md
 #
 # WHAT THIS CARD SPAWNS
-#   Codespace : bin/mlx-agent (the loop + tool registry + sandbox),
-#               bin/mlx-here (+--agent/--tools route)
+#   Codespace : bin/mlx_agent_core.py (shared loop + registry + sandbox),
+#               bin/mlx-agent (Tailscale CLI over the core), bin/mlx-here (+--agent),
+#               bin/fm-agent-service (Mini queue worker), bin/fm-agent-submit (client)
 #   Thinkspace: the .session.md — the /last30days finding that Apple's official
 #               WWDC26 stack has ONE primitive Convey lacked (the tool-calling
 #               loop), and the decision to adopt it since both halves (a tool-
@@ -92,9 +93,9 @@ Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
           section lived past 4 KB in a long spec file
     When read_file gains an offset param + a "[truncated: N more bytes — offset=…]" hint
     Then paging to offset=8000 reaches the previously-unseen section
-    # Tool-level verified 2026-06-16: default read ends with the hint; offset=8000 reaches
-    # the "Open decisions for Esa" section. Corrected model re-run PENDING (Mini MLX server
-    # was flapping 502 under load at the time) — NOT claiming the corrected model answer yet.
+    # HW-VERIFIED 2026-06-16: corrected re-run — the model paged ITSELF, read_file
+    # offset=8200 then offset=10400 (following the hint), and answered "4 Open
+    # decisions" naming each, vs the pre-fix "0".
 
   @built @hw-verified
   Scenario: transient 502/503 reload windows are retried (a 2nd bug the live run surfaced)
@@ -102,6 +103,18 @@ Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
     When _post hits 500/502/503/504 or a connection error
     Then it retries with backoff (the same window convey graph analyze retries through)
     # Surfaced + fixed 2026-06-16. Long wedges still fail honestly with a clear message.
+
+  @built @sim-verified
+  Scenario: the queue twin runs the loop on the Mini (Comms/Syncthing path)
+    Given the loop + tool registry are extracted to mlx_agent_core (shared, DRY)
+    And bin/fm-agent-service drains fm-agent-inbox, runs core.run_loop ON THE MINI,
+        streams the tool trace to <id>.partial.json, returns <id>.json via Syncthing
+    And bin/fm-agent-submit drops a job + tails the trace
+    Then `fm-agent-submit "<task>" --cwd <mini-path>` answers from the Mini's files
+    # Self-verified locally 2026-06-16: core stubbed-loop test, real tools via core, sandbox
+    # (ROOT), allowlist narrowing, fm-agent-submit --status. AGENT_ROOT tightened to ~/work.
+    # Live-on-Mini PENDING: needs fm-agent-service deployed as a Cloudcity-Boot pane in
+    # systems.yaml (NEVER nohup) + the chat model served with memory headroom.
 
   @built @sim-verified
   Scenario: the final answer is shown via the ONE shared presenter (DRY)

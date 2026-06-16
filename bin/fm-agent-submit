@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""fm-agent-submit — submit an agentic-loop task to the Mini over Comms/Syncthing.
+
+The client for fm-agent-service. Drops a job into fm-agent-inbox/, Syncthing carries
+it to the Mini, the worker runs the tool-calling loop ON THE MINI against the Mini's
+files, and the answer (plus the tool-call trace) returns via fm-agent-outbox/.
+
+  fm-agent-submit "what is <mini-path> about and what does it relate to?" [--cwd PATH]
+  fm-agent-submit "..." --no-wait            # fire-and-forget (just queue it)
+  fm-agent-submit "..." --trace              # show the tool calls as they stream back
+  fm-agent-submit --status                   # queue depth + worker heartbeat + model_loaded
+
+Mirrors fm-submit's shape against the fm-agent-* queue triple.
+FEATURE-CARD >> features/mlx-agent-tool-loop.feature
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+QUEUE = Path.home() / "work" / "comms" / "queue"
+INBOX = QUEUE / "fm-agent-inbox"
+OUTBOX = QUEUE / "fm-agent-outbox"
+HEARTBEAT = QUEUE / "fm-agent-heartbeat.json"
+STALE_AFTER = 120.0
+
+
+def _job_id() -> str:
+    return f"agent-{int(time.time())}-{os.urandom(2).hex()}"
+
+
+def submit(task: str, cwd: str, max_iters: int, tools, stream: bool) -> str:
+    INBOX.mkdir(parents=True, exist_ok=True)
+    jid = _job_id()
+    spec = {"id": jid, "task": task, "cwd": cwd, "max_iters": max_iters,
+            "tools": tools, "stream": stream}
+    tmp = INBOX / f"{jid}.json.tmp"
+    tmp.write_text(json.dumps(spec, ensure_ascii=False))
+    tmp.replace(INBOX / f"{jid}.json")
+    return jid
+
+
+def status():
+    queued = len(list(INBOX.glob("*.json"))) if INBOX.is_dir() else 0
+    answers = len(list(OUTBOX.glob("*.json"))) if OUTBOX.is_dir() else 0
+    print(f"inbox:  {INBOX}  ({queued} queued)")
+    print(f"outbox: {OUTBOX}  ({answers} answers)")
+    if HEARTBEAT.exists():
+        try:
+            hb = json.loads(HEARTBEAT.read_text())
+            age = time.time() - HEARTBEAT.stat().st_mtime
+            alive = age < STALE_AFTER
+            print(f"worker: {hb.get('host')} — heartbeat {age:.0f}s ago "
+                  f"({'alive' if alive else 'STALE'}), model_loaded={hb.get('model_loaded')}, "
+                  f"inflight={hb.get('inflight')}")
+        except Exception as e:
+            print(f"worker: heartbeat unreadable ({e})")
+    else:
+        print("worker: no heartbeat yet (fm-agent-service not running on the Mini?)")
+
+
+def wait(jid: str, timeout: float, show_trace: bool):
+    final = OUTBOX / f"{jid}.json"
+    partial = OUTBOX / f"{jid}.partial.json"
+    seen = 0
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        if show_trace and partial.exists():
+            try:
+                tr = json.loads(partial.read_text()).get("trace", [])
+                for step in tr[seen:]:
+                    a = ", ".join(f"{k}={v!r}" for k, v in (step.get("args") or {}).items())
+                    sys.stderr.write(f"\033[2m  → {step['name']}({a})\033[0m\n")
+                seen = len(tr)
+            except Exception:
+                pass
+        if final.exists():
+            try:
+                return json.loads(final.read_text())
+            except Exception:
+                pass
+        time.sleep(0.5)
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("task", nargs="*")
+    ap.add_argument("--cwd", default=None)
+    ap.add_argument("--max-iters", type=int, default=6)
+    ap.add_argument("--tools", default=None, help="comma list to NARROW the toolset")
+    ap.add_argument("--no-wait", action="store_true")
+    ap.add_argument("--no-stream", action="store_true")
+    ap.add_argument("--trace", action="store_true")
+    ap.add_argument("--timeout", type=float, default=240.0)
+    ap.add_argument("--status", action="store_true")
+    ap.add_argument("-h", "--help", action="store_true")
+    a = ap.parse_args()
+    if a.help:
+        print(__doc__)
+        return
+    if a.status:
+        status()
+        return
+    task = " ".join(a.task).strip()
+    if not task and not sys.stdin.isatty():
+        task = sys.stdin.read().strip()
+    if not task:
+        print('usage: fm-agent-submit "your task" [--cwd PATH] [--trace] [--no-wait]',
+              file=sys.stderr)
+        sys.exit(1)
+    tools = [t.strip() for t in a.tools.split(",")] if a.tools else None
+    cwd = a.cwd or str(Path.home() / "work")
+    jid = submit(task, cwd, a.max_iters, tools, not a.no_stream)
+    print(f"queued: {jid}")
+    if a.no_wait:
+        return
+    res = wait(jid, a.timeout, a.trace)
+    if res is None:
+        print(f"\n(no answer within {a.timeout:.0f}s — `fm-agent-submit --status` to check "
+              f"the worker; the job stays queued and runs when it's back)")
+        sys.exit(2)
+    if res.get("ok"):
+        print("\n" + (res.get("answer") or "[empty]"))
+    else:
+        print(f"\n[agent did not finish] {res.get('err')}")
+        if res.get("trace"):
+            print("partial trace:", json.dumps(res["trace"]))
+
+
+if __name__ == "__main__":
+    main()

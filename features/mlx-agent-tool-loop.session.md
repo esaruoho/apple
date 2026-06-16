@@ -56,3 +56,17 @@ tool-calling protocol; convey has a verb catalog), so this wires them:
 ## Side effects surfaced
 - The /last30days first-run wrote ~/.config/last30days/.env (SETUP_COMPLETE=true), chmod 600.
 - Raw research saved at ~/Documents/Last30Days/apple-mlx-agentic-filesystem-*-raw-v3.md.
+
+## 2026-06-16 (cont.) — corrected demo + the Comms/Syncthing twin
+Corrected paging demo re-shown LIVE: the model paged itself (read_file offset=8200 →
+10400, following the truncation hint) and answered "4 Open decisions" naming each —
+vs the pre-fix "0". The read_file fix is now end-to-end verified through the model.
+
+Built the Comms/Syncthing twin (the spec realized): DRY refactor extracted the loop +
+registry into bin/mlx_agent_core.py (mlx-agent now imports it — one loop, not two);
+bin/fm-agent-service is the Mini-resident queue worker (drains fm-agent-inbox, runs the
+loop on the Mini, streams the tool trace to <id>.partial.json, returns via Syncthing,
+heartbeat + inflight recovery, AGENT_ROOT=~/work, model-loaded probe); bin/fm-agent-submit
+is the client (drop job, tail trace, --status). Self-tested locally (stubbed loop, real
+tools, sandbox, allowlist). Live-on-Mini pending: deploy fm-agent-service as a Cloudcity-
+Boot pane (systems.yaml, never nohup) with the chat model given memory headroom.
