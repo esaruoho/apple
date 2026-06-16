@@ -356,6 +356,14 @@ final class FolderModel: ObservableObject {
     private let conveyBin = "/Users/esaruoho/work/apple/bin/convey"
     private let conveyCwd = "/Users/esaruoho/work/convey"   // so `belt --spec media.filerule` resolves
     private let folderMemoryBin = "/Users/esaruoho/work/apple/bin/folder-memory"
+    private var currentProc: Process?   // the in-flight verb, so Done can stop it
+
+    /// Stop an in-flight verb (OCR, MLX ask, …) so dismissing the sheet ends the run.
+    func stopConvey() {
+        currentProc?.terminate()
+        currentProc = nil
+        conveyRunning = false
+    }
 
     /// Run any executable, capture stdout+stderr into the sheet, then reload (a verb may
     /// have produced files — OCR .txt, .molecule.json, .memory.md — show them now).
@@ -366,6 +374,7 @@ final class FolderModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             let p = Process()
+            DispatchQueue.main.async { self.currentProc = p }
             p.executableURL = URL(fileURLWithPath: exec)
             p.arguments = args
             p.currentDirectoryURL = URL(fileURLWithPath: cwd)
@@ -596,7 +605,7 @@ final class FolderModel: ObservableObject {
             let q = field.stringValue.isEmpty
                 ? "What is this file and how does it relate to the files around it?"
                 : field.stringValue
-            runConvey(["ask", url.path, q], title: "convey ask · \(box.title)")
+            runConvey(["ask", url.path, q, "--no-speak"], title: "convey ask · \(box.title)")
         }
     }
 }
@@ -786,11 +795,15 @@ struct ConveyOutputView: View {
                     Text("running…").font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
-                Button("Done") { model.conveyOutput = nil }.keyboardShortcut(.defaultAction)
+                Button("Done") { model.stopConvey(); model.conveyOutput = nil }.keyboardShortcut(.defaultAction)
             }
             ScrollView {
-                Text(model.conveyOutput ?? "")
-                    .font(.system(.callout, design: .monospaced))
+                // MANDATORY: model output renders markdown (no raw **bold** / `code`).
+                Text((try? AttributedString(
+                        markdown: model.conveyOutput ?? "",
+                        options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+                     ?? AttributedString(model.conveyOutput ?? ""))
+                    .font(.callout)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
