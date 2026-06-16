@@ -1,4 +1,4 @@
-# CLI Tools Index — 242 tools in bin/
+# CLI Tools Index — 244 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -142,10 +142,12 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
+`mlx` — (no description) — `bin/mlx`
 `mlx-agent` — (no description) — `bin/mlx-agent`
 `mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
 `mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-here`
+`mlx-relay` — (no description) — `bin/mlx-relay`
 `morning-digest` — (no description) — `bin/morning-digest`
 `ner-graph` — (no description) — `bin/ner-graph`
 `ner-graph-svg` — (no description) — `bin/ner-graph-svg`
