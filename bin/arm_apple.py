@@ -43,6 +43,12 @@ for _cand in (Path.home() / "work" / "convey", APPLE.parent / "convey"):
 # ── which skill governs the folder you launched from ────────────────────────
 _ACTIVE: dict | None = None   # set by build_system(); read by retrieve_context()
 
+# Skills whose knowledge is armed ALONGSIDE a project skill (its foundation layer).
+# Paketti is a Renoise Lua tool, so the Renoise API reference rides with it — a
+# question like "can Paketti change pattern length?" needs both the Paketti feature
+# AND the underlying Renoise API it's built on.
+_COMPANIONS = {"paketti": ["renoise-api"]}
+
 
 def _name_tokens(name: str):
     """Candidate skill names from a folder name, longest first. Handles symlink
@@ -106,8 +112,17 @@ def detect_skill(cwd: str) -> dict:
             for tok in _name_tokens(d.name):
                 sp = _installed_skill(tok)
                 if sp:
-                    return {"root": d, "skill_md": sp, "name": tok.lower(),
-                            "is_apple": False, "corpus": [d, sp.parent]}
+                    name = tok.lower()
+                    corpus = [d, sp.parent]
+                    companions = []
+                    for comp in _COMPANIONS.get(name, []):
+                        csp = _installed_skill(comp)
+                        if csp:
+                            companions.append({"name": comp, "skill_md": csp})
+                            corpus.append(csp.parent)       # its docs join retrieval
+                    return {"root": d, "skill_md": sp, "name": name,
+                            "is_apple": False, "corpus": corpus,
+                            "companions": companions}
     # 3. Apple fallback
     return {"root": APPLE, "skill_md": SKILL_MD, "name": "apple",
             "is_apple": True, "corpus": None}
@@ -118,7 +133,9 @@ def active_label() -> str:
     s = _ACTIVE or {}
     if s.get("is_apple", True):
         return "Apple skill"
-    return f"{s.get('name', 'project')} skill"
+    comps = [c["name"] for c in (s.get("companions") or [])]
+    extra = f" +{'+'.join(comps)}" if comps else ""
+    return f"{s.get('name', 'project')}{extra} skill"
 
 
 def _first_chars(path: Path, n: int) -> str:
@@ -169,21 +186,32 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
     the identity, its tree is the per-turn retrieval corpus."""
     name = skill["name"]
     skill_core = _first_chars(skill["skill_md"], 6000)
+    companions = skill.get("companions") or []
+    comp_names = ", ".join(c["name"] for c in companions)
+    comp_clause = (f" You ALSO have the {comp_names} reference — the foundation "
+                   f"this project is built on — so answer feature questions using "
+                   f"both this project's own conventions AND that underlying API."
+                   if companions else "")
     parts = [
         f"You are the {name} skill — the development assistant for the \"{name}\" "
         f"project. You help Esa Ruoho work on THIS specific repository. Ground "
         f"every answer in this project's own conventions, build pipeline, source "
         f"files and docs — do NOT give generic advice, and do NOT talk about Apple "
-        f"or macOS automation unless this project is actually about that.",
+        f"or macOS automation unless this project is actually about that." + comp_clause,
         "",
         "HARD RULES: Never invent file names, functions, build steps, flags or "
-        "APIs. Cite only ones that appear in THE SKILL below or in the RELEVANT "
-        "KNOWLEDGE retrieved each turn, or that you are certain of. If you don't "
-        "know, say so plainly. Be concise and concrete; prefer a real file path "
-        "or command over prose.",
+        "APIs. Cite only ones that appear in THE SKILL (or COMPANION) below or in "
+        "the RELEVANT KNOWLEDGE retrieved each turn, or that you are certain of. If "
+        "you don't know, say so plainly. Be concise and concrete; prefer a real "
+        "file path or command over prose.",
         "",
         f"--- THE SKILL ({skill['skill_md'].name}, abridged) ---",
         skill_core,
+    ]
+    for c in companions:
+        parts += ["", f"--- COMPANION: the {c['name']} reference (abridged) ---",
+                  _first_chars(c["skill_md"], 3000)]
+    parts += [
         "",
         "--- WHERE YOU ARE ---",
         _folder_context(cwd),
