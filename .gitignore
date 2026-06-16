@@ -112,3 +112,9 @@ panel-app/ApplePanel.app/
 # keep those local (public repo; transcripts carry personal/infra context).
 principles/**/*.transcript.jsonl
 principles/**/*.transcript.md
+
+# folder-memory sidecars are regenerable (model summary is non-deterministic).
+.memory.md
+.memory.json
+.memory.savedSearch
+UNDERSTANDING.md

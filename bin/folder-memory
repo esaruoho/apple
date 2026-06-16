@@ -1,0 +1,802 @@
+#!/usr/bin/env python3
+"""
+folder-memory — give a folder a voice. The per-folder sidecar triad.
+
+A folder is already a memory; it just can't speak. This emits, for a folder:
+
+  .memory.md         the understanding  — Obsidian node, model context, human-read
+  .memory.savedSearch the live view     — a Finder Smart Folder of the key files
+  .memory.json       the snapshot       — structured state for --diff and fast re-runs
+
+The understanding is auto-formulated from the files' own metadata + content:
+  • embed every text file with apple-embed (on-device NLEmbedding, 512-dim, no deps)
+  • leader-cluster the vectors → the folder's natural subsystems
+  • rank structural hubs (who is imported / referenced most) → the load-bearing files
+  • (optional) ask the on-device model to phrase the architecture in a few sentences
+
+Then you can TALK to the folder, DIFF it across time, fold it into an Obsidian
+VAULT, or point it at a whole REPO.
+
+USAGE
+  folder-memory <dir>                 build/refresh the triad for one folder
+  folder-memory <dir> --no-model      deterministic only (skip the model summary)
+  folder-memory <dir> --tag           also stamp `mem:<slug>` on the hub files
+  folder-memory <dir> --recursive     sidecar every folder in the tree (ignore-aware)
+  folder-memory <dir> --chat          talk to the folder (model + its .memory.md)
+  folder-memory <dir> --diff          what changed vs the stored snapshot (vibe diff)
+  folder-memory <dir> --vault <vdir>  also drop .memory.md into an Obsidian vault
+  folder-memory --repo <url|path> [--vault <vdir>]
+                                      clone (if url) + understand a whole repo,
+                                      writing an aggregate UNDERSTANDING.md
+  folder-memory <dir> --show          print the .memory.md (build if missing)
+  folder-memory <dir> --open          open the Smart Folder in Finder
+
+OPTIONS
+  --brain mlx|fm     which on-device model (default: mlx = Mini Qwen3-4B; fm = FoundationModels)
+  --ext .a,.b        extra text extensions to treat as readable
+  --max-files N      cap files embedded per folder (default 300)
+  --k-threshold X    cluster cosine threshold (default 0.62; higher = tighter clusters)
+  --quiet            less chatter
+
+Apple-native: python3 stdlib + the local apple-embed / fm-mlx / fm-submit CLIs.
+
+FEATURE-CARD >> features/folder-memory.feature
+"""
+import argparse
+import hashlib
+import json
+import os
+import plistlib
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+# ── ignore rules ────────────────────────────────────────────────────────────
+IGNORE_DIRS = {
+    ".git", "node_modules", "dist", "build", ".venv", "venv", "__pycache__",
+    ".next", ".cache", ".idea", ".vscode", "target", "Pods", ".gradle",
+    "DerivedData", ".stversions", "vendor", ".pytest_cache", ".mypy_cache",
+}
+IGNORE_NAMES = {".DS_Store", ".memory.md", ".memory.json", ".memory.savedSearch"}
+TEXT_EXTS = {
+    ".md", ".markdown", ".txt", ".py", ".swift", ".js", ".ts", ".jsx", ".tsx",
+    ".sh", ".bash", ".zsh", ".rb", ".go", ".rs", ".c", ".h", ".cpp", ".hpp",
+    ".cc", ".m", ".mm", ".java", ".kt", ".lua", ".pl", ".php", ".html", ".css",
+    ".scss", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+    ".sql", ".r", ".jl", ".scala", ".clj", ".ex", ".exs", ".vim", ".el",
+    ".asm", ".s", ".applescript", ".feature", ".rst", ".tex", ".gradle",
+}
+# import / reference patterns, by language family. Each entry is a list of
+# FIXED prefixes we look for at the start of a stripped line; we then pull bare
+# identifiers out of the rest of the line with a SAFE (no-`.*`) token regex.
+TOKEN_RE = re.compile(r"[A-Za-z0-9_./-]+")
+WIKILINK_RE = re.compile(r"\[\[([^\]\|#]+)")          # [[note]] — safe, no .*
+MD_LINK_RE = re.compile(r"\]\(([^)\s]+)")             # ](path) — safe
+
+
+def log(msg, quiet=False):
+    if not quiet:
+        sys.stderr.write(msg + "\n")
+
+
+def slugify(path: Path) -> str:
+    s = path.name or "root"
+    s = re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower()
+    return s or "root"
+
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+def list_own_files(folder: Path):
+    """Immediate files of a folder (not recursive), ignore-aware."""
+    out = []
+    try:
+        for entry in sorted(folder.iterdir()):
+            if entry.is_dir():
+                continue
+            if entry.name in IGNORE_NAMES or entry.name.startswith("._"):
+                continue
+            out.append(entry)
+    except PermissionError:
+        pass
+    return out
+
+
+def walk_folders(root: Path):
+    """Yield every folder in the tree, ignore-aware."""
+    for dirpath, dirnames, _ in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not d.startswith(".")]
+        yield Path(dirpath)
+
+
+def is_text(path: Path, extra_exts) -> bool:
+    if path.suffix.lower() in TEXT_EXTS or path.suffix.lower() in extra_exts:
+        return True
+    if path.suffix == "" and path.stat().st_size < 200_000:
+        # extensionless — sniff for NUL bytes
+        try:
+            chunk = path.read_bytes()[:2048]
+            return b"\x00" not in chunk
+        except OSError:
+            return False
+    return False
+
+
+def read_text(path: Path, max_bytes=200_000) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")[:max_bytes]
+    except OSError:
+        return ""
+
+
+def head_repr(path: Path, name: str) -> str:
+    """One-line embedding representative: name + first prose of the file."""
+    text = read_text(path, 8000)
+    lines = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if not s or s.startswith(("#!", "//", "/*", "*", "<!--")):
+            continue
+        lines.append(s)
+        if len(" ".join(lines)) > 1200:
+            break
+    body = " ".join(lines)[:1200]
+    return f"{name} :: {body}".replace("\n", " ")
+
+
+def content_hash(path: Path) -> str:
+    try:
+        return hashlib.sha1(path.read_bytes()).hexdigest()[:12]
+    except OSError:
+        return ""
+
+
+# ── embeddings + clustering ─────────────────────────────────────────────────
+def embed(strings):
+    """strings -> list of 512-d vectors via apple-embed. Order preserved."""
+    if not strings:
+        return []
+    payload = "\n".join(s.replace("\n", " ") for s in strings) + "\n"
+    proc = subprocess.run(
+        [str(HERE / "apple-embed")], input=payload,
+        capture_output=True, text=True, timeout=600,
+    )
+    vecs = []
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            vecs.append(json.loads(line).get("v"))
+        except json.JSONDecodeError:
+            vecs.append(None)
+    # pad/truncate to match input count
+    while len(vecs) < len(strings):
+        vecs.append(None)
+    return vecs[:len(strings)]
+
+
+def cosine(a, b):
+    if not a or not b:
+        return 0.0
+    dot = s1 = s2 = 0.0
+    for x, y in zip(a, b):
+        dot += x * y
+        s1 += x * x
+        s2 += y * y
+    if s1 == 0 or s2 == 0:
+        return 0.0
+    return dot / ((s1 ** 0.5) * (s2 ** 0.5))
+
+
+def leader_cluster(items, vecs, threshold):
+    """Leader clustering: each item joins the first leader within threshold,
+    else becomes a new leader. Avoids single-linkage chaining."""
+    leaders = []          # (leader_vec, [member_indices])
+    for i, v in enumerate(vecs):
+        if v is None:
+            leaders.append((None, [i]))
+            continue
+        placed = False
+        for lv, members in leaders:
+            if lv is not None and cosine(v, lv) >= threshold:
+                members.append(i)
+                placed = True
+                break
+        if not placed:
+            leaders.append((v, [i]))
+    clusters = []
+    for lv, members in leaders:
+        clusters.append([items[m] for m in members])
+    # biggest clusters first
+    clusters.sort(key=len, reverse=True)
+    return clusters
+
+
+# ── structural hubs ─────────────────────────────────────────────────────────
+def rank_hubs(files, texts):
+    """Count inbound references: how many OTHER files mention this file's stem
+    (whole-word) or its full name. Pure fixed-string / escaped-literal — no
+    catastrophic-backtracking risk."""
+    stems = {}
+    for f in files:
+        stem = f.stem
+        if len(stem) >= 3:
+            stems[f] = stem
+    inbound = {f: 0 for f in files}
+    name_set = {f.name: f for f in files}
+    for src, text in texts.items():
+        # full-name references (imports of "foo.py", links to "bar.md")
+        seen_targets = set()
+        for tok in TOKEN_RE.findall(text):
+            base = os.path.basename(tok)
+            if base in name_set and name_set[base] is not src:
+                seen_targets.add(name_set[base])
+        # whole-word stem references
+        for tgt, stem in stems.items():
+            if tgt is src:
+                continue
+            if tgt in seen_targets:
+                continue
+            if re.search(r"\b" + re.escape(stem) + r"\b", text):
+                seen_targets.add(tgt)
+        for tgt in seen_targets:
+            inbound[tgt] += 1
+    ranked = sorted(files, key=lambda f: (-inbound[f], f.name))
+    return [(f, inbound[f]) for f in ranked]
+
+
+# ── git ─────────────────────────────────────────────────────────────────────
+def git_info(folder: Path):
+    def g(*args):
+        try:
+            return subprocess.run(["git", "-C", str(folder), *args],
+                                  capture_output=True, text=True, timeout=10).stdout.strip()
+        except Exception:
+            return ""
+    inside = g("rev-parse", "--is-inside-work-tree")
+    if inside != "true":
+        return {}
+    return {
+        "commit": g("rev-parse", "--short", "HEAD"),
+        "branch": g("rev-parse", "--abbrev-ref", "HEAD"),
+        "remote": g("config", "--get", "remote.origin.url"),
+    }
+
+
+# ── the model brain ─────────────────────────────────────────────────────────
+def model_raw(prompt, system="", brain="mlx", timeout=90):
+    """One headless model call. Returns text or None if unreachable."""
+    try:
+        if brain == "mlx":
+            cmd = [str(HERE / "fm-mlx"), "--raw"]
+            if system:
+                cmd += ["--system", system]
+            cmd += [prompt]
+        else:
+            cmd = [str(HERE / "fm-submit")]
+            if system:
+                cmd += ["--system", system]
+            cmd += ["--timeout", str(timeout), prompt]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 30)
+        out = (proc.stdout or "").strip()
+        return out or None
+    except Exception:
+        return None
+
+
+# ── snapshot (the structured truth) ─────────────────────────────────────────
+def build_snapshot(folder, args):
+    folder = folder.resolve()
+    files = list_own_files(folder)
+    text_files = [f for f in files if is_text(f, args.extra_exts)]
+    if len(text_files) > args.max_files:
+        log(f"  trimming {len(text_files)} → {args.max_files} text files for embedding", args.quiet)
+        text_files = text_files[:args.max_files]
+
+    texts = {f: read_text(f) for f in text_files}
+    reprs = [head_repr(f, f.name) for f in text_files]
+    log(f"  embedding {len(reprs)} files…", args.quiet)
+    vecs = embed(reprs) if reprs else []
+
+    clusters = leader_cluster(text_files, vecs, args.k_threshold) if vecs else []
+    hubs = rank_hubs(text_files, texts) if text_files else []
+
+    # metadata per file
+    meta = []
+    ext_counts = {}
+    for f in files:
+        try:
+            st = f.stat()
+        except OSError:
+            continue
+        ext = f.suffix.lower() or "(none)"
+        ext_counts[ext] = ext_counts.get(ext, 0) + 1
+        meta.append({
+            "name": f.name,
+            "ext": ext,
+            "size": st.st_size,
+            "mtime": int(st.st_mtime),
+            "hash": content_hash(f) if f in texts else "",
+            "text": f in texts,
+        })
+    meta.sort(key=lambda m: -m["mtime"])
+
+    snap = {
+        "folder": str(folder),
+        "slug": slugify(folder),
+        "generated": int(time.time()),
+        "file_count": len(files),
+        "text_count": len(text_files),
+        "ext_counts": ext_counts,
+        "git": git_info(folder),
+        "hubs": [{"name": f.name, "inbound": n} for f, n in hubs[:12]],
+        "clusters": [[f.name for f in c] for c in clusters],
+        "files": meta,
+        "recent": [m["name"] for m in meta[:8]],
+    }
+    return snap
+
+
+# ── model summary ───────────────────────────────────────────────────────────
+def model_summary(snap, brain, quiet):
+    lines = [f"Folder: {snap['folder']}", f"{snap['file_count']} files."]
+    if snap["ext_counts"]:
+        top = sorted(snap["ext_counts"].items(), key=lambda x: -x[1])[:6]
+        lines.append("File types: " + ", ".join(f"{e} ×{n}" for e, n in top))
+    if snap["hubs"]:
+        lines.append("Most-referenced (load-bearing) files: "
+                     + ", ".join(f"{h['name']}({h['inbound']})" for h in snap["hubs"][:6]))
+    for i, c in enumerate(snap["clusters"][:8], 1):
+        if c:
+            lines.append(f"Subsystem {i}: " + ", ".join(c[:8]))
+    context = "\n".join(lines)
+    system = ("You are a precise software archivist. Given a folder's file "
+              "inventory, type counts, reference hubs and semantic file clusters, "
+              "describe in 3-5 sentences WHAT this folder is and its ARCHITECTURE: "
+              "the role of the hub files and how the subsystems relate. Be concrete, "
+              "name files. Do not invent files not listed. No preamble.")
+    log("  asking the model to phrase the architecture…", quiet)
+    out = model_raw(context, system=system, brain=brain)
+    return out
+
+
+# ── renderers ───────────────────────────────────────────────────────────────
+def render_savedsearch(snap):
+    folder = snap["folder"]
+    # query = the key files (hubs + cluster reps + the memory note itself)
+    key = []
+    for h in snap["hubs"][:10]:
+        key.append(h["name"])
+    for c in snap["clusters"][:8]:
+        if c:
+            key.append(c[0])
+    key.append(".memory.md")
+    seen, names = set(), []
+    for n in key:
+        if n not in seen:
+            seen.add(n)
+            names.append(n)
+    parts = [f'kMDItemFSName == "{n}"' for n in names]
+    query = "(" + " || ".join(parts) + ")" if parts else 'kMDItemFSName == "*"'
+    return {
+        "RawQuery": query,
+        "RawQueryDict": {
+            "FinderFilesOnly": True,
+            "RawQuery": query,
+            "SearchScopes": [folder],
+            "UserFilesOnly": False,
+        },
+        "SearchCriteria": {
+            "FXCriteriaSlices": [],
+            "FXScope": "FXScopeSpecifiedItems",
+            "FXScopeArrayOfPaths": [folder],
+        },
+        "SearchResultsViewOptions": {
+            "FXArrangeGroupViewBy": "Name",
+            "FXPreferredViewStyle": "Nlsv",
+        },
+    }
+
+
+def render_memory_md(snap, summary, vault=False):
+    folder = Path(snap["folder"])
+    ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(snap["generated"]))
+    git = snap.get("git") or {}
+    fm = [
+        "---",
+        f"folder: {snap['folder']}",
+        f"slug: {snap['slug']}",
+        f"generated: {ts}",
+        f"files: {snap['file_count']}",
+    ]
+    if git.get("commit"):
+        fm.append(f"commit: {git['commit']}")
+        if git.get("branch"):
+            fm.append(f"branch: {git['branch']}")
+    fm += ["type: folder-memory", "---", ""]
+
+    out = fm
+    out.append(f"# Memory · {folder.name}")
+    out.append("")
+    if summary:
+        out.append(summary.strip())
+        out.append("")
+    else:
+        out.append(f"*{snap['file_count']} files; "
+                   f"{snap['text_count']} text. Deterministic snapshot — no model summary.*")
+        out.append("")
+
+    # live view link
+    ss = folder / ".memory.savedSearch"
+    out.append(f"**Live view:** [Open Smart Folder]({ss.as_uri()}) · "
+               f"re-evaluated by Spotlight on every open.")
+    out.append("")
+
+    # hubs
+    if snap["hubs"]:
+        out.append("## Load-bearing files (most referenced)")
+        out.append("")
+        for h in snap["hubs"][:10]:
+            if h["inbound"] > 0:
+                link = f"[[{Path(h['name']).stem}]]" if vault else f"[{h['name']}]({(folder / h['name']).as_uri()})"
+                out.append(f"- {link} — referenced by {h['inbound']} file(s)")
+        out.append("")
+
+    # clusters
+    real = [c for c in snap["clusters"] if len(c) > 1]
+    if real:
+        out.append("## Subsystems (semantic clusters)")
+        out.append("")
+        for i, c in enumerate(real[:10], 1):
+            out.append(f"**Cluster {i}** ({len(c)} files)")
+            for n in c[:12]:
+                link = f"[[{Path(n).stem}]]" if vault else f"[{n}]({(folder / n).as_uri()})"
+                out.append(f"- {link}")
+            out.append("")
+
+    # types
+    if snap["ext_counts"]:
+        top = sorted(snap["ext_counts"].items(), key=lambda x: -x[1])
+        out.append("## Composition")
+        out.append("")
+        out.append(" · ".join(f"`{e}` ×{n}" for e, n in top))
+        out.append("")
+
+    # recent
+    if snap["recent"]:
+        out.append("## Recently changed")
+        out.append("")
+        for n in snap["recent"]:
+            out.append(f"- {n}")
+        out.append("")
+
+    out.append("---")
+    out.append(f"*Snapshot {ts}. `.memory.json` holds the structured state for "
+               f"`folder-memory --diff`. Regenerate with `folder-memory \"{folder}\"`.*")
+    return "\n".join(out) + "\n"
+
+
+# ── tag stamping (optional) ─────────────────────────────────────────────────
+def stamp_tags(folder, snap, quiet):
+    tag = f"mem:{snap['slug']}"
+    targets = [folder / h["name"] for h in snap["hubs"][:8] if h["inbound"] > 0]
+    tagbin = HERE / "tag"
+    if not tagbin.exists():
+        log("  (bin/tag not found — skipping tag stamping)", quiet)
+        return
+    for t in targets:
+        try:
+            subprocess.run([str(tagbin), str(t), tag], capture_output=True, timeout=15)
+        except Exception:
+            pass
+    log(f"  stamped {tag} on {len(targets)} hub files", quiet)
+
+
+# ── one-folder build ────────────────────────────────────────────────────────
+def build_one(folder: Path, args, vault_links=False):
+    folder = folder.resolve()
+    log(f"folder-memory: {folder}", args.quiet)
+    snap = build_snapshot(folder, args)
+
+    summary = None
+    if not args.no_model:
+        summary = model_summary(snap, args.brain, args.quiet)
+        if summary:
+            snap["summary"] = summary
+
+    # write triad
+    (folder / ".memory.json").write_text(json.dumps(snap, indent=2))
+    md = render_memory_md(snap, summary, vault=vault_links)
+    (folder / ".memory.md").write_text(md)
+    ss = render_savedsearch(snap)
+    with (folder / ".memory.savedSearch").open("wb") as f:
+        plistlib.dump(ss, f, fmt=plistlib.FMT_XML)
+
+    if args.tag:
+        stamp_tags(folder, snap, args.quiet)
+
+    log(f"  ✓ .memory.md  .memory.savedSearch  .memory.json"
+        f"  ({snap['file_count']} files, {len(snap['clusters'])} clusters)", args.quiet)
+    return snap
+
+
+# ── diff ────────────────────────────────────────────────────────────────────
+def do_diff(folder: Path, args):
+    folder = folder.resolve()
+    old_path = folder / ".memory.json"
+    if not old_path.exists():
+        sys.exit(f"folder-memory: no prior snapshot at {old_path}; run a build first.")
+    old = json.loads(old_path.read_text())
+    new = build_snapshot(folder, args)
+
+    def by_name(snap):
+        return {m["name"]: m for m in snap["files"]}
+    o, n = by_name(old), by_name(new)
+    added = [k for k in n if k not in o]
+    removed = [k for k in o if k not in n]
+    changed = [k for k in n if k in o and o[k]["hash"] and n[k]["hash"]
+               and o[k]["hash"] != n[k]["hash"]]
+
+    old_hubs = [h["name"] for h in old.get("hubs", [])]
+    new_hubs = [h["name"] for h in new.get("hubs", [])]
+    hub_in = [h for h in new_hubs if h not in old_hubs]
+    hub_out = [h for h in old_hubs if h not in new_hubs]
+
+    print(f"# Diff · {folder.name}")
+    o_ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(old["generated"]))
+    print(f"since {o_ts}  ({old['file_count']} → {new['file_count']} files)\n")
+    print(f"  + added   : {', '.join(added) if added else '—'}")
+    print(f"  - removed : {', '.join(removed) if removed else '—'}")
+    print(f"  ~ changed : {', '.join(changed) if changed else '—'}")
+    print(f"  hubs in   : {', '.join(hub_in) if hub_in else '—'}")
+    print(f"  hubs out  : {', '.join(hub_out) if hub_out else '—'}")
+
+    if not args.no_model and (added or removed or changed or hub_in or hub_out):
+        ctx = (f"Folder {folder.name} changed.\n"
+               f"Added files: {added}\nRemoved: {removed}\nModified: {changed}\n"
+               f"New load-bearing files: {hub_in}\nNo-longer-load-bearing: {hub_out}\n"
+               f"Old summary: {old.get('summary','(none)')}")
+        sysmsg = ("You are a code historian. Given what changed in a folder between "
+                  "two snapshots, explain in 2-3 sentences the ARCHITECTURAL meaning "
+                  "of the change — not a file list, the story. If trivial, say so.")
+        narration = model_raw(ctx, system=sysmsg, brain=args.brain)
+        if narration:
+            print("\n## What changed (vibe diff)\n")
+            print(narration.strip())
+    # refresh snapshot so next diff is against now
+    if args.update_after_diff:
+        build_one(folder, args)
+
+
+# ── chat ────────────────────────────────────────────────────────────────────
+def do_chat(folder: Path, args):
+    folder = folder.resolve()
+    mem = folder / ".memory.md"
+    if not mem.exists():
+        log("no .memory.md yet — building first…", args.quiet)
+        build_one(folder, args)
+    memory_text = read_text(mem, 12000)
+    system = (
+        "You ARE this folder's memory. Below is your structured memory of the "
+        "folder's files, load-bearing modules and subsystems. Answer the user's "
+        "questions about this folder concretely, naming real files from the memory. "
+        "If something isn't in your memory, say you'd need to read that file.\n\n"
+        f"=== FOLDER MEMORY ===\n{memory_text}\n=== END MEMORY ==="
+    )
+    print(f"talking to: {folder}  (brain={args.brain}, Ctrl-D to exit)\n")
+    history = []
+    while True:
+        try:
+            user = input("you › ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not user:
+            continue
+        if user in ("/exit", "/quit"):
+            break
+        history.append(("user", user))
+        convo = "\n".join(f"{r.upper()}: {t}" for r, t in history[-8:])
+        t0 = time.time()
+        reply = model_raw(convo, system=system, brain=args.brain, timeout=120)
+        dt = time.time() - t0
+        if not reply:
+            print("  (model unreachable)\n")
+            continue
+        history.append(("assistant", reply))
+        print(f"\n{folder.name} › {reply.strip()}\n  [{dt:.1f}s]\n")
+
+
+# ── recursive ───────────────────────────────────────────────────────────────
+def do_recursive(root: Path, args, vault_links=False):
+    folders = [f for f in walk_folders(root) if list_own_files(f)]
+    log(f"folder-memory --recursive: {len(folders)} folders under {root}", args.quiet)
+    snaps = []
+    for f in folders:
+        try:
+            snaps.append(build_one(f, args, vault_links=vault_links))
+        except Exception as e:
+            log(f"  ! {f}: {e}", args.quiet)
+    return snaps
+
+
+# ── vault ───────────────────────────────────────────────────────────────────
+def drop_into_vault(snap, vault: Path, root: Path):
+    """Copy a folder's .memory.md into an Obsidian vault, mirroring tree."""
+    folder = Path(snap["folder"])
+    try:
+        rel = folder.relative_to(root)
+    except ValueError:
+        rel = Path(folder.name)
+    dest_dir = vault / rel
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    src = folder / ".memory.md"
+    if src.exists():
+        note = dest_dir / f"{folder.name}.memory.md"
+        note.write_text(read_text(src, 1_000_000))
+        return note
+    return None
+
+
+# ── repo ────────────────────────────────────────────────────────────────────
+def do_repo(spec, args):
+    if spec.startswith(("http://", "https://", "git@")):
+        cache = Path.home() / ".cache" / "folder-memory" / "repos"
+        cache.mkdir(parents=True, exist_ok=True)
+        name = re.sub(r"[^A-Za-z0-9._-]+", "-", spec.rstrip("/").split("/")[-1].replace(".git", ""))
+        dest = cache / name
+        if dest.exists():
+            log(f"repo: updating {dest}", args.quiet)
+            subprocess.run(["git", "-C", str(dest), "pull", "--ff-only"],
+                           capture_output=True, timeout=300)
+        else:
+            log(f"repo: cloning {spec} → {dest}", args.quiet)
+            r = subprocess.run(["git", "clone", "--depth", "1", spec, str(dest)],
+                               capture_output=True, text=True, timeout=600)
+            if r.returncode != 0:
+                sys.exit(f"folder-memory: clone failed: {r.stderr.strip()}")
+        root = dest
+    else:
+        root = Path(spec).expanduser().resolve()
+        if not root.is_dir():
+            sys.exit(f"folder-memory: not a directory: {root}")
+
+    vault_links = bool(args.vault)
+    snaps = do_recursive(root, args, vault_links=vault_links)
+
+    # vault drop
+    if args.vault:
+        vault = Path(args.vault).expanduser().resolve()
+        for s in snaps:
+            drop_into_vault(s, vault, root)
+        log(f"  dropped {len(snaps)} memory notes into {vault}", args.quiet)
+
+    # aggregate UNDERSTANDING.md
+    write_understanding(root, snaps, args)
+
+
+def write_understanding(root: Path, snaps, args):
+    # rank folders by file count + hub strength
+    snaps_sorted = sorted(snaps, key=lambda s: -(s["file_count"]))
+    git = git_info(root)
+    lines = ["---", f"repo: {root}", f"folders: {len(snaps)}"]
+    if git.get("remote"):
+        lines.append(f"remote: {git['remote']}")
+    if git.get("commit"):
+        lines.append(f"commit: {git['commit']}")
+    lines += ["type: repo-understanding",
+              f"generated: {time.strftime('%Y-%m-%d %H:%M')}", "---", "",
+              f"# Understanding · {root.name}", ""]
+
+    # model-level overview
+    if not args.no_model:
+        topfolders = []
+        for s in snaps_sorted[:14]:
+            hubs = ", ".join(h["name"] for h in s["hubs"][:3] if h["inbound"] > 0)
+            rel = os.path.relpath(s["folder"], root)
+            topfolders.append(f"{rel}/ ({s['file_count']} files; hubs: {hubs or 'n/a'})")
+        ctx = f"Repository: {root.name}\nTop folders:\n" + "\n".join(topfolders)
+        sysmsg = ("You are a staff engineer onboarding to a repo. Given its top "
+                  "folders and their hub files, write a 4-6 sentence overview: what "
+                  "the project is, where the core logic lives, and how to navigate it. "
+                  "Name real folders. No preamble, no invented paths.")
+        overview = model_raw(ctx, system=sysmsg, brain=args.brain, timeout=120)
+        if overview:
+            lines += [overview.strip(), ""]
+
+    lines += ["## Folder map", ""]
+    for s in snaps_sorted:
+        rel = os.path.relpath(s["folder"], root)
+        if rel == ".":
+            rel = "(root)"
+        hubs = ", ".join(h["name"] for h in s["hubs"][:4] if h["inbound"] > 0)
+        mem = os.path.join(s["folder"], ".memory.md")
+        lines.append(f"- **{rel}/** — {s['file_count']} files"
+                     + (f"; hubs: {hubs}" if hubs else "")
+                     + f"  · [memory]({Path(mem).as_uri()})")
+    lines.append("")
+
+    out = root / "UNDERSTANDING.md"
+    out.write_text("\n".join(lines) + "\n")
+    log(f"  ✓ {out}", args.quiet)
+    print(str(out))
+
+
+# ── main ────────────────────────────────────────────────────────────────────
+def main():
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument("target", nargs="?")
+    p.add_argument("--repo")
+    p.add_argument("--vault")
+    p.add_argument("--recursive", action="store_true")
+    p.add_argument("--chat", action="store_true")
+    p.add_argument("--diff", action="store_true")
+    p.add_argument("--show", action="store_true")
+    p.add_argument("--open", action="store_true")
+    p.add_argument("--tag", action="store_true")
+    p.add_argument("--no-model", action="store_true")
+    p.add_argument("--update-after-diff", action="store_true")
+    p.add_argument("--brain", default="mlx", choices=["mlx", "fm"])
+    p.add_argument("--ext", default="")
+    p.add_argument("--max-files", type=int, default=300, dest="max_files")
+    p.add_argument("--k-threshold", type=float, default=0.75, dest="k_threshold")
+    p.add_argument("--quiet", action="store_true")
+    p.add_argument("-h", "--help", action="store_true")
+    args = p.parse_args()
+
+    if args.help or (not args.target and not args.repo):
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+
+    args.extra_exts = {e if e.startswith(".") else "." + e
+                       for e in args.ext.split(",") if e.strip()}
+
+    if args.repo:
+        do_repo(args.repo, args)
+        return
+
+    folder = Path(args.target).expanduser().resolve()
+    if not folder.is_dir():
+        sys.exit(f"folder-memory: not a directory: {folder}")
+
+    if args.show:
+        mem = folder / ".memory.md"
+        if not mem.exists():
+            build_one(folder, args)
+        sys.stdout.write(read_text(mem, 1_000_000))
+        return
+    if args.open:
+        ss = folder / ".memory.savedSearch"
+        if not ss.exists():
+            build_one(folder, args)
+        subprocess.run(["open", str(ss)])
+        return
+    if args.chat:
+        do_chat(folder, args)
+        return
+    if args.diff:
+        do_diff(folder, args)
+        return
+    if args.recursive:
+        snaps = do_recursive(folder, args, vault_links=bool(args.vault))
+        if args.vault:
+            vault = Path(args.vault).expanduser().resolve()
+            for s in snaps:
+                drop_into_vault(s, vault, folder)
+            log(f"  dropped {len(snaps)} notes into {vault}", args.quiet)
+        return
+
+    snap = build_one(folder, args, vault_links=bool(args.vault))
+    if args.vault:
+        vault = Path(args.vault).expanduser().resolve()
+        note = drop_into_vault(snap, vault, folder.parent)
+        if note:
+            log(f"  dropped note into vault: {note}", args.quiet)
+
+
+if __name__ == "__main__":
+    main()

@@ -73,15 +73,35 @@ Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
     And `mlx-here --agent <task>` execs bin/mlx-agent --cwd "$PWD"
     # Verified 2026-06-15: both printed the 8-tool registry.
 
-  @built @untested
+  @built @hw-verified
   Scenario: a real task drives the belt end-to-end on the Mini
-    Given the Qwen3-4B chat model is actually served at FM_MLX_HOST
-    When `mlx-agent "what is <file> about and what does it relate to?"` runs
-    Then the model calls search_notes / molecule / read_file as needed and answers
-    # PENDING hardware verification: on 2026-06-15 the Mini's :8080 was serving
-    # TTS + GLM-OCR models, not the Qwen3-4B chat model, so the live agentic loop
-    # could not be exercised. Re-run once the chat model is served (set FM_MLX_HOST
-    # / FM_MLX_MODEL to the chat endpoint). NOT claiming hw-verified until then.
+    Given Qwen3-4B-Instruct-2507-8bit is served at http://cloudcitymacmini:8080
+    When `mlx-agent "<task>"` runs against a real folder
+    Then the model emits real tool_calls, they execute, and it answers from the results
+    # HW-VERIFIED 2026-06-16, two live runs against the Mini's Qwen3-4B:
+    #  (1) search_notes("Foundation Models … NLEmbedding cache", ".") → answer citing the
+    #      correct file convey-vs-apple-mlx-stack-and-embeddings.md.
+    #  (2) MULTI-tool loop: list_dir(.) → read_file(spec) → answer. Proves the loop iterates
+    #      on the model's own decisions, not a single call.
+    # The server confirmed it honours the OpenAI `tools` param and returns proper tool_calls
+    # (id + name + JSON arguments).
+
+  @built @hw-verified
+  Scenario: long files are paged (a bug the live run surfaced)
+    Given read_file capped at 4000 bytes, run (2) answered "0 Open decisions" because the
+          section lived past 4 KB in a long spec file
+    When read_file gains an offset param + a "[truncated: N more bytes — offset=…]" hint
+    Then paging to offset=8000 reaches the previously-unseen section
+    # Tool-level verified 2026-06-16: default read ends with the hint; offset=8000 reaches
+    # the "Open decisions for Esa" section. Corrected model re-run PENDING (Mini MLX server
+    # was flapping 502 under load at the time) — NOT claiming the corrected model answer yet.
+
+  @built @hw-verified
+  Scenario: transient 502/503 reload windows are retried (a 2nd bug the live run surfaced)
+    Given the Mini's mlx_lm.server 502s during model crash/reload windows
+    When _post hits 500/502/503/504 or a connection error
+    Then it retries with backoff (the same window convey graph analyze retries through)
+    # Surfaced + fixed 2026-06-16. Long wedges still fail honestly with a clear message.
 
   @built @sim-verified
   Scenario: the final answer is shown via the ONE shared presenter (DRY)

@@ -96,14 +96,21 @@ def t_list_dir(path="."):
     return f"{p} ({len(items)} entries):\n" + "\n".join(items[:200])
 
 
-def t_read_file(path, max_bytes=4000):
+def t_read_file(path, max_bytes=8000, offset=0):
     p = _safe_path(path)
     if not p.is_file():
         return f"[not a file: {p}]"
     try:
-        return p.read_text(encoding="utf-8", errors="replace")[: int(max_bytes)]
+        full = p.read_text(encoding="utf-8", errors="replace")
     except Exception as e:
         return f"[unreadable: {e}]"
+    off, cap = int(offset), int(max_bytes)
+    chunk = full[off: off + cap]
+    rest = len(full) - (off + len(chunk))
+    if rest > 0:
+        chunk += (f"\n[truncated: {rest} more bytes \u2014 call read_file again with "
+                  f"offset={off + len(chunk)} to continue]")
+    return chunk
 
 
 def t_search_notes(query, dir="."):
@@ -144,10 +151,13 @@ TOOLS: dict = {
             "path": {"type": "string", "description": "directory path (default '.')"}}},
     }),
     "read_file": (t_read_file, {
-        "description": "Read a text file's first bytes (under $HOME).",
+        "description": "Read a text file (under $HOME). Long files are paged: if the "
+                       "result ends with '[truncated: N more bytes ... offset=...]', "
+                       "call again with that offset to read the rest.",
         "parameters": {"type": "object", "properties": {
             "path": {"type": "string"},
-            "max_bytes": {"type": "integer", "description": "default 4000"}},
+            "max_bytes": {"type": "integer", "description": "bytes per read, default 8000"},
+            "offset": {"type": "integer", "description": "byte offset to start at, default 0"}},
             "required": ["path"]},
     }),
     "search_notes": (t_search_notes, {
@@ -212,15 +222,30 @@ def _exec_tool(name: str, args: dict) -> str:
 
 
 # ── the loop ─────────────────────────────────────────────────────────────────
-def _post(messages: list) -> dict:
+def _post(messages: list, retries: int = 4) -> dict:
+    """One round-trip to the MLX server, retrying through the transient 502/503
+    crash/reload window (the same window convey graph analyze retries through)."""
     body = {"messages": messages, "tools": _openai_tools(), "tool_choice": "auto"}
     if MODEL:
         body["model"] = MODEL
-    req = urllib.request.Request(
-        f"{HOST}/v1/chat/completions",
-        data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
-        return json.loads(resp.read().decode())
+    data = json.dumps(body).encode()
+    last = None
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(
+                f"{HOST}/v1/chat/completions", data=data,
+                headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code not in (500, 502, 503, 504):
+                raise
+        except (urllib.error.URLError, ConnectionError) as e:
+            last = e
+        if attempt < retries - 1:
+            time.sleep(2.0 * (attempt + 1))
+    raise last if last else RuntimeError("post failed")
 
 
 def run_loop(task: str, system: str, max_iters: int, trace: bool) -> str:
