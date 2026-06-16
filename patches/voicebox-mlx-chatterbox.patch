@@ -1,0 +1,273 @@
+diff --git a/backend/backends/__init__.py b/backend/backends/__init__.py
+index 2437a87..7e557a8 100644
+--- a/backend/backends/__init__.py
++++ b/backend/backends/__init__.py
+@@ -12,6 +12,7 @@ and a model config registry that eliminates per-engine dispatch maps.
+ # HF_HUB_OFFLINE=1 and on network failures.
+ from ..utils import hf_offline_patch  # noqa: F401
+ 
++import os
+ import threading
+ from dataclasses import dataclass, field
+ from typing import Protocol, Optional, Tuple, List
+@@ -689,9 +690,17 @@ def get_tts_backend_for_engine(engine: str) -> TTSBackend:
+ 
+             backend = LuxTTSBackend()
+         elif engine == "chatterbox":
+-            from .chatterbox_backend import ChatterboxTTSBackend
++            # On Apple-GPU (MLX) platforms, run Chatterbox on Metal via mlx-audio
++            # instead of the CPU-forced PyTorch path. Same clones, same engine name.
++            # Opt out with VOICEBOX_CHATTERBOX_MLX=0.
++            if get_backend_type() == "mlx" and os.environ.get("VOICEBOX_CHATTERBOX_MLX", "1") != "0":
++                from .chatterbox_mlx_backend import ChatterboxMLXTTSBackend
+ 
+-            backend = ChatterboxTTSBackend()
++                backend = ChatterboxMLXTTSBackend()
++            else:
++                from .chatterbox_backend import ChatterboxTTSBackend
++
++                backend = ChatterboxTTSBackend()
+         elif engine == "chatterbox_turbo":
+             from .chatterbox_turbo_backend import ChatterboxTurboTTSBackend
+ 
+diff --git a/backend/services/profiles.py b/backend/services/profiles.py
+index d7d32fa..12e19ab 100644
+--- a/backend/services/profiles.py
++++ b/backend/services/profiles.py
+@@ -578,6 +578,13 @@ async def create_voice_prompt_for_profile(
+ 
+     tts_model = get_tts_backend_for_engine(engine)
+ 
++    # Chatterbox clones from a SHORT single reference (~10-15s). Concatenating
++    # every sample (e.g. 169 samples → ~51 min of audio) garbles MLX-chatterbox
++    # (Whisper coverage ~0.1) and slows the PyTorch path. For chatterbox engines,
++    # use one substantial sample instead of combining all of them.
++    if engine in ("chatterbox", "chatterbox_turbo") and len(samples) > 1:
++        samples = [max(samples, key=lambda s: len(s.reference_text or ""))]
++
+     if len(samples) == 1:
+         sample = samples[0]
+         sample_audio_path = config.resolve_storage_path(sample.audio_path)
+
+# === NEW FILE: backend/backends/chatterbox_mlx_backend.py ===
+diff --git a/backend/backends/chatterbox_mlx_backend.py b/backend/backends/chatterbox_mlx_backend.py
+new file mode 100644
+index 0000000..6a010af
+--- /dev/null
++++ b/backend/backends/chatterbox_mlx_backend.py
+@@ -0,0 +1,215 @@
++"""
++Chatterbox TTS backend — MLX / Apple-GPU implementation.
++
++Drop-in counterpart to chatterbox_backend.py (the PyTorch one, which forces CPU
++on macOS due to MPS tensor issues). This runs the SAME Chatterbox voice clones on
++the Apple GPU via mlx-audio (Metal), using a pre-converted MLX checkpoint
++(mlx-community/chatterbox-fp16 by default).
++
++Why this exists: on macOS the PyTorch Chatterbox path is CPU-only — slow and prone
++to the silent-truncation retry loop. mlx-audio runs Chatterbox on Metal. The one
++gotcha is generation params: mlx-audio's defaults (repetition_penalty=1.2,
++exaggeration=0.1) let the model ramble (48s of audio for one sentence). We mirror
++the PyTorch backend's proven defaults (repetition_penalty=2.0, cfg_weight=0.5,
++temperature=0.8, exaggeration=0.5), which produce clean, correct-length speech.
++
++Implements the same TTSBackend contract (create_voice_prompt / generate /
++load_model / unload_model / is_loaded) so it slots into get_tts_backend_for_engine
++under the "chatterbox" engine name on MLX platforms — existing cloned profiles
++(default_engine="chatterbox") get the GPU automatically, no re-pointing.
++"""
++
++import asyncio
++import logging
++import os
++from pathlib import Path
++from typing import ClassVar, List, Optional, Tuple
++
++import numpy as np
++
++from .base import (
++    combine_voice_prompts as _combine_voice_prompts,
++    is_model_cached,
++    model_load_progress,
++)
++
++logger = logging.getLogger(__name__)
++
++# Pre-converted MLX checkpoint (config.json + model.safetensors in MLX layout).
++# Override with VOICEBOX_CHATTERBOX_MLX_REPO (e.g. a 4bit/8bit quant for less RAM).
++CHATTERBOX_MLX_REPO = os.environ.get(
++    "VOICEBOX_CHATTERBOX_MLX_REPO", "mlx-community/chatterbox-fp16"
++)
++
++# Chatterbox voice cloning wants a SHORT reference clip (~10-15s). voicebox
++# concatenates every profile sample into one prompt — for a 169-sample profile
++# that's ~51 minutes of audio, which the MLX path renders as garbage (Whisper
++# coverage ~0.19). Cap the reference; a single short clip clones cleanly.
++MAX_REF_SECONDS = float(os.environ.get("VOICEBOX_CHATTERBOX_MLX_REF_SECONDS", "15"))
++MAX_REF_TEXT_CHARS = int(os.environ.get("VOICEBOX_CHATTERBOX_MLX_REF_TEXT_CHARS", "350"))
++
++
++class ChatterboxMLXTTSBackend:
++    """Chatterbox voice-cloning TTS on the Apple GPU via mlx-audio."""
++
++    def __init__(self):
++        self.model = None
++        self.model_size = "default"
++        self._model_load_lock = asyncio.Lock()
++
++    def _get_model_path(self, model_size: str = "default") -> str:
++        return CHATTERBOX_MLX_REPO
++
++    def is_loaded(self) -> bool:
++        return self.model is not None
++
++    def _is_model_cached(self, model_size: str = "default") -> bool:
++        # MLX checkpoint layout: config.json + a safetensors weight file.
++        return is_model_cached(CHATTERBOX_MLX_REPO, required_files=["config.json"])
++
++    async def load_model(self, model_size: str = "default") -> None:
++        if self.model is not None:
++            return
++        async with self._model_load_lock:
++            if self.model is not None:
++                return
++            await asyncio.to_thread(self._load_model_sync)
++
++    def _load_model_sync(self):
++        is_cached = self._is_model_cached()
++        with model_load_progress("chatterbox-mlx", is_cached):
++            logger.info(f"Loading Chatterbox (MLX/Metal) from {CHATTERBOX_MLX_REPO}...")
++            from mlx_audio.tts.utils import load_model
++
++            self.model = load_model(CHATTERBOX_MLX_REPO)
++        logger.info("Chatterbox (MLX/Metal) loaded successfully")
++
++    def unload_model(self) -> None:
++        if self.model is not None:
++            del self.model
++            self.model = None
++            try:
++                import mlx.core as mx
++
++                mx.clear_cache()
++            except Exception:
++                pass
++            logger.info("Chatterbox (MLX) unloaded")
++
++    async def create_voice_prompt(
++        self,
++        audio_path: str,
++        reference_text: str,
++        use_cache: bool = True,
++    ) -> Tuple[dict, bool]:
++        """Chatterbox processes the reference audio at generation time, so the
++        prompt just carries the path + text (identical to the PyTorch backend)."""
++        voice_prompt = {"ref_audio": str(audio_path), "ref_text": reference_text}
++        return voice_prompt, False
++
++    async def combine_voice_prompts(
++        self,
++        audio_paths: List[str],
++        reference_texts: List[str],
++    ) -> Tuple[np.ndarray, str]:
++        return await _combine_voice_prompts(audio_paths, reference_texts)
++
++    # Mirror the PyTorch backend's proven generation defaults. The crucial one is
++    # repetition_penalty=2.0 — mlx-audio's default 1.2 lets the model ramble.
++    _LANG_DEFAULTS: ClassVar[dict] = {
++        "he": {
++            "exaggeration": 0.4,
++            "cfg_weight": 0.7,
++            "temperature": 0.65,
++            "repetition_penalty": 2.5,
++        },
++    }
++    _GLOBAL_DEFAULTS: ClassVar[dict] = {
++        "exaggeration": 0.5,
++        "cfg_weight": 0.5,
++        "temperature": 0.8,
++        "repetition_penalty": 2.0,
++    }
++
++    async def generate(
++        self,
++        text: str,
++        voice_prompt: dict,
++        language: str = "en",
++        seed: Optional[int] = None,
++        instruct: Optional[str] = None,
++    ) -> Tuple[np.ndarray, int]:
++        await self.load_model()
++
++        ref_audio = voice_prompt.get("ref_audio")
++        if ref_audio and not Path(ref_audio).exists():
++            logger.warning(f"Reference audio not found: {ref_audio}")
++            ref_audio = None
++        ref_text = (voice_prompt.get("ref_text") or "")[:MAX_REF_TEXT_CHARS]
++
++        params = self._LANG_DEFAULTS.get(language, self._GLOBAL_DEFAULTS)
++
++        def _generate_sync():
++            import tempfile
++
++            if seed is not None:
++                try:
++                    import mlx.core as mx
++
++                    mx.random.seed(int(seed))
++                except Exception:
++                    pass
++
++            # Cap the reference clip — a multi-minute combined prompt garbles MLX.
++            ref_audio_use = ref_audio
++            tmp_ref = None
++            if ref_audio:
++                try:
++                    import soundfile as sf
++
++                    data, sr = sf.read(ref_audio, dtype="float32")
++                    max_frames = int(MAX_REF_SECONDS * sr)
++                    if data.shape[0] > max_frames:
++                        if data.ndim > 1:
++                            data = data[:, 0]
++                        tmp_ref = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
++                        sf.write(tmp_ref.name, data[:max_frames], sr)
++                        ref_audio_use = tmp_ref.name
++                        logger.info(
++                            f"[Chatterbox-MLX] trimmed reference {data.shape[0]/sr:.0f}s -> {MAX_REF_SECONDS:.0f}s"
++                        )
++                except Exception as e:
++                    logger.warning(f"[Chatterbox-MLX] ref trim failed ({e}); using full reference")
++
++            logger.info(f"[Chatterbox-MLX] Generating on Metal: lang={language}")
++
++            chunks: List[np.ndarray] = []
++            sample_rate = 24000
++            try:
++                for result in self.model.generate(
++                    text=text,
++                    ref_audio=ref_audio_use,
++                    ref_text=ref_text,
++                    lang_code=language,
++                    exaggeration=params["exaggeration"],
++                    cfg_weight=params["cfg_weight"],
++                    temperature=params["temperature"],
++                    repetition_penalty=params["repetition_penalty"],
++                    verbose=False,
++                ):
++                    audio = np.asarray(result.audio, dtype=np.float32).squeeze()
++                    if audio.size:
++                        chunks.append(audio)
++                    sample_rate = getattr(result, "sample_rate", None) or sample_rate
++            finally:
++                if tmp_ref is not None:
++                    try:
++                        os.unlink(tmp_ref.name)
++                    except OSError:
++                        pass
++
++            if not chunks:
++                return np.zeros(0, dtype=np.float32), sample_rate
++            return np.concatenate(chunks).astype(np.float32), int(sample_rate)
++
++        return await asyncio.to_thread(_generate_sync)
