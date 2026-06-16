@@ -189,17 +189,6 @@ Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline 
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Read HomePod temperature + humidity from the laptop, live and on demand  —  7 scenarios   (features/homepod-live-climate.feature)
-  - [(no grade)] Default read returns the latest synced reading, offline
-  - [(no grade)] --live polls the sensor directly via the local Shortcut
-  - [(no grade)] --live persists the fresh reading so the default read reflects i
-  - [@built @runtime-untested] --live falls back to the synced file when it can't read live
-  - [(no grade)] /climate in mlx-here surfaces a live reading with zero LLM token
-  - [(no grade)] quit leaves mlx-here, with or without a slash
-  - [@built] `homepod` in the terminal shows the climate (alias repaired)
-  triad: .session✓  transcript✓  RESULT✓
-  honesty: 2/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
-
 image-playground — on-device pictures, locally, as the prose's twin  —  16 scenarios   (features/image-playground.feature)
   - [@built] The CLI generates an image from a prompt
   - [@built] Bare prompt → derived filename, auto-open
