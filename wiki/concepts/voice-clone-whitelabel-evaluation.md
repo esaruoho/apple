@@ -114,8 +114,19 @@ Shims rewired (import → `convey/voices/_shared`; audio_dir → each voice's ex
 render home). `~/bin/{bearden,esa,milton,rob}` → symlinks into the cards. The 4 broken
 `~/.claude/skills/what-would-*-say` symlinks repointed into convey. hyp doc refs updated.
 2.8 GB of renders deliberately left in place. Verified: all 4 shims load + resolve their
-voicebox profile; live esa synth reached generation through the moved chain. Follow-up still
-open: backfill `train_clone.py` + `samples/` for Bearden & Esa (reproducibility hole).
+voicebox profile; live esa synth reached generation through the moved chain.
+
+### Reproducibility backfill — DONE 2026-06-16 (Bearden + Esa), convey `2d6aa93`
+Closed the hole. Each of Bearden (416 samples) and Esa (169) now carries, git-tracked:
+`creation.yaml` (UUID, source, engine, dates + master path/sha256 + rebuild commands) and
+`samples/transcripts.jsonl` (every training sample's reference text, exported live from the
+voicebox `/profiles/{id}/samples` API) + `samples/README.md`. The re-importable binary
+masters (`/profiles/{id}/export` → `.voicebox.zip`: Bearden 388 MB/416 wavs, Esa 111 MB/169
+wavs) were integrity-verified and stored in each voice's out-of-git render home
+(`merlib-dump/audio/bearden/masters/`, `esa-voice/masters/`), sha256 in creation.yaml.
+Still open: (a) a DURABLE backup home for the ~500 MB of masters (git-lfs declined; same
+mediabank-style question as OCR outputs); (b) same backfill for erickson/rob if wanted
+(their voicebox audio corpus also lives only in voicebox).
 
 ### Original plan (copy → verify → symlink-back) — superseded by the move-no-symlinks choice
 ```
