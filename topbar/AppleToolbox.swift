@@ -3762,6 +3762,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return root
     }
 
+    /// Discover fleet peers from the Machine Cards in the Syncthing queue (the
+    /// same source Fleet reads), one VIEW row each that runs
+    /// `fleet-files screen <id>`. Excludes self and the heartbeat/probe sidecar
+    /// JSONs. No JSON parse needed — the id is the filename.
+    func screenShareItems() -> [NSMenuItem] {
+        let queue = "\(HOME)/work/comms/queue"
+        let me = (ProcessInfo.processInfo.hostName.components(separatedBy: ".").first ?? "").lowercased()
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: queue)) ?? []
+        var ids: [String] = []
+        for f in files where f.hasPrefix("machine-card-") && f.hasSuffix(".json") {
+            let id = String(f.dropFirst("machine-card-".count).dropLast(".json".count))
+            if id.contains("heartbeat") || id.contains("probe") || id.contains("publish") { continue }
+            if id.lowercased() == me { continue }
+            ids.append(id)
+        }
+        if ids.isEmpty {
+            return [NSMenuItem(title: "(no peers found)", action: nil, keyEquivalent: "")]
+        }
+        return ids.sorted().map {
+            action("VIEW \($0)", cmd: "\(APPLE_DIR)/bin/fleet-files", args: ["screen", $0])
+        }
+    }
+
     func submenu(_ title: String, items: [NSMenuItem]) -> NSMenuItem {
         let root = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let sub = NSMenu()
@@ -4144,6 +4167,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             action("🫥 Show Hidden Files", cmd: "\(TOPBAR)/scripts/show-hidden.sh"),
             action("🙈 Hide Hidden Files", cmd: "\(TOPBAR)/scripts/hide-hidden.sh"),
         ]))
+
+        // Screen Share submenu — one-click VIEW (Screen Sharing/VNC) to any
+        // fleet peer. fleet-files sets up the ssh -L hop through the Mini for
+        // LAN-only Macs, or opens vnc://<host> directly for reachable ones.
+        menu.addItem(submenu("🖥 Screen Share", items: screenShareItems()))
 
         // Tags submenu — Finder tag helpers acting on the current Finder selection
         menu.addItem(submenu("🏷 Tags", items: [

@@ -213,6 +213,7 @@ enum CardSource {
     static let panelBin = "\(FleetConfig.binDir)/apple-panel"
     static let nudgeBin = "\(FleetConfig.binDir)/syncthing-nudge"
     static let eppcBin = "\(FleetConfig.binDir)/eppc-probe"
+    static let fleetFilesBin = "\(FleetConfig.binDir)/fleet-files"
     static let queue = FleetConfig.queueDir
 
     /// The curated eppc probe registry (machine-agnostic), loaded once.
@@ -611,6 +612,22 @@ final class FleetModel: ObservableObject {
         }
     }
 
+    /// VIEW — open a Screen Sharing session to a peer. Fire-and-forget so the
+    /// UI never blocks (fleet-files may Wake-on-LAN the peer, up to ~90s):
+    /// fleet-files sets up the ssh -L hop through the Mini for LAN-only Macs,
+    /// or opens vnc://<host> directly for Tailscale-reachable ones.
+    func screenShare(on card: Card) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        p.arguments = ["python3", CardSource.fleetFilesBin, "screen", card.id]
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch {
+            flash("⚠️ VIEW failed: \(error.localizedDescription)"); return
+        }
+        flash("🖥 Opening Screen Sharing → \(card.identity?.computer_name ?? card.id)…")
+    }
+
     func route(skill: Skill, on card: Card) {
         guard let inbox = skill.inbox else { return }
         let panel = NSOpenPanel()
@@ -823,6 +840,16 @@ struct CardView: View {
                     Text(card.identity?.computer_name ?? card.id)
                         .font(.title3).bold()
                     Text(originLabel).font(.caption2).foregroundColor(.secondary)
+                }
+                // VIEW — one-click Screen Sharing to this peer (not to self).
+                if card.origin != .local {
+                    Spacer()
+                    Button { model.screenShare(on: card) } label: {
+                        Label("VIEW", systemImage: "display")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .help("Open Screen Sharing to \(card.identity?.computer_name ?? card.id)")
                 }
             }
             Divider()

@@ -53,12 +53,22 @@ def target(peer):
     return f'{peer["user"]}@{peer["host"]}'
 
 
-def resolve(name):
-    if name in PEERS:
-        return PEERS[name]
-    for p in PEERS.values():          # also accept the friendly alias
-        if p.get("alias") == name:
+def find_peer(name):
+    # Case-insensitive across the PEERS key, the friendly alias, AND the host
+    # field, so callers can pass any of them — including a Machine Card's `id`
+    # (e.g. "HertsiMacPro") straight from Fleet/AppleToolbox without lowercasing.
+    # Returns None when the name isn't a known LAN-bridge peer.
+    n = name.lower()
+    for key, p in PEERS.items():
+        if n in (key.lower(), p.get("alias", "").lower(), p.get("host", "").lower()):
             return p
+    return None
+
+
+def resolve(name):
+    p = find_peer(name)
+    if p:
+        return p
     known = ", ".join(sorted({*PEERS, *(p.get("alias", "") for p in PEERS.values())}))
     print(f"  unknown peer '{name}' (known: {known})", file=sys.stderr)
     sys.exit(2)
@@ -270,6 +280,16 @@ def cmd_tunnel(args):
     if args.stop:
         subprocess.run(["pkill", "-f", f"ssh -f -N -L {lport}:"], capture_output=True)
         print(f"  ✓ stopped {label} tunnel"); return 0
+    # Not a LAN-bridge Mac → directly reachable (Tailscale / same LAN). Skip the
+    # tunnel and point the viewer straight at the hostname. Lets a single VIEW
+    # action work for every peer: bridge Macs get the ssh -L hop, the rest open
+    # vnc://<host> / smb://<host> directly.
+    if find_peer(name) is None:
+        url = f"{scheme}://{name}"
+        print(f"  ✓ {label} (direct): {url}")
+        if not args.no_open:
+            subprocess.run(["open", url])
+        return 0
     ip, up = _peer_ip(name)
     if not up and not args.no_wake:
         if _wake_via_mini(resolve(name)["host"]):
