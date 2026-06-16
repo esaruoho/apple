@@ -294,7 +294,7 @@ def _feature_lines(query: str, roots, cap: int = 2200) -> str:
     ranked by how many query terms they contain. This is what makes "does Paketti
     have pattern length?" answer correctly — the keybindings live in .txt/.lua, not
     the .md docs the lexical retriever reads."""
-    terms = {t for t in re.split(r"[^a-z0-9]+", (query or "").lower()) if len(t) > 2}
+    terms = _expand(_query_terms(query))
     if not terms:
         return ""
     scored, seen = [], set()
@@ -325,14 +325,87 @@ def _feature_lines(query: str, roots, cap: int = 2200) -> str:
     return "\n".join(out)
 
 
+# Domain synonyms so the user's word reaches the code's word (Renoise/tracker
+# vocab): "resize" never appears in code that says "length". Bridges the gap.
+_SYNONYMS = {
+    "resize": ["length", "lines", "size", "rows", "expand", "shrink", "longer", "shorter"],
+    "length": ["lines", "size", "rows"], "size": ["length", "lines", "rows"],
+    "tempo": ["bpm"], "speed": ["bpm", "lpb", "tempo"], "bpm": ["bpm", "tempo"],
+    "sample": ["instrument", "slice", "wav"], "render": ["wav", "bounce", "export"],
+    "midi": ["mapping", "cc", "controller"], "shortcut": ["keybinding"],
+    "fill": ["interpolate", "write"], "double": ["doubler"], "halve": ["halver"],
+}
+
+
+# Stopwords + the project name (matches everything) — excluded from ranking.
+_STOP = {"can", "the", "and", "for", "with", "you", "your", "how", "does", "did",
+         "has", "have", "what", "where", "when", "why", "which", "this", "that",
+         "there", "are", "any", "use", "using", "make", "made", "paketti", "renoise",
+         "able", "want", "need", "way", "system", "feature", "features", "tool"}
+
+
+def _query_terms(query: str) -> set:
+    return {t for t in re.split(r"[^a-z0-9]+", (query or "").lower())
+            if len(t) > 2 and t not in _STOP}
+
+
+def _expand(terms: set) -> set:
+    out = set(terms)
+    for t in list(terms):
+        out.update(_SYNONYMS.get(t, []))
+    return out
+
+
+def _source_grep(query: str, roots, cap: int = 2400, top: int = 5, max_funcs: int = 24) -> str:
+    """The CODEBASE view. Ranks source files by query (+ domain synonyms) over the
+    FILENAME and the CONTENT, then lists each winner's functions and keybinding/menu
+    registrations — so the bot sees the dialog / relative-adjust / arbitrary-length
+    code (the real implementation), not just the fixed shortcuts in the manifest."""
+    base = _query_terms(query)
+    if not base:
+        return ""
+    terms = _expand(base)
+    func_re = re.compile(r"^\s*(?:local\s+)?function\s+[\w:.]+|add_keybinding|add_menu_entry|add_midi_mapping")
+    scored = []
+    for root in roots:
+        for fp in Path(root).rglob("*.lua"):
+            try:
+                txt = fp.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+            low = txt.lower()
+            name_low = fp.name.lower()
+            # Filename match DOMINATES (PakettiPatternLength.lua is literally about
+            # pattern length); content frequency is only a tiebreak, so a big general
+            # file can't bury the focused one.
+            name_hits = sum(1 for t in terms if t in name_low)
+            content = sum(min(low.count(t), 6) for t in terms)
+            score = name_hits * 100 + min(content, 30)
+            if score:
+                scored.append((score, fp, txt))
+    scored.sort(key=lambda x: -x[0])
+    out, total = [], 0
+    for _s, fp, txt in scored[:top]:
+        defs = [ln.strip()[:150] for ln in txt.splitlines() if func_re.match(ln)]
+        if not defs:
+            continue
+        block = (f"{fp.name} — functions & registrations (the actual code):\n"
+                 + "\n".join("  · " + d for d in defs[:max_funcs]))
+        if total + len(block) > cap:
+            break
+        out.append(block)
+        total += len(block)
+    return "\n\n".join(out)
+
+
 def retrieve_context(query: str, cap: int = 2400) -> str:
     """Per-turn: the passages most relevant to `query`. For Apple, the wiki content
-    subdirs; for any project skill, the keybinding/feature MANIFESTS first (ground
-    truth) then the project's .md docs. '' if nothing matched."""
+    subdirs; for any project skill, the keybinding MANIFESTS + the actual CODEBASE
+    (matching .lua functions) first (ground truth), then the project's .md docs."""
     skill = _ACTIVE or detect_skill(os.getcwd())
     blocks, total = [], 0
 
-    # Project skills: lead with the authoritative feature/keybinding lines.
+    # Project skills: lead with authoritative keybindings AND the real code.
     if not skill.get("is_apple", True):
         roots = skill.get("corpus") or [skill["root"]]
         feat = _feature_lines(query, roots)
@@ -340,9 +413,15 @@ def retrieve_context(query: str, cap: int = 2400) -> str:
             blocks.append("EXACT FEATURES / KEYBINDINGS (authoritative — answer FROM "
                           "these; a feature's absence from the prose below does NOT "
                           "mean it doesn't exist):")
-            for line in feat.splitlines():
-                blocks.append(line)
-                total += len(line)
+            blocks.append(feat)
+            total += len(feat)
+        src = _source_grep(query, roots)
+        if src:
+            blocks.append("\nSOURCE CODE (the actual implementation — these functions "
+                          "exist; describe what they do, e.g. a dialog or relative "
+                          "adjust is MORE than the fixed shortcuts):")
+            blocks.append(src)
+            total += len(src)
         corpora = [(d, 6) for d in roots]
     else:
         corpora = [(WIKI / sub, k) for sub, k in _CORPORA]

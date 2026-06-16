@@ -17,6 +17,15 @@ import paketti_faq as F  # noqa: E402
 GREEN, DIM, YELLOW, RESET = "\033[32m", "\033[2m", "\033[33m", "\033[0m"
 
 
+def _render(answer: str) -> str:
+    """Richtext: the answer is Markdown, so render it (bold/headings/code) on a TTY."""
+    try:
+        from fm_render import md_to_ansi
+        return md_to_ansi(answer) if sys.stdout.isatty() else answer
+    except Exception:
+        return answer
+
+
 def main() -> int:
     args = sys.argv[1:]
     n = 3
@@ -43,9 +52,8 @@ def main() -> int:
             continue
         e = F.new_entry(q, ans)
         F.add(e)
-        preview = ans.replace("\n", " ")[:160]
-        cites = ", ".join(e["citations"][:4]) or "—"
-        print(f"{DIM}  → {preview}…{RESET}")
+        cites = ", ".join(e["citations"][:6]) or "—"
+        print(_render(ans))
         print(f"{DIM}  cites: {cites}  ·  id {e['id']}  ·  status unvetted{RESET}\n")
 
     print(f"{GREEN}Done.{RESET} {DIM}Now: `paketti-faq-rate` to certify them.{RESET}")
