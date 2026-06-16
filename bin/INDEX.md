@@ -1,4 +1,4 @@
-# CLI Tools Index — 251 tools in bin/
+# CLI Tools Index — 247 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -106,7 +106,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fm-mlx` — ask the CloudcityMacMini's MLX server (Qwen3-4B) over Tailscale. — `bin/fm-mlx`
 `fm-submit` — (no description) — `bin/fm-submit`
 `fm-worker` — (no description) — `bin/fm-worker`
-`folder-memory` — (no description) — `bin/folder-memory`
 `folder-wordcloud` — bounded word-cloud for a folder, backing the "Word Cloud" — `bin/folder-wordcloud`
 `gdrive` — submit a Google Drive download to PakettiBot from any terminal. — `bin/gdrive`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
@@ -145,14 +144,11 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
-`mlx` — (no description) — `bin/mlx`
 `mlx-agent` — (no description) — `bin/mlx-agent`
 `mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
 `mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-here`
-`mlx-relay` — (no description) — `bin/mlx-relay`
 `morning-digest` — (no description) — `bin/morning-digest`
-`musicmouse` — launch Laurie Spiegel's 1989 Music Mouse inside Mini vMac — `bin/musicmouse`
 `ner-graph` — (no description) — `bin/ner-graph`
 `ner-graph-svg` — (no description) — `bin/ner-graph-svg`
 `notify-iphone` — (no description) — `bin/notify-iphone`
