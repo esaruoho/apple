@@ -41,6 +41,13 @@ The concrete plan (reuse the Hertsi mechanism; only the transport changes):
 - **XP — screen (VIEW):** **VNC server on XP** (UltraVNC/TightVNC) → forward 5900 through the Mini, identical to Hertsi's `fleet-files screen`. RDP (3389) works only if it's XP **Pro**; XP **Home** has no RDP server → use VNC.
 - **DOS PC — indirect, through a share:** no SSH/VNC server exists for DOS. It maps a **network share** (hosted on XP or a NAS) as a drive letter. Reach it by writing into that share via the XP/SSH path → the DOS box sees the files on its mapped drive. A "compile-on-XP, drop the artifact into the DOS share" loop is the realistic shape.
 
+**Security posture — XP stays OFFLINE while on the LAN (decided default).** The Mini reaches XP over the *local subnet only*, so XP needs no internet at all. Same-subnet traffic uses no gateway; the default gateway is consulted only for destinations outside the LAN. Therefore:
+- Give XP a **static LAN IP with the default gateway left BLANK** (e.g. `192.168.32.50/24`, gateway empty, DNS empty, IP outside the DHCP pool). XP can then talk to the Mini (`.101`) and the DOS share, but has **no route to the internet** — offline, yet fully LAN-reachable, so `RayMac → Tailscale → Mini → XP` still works end-to-end.
+- **DOS ↔ XP is untouched** by this (purely local, same subnet, never used a gateway).
+- Behind the router's **NAT**, XP was never inbound-reachable from the internet anyway; the danger is only outbound/UPnP. Belt-and-suspenders: **block XP's MAC from WAN** at the router and **disable UPnP**.
+- Residual risk is *lateral* (a compromised LAN peer), not internet: keep XP's **Windows Firewall on, scoped to allow only the Mini's IP** to its SSH/SMB/VNC ports.
+- Principle: **the Mini is XP's only uplink** — XP speaks to the LAN, the Mini speaks to the world, you ride through the Mini. Never port-forward XP; never give it a gateway.
+
 **Open questions to settle by a read-only probe** (do this FIRST, before installing anything — once XP is on the hub, from the Mini: ping, find its IP, port-scan 22/445/3389/5900): is it XP **Pro or Home** (decides RDP), and is SMB1 on? Probe `machine-card-probe.sh`-style (static IP, mDNS-independent) and surface a card; the Mini *probes and publishes on its behalf*, a shown node not a worker.
 
 None of this is built yet — hoped-for extension. Reuse `machine-card-probe.sh` + the `fleet-files` relay, not a new mechanism.
