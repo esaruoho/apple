@@ -38,6 +38,60 @@ enum BoxKind: String {
     }
 }
 
+/// A typed bond read from a file's co-located `<name>.molecule.json` sidecar (convey's
+/// molecule format). A processing RESULT is a bond: research.pdf --produces--> research.txt.
+/// This is the bet made visible — the metadata that travelled WITH the file, now seen.
+struct Bond: Decodable, Hashable {
+    let to: String
+    let kind: String            // part_of | produces | derived_from | associated_with | references
+    let targetPath: String
+    let note: String?
+    enum CodingKeys: String, CodingKey { case to, kind, note; case targetPath = "target_path" }
+
+    /// An ONLINE edge: target is a URL, not a filesystem path (kind "references").
+    var isURL: Bool { targetPath.hasPrefix("http://") || targetPath.hasPrefix("https://") }
+
+    /// Direction glyph: → produces, ← derived_from, ⊂ part_of, ↔ associated_with, ↗ references(url).
+    var arrow: String {
+        switch kind {
+        case "produces":        return "→"
+        case "derived_from":    return "←"
+        case "part_of":         return "⊂"
+        case "associated_with": return "↔"
+        case "references":      return "↗"
+        default:                return "·"
+        }
+    }
+    /// Menu label tail: a file's basename, or a URL's host (so an online edge reads cleanly).
+    var targetName: String {
+        if isURL { return URL(string: targetPath)?.host ?? targetPath }
+        return (targetPath as NSString).lastPathComponent
+    }
+    /// A URL edge is always "live" (we can't filestat it); a file edge must exist on disk.
+    var exists: Bool { isURL || FileManager.default.fileExists(atPath: targetPath) }
+}
+
+/// The shape of a `<name>.molecule.json` sidecar — we only need its bonds.
+private struct MoleculeSidecar: Decodable { let bonds: [Bond] }
+
+private let _imageExts: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "heif", "tiff", "tif", "bmp", "webp"]
+
+/// A downscaled thumbnail of an image file, so an image box SHOWS the image (a
+/// wordcloud.png box is the wordcloud). nil for non-images → caller uses the Finder icon.
+private func imageThumb(_ url: URL) -> NSImage? {
+    guard _imageExts.contains(url.pathExtension.lowercased()),
+          let img = NSImage(contentsOf: url), img.size.width > 0, img.size.height > 0 else { return nil }
+    let maxDim: CGFloat = 128                       // keep a folder of big images light
+    let s = img.size
+    let scale = min(maxDim / s.width, maxDim / s.height, 1)
+    let t = NSSize(width: s.width * scale, height: s.height * scale)
+    let thumb = NSImage(size: t)
+    thumb.lockFocus()
+    img.draw(in: NSRect(origin: .zero, size: t))
+    thumb.unlockFocus()
+    return thumb
+}
+
 /// One box on the screen. Generic on purpose — a filee, a repo, a skill and a peer are
 /// all just (icon, title, subtitle, kind, action, links). Today we fill it from the
 /// filesystem; tomorrow from git, from skills/, from the fleet.
@@ -48,7 +102,8 @@ struct BoxItem: Identifiable {
     let subtitle: String    // shown small under the title
     let kind: BoxKind
     let icon: NSImage?      // real Finder icon for files; nil → SF Symbol fallback
-    var links: [URL] = []   // local↔online edges — the "connected data" seed (@designed)
+    var bonds: [Bond] = []  // typed edges from <name>.molecule.json — the bet, made visible
+    var links: [URL] = []   // local↔online edges — derived from bonds' target paths
 }
 
 /// Boots into a folder, lists it as boxes, lets you walk in/up, and tracks a keyboard
@@ -114,9 +169,21 @@ final class FolderModel: ObservableObject {
             } else {
                 sub = vals?.localizedTypeDescription ?? "file"
             }
+            // The bet: read the molecule sidecar sitting BESIDE this box. `convey molecule`
+            // wrote `<name>.molecule.json` next to the file; we just look down and see it.
+            var bonds: [Bond] = []
+            let sidecar = URL(fileURLWithPath: url.path + ".molecule.json")
+            if let data = try? Data(contentsOf: sidecar),
+               let mol = try? JSONDecoder().decode(MoleculeSidecar.self, from: data) {
+                bonds = mol.bonds
+            }
+            // An IMAGE box shows the image itself (a wordcloud.png box IS the wordcloud),
+            // not a generic file-type icon. Falls back to the Finder icon otherwise.
             return BoxItem(id: url.path, url: url, title: url.lastPathComponent,
                            subtitle: sub, kind: kind,
-                           icon: ws.icon(forFile: url.path))
+                           icon: imageThumb(url) ?? ws.icon(forFile: url.path),
+                           bonds: bonds,
+                           links: bonds.map { URL(fileURLWithPath: $0.targetPath) })
         }
         items = mapped.sorted {
             if ($0.kind == .file) != ($1.kind == .file) { return $0.kind != .file }
@@ -126,6 +193,23 @@ final class FolderModel: ObservableObject {
         // else select the first box so the keyboard highlight has a starting point.
         if let k = selection, items.contains(where: { $0.id == k }) { /* keep */ }
         else { selection = items.first?.id }
+
+        // auto-convey: armed folder → CHEAP molecule for files that just ARRIVED. We only
+        // fire on a reload of the SAME folder (knownIdsDir == dir.path), so opening a
+        // populated armed folder seeds quietly without molecule-ing everything at once.
+        autoConvey = fm.fileExists(atPath: dir.appendingPathComponent(autoMarkerName).path)
+        if autoConvey && knownIdsDir == dir.path {
+            for box in items where !knownIds.contains(box.id)
+                && box.kind == .file
+                && box.bonds.isEmpty
+                && !box.title.hasSuffix(".molecule.json")
+                && !conveyingIds.contains(box.id) {
+                quietConvey(box.id)
+            }
+        }
+        knownIds = Set(items.map { $0.id })
+        knownIdsDir = dir.path
+
         watchDir()   // (re)arm the live watcher on the folder now shown
     }
 
@@ -165,6 +249,21 @@ final class FolderModel: ObservableObject {
         } else {
             NSWorkspace.shared.open(url)   // a filee opens in its default app
         }
+    }
+
+    /// Follow a molecule bond to its target: walk INTO a bonded folder, or REVEAL a bonded
+    /// file in Finder. Dead targets (the source got moved/deleted) are no-ops — the widget
+    /// greys them out, so this only fires on live edges.
+    func goToBond(_ bond: Bond) {
+        if bond.isURL {                                                   // ONLINE edge → open in browser
+            if let u = URL(string: bond.targetPath) { NSWorkspace.shared.open(u) }
+            return
+        }
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: bond.targetPath, isDirectory: &isDir) else { return }
+        let url = URL(fileURLWithPath: bond.targetPath)
+        if isDir.boolValue { dir = url; load() }                          // enter the bonded folder
+        else { NSWorkspace.shared.activateFileViewerSelecting([url]) }     // reveal the bonded file
     }
 
     /// Open whatever the keyboard selection points at (Return key).
@@ -226,21 +325,24 @@ final class FolderModel: ObservableObject {
         }
     }
 
-    // ── do something with a file, using convey ──────────────────────────────────
-    // The box's widget runs a convey verb on the file and shows the output in a sheet.
+    // ── do something with a box, using convey + friends ─────────────────────────
+    // The box's widget runs a verb and shows the output in a sheet.
     private let conveyBin = "/Users/esaruoho/work/apple/bin/convey"
     private let conveyCwd = "/Users/esaruoho/work/convey"   // so `belt --spec media.filerule` resolves
+    private let folderMemoryBin = "/Users/esaruoho/work/apple/bin/folder-memory"
 
-    func runConvey(_ args: [String], title: String) {
+    /// Run any executable, capture stdout+stderr into the sheet, then reload (a verb may
+    /// have produced files — OCR .txt, .molecule.json, .memory.md — show them now).
+    func runProcess(_ exec: String, _ args: [String], cwd: String, title: String) {
         conveyTitle = title
         conveyOutput = ""          // non-nil → sheet appears immediately
         conveyRunning = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             let p = Process()
-            p.executableURL = URL(fileURLWithPath: self.conveyBin)
+            p.executableURL = URL(fileURLWithPath: exec)
             p.arguments = args
-            p.currentDirectoryURL = URL(fileURLWithPath: self.conveyCwd)
+            p.currentDirectoryURL = URL(fileURLWithPath: cwd)
             let pipe = Pipe()
             p.standardOutput = pipe; p.standardError = pipe
             var text = ""
@@ -250,13 +352,96 @@ final class FolderModel: ObservableObject {
                 p.waitUntilExit()
                 text = String(data: data, encoding: .utf8) ?? ""
             } catch {
-                text = "couldn't run convey: \(error.localizedDescription)"
+                text = "couldn't run \((exec as NSString).lastPathComponent): \(error.localizedDescription)"
             }
             DispatchQueue.main.async {
                 self.conveyOutput = text.isEmpty ? "(no output)" : text
                 self.conveyRunning = false
-                self.load()   // a verb may have produced files (OCR .txt, .molecule.json) → show them now
+                self.load()
             }
+        }
+    }
+
+    func runConvey(_ args: [String], title: String) {
+        runProcess(conveyBin, args, cwd: conveyCwd, title: title)
+    }
+
+    /// Prompt for a URL, then `convey molecule <file> --from-url <url>` — the ONLINE half of
+    /// the local↔online edge (a transcript ← its YouTube video). The resulting bond's target
+    /// IS the URL, so its Bonds-menu row opens in the browser.
+    func linkURL(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let alert = NSAlert()
+        alert.messageText = "Link \(box.title) to an online source"
+        alert.informativeText = "A URL this file references (e.g. the video it came from):"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
+        field.placeholderString = "https://…"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Link"); alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty {
+            runConvey(["molecule", url.path, "--from-url", field.stringValue],
+                      title: "molecule --from-url · \(box.title)")
+        }
+    }
+
+    // ── folder memory: give a folder a voice (folder-memory triad) ───────────────
+    func buildFolderMemory(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        runProcess(folderMemoryBin, [url.path], cwd: conveyCwd, title: "folder-memory · \(box.title)")
+    }
+    func showFolderMemory(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let mem = url.appendingPathComponent(".memory.md")
+        if FileManager.default.fileExists(atPath: mem.path) { NSWorkspace.shared.open(mem) }
+        else { buildFolderMemory(box) }   // none yet → build it
+    }
+    /// Open Terminal in the folder running `mlx-here` — standing in the folder arms its
+    /// governing skill; this is the interactive "talk to it" the capture-sheet can't host.
+    func talkToFolder(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        let src = "tell application \"Terminal\"\ndo script \"cd \\\"\(url.path)\\\" && mlx-here\"\nactivate\nend tell"
+        NSAppleScript(source: src)?.executeAndReturnError(nil)
+    }
+
+    // ── rung 3: open a repo box into its commits ─────────────────────────────────
+    func showCommits(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        runProcess("/usr/bin/git", ["-C", url.path, "log", "--oneline", "--decorate", "-40"],
+                   cwd: url.path, title: "git log · \(box.title)")
+    }
+
+    // ── auto-convey: a folder armed to molecule new files as they LAND ───────────
+    // SAFE by design: auto-runs only the CHEAP `convey molecule --json` (writes a sidecar,
+    // no OCR, no CPU burn). The heavy belt --run stays manual. Marker: `.filee-autoconvey`.
+    @Published var autoConvey = false
+    private var knownIds: Set<String> = []
+    private var knownIdsDir = ""
+    private var conveyingIds: Set<String> = []
+    private let autoMarkerName = ".filee-autoconvey"
+
+    func toggleAutoConvey() {
+        let marker = dir.appendingPathComponent(autoMarkerName)
+        if autoConvey { try? FileManager.default.removeItem(at: marker) }
+        else {
+            FileManager.default.createFile(atPath: marker.path,
+                contents: Data("filee auto-convey: new files here get `convey molecule --json` (cheap; no OCR).\n".utf8))
+        }
+        load()
+    }
+
+    /// Background `convey molecule --json` with NO sheet — used by auto-convey. Loop-free:
+    /// it gives the file a sidecar, after which the file has bonds and is no longer "fresh".
+    private func quietConvey(_ id: String) {
+        conveyingIds.insert(id)
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: self.conveyBin)
+            p.arguments = ["molecule", id, "--json"]
+            p.currentDirectoryURL = URL(fileURLWithPath: self.conveyCwd)
+            p.standardOutput = Pipe(); p.standardError = Pipe()
+            try? p.run(); p.waitUntilExit()
+            DispatchQueue.main.async { self.conveyingIds.remove(id); self.load() }
         }
     }
 
@@ -339,6 +524,13 @@ struct FileeView: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1).truncationMode(.head)
             Spacer()
+            Button { model.toggleAutoConvey() } label: {
+                Image(systemName: model.autoConvey ? "bolt.fill" : "bolt.slash")
+                    .foregroundColor(model.autoConvey ? .accentColor : .secondary)
+            }.buttonStyle(.borderless)
+             .help(model.autoConvey
+                ? "Auto-convey ON: new files here auto-get `convey molecule --json` (cheap, no OCR). Click to disarm."
+                : "Auto-convey OFF: arm this folder so new files auto-grow their molecule.")
             Button { model.toggleHidden() } label: {
                 Image(systemName: model.showHidden ? "eye" : "eye.slash")
             }.buttonStyle(.borderless).help("Show hidden files")
@@ -375,9 +567,30 @@ struct FileeView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(box.url?.path ?? box.id, forType: .string)
         }
+        // The connected-data thesis, no longer @designed: this file's molecule bonds, each a
+        // row you can follow. → produces, ← derived_from, ⊂ part_of, ↔ associated_with.
+        if !box.bonds.isEmpty {
+            Divider()
+            Menu("⋈ Bonds (\(box.bonds.count))") {
+                ForEach(box.bonds, id: \.self) { bond in
+                    Button("\(bond.arrow) \(bond.kind) · \(bond.targetName)") {
+                        model.goToBond(bond)
+                    }
+                    .disabled(!bond.exists)   // grey out edges whose target is gone
+                }
+            }
+        }
         Divider()
-        // Do something with this filee, using convey.
+        // Do something with this box.
         if box.kind == .folder || box.kind == .repo {
+            if box.kind == .repo {                                  // rung 3: the repo's interior
+                Button("Show commits (git log)") { model.showCommits(box) }
+            }
+            Menu("Folder memory") {                                 // give the folder a voice
+                Button("Build / refresh (.memory.md)") { model.buildFolderMemory(box) }
+                Button("Show .memory.md") { model.showFolderMemory(box) }
+                Button("Talk to this folder (Terminal)") { model.talkToFolder(box) }
+            }
             Button("convey changed") {
                 model.runConvey(["changed", box.url?.path ?? "", "--no-html"],
                                 title: "convey changed · \(box.title)")
@@ -387,6 +600,7 @@ struct FileeView: View {
                 model.runConvey(["molecule", box.url?.path ?? box.id],
                                 title: "convey molecule · \(box.title)")
             }
+            Button("Link to URL… (online edge)") { model.linkURL(box) }
             Button("convey ask…") { model.askConvey(box) }
             Button("convey belt (plan)") {
                 model.runConvey(["belt", box.url?.path ?? box.id],
@@ -470,6 +684,17 @@ struct BoxView: View {
         .overlay(RoundedRectangle(cornerRadius: 10)
             .stroke(selected ? Color.accentColor : Color(NSColor.separatorColor),
                     lineWidth: selected ? 2 : 0.5))
+        // The bet, seen: a box that carries molecule bonds wears a ⋈ count chip.
+        .overlay(alignment: .topTrailing) {
+            if !box.bonds.isEmpty {
+                Text("⋈ \(box.bonds.count)")
+                    .font(.system(size: 9, weight: .semibold))
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Capsule().fill(Color.accentColor.opacity(0.85)))
+                    .foregroundColor(.white)
+                    .padding(5)
+            }
+        }
         .help(box.url?.path ?? box.title)
     }
 }

@@ -9,25 +9,31 @@
 #               navigation, open/reveal. MUST NOT touch — the convey CLI, the Mini
 #               factory, Fleet.app's peer logic.
 #
-# RESULT (as of 2026-06-15)
+# RESULT (as of 2026-06-16)
 #   Files     : apple/filee/Filee.swift, apple/filee/build.sh, apple/bin/filee (launcher).
-#               Renamed from Boxes.* this session. Built: Filee.app (signed).
-#   Delivery  : working tree, UNCOMMITTED (awaiting Esa's "commit"). apple repo.
-#   Verified  : 820x600 window confirmed live via CGWindowListCopyWindowInfo +
-#               screencapture -l <windowID>: ~/work/convey rendered as 85 file/folder
-#               boxes (folders first, git repos badged "git repo · N items"), footer
-#               "file → repo → skill → machine · same box, bigger noun". Arrow-key nav
-#               verified: → moved the highlight from box 0 to box 1 (before/after shots).
+#               Built: Filee.app (signed, 456K). Convey side: convey/molecule.py mark_from_url()
+#               + cli.py `molecule --from-url URL` (the online `references` bond).
+#   Delivery  : working tree, UNCOMMITTED (awaiting Esa's "commit"). apple + convey repos.
+#   Verified  : (orig) 820x600 window live; ~/work/convey as file/folder boxes; arrow-key nav.
+#               (bonds) /tmp/filee-demo — research.pdf & research.txt wear "⋈ N" chips.
+#               (auto-convey) LIVE through the running app 2026-06-16: dropped a file into an
+#               armed folder → its .molecule.json appeared in ~1s (cheap molecule --json only).
+#               (url-bond) convey molecule --from-url → `references` bond persisted + reloaded.
+#               Render of url rows + folder-memory/commits sheets are code-verified (Spaces +
+#               context-menu make headless screenshots unreliable; argv/data all verified).
 #
 # THE LADDER (same box primitive, bigger noun each rung)
 #   rung 1  file   ← THIS CARD (@built @verified)
 #   rung 2  folder ← THIS CARD (@built @verified — folders are boxes you enter)
-#   rung 3  repo   (@built-partial — a .git folder gets BoxKind.repo + badge + "git repo"
-#                   subtitle, verified on ~/work; the repo-INTERNAL commits/gates view is @todo)
-#   rung 4  skill+memory (@designed — BoxKind.skill present; reader TODO)
+#   rung 3  repo   (@built — BoxKind.repo + badge + "git repo" subtitle + "Show commits"
+#                   widget (git log → sheet); richer commits/gates/architecture view still @todo)
+#   rung 4  skill+memory (@built-seed — folder box "Folder memory" widget: build/show .memory.md
+#                   + "Talk to this folder" (mlx-here in Terminal); BoxKind.skill reader still @todo)
 #   rung 5  machine (@built ELSEWHERE — Fleet.app already renders peers-as-boxes)
-#   edges   local↔online "connected data" (@designed — BoxItem.links field present, unused)
-#   auto    smart-folder-that-conveys (@designed — see Filee.session.md "Finder-level")
+#   edges   molecule bonds (@built @verified — load() decodes <name>.molecule.json → ⋈ chip +
+#                   Bonds▸ submenu navigates target_path/opens URLs; LOCAL + ONLINE (references) edges)
+#   auto    smart-folder-that-conveys (@built @verified — ⚡ arm → new files auto-get molecule --json,
+#                   live-tested; OCR/belt stays manual. Saved-query smart folder still @todo)
 
 Feature: A folder's files are boxes on a screen
   As Esa, conveying the half-baked idea that we should re-invent the GUI where WE
@@ -81,19 +87,66 @@ Feature: A folder's files are boxes on a screen
     # cite: Filee.swift FolderModel.load() (.repo when .git exists); BoxView repo badge
     But a commits/gates/architecture view inside the repo is NOT yet built  # @todo
 
-  @designed @todo
-  Scenario: A box carries local↔online edges ("convey the idea of connected data")
-    Given a file that came from a known source (e.g. this video ← that YouTube)
-    Then its box exposes BoxItem.links and renders an edge to the source
-    # cite: Filee.swift BoxItem.links (field present, currently always empty)
+  @built @verified
+  Scenario: A box carries molecule bonds as visible, navigable edges
+    Given a file with a co-located <name>.molecule.json sidecar (written by `convey molecule`)
+    When the folder loads
+    # cite: Filee.swift FolderModel.load() decodes MoleculeSidecar beside each url → BoxItem.bonds
+    Then the box wears a "⋈ N" count chip
+    # cite: Filee.swift BoxView .overlay(alignment: .topTrailing) bonds chip
+    # VERIFIED 2026-06-15: /tmp/filee-demo — research.pdf & research.txt show "⋈ 2"; notes.md none.
+    #   screencapture -R of window 1 (CGWindowList nil from headless shell → System Events bounds).
+    And right-clicking shows a "⋈ Bonds (N)" submenu, one row per bond
+    # cite: Filee.swift widget(for:) Menu("⋈ Bonds …") ForEach(box.bonds)
+    #   row label = arrow+kind+targetName: → produces / ← derived_from / ⊂ part_of / ↔ associated_with
+    And selecting a bond walks into the bonded folder or reveals the bonded file
+    # cite: Filee.swift FolderModel.goToBond(_:) ; dead targets greyed via Bond.exists
+    But the submenu/navigation half is code-verified, NOT yet screenshot-verified  # @honesty
+    # NOTE: BoxItem.links now derives from bonds' target paths (no longer always empty).
 
-  @designed @todo
-  Scenario: A smart folder of filees gets conveyed automatically (Finder-level)
-    Given a saved Spotlight/NSMetadataQuery predicate shown as a live grid of boxes
-    When a new filee matches the query
-    Then it appears as a box AND rides the convey belt (convey belt <file>) per its rule
-    # The Finder-level target: a smart folder whose contents auto-convey. Reuses
-    # convey's existing belt (0007/0049) + trustees (0029) — Filee is the visible surface.
+  @built @verified
+  Scenario: A box carries an ONLINE edge to a URL (the local↔online half)
+    Given a file's widget "Link to URL… (online edge)" → a URL
+    # cite: Filee.swift FolderModel.linkURL() → convey molecule <file> --from-url <url>
+    # cite: convey/molecule.py mark_from_url() writes a `references` bond, target_path = the URL
+    When the folder reloads
+    Then the box's "⋈ Bonds" submenu shows "↗ references · <host>" and selecting it opens the browser
+    # cite: Filee.swift Bond.isURL / .arrow "↗" / goToBond() NSWorkspace.open(url)
+    # VERIFIED 2026-06-15: convey molecule research.txt --from-url <youtube> → references bond in
+    #   research.txt.molecule.json. Filee render+open is code-verified (context menu, hard to shoot).
+
+  @built @verified
+  Scenario: A smart folder conveys new files automatically as they land (Finder-level, SAFE)
+    Given a folder armed for auto-convey (header ⚡ toggle writes .filee-autoconvey)
+    # cite: Filee.swift FolderModel.toggleAutoConvey(); header bolt.fill/bolt.slash button
+    When a NEW file lands in the watched folder
+    # cite: Filee.swift load() delta (knownIds/knownIdsDir) → quietConvey() on genuinely-new files
+    Then Filee auto-runs the CHEAP `convey molecule <file> --json` and its ⋈ chip appears
+    # VERIFIED 2026-06-16 LIVE through the running app: dropped /tmp/filee-demo/dropped-note.txt
+    #   → dropped-note.txt.molecule.json (part_of bond) created in ~1s, no screenshot needed.
+    But ONLY molecule --json fires (writes a sidecar) — OCR / belt --run stay MANUAL  # no CPU/OCR burn
+    # Loop-free: a conveyed file gains a sidecar → has bonds → no longer "fresh"; conveyingIds dedupes.
+    # The full belt-per-rule (trustees 0029 + belt 0007/0049) auto-run is deliberately NOT wired
+    #   (would risk local OCR/CPU); the visible-surface + cheap-molecule half is what's @built.
+
+  @built @verified
+  Scenario: A folder box can speak — folder-memory + talk (rung 4 seed)
+    Given a folder/repo box widget "Folder memory" submenu
+    # cite: Filee.swift widget(for:) Menu("Folder memory"); FolderModel.buildFolderMemory/showFolderMemory/talkToFolder
+    Then "Build / refresh" runs ~/work/apple/bin/folder-memory <dir> (the .memory.{md,savedSearch,json} triad)
+    And "Show .memory.md" opens it (building first if absent)
+    And "Talk to this folder (Terminal)" opens Terminal in the dir running `mlx-here` (skill auto-armed)
+    # VERIFIED 2026-06-16: folder-memory binary invocable; argv produces output.
+    #   Sheet/Terminal display is code-verified (heavy embed run not triggered, to spare CPU).
+
+  @built @verified
+  Scenario: A repo box opens into its commits (rung 3 interior)
+    Given a .git folder box (BoxKind.repo)
+    When "Show commits (git log)" is chosen
+    # cite: Filee.swift widget(for:) repo branch; FolderModel.showCommits() → git -C <repo> log --oneline --decorate -40
+    Then the commit list renders in the ConveyOutputView sheet
+    # VERIFIED 2026-06-16: argv produces real output on ~/work/convey. Sheet display reuses the
+    #   verified ConveyOutputView path. The richer commits/gates/architecture view is still @todo.
 
   @built @verified
   Scenario: Do something with a filee, using convey (the widget runs convey verbs)
