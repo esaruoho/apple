@@ -8,6 +8,12 @@ armed with the skill that GOVERNS the folder you're standing in.
     mlx --list                           # list mlx discussions started in this folder
     mlx --fm                             # use the FoundationModels brain instead of MLX
     mlx --cwd DIR [name]                 # arm the skill governing DIR (not the shell cwd)
+    mlx --autoarm [on|off]               # make OPENING Converse.app + ⌘3 self-arm to this
+                                         # folder's skill — no terminal, no launch. The
+                                         # boot-time mlx experience. `off` → plain MLX.
+
+Running `mlx` (or `mlx <name>`) also sets this folder as the boot default, so simply
+opening Converse.app and pressing ⌘3 keeps arming to your last mlx context.
 
 The discussion IS a real Converse session, so it is:
   • renameable — it's just the folder name under ~/work/converse/sessions/
@@ -100,9 +106,11 @@ def write_session(dirpath: Path, stamp: str):
         tpath.write_text("")
 
 
-def set_brain(use_mlx: bool):
-    """Pre-select Converse's brain (⌘3 MLX vs ⌘1 FM) by merging settings.json, so
-    the discussion opens in the right mode without a keystroke."""
+def set_brain(use_mlx: bool, arm_cwd=None):
+    """Merge Converse's settings.json: pre-select the ⌘3 MLX (vs ⌘1 FM) brain, and —
+    when arm_cwd is given — record it as `mlxArmCwd` so that simply OPENING Converse
+    and pressing ⌘3 self-arms to that folder's skill (the boot-time `mlx` experience,
+    no terminal). Pass arm_cwd="" to clear (back to plain MLX)."""
     SETTINGS.parent.mkdir(parents=True, exist_ok=True)
     o = {}
     if SETTINGS.exists():
@@ -111,6 +119,8 @@ def set_brain(use_mlx: bool):
         except Exception:
             o = {}
     o["brain"] = "mlx" if use_mlx else "fm"
+    if arm_cwd is not None:
+        o["mlxArmCwd"] = arm_cwd
     SETTINGS.write_text(json.dumps(o, indent=2))
 
 
@@ -154,6 +164,7 @@ def main():
     cwd_override = None
     name = None
     do_list = False
+    autoarm = None        # "on" | "off" → configure boot-time self-arm, don't launch
     i = 0
     while i < len(args):
         a = args[i]
@@ -167,6 +178,9 @@ def main():
             do_list = True; i += 1
         elif a == "--cwd":
             cwd_override = args[i + 1]; i += 2
+        elif a == "--autoarm":
+            autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")
+            i += 2 if autoarm in ("on", "off") and i + 1 < len(args) and args[i + 1] in ("on", "off") else 1
         elif a.startswith("-"):
             sys.exit(f"mlx: unknown flag {a} (see --help)")
         else:
@@ -176,6 +190,18 @@ def main():
 
     if do_list:
         list_for(cwd)
+        return 0
+
+    # --autoarm: configure whether OPENING Converse + ⌘3 self-arms (no launch).
+    if autoarm is not None:
+        if autoarm == "off":
+            set_brain(use_mlx, arm_cwd="")
+            print("mlx: boot-time self-arm OFF — opening Converse + ⌘3 is plain MLX.")
+        else:
+            skill = arm_apple.detect_skill(cwd); arm_apple._ACTIVE = skill
+            set_brain(True, arm_cwd=cwd)
+            print(f"mlx: boot-time self-arm ON → {arm_apple.active_label()} ({cwd}).")
+            print("     Now just open Converse.app and press ⌘3 — it arms automatically.")
         return 0
 
     skill = arm_apple.detect_skill(cwd)
@@ -191,7 +217,9 @@ def main():
 
     write_session(dirpath, stamp)
     seed_fm_state(stamp, cwd)
-    set_brain(use_mlx)
+    # Also make THIS the boot default: opening Converse + ⌘3 later self-arms to the
+    # same folder's skill, so "just open Converse" keeps the mlx experience.
+    set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
     # touch the dir so it is the NEWEST session → fm-converse's current_session_key()
     # resolves to it, so Converse's ⌘3 loads exactly the bucket we just armed.
     os.utime(dirpath, None)

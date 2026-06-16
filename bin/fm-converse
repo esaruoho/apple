@@ -173,6 +173,8 @@ def main() -> int:
     do_reset = False
     do_history = False
     use_mlx = False
+    arm_skill = False        # --apple: arm the skill governing arm_cwd
+    arm_cwd = None           # --cwd DIR
     rest = []
     i = 0
     while i < len(args):
@@ -189,6 +191,10 @@ def main() -> int:
             do_history = True; i += 1
         elif a == "--mlx":
             use_mlx = True; i += 1
+        elif a == "--apple":
+            arm_skill = True; i += 1
+        elif a == "--cwd":
+            arm_cwd = args[i + 1]; i += 2
         elif a == "-":
             rest.append(sys.stdin.read()); i += 1
         else:
@@ -201,7 +207,29 @@ def main() -> int:
     # if you later resume it from elsewhere.
     if not state.get("cwd"):
         state["cwd"] = os.path.realpath(os.getcwd())
-    if system_override is not None:
+
+    # --apple: arm the skill governing the chat's folder (identity from its SKILL.md
+    # + per-turn retrieval from its docs). STICKY: arm_cwd is persisted into the
+    # session state, so every later turn — incl. Converse's plain `fm-converse --mlx`
+    # ⌘3 call, and any resume — self-arms with no flag. Reuses bin/arm_apple.py.
+    # NOTE: keep this block in sync — it has been clobbered by concurrent edits before.
+    arm_cwd_final = None
+    if arm_skill:
+        arm_cwd_final = arm_cwd or state.get("arm_cwd") or state.get("cwd") or os.getcwd()
+        state["arm_cwd"] = arm_cwd_final
+    elif state.get("arm_cwd"):
+        arm_cwd_final = state["arm_cwd"]
+    armer = None
+    if arm_cwd_final:
+        try:
+            import arm_apple as armer  # bin/arm_apple.py (sys.path has HERE)
+        except Exception as e:
+            sys.stderr.write(f"fm-converse: could not arm skill: {e}\n")
+            armer = None
+        if armer is not None:
+            state["system"] = armer.build_system(arm_cwd_final, extra=system_override or "")
+            save(key, state)
+    elif system_override is not None:
         state["system"] = system_override
         save(key, state)
 
@@ -230,6 +258,12 @@ def main() -> int:
         user_turn = (f"Here is some text (from {filename}) to help me with:\n\n"
                      f"{sent_text}\n\n"
                      f"Please summarize it and note anything important.")
+
+    # When armed, prepend the turn with LIVE DATA + the skill-doc passages most
+    # relevant to this question (build_system above already set _ACTIVE so this
+    # retrieves from the governing skill's corpus). The query is the raw line.
+    if armer is not None:
+        user_turn = armer.augment_prompt(user_turn, prompt)
 
     def call_fm(replay_text: str):
         cmd = [str(HERE / "fm-submit"), "--timeout", timeout]
