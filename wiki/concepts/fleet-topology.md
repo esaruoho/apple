@@ -32,11 +32,18 @@ Also on the workspace LAN, **not yet on the fleet**:
 - **XP32Bit** — a Windows XP 32-bit desktop.
 - **DOS PC** — a DOS machine, **LAN-connected to the XP box**.
 
-**Goal:** eventually have these talk to the Mac Fleet too. The natural path is the **same pattern we use for HertsiMacPro**: the Mini, being on the workspace LAN, *probes* a node it can reach and publishes a Machine Card on its behalf (a node too limited to self-report is shown, not a worker — see the `machine-card-probe` design). For the legacy boxes the transport differs from SSH:
-- **XP**: reachable over **SMB / RDP** (and possibly a tiny polled agent or SNMP); the Mini could probe basic shape (OS, name, up/down) and surface a card. Screen access via RDP through the same `ssh -L` relay trick (forward 3389 instead of 5900).
-- **DOS PC**: no IP stack of its own in the usual sense — it sits behind/beside the XP box on the LAN. Most likely surfaced *through* the XP node (XP as its bridge) rather than directly.
+**Goal:** eventually have these talk to the Mac Fleet too. **Feasibility: yes** — plugged into the same hub, XP gets a LAN IP (`192.168.32.x`) and the Mini (already LAN + Tailscale) bridges it to the world exactly as it does HertsiMacPro: **RayMac → Tailscale → Mini → XP**. XP never faces the public internet — it's reachable only through the tailnet + Mini relay. **Never port-forward XP to the internet; always relay through the Mini** (a 20-year-old OS must stay behind the bridge).
 
-None of this is built yet — it's the hoped-for extension. When it happens it should reuse `machine-card-probe.sh` (static-IP, mDNS-independent) and the `fleet-files` relay, not a new mechanism.
+The concrete plan (reuse the Hertsi mechanism; only the transport changes):
+
+- **XP — talk / compile / run commands:** install a small **SSH server on XP** (freeSSHd, Bitvise, or Cygwin sshd). Then it's a real fleet node: `ssh XP32Bit` via `ProxyJump cloudcity`, run a compiler remotely (TASM/TLINK etc.), `fleet-files` it. This is the cleanest path and it sidesteps the SMB headache.
+- **XP — files / folders:** **SFTP over that same SSH** (preferred), or XP's native **SMB**. Caveat: XP speaks only **SMB1**, which modern macOS clients resist — that's exactly why SSH/SFTP is the better path.
+- **XP — screen (VIEW):** **VNC server on XP** (UltraVNC/TightVNC) → forward 5900 through the Mini, identical to Hertsi's `fleet-files screen`. RDP (3389) works only if it's XP **Pro**; XP **Home** has no RDP server → use VNC.
+- **DOS PC — indirect, through a share:** no SSH/VNC server exists for DOS. It maps a **network share** (hosted on XP or a NAS) as a drive letter. Reach it by writing into that share via the XP/SSH path → the DOS box sees the files on its mapped drive. A "compile-on-XP, drop the artifact into the DOS share" loop is the realistic shape.
+
+**Open questions to settle by a read-only probe** (do this FIRST, before installing anything — once XP is on the hub, from the Mini: ping, find its IP, port-scan 22/445/3389/5900): is it XP **Pro or Home** (decides RDP), and is SMB1 on? Probe `machine-card-probe.sh`-style (static IP, mDNS-independent) and surface a card; the Mini *probes and publishes on its behalf*, a shown node not a worker.
+
+None of this is built yet — hoped-for extension. Reuse `machine-card-probe.sh` + the `fleet-files` relay, not a new mechanism.
 
 ## One-glance summary
 
