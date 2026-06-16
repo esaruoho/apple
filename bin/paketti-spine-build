@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""paketti-spine-build — build the Paketti SPINE, deterministically (no MLX).
+
+The spine is Renoise's anatomy (REGIONS) with Paketti's features hanging off it:
+  • REGIONS come from the entry points — every keybinding / menu / MIDI mapping name
+    starts with its Renoise region ("Pattern Editor:Paketti:Set Pattern Length …").
+  • FEATURES are ENTITIES — each Paketti<Name>.lua is one entity; its definition is the
+    code-file header + its FIRST changelog `Feature:` entry (foundation), plus every
+    later Feature/Improvement/Fix entry (the parts it accreted over time).
+  • Everything is LINKED: region ↔ feature ↔ keybindings/menus/MIDI ↔ code ↔ changelog.
+
+Output (in ~/.paketti-spine/): spine.json (structured) + SPINE.md (human-readable).
+This is the source of truth the FAQ / paketti-ask / a Discord bot retrieve from — so
+the model presents Esa's real words instead of inventing them.
+"""
+import json
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+PAKETTI = Path("/Users/esaruoho/work/paketti")
+CHANGELOG = PAKETTI / "manual" / "CHANGESLOG.md"
+OUT = Path.home() / ".paketti-spine"
+
+REG_RE = re.compile(r'add_(keybinding|menu_entry|midi_mapping)\s*\{\s*name\s*=\s*"([^"]+)"')
+CL_HEADER = re.compile(r'^###\s+(\d{4}-\d{2}-\d{2})\s*-\s*([A-Za-z]+):\s*(.*)$')
+FUNC_RE = re.compile(r'^\s*(?:local\s+)?function\s+([\w:.]+)')
+
+
+def _clean_region(seg: str) -> str:
+    return seg.lstrip("-").lstrip("!").strip()
+
+
+# ── 1. entry points → regions ────────────────────────────────────────────────
+def collect_entry_points():
+    """{region: [ {kind, name, leaf, file} ]} + flat list."""
+    regions = defaultdict(list)
+    flat = []
+    for fp in PAKETTI.glob("*.lua"):
+        try:
+            txt = fp.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for kind, name in REG_RE.findall(txt):
+            parts = name.split(":")
+            region = _clean_region(parts[0]) if parts else "?"
+            # MIDI mappings are "Paketti:..." (no region) → bucket as Global/MIDI
+            if region == "Paketti":
+                region = "Global"
+            leaf = parts[-1]
+            rec = {"kind": kind, "name": name, "leaf": leaf, "file": fp.name}
+            regions[region].append(rec)
+            flat.append(rec)
+    return regions, flat
+
+
+# ── 2. entities (Paketti<Name>.lua) ──────────────────────────────────────────
+def collect_entities():
+    """{entity_name: {code_file, header, functions[]}} from Paketti*.lua filenames."""
+    ents = {}
+    for fp in sorted(PAKETTI.glob("Paketti*.lua")):
+        name = fp.stem[len("Paketti"):]
+        if not name:
+            continue
+        try:
+            lines = fp.read_text(encoding="utf-8", errors="replace").splitlines()
+        except Exception:
+            continue
+        header = []
+        for ln in lines[:8]:
+            s = ln.strip()
+            if s.startswith("--") and len(s) > 4:
+                header.append(s.lstrip("- ").strip())
+            elif header:
+                break
+        funcs = [m.group(1) for ln in lines if (m := FUNC_RE.match(ln))]
+        ents[name] = {"code_file": fp.name, "header": header[:4], "functions": funcs[:40]}
+    return ents
+
+
+# ── 3. changelog → dated entries ─────────────────────────────────────────────
+def parse_changelog():
+    entries = []
+    if not CHANGELOG.exists():
+        return entries
+    cur = None
+    for ln in CHANGELOG.read_text(encoding="utf-8", errors="replace").splitlines():
+        m = CL_HEADER.match(ln)
+        if m:
+            if cur:
+                entries.append(cur)
+            cur = {"date": m.group(1), "type": m.group(2), "title": m.group(3).strip(), "body": []}
+        elif cur is not None:
+            cur["body"].append(ln)
+    if cur:
+        entries.append(cur)
+    for e in entries:
+        e["body"] = "\n".join(e["body"]).strip()
+    return entries
+
+
+def _split_words(s):
+    return re.findall(r"[A-Za-z0-9]+", s)
+
+
+def entity_history(entity, entries):
+    """All changelog entries about `entity` (substring, case-insensitive), oldest first.
+    Foundation = earliest `Feature:` entry. Returns (foundation, parts[])."""
+    low = entity.lower()
+    hits = [e for e in entries if low in (e["title"] + " " + e["body"]).lower()]
+    hits.sort(key=lambda e: e["date"])
+    foundation = next((e for e in hits if e["type"].lower() == "feature"), hits[0] if hits else None)
+    parts = [e for e in hits if e is not foundation]
+    return foundation, parts
+
+
+def link_entry_points(entity, flat):
+    """Entry points whose name mentions the entity → its regions + shortcuts."""
+    low = entity.lower()
+    eps = [r for r in flat if low in r["name"].lower()]
+    regions = sorted({_clean_region(r["name"].split(":")[0]).replace("Paketti", "Global")
+                      for r in eps if r["name"]})
+    return eps, regions
+
+
+def build_entity_record(entity, ents, entries, flat):
+    info = ents.get(entity, {})
+    foundation, parts = entity_history(entity, entries)
+    eps, regions = link_entry_points(entity, flat)
+    return {
+        "entity": entity,
+        "code_file": info.get("code_file"),
+        "header": info.get("header", []),
+        "regions": regions,
+        "foundation": ({"date": foundation["date"], "title": foundation["title"],
+                        "body": foundation["body"][:1000]} if foundation else None),
+        "parts": [{"date": p["date"], "type": p["type"], "title": p["title"]} for p in parts],
+        "entry_points": len(eps),
+        "keybindings": [r["name"] for r in eps if r["kind"] == "keybinding"][:30],
+        "functions": info.get("functions", [])[:20],
+    }
+
+
+def main():
+    regions, flat = collect_entry_points()
+    ents = collect_entities()
+    entries = parse_changelog()
+
+    # entities that have BOTH a code file and changelog history are the documented ones
+    documented = []
+    for name in ents:
+        f, p = entity_history(name, entries)
+        if f or p:
+            documented.append(name)
+
+    spine = {
+        "regions": {r: sorted({e["leaf"] for e in eps}) for r, eps in regions.items()},
+        "region_counts": {r: len(eps) for r, eps in sorted(regions.items(), key=lambda x: -len(x[1]))},
+        "entities": {name: build_entity_record(name, ents, entries, flat) for name in documented},
+        "stats": {"regions": len(regions), "entry_points": len(flat),
+                  "entities_total": len(ents), "entities_documented": len(documented),
+                  "changelog_entries": len(entries)},
+    }
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / "spine.json").write_text(json.dumps(spine, ensure_ascii=False, indent=1))
+
+    # human-readable SPINE.md
+    md = ["# Paketti Spine", "",
+          f"*Renoise regions ← Paketti features. {spine['stats']['entry_points']} entry points · "
+          f"{spine['stats']['regions']} regions · {spine['stats']['entities_documented']} documented "
+          f"feature entities · {spine['stats']['changelog_entries']} changelog entries.*", "",
+          "## Renoise regions Paketti extends (by entry-point count)", ""]
+    for r, c in sorted(spine["region_counts"].items(), key=lambda x: -x[1]):
+        md.append(f"- **{r}** — {c} entry points")
+    md += ["", "## Documented feature entities", ""]
+    for name in sorted(documented):
+        rec = spine["entities"][name]
+        md.append(f"### {name}")
+        if rec["header"]:
+            md.append(f"*{rec['header'][0]}*")
+        if rec["foundation"]:
+            md.append(f"- **Foundation** ({rec['foundation']['date']}): {rec['foundation']['title']}")
+        if rec["parts"]:
+            md.append(f"- **{len(rec['parts'])} later changes**: "
+                      + ", ".join(f"{p['title']} ({p['date']})" for p in rec["parts"][:8]))
+        md.append(f"- regions: {', '.join(rec['regions']) or '—'} · {rec['entry_points']} entry points · code: {rec['code_file']}")
+        md.append("")
+    (OUT / "SPINE.md").write_text("\n".join(md))
+
+    s = spine["stats"]
+    print(f"spine built → {OUT}/spine.json + SPINE.md")
+    print(f"  {s['regions']} regions · {s['entry_points']} entry points · "
+          f"{s['entities_documented']}/{s['entities_total']} entities documented · "
+          f"{s['changelog_entries']} changelog entries")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

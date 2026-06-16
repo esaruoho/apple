@@ -86,11 +86,48 @@ def _citations(answer: str) -> list:
     return sorted(set(re.findall(r"[A-Za-z0-9_/.\-]+\.lua", answer)))
 
 
+SPINE = Path.home() / ".paketti-spine" / "spine.json"
+
+
+def spine_context(query: str) -> str:
+    """If the question names a documented Paketti ENTITY (HyperEdit, Groovebox, …),
+    return its AUTHORITATIVE spine record (foundation + parts + regions, all in
+    Esa's words) so the model presents real facts instead of inventing them."""
+    try:
+        s = json.loads(SPINE.read_text())
+    except Exception:
+        return ""
+    ql = query.lower()
+    blocks = []
+    for name, rec in s.get("entities", {}).items():
+        if len(name) > 3 and name.lower() in ql:
+            b = [f'AUTHORITATIVE SPINE — Paketti "{name}" (ground EVERY claim in this; '
+                 f'do NOT invent modes or features):']
+            if rec.get("code_file"):
+                b.append(f"CODE: {rec['code_file']}")
+            if rec.get("foundation"):
+                b.append(f"FOUNDATION ({rec['foundation']['date']}): {rec['foundation']['title']}")
+            if rec.get("regions"):
+                b.append("LIVES IN REGIONS: " + ", ".join(rec["regions"]))
+            parts = [p for p in rec.get("parts", [])
+                     if not p["title"].lower().startswith(("nineteen", "seven", "all playmode",
+                                                           "dialog of dialogs", "more tools"))]
+            if parts:
+                b.append("PARTS ADDED OVER TIME:\n"
+                         + "\n".join(f"- {p['date']} {p['title']}" for p in parts[:14]))
+            blocks.append("\n".join(b))
+    return "\n\n".join(blocks[:2])
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
-    """Draft a grounded answer with the paketti+renoise-armed MLX brain."""
+    """Draft a grounded answer with the paketti+renoise-armed MLX brain. If the
+    question names a spine entity, that authoritative record leads the prompt."""
     import arm_apple
     system = arm_apple.build_system(PAKETTI)            # arms paketti (+renoise companion)
     prompt = arm_apple.augment_prompt(question, question)  # + per-turn retrieval
+    spine = spine_context(question)
+    if spine:
+        prompt = spine + "\n\n" + prompt
     try:
         p = subprocess.run([str(FM_MLX), "--raw", "--system", system, prompt],
                            capture_output=True, text=True, timeout=timeout,
