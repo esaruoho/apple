@@ -580,7 +580,18 @@ final class FleetModel: ObservableObject {
         let selfID = self.selfID
         DispatchQueue.global(qos: .utility).async {
             let found = CardSource.syncthingPeers(excluding: selfID)
+            let foundIDs = Set(found.map { $0.id })
             DispatchQueue.main.async {
+                // Reconcile DELETIONS: a Syncthing-sourced peer whose card file
+                // has vanished from the queue (e.g. a machine renamed, so its old
+                // machine-card-<oldname>.json was removed) must be evicted, not
+                // kept forever. Without this, refresh only ever adds/updates and
+                // a deleted card lingers in the view (the "MacPro stays after
+                // Refresh" bug). Only prune .syncthing peers — Bonjour/LAN peers
+                // are reconciled by the NWBrowser's own found/lost events.
+                for (id, peer) in self.peers where peer.origin == .syncthing && !foundIDs.contains(id) {
+                    self.peers.removeValue(forKey: id)
+                }
                 for c in found {
                     // Keep whichever card carries the newer data — compare by the
                     // card's own `ts` (when machine-card generated it), NOT by which
