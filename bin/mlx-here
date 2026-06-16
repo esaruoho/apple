@@ -12,6 +12,12 @@
 #   mlx-here --agent "what is X about?"  # the TOOL-CALLING LOOP: the model drives the
 #                                        # convey verbs (search_notes, molecule, vision_ocr…)
 #                                        # instead of one retrieve-then-answer pass → mlx-agent
+#   mlx-here --no-greet                  # skip the opening "this folder is …" greeting
+#
+# ONE command = arm + greet + talk. On launch it detects the skill governing $PWD,
+# greets you with a one-line "this is project X, ask me about …", then drops you
+# straight into the armed REPL — no Converse, no ⌘3. (That GUI dance is Converse's
+# nature as a dictation editor; this is the zero-ceremony path.)
 #
 # Equivalent to: fm-chat --mlx --apple --cwd "$PWD"  (or --apple alone with --fm).
 # --agent/--tools routes to bin/mlx-agent (the on-device agentic loop, MLX-only).
@@ -21,17 +27,36 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 brain="--mlx"
+greet=1
 rest=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --fm)   brain="" ; shift ;;          # FoundationModels brain (drop --mlx)
     --mlx)  brain="--mlx" ; shift ;;
+    --no-greet) greet=0; shift ;;        # skip the opening greeting
     --agent|--tools)                     # the tool-calling loop (mlx-agent), MLX-only
       shift
       exec "$HERE/mlx-agent" --cwd "$PWD" "${@}" ;;
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)      rest+=("$1"); shift ;;
   esac
 done
+
+# Greet: detect the governing skill, arm it, and have the model say (in one line)
+# what this folder is + what to ask — so it "just tells you" instead of waiting on
+# a blank prompt. Only when interactive, MLX brain, no inline question given.
+if [ "$greet" = 1 ] && [ "$brain" = "--mlx" ] && [ ${#rest[@]} -eq 0 ] && [ -t 1 ]; then
+  sys=$(python3 -c "import sys; sys.path.insert(0,'$HERE'); import arm_apple; print(arm_apple.build_system('$PWD'))" 2>/dev/null)
+  if [ -n "$sys" ]; then
+    label=$(python3 -c "import sys; sys.path.insert(0,'$HERE'); import arm_apple; arm_apple._ACTIVE=arm_apple.detect_skill('$PWD'); print(arm_apple.active_label())" 2>/dev/null)
+    printf '\033[2m  …%s waking up…\033[0m\r' "${label:-skill}"
+    intro=$("$HERE/fm-mlx" --raw --quiet --system "$sys" "In TWO short sentences, tell me what THIS specific project is and the kinds of things I can ask you about it. Be concrete to this project; no preamble, no greeting." 2>/dev/null)
+    if [ -n "$intro" ]; then
+      printf '\033[K\033[1;36m%s ›\033[0m %s\n\n' "${label:-skill}" "$intro"
+    else
+      printf '\033[K'
+    fi
+  fi
+fi
 
 exec "$HERE/fm-chat" $brain --apple --cwd "$PWD" "${rest[@]+"${rest[@]}"}"
