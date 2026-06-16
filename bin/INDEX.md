@@ -1,4 +1,4 @@
-# CLI Tools Index — 251 tools in bin/
+# CLI Tools Index — 252 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -163,6 +163,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `paketti-faq-gen` — (no description) — `bin/paketti-faq-gen`
 `paketti-faq-rate` — (no description) — `bin/paketti-faq-rate`
 `paketti-spine-build` — (no description) — `bin/paketti-spine-build`
+`paketti-spine-report` — (no description) — `bin/paketti-spine-report`
 `pakettimcp` — pakettimcp "<english>" — type plain English; the Mini's local Qwen3-4B reasons — `bin/pakettimcp`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
