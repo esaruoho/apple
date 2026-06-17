@@ -98,9 +98,12 @@ def persona_system(voice: str) -> str:
             f"directions, no name prefix.\n\nHow you speak:\n{body}")
 
 
-def seed_persona(voice: str, stamp: str):
-    """Light-arm an EXISTING Converse session to a persona: seed fm-converse state with
-    a pre-built in-character system (no slow build_system) + write the voice sidecar.
+def seed_persona(voice: str, stamp: str, mode: str = "deep", profile: str = ""):
+    """Arm an EXISTING Converse session to a persona. mode:
+        fast — light cadence system (no retrieval), ~7s/turn, snappy
+        deep — heavy archive-grounded identity built once + kept armed, ~45-60s/turn
+        both — same grounding as deep (Converse speaks AND shows every reply)
+    profile overrides the spoken voicebox profile (e.g. Rob Teaching vs Sleeping).
     Used by Converse.app's Engines ▸ Persona picker — no launch."""
     sp = fm_store_path(stamp)
     state = {"system": "", "turns": [], "cwd": str(VOICES_DIR / voice), "arm_cwd": ""}
@@ -110,7 +113,6 @@ def seed_persona(voice: str, stamp: str):
         except Exception:
             pass
     if voice == "none":
-        # back to the plain MLX brain, default voice
         state["system"] = ""
         state["arm_cwd"] = ""
         sp.parent.mkdir(parents=True, exist_ok=True)
@@ -120,24 +122,30 @@ def seed_persona(voice: str, stamp: str):
             vj.unlink()
         return
     card = str(VOICES_DIR / (voice if voice != "milton" else "erickson"))
-    # Build the HEAVY grounded identity (archive retrieval over the persona's card)
-    # ONCE and freeze it. arm_cwd stays set so each turn still does live per-question
-    # retrieval (augment_prompt), but fm-converse won't rebuild the system every turn.
-    try:
-        import arm_apple
-        arm_apple.detect_skill(card)
-        state["system"] = arm_apple.build_system(card)
-    except Exception:
-        state["system"] = persona_system(voice)   # fallback: light cadence brief
-    state["arm_cwd"] = card        # KEEP ARMED → per-turn live retrieval
+    if mode == "fast":
+        # Light cadence identity — no retrieval, no per-turn rebuild. Snappy.
+        state["system"] = persona_system(voice)
+        state["arm_cwd"] = ""
+        state["max_tokens"] = 420
+    else:
+        # deep / both — heavy archive-grounded identity, built ONCE and frozen
+        # (fm-converse caches it); arm_cwd kept so each turn does live retrieval.
+        try:
+            import arm_apple
+            arm_apple.detect_skill(card)
+            state["system"] = arm_apple.build_system(card)
+        except Exception:
+            state["system"] = persona_system(voice)
+        state["arm_cwd"] = card
+        state["max_tokens"] = 800
     state["cwd"] = card
-    state["max_tokens"] = 800      # grounded replies — enough to finish a thought
     sp.parent.mkdir(parents=True, exist_ok=True)
     sp.write_text(json.dumps(state, ensure_ascii=False))
     sdir = SESSIONS / stamp
     if sdir.exists():
+        prof = profile or PERSONA_PROFILES.get(voice, voice)
         (sdir / "voice.json").write_text(json.dumps(
-            {"profile": PERSONA_PROFILES.get(voice, voice), "engine": "chatterbox"}))
+            {"profile": prof, "engine": "chatterbox"}))
 
 
 def seed_fm_state(session_name: str, arm_cwd: str):
@@ -264,8 +272,12 @@ def main():
         elif a == "--persona":
             persona = args[i + 1].lower(); i += 2
         elif a == "--seed-persona":
-            # in-app hook (Converse Engines ▸ Persona): light-arm an existing session
-            seed_persona(args[i + 1].lower(), args[i + 2])
+            # in-app hook (Converse Engines ▸ Persona): arm an existing session.
+            # args: <voice> <stamp> [mode=fast|deep|both] [profile]
+            _v = args[i + 1].lower(); _st = args[i + 2]
+            _md = args[i + 3] if len(args) > i + 3 else "deep"
+            _pr = args[i + 4] if len(args) > i + 4 else ""
+            seed_persona(_v, _st, _md, _pr)
             return 0
         elif a == "--autoarm":
             autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")

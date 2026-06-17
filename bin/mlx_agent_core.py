@@ -10,17 +10,12 @@ SAFE by construction: read-only / idempotent verbs only, argv-array exec (never 
 shell string), paths sandboxed under ROOT (default $HOME; the queue worker tightens
 it to ~/work via AGENT_ROOT), every tool output bounded, the loop capped.
 
-GROUNDED by construction: search_notes surfaces the winning FILES and the loop will
-not accept an answer that cites a file the model never opened with read_file (it is
-re-prompted to open + verify in the source first); fabricated paths are flagged.
-
 FEATURE-CARD >> features/mlx-agent-tool-loop.feature
 """
 from __future__ import annotations
 
 import json
 import os
-import re as _re
 import subprocess
 import time
 import urllib.error
@@ -39,46 +34,31 @@ TOOL_OUTPUT_CAP = 4000
 HTTP_TIMEOUT = 180
 CONVEY = str(HERE / "convey")
 
-# Anti-hallucination rule appended to the system prompt; the loop enforces it.
+# Anti-hallucination rule the CLI + worker append to their system prompt, and the
+# deterministic backstop that enforces it (a small model will otherwise invent a
+# confident answer with a fake file path when retrieval comes up empty).
 GROUNDING = ("GROUNDING RULES: Only cite or quote a file you actually opened with "
-             "read_file this turn. After search_notes, open the single most relevant "
-             "file with read_file and confirm the answer is in its text before you cite "
-             "it. If search_notes returns nothing relevant, say you could not find it — "
-             "do NOT invent a file path, a wiki page, or a quote.")
+             "read_file this turn. If search_notes returns nothing relevant, say you "
+             "could not find it — do NOT invent a file path, a wiki page, or a quote.")
 
-# cited path inside backticks `x.md` or a markdown link ](x.md) — linear, no backtracking.
+import re as _re
 _CITE_RE = _re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|markdown|txt|py|sh|json|feature|ya?ml))`"
                        r"|\]\(([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|markdown|txt|py|sh|json|feature|ya?ml))\)")
-# a vault-grep hit line: "0.521  FILE.ext:123  snippet" — pull the file.
-_SEARCH_FILE_RE = _re.compile(r"^[0-9.]+\s+([A-Za-z0-9_./-]+\.\w+):\d+")
 
 
-def _resolve(cand: str) -> str:
-    p = Path(cand)
-    return str(p.resolve()) if p.is_absolute() else str((Path.cwd() / cand).resolve())
-
-
-def _cited_paths(answer: str):
-    """(raw, resolved-on-disk | None) for each distinct cited *.ext path in the answer."""
-    out, seen = [], set()
+def verify_citations(answer: str) -> list:
+    """Return cited file paths that do NOT exist on disk (under cwd or absolute).
+    Linear regex (no backtracking). Catches a model citing a file it never opened."""
+    seen, bad = set(), []
     for m in _CITE_RE.findall(answer or ""):
         cand = m[0] or m[1]
         if not cand or cand in seen:
             continue
         seen.add(cand)
         p = Path(cand)
-        if p.is_absolute() and p.exists():
-            out.append((cand, str(p.resolve())))
-        elif (Path.cwd() / cand).exists():
-            out.append((cand, str((Path.cwd() / cand).resolve())))
-        else:
-            out.append((cand, None))
-    return out
-
-
-def verify_citations(answer: str) -> list:
-    """Cited file paths that do NOT exist on disk (the fabricated ones)."""
-    return [raw for raw, res in _cited_paths(answer) if res is None]
+        if not (p.is_absolute() and p.exists()) and not (Path.cwd() / cand).exists():
+            bad.append(cand)
+    return bad
 
 
 # ── sandbox ──────────────────────────────────────────────────────────────────
@@ -132,17 +112,7 @@ def t_read_file(path, max_bytes=8000, offset=0):
 
 
 def t_search_notes(query, dir="."):
-    raw = _run([str(HERE / "vault-grep"), query, "--root", str(_safe_path(dir))])
-    files = []
-    for line in raw.splitlines():
-        m = _SEARCH_FILE_RE.match(line.strip())
-        if m and m.group(1) not in files:
-            files.append(m.group(1))
-    if files:
-        return ("TOP FILES (open the single most relevant one with read_file and confirm "
-                "the answer is in its text BEFORE you cite it): " + ", ".join(files[:5])
-                + "\n" + raw)
-    return raw + "\n[no files matched — do not invent one; say you could not find it]"
+    return _run([str(HERE / "vault-grep"), query, "--root", str(_safe_path(dir))])
 
 
 def t_molecule(path):
@@ -184,8 +154,7 @@ TOOLS: dict = {
             "required": ["path"]}}),
     "search_notes": (t_search_notes, {
         "description": "On-device semantic search (Apple NLEmbedding) over a folder's text "
-                       "files. Returns the top matching files + passages; OPEN the top file "
-                       "with read_file to verify before citing it.",
+                       "files. Returns the most relevant passages with file paths.",
         "parameters": {"type": "object", "properties": {
             "query": {"type": "string"},
             "dir": {"type": "string", "description": "folder to search (default '.')"}},
@@ -267,47 +236,30 @@ def post(messages: list, retries: int = 4, host: str | None = None,
 def run_loop(task: str, system: str = "", max_iters: int = 6, on_tool=None,
              host: str | None = None, model: str | None = None,
              allow: list | None = None, retries: int = 4) -> dict:
-    """The agentic loop. Returns {ok, answer, trace, iters, err, unverified, reprompts}.
-
-    Grounding enforcement: the model may not finalise an answer that cites an existing
-    file it did NOT open with read_file this loop — it is re-prompted (up to twice) to
-    open + verify in the source. Cited paths that don't exist on disk are flagged."""
+    """The agentic loop. Returns {ok, answer, trace, iters, err}.
+    on_tool(name, args, result) is called after each tool executes (the worker
+    uses it to stream a partial trace; the CLI uses it to print live tool calls)."""
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": task})
     trace = []
-    opened = set()          # resolved paths the model actually read this loop
-    reprompts = 0
     for i in range(max_iters):
         try:
             data = post(messages, retries=retries, host=host, model=model, allow=allow)
         except Exception as e:
             return {"ok": False, "answer": "", "trace": trace, "iters": i,
-                    "err": f"could not reach the MLX server at {host or HOST}: {e}",
-                    "unverified": [], "reprompts": reprompts}
+                    "err": f"could not reach the MLX server at {host or HOST}: {e}"}
         msg = data["choices"][0]["message"]
         calls = msg.get("tool_calls") or []
         if not calls:
             answer = (msg.get("content") or "").strip()
-            cited = _cited_paths(answer)
-            unopened = [raw for raw, res in cited if res and res not in opened]
-            missing = [raw for raw, res in cited if res is None]
-            if unopened and reprompts < 2 and i < max_iters - 1:
-                reprompts += 1
-                messages.append({"role": "assistant", "content": answer})
-                it = "it" if len(unopened) == 1 else "them"
-                messages.append({"role": "user", "content":
-                    f"Do not answer yet. You referenced {', '.join(unopened)} but did not "
-                    f"open {it} with read_file this turn. Call read_file on the file, confirm "
-                    f"the answer is actually in its text, then answer and cite it. If the file "
-                    f"does not contain the answer, say so plainly."})
-                continue
-            if missing:
-                answer += ("\n\n⚠ unverified citation(s) — not on disk, may be invented: "
-                           + ", ".join(missing))
+            bad = verify_citations(answer)
+            if bad:
+                answer += ("\n\n\u26a0 unverified citation(s) — these paths are NOT on "
+                           "disk and may be invented: " + ", ".join(bad))
             return {"ok": True, "answer": answer, "trace": trace, "iters": i,
-                    "err": None, "unverified": missing, "reprompts": reprompts}
+                    "err": None, "unverified": bad}
         messages.append({"role": "assistant", "content": msg.get("content") or "",
                          "tool_calls": calls})
         for c in calls:
@@ -321,11 +273,6 @@ def run_loop(task: str, system: str = "", max_iters: int = 6, on_tool=None,
                 result = f"[tool {name} not permitted for this job]"
             else:
                 result = exec_tool(name, args)
-            if name == "read_file" and args.get("path"):
-                try:
-                    opened.add(_resolve(args["path"]))
-                except Exception:
-                    pass
             trace.append({"name": name, "args": args, "result_len": len(result)})
             if on_tool:
                 try:
@@ -335,5 +282,4 @@ def run_loop(task: str, system: str = "", max_iters: int = 6, on_tool=None,
             messages.append({"role": "tool", "tool_call_id": c.get("id", name),
                              "name": name, "content": result})
     return {"ok": False, "answer": "", "trace": trace, "iters": max_iters,
-            "err": f"hit the tool-call cap (max_iters={max_iters}) without a final answer",
-            "unverified": [], "reprompts": reprompts}
+            "err": f"hit the tool-call cap (max_iters={max_iters}) without a final answer"}

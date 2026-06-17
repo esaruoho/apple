@@ -117,17 +117,6 @@ Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
     # systems.yaml (NEVER nohup) + the chat model served with memory headroom.
 
   @built @sim-verified
-  Scenario: the loop refuses an answer that cites an un-opened file (grounding enforcement)
-    Given the model tries to finalise an answer citing a real file it never read_file'd
-    When run_loop sees a cited-but-unopened existing file
-    Then it re-prompts (up to 2x) to open + verify in the source, then accepts
-    And a cited path that does NOT exist on disk is flagged "⚠ unverified citation"
-    And search_notes surfaces the TOP FILES and tells the model to open one before citing
-    # Verified 2026-06-17 (stubbed brain): cite-without-open → reprompt → read_file → accept;
-    # fabricated path → flagged. Born from a live run where the 4B invented
-    # wiki/concepts/nle-embedding-vs-fm.md (a file that does not exist).
-
-  @built @sim-verified
   Scenario: the final answer is shown via the ONE shared presenter (DRY)
     Given a final answer and an interactive stdout
     Then it is rendered + spoken via fm_render.py --present (rich markdown + karaoke),
