@@ -94,13 +94,20 @@ else:
 # to this machine by dropping a file into the Syncthing-mirrored queue dir.
 # Override the whole list via config "services": [{name,heartbeat,inbox,verb},...].
 _DEFAULT_SERVICES = {
-    "ocr":           {"heartbeat": "ocr-heartbeat.json",          "inbox": "ocr-inbox",        "verb": "OCR a PDF or image"},
-    "voicebox":      {"heartbeat": "voicebox-heartbeat.json",     "inbox": "voicebox-inbox",   "verb": "Text-to-speech"},
-    "whisp":         {"heartbeat": "whisp-heartbeat.json",        "inbox": "pakettibot-inbox", "verb": "Transcribe audio / YouTube"},
-    "pakettibot":    {"heartbeat": "pakettibot-heartbeat.json",   "inbox": "pakettibot-inbox", "verb": "Run a !pk command"},
-    "merlib-mirror": {"heartbeat": "merlib-mirror-heartbeat.json", "inbox": None,              "verb": "Mirror a website"},
-    "spine":         {"heartbeat": "spine-heartbeat.json",        "inbox": None,               "verb": "Spine orchestrator"},
-    "repo-puller":   {"heartbeat": "repo-puller-heartbeat.json",  "inbox": None,               "verb": "Auto-pull tracked repos"},
+    "ocr":           {"heartbeat": "ocr-heartbeat.json",          "inbox": "ocr-inbox",            "verb": "OCR a PDF or image"},
+    "voicebox":      {"heartbeat": "voicebox-heartbeat.json",     "inbox": "voicebox-inbox",       "verb": "Text-to-speech"},
+    "whisp":         {"heartbeat": "whisp-heartbeat.json",        "inbox": "pakettibot-inbox",     "verb": "Transcribe audio / YouTube"},
+    "pakettibot":    {"heartbeat": "pakettibot-heartbeat.json",   "inbox": "pakettibot-inbox",     "verb": "Run a !pk command"},
+    "merlib-mirror": {"heartbeat": "merlib-mirror-heartbeat.json", "inbox": None,                  "verb": "Mirror a website"},
+    "spine":         {"heartbeat": "spine-heartbeat.json",        "inbox": None,                   "verb": "Spine orchestrator"},
+    "repo-puller":   {"heartbeat": "repo-puller-heartbeat.json",  "inbox": None,                   "verb": "Auto-pull tracked repos"},
+    # Convey fleet workers — these stamp {ts,status,detail,host}; `detail` carries the
+    # current job id (mapped to current_job in compute_activity). Without these here,
+    # Fleet's ACTIVITY face couldn't show what Convey is doing (the 2026-06-17 blind spot).
+    "convey-video":  {"heartbeat": "convey-video-heartbeat.json", "inbox": "convey-video-inbox",   "verb": "Convey a video end-to-end"},
+    "convey-isolate":{"heartbeat": "convey-isolate-heartbeat.json","inbox": "convey-isolate-inbox", "verb": "Isolate a person's speech"},
+    "convey-worker": {"heartbeat": "convey-worker-heartbeat.json", "inbox": "convey-inbox",         "verb": "Run the Convey belt"},
+    "fm":            {"heartbeat": "fm-heartbeat.json",           "inbox": "fm-inbox",             "verb": "FoundationModels on-device LLM"},
 }
 
 def _services_from_config(cfg: dict):
@@ -529,7 +536,14 @@ def compute_activity() -> list[dict]:
             "age_s": round(age) if age is not None else None,
             "status": d.get("status"),
         }
+        # current_job: writers disagree on the field name. whisp/ocr use current_job/current;
+        # the convey-* workers + fm carry the live job id in `detail`. Read all, but only when
+        # actually working — an idle worker stamps detail="" (or a stale id), which must NOT
+        # read as "busy on X". So `detail` only counts as the current job when status is busy.
+        status = (d.get("status") or "").lower()
         job = d.get("current_job") or d.get("current")
+        if not job and status in ("busy", "working", "processing", "running"):
+            job = d.get("detail")
         if isinstance(job, str) and job:
             rec["current_job"] = job
         cur, tot = d.get("current_page"), d.get("total_pages")
