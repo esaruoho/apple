@@ -98,6 +98,20 @@ TRIGGERS = {
             ".mp4", ".m4v", ".mov", ".mkv", ".avi", ".wmv", ".webm",
         ],
     },
+    # 'convey' — the magic-folder tag. Unlike the others (per-file submit → async
+    # queued/complete via a Mini worker), convey is SELF-CONTAINED: `convey tagsweep`
+    # already finds EVERY convey-tagged file across the whole computer (Spotlight), runs
+    # the belt OR routes a video to `convey video`, writes results BESIDE each source, and
+    # flips the tag convey→conveyed itself. So this trigger just RUNS THE SWEEP each tick
+    # (mode "convey-sweep"); no submit script, no queued/complete bookkeeping here. A lock
+    # keeps two ticks from stacking (a video sweep can run for minutes). This is what makes
+    # the sticker ALONE enough — tag a file `convey` and the next tick conveys it.
+    "convey": {
+        "mode": "convey-sweep",
+        "convey_bin": str(HOME / "work" / "apple" / "bin" / "convey"),
+        "trigger_tag": "convey",
+        "complete_tag": "conveyed:green",   # tagsweep does the actual swap; shown in --status
+    },
 }
 
 
@@ -234,6 +248,16 @@ def cmd_status():
     print(f"  failed:     {mc['failed']:>4}   (lifetime)")
     print()
     for name, cfg in TRIGGERS.items():
+        if cfg.get("mode") == "convey-sweep":
+            pend = len(mdfind_tag(cfg.get("trigger_tag", "convey")))
+            done = len(mdfind_tag(cfg["complete_tag"].split(":", 1)[0]))
+            running = "yes" if CONVEY_LOCK.exists() else "no"
+            print(f"  {name}  (→ convey tagsweep --run · whole computer · self-flips convey→conveyed)")
+            print(f"    pending (tagged 'convey'):   {pend}")
+            print(f"    done    (tagged 'conveyed'): {done}")
+            print(f"    sweep running now:           {running}")
+            print()
+            continue
         pending = len(find_pending(name, cfg))
         queued_name = cfg["queued_tag"].split(":", 1)[0]
         queued = len(mdfind_tag(queued_name))
@@ -256,11 +280,55 @@ def cmd_status():
     print(f"log: {LOG_PATH}")
 
 
+CONVEY_LOCK = Path("/tmp/convey-tagsweep.lock")
+
+
+def run_convey_sweep(cfg, dry_run=False):
+    """The 'convey' trigger: hand the whole job to `convey tagsweep`, which scans the whole
+    computer for convey-tagged files and conveys each (belt or convey-video), flipping
+    convey→conveyed itself. A pid lock keeps two ticks from stacking — a video sweep can run
+    for minutes, and the LaunchAgent fires every 60s. Returns 1 if it ran, 0 if skipped."""
+    convey = cfg.get("convey_bin") or str(HOME / "work" / "apple" / "bin" / "convey")
+    if not Path(convey).exists():
+        log(f"convey-sweep SKIP: convey not found at {convey}")
+        return 0
+    if dry_run:
+        r = subprocess.run([convey, "tagsweep"], capture_output=True, text=True)
+        out = (r.stdout or "").strip()
+        print(out[:2000] if out else "convey: (nothing tagged 'convey')")
+        return 0
+    # don't stack: if a previous sweep's pid is still alive, skip this tick
+    if CONVEY_LOCK.exists():
+        try:
+            pid = int(CONVEY_LOCK.read_text().strip() or "0")
+            os.kill(pid, 0)
+            print("convey: a tagsweep is still running — skipping this tick")
+            return 0
+        except (ValueError, ProcessLookupError, PermissionError):
+            pass  # dead/garbage lock → reclaim it
+    CONVEY_LOCK.write_text(str(os.getpid()))
+    try:
+        r = subprocess.run([convey, "tagsweep", "--run"], capture_output=True, text=True)
+        out = (r.stdout or "").strip()
+        if out and "no files tagged" not in out:
+            print(out[:4000])
+            log(f"convey-sweep ran (rc={r.returncode})")
+    finally:
+        try:
+            CONVEY_LOCK.unlink()
+        except FileNotFoundError:
+            pass
+    return 1
+
+
 def cmd_run(dry_run=False, only_trigger=None):
     mapping = load_map()
     total = 0
     for name, cfg in TRIGGERS.items():
         if only_trigger and name != only_trigger:
+            continue
+        if cfg.get("mode") == "convey-sweep":
+            run_convey_sweep(cfg, dry_run=dry_run)
             continue
         pending = find_pending(name, cfg)
         if not pending:
@@ -285,6 +353,9 @@ def cmd_reset(target):
     if not p.exists():
         sys.exit(f"tag-watcher: not a file: {p}")
     for cfg in TRIGGERS.values():
+        if cfg.get("mode") == "convey-sweep":
+            remove_tag(p, cfg["complete_tag"].split(":", 1)[0])   # un-do 'conveyed' so it re-sweeps
+            continue
         queued = cfg["queued_tag"].split(":", 1)[0]
         remove_tag(p, queued)
         remove_tag(p, queued.replace("queued", "processing"))
