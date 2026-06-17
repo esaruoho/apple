@@ -148,7 +148,7 @@ def call_mlx(turns, system, user_turn, timeout):
         kept.append({"role": role, "content": text})
     msgs.extend(reversed(kept))
     msgs.append({"role": "user", "content": user_turn})
-    body = json.dumps({"messages": msgs}).encode()
+    body = json.dumps({"messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS", "4096"))}).encode()
     req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
     try:

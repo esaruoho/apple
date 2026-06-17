@@ -52,10 +52,10 @@ if [ -z "$prompt" ]; then
   exit 1
 fi
 
-body=$(python3 -c 'import json,sys
+body=$(python3 -c 'import json,sys,os
 sysmsg, user = sys.argv[1], sys.argv[2]
 msgs = ([{"role":"system","content":sysmsg}] if sysmsg else []) + [{"role":"user","content":user}]
-print(json.dumps({"messages": msgs}))' "$system" "$prompt")
+print(json.dumps({"messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS","4096"))}))' "$system" "$prompt")
 
 t0=$(python3 -c 'import time; print(time.time())')
 reply=$(curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
