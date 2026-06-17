@@ -68,6 +68,16 @@ AppleBar — what the session accomplished  —  8 scenarios   (features/appleba
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+The architecture of any repository, whitelabeled  —  6 scenarios   (features/archof.feature)
+  - [@built @verified] Read a repo's shape, language-agnostic
+  - [@built @verified] The wiring is drawn, not just listed (so you can SEE it)
+  - [@built @verified] Custom require-wrappers are understood (not just bare import)
+  - [@built @verified] Safe and bounded (no laptop-cooking grep)
+  - [@built @verified] Reusable everywhere — one source of truth
+  - [@stock] Apple-native, dependency-free
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 5/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Arm the Apple skill into the Mini's on-device chat brain  —  17 scenarios   (features/arm-apple-skill.feature)
   - [@built @hw-verified] mlx-here arms the skill from the current folder
   - [@built @hw-verified] identity is set once, knowledge is retrieved per turn

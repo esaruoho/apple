@@ -487,44 +487,24 @@ final class FolderModel: ObservableObject {
         runProcess("/bin/sh", ["-c", script], cwd: url.path, title: "history · \(box.title)")
     }
 
-    /// The ARCHITECTURE view (rung 3, the most important): read a repo's SHAPE, not its log.
-    /// Composition (languages) → top-level modules → entry points → the structural HUBS (the
-    /// most-imported code files — the wiring backbone everything hangs off) → orientation docs.
-    /// All via `git grep`/`git ls-files` with ANCHORED, FIXED-STRING matching (no catastrophic
-    /// backtracking), bounded to 500 files, run off the main thread (runProcess is async).
+    /// The ARCHITECTURE view (rung 3, the most important): read a repo's SHAPE, not its log —
+    /// composition → top-level modules → entry points → structural HUBS → module→module WIRING.
+    /// DELEGATES to the standalone, whitelabeled `archof` tool (~/work/apple/bin/archof) so the
+    /// SAME architecture-understanding is reusable everywhere (terminal, Filee, any skill) — one
+    /// source of truth. archof is dependency-free (git+awk), language-agnostic, custom-require
+    /// aware, and SAFE (anchored regex + fixed-string counts, no catastrophic backtracking).
+    private let archofBin = "/Users/esaruoho/work/apple/bin/archof"
     func showArchitecture(_ box: BoxItem) {
         guard let url = box.url else { return }
-        let p = url.path.replacingOccurrences(of: "'", with: "'\\''")
-        // language globs reused for both the import scan and the hub-candidate list
-        let exts = "'*.py' '*.swift' '*.js' '*.ts' '*.jsx' '*.tsx' '*.rs' '*.lua' '*.c' '*.h' '*.cc' '*.cpp' '*.hpp' '*.go' '*.rb'"
-        let script = """
-        cd '\(p)' || exit 1
-        echo '══ ARCHITECTURE · '"$(basename '\(p)')"' ══'
-        echo
-        echo '── composition (tracked files by type) ──'
-        git ls-files | awk -F. 'NF>1{print $NF}' | grep -E '^[A-Za-z0-9]+$' | sort | uniq -c | sort -rn | head -12
-        echo
-        echo '── top-level modules (file count · dir) ──'
-        git ls-files | awk -F/ 'NF>1{print $1}' | sort | uniq -c | sort -rn | head -15
-        echo
-        echo '── entry points ──'
-        git ls-files | grep -iE '(^|/)(main|index|app|cli|__main__|server|lib|mod)\\.(swift|py|js|ts|jsx|tsx|rs|lua|c|cc|cpp|go|rb)$' | head -12
-        echo
-        echo '── structural hubs (refs · module — the most-imported = wiring backbone) ──'
-        imports=$(git grep -hI -E '^[[:space:]]*(import|from|#include|#import|require|use|@import|include)[[:space:](]' -- \(exts) 2>/dev/null)
-        git ls-files -- \(exts) 2>/dev/null | head -2000 | while IFS= read -r f; do b=$(basename "$f"); echo "${b%.*}"; done \\
-          | grep -vE '^(steps|__init__|conftest|setup|index|mod|lib|test|tests|main)$' \\
-          | sort -u | while IFS= read -r stem; do
-              [ ${#stem} -lt 3 ] && continue
-              n=$(printf '%s\\n' "$imports" | grep -wFc -- "$stem" 2>/dev/null)
-              [ "${n:-0}" -gt 0 ] && printf '%5d  %s\\n' "$n" "$stem"
-          done | sort -rn | head -15
-        echo
-        echo '── orientation docs ──'
-        ls README* readme* atlas/MAP.md UNDERSTANDING.md .memory.md CLAUDE.md AGENTS.md 2>/dev/null | head -8
-        if git for-each-ref --count=1 refs/h5i >/dev/null 2>&1; then echo; echo '(repo carries h5i AI-provenance — see "Show history")'; fi
-        """
-        runProcess("/bin/sh", ["-c", script], cwd: url.path, title: "architecture · \(box.title)")
+        runProcess(archofBin, [url.path], cwd: url.path, title: "architecture · \(box.title)")
+    }
+
+    /// Write the durable, whitelabeled ARCHITECTURE.md (with a Mermaid wiring diagram) into the
+    /// repo — `archof <repo> --write`. The report-card-for-a-repo: open it in any markdown viewer
+    /// to SEE the architecture drawn.
+    func writeArchitecture(_ box: BoxItem) {
+        guard let url = box.url else { return }
+        runProcess(archofBin, [url.path, "--write"], cwd: url.path, title: "ARCHITECTURE.md · \(box.title)")
     }
 
     // ── auto-convey: a folder armed to molecule new files as they LAND ───────────
@@ -817,6 +797,7 @@ struct FileeView: View {
             }
             if box.kind == .repo {                                  // rung 3: the repo's interior
                 Button("Show architecture (modules + wiring)") { model.showArchitecture(box) }
+                Button("Write ARCHITECTURE.md (+ diagram)") { model.writeArchitecture(box) }
                 Button("Show history (graph + provenance)") { model.showCommits(box) }
             }
             Menu("Folder memory") {                                 // give the folder a voice
@@ -827,6 +808,24 @@ struct FileeView: View {
             Button("convey changed") {
                 model.runConvey(["changed", box.url?.path ?? "", "--no-html"],
                                 title: "convey changed · \(box.title)")
+            }
+            // The MAGIC FOLDER: this folder ACTS on the files you tagged `convey` in Finder
+            // — belts each (results land beside it, appearing as boxes via the live watcher),
+            // then flips the tag convey→conveyed so it's done. The Smart Folder built from the
+            // tag (tag-smart) is the live VIEW; this makes it act. Preview is a dry-run.
+            Menu("✨ Magic folder (convey-tagged)") {
+                Button("Preview tagged files (dry-run)") {
+                    model.runConvey(["tagsweep", box.url?.path ?? box.id],
+                                    title: "tagsweep (preview) · \(box.title)")
+                }
+                Button("Convey them ▶  (results beside each, tag → conveyed)") {
+                    model.runConvey(["tagsweep", box.url?.path ?? box.id, "--run"],
+                                    title: "tagsweep --run · \(box.title)")
+                }
+                Button("Build Finder Smart Folder for 'convey' tag") {
+                    model.runConvey(["tagsweep", box.url?.path ?? box.id, "--smart"],
+                                    title: "smart folder · convey")
+                }
             }
         } else {
             Button("convey molecule") {
