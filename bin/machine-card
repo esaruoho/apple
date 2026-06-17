@@ -43,6 +43,17 @@ import sys
 import time
 from pathlib import Path
 
+# Force a C numeric locale for every child process we shell out to (ps, uptime,
+# sysctl, vm_stat, pmset, ...). Under a comma-decimal locale — e.g. fi_FI.UTF-8,
+# which the Cloudcity-Boot iTerm panes inherit — `ps` prints CPU% as "30,6" and
+# the unguarded float() in compute_running() raised ValueError, crashing
+# build_card() so `--publish` exited 1. The publisher loop then logged
+# emit-error every cycle, the Mini's Machine Card aged past Fleet's 120s "live"
+# window, and Fleet showed the always-on Mini as "WAKE & VIEW". LC_NUMERIC only
+# governs the decimal/thousands separator — it does NOT touch LC_CTYPE, so UTF-8
+# machine/process names still decode correctly (LC_ALL=C would have broken them).
+os.environ["LC_NUMERIC"] = "C"
+
 HERE = Path(__file__).resolve().parent
 APPLE_REPORT = HERE / "apple-report"
 SKILLS_DIR = Path.home() / ".claude" / "skills"
