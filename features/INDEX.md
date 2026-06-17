@@ -283,7 +283,7 @@ Where am I right now — device-presence geolocation for a desktop Mac  —  9 s
   triad: .session✓  transcript✗  RESULT✓
   honesty: 7/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-The on-device agentic tool-calling loop on the Mini's MLX brain  —  9 scenarios   (features/mlx-agent-tool-loop.feature)
+The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenarios   (features/mlx-agent-tool-loop.feature)
   - [@built @sim-verified] the loop executes a tool then returns a final answer
   - [@built @hw-verified] the SAFE tool registry runs the real verbs read-only
   - [@built @hw-verified] the sandbox refuses paths outside $HOME
@@ -292,9 +292,10 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  9 scenario
   - [@built @hw-verified] long files are paged (a bug the live run surfaced)
   - [@built @hw-verified] transient 502/503 reload windows are retried (a 2nd bug the live
   - [@built @sim-verified] the queue twin runs the loop on the Mini (Comms/Syncthing path)
+  - [@built @sim-verified] the loop refuses an answer that cites an un-opened file (groundi
   - [@built @sim-verified] the final answer is shown via the ONE shared presenter (DRY)
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 9/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Desktop & Dock visibility from the command bar  —  3 scenarios   (features/shell-toggles.feature)
   - [@verified] "hide … desktop" and "hide the dock" route to their actions
