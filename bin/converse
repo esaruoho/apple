@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""converse — LAUNCH Converse.app as a named, resumable discussion with the Mini's
+MLX brain, armed with the skill that GOVERNS the folder you're standing in.
+
+This OPENS THE GUI. To talk to the same MLX brain in your TERMINAL instead (no
+app, no ⌘3), use `mlx` (a.k.a. mlx-here).
+
+    cd ~/work/apple && converse          # open Converse, Apple skill armed
+    cd ~/work/impulse-tracker && converse # open Converse, impulse-tracker skill armed
+    converse midi-sync                    # NAMED discussion 'midi-sync' (resume by reusing the name)
+    converse --list                       # list discussions started in this folder
+    converse --fm                         # use the FoundationModels brain instead of MLX
+    converse --cwd DIR [name]             # arm the skill governing DIR (not the shell cwd)
+    converse --autoarm [on|off]           # make OPENING Converse.app + ⌘3 self-arm to this
+                                          # folder's skill — no terminal needed. `off` → plain MLX.
+
+Running `converse` (or `converse <name>`) also sets this folder as the boot default,
+so simply opening Converse.app and pressing ⌘3 keeps arming to your last context.
+
+The discussion IS a real Converse session, so it is:
+  • renameable — it's just the folder name under ~/work/converse/sessions/
+  • saveable   — Converse autosaves the livefile (source of truth) + transcript
+  • resumable  — run `converse <same-name>` again, or Converse ▸ File ▸ Open Session (⌘O)
+  • copyable   — click the "⧉ copy" after any reply (or select + ⌘C)
+
+How the arming works WITHOUT touching the Swift app: we seed the session's
+fm-converse state with `arm_cwd`, so Converse's plain `fm-converse --mlx` ⌘3 call
+self-arms from the governing skill (identity from its SKILL.md + per-turn retrieval
+from its docs). Same engine as `mlx` / `fm-chat --apple`. Apple is the fallback.
+
+Apple-native: python3 stdlib only.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import arm_apple  # detect_skill / active_label — pure, no convey needed
+
+SESSIONS = Path.home() / "work" / "converse" / "sessions"
+FM_STORE = Path.home() / ".cache" / "fm-converse"
+SETTINGS = Path.home() / ".config" / "converse" / "settings.json"
+APP_BUILT = Path.home() / "work" / "converse" / "build" / "Converse.app"
+APPVER = "0.5.0"
+DOCTRINE = "envoy-livefile-v1"
+
+
+def slugify(s: str) -> str:
+    s = re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower()
+    return s or "chat"
+
+
+def fm_store_path(key: str) -> Path:
+    safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in key)
+    return FM_STORE / f"{safe}.json"
+
+
+def seed_fm_state(session_name: str, arm_cwd: str):
+    """Pre-create the fm-converse memory bucket for this session, armed. fm-converse
+    keys by session dir name; arm_cwd makes every turn (incl. Converse's ⌘3) self-arm."""
+    FM_STORE.mkdir(parents=True, exist_ok=True)
+    p = fm_store_path(session_name)
+    state = {"system": "", "turns": [], "cwd": arm_cwd, "arm_cwd": arm_cwd}
+    if p.exists():                                   # resuming → keep history, refresh arm
+        try:
+            state = json.loads(p.read_text())
+        except Exception:
+            pass
+        state["arm_cwd"] = arm_cwd
+        state.setdefault("cwd", arm_cwd)
+    p.write_text(json.dumps(state, ensure_ascii=False))
+
+
+def write_session(dirpath: Path, stamp: str):
+    """Create a minimal but valid Converse session: the livefile.jsonl Converse
+    needs to resume, a manifest, and an empty transcript. Matches LiveLog.emit's
+    line shape so the event log stays uniform."""
+    chunks = dirpath / "chunks"
+    chunks.mkdir(parents=True, exist_ok=True)
+    transcript = f"converse-{stamp}.md"
+    audio = f"converse-{stamp}.caf"
+    iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    livefile = dirpath / "livefile.jsonl"
+    if not livefile.exists():
+        evt = {
+            "actor": "local-user", "app": "converse", "app_version": APPVER,
+            "body": stamp, "doctrine": DOCTRINE, "id": "evt_000001",
+            "session_id": stamp, "t": iso, "transcript": transcript,
+            "audio": audio, "type": "session.created",
+        }
+        livefile.write_text(json.dumps(evt, sort_keys=True) + "\n")
+    manifest = {
+        "id": stamp, "app": "converse", "app_version": APPVER,
+        "doctrine": DOCTRINE,
+        "doctrine_note": "The transcript is a view. The event log is the document.",
+        "started_at": iso, "event_log": "livefile.jsonl",
+        "transcript": transcript, "audio": audio,
+        "armed_by": "mlx",
+    }
+    (dirpath / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    tpath = dirpath / transcript
+    if not tpath.exists():
+        tpath.write_text("")
+
+
+def set_brain(use_mlx: bool, arm_cwd=None):
+    """Merge Converse's settings.json: pre-select the ⌘3 MLX (vs ⌘1 FM) brain, and —
+    when arm_cwd is given — record it as `mlxArmCwd` so that simply OPENING Converse
+    and pressing ⌘3 self-arms to that folder's skill (the boot-time `mlx` experience,
+    no terminal). Pass arm_cwd="" to clear (back to plain MLX)."""
+    SETTINGS.parent.mkdir(parents=True, exist_ok=True)
+    o = {}
+    if SETTINGS.exists():
+        try:
+            o = json.loads(SETTINGS.read_text())
+        except Exception:
+            o = {}
+    o["brain"] = "mlx" if use_mlx else "fm"
+    if arm_cwd is not None:
+        o["mlxArmCwd"] = arm_cwd
+    SETTINGS.write_text(json.dumps(o, indent=2))
+
+
+def list_for(cwd: str):
+    real = os.path.realpath(cwd)
+    rows = []
+    if SESSIONS.is_dir():
+        for d in SESSIONS.iterdir():
+            if not d.is_dir() or not d.name.startswith("mlx-"):
+                continue
+            st = fm_store_path(d.name)
+            armc = ""
+            turns = 0
+            if st.exists():
+                try:
+                    s = json.loads(st.read_text())
+                    armc = s.get("arm_cwd") or s.get("cwd") or ""
+                    turns = len(s.get("turns", [])) // 2
+                except Exception:
+                    pass
+            if real and os.path.realpath(armc or "/nonexistent") != real:
+                continue
+            rows.append((d.stat().st_mtime, d.name, turns))
+    if not rows:
+        print(f"(no converse discussions for {real})")
+        return
+    for _, name, turns in sorted(rows, reverse=True):
+        print(f"  {name}   {turns} exchange(s)   resume: converse {name[4:]}")
+
+
+def launch(dirpath: Path):
+    """`open -a <app> <dir>` → Converse's applicationOpenFiles → resumeSession(dir).
+    Prefer the built app bundle; fall back to a registered 'Converse'."""
+    app = str(APP_BUILT) if APP_BUILT.exists() else "Converse"
+    subprocess.run(["open", "-a", app, str(dirpath)], check=False)
+
+
+def main():
+    args = sys.argv[1:]
+    use_mlx = True
+    cwd_override = None
+    name = None
+    do_list = False
+    autoarm = None        # "on" | "off" → configure boot-time self-arm, don't launch
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-h", "--help"):
+            sys.stdout.write(__doc__); return 0
+        elif a == "--fm":
+            use_mlx = False; i += 1
+        elif a == "--mlx":
+            use_mlx = True; i += 1
+        elif a == "--list":
+            do_list = True; i += 1
+        elif a == "--cwd":
+            cwd_override = args[i + 1]; i += 2
+        elif a == "--autoarm":
+            autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")
+            i += 2 if autoarm in ("on", "off") and i + 1 < len(args) and args[i + 1] in ("on", "off") else 1
+        elif a.startswith("-"):
+            sys.exit(f"converse: unknown flag {a} (see --help)")
+        else:
+            name = a; i += 1
+
+    cwd = os.path.realpath(cwd_override or os.getcwd())
+
+    if do_list:
+        list_for(cwd)
+        return 0
+
+    # --autoarm: configure whether OPENING Converse + ⌘3 self-arms (no launch).
+    if autoarm is not None:
+        if autoarm == "off":
+            set_brain(use_mlx, arm_cwd="")
+            print("converse: boot-time self-arm OFF — opening Converse + ⌘3 is plain MLX.")
+        else:
+            skill = arm_apple.detect_skill(cwd); arm_apple._ACTIVE = skill
+            set_brain(True, arm_cwd=cwd)
+            print(f"converse: boot-time self-arm ON → {arm_apple.active_label()} ({cwd}).")
+            print("     Now just open Converse.app and press ⌘3 — it arms automatically.")
+        return 0
+
+    skill = arm_apple.detect_skill(cwd)
+    arm_apple._ACTIVE = skill
+    label = arm_apple.active_label()
+
+    if name:
+        stamp = "mlx-" + slugify(name)
+    else:
+        stamp = f"mlx-{slugify(skill['name'])}-{time.strftime('%Y%m%d-%H%M%S')}"
+    dirpath = SESSIONS / stamp
+    resuming = dirpath.exists()
+
+    write_session(dirpath, stamp)
+    seed_fm_state(stamp, cwd)
+    # Also make THIS the boot default: opening Converse + ⌘3 later self-arms to the
+    # same folder's skill, so "just open Converse" keeps the mlx experience.
+    set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
+    # touch the dir so it is the NEWEST session → fm-converse's current_session_key()
+    # resolves to it, so Converse's ⌘3 loads exactly the bucket we just armed.
+    os.utime(dirpath, None)
+    launch(dirpath)
+
+    brain = "MLX (Qwen3-4B)" if use_mlx else "FoundationModels"
+    verb = "resuming" if resuming else "new"
+    print(f"converse: {verb} discussion '{stamp[4:]}'  ·  {label} armed  ·  brain: {brain}")
+    print(f"     session: {dirpath}")
+    print(f"     in Converse: type, press {'⌘3' if use_mlx else '⌘1'} to send · ⌘C copies a reply · ⌘O reopens · ⌘S saves")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
