@@ -40,13 +40,49 @@ Feature: Every camera → a file
     # Front capture needs on-device software + a tap, which the no-UI-hijack rule bans.
 
 Feature: Full-resolution iPhone photo (the real Camera.app file)
-  @blocked-physical
-  Scenario: Import the newest / next photo over USB
-    Given the iPhone is tethered, trusted, AND unlocked
-    When I run `iphone-import --latest <dir>` (or `--watch`)
-    Then the 12MP/48MP HEIC/JPEG is copied off the phone via ImageCaptureCore
-    # innards: sensor-snapshot/iphone-import.swift; device discovered + session opens live,
-    # blocked only on "Please unlock" (DCIM gate) — code path correct, not yet green.
+  @built   # NOT yet verified for a freshly-taken photo — see the honesty note below
+  Scenario: Import the next photo over USB — YOU shoot it
+    Given the iPhone is tethered (and trusted+unlocked, retried for ~80s)
+    When I run `iphone-import --watch <dir>` and take a photo in the Camera app
+    Then the real HEIC/JPEG the phone just wrote is copied off via ImageCaptureCore
+    # innards: sensor-snapshot/iphone-import.swift. Detection is by 2s POLLING (close→reopen
+    # re-enumerates the catalog), because ImageCaptureCore's didAdd push event does NOT fire
+    # for iPhone captures taken after the session opens. Compiles + runs; a freshly-taken photo
+    # has NOT yet been observed landing through the poll. @built until that live observation.
+
+  @verified
+  Scenario: Survive starting before the phone is unlocked (retry, don't bail)
+    Given the iPhone is locked when the command starts
+    When the ImageCaptureCore session-open returns -9943 (ICReturnDeviceIsPasscodeLocked)
+    Then a MAIN-THREAD repeating Timer re-issues requestOpenSession() every 2s for ~80s
+    And the session opens as soon as I unlock the phone — order no longer matters
+    # innards: Importer.tick() phase 1 + the top-level Timer added on the CFRunLoopRun thread.
+    # GOTCHA proven live 2026-06-17: a Timer/asyncAfter scheduled from ICC's callback thread
+    # never wakes this run loop — it MUST be created on the main thread before CFRunLoopRun().
+
+  @verified
+  Scenario: Wait for the NEXT photo, never grab an existing one
+    Given the phone holds ~1966 existing photos
+    When --watch enumerates them at session open
+    Then those are absorbed into the baseline and ignored; only a post-baseline photo is taken
+    # innards: catalogReady gate; the baseline diff lives in deviceDidBecomeReady's refresh path.
+    # Verified live 2026-06-17 that it correctly WAITS instead of grabbing an old IMG_E####.JPG.
+
+Feature: iPhone photo → the macOS clipboard
+  @verified
+  Scenario: One command puts a Continuity-grabbed iPhone photo on the pasteboard
+    Given I want to paste an iPhone photo straight into Claude / Mail / Messages
+    When I run `iphone-clip` (blind Continuity grab)
+    Then the captured image is written to the general pasteboard as image data (Cmd-V pastes it)
+    # innards: bin/iphone-clip → iphone-photo, then NSImage → NSPasteboard writeObjects.
+    # Verified live 2026-06-17: clipboard info shows TIFF/JPEG/PNG picture types. Slash: /iphone-clip.
+
+  @built   # the --watch path inherits the unverified poll-detection above
+  Scenario: iphone-clip --watch puts the photo YOU shot on the pasteboard
+    Given I run `iphone-clip --watch` and take a photo on the iPhone
+    Then that real photo (not a blind grab) is copied to the clipboard
+    # innards: bin/iphone-clip --watch → iphone-import --watch (2s poll) → NSPasteboard.
+    # @built until a freshly-taken photo is observed landing through the poll.
 
 Feature: iPhone screen → a file
   @built

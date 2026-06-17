@@ -1,0 +1,71 @@
+#!/bin/bash
+# iphone-clip — get an iPhone photo onto the macOS clipboard, so Cmd-V pastes
+# the picture straight into Claude / Mail / Messages / any rich surface.
+#
+# Two modes:
+#   iphone-clip --watch         YOU shoot it. Waits, you open the iPhone Camera,
+#                               frame + tap the shutter, that real full-res photo
+#                               is imported and copied to the clipboard.
+#   iphone-clip                 MAC shoots it. Blind Continuity-Camera grab — no
+#                               viewfinder, fires instantly (≈2.8MP still).
+#
+# Options:
+#   --keep <path>   also save a copy of the captured image to <path>
+#   --device <sub>  (default mode only) pick a Continuity Camera by name substr
+#   --list          list the cameras the Mac can see, then exit
+#
+# Pipelines:
+#   --watch : bin/iphone-import --watch (ImageCaptureCore, USB-tethered phone)
+#   default : bin/iphone-photo (AVFoundation Continuity Camera)
+#   both    → NSImage → NSPasteboard (image data on the general pasteboard)
+#
+# FEATURE-CARD >> sensor-snapshot/snapshot.feature
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+
+DEVICE="esaiPhone16Pro Camera"   # default: the rear iPhone cam, not Desk View
+KEEP=""
+WATCH=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --list)   exec "$REPO/bin/iphone-photo" --list ;;
+    --watch)  WATCH=1;      shift ;;
+    --device) DEVICE="$2";  shift 2 ;;
+    --keep)   KEEP="$2";    shift 2 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+copy_to_clipboard() {  # $1 = image path
+  osascript >/dev/null <<APPLESCRIPT
+use framework "Foundation"
+use framework "AppKit"
+set theImage to current application's NSImage's alloc()'s initWithContentsOfFile:"$1"
+if theImage is missing value then error "could not load captured image"
+set pb to current application's NSPasteboard's generalPasteboard()
+pb's clearContents()
+pb's writeObjects:{theImage}
+APPLESCRIPT
+}
+
+if [[ "$WATCH" -eq 1 ]]; then
+  WDIR="$(mktemp -d -t iphone-clip-watch)"
+  trap 'rm -rf "$WDIR"' EXIT
+  echo "👉 Open the Camera app on your iPhone and take a photo now…" >&2
+  IMG="$("$REPO/bin/iphone-import" --watch "$WDIR" | tail -1)"
+  if [[ -z "$IMG" || ! -f "$IMG" ]]; then
+    echo "❌ no photo imported (is the iPhone USB-connected + unlocked?)" >&2
+    exit 1
+  fi
+else
+  IMG="$(mktemp -t iphone-clip).jpg"
+  trap 'rm -f "$IMG"' EXIT
+  echo "📸 capturing from iPhone (${DEVICE})…" >&2
+  "$REPO/bin/iphone-photo" "$IMG" --device "$DEVICE" >&2
+fi
+
+copy_to_clipboard "$IMG"
+if [[ -n "$KEEP" ]]; then cp -f "$IMG" "$KEEP"; echo "💾 saved: $KEEP" >&2; fi
+BYTES=$(stat -f%z "$IMG")
+echo "✅ iPhone photo on clipboard (${BYTES} bytes) — Cmd-V to paste into Claude." >&2
