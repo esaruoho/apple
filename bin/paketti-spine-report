@@ -121,12 +121,13 @@ def main():
 
     text = "\n".join(md)
     (OUT / "SPINE-TRUE.md").write_text(text)
-    # Also drop it in the Paketti repo itself — this is useful Paketti documentation.
+    # Also drop it in the Paketti repo's docs/ — useful Paketti documentation.
     try:
-        (Path(PAKETTI) / "SPINE-TRUE.md").write_text(text)
+        (Path(PAKETTI) / "docs").mkdir(exist_ok=True)
+        (Path(PAKETTI) / "docs" / "SPINE-TRUE.md").write_text(text)
     except Exception:
         pass
-    print(f"wrote {OUT}/SPINE-TRUE.md  +  {PAKETTI}/SPINE-TRUE.md")
+    print(f"wrote {OUT}/SPINE-TRUE.md  +  {PAKETTI}/docs/SPINE-TRUE.md")
     print(f"  {grand:,} registration points "
           f"({u['keybinding']:,} shortcuts · {u['menu_entry']:,} menus · {u['midi_mapping']:,} MIDI)")
     print(f"  {nloaded}/{ntot} files robust · {nbad} brittle")
