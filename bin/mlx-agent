@@ -52,6 +52,7 @@ def main():
     ap.add_argument("--voice", default=os.environ.get("FM_MLX_VOICE", "Zoe (Premium)"))
     ap.add_argument("--no-arm", action="store_true", help="skip skill arming")
     ap.add_argument("--dry-run", action="store_true", help="list tools and exit")
+    ap.add_argument("--trace", action="store_true", help="force the live tool-call trace (even with --raw / piped)")
     ap.add_argument("--no-trace", action="store_true")
     ap.add_argument("-h", "--help", action="store_true")
     a = ap.parse_args()
@@ -86,7 +87,7 @@ def main():
         except Exception:
             system = ""
 
-    trace = (not a.no_trace) and sys.stderr.isatty()
+    trace = a.trace or ((not a.no_trace) and sys.stderr.isatty())
 
     def on_tool(name, args, result):
         if trace:
