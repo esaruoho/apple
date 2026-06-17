@@ -47,6 +47,18 @@ FM_STORE = Path.home() / ".cache" / "fm-converse"
 SETTINGS = Path.home() / ".config" / "converse" / "settings.json"
 APP_BUILT = Path.home() / "work" / "converse" / "build" / "Converse.app"
 APPVER = "0.5.0"
+
+# Cloned personas: name -> (voice-card dir to ARM to, voicebox profile to SPEAK in).
+# `converse --persona bearden` arms Converse to think AS Bearden (his voice card's
+# SKILL.md/cadence) AND speak in his cloned chatterbox voice.
+VOICES_DIR = Path.home() / "work" / "convey" / "voices"
+PERSONA_PROFILES = {
+    "bearden":  "Tom Bearden (Tom Talks Tesla)",
+    "esa":      "Esa Ruoho",
+    "rob":      "Rob McNeilly (Sleeping Easy)",
+    "milton":   "Milton H. Erickson",
+    "erickson": "Milton H. Erickson",
+}
 DOCTRINE = "envoy-livefile-v1"
 
 
@@ -156,7 +168,7 @@ def list_for(cwd: str):
 def launch(dirpath: Path):
     """`open -a <app> <dir>` → Converse's applicationOpenFiles → resumeSession(dir).
     Prefer the built app bundle; fall back to a registered 'Converse'."""
-    app = str(APP_BUILT) if APP_BUILT.exists() else "Converse"
+    app = "/Applications/Converse.app" if os.path.exists("/Applications/Converse.app") else "Converse"  # boot the INSTALLED bundle, not build/
     subprocess.run(["open", "-a", app, str(dirpath)], check=False)
 
 
@@ -167,6 +179,7 @@ def main():
     name = None
     do_list = False
     autoarm = None        # "on" | "off" → configure boot-time self-arm, don't launch
+    persona = None        # --persona <voice>: arm to + speak in a cloned persona
     i = 0
     while i < len(args):
         a = args[i]
@@ -180,6 +193,8 @@ def main():
             do_list = True; i += 1
         elif a == "--cwd":
             cwd_override = args[i + 1]; i += 2
+        elif a == "--persona":
+            persona = args[i + 1].lower(); i += 2
         elif a == "--autoarm":
             autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")
             i += 2 if autoarm in ("on", "off") and i + 1 < len(args) and args[i + 1] in ("on", "off") else 1
