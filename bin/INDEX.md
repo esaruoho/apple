@@ -1,4 +1,4 @@
-# CLI Tools Index — 252 tools in bin/
+# CLI Tools Index — 253 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -160,6 +160,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `olga` — (no description) — `bin/olga`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`
 `paketti-ask` — (no description) — `bin/paketti-ask`
+`paketti-coverage` — (no description) — `bin/paketti-coverage`
 `paketti-faq-gen` — (no description) — `bin/paketti-faq-gen`
 `paketti-faq-rate` — (no description) — `bin/paketti-faq-rate`
 `paketti-spine-build` — (no description) — `bin/paketti-spine-build`
