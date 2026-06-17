@@ -119,9 +119,19 @@ def seed_persona(voice: str, stamp: str):
         if vj.exists():
             vj.unlink()
         return
-    state["system"] = persona_system(voice)
-    state["arm_cwd"] = ""          # IMPORTANT: no heavy retrieval-arming on each turn
-    state["max_tokens"] = 420      # spoken replies are short — keeps each turn snappy
+    card = str(VOICES_DIR / (voice if voice != "milton" else "erickson"))
+    # Build the HEAVY grounded identity (archive retrieval over the persona's card)
+    # ONCE and freeze it. arm_cwd stays set so each turn still does live per-question
+    # retrieval (augment_prompt), but fm-converse won't rebuild the system every turn.
+    try:
+        import arm_apple
+        arm_apple.detect_skill(card)
+        state["system"] = arm_apple.build_system(card)
+    except Exception:
+        state["system"] = persona_system(voice)   # fallback: light cadence brief
+    state["arm_cwd"] = card        # KEEP ARMED → per-turn live retrieval
+    state["cwd"] = card
+    state["max_tokens"] = 800      # grounded replies — enough to finish a thought
     sp.parent.mkdir(parents=True, exist_ok=True)
     sp.write_text(json.dumps(state, ensure_ascii=False))
     sdir = SESSIONS / stamp

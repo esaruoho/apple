@@ -235,8 +235,14 @@ def main() -> int:
             sys.stderr.write(f"fm-converse: could not arm skill: {e}\n")
             armer = None
         if armer is not None:
-            state["system"] = armer.build_system(arm_cwd_final, extra=system_override or "")
-            save(key, state)
+            # Build the (heavy) grounded system ONCE and CACHE it. Rebuilding the
+            # full archive-retrieval system on every turn is what made armed personas
+            # take 35s+ and time out. The cached identity stays armed; per-turn live
+            # retrieval still happens below via armer.augment_prompt. Force a rebuild
+            # with FM_REARM=1 (or --reset).
+            if not state.get("system") or os.environ.get("FM_REARM") == "1":
+                state["system"] = armer.build_system(arm_cwd_final, extra=system_override or "")
+                save(key, state)
     elif system_override is not None:
         state["system"] = system_override
         save(key, state)
