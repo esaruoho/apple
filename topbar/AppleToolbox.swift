@@ -2677,6 +2677,11 @@ struct MailFlagStatus {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var refreshTimer: Timer?
+    // "Arm iPhone → Clipboard" one-shot watcher (bin/iphone-clip --watch). While
+    // armed, you take a photo on the iPhone and it lands on the macOS clipboard;
+    // the process then exits. Held so a second click disarms it. See
+    // features/iphone-clip.feature + sensor-snapshot/iphone-import.swift.
+    var iphoneWatchProc: Process?
     // Cached Voicebox API server reachability, refreshed off-main-thread by
     // probeVoiceboxServer(). The Claude-speech menu row reads this so its label
     // can show the TRUE end-to-end state (flag ON *and* server up) without doing
@@ -3235,6 +3240,53 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let args = p["args"] as? [String] ?? []
         NSLog("AppleToolbox: runAction title='\(sender.title)' cmd=\(cmd) args=\(args)")
         runDetached(cmd, args)
+    }
+
+    /// "Arm iPhone → Clipboard": launch bin/iphone-clip --watch as a one-shot.
+    /// Once armed, take a photo on the iPhone (Camera app) and the real photo is
+    /// imported over USB and copied to the clipboard, ready to ⌘V into Claude.
+    /// Clicking the row again while armed disarms (terminates the watcher).
+    /// Auto-disarms after 5 min so the 2s USB poll doesn't cycle forever.
+    @objc func armIPhoneToClipboard(_ sender: Any?) {
+        // Already armed → this click disarms.
+        if let p = iphoneWatchProc, p.isRunning {
+            p.terminationHandler = nil
+            p.terminate()
+            iphoneWatchProc = nil
+            notify("📲 iPhone → Clipboard", "Disarmed.")
+            return
+        }
+
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "\(APPLE_DIR)/bin/iphone-clip")
+        p.arguments = ["--watch"]
+        p.terminationHandler = { [weak self] proc in
+            DispatchQueue.main.async {
+                guard let self = self, self.iphoneWatchProc === proc else { return }
+                self.iphoneWatchProc = nil
+                if proc.terminationStatus == 0 {
+                    notify("📲 iPhone → Clipboard", "✅ Photo on the clipboard — ⌘V to paste.")
+                } else {
+                    notify("📲 iPhone → Clipboard", "Ended without a photo. Click to re-arm.")
+                }
+            }
+        }
+        do {
+            try p.run()
+        } catch {
+            notify("📲 iPhone → Clipboard", "Couldn't start the watcher: \(error.localizedDescription)")
+            return
+        }
+        iphoneWatchProc = p
+        notify("📲 iPhone armed", "Unlock the iPhone, take a photo — it lands on the clipboard.")
+        // Safety auto-disarm so an un-fired watcher doesn't poll the USB forever.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 300) { [weak self] in
+            guard let self = self, let pp = self.iphoneWatchProc, pp === p, pp.isRunning else { return }
+            pp.terminationHandler = nil
+            pp.terminate()
+            self.iphoneWatchProc = nil
+            notify("📲 iPhone → Clipboard", "Auto-disarmed after 5 min.")
+        }
     }
 
     @objc func runPromptAction(_ sender: NSMenuItem) {
@@ -3907,6 +3959,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // symbols like ⏹/⚙ to force emoji presentation — never raw
         // symbol-presentation glyphs, they render visibly smaller).
         menu.addItem(action("🔇 Stop Voicebox", cmd: "\(HOME)/bin/voicebox-stop"))
+        // Arm iPhone → Clipboard. One click arms bin/iphone-clip --watch; take a
+        // photo on the iPhone and it lands on the macOS clipboard (⌘V into Claude).
+        // Title reflects live armed state; a second click disarms.
+        let iphoneArmed = (iphoneWatchProc?.isRunning ?? false)
+        let iphoneTitle = iphoneArmed
+            ? "📲 iPhone → Clipboard: ARMED — click to disarm"
+            : "📲 Arm iPhone → Clipboard"
+        menu.addItem(customAction(iphoneTitle, selector: #selector(armIPhoneToClipboard(_:))))
         // Claude-speech switch — the ONE control for "Claude talks to me". Truth
         // = intent flag (~/.config/voicebox/speak.state) AND server reachable
         // (cached voiceboxServerUp). Enabling guarantees BOTH: it flips the flag

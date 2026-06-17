@@ -244,6 +244,14 @@ image-playground — on-device pictures, locally, as the prose's twin  —  16 s
   triad: .session✓  transcript✗  RESULT✓
   honesty: 16/16 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+An iPhone photo, on the Mac clipboard, the way you took it  —  4 scenarios   (features/iphone-clip.feature)
+  - [@verified] --watch — YOU shoot it, it lands on the clipboard
+  - [@verified] blind mode — the Mac fires a Continuity-Camera grab
+  - [@verified] Arm it from the AppleToolbox menu bar
+  - [@built] Disarm / re-arm cycle behaves
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 AppleBar parses markdown in its result pane  —  4 scenarios   (features/markdown-attributed.feature)
   - [@verified] headings, bold, code, and rules render (not raw markers)
   - [@built] AppleBar shows the rendered markdown, not the raw text
