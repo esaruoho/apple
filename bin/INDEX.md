@@ -1,4 +1,4 @@
-# CLI Tools Index — 253 tools in bin/
+# CLI Tools Index — 254 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -64,6 +64,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-index` — (no description) — `bin/cc-index`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
+`converse` — (no description) — `bin/converse`
 `create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
 `describe-worker` — (no description) — `bin/describe-worker`
@@ -144,7 +145,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `merlib-frontmatter` — (no description) — `bin/merlib-frontmatter`
 `merlib-linkcheck` — (no description) — `bin/merlib-linkcheck`
 `mic-record` — capture the default microphone to a WAV. Self-building Swift, no deps. — `bin/mic-record`
-`mlx` — (no description) — `bin/mlx`
+`mlx` — here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx`
 `mlx-agent` — (no description) — `bin/mlx-agent`
 `mlx-chat` — mlx-here — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-chat`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
