@@ -144,8 +144,35 @@ def seed_persona(voice: str, stamp: str, mode: str = "deep", profile: str = ""):
     sdir = SESSIONS / stamp
     if sdir.exists():
         prof = profile or PERSONA_PROFILES.get(voice, voice)
-        (sdir / "voice.json").write_text(json.dumps(
-            {"profile": prof, "engine": "chatterbox"}))
+        vj = {"profile": prof, "engine": "chatterbox"}
+        if mode == "both":
+            # dual: Converse speaks a FAST reply (hear) then shows the DEEP one (see)
+            vj["dual"] = True
+            vj["voice"] = voice
+        (sdir / "voice.json").write_text(json.dumps(vj))
+
+
+def persona_reply(voice: str, utterance: str) -> str:
+    """A FAST, stateless in-character reply (light cadence system, no retrieval) —
+    used by Converse's dual 'Both' mode to speak something in ~7s while the deep,
+    grounded answer is still being written."""
+    sys_prompt = persona_system(voice)
+    import urllib.request
+    body = json.dumps({"messages": [{"role": "system", "content": sys_prompt},
+                                    {"role": "user", "content": utterance}],
+                       "max_tokens": 300}).encode()
+    host = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini:8080")
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(host + "/v1/chat/completions", data=body,
+                                         headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=60) as r:
+                d = json.loads(r.read().decode())
+            return d["choices"][0]["message"]["content"].strip()
+        except Exception:
+            import time as _t
+            _t.sleep(2 + 2 * attempt)
+    return ""
 
 
 def seed_fm_state(session_name: str, arm_cwd: str):
@@ -278,6 +305,10 @@ def main():
             _md = args[i + 3] if len(args) > i + 3 else "deep"
             _pr = args[i + 4] if len(args) > i + 4 else ""
             seed_persona(_v, _st, _md, _pr)
+            return 0
+        elif a == "--persona-reply":
+            # dual 'Both': a fast in-voice reply to speak while the deep answer writes
+            sys.stdout.write(persona_reply(args[i + 1].lower(), args[i + 2]))
             return 0
         elif a == "--autoarm":
             autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")

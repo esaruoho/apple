@@ -153,16 +153,33 @@ def call_mlx(turns, system, user_turn, timeout):
     # comes back. Override with FM_MLX_MAX_TOKENS.
     max_tokens = int(os.environ.get("FM_MLX_MAX_TOKENS", "4096"))
     body = json.dumps({"messages": msgs, "max_tokens": max_tokens}).encode()
-    req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
-                                 headers={"Content-Type": "application/json"}, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=float(timeout)) as r:
-            d = json.loads(r.read().decode())
-        return d["choices"][0]["message"]["content"].strip(), None
-    except urllib.error.URLError as e:
-        return "", f"MLX server unreachable ({getattr(e, 'reason', e)}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
-    except Exception as e:
-        return "", f"MLX error: {e}"
+    # The MLX server runs single-concurrency, so a request that arrives while it's
+    # busy (or mid-restart) returns 502/503. Retry transient failures with backoff
+    # rather than failing the turn. Genuine "server down" still surfaces after retries.
+    import time as _t
+    last = "unknown"
+    for attempt in range(4):
+        req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
+                                     headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=float(timeout)) as r:
+                d = json.loads(r.read().decode())
+            return d["choices"][0]["message"]["content"].strip(), None
+        except urllib.error.HTTPError as e:
+            last = f"HTTP {e.code}"
+            if e.code in (429, 500, 502, 503, 504) and attempt < 3:
+                _t.sleep(2 + 3 * attempt)      # server busy (single-concurrency) — wait + retry
+                continue
+            return "", f"MLX server error ({last}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
+        except urllib.error.URLError as e:
+            last = str(getattr(e, "reason", e))
+            if attempt < 3:
+                _t.sleep(2 + 3 * attempt)
+                continue
+            return "", f"MLX server unreachable ({last}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
+        except Exception as e:
+            return "", f"MLX error: {e}"
+    return "", f"MLX server unreachable after retries ({last})"
 
 
 def main() -> int:
