@@ -53,7 +53,24 @@ each character (Esa, Bearden, Rob, Milton).
   Whisper coverage 0.97. Preserved as `apple/patches/voicebox-mlx-chatterbox.patch`.
 - **Live ⏳ seconds counter** in every persona CLI (shared engine).
 
-## What we LEFT ON THE TABLE
+## Round 3 (2026-06-17) — fast + the conversation proof
+- **Turbo engine is now the DEFAULT** (`mlx-community/chatterbox-turbo-fp16`) — ~2× faster
+  generation than fp16. Fixed the snag where turbo's compact clips tripped the duration floor.
+- **`repetition_penalty` 2.4** — first-try passes, no retry-thrash.
+- **Verification 8s → 2s.** The coverage check now uses in-process `mlx_whisper tiny`
+  (lru-cached across chunks) instead of voicebox `/transcribe` (whisper-base ~8s). That was
+  the real "10 seconds" bottleneck — it was the *checking*, not the voice.
+- **Private fork** `esaruoho/voicebox` (branch `mlx-chatterbox-gpu`) holds all of it.
+- **PROVEN: Bearden + Esa hold a conversation.** Six alternating lines synthesized on the
+  turbo GPU path (coverage 0.86–1.00, ~2.7–6.2s each) and played back in order — both voices
+  audibly working.
+
+## What we LEFT ON THE TABLE (after round 3 — only nice-to-haves)
+- The ~2s per line is now mostly process startup + the single coverage transcribe; going
+  lower would mean a persistent synth service (not worth it yet).
+- Quantized turbo (4/8-bit) could cut memory/startup further — untested.
+
+## (historical) earlier "left on the table"
 - **Make the GPU voice actually FAST.** It works on the GPU but is ~CPU-speed at fp16, and a
   "trailing artifact" makes it retry. Fixes pending: bump `repetition_penalty` 2.0→~2.4, and
   try `chatterbox-turbo` / quantized checkpoints (one env-var: `VOICEBOX_CHATTERBOX_MLX_REPO`).
