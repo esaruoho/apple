@@ -250,12 +250,14 @@ def cmd_status():
     for name, cfg in TRIGGERS.items():
         if cfg.get("mode") == "convey-sweep":
             pend = len(mdfind_tag(cfg.get("trigger_tag", "convey")))
+            inflight = len(mdfind_tag("conveying"))
             done = len(mdfind_tag(cfg["complete_tag"].split(":", 1)[0]))
             running = "yes" if CONVEY_LOCK.exists() else "no"
             print(f"  {name}  (→ convey tagsweep --run · whole computer · self-flips convey→conveyed)")
-            print(f"    pending (tagged 'convey'):   {pend}")
-            print(f"    done    (tagged 'conveyed'): {done}")
-            print(f"    sweep running now:           {running}")
+            print(f"    pending  (tagged 'convey'):    {pend}")
+            print(f"    in-flight(tagged 'conveying'): {inflight}   (videos on the Mini, awaiting clips)")
+            print(f"    done     (tagged 'conveyed'):  {done}")
+            print(f"    sweep running now:             {running}")
             print()
             continue
         pending = len(find_pending(name, cfg))
@@ -355,6 +357,7 @@ def cmd_reset(target):
     for cfg in TRIGGERS.values():
         if cfg.get("mode") == "convey-sweep":
             remove_tag(p, cfg["complete_tag"].split(":", 1)[0])   # un-do 'conveyed' so it re-sweeps
+            remove_tag(p, "conveying")                             # …and clear any in-flight marker
             continue
         queued = cfg["queued_tag"].split(":", 1)[0]
         remove_tag(p, queued)
