@@ -203,6 +203,12 @@ def main():
         else:
             name = a; i += 1
 
+    if persona:
+        if persona not in PERSONA_PROFILES:
+            sys.exit(f"converse: unknown persona '{persona}' (have: {', '.join(PERSONA_PROFILES)})")
+        cwd_override = cwd_override or str(VOICES_DIR / persona)   # arm to the voice card
+        name = name or persona
+
     cwd = os.path.realpath(cwd_override or os.getcwd())
 
     if do_list:
@@ -234,6 +240,15 @@ def main():
 
     write_session(dirpath, stamp)
     seed_fm_state(stamp, cwd)
+    # Persona voice sidecar: Converse's runReadAloud reads this and speaks replies
+    # in the cloned voice. Removed when not a persona session, so resuming a normal
+    # chat in the same name doesn't inherit a stale voice.
+    voice_file = dirpath / "voice.json"
+    if persona:
+        voice_file.write_text(json.dumps(
+            {"profile": PERSONA_PROFILES[persona], "engine": "chatterbox"}))
+    elif voice_file.exists():
+        voice_file.unlink()
     # Also make THIS the boot default: opening Converse + ⌘3 later self-arms to the
     # same folder's skill, so "just open Converse" keeps the mlx experience.
     set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
