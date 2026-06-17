@@ -34,6 +34,32 @@ TOOL_OUTPUT_CAP = 4000
 HTTP_TIMEOUT = 180
 CONVEY = str(HERE / "convey")
 
+# Anti-hallucination rule the CLI + worker append to their system prompt, and the
+# deterministic backstop that enforces it (a small model will otherwise invent a
+# confident answer with a fake file path when retrieval comes up empty).
+GROUNDING = ("GROUNDING RULES: Only cite or quote a file you actually opened with "
+             "read_file this turn. If search_notes returns nothing relevant, say you "
+             "could not find it — do NOT invent a file path, a wiki page, or a quote.")
+
+import re as _re
+_CITE_RE = _re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|markdown|txt|py|sh|json|feature|ya?ml))`"
+                       r"|\]\(([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|markdown|txt|py|sh|json|feature|ya?ml))\)")
+
+
+def verify_citations(answer: str) -> list:
+    """Return cited file paths that do NOT exist on disk (under cwd or absolute).
+    Linear regex (no backtracking). Catches a model citing a file it never opened."""
+    seen, bad = set(), []
+    for m in _CITE_RE.findall(answer or ""):
+        cand = m[0] or m[1]
+        if not cand or cand in seen:
+            continue
+        seen.add(cand)
+        p = Path(cand)
+        if not (p.is_absolute() and p.exists()) and not (Path.cwd() / cand).exists():
+            bad.append(cand)
+    return bad
+
 
 # ── sandbox ──────────────────────────────────────────────────────────────────
 def _safe_path(p: str) -> Path:
@@ -227,8 +253,13 @@ def run_loop(task: str, system: str = "", max_iters: int = 6, on_tool=None,
         msg = data["choices"][0]["message"]
         calls = msg.get("tool_calls") or []
         if not calls:
-            return {"ok": True, "answer": (msg.get("content") or "").strip(),
-                    "trace": trace, "iters": i, "err": None}
+            answer = (msg.get("content") or "").strip()
+            bad = verify_citations(answer)
+            if bad:
+                answer += ("\n\n\u26a0 unverified citation(s) — these paths are NOT on "
+                           "disk and may be invented: " + ", ".join(bad))
+            return {"ok": True, "answer": answer, "trace": trace, "iters": i,
+                    "err": None, "unverified": bad}
         messages.append({"role": "assistant", "content": msg.get("content") or "",
                          "tool_calls": calls})
         for c in calls:

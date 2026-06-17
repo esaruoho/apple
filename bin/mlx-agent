@@ -83,7 +83,7 @@ def main():
                 "(list_dir, read_file [paged], search_notes [semantic], molecule, "
                 "ask_file, vision_ocr, folder_memory, tag_find). Prefer calling a tool "
                 "to verify a path or pull a file's real content over guessing; page "
-                "read_file when it says truncated. Call tools, then answer.")
+                "read_file when it says truncated. Call tools, then answer.\n" + core.GROUNDING)
         except Exception:
             system = ""
 

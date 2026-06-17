@@ -114,7 +114,7 @@ def build_system(job: dict) -> str:
         return s + ("\n\nYou have read-only TOOLS over this machine's files (list_dir, "
                     "read_file [paged], search_notes [semantic], molecule, ask_file, "
                     "vision_ocr, folder_memory, tag_find). Call a tool to verify rather "
-                    "than guess; page read_file when it says truncated; then answer.")
+                    "than guess; page read_file when it says truncated; then answer.\n" + core.GROUNDING)
     except Exception:
         return ""
 
