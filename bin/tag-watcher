@@ -77,27 +77,13 @@ TRIGGERS = {
         "result_dir": str(HOME / "work" / "whisp-transcripts"),
         "extensions": [".mp3", ".m4a", ".wav", ".flac", ".mp4", ".m4v", ".mov", ".aiff"],
     },
-    # 'process' — the universal tag. Routes by file extension:
-    #   .pdf                                → OCR worker
-    #   .mp3/.m4a/.wav/.mp4/.mov/.mkv/etc.  → Whisp transcription worker
-    # The dispatch is done by bin/process-router (NOT directly by a single
-    # submit script), so adding a new file class only touches the router.
-    #
-    # Companion paths that funnel into the same router:
-    #   - AppleToolbox VoiceMemoPipeline reads #process in Voice Memos titles
-    #   - bin/process CLI is the terminal entry point (`process file.mp3`)
-    #   - any other peer that calls process-router with a file path
-    "process": {
-        "submit": str(HOME / "work" / "apple" / "bin" / "process-router"),
-        "queued_tag": "process-queued:yellow",
-        "complete_tag": "process-complete:green",
-        "result_dir": str(HOME / "work" / "comms" / "queue"),
-        "extensions": [
-            ".pdf",
-            ".mp3", ".m4a", ".wav", ".flac", ".aiff", ".aac", ".opus", ".ogg",
-            ".mp4", ".m4v", ".mov", ".mkv", ".avi", ".wmv", ".webm",
-        ],
-    },
+    # NOTE: the 'process' trigger was REMOVED 2026-06-17 at Esa's request — it routed Finder-
+    # 'process'-tagged files straight to OCR/whisp workers (bin/process-router), bypassing the
+    # convey conveyor belt. The 'convey' tag below is the one true tag: it runs the belt
+    # (OCR/wordcloud/molecule) or routes a video through `convey video`. Use 'convey', not
+    # 'process'. (The Voice-Memo `#process` title path and the `process` CLI are unaffected —
+    # they don't go through this Finder-tag trigger.) Reinstate from git if a Finder-tag OCR
+    # dispatch is ever needed again.
     # 'convey' — the magic-folder tag. Unlike the others (per-file submit → async
     # queued/complete via a Mini worker), convey is SELF-CONTAINED: `convey tagsweep`
     # already finds EVERY convey-tagged file across the whole computer (Spotlight), runs
@@ -315,6 +301,14 @@ def run_convey_sweep(cfg, dry_run=False):
         if out and "no files tagged" not in out:
             print(out[:4000])
             log(f"convey-sweep ran (rc={r.returncode})")
+        # SELF-HEAL: re-throw any conveyed video that lacks a real whisper transcript
+        # (whisp-pending) to `convey video --reheal`. Loop-safe — `convey heal` caps attempts
+        # per video and a healed video drops out, so this can't churn.
+        h = subprocess.run([convey, "heal", "--run"], capture_output=True, text=True)
+        hout = (h.stdout or "").strip()
+        if hout and "no whisp-pending" not in hout:
+            print(hout[:4000])
+            log(f"convey-heal ran (rc={h.returncode})")
     finally:
         try:
             CONVEY_LOCK.unlink()
