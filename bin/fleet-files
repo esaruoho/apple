@@ -270,16 +270,68 @@ def cmd_wake(args):
     return 0 if _wake_via_mini(resolve(args.peer)["host"]) else 2
 
 
+def _peer_offset(name):
+    """Stable 0-based slot for a peer in PEERS, so each gets its OWN local port.
+    A single fixed port per kind (5901 screen / 1445 finder) is shared across
+    every peer — so the FIRST peer you VIEW wins the port and every later peer
+    silently connects to that first tunnel's target instead of its own. Offset
+    the local port by the peer's slot to keep tunnels distinct (Hertsi=5901,
+    esarmbp=5902, …). (2026-06-17: clicking VIEW on Hertsi opened esarMBP.)"""
+    n = name.lower()
+    for i, (key, p) in enumerate(PEERS.items()):
+        if n in (key.lower(), p.get("alias", "").lower(), p.get("host", "").lower()):
+            return i
+    return 0
+
+
+def _tunnel_pids(lport):
+    """PIDs of `ssh … -L {lport}:…` forwards. Matched by PID, not pkill: a pkill
+    pattern of '-L {lport}:' starts with '-', which pkill parses as an OPTION
+    flag (not a pattern) and silently no-ops — that's why --stop never worked."""
+    out = subprocess.run(["ps", "-axo", "pid,command"], capture_output=True, text=True).stdout
+    pids = []
+    for line in out.splitlines():
+        if "ssh" in line and f"-L {lport}:" in line:
+            pids.append(line.split(None, 1)[0])
+    return pids
+
+
+def _tunnel_target(lport):
+    """'ip:rport' the existing `ssh -L {lport}:…` forward points at, else None.
+    Lets us reap a stale tunnel that forwards to a peer's OLD ip (DHCP churn) or
+    — before the per-peer-port fix — to a wholly different machine."""
+    out = subprocess.run(["ps", "-axo", "command"], capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        if "ssh" in line and f"-L {lport}:" in line:
+            toks = line.split()
+            for i, t in enumerate(toks):
+                if t == "-L" and i + 1 < len(toks):
+                    seg = toks[i + 1].split(":")        # lport:ip:rport
+                    if len(seg) == 3:
+                        return f"{seg[1]}:{seg[2]}"
+    return None
+
+
+def _kill_tunnel(lport):
+    """Reap any ssh -L forward on lport. By PID — see _tunnel_pids on why."""
+    pids = _tunnel_pids(lport)
+    for pid in pids:
+        subprocess.run(["kill", pid], capture_output=True)
+    return len(pids)
+
+
 def cmd_tunnel(args):
     """VNC/SMB to a LAN-only peer from anywhere — forwarded through the Mini over
     Tailscale. VNC/SMB aren't SSH, so ProxyJump can't carry them; an `ssh -L`
     port-forward through the relay does."""
     kind = args.kind
-    lport, rport, scheme, label = TUN[kind]
+    base_lport, rport, scheme, label = TUN[kind]
     name = args.peer
+    lport = base_lport + _peer_offset(name)   # per-peer port — no cross-peer collision
     if args.stop:
-        subprocess.run(["pkill", "-f", f"ssh -f -N -L {lport}:"], capture_output=True)
-        print(f"  ✓ stopped {label} tunnel"); return 0
+        n = _kill_tunnel(lport)
+        print(f"  ✓ stopped {label} tunnel" if n else f"  (no {label} tunnel on :{lport})")
+        return 0
     # Not a LAN-bridge Mac → directly reachable (Tailscale / same LAN). Skip the
     # tunnel and point the viewer straight at the hostname. Lets a single VIEW
     # action work for every peer: bridge Macs get the ssh -L hop, the rest open
@@ -299,9 +351,13 @@ def cmd_tunnel(args):
     if not up:
         print(f"  ⚠ {name} is still DOWN — it must be awake on the LAN for this to "
               f"connect (WoL only wakes from sleep, not power-off).", file=sys.stderr)
-    inuse = subprocess.run(["lsof", "-ti", f"tcp:{lport}"], capture_output=True,
-                           text=True).stdout.strip()
-    if not inuse:
+    want = f"{ip}:{rport}"
+    cur = _tunnel_target(lport)
+    if cur and cur != want:        # stale tunnel to a different/old target — reap it
+        _kill_tunnel(lport)
+        print(f"  ↻ replaced stale tunnel (was → {cur})")
+        cur = None
+    if not cur:
         rc = subprocess.run(["ssh", "-f", "-N", "-o", "ExitOnForwardFailure=yes",
                              "-L", f"{lport}:{ip}:{rport}", JUMP_RELAY]).returncode
         if rc != 0:
