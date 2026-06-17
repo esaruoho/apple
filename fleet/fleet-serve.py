@@ -23,8 +23,10 @@ Usage:
 Deps: python3 + dns-sd. The card comes from ../bin/machine-card (portable —
 native system_profiler, no apple-report needed).
 """
+import atexit
 import json
 import os
+import signal
 import socket
 import struct
 import subprocess
@@ -99,10 +101,34 @@ def main():
     if not (subprocess.run(["which", "dns-sd"], capture_output=True).stdout.strip()):
         sys.stderr.write("fleet-serve: dns-sd not found — cannot advertise on this macOS.\n")
         return 1
+
+    # Reap any STALE registration before spawning ours. `dns-sd -R` runs forever
+    # until killed; if a prior fleet-serve was SIGKILLed (pane restart), its child
+    # dns-sd reparents to PID 1 and lives on. Without this reap, every restart
+    # leaked one orphaned dns-sd — 4556 of them piled up on the Mini (2026-06-17),
+    # hit the per-user process limit (5333), and fork() began failing machine-wide.
+    # Match on our own (name, service) so we never touch another machine's ad.
+    subprocess.run(
+        ["pkill", "-f", f"dns-sd -R {name} {SERVICE} local"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
     reg = subprocess.Popen(
         ["dns-sd", "-R", name, SERVICE, "local", str(port)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
+
+    # Make the dns-sd child die WITH us on graceful termination (SIGTERM/SIGINT/exit),
+    # so a clean restart never leaks. SIGKILL still can't be caught — which is exactly
+    # why the startup reap above is the real guarantee.
+    def _cleanup(*_a):
+        try:
+            reg.terminate()
+        except Exception:
+            pass
+    atexit.register(_cleanup)
+    signal.signal(signal.SIGTERM, lambda *_: (_cleanup(), os._exit(0)))
+
     sys.stderr.write(
         f"fleet-serve: '{name}' advertising {SERVICE} on :{port} "
         f"(pid {os.getpid()}, card={card_path})\n"
@@ -115,7 +141,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        reg.terminate()
+        _cleanup()
     return 0
 
 
