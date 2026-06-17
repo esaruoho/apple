@@ -107,16 +107,12 @@ def requeue_inflight():
 def build_system(job: dict) -> str:
     if job.get("system"):
         return job["system"]
-    if arm_apple is None:
-        return ""
-    try:
-        s = arm_apple.build_system(job.get("cwd") or str(Path.home() / "work"))
-        return s + ("\n\nYou have read-only TOOLS over this machine's files (list_dir, "
-                    "read_file [paged], search_notes [semantic], molecule, ask_file, "
-                    "vision_ocr, folder_memory, tag_find). Call a tool to verify rather "
-                    "than guess; page read_file when it says truncated; then answer.\n" + core.GROUNDING)
-    except Exception:
-        return ""
+    cwd = job.get("cwd") or str(Path.home() / "work")
+    note = ("Use the read-only tools to read real files before answering; page read_file "
+            "when truncated; prefer a verified fact from a file over a guess. Be concise.")
+    # lean by default — keep the request small so the single-flight MLX server doesn't crash.
+    return (f"You are a precise tool-using assistant working in '{Path(cwd).name}' ({cwd}) "
+            f"on Esa's Mac. {note}\n" + core.GROUNDING)
 
 
 def process(job_path: Path):

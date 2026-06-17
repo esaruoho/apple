@@ -50,7 +50,8 @@ def main():
     ap.add_argument("--say", action="store_true")
     ap.add_argument("--quiet", "--no-say", dest="quiet", action="store_true")
     ap.add_argument("--voice", default=os.environ.get("FM_MLX_VOICE", "Zoe (Premium)"))
-    ap.add_argument("--no-arm", action="store_true", help="skip skill arming")
+    ap.add_argument("--no-arm", action="store_true", help="no system prompt at all")
+    ap.add_argument("--full-arm", action="store_true", help="use the full skill-armed prompt (bigger request; may stress the Mini)")
     ap.add_argument("--dry-run", action="store_true", help="list tools and exit")
     ap.add_argument("--trace", action="store_true", help="force the live tool-call trace (even with --raw / piped)")
     ap.add_argument("--no-trace", action="store_true")
@@ -75,17 +76,18 @@ def main():
         sys.exit(1)
 
     cwd = a.cwd or os.getcwd()
+    note = ("Use the tools to read real files before answering; page read_file when it "
+            "says truncated; prefer a verified fact from a file over a guess. Be concise.")
     system = ""
-    if not a.no_arm and arm_apple is not None:
-        try:
-            system = arm_apple.build_system(cwd) + (
-                "\n\nYou have TOOLS that read this machine's filesystem on demand "
-                "(list_dir, read_file [paged], search_notes [semantic], molecule, "
-                "ask_file, vision_ocr, folder_memory, tag_find). Prefer calling a tool "
-                "to verify a path or pull a file's real content over guessing; page "
-                "read_file when it says truncated. Call tools, then answer.\n" + core.GROUNDING)
-        except Exception:
-            system = ""
+    if not a.no_arm:
+        if a.full_arm and arm_apple is not None:
+            try:
+                system = arm_apple.build_system(cwd) + "\n\n" + note + "\n" + core.GROUNDING
+            except Exception:
+                system = ""
+        if not system:                      # lean by default — a small request the Mini can serve
+            system = (f"You are a precise tool-using assistant working in "
+                      f"'{Path(cwd).name}' ({cwd}) on Esa's Mac. {note} {core.GROUNDING}")
 
     trace = a.trace or ((not a.no_trace) and sys.stderr.isatty())
 
