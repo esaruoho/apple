@@ -834,6 +834,19 @@ struct FileeView: View {
                                 title: "convey molecule · \(box.title)")
             }
             Button("Link to URL… (online edge)") { model.linkURL(box) }
+            // Make a cloud of THIS one file — the direct right-click Esa wanted, not just a
+            // belt step. The verb writes <stem>.wordcloud.png beside the file (it appears as
+            // a box via the live watcher) and opens it. Sentence cloud is the sibling.
+            Menu("Make a cloud") {
+                Button("Wordcloud (this file)") {
+                    model.runConvey(["wordcloud", box.url?.path ?? box.id],
+                                    title: "convey wordcloud · \(box.title)")
+                }
+                Button("Sentence cloud (this file)") {
+                    model.runConvey(["sentencecloud", box.url?.path ?? box.id],
+                                    title: "convey sentencecloud · \(box.title)")
+                }
+            }
             Button("convey ask…") { model.askConvey(box) }
             Button("convey belt (plan)") {
                 model.runConvey(["belt", box.url?.path ?? box.id],
