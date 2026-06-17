@@ -292,7 +292,7 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenari
   - [@built @hw-verified] long files are paged (a bug the live run surfaced)
   - [@built @hw-verified] transient 502/503 reload windows are retried (a 2nd bug the live
   - [@built @sim-verified] the queue twin runs the loop on the Mini (Comms/Syncthing path)
-  - [@built @sim-verified] the loop refuses an answer that cites an un-opened file (groundi
+  - [@built @hw-verified] the loop refuses an answer that cites an un-opened file (groundi
   - [@built @sim-verified] the final answer is shown via the ONE shared presenter (DRY)
   triad: .session✓  transcript✗  RESULT✓
   honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)

@@ -116,6 +116,20 @@ Feature: The on-device agentic tool-calling loop on the Mini's MLX brain
     # Live-on-Mini PENDING: needs fm-agent-service deployed as a Cloudcity-Boot pane in
     # systems.yaml (NEVER nohup) + the chat model served with memory headroom.
 
+  @built @hw-verified
+  Scenario: the loop refuses an answer that cites an un-opened file (grounding enforcement)
+    Given the model tries to finalise an answer citing a real file it never read_file'd
+    When run_loop sees a cited-but-unopened existing file
+    Then it re-prompts (up to 2x) to open + verify in the source, then accepts
+    And a cited path that does NOT exist on disk is flagged "⚠ unverified citation"
+    And search_notes surfaces the TOP FILES and tells the model to open one before citing
+    # Verified 2026-06-17 (stubbed brain): cite-without-open → reprompt → read_file → accept;
+    # fabricated path → flagged. Born from a live run where the 4B invented
+    # wiki/concepts/nle-embedding-vs-fm.md (a file that does not exist).
+    # LIVE 2026-06-17: with the lean system prompt (no more 502 crash), the Mini's
+    # Qwen3-4B ran it clean: search_notes -> read_file -> read_file(offset=8000) ->
+    # answered from a REAL file it opened (no fabrication, no ⚠).
+
   @built @sim-verified
   Scenario: the final answer is shown via the ONE shared presenter (DRY)
     Given a final answer and an interactive stdout
