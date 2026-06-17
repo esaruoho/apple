@@ -72,6 +72,64 @@ def fm_store_path(key: str) -> Path:
     return FM_STORE / f"{safe}.json"
 
 
+PERSONA_NAMES = {"bearden": "Tom Bearden", "esa": "Esa Ruoho",
+                 "rob": "Rob McNeilly", "milton": "Milton H. Erickson",
+                 "erickson": "Milton H. Erickson"}
+
+
+def persona_system(voice: str) -> str:
+    """A LIGHT in-character system prompt from the voice card's cadence material —
+    fast to build and fast for MLX (no heavy archive retrieval like build_system)."""
+    name = PERSONA_NAMES.get(voice, voice)
+    card = VOICES_DIR / (voice if voice != "milton" else "erickson")
+    body = ""
+    for rel in ("voice-signature.md", "rules/cadence-vocabulary.md",
+                "phrasing-library.md", "SKILL.md"):
+        f = card / rel
+        if f.exists():
+            lines = [re.sub(r"^#+\s*", "", ln) for ln in f.read_text(errors="ignore").splitlines()]
+            body = "\n".join(l for l in lines if l.strip())[:2400]
+            break
+    if not body:
+        body = f"{name} — a thoughtful speaker."
+    return (f"You ARE {name}, speaking in first person in a live spoken conversation. "
+            f"Stay fully in character — your own cadence, idiom and vocabulary. Reply with "
+            f"ONE to FOUR natural spoken sentences (read aloud). No markdown, no stage "
+            f"directions, no name prefix.\n\nHow you speak:\n{body}")
+
+
+def seed_persona(voice: str, stamp: str):
+    """Light-arm an EXISTING Converse session to a persona: seed fm-converse state with
+    a pre-built in-character system (no slow build_system) + write the voice sidecar.
+    Used by Converse.app's Engines ▸ Persona picker — no launch."""
+    sp = fm_store_path(stamp)
+    state = {"system": "", "turns": [], "cwd": str(VOICES_DIR / voice), "arm_cwd": ""}
+    if sp.exists():
+        try:
+            state = json.loads(sp.read_text())
+        except Exception:
+            pass
+    if voice == "none":
+        # back to the plain MLX brain, default voice
+        state["system"] = ""
+        state["arm_cwd"] = ""
+        sp.parent.mkdir(parents=True, exist_ok=True)
+        sp.write_text(json.dumps(state, ensure_ascii=False))
+        vj = SESSIONS / stamp / "voice.json"
+        if vj.exists():
+            vj.unlink()
+        return
+    state["system"] = persona_system(voice)
+    state["arm_cwd"] = ""          # IMPORTANT: no heavy retrieval-arming on each turn
+    state["max_tokens"] = 420      # spoken replies are short — keeps each turn snappy
+    sp.parent.mkdir(parents=True, exist_ok=True)
+    sp.write_text(json.dumps(state, ensure_ascii=False))
+    sdir = SESSIONS / stamp
+    if sdir.exists():
+        (sdir / "voice.json").write_text(json.dumps(
+            {"profile": PERSONA_PROFILES.get(voice, voice), "engine": "chatterbox"}))
+
+
 def seed_fm_state(session_name: str, arm_cwd: str):
     """Pre-create the fm-converse memory bucket for this session, armed. fm-converse
     keys by session dir name; arm_cwd makes every turn (incl. Converse's ⌘3) self-arm."""
@@ -195,6 +253,10 @@ def main():
             cwd_override = args[i + 1]; i += 2
         elif a == "--persona":
             persona = args[i + 1].lower(); i += 2
+        elif a == "--seed-persona":
+            # in-app hook (Converse Engines ▸ Persona): light-arm an existing session
+            seed_persona(args[i + 1].lower(), args[i + 2])
+            return 0
         elif a == "--autoarm":
             autoarm = (args[i + 1] if i + 1 < len(args) and args[i + 1] in ("on", "off") else "on")
             i += 2 if autoarm in ("on", "off") and i + 1 < len(args) and args[i + 1] in ("on", "off") else 1
@@ -239,19 +301,20 @@ def main():
     resuming = dirpath.exists()
 
     write_session(dirpath, stamp)
-    seed_fm_state(stamp, cwd)
-    # Persona voice sidecar: Converse's runReadAloud reads this and speaks replies
-    # in the cloned voice. Removed when not a persona session, so resuming a normal
-    # chat in the same name doesn't inherit a stale voice.
-    voice_file = dirpath / "voice.json"
     if persona:
-        voice_file.write_text(json.dumps(
-            {"profile": PERSONA_PROFILES[persona], "engine": "chatterbox"}))
-    elif voice_file.exists():
-        voice_file.unlink()
-    # Also make THIS the boot default: opening Converse + ⌘3 later self-arms to the
-    # same folder's skill, so "just open Converse" keeps the mlx experience.
-    set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
+        # Persona: LIGHT in-character system (fast — no heavy archive retrieval) +
+        # voice.json so replies speak in the clone. arm_cwd cleared so ⌘3 doesn't
+        # rebuild a slow system each turn (that 35s+ build is what timed out).
+        seed_persona(persona, stamp)
+        set_brain(use_mlx, arm_cwd="")
+    else:
+        seed_fm_state(stamp, cwd)
+        vf = dirpath / "voice.json"
+        if vf.exists():
+            vf.unlink()
+        # Make THIS the boot default: opening Converse + ⌘3 later self-arms to the
+        # same folder's skill, so "just open Converse" keeps the mlx experience.
+        set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
     # touch the dir so it is the NEWEST session → fm-converse's current_session_key()
     # resolves to it, so Converse's ⌘3 loads exactly the bucket we just armed.
     os.utime(dirpath, None)

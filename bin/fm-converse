@@ -148,7 +148,11 @@ def call_mlx(turns, system, user_turn, timeout):
         kept.append({"role": role, "content": text})
     msgs.extend(reversed(kept))
     msgs.append({"role": "user", "content": user_turn})
-    body = json.dumps({"messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS", "4096"))}).encode()
+    # The MLX server (mlx_lm.server) defaults to max_tokens=512 → long answers get
+    # chopped MID-WORD (finish_reason "length"). Raise it so a full structured reply
+    # comes back. Override with FM_MLX_MAX_TOKENS.
+    max_tokens = int(os.environ.get("FM_MLX_MAX_TOKENS", "4096"))
+    body = json.dumps({"messages": msgs, "max_tokens": max_tokens}).encode()
     req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
     try:
@@ -207,6 +211,10 @@ def main() -> int:
     # if you later resume it from elsewhere.
     if not state.get("cwd"):
         state["cwd"] = os.path.realpath(os.getcwd())
+
+    # Per-session token cap (set by persona sessions for snappy spoken replies).
+    if state.get("max_tokens") and not os.environ.get("FM_MLX_MAX_TOKENS"):
+        os.environ["FM_MLX_MAX_TOKENS"] = str(state["max_tokens"])
 
     # --apple: arm the skill governing the chat's folder (identity from its SKILL.md
     # + per-turn retrieval from its docs). STICKY: arm_cwd is persisted into the
