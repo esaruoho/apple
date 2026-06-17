@@ -40,15 +40,15 @@ Feature: Every camera → a file
     # Front capture needs on-device software + a tap, which the no-UI-hijack rule bans.
 
 Feature: Full-resolution iPhone photo (the real Camera.app file)
-  @built   # NOT yet verified for a freshly-taken photo — see the honesty note below
+  @verified
   Scenario: Import the next photo over USB — YOU shoot it
     Given the iPhone is tethered (and trusted+unlocked, retried for ~80s)
     When I run `iphone-import --watch <dir>` and take a photo in the Camera app
     Then the real HEIC/JPEG the phone just wrote is copied off via ImageCaptureCore
     # innards: sensor-snapshot/iphone-import.swift. Detection is by 2s POLLING (close→reopen
     # re-enumerates the catalog), because ImageCaptureCore's didAdd push event does NOT fire
-    # for iPhone captures taken after the session opens. Compiles + runs; a freshly-taken photo
-    # has NOT yet been observed landing through the poll. @built until that live observation.
+    # for iPhone captures taken after the session opens. VERIFIED live 2026-06-17: a freshly-
+    # taken photo (a Bitvise-SSH XP screen) was detected by the poll and landed on the clipboard.
 
   @verified
   Scenario: Survive starting before the phone is unlocked (retry, don't bail)
@@ -77,12 +77,12 @@ Feature: iPhone photo → the macOS clipboard
     # innards: bin/iphone-clip → iphone-photo, then NSImage → NSPasteboard writeObjects.
     # Verified live 2026-06-17: clipboard info shows TIFF/JPEG/PNG picture types. Slash: /iphone-clip.
 
-  @built   # the --watch path inherits the unverified poll-detection above
+  @verified
   Scenario: iphone-clip --watch puts the photo YOU shot on the pasteboard
     Given I run `iphone-clip --watch` and take a photo on the iPhone
     Then that real photo (not a blind grab) is copied to the clipboard
     # innards: bin/iphone-clip --watch → iphone-import --watch (2s poll) → NSPasteboard.
-    # @built until a freshly-taken photo is observed landing through the poll.
+    # VERIFIED live 2026-06-17: photo shot on the iPhone pasted straight into Claude.
 
 Feature: iPhone screen → a file
   @built
