@@ -77,14 +77,18 @@ PERSONA_NAMES = {"bearden": "Tom Bearden", "esa": "Esa Ruoho",
                  "erickson": "Milton H. Erickson"}
 
 
-def persona_system(voice: str) -> str:
-    """A LIGHT in-character system prompt from the voice card's cadence material —
-    fast to build and fast for MLX (no heavy archive retrieval like build_system)."""
+def persona_system(voice: str, deep: bool = False) -> str:
+    """In-character ROLE-PLAY system from the voice card's cadence material. This is a
+    'you ARE the person, talk freely in their voice' frame — deliberately NOT the
+    card's SKILL.md analytical mandate (which refuses off-ledger questions). For deep
+    sessions we ALSO keep arm_cwd set so each turn gets live archive retrieval, and the
+    note below tells the persona to weave that in — grounded, but never refusing."""
     name = PERSONA_NAMES.get(voice, voice)
     card = VOICES_DIR / (voice if voice != "milton" else "erickson")
     body = ""
-    for rel in ("voice-signature.md", "rules/cadence-vocabulary.md",
-                "phrasing-library.md", "SKILL.md"):
+    # Prefer cadence/signature over SKILL.md — SKILL.md is the analytical-skill mandate
+    # ("refuse if not in the ledger"), which makes the persona lecture instead of answer.
+    for rel in ("rules/cadence-vocabulary.md", "voice-signature.md", "phrasing-library.md"):
         f = card / rel
         if f.exists():
             lines = [re.sub(r"^#+\s*", "", ln) for ln in f.read_text(errors="ignore").splitlines()]
@@ -92,10 +96,16 @@ def persona_system(voice: str) -> str:
             break
     if not body:
         body = f"{name} — a thoughtful speaker."
+    grounding = ("\n\nWhen RELEVANT KNOWLEDGE from your own work is provided with a "
+                 "question, weave it into your answer and let it sharpen your point — "
+                 "but ALWAYS answer in your own voice, on ANY topic. Never refuse a "
+                 "question or tell the asker to rephrase; if it's outside your archive, "
+                 "answer it the way YOU would see it." if deep else "")
     return (f"You ARE {name}, speaking in first person in a live spoken conversation. "
-            f"Stay fully in character — your own cadence, idiom and vocabulary. Reply with "
+            f"Stay fully in character — your own cadence, idiom and vocabulary. You have "
+            f"strong opinions and will engage ANY topic the way {name} would. Reply with "
             f"ONE to FOUR natural spoken sentences (read aloud). No markdown, no stage "
-            f"directions, no name prefix.\n\nHow you speak:\n{body}")
+            f"directions, no name prefix.\n\nHow you speak:\n{body}{grounding}")
 
 
 def seed_persona(voice: str, stamp: str, mode: str = "deep", profile: str = ""):
@@ -128,14 +138,12 @@ def seed_persona(voice: str, stamp: str, mode: str = "deep", profile: str = ""):
         state["arm_cwd"] = ""
         state["max_tokens"] = 420
     else:
-        # deep / both — heavy archive-grounded identity, built ONCE and frozen
-        # (fm-converse caches it); arm_cwd kept so each turn does live retrieval.
-        try:
-            import arm_apple
-            arm_apple.detect_skill(card)
-            state["system"] = arm_apple.build_system(card)
-        except Exception:
-            state["system"] = persona_system(voice)
+        # deep / both — persona ROLE-PLAY identity (answers freely in voice), with
+        # arm_cwd kept so each turn gets LIVE archive retrieval (augment_prompt) woven
+        # in. We deliberately do NOT use build_system here: that loads the card's
+        # analytical SKILL.md mandate, which makes the persona REFUSE off-ledger
+        # questions ("rephrase as 'what would Bearden say about…'") instead of answering.
+        state["system"] = persona_system(voice, deep=True)
         state["arm_cwd"] = card
         state["max_tokens"] = 800
     state["cwd"] = card
