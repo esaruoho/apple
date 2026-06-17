@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""paketti-coverage — cross-orifice coverage analysis of Paketti.
+
+The three orifices (keyboard shortcut / MIDI mapping / menu entry) are different
+doors to the same features. A feature reachable by shortcut but NOT by MIDI is
+locked out for controller users; one in a menu but with no shortcut is mouse-only.
+This finds those gaps — globally and per Renoise region — so we see what's "left on
+the table."
+
+Reads ~/.paketti-spine/spine-true.json (run `paketti-spine-report` first, or this
+runs the harness itself). Writes ~/.paketti-spine/COVERAGE.md.
+"""
+import json
+import re
+import shutil
+import subprocess
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+HARNESS = HERE / "paketti-harness.lua"
+PAKETTI = "/Users/esaruoho/work/paketti"
+OUT = Path.home() / ".paketti-spine"
+JSON = OUT / "spine-true.json"
+
+_HINT = re.compile(r"\s*[\[<(][^\]\)>]*[\]\)>]\s*$")   # trailing " [Ctrl+X]" / " <…>" hint
+
+
+def leaf(name: str) -> str:
+    """The action identifier: last ':'-segment, minus separators/order prefixes/hints."""
+    s = name.split(":")[-1]
+    s = s.lstrip("-").lstrip("!").strip()
+    s = _HINT.sub("", s).strip()
+    return s
+
+
+def region_of(name: str) -> str:
+    """The Renoise GUI context = the first segment (MIDI has none → 'Global')."""
+    seg = name.split(":")[0]
+    seg = seg.lstrip("-").lstrip("!").strip()
+    if seg == "Paketti" or seg == "":
+        return "Global"
+    return seg
+
+
+def load():
+    if not JSON.exists():
+        lj = shutil.which("luajit") or shutil.which("lua")
+        if not lj:
+            sys.exit("need luajit and a spine-true.json (run paketti-spine-report)")
+        OUT.mkdir(parents=True, exist_ok=True)
+        subprocess.run([lj, str(HARNESS), PAKETTI, str(JSON)], timeout=180)
+    return json.loads(JSON.read_text())
+
+
+def main():
+    d = load()
+    names = d["names"]
+
+    # global leaf sets per orifice
+    KB = {leaf(n) for n in names["keybinding"]}
+    MI = {leaf(n) for n in names["midi_mapping"]}
+    ME = {leaf(n) for n in names["menu_entry"]}
+
+    # per-region leaves (keybindings + menus carry a region; MIDI is global)
+    kb_by_region = defaultdict(set)
+    me_by_region = defaultdict(set)
+    for n in names["keybinding"]:
+        kb_by_region[region_of(n)].add(leaf(n))
+    for n in names["menu_entry"]:
+        me_by_region[region_of(n)].add(leaf(n))
+
+    out = []
+    out.append("# Paketti — cross-orifice coverage (what's left on the table)")
+    out.append("")
+    out.append("*The three doors to a feature — keyboard shortcut · MIDI mapping · menu entry — "
+               "matched by action name (from the running code). A feature behind only one door "
+               "is unreachable through the others.*")
+    out.append("")
+
+    # ── global picture: which orifices expose each distinct action ──
+    allactions = KB | MI | ME
+    def has(s, a): return a in s
+    buckets = defaultdict(int)
+    for a in allactions:
+        tag = ("K" if a in KB else "") + ("M" if a in MI else "") + ("E" if a in ME else "")
+        buckets[tag] += 1
+    out.append(f"## The whole surface: {len(allactions):,} distinct actions")
+    out.append("")
+    out.append("| reachable by | count | meaning |")
+    out.append("|---|--:|---|")
+    label = {
+        "KME": "all three (keyboard + MIDI + menu)",
+        "KM":  "keyboard + MIDI (no menu)",
+        "KE":  "keyboard + menu (no MIDI)",
+        "ME":  "MIDI + menu (no keyboard)",
+        "K":   "keyboard ONLY — no MIDI, no menu",
+        "M":   "MIDI ONLY",
+        "E":   "menu ONLY — mouse-only, no shortcut",
+    }
+    for tag in ["KME", "KE", "KM", "ME", "K", "E", "M"]:
+        if buckets.get(tag):
+            out.append(f"| **{tag}** | {buckets[tag]:,} | {label.get(tag, tag)} |")
+    out.append("")
+    out.append(f"- **Keyboard-reachable:** {len(KB):,} · **MIDI-reachable:** {len(MI):,} · "
+               f"**Menu-reachable:** {len(ME):,}")
+    out.append(f"- **Shortcut but NO MIDI mapping:** {len(KB - MI):,} actions (controller users can't reach these)")
+    out.append(f"- **Shortcut but NO menu:** {len(KB - ME):,} actions (undiscoverable by browsing menus)")
+    out.append(f"- **Menu but NO shortcut:** {len(ME - KB):,} actions (mouse-only; no keyboard access)")
+    out.append(f"- **MIDI but NO shortcut:** {len(MI - KB):,} actions")
+    out.append("")
+
+    # ── per-region: keyboard vs MIDI vs menu ──
+    out.append("## Per Renoise region — keyboard shortcuts vs the other doors")
+    out.append("")
+    out.append("For each region's **keyboard shortcuts**: how many also have a MIDI mapping, "
+               "how many also have a menu entry, and how many are **keyboard-only** (the gap).")
+    out.append("")
+    out.append("| Region | shortcuts | also MIDI | also menu | keyboard-ONLY |")
+    out.append("|---|--:|--:|--:|--:|")
+    rows = []
+    for region, kbset in kb_by_region.items():
+        also_midi = len(kbset & MI)
+        also_menu = len(kbset & me_by_region.get(region, set()))
+        only = len(kbset - MI - me_by_region.get(region, set()))
+        rows.append((len(kbset), region, also_midi, also_menu, only))
+    for nkb, region, am, ae, only in sorted(rows, reverse=True):
+        if nkb >= 10:
+            out.append(f"| {region} | {nkb:,} | {am:,} | {ae:,} | **{only:,}** |")
+    out.append("")
+
+    # ── the biggest single gap: keyboard-only in the busiest regions ──
+    out.append("## Biggest gaps — keyboard shortcuts with NO MIDI mapping (sample)")
+    out.append("")
+    out.append("These have a keyboard shortcut but **no MIDI equivalent** — add MIDI mappings and "
+               "they become controller-reachable:")
+    out.append("")
+    for region, kbset in sorted(kb_by_region.items(), key=lambda x: -len(x[1] - MI)):
+        gap = sorted(kbset - MI)
+        if len(gap) >= 5 and region != "Global":
+            out.append(f"**{region}** — {len(gap):,} keyboard-only of {len(kbset):,} shortcuts. e.g.:")
+            for a in gap[:8]:
+                out.append(f"- {a}")
+            out.append("")
+        if sum(1 for r, s in kb_by_region.items() if len(s - MI) >= 5 and r != "Global") and len([l for l in out if l.startswith('**')]) > 6:
+            break
+
+    text = "\n".join(out)
+    (OUT / "COVERAGE.md").write_text(text)
+    try:
+        (Path(PAKETTI) / "COVERAGE.md").write_text(text)   # useful Paketti documentation
+    except Exception:
+        pass
+    print(f"wrote {OUT}/COVERAGE.md  +  {PAKETTI}/COVERAGE.md")
+    print(f"  {len(allactions):,} distinct actions · "
+          f"K={len(KB):,} M={len(MI):,} E={len(ME):,}")
+    print(f"  shortcut-but-no-MIDI: {len(KB - MI):,} · menu-but-no-shortcut: {len(ME - KB):,}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -19,9 +19,28 @@ local function record(kind, name)
 end
 
 -- ── permissive magic stub: indexes/calls/concats/etc. never crash ────────────
+-- Lua 5.1/LuaJIT won't compare table<number even with __lt (both operands must
+-- share the metamethod), so scalar-looking fields must return REAL numbers.
+local SCALAR_KEYS = { value = true, count = true, size = true, length = true,
+                      index = true, number_of_lines = true, line = true }
 local function magic(name)
   return setmetatable({}, {
-    __index    = function(_, k) return magic(name .. "." .. tostring(k)) end,
+    __index = function(_, k)
+      if k == "value" then
+        -- a preference's .value: path/name-like → string (for :match/..), else number
+        if name:match("[Pp]ath") or name:match("XRNI") or name:match("[Ff]older")
+           or name:match("[Ff]ile") or name:match("[Dd]ir") or name:match("[Nn]ame")
+           or name:match("[Tt]ext") or name:match("[Ss]tring") then
+          return ""
+        end
+        return 0
+      end
+      if type(k) == "string" and (SCALAR_KEYS[k]
+          or k:match("_index$") or k:match("_count$") or k:match("_size$")) then
+        return 0                                  -- numeric so comparisons work
+      end
+      return magic(name .. "." .. tostring(k))
+    end,
     __newindex = function() end,
     __call     = function(_, ...) return magic(name .. "()") end,
     __concat   = function(a, b) return tostring(a) .. tostring(b) end,
@@ -35,6 +54,15 @@ local function magic(name)
   })
 end
 
+-- Renoise extends the `table` library; provide the ones Paketti uses at load time.
+table.create   = table.create   or function(t) return t or {} end
+table.copy      = table.copy     or function(t) local r = {} if type(t) == "table" then for k, v in pairs(t) do r[k] = v end end return r end
+table.rcopy     = table.rcopy    or function(t) local function dc(x) if type(x) ~= "table" then return x end local r = {} for k, v in pairs(x) do r[k] = dc(v) end return r end return dc(t) end
+table.clear     = table.clear    or function(t) if type(t) == "table" then for k in pairs(t) do t[k] = nil end end return t end
+table.count     = table.count    or function(t) local n = 0 if type(t) == "table" then for _ in pairs(t) do n = n + 1 end end return n end
+table.find      = table.find     or function(t, v) if type(t) == "table" then for i, x in ipairs(t) do if x == v then return i end end end return nil end
+table.is_empty  = table.is_empty or function(t) return type(t) ~= "table" or next(t) == nil end
+
 -- ── the recording tool (what renoise.tool() returns) ─────────────────────────
 local recording_tool = setmetatable({
   bundle_path = BUNDLE,
@@ -47,6 +75,7 @@ local recording_tool = setmetatable({
 renoise = setmetatable({
   tool = function() return recording_tool end,
   API_VERSION = 6.2,                       -- numeric: version checks must compare
+  RENOISE_VERSION = "3.5.0",               -- string: string.match() needs a string
   app = function() return magic("app") end,
   song = function() return magic("song") end,
   ApplicationWindow = magic("ApplicationWindow"),
@@ -166,6 +195,10 @@ for r, c in pairs(regions) do
                       ',"total":' .. (c.keybinding + c.menu_entry + c.midi_mapping) .. '}'
 end
 out[#out+1] = '"regions":{' .. table.concat(rparts, ',') .. '},'
+-- the actual NAMES per orifice (for cross-orifice coverage analysis)
+out[#out+1] = '"names":{"keybinding":' .. jarr(U.keybinding, jstr) ..
+              ',"menu_entry":' .. jarr(U.menu_entry, jstr) ..
+              ',"midi_mapping":' .. jarr(U.midi_mapping, jstr) .. '},'
 -- files (robust vs brittle)
 local fparts = {}
 for _, f in ipairs(FILES) do

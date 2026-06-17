@@ -119,8 +119,14 @@ def main():
     md.append("```")
     md.append("Mechanism: `bin/paketti-harness.lua` (LuaJIT, mocked Renoise) → `spine-true.json`.")
 
-    (OUT / "SPINE-TRUE.md").write_text("\n".join(md))
-    print(f"wrote {OUT}/SPINE-TRUE.md")
+    text = "\n".join(md)
+    (OUT / "SPINE-TRUE.md").write_text(text)
+    # Also drop it in the Paketti repo itself — this is useful Paketti documentation.
+    try:
+        (Path(PAKETTI) / "SPINE-TRUE.md").write_text(text)
+    except Exception:
+        pass
+    print(f"wrote {OUT}/SPINE-TRUE.md  +  {PAKETTI}/SPINE-TRUE.md")
     print(f"  {grand:,} registration points "
           f"({u['keybinding']:,} shortcuts · {u['menu_entry']:,} menus · {u['midi_mapping']:,} MIDI)")
     print(f"  {nloaded}/{ntot} files robust · {nbad} brittle")
