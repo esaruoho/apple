@@ -301,9 +301,13 @@ def list_fmchat(folder):
 
 
 # ─────────────────────────── Converse ────────────────────────────────
-# Stateful fm-converse chats with the on-device Foundation Models. Unlike the
-# others these are NOT folder-scoped — they're named conversations under
-# ~/.cache/fm-converse/<name>.json — so they're shown for every folder.
+# Stateful fm-converse chats with the on-device Foundation Models, stored as
+# named conversations under ~/.cache/fm-converse/<name>.json. Each file records
+# the folder it was started in ("cwd"), so — like every other provider — they
+# are folder-scoped: a Converse chat only shows up in the folder it belongs to.
+# Sessions with no recorded cwd (early builds, FoundationModels smoke-tests)
+# are global junk and are hidden from project folders so they don't clutter
+# every page.
 
 CONVERSE_ROOT = f"{HOME}/.cache/fm-converse"
 
@@ -311,6 +315,7 @@ CONVERSE_ROOT = f"{HOME}/.cache/fm-converse"
 def list_converse(folder):
     if not os.path.isdir(CONVERSE_ROOT):
         return []
+    resolved = os.path.realpath(folder)
     rows = []
     for name in os.listdir(CONVERSE_ROOT):
         if not name.endswith(".json"):
@@ -318,11 +323,21 @@ def list_converse(folder):
         full = os.path.join(CONVERSE_ROOT, name)
         try:
             st = os.stat(full)
-        except OSError:
+            with open(full, "r", encoding="utf-8", errors="replace") as f:
+                cwd = (json.load(f) or {}).get("cwd") or ""
+        except Exception:
             continue
-        # uuid = the session name (what fm-converse --session expects). cwd is
-        # filled lazily in load_converse_meta (read from the stored "cwd" field).
-        rows.append(Row("converse", name[:-5], "", full, st.st_mtime, st.st_size))
+        # Folder-scope by the chat's recorded cwd. No cwd → unscoped test/junk,
+        # skip it. Mismatched cwd → belongs to a different folder, skip it.
+        if not cwd:
+            continue
+        try:
+            if os.path.realpath(cwd) != resolved:
+                continue
+        except Exception:
+            continue
+        # uuid = the session name (what fm-converse --session expects).
+        rows.append(Row("converse", name[:-5], cwd, full, st.st_mtime, st.st_size))
     rows.sort(key=lambda r: r.mtime, reverse=True)
     return rows
 
