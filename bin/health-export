@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""health-export — turn an Apple Health `export.zip` into useful files.
+
+Apple Health gates HealthKit behind on-device entitlements: there is NO macOS
+or iPhone scripting API to pull the data. The ONLY export path is the manual
+iPhone tap (Health app -> profile photo -> "Export All Health Data") which
+produces `export.zip`. This tool is the Mac-side half: it parses the
+`export.xml` inside that zip and emits files you can actually use.
+
+  iPhone (manual once)  ->  AirDrop/Files  ->  this tool (repeatable)
+
+Pure Python stdlib (xml.etree.ElementTree.iterparse) so it streams a 100 MB+
+file without loading it into RAM, and needs no pip/Homebrew.
+
+Inputs accepted:
+  - path to export.zip            (will read export.xml from inside it)
+  - path to an extracted export.xml
+  - a directory containing either
+
+Outputs (into <outdir>, default ./health-export-out):
+  - records/<Type>.csv        one CSV per HK record type (raw)
+  - daily/<Type>.csv          per-day aggregate (sum for counts/distance,
+                              mean for rates like heart-rate)
+  - summary.md                human-readable overview: profile, date range,
+                              every type with count + first/last date
+  - workouts.csv              one row per workout
+  - manifest.json             machine-readable index of what was written
+
+Usage:
+  bin/health-export ~/Downloads/export.zip
+  bin/health-export ~/Downloads/export.zip --outdir ~/health --only StepCount,HeartRate
+  bin/health-export export.xml --no-daily
+  bin/health-export ~/Downloads/export.zip --list      # just list types + counts, write nothing
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import io
+import json
+import os
+import re
+import sys
+import zipfile
+from collections import defaultdict
+from datetime import datetime
+from xml.etree import ElementTree as ET
+
+# HK type identifiers whose values are RATES/levels -> daily aggregate = mean.
+# Everything else (counts, distances, energy) -> daily aggregate = sum.
+MEAN_HINTS = (
+    "HeartRate", "RespiratoryRate", "OxygenSaturation", "BodyTemperature",
+    "BloodPressure", "BodyMass", "Height", "BodyMassIndex", "VO2Max",
+    "WalkingSpeed", "WalkingHeartRateAverage", "RestingHeartRate",
+    "HeartRateVariability", "BloodGlucose", "Vo2",
+)
+
+
+def short_type(t: str) -> str:
+    """HKQuantityTypeIdentifierStepCount -> StepCount."""
+    for prefix in (
+        "HKQuantityTypeIdentifier", "HKCategoryTypeIdentifier",
+        "HKCorrelationTypeIdentifier", "HKDataTypeIdentifier",
+        "HKCharacteristicTypeIdentifier",
+    ):
+        if t.startswith(prefix):
+            return t[len(prefix):]
+    return t
+
+
+def safe_name(name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", name)
+
+
+def parse_date(s: str):
+    """Apple export dates: '2023-01-31 08:15:00 +0200'."""
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S %z")
+    except ValueError:
+        try:
+            return datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+
+
+def open_xml_stream(path: str):
+    """Return (file-like, label) for the export XML, locating it if given a zip/dir."""
+    if os.path.isdir(path):
+        for cand in ("apple_health_export/export.xml", "export.xml"):
+            full = os.path.join(path, cand)
+            if os.path.exists(full):
+                return open(full, "rb"), full
+        raise SystemExit(f"No export.xml found under directory {path}")
+    if path.lower().endswith(".zip"):
+        zf = zipfile.ZipFile(path)
+        names = zf.namelist()
+        member = next((n for n in names if n.endswith("export.xml") and "cda" not in n.lower()), None)
+        if not member:
+            raise SystemExit(f"No export.xml inside {path} (members: {names[:5]}...)")
+        return zf.open(member, "r"), f"{path}::{member}"
+    # assume it's the xml itself
+    return open(path, "rb"), path
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Parse Apple Health export.zip into CSVs + summary.")
+    ap.add_argument("input", help="path to export.zip, export.xml, or a directory containing them")
+    ap.add_argument("--outdir", default="health-export-out", help="output directory (default ./health-export-out)")
+    ap.add_argument("--only", default="", help="comma-separated short type names to keep (e.g. StepCount,HeartRate)")
+    ap.add_argument("--no-daily", action="store_true", help="skip per-day aggregate CSVs")
+    ap.add_argument("--no-records", action="store_true", help="skip raw per-type CSVs (summary/daily only)")
+    ap.add_argument("--list", action="store_true", help="list types + counts, write nothing")
+    args = ap.parse_args()
+
+    only = {s.strip() for s in args.only.split(",") if s.strip()}
+
+    stream, label = open_xml_stream(args.input)
+    print(f"reading {label}", file=sys.stderr)
+
+    counts: dict[str, int] = defaultdict(int)
+    first_date: dict[str, datetime] = {}
+    last_date: dict[str, datetime] = {}
+    units: dict[str, str] = {}
+    sources: dict[str, set] = defaultdict(set)
+    daily: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))  # type -> day -> [floats]
+    workouts: list[dict] = []
+    profile: dict[str, str] = {}
+
+    writers: dict[str, tuple] = {}  # type -> (file, csv.writer)
+    rec_dir = os.path.join(args.outdir, "records")
+    if not args.list and not args.no_records:
+        os.makedirs(rec_dir, exist_ok=True)
+
+    def rec_writer(stype: str):
+        if stype not in writers:
+            f = open(os.path.join(rec_dir, safe_name(stype) + ".csv"), "w", newline="")
+            w = csv.writer(f)
+            w.writerow(["startDate", "endDate", "value", "unit", "sourceName"])
+            writers[stype] = (f, w)
+        return writers[stype][1]
+
+    n = 0
+    for event, elem in ET.iterparse(stream, events=("end",)):
+        tag = elem.tag
+        if tag == "Record":
+            full_type = elem.get("type", "")
+            stype = short_type(full_type)
+            if only and stype not in only:
+                elem.clear()
+                continue
+            n += 1
+            counts[stype] += 1
+            unit = elem.get("unit", "")
+            if unit:
+                units.setdefault(stype, unit)
+            src = elem.get("sourceName", "")
+            if src:
+                sources[stype].add(src)
+            sd = elem.get("startDate", "")
+            ed = elem.get("endDate", "")
+            val = elem.get("value", "")
+            d = parse_date(sd)
+            if d:
+                if stype not in first_date or d < first_date[stype]:
+                    first_date[stype] = d
+                if stype not in last_date or d > last_date[stype]:
+                    last_date[stype] = d
+            if not args.list:
+                if not args.no_records:
+                    rec_writer(stype).writerow([sd, ed, val, unit, src])
+                if not args.no_daily and d is not None:
+                    try:
+                        daily[stype][d.strftime("%Y-%m-%d")].append(float(val))
+                    except (TypeError, ValueError):
+                        pass
+            if n % 200000 == 0:
+                print(f"  ...{n:,} records", file=sys.stderr)
+            elem.clear()
+        elif tag == "Workout":
+            wtype = elem.get("workoutActivityType", "")
+            workouts.append({
+                "type": wtype.replace("HKWorkoutActivityType", ""),
+                "startDate": elem.get("startDate", ""),
+                "endDate": elem.get("endDate", ""),
+                "duration": elem.get("duration", ""),
+                "durationUnit": elem.get("durationUnit", ""),
+                "totalDistance": elem.get("totalDistance", ""),
+                "totalEnergyBurned": elem.get("totalEnergyBurned", ""),
+                "sourceName": elem.get("sourceName", ""),
+            })
+            elem.clear()
+        elif tag == "Me":
+            for k, v in elem.attrib.items():
+                profile[k.replace("HKCharacteristicTypeIdentifier", "")] = v
+            elem.clear()
+
+    stream.close()
+
+    # ---- list mode: print and exit ----
+    if args.list:
+        print(f"\n{'TYPE':<40} {'COUNT':>12}  RANGE")
+        for t in sorted(counts, key=lambda x: -counts[x]):
+            fr = first_date.get(t)
+            la = last_date.get(t)
+            rng = f"{fr.date()} .. {la.date()}" if fr and la else ""
+            print(f"{t:<40} {counts[t]:>12,}  {rng}")
+        print(f"\n{len(counts)} types, {sum(counts.values()):,} records, {len(workouts):,} workouts")
+        return
+
+    os.makedirs(args.outdir, exist_ok=True)
+    for f, _ in writers.values():
+        f.close()
+
+    # ---- daily aggregates ----
+    if not args.no_daily:
+        daily_dir = os.path.join(args.outdir, "daily")
+        os.makedirs(daily_dir, exist_ok=True)
+        for stype, days in daily.items():
+            use_mean = any(h in stype for h in MEAN_HINTS)
+            with open(os.path.join(daily_dir, safe_name(stype) + ".csv"), "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["date", "mean" if use_mean else "sum", "min", "max", "n", "unit"])
+                for day in sorted(days):
+                    vals = days[day]
+                    agg = (sum(vals) / len(vals)) if use_mean else sum(vals)
+                    w.writerow([day, round(agg, 4), round(min(vals), 4), round(max(vals), 4), len(vals), units.get(stype, "")])
+
+    # ---- workouts ----
+    if workouts:
+        with open(os.path.join(args.outdir, "workouts.csv"), "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(workouts[0].keys()))
+            w.writeheader()
+            w.writerows(workouts)
+
+    # ---- summary.md ----
+    all_dates = [d for d in list(first_date.values()) + list(last_date.values())]
+    span = ""
+    if all_dates:
+        span = f"{min(all_dates).date()} .. {max(all_dates).date()}"
+    with open(os.path.join(args.outdir, "summary.md"), "w") as f:
+        f.write("# Apple Health export summary\n\n")
+        f.write(f"- Source: `{label}`\n")
+        f.write(f"- Date range: **{span}**\n")
+        f.write(f"- Record types: **{len(counts)}**  ·  Records: **{sum(counts.values()):,}**  ·  Workouts: **{len(workouts):,}**\n")
+        if profile:
+            f.write("\n## Profile\n\n")
+            for k, v in sorted(profile.items()):
+                f.write(f"- {k}: {v}\n")
+        f.write("\n## Metrics (by record count)\n\n")
+        f.write("| Type | Count | Unit | First | Last | Sources |\n")
+        f.write("|---|---:|---|---|---|---|\n")
+        for t in sorted(counts, key=lambda x: -counts[x]):
+            fr = first_date.get(t)
+            la = last_date.get(t)
+            f.write(f"| {t} | {counts[t]:,} | {units.get(t,'')} | "
+                    f"{fr.date() if fr else ''} | {la.date() if la else ''} | "
+                    f"{', '.join(sorted(sources.get(t, [])))} |\n")
+        if workouts:
+            f.write("\n## Workouts\n\n")
+            wt = defaultdict(int)
+            for w in workouts:
+                wt[w["type"]] += 1
+            for k in sorted(wt, key=lambda x: -wt[x]):
+                f.write(f"- {k}: {wt[k]}\n")
+
+    # ---- manifest.json ----
+    manifest = {
+        "source": label,
+        "date_range": span,
+        "types": {t: counts[t] for t in sorted(counts)},
+        "units": units,
+        "workouts": len(workouts),
+        "profile": profile,
+        "outputs": {
+            "records": (not args.no_records),
+            "daily": (not args.no_daily),
+            "summary": "summary.md",
+            "workouts": "workouts.csv" if workouts else None,
+        },
+    }
+    with open(os.path.join(args.outdir, "manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=2)
+
+    print(f"\nWrote {len(counts)} types, {sum(counts.values()):,} records to {args.outdir}/", file=sys.stderr)
+    print(f"  summary.md  ·  records/  ·  {'daily/  ·  ' if not args.no_daily else ''}manifest.json", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
