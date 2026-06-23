@@ -26,6 +26,7 @@ FM_SUBMIT = HERE / "fm-submit"          # the fleet brain: queues to the Mini's 
 APPLE_EMBED = HERE / "apple-embed"
 PAKETTI = "/Users/esaruoho/work/paketti"
 FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
+PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/manual/license/where
 
 # Brain: fm-mlx (the Mini's Qwen3-4B-Instruct via mlx_lm.server, port 8080) by default —
 # better instruction-following + no aggressive guardrails than Apple FoundationModels.
@@ -182,10 +183,34 @@ def feature_context(query: str, limit: int = 18) -> str:
 
 
 _LEAN_SYSTEM = (
-    "You are a concise expert on Paketti, a Lua quality-of-life tool for the Renoise "
-    "tracker. Answer the user's question using ONLY the Paketti features and facts listed "
-    "below. Do NOT invent features; if the list doesn't cover it, say you're not sure. Keep "
-    "it to 2-6 sentences and name the exact feature(s) the user should use.")
+    "You are a concise, helpful expert on Paketti, a Lua workflow tool for the Renoise tracker. "
+    "Use the Paketti information below — it includes registered FEATURES and PROJECT INFO "
+    "(support/donations, the manual, Discord, license). Answer the question directly and "
+    "helpfully: for support / donation / install / manual / where-to-get questions, answer from "
+    "the project info (e.g. give the actual donation links); for workflow questions, name the "
+    "exact feature(s). Do NOT pedantically reply that something 'isn't a feature' — just answer "
+    "the question. Don't invent features that aren't listed. Keep it to 2-6 sentences.")
+
+_PROJECT_TRIGGERS = (
+    "support", "donat", "patreon", "gumroad", "ko-fi", "kofi", "buy", "coffee", "sponsor",
+    "money", "pay", "price", "cost", "free", "install", "download", "where", "get ", "manual",
+    "license", "gpl", "discord", "forum", "contribut", "link", "website", "author", "who made",
+    "lackluster", "esa")
+
+
+def project_context(query: str) -> str:
+    """Pull the README (support/donations/manual/install/license/where-to-get) into grounding
+    when the question is about the PROJECT rather than a workflow feature — so 'how do I support
+    Paketti' gets the real donation links instead of 'that isn't a feature'."""
+    low = query.lower()
+    if not any(t in low for t in _PROJECT_TRIGGERS):
+        return ""
+    try:
+        txt = PROJECT_DOC.read_text(encoding="utf-8").strip()
+    except Exception:
+        return ""
+    return ("PAKETTI PROJECT INFO (use for support / donations / manual / install / where-to-get "
+            "/ license / links):\n" + txt)
 
 
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
@@ -194,7 +219,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
-    grounding = "\n\n".join(c for c in (feature_context(question), spine_context(question)) if c)
+    grounding = "\n\n".join(c for c in (project_context(question), feature_context(question), spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():

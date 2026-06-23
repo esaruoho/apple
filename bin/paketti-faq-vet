@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""paketti-faq-vet — certify (👍) or reject (👎) a Q&A in the Paketti FAQ vault.
+
+The Discord bot's feedback path: a 👍 on an answer certifies that Q&A so the NEXT person
+who asks gets it instantly and trusted (no model call); a 👎 marks the draft rejected so
+it's never served. Strips the Discord header/footer (✅/🟡 tag, _cites:_) before storing.
+
+  paketti-faq-vet --q "the question" --a "the answer text"   # certify → vetted
+  paketti-faq-vet --q "the question" --reject                # mark matching draft rejected
+
+Reuses bin/paketti_faq.py (same vault the bot serves from).
+"""
+import argparse
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paketti_faq as F
+
+
+def _clean(answer: str) -> str:
+    """Strip the --discord presentation so the stored answer is plain prose."""
+    a = (answer or "").strip()
+    # drop a leading "✅ **Vetted …**" / "🟡 **Draft …**" header line + blank line
+    a = re.sub(r"^\s*(✅|🟡|⚠️)\s*\*\*.*?\*\*.*?\n\s*\n", "", a, count=1, flags=re.S)
+    # drop a trailing "_cites: …_" line
+    a = re.sub(r"\n+_cites:.*$", "", a, flags=re.S).strip()
+    return a
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--q", required=True, help="the question")
+    ap.add_argument("--a", default="", help="the answer to certify")
+    ap.add_argument("--reject", action="store_true", help="mark the matching draft rejected")
+    args = ap.parse_args()
+
+    entries = F.load()
+    qn = args.q.strip().lower()
+    match = next((e for e in entries if e.get("q", "").strip().lower() == qn), None)
+
+    if args.reject:
+        if match:
+            F.update(match["id"], status="rejected")
+            print(f"rejected {match['id']}")
+        else:
+            print("no matching draft to reject")
+        return 0
+
+    ans = _clean(args.a)
+    if not ans:
+        print("refusing to certify an empty answer", file=sys.stderr)
+        return 2
+
+    if match:
+        F.update(match["id"], a=ans, citations=F._citations(ans), status="vetted")
+        print(f"vetted {match['id']}")
+    else:
+        e = F.new_entry(args.q, ans)
+        e["status"] = "vetted"
+        e["citations"] = F._citations(ans)
+        F.add(e)
+        print(f"vetted-new {e['id']}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
