@@ -161,20 +161,24 @@ def feature_context(query: str, limit: int = 18) -> str:
             words.add(_SYN[w])
     if not words:
         return ""
-    hits = []
+    # Score each FEATURE BULLET (skip "| group | counts |" summary rows) by how many
+    # distinct query keywords it matches, so specific multi-word hits (e.g. "Selection
+    # Volume Offset") rank above generic single-word ones ("Add Pattern …").
+    scored = []
     for ln in lines:
         s = ln.strip()
-        if not (s.startswith("-") or s.startswith("|")):
+        if not s.startswith("- "):
             continue
         low = s.lower()
-        if any(w in low for w in words):
-            hits.append(s.lstrip("-| ").strip())
-        if len(hits) >= limit:
-            break
-    if not hits:
+        n = sum(1 for w in words if w in low)
+        if n:
+            scored.append((n, s.lstrip("- ").strip()))
+    if not scored:
         return ""
+    scored.sort(key=lambda x: -x[0])
+    top = [t for _, t in scored[:limit]]
     return ("RELEVANT PAKETTI FEATURES (from the live feature map — these EXIST; ground "
-            "claims in these, do NOT invent features):\n" + "\n".join(f"- {h}" for h in hits))
+            "claims in these, do NOT invent features):\n" + "\n".join(f"- {t}" for t in top))
 
 
 _LEAN_SYSTEM = (
