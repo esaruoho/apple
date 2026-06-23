@@ -145,7 +145,7 @@ _FEAT_STOP = {"does", "have", "what", "with", "this", "that", "from", "your", "p
               "about", "there", "their", "make", "made", "system", "feature", "thing"}
 
 
-def feature_context(query: str, limit: int = 18) -> str:
+def feature_context(query: str, limit: int = 28) -> str:
     """Grep the live FEATURE-MAP (every registered Paketti feature, auto-pulled fresh on
     the Mini) for lines matching the question's keywords — so the model grounds in
     features that ACTUALLY EXIST rather than inventing them."""
