@@ -31,6 +31,9 @@ def _render(answer: str):
 def main() -> int:
     args = sys.argv[1:]
     thr = THRESHOLD
+    discord = "--discord" in args   # clean markdown for the Discord bot: no ANSI, no chrome
+    if discord:
+        args.remove("--discord")
     if "--threshold" in args:
         i = args.index("--threshold"); thr = float(args[i + 1]); del args[i:i + 2]
     question = " ".join(args).strip()
@@ -40,6 +43,21 @@ def main() -> int:
 
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
+
+    # ── Discord mode: just the answer + a one-line provenance tag (plain markdown) ──
+    if discord:
+        if match and score >= thr:
+            cites = f"\n\n_cites: {', '.join(match['citations'])}_" if match.get("citations") else ""
+            print(f"✅ **Vetted answer** _(certified)_\n\n{match['a']}{cites}")
+            return 0
+        ans = F.generate_answer(question)
+        if not ans:
+            print("⚠️ I couldn't draft an answer right now (the on-device brain didn't respond).")
+            return 1
+        e = F.new_entry(question, ans)
+        F.add(e)
+        print(f"🟡 **Draft — unverified** _(from the repo, not yet certified)_\n\n{ans}")
+        return 0
 
     if match and score >= thr:
         # "did the user ask for this? are we sure? — yes. here's the info."

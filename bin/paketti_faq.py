@@ -22,11 +22,21 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 FM_MLX = HERE / "fm-mlx"
+FM_SUBMIT = HERE / "fm-submit"          # the fleet brain: queues to the Mini's fm-service
 APPLE_EMBED = HERE / "apple-embed"
 PAKETTI = "/Users/esaruoho/work/paketti"
+FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
 
-VAULT_DIR = Path.home() / ".paketti-faq"
-VAULT = VAULT_DIR / "vault.jsonl"
+# Brain: fm-submit (Mini's on-device FoundationModels, works from any fleet machine)
+# unless overridden. The laptop-only fm-mlx remains the fallback.
+BRAIN = os.environ.get("PAKETTI_FAQ_BRAIN", "fm-submit")
+
+# Vault lives in the Syncthing comms queue so the Mini's bot serves the SAME certified
+# answers you vet on the laptop. Override with PAKETTI_FAQ_VAULT.
+_COMMS_VAULT = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "vault.jsonl"
+_LEGACY_VAULT = Path.home() / ".paketti-faq" / "vault.jsonl"
+VAULT = Path(os.environ.get("PAKETTI_FAQ_VAULT", str(_COMMS_VAULT)))
+VAULT_DIR = VAULT.parent
 
 # Seed feature-questions — real Paketti topics. gen() answers the next unanswered ones.
 SEED_QUESTIONS = [
@@ -47,6 +57,13 @@ SEED_QUESTIONS = [
 
 # ── vault io ─────────────────────────────────────────────────────────────────
 def load() -> list:
+    # One-time migration: seed the shared comms vault from the legacy laptop vault.
+    if not VAULT.exists() and VAULT != _LEGACY_VAULT and _LEGACY_VAULT.exists():
+        try:
+            VAULT_DIR.mkdir(parents=True, exist_ok=True)
+            VAULT.write_text(_LEGACY_VAULT.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
     if not VAULT.exists():
         return []
     out = []
@@ -119,18 +136,65 @@ def spine_context(query: str) -> str:
     return "\n\n".join(blocks[:2])
 
 
-def generate_answer(question: str, timeout: int = 180) -> "str | None":
-    """Draft a grounded answer with the paketti+renoise-armed MLX brain. If the
-    question names a spine entity, that authoritative record leads the prompt."""
-    import arm_apple
-    system = arm_apple.build_system(PAKETTI)            # arms paketti (+renoise companion)
-    prompt = arm_apple.augment_prompt(question, question)  # + per-turn retrieval
-    spine = spine_context(question)
-    if spine:
-        prompt = spine + "\n\n" + prompt
+_FEAT_STOP = {"does", "have", "what", "with", "this", "that", "from", "your", "paketti",
+              "renoise", "they", "them", "when", "where", "which", "would", "could", "into",
+              "about", "there", "their", "make", "made", "system", "feature", "thing"}
+
+
+def feature_context(query: str, limit: int = 18) -> str:
+    """Grep the live FEATURE-MAP (every registered Paketti feature, auto-pulled fresh on
+    the Mini) for lines matching the question's keywords — so the model grounds in
+    features that ACTUALLY EXIST rather than inventing them."""
     try:
-        p = subprocess.run([str(FM_MLX), "--raw", "--system", system, prompt],
-                           capture_output=True, text=True, timeout=timeout,
+        lines = FEATURE_MAP.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return ""
+    words = {w for w in re.findall(r"[a-z]{4,}", query.lower()) if w not in _FEAT_STOP}
+    if not words:
+        return ""
+    hits = []
+    for ln in lines:
+        s = ln.strip()
+        if not (s.startswith("-") or s.startswith("|")):
+            continue
+        low = s.lower()
+        if any(w in low for w in words):
+            hits.append(s.lstrip("-| ").strip())
+        if len(hits) >= limit:
+            break
+    if not hits:
+        return ""
+    return ("RELEVANT PAKETTI FEATURES (from the live feature map — these EXIST; ground "
+            "claims in these, do NOT invent features):\n" + "\n".join(f"- {h}" for h in hits))
+
+
+_LEAN_SYSTEM = (
+    "You are a concise expert on Paketti, a Lua quality-of-life tool for the Renoise "
+    "tracker. Answer the user's question using ONLY the Paketti features and facts listed "
+    "below. Do NOT invent features; if the list doesn't cover it, say you're not sure. Keep "
+    "it to 2-6 sentences and name the exact feature(s) the user should use.")
+
+
+def generate_answer(question: str, timeout: int = 180) -> "str | None":
+    """Draft a grounded answer. Grounding = any named spine entity + the matching live
+    FEATURE-MAP lines (real registered features). Brain is fm-submit (the Mini's small
+    on-device FoundationModels) by default — fed a LEAN system + grounding, because the
+    full 12KB skill-arm overwhelms it (slow + refuses). fm-mlx (laptop, capable) keeps the
+    full armed system."""
+    import arm_apple
+    grounding = "\n\n".join(c for c in (feature_context(question), spine_context(question)) if c)
+    try:
+        if BRAIN == "fm-submit" and FM_SUBMIT.exists():
+            system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
+            cmd = [str(FM_SUBMIT), "--system", system,
+                   "--timeout", str(max(60, timeout - 20)), question]
+        else:
+            system = arm_apple.build_system(PAKETTI)            # full paketti(+renoise) arm
+            prompt = arm_apple.augment_prompt(question, question)
+            if grounding:
+                prompt = grounding + "\n\n" + prompt
+            cmd = [str(FM_MLX), "--raw", "--system", system, prompt]
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            stdin=subprocess.DEVNULL)
     except Exception:
         return None
