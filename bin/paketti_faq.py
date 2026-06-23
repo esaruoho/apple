@@ -33,7 +33,10 @@ PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/ma
 # Set PAKETTI_FAQ_BRAIN=fm-submit to use FoundationModels (fm-service) instead.
 BRAIN = os.environ.get("PAKETTI_FAQ_BRAIN", "fm-mlx")
 
-THRESHOLD = 0.62   # cosine above this = "we're sure it's the same question" (shared by ask + bench)
+THRESHOLD = 0.80   # cosine above this = "we're sure it's the same question" (shared by ask + bench).
+# Raised from 0.62: at 0.62, structurally-similar but unrelated questions matched (e.g. "how do
+# i support paketti" ↔ "how do i slice a sample" = 0.662 → served the WRONG vetted answer). Only
+# serve a certified answer on a STRONG (>0.8) match; weaker → draft fresh (grounded, re-vettable).
 
 # Vault lives in the Syncthing comms queue so the Mini's bot serves the SAME certified
 # answers you vet on the laptop. Override with PAKETTI_FAQ_VAULT.
