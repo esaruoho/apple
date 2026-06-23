@@ -287,8 +287,11 @@ def main() -> int:
     ap.add_argument("--html", metavar="OUT", help="render the quality-over-runs trend chart")
     ap.add_argument("--list-runs", action="store_true")
     ap.add_argument("--force", action="store_true", help="bench even if the live bot is busy")
+    ap.add_argument("--questions", action="store_true", help="emit the per-area questions as JSON (one source of truth for the bot's !bench)")
     args = ap.parse_args()
 
+    if args.questions:
+        print(json.dumps(AREAS)); return 0
     if args.html:
         render_html(Path(args.html)); return 0
     if args.list_runs:
