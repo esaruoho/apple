@@ -97,6 +97,20 @@ def _feature_map_text() -> str:
         return ""
 
 
+def graph_stats() -> dict:
+    """Snapshot the Paketti DreamGraph size (nodes/edges/features) so each bench run records
+    how the knowledge graph is GROWING alongside the answer quality."""
+    import subprocess
+    try:
+        convey = Path(__file__).resolve().parent / "convey"
+        p = subprocess.run([str(convey), "graph", "stats"], capture_output=True, text=True, timeout=30)
+        d = json.loads(p.stdout)
+        return {"nodes": d.get("nodes"), "edges": d.get("edges"),
+                "features": d.get("node_kinds", {}).get("feature")}
+    except Exception:
+        return {}
+
+
 def score_answer(answer: str, vetted: bool, fmap: str) -> dict:
     if not answer or not answer.strip():
         return {"answered": 0.0, "grounded": 0.0, "vetted": 0.0, "composite": 0.0}
@@ -125,9 +139,15 @@ def answer_one(q: str, entries: list):
 def run(areas: dict, per_area: int) -> dict:
     fmap = _feature_map_text()
     entries = F.load()
+    vetted = sum(1 for e in entries if e.get("status") == "vetted")
     out = {"ts": int(time.time()),
            "iso": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+           "graph": graph_stats(),
+           "vault": {"vetted": vetted, "total": len(entries)},
            "areas": {}, "n_questions": 0}
+    g = out["graph"]
+    if g.get("nodes"):
+        print(f"DreamGraph: {g['nodes']} nodes · {g.get('features')} features · {g.get('edges')} edges\n")
     composites = []
     for area, qs in areas.items():
         qs = qs[:per_area] if per_area else qs
@@ -203,9 +223,15 @@ def render_html(out_path: Path):
         gy = y(g / 10)
         svg.append(f'<line x1="{pad}" y1="{gy:.0f}" x2="{W-pad}" y2="{gy:.0f}" stroke="#222"/>')
         svg.append(f'<text x="{pad-8}" y="{gy+4:.0f}" fill="#888" font-size="11" text-anchor="end">{g/10:.1f}</text>')
-    # overall line (thick white)
+    # overall quality line (thick white)
     pts = " ".join(f"{x(i):.0f},{y(r.get('overall',0)):.0f}" for i, r in enumerate(runs))
     svg.append(f'<polyline points="{pts}" fill="none" stroke="#fff" stroke-width="3"/>')
+    # DreamGraph growth (dashed grey, scaled to max nodes) — the graph getting bigger over time
+    node_vals = [(r.get('graph') or {}).get('nodes') or 0 for r in runs]
+    maxn = max(node_vals) or 1
+    if maxn > 1:
+        gpts = " ".join(f"{x(i):.0f},{y(node_vals[i]/maxn):.0f}" for i in range(len(runs)))
+        svg.append(f'<polyline points="{gpts}" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="5,4"/>')
     for ci, area in enumerate(areas):
         col = colors[ci % len(colors)]
         pts = " ".join(f"{x(i):.0f},{y(r.get('areas',{}).get(area,{}).get('avg',0)):.0f}"
@@ -215,10 +241,13 @@ def render_html(out_path: Path):
         svg.append(f'<text x="{x(i):.0f}" y="{H-pad+16:.0f}" fill="#888" font-size="10" text-anchor="middle">{_html.escape(lbl)}</text>')
     svg.append('</svg>')
     legend = '<div style="margin-top:10px">' + \
-        '<span style="color:#fff;font-weight:bold">━ OVERALL</span> &nbsp; ' + \
+        '<span style="color:#fff;font-weight:bold">━ OVERALL quality</span> &nbsp; ' + \
+        '<span style="color:#888">┄ DreamGraph size</span> &nbsp; ' + \
         ' &nbsp; '.join(f'<span style="color:{colors[ci%len(colors)]}">━ {_html.escape(a)}</span>'
                         for ci, a in enumerate(areas)) + '</div>'
     latest = runs[-1]
+    lg = latest.get("graph") or {}
+    lv = latest.get("vault") or {}
     rows = "".join(
         f'<tr><td>{_html.escape(a)}</td><td style="text-align:right">{d["avg"]:.2f}</td></tr>'
         for a, d in sorted(latest.get("areas", {}).items()))
@@ -226,7 +255,9 @@ def render_html(out_path: Path):
 <body style="background:#0d0d10;color:#ddd;font-family:-apple-system,sans-serif;padding:24px;max-width:960px">
 <h1 style="font-weight:600">Paketti FAQ — quality over time</h1>
 <p style="color:#888">{len(runs)} run(s) · latest overall <b style="color:#fff">{latest.get('overall',0):.3f}</b>
-· {latest.get('n_questions',0)} questions · {_html.escape(latest['iso'][:16])}</p>
+· {latest.get('n_questions',0)} questions · {_html.escape(latest['iso'][:16])}<br>
+DreamGraph: <b style="color:#ccc">{lg.get('nodes','?')}</b> nodes / {lg.get('features','?')} features ·
+vault: <b style="color:#ccc">{lv.get('vetted',0)}</b> vetted of {lv.get('total',0)}</p>
 {''.join(svg)}{legend}
 <h3 style="margin-top:28px">Latest per-area</h3>
 <table style="border-collapse:collapse"><tr><th style="text-align:left">Area</th><th>Quality</th></tr>{rows}</table>
