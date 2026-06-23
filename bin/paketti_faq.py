@@ -27,9 +27,10 @@ APPLE_EMBED = HERE / "apple-embed"
 PAKETTI = "/Users/esaruoho/work/paketti"
 FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
 
-# Brain: fm-submit (Mini's on-device FoundationModels, works from any fleet machine)
-# unless overridden. The laptop-only fm-mlx remains the fallback.
-BRAIN = os.environ.get("PAKETTI_FAQ_BRAIN", "fm-submit")
+# Brain: fm-mlx (the Mini's Qwen3-4B-Instruct via mlx_lm.server, port 8080) by default —
+# better instruction-following + no aggressive guardrails than Apple FoundationModels.
+# Set PAKETTI_FAQ_BRAIN=fm-submit to use FoundationModels (fm-service) instead.
+BRAIN = os.environ.get("PAKETTI_FAQ_BRAIN", "fm-mlx")
 
 # Vault lives in the Syncthing comms queue so the Mini's bot serves the SAME certified
 # answers you vet on the laptop. Override with PAKETTI_FAQ_VAULT.
@@ -150,6 +151,14 @@ def feature_context(query: str, limit: int = 18) -> str:
     except Exception:
         return ""
     words = {w for w in re.findall(r"[a-z]{4,}", query.lower()) if w not in _FEAT_STOP}
+    # expand with synonyms so e.g. "quieter" reaches the Volume features
+    _SYN = {"quiet": "volume", "quieter": "volume", "softer": "volume", "louder": "volume",
+            "loud": "volume", "lull": "volume", "faster": "tempo", "slower": "tempo",
+            "speed": "tempo", "pan": "panning", "timing": "delay", "groove": "delay",
+            "chop": "slice", "kit": "drumkit", "arp": "arpeggio"}
+    for w in list(words):
+        if w in _SYN:
+            words.add(_SYN[w])
     if not words:
         return ""
     hits = []
@@ -177,23 +186,18 @@ _LEAN_SYSTEM = (
 
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
-    FEATURE-MAP lines (real registered features). Brain is fm-submit (the Mini's small
-    on-device FoundationModels) by default — fed a LEAN system + grounding, because the
-    full 12KB skill-arm overwhelms it (slow + refuses). fm-mlx (laptop, capable) keeps the
-    full armed system."""
-    import arm_apple
+    FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
+    whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
+    fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
+    on-device models, so grounding leads instead."""
     grounding = "\n\n".join(c for c in (feature_context(question), spine_context(question)) if c)
+    system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():
-            system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
             cmd = [str(FM_SUBMIT), "--system", system,
                    "--timeout", str(max(60, timeout - 20)), question]
-        else:
-            system = arm_apple.build_system(PAKETTI)            # full paketti(+renoise) arm
-            prompt = arm_apple.augment_prompt(question, question)
-            if grounding:
-                prompt = grounding + "\n\n" + prompt
-            cmd = [str(FM_MLX), "--raw", "--system", system, prompt]
+        else:  # fm-mlx → the Mini's Qwen3-4B MLX server (--raw = text only, no speech)
+            cmd = [str(FM_MLX), "--raw", "--system", system, question]
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            stdin=subprocess.DEVNULL)
     except Exception:
