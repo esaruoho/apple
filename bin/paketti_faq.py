@@ -33,6 +33,8 @@ PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/ma
 # Set PAKETTI_FAQ_BRAIN=fm-submit to use FoundationModels (fm-service) instead.
 BRAIN = os.environ.get("PAKETTI_FAQ_BRAIN", "fm-mlx")
 
+THRESHOLD = 0.62   # cosine above this = "we're sure it's the same question" (shared by ask + bench)
+
 # Vault lives in the Syncthing comms queue so the Mini's bot serves the SAME certified
 # answers you vet on the laptop. Override with PAKETTI_FAQ_VAULT.
 _COMMS_VAULT = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "vault.jsonl"

@@ -1,0 +1,272 @@
+#!/usr/bin/env python3
+"""paketti-faq-bench — per-area quality harness for the Paketti FAQ engine.
+
+Runs a fixed set of questions across every Paketti area (sample editor, mappings, navigator,
+instrument box, mixer, pattern editor, phrase editor, sequencer, recorder, track DSPs, …)
+through the SAME engine the Discord bot uses, scores each answer, saves a timestamped run, and
+reports per-area + overall quality plus the delta vs the previous run — so you can watch quality
+rise over time and catch regressions.
+
+Scoring (0..1 composite per answer):
+  • answered   — gave a substantive answer (not a refusal / "not a feature" / "not sure")
+  • grounded   — the **bold feature names** it cites actually exist in the live FEATURE-MAP
+                 (catches hallucinated features)
+  • vetted     — served from the certified vault (your 👍'd answers) rather than a fresh draft
+  composite = 0.4*answered + 0.4*grounded + 0.2*vetted
+
+Read-only: it does NOT write drafts to the vault (uses generate_answer directly), so benching
+never pollutes the vault.
+
+  paketti-faq-bench                 # full run, report + save
+  paketti-faq-bench --area "Mixer"  # one area only
+  paketti-faq-bench --per-area 1    # quick: 1 question/area
+  paketti-faq-bench --html OUT.html # render the quality-over-runs trend chart
+  paketti-faq-bench --list-runs     # list saved runs
+"""
+import argparse
+import html as _html
+import json
+import re
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paketti_faq as F
+
+BENCH_DIR = F.VAULT_DIR / "bench"        # Syncthing-shared (laptop + Mini see the same trend)
+
+AREAS = {
+    "Sample Editor": [
+        "How do I slice a sample in Paketti?",
+        "Can Paketti normalize or reverse a sample?",
+        "How do I edit a sample's loop points in Paketti?",
+    ],
+    "Sample Mappings": [
+        "How do I set up sample keyzones in Paketti?",
+        "Can Paketti auto-map samples across the keyboard?",
+    ],
+    "Sample Navigator": [
+        "What does the sample navigator do in Paketti?",
+        "How do I move between samples in Paketti?",
+    ],
+    "Instrument Box": [
+        "How do I manage instruments in Paketti?",
+        "Can Paketti duplicate or reorder instruments?",
+    ],
+    "Mixer": [
+        "What mixer controls does Paketti add?",
+        "How do I adjust track volume in Paketti?",
+    ],
+    "Pattern Editor": [
+        "How do I make a pattern selection quieter in Paketti?",
+        "Can Paketti transpose selected notes?",
+        "How do I interpolate values across a selection in Paketti?",
+    ],
+    "Phrase Editor": [
+        "What phrase tools does Paketti provide?",
+        "How do I work with phrases in Paketti?",
+    ],
+    "Pattern Sequencer": [
+        "How do I schedule patterns in Paketti?",
+        "Can Paketti reorder or duplicate sequence slots?",
+    ],
+    "Sample Recorder": [
+        "How do I record a sample in Paketti?",
+        "Does Paketti have line-input recording?",
+    ],
+    "Track DSPs": [
+        "How do I add or manage track DSP devices in Paketti?",
+        "Can Paketti load device chains or presets?",
+    ],
+}
+
+_REFUSALS = (
+    "not have a feature", "does not have", "doesn't have", "not sure", "no feature",
+    "isn't a feature", "is not a feature", "not a feature", "no specific feature",
+    "i'm not sure", "i am not sure", "no direct feature", "not provide", "no built-in",
+    "cannot find", "there is no", "no option", "not available in paketti",
+)
+
+
+def _feature_map_text() -> str:
+    try:
+        return F.FEATURE_MAP.read_text(encoding="utf-8").lower()
+    except Exception:
+        return ""
+
+
+def score_answer(answer: str, vetted: bool, fmap: str) -> dict:
+    if not answer or not answer.strip():
+        return {"answered": 0.0, "grounded": 0.0, "vetted": 0.0, "composite": 0.0}
+    low = answer.lower()
+    answered = 0.0 if any(p in low for p in _REFUSALS) else 1.0
+    names = [n.strip() for n in re.findall(r"\*\*(.+?)\*\*", answer) if n.strip()]
+    if names and fmap:
+        hits = sum(1 for n in names if n.lower() in fmap)
+        grounded = hits / len(names)
+    else:
+        grounded = 0.5 * answered          # no named features → neutral if it answered at all
+    vetted_s = 1.0 if vetted else 0.0
+    composite = round(0.4 * answered + 0.4 * grounded + 0.2 * vetted_s, 3)
+    return {"answered": answered, "grounded": round(grounded, 3), "vetted": vetted_s,
+            "composite": composite, "n_named": len(names)}
+
+
+def answer_one(q: str, entries: list):
+    """Mirror the bot's are-we-sure gate, but WITHOUT saving a draft to the vault."""
+    match, score = F.best_match(q, entries, vetted_only=True)
+    if match and score >= F.THRESHOLD:
+        return match["a"], True
+    return (F.generate_answer(q) or ""), False
+
+
+def run(areas: dict, per_area: int) -> dict:
+    fmap = _feature_map_text()
+    entries = F.load()
+    out = {"ts": int(time.time()),
+           "iso": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+           "areas": {}, "n_questions": 0}
+    composites = []
+    for area, qs in areas.items():
+        qs = qs[:per_area] if per_area else qs
+        rows = []
+        for q in qs:
+            ans, vetted = answer_one(q, entries)
+            sc = score_answer(ans, vetted, fmap)
+            rows.append({"q": q, "vetted": vetted, **sc,
+                         "preview": (ans or "").replace("\n", " ")[:140]})
+            composites.append(sc["composite"])
+            out["n_questions"] += 1
+            flag = "✓vet" if vetted else ("ok " if sc["answered"] else "REF")
+            print(f"  [{flag}] {sc['composite']:.2f}  {q[:60]}")
+        avg = round(sum(r["composite"] for r in rows) / len(rows), 3) if rows else 0.0
+        out["areas"][area] = {"avg": avg, "rows": rows}
+        print(f"— {area}: {avg:.2f}\n")
+    out["overall"] = round(sum(composites) / len(composites), 3) if composites else 0.0
+    return out
+
+
+def save_run(rec: dict) -> Path:
+    BENCH_DIR.mkdir(parents=True, exist_ok=True)
+    p = BENCH_DIR / f"{rec['iso'].replace(':', '').replace('-', '')}.json"
+    p.write_text(json.dumps(rec, indent=2), encoding="utf-8")
+    return p
+
+
+def load_runs() -> list:
+    if not BENCH_DIR.exists():
+        return []
+    runs = []
+    for f in sorted(BENCH_DIR.glob("*.json")):
+        try:
+            runs.append(json.loads(f.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return sorted(runs, key=lambda r: r.get("ts", 0))
+
+
+def report_delta(rec: dict):
+    runs = load_runs()
+    prev = runs[-1] if runs else None      # the most recent SAVED run (before this one)
+    print("=" * 56)
+    print(f"OVERALL quality: {rec['overall']:.3f}  ({rec['n_questions']} questions)")
+    if prev:
+        d = rec["overall"] - prev.get("overall", 0)
+        arrow = "▲" if d > 0.001 else ("▼" if d < -0.001 else "▬")
+        print(f"  vs last run ({prev['iso'][:16]}): {arrow} {d:+.3f}")
+        for area, a in rec["areas"].items():
+            pa = prev.get("areas", {}).get(area, {}).get("avg")
+            if pa is not None:
+                da = a["avg"] - pa
+                ar = "▲" if da > 0.001 else ("▼" if da < -0.001 else "▬")
+                print(f"    {area:<20} {a['avg']:.2f}  {ar} {da:+.3f}")
+    else:
+        print("  (first run — no previous to compare)")
+
+
+def render_html(out_path: Path):
+    runs = load_runs()
+    if not runs:
+        sys.exit("no saved runs yet — run `paketti-faq-bench` first")
+    areas = sorted({a for r in runs for a in r.get("areas", {})})
+    labels = [r["iso"][5:16] for r in runs]
+    W, H, pad = 900, 420, 50
+    def x(i): return pad + (W - 2 * pad) * (i / max(1, len(runs) - 1))
+    def y(v): return H - pad - (H - 2 * pad) * v
+    colors = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4",
+              "#f032e6", "#bfef45", "#fabed4", "#469990", "#9A6324"]
+    svg = [f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}">']
+    svg.append(f'<rect width="{W}" height="{H}" fill="#0d0d10"/>')
+    for g in range(0, 11, 2):
+        gy = y(g / 10)
+        svg.append(f'<line x1="{pad}" y1="{gy:.0f}" x2="{W-pad}" y2="{gy:.0f}" stroke="#222"/>')
+        svg.append(f'<text x="{pad-8}" y="{gy+4:.0f}" fill="#888" font-size="11" text-anchor="end">{g/10:.1f}</text>')
+    # overall line (thick white)
+    pts = " ".join(f"{x(i):.0f},{y(r.get('overall',0)):.0f}" for i, r in enumerate(runs))
+    svg.append(f'<polyline points="{pts}" fill="none" stroke="#fff" stroke-width="3"/>')
+    for ci, area in enumerate(areas):
+        col = colors[ci % len(colors)]
+        pts = " ".join(f"{x(i):.0f},{y(r.get('areas',{}).get(area,{}).get('avg',0)):.0f}"
+                       for i, r in enumerate(runs))
+        svg.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="1.5" opacity="0.85"/>')
+    for i, lbl in enumerate(labels):
+        svg.append(f'<text x="{x(i):.0f}" y="{H-pad+16:.0f}" fill="#888" font-size="10" text-anchor="middle">{_html.escape(lbl)}</text>')
+    svg.append('</svg>')
+    legend = '<div style="margin-top:10px">' + \
+        '<span style="color:#fff;font-weight:bold">━ OVERALL</span> &nbsp; ' + \
+        ' &nbsp; '.join(f'<span style="color:{colors[ci%len(colors)]}">━ {_html.escape(a)}</span>'
+                        for ci, a in enumerate(areas)) + '</div>'
+    latest = runs[-1]
+    rows = "".join(
+        f'<tr><td>{_html.escape(a)}</td><td style="text-align:right">{d["avg"]:.2f}</td></tr>'
+        for a, d in sorted(latest.get("areas", {}).items()))
+    doc = f"""<!doctype html><meta charset="utf-8"><title>Paketti FAQ quality trend</title>
+<body style="background:#0d0d10;color:#ddd;font-family:-apple-system,sans-serif;padding:24px;max-width:960px">
+<h1 style="font-weight:600">Paketti FAQ — quality over time</h1>
+<p style="color:#888">{len(runs)} run(s) · latest overall <b style="color:#fff">{latest.get('overall',0):.3f}</b>
+· {latest.get('n_questions',0)} questions · {_html.escape(latest['iso'][:16])}</p>
+{''.join(svg)}{legend}
+<h3 style="margin-top:28px">Latest per-area</h3>
+<table style="border-collapse:collapse"><tr><th style="text-align:left">Area</th><th>Quality</th></tr>{rows}</table>
+<p style="color:#555;margin-top:24px">composite = 0.4·answered + 0.4·grounded-in-real-features + 0.2·vetted · higher = better</p>
+</body>"""
+    out_path.write_text(doc, encoding="utf-8")
+    print(f"wrote {out_path}  ({len(runs)} runs, {len(areas)} areas)")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--area", help="run a single area only")
+    ap.add_argument("--per-area", type=int, default=0, help="cap questions per area (0 = all)")
+    ap.add_argument("--html", metavar="OUT", help="render the quality-over-runs trend chart")
+    ap.add_argument("--list-runs", action="store_true")
+    args = ap.parse_args()
+
+    if args.html:
+        render_html(Path(args.html)); return 0
+    if args.list_runs:
+        for r in load_runs():
+            print(f"  {r['iso'][:16]}  overall {r.get('overall',0):.3f}  ({r.get('n_questions',0)} q)")
+        return 0
+
+    areas = AREAS
+    if args.area:
+        match = {k: v for k, v in AREAS.items() if args.area.lower() in k.lower()}
+        if not match:
+            sys.exit(f"no area matching '{args.area}'. Areas: {', '.join(AREAS)}")
+        areas = match
+
+    print(f"benching {sum(len(v[:args.per_area] if args.per_area else v) for v in areas.values())} "
+          f"questions across {len(areas)} area(s)…\n")
+    rec = run(areas, args.per_area)
+    report_delta(rec)               # compare against the previous run BEFORE saving this one
+    p = save_run(rec)
+    print(f"\nsaved {p}")
+    print("render the trend:  paketti-faq-bench --html /tmp/paketti-quality.html")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
