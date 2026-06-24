@@ -169,7 +169,7 @@ def run(areas: dict, per_area: int) -> dict:
             ans, vetted = answer_one(q, entries)
             sc = score_answer(ans, vetted, fmap)
             rows.append({"q": q, "vetted": vetted, **sc,
-                         "preview": (ans or "").replace("\n", " ")[:140]})
+                         "answer": ans or ""})       # FULL answer (so runs are diffable, not just a preview)
             composites.append(sc["composite"])
             out["n_questions"] += 1
             flag = "✓vet" if vetted else ("ok " if sc["answered"] else "REF")
@@ -198,6 +198,33 @@ def load_runs() -> list:
         except Exception:
             pass
     return sorted(runs, key=lambda r: r.get("ts", 0))
+
+
+def diff_runs(full: bool = False):
+    """Compare the two most recent runs: per-question score delta + whether the answer text
+    changed (and, with --diff-full, the before→after). This is the 'diff + append' view — every
+    run appends a full-answer snapshot; this shows what moved between the last two."""
+    runs = load_runs()
+    if len(runs) < 2:
+        sys.exit("need at least 2 saved runs to diff — run `paketti-faq-bench` again later.")
+    prev, cur = runs[-2], runs[-1]
+
+    def rowmap(r):
+        return {row["q"]: row for a in r.get("areas", {}).values() for row in a.get("rows", [])}
+    pm, cm = rowmap(prev), rowmap(cur)
+    print(f"DIFF  {prev['iso'][:16]} → {cur['iso'][:16]}   overall "
+          f"{prev.get('overall', 0):.3f} → {cur.get('overall', 0):.3f} "
+          f"({cur.get('overall', 0) - prev.get('overall', 0):+.3f})\n")
+    for q, cr in cm.items():
+        pr = pm.get(q)
+        ds = cr["composite"] - (pr["composite"] if pr else 0.0)
+        changed = (not pr) or (cr.get("answer", "").strip() != pr.get("answer", "").strip())
+        arrow = "▲" if ds > 0.001 else ("▼" if ds < -0.001 else "▬")
+        tag = "NEW" if not pr else ("changed" if changed else "same")
+        print(f"  {arrow} {ds:+.2f}  [{tag}]  {q}")
+        if full and changed and pr:
+            print(f"      − was: {' '.join(pr.get('answer', '').split())[:240]}")
+            print(f"      + now: {' '.join(cr.get('answer', '').split())[:240]}\n")
 
 
 def report_delta(rec: dict):
@@ -288,10 +315,14 @@ def main() -> int:
     ap.add_argument("--list-runs", action="store_true")
     ap.add_argument("--force", action="store_true", help="bench even if the live bot is busy")
     ap.add_argument("--questions", action="store_true", help="emit the per-area questions as JSON (one source of truth for the bot's !bench)")
+    ap.add_argument("--diff", action="store_true", help="compare the two most recent runs (score deltas + what changed)")
+    ap.add_argument("--diff-full", action="store_true", help="like --diff but print the before→after answers")
     args = ap.parse_args()
 
     if args.questions:
         print(json.dumps(AREAS)); return 0
+    if args.diff or args.diff_full:
+        diff_runs(full=args.diff_full); return 0
     if args.html:
         render_html(Path(args.html)); return 0
     if args.list_runs:
