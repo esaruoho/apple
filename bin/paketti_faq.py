@@ -283,12 +283,30 @@ def cosine(a, b) -> float:
     return dot / (na * nb) if na and nb else 0.0
 
 
+_TEMPLATE_WORDS = ("how do i", "how can i", "how do you", "can paketti", "does paketti",
+                   "what does", "what is", "what are", "is there", "in paketti", "with paketti",
+                   "paketti", "the", " a ", " an ")
+
+
+def _strip_template(q: str) -> str:
+    """Drop the boilerplate 'how do I … in Paketti?' scaffolding so the embedding compares the
+    CONTENT (schedule patterns vs slice a sample), not the shared template. Without this, NLEmbedding
+    rated 'how do i schedule patterns' ↔ 'how do i slice a sample' at 0.837 → a wrong vetted answer."""
+    s = " " + q.lower() + " "
+    for w in _TEMPLATE_WORDS:
+        s = s.replace(w, " ")
+    s = re.sub(r"[^a-z ]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s or q.lower()       # fall back to the raw question if stripping emptied it
+
+
 def best_match(question: str, entries: list, vetted_only: bool = True):
-    """Return (entry, score) of the closest VETTED vault question, or (None, 0)."""
+    """Return (entry, score) of the closest VETTED vault question, or (None, 0). Matches on the
+    content-stripped question so structurally-similar but unrelated questions don't false-match."""
     pool = [e for e in entries if (e.get("status") == "vetted" or not vetted_only)]
     if not pool:
         return None, 0.0
-    vecs = embed([question] + [e["q"] for e in pool])
+    vecs = embed([_strip_template(question)] + [_strip_template(e["q"]) for e in pool])
     qv = vecs[0]
     best, score = None, -1.0
     for e, v in zip(pool, vecs[1:]):
