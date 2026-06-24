@@ -19,25 +19,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import paketti_faq as F
 
 
-_BULLET = re.compile(r"^\s*[-•*]\s+(.+)")
-
-
-def _merge_answers(old: str, new: str) -> str:
-    """Appendy union: keep the new answer's prose, but append any bullet the OLD certified
-    answer had that the new one dropped — so the vetted answer only ever grows."""
-    def bullets(t):
-        return [m.group(0).strip() for m in (_BULLET.match(ln) for ln in t.splitlines()) if m]
-    old_b, new_b = bullets(old), bullets(new)
-    if not old_b or not new_b:
-        return new                       # nothing structured to merge
-    norm = lambda l: re.sub(r"[^a-z0-9]", "", l.lower())
-    have = {norm(l) for l in new_b}
-    missing = [l for l in old_b if norm(l) and norm(l) not in have]
-    if not missing:
-        return new                       # new already covers old → already appendy
-    return new.rstrip() + "\n" + "\n".join(missing)
-
-
 def _clean(answer: str) -> str:
     """Strip the --discord presentation so the stored answer is plain prose."""
     a = (answer or "").strip()
@@ -73,9 +54,9 @@ def main() -> int:
         return 2
 
     if match:
-        # APPENDY: a re-certify must never DROP a previously-certified bullet. Union the new
-        # answer's bullets with any the old one had that the new is missing.
-        ans = _merge_answers(match.get("a", ""), ans)
+        # Certify EXACTLY what the human approved. No auto-merge — that would re-add an item the
+        # user deliberately removed. The revise step (add/remove) + the human 👍 already make the
+        # shown answer the intended one; storing anything else overrides their decision.
         F.update(match["id"], a=ans, citations=F._citations(ans), status="vetted")
         print(f"vetted {match['id']}")
     else:

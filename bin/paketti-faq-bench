@@ -82,6 +82,50 @@ AREAS = {
     ],
 }
 
+# Editable, Syncthing-shared questionnaire. AREAS above is the SEED; the file is the live source
+# you append to (one question per line, `# Area` headers, `//` for comments). Bench + the bot's
+# !bench both read it via load_areas(), so adding a question = editing this one file.
+QUESTIONS_FILE = F.VAULT_DIR / "questions.md"
+
+
+def _seed_questions_file():
+    if QUESTIONS_FILE.exists():
+        return
+    QUESTIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["// Paketti FAQ benchmark questionnaire — edit freely.",
+             "// One question per line; lines starting with '# ' are area headers; '//' = comment.",
+             "// Append questions any time — the bench and the bot's !bench read this on every run.",
+             ""]
+    for area, qs in AREAS.items():
+        lines.append(f"# {area}")
+        lines.extend(qs)
+        lines.append("")
+    QUESTIONS_FILE.write_text("\n".join(lines), encoding="utf-8")
+
+
+def load_areas() -> dict:
+    """Read the editable questionnaire (seeding it from AREAS on first use). Falls back to the
+    built-in AREAS if the file is missing or empty."""
+    _seed_questions_file()
+    try:
+        areas, cur = {}, None
+        for ln in QUESTIONS_FILE.read_text(encoding="utf-8").splitlines():
+            ln = ln.strip()
+            if not ln or ln.startswith("//"):
+                continue
+            if ln.startswith("#"):
+                cur = ln.lstrip("#").strip()
+                areas.setdefault(cur, [])
+            elif cur:
+                areas[cur].append(ln)
+        areas = {k: v for k, v in areas.items() if v}
+        if areas:
+            return areas
+    except Exception:
+        pass
+    return AREAS
+
+
 _REFUSALS = (
     "not have a feature", "does not have", "doesn't have", "not sure", "no feature",
     "isn't a feature", "is not a feature", "not a feature", "no specific feature",
@@ -320,7 +364,7 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.questions:
-        print(json.dumps(AREAS)); return 0
+        print(json.dumps(load_areas())); return 0
     if args.diff or args.diff_full:
         diff_runs(full=args.diff_full); return 0
     if args.html:
@@ -335,11 +379,11 @@ def main() -> int:
                  "Mini's single Qwen and would STARVE real answers. Wait until it's idle, or "
                  "re-run with --force if you accept the contention.")
 
-    areas = AREAS
+    areas = load_areas()
     if args.area:
-        match = {k: v for k, v in AREAS.items() if args.area.lower() in k.lower()}
+        match = {k: v for k, v in areas.items() if args.area.lower() in k.lower()}
         if not match:
-            sys.exit(f"no area matching '{args.area}'. Areas: {', '.join(AREAS)}")
+            sys.exit(f"no area matching '{args.area}'. Areas: {', '.join(areas)}")
         areas = match
 
     print(f"benching {sum(len(v[:args.per_area] if args.per_area else v) for v in areas.values())} "
