@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""paketti-kb-populate — ZERO-TOKEN knowledge-base filler.
+
+Scans the Paketti XRNX codebase for every `add_keybinding` / `add_menu_entry` / `add_midi_mapping`
+and fills the `<!-- AUTO:Scope -->` blocks in the knowledge base with the real, current feature
+lists, grouped by keybinding scope (Sample Editor, Mixer, Pattern Editor, …). No LLM, no tokens —
+pure source extraction, so the lists are always in sync with the code.
+
+The KB (`paketti-kb.md`, Syncthing-shared) is YOURS to edit anywhere OUTSIDE the AUTO markers;
+re-running this refreshes only the AUTO blocks and leaves your prose / Q&A untouched.
+
+  paketti-kb-populate            # create the KB (first run) or refresh its AUTO blocks
+  paketti-kb-populate --print    # print to stdout without writing
+"""
+import re
+import sys
+from pathlib import Path
+
+PAKETTI = Path("/Users/esaruoho/work/paketti")
+KB = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "paketti-kb.md"
+
+# the scopes worth their own KB section, in a sensible order (Global last — it's the catch-all)
+SCOPES = ["Sample Editor", "Sample Keyzones", "Sample Navigator", "Sample Mappings",
+          "Instrument Box", "Mixer", "Pattern Editor", "Phrase Editor", "Pattern Sequencer",
+          "Pattern Matrix", "DSP Chain", "Automation", "Global"]
+
+AUTO_RE = re.compile(r"(<!-- AUTO:(.+?) -->)(.*?)(<!-- /AUTO -->)", re.S)
+_KB_RE = re.compile(r'add_keybinding\s*\{\s*name\s*=\s*"([^"]+)"')
+_MIDI_RE = re.compile(r'add_midi_mapping\s*\{\s*name\s*=\s*"([^"]+)"')
+_MENU_RE = re.compile(r'add_menu_entry\s*\{\s*name\s*=\s*"([^"]+)"')
+
+
+def extract():
+    """Zero-token: {scope: {feature}} keybindings + sets of midi / menu feature leaves."""
+    kb, midi, menu = {}, set(), set()
+    for lua in sorted(PAKETTI.glob("*.lua")):
+        try:
+            t = lua.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for name in _KB_RE.findall(t):
+            parts = [p.strip() for p in name.split(":")]
+            scope = parts[0] or "Global"
+            kb.setdefault(scope, set()).add(parts[-1])
+        for name in _MIDI_RE.findall(t):
+            midi.add(name.split(":")[-1].strip())
+        for name in _MENU_RE.findall(t):
+            menu.add(name.split(":")[-1].strip())
+    return kb, midi, menu
+
+
+def feature_lines(scope, kb, midi, menu):
+    feats = sorted(kb.get(scope, set()))
+    out = []
+    for f in feats:
+        flags = ["⌨"]
+        if f in midi:
+            flags.append("🎛")
+        if f in menu:
+            flags.append("☰")
+        out.append(f"- **{f}** — {' · '.join(flags)}")
+    return out or [f"_(no `{scope}:` keybindings found in the codebase)_"]
+
+
+def section(scope, kb, midi, menu, with_todo=True):
+    out = [f"## {scope}", ""]
+    if with_todo:
+        out += [f"<!-- TODO: write your curated notes / Q&A for {scope} here (this line is yours to edit) -->", ""]
+    out += [f"<!-- AUTO:{scope} -->"]
+    out += feature_lines(scope, kb, midi, menu)
+    out += ["<!-- /AUTO -->", ""]
+    return out
+
+
+def build_skeleton(kb, midi, menu):
+    total = sum(len(v) for v in kb.values())
+    out = [
+        "# Paketti Knowledge Base", "",
+        "> Your editable knowledge base for Paketti. Write notes, Q&A, anything — anywhere",
+        "> **outside** the `<!-- AUTO -->` blocks. Those blocks are filled **zero-token** from",
+        "> the Paketti code by `paketti-kb-populate` (KeyBindings ⌨ · MidiMappings 🎛 ·",
+        "> MenuEntries ☰) and are **overwritten on every run**, so don't hand-edit inside them.",
+        ">",
+        f"> Auto-extracted: **{total}** keybindings across **{len(kb)}** scopes. Re-run",
+        "> `paketti-kb-populate` after a code change to refresh the lists; your prose is preserved.",
+        "",
+    ]
+    for scope in SCOPES:
+        out += section(scope, kb, midi, menu)
+    # any scopes found in code but not in our list → append so nothing's lost
+    for scope in sorted(kb):
+        if scope not in SCOPES:
+            out += section(scope, kb, midi, menu)
+    return "\n".join(out).rstrip() + "\n"
+
+
+def refresh(text, kb, midi, menu):
+    def repl(m):
+        scope = m.group(2).strip()
+        body = "\n".join(feature_lines(scope, kb, midi, menu))
+        return f"{m.group(1)}\n{body}\n{m.group(4)}"
+    return AUTO_RE.sub(repl, text)
+
+
+def main():
+    kb, midi, menu = extract()
+    if KB.exists() and AUTO_RE.search(KB.read_text(encoding="utf-8")):
+        text = refresh(KB.read_text(encoding="utf-8"), kb, midi, menu)
+        action = "refreshed AUTO blocks in"
+    else:
+        text = build_skeleton(kb, midi, menu)
+        action = "created"
+    if "--print" in sys.argv:
+        sys.stdout.write(text)
+        return 0
+    KB.parent.mkdir(parents=True, exist_ok=True)
+    KB.write_text(text, encoding="utf-8")
+    total = sum(len(v) for v in kb.values())
+    print(f"{action} {KB}")
+    print(f"  {total} keybindings · {len(kb)} scopes · {len(midi)} midi · {len(menu)} menu (zero tokens)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
