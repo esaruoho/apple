@@ -41,6 +41,13 @@ def main() -> int:
         print("usage: paketti-ask \"your paketti question\"")
         return 2
 
+    # Ground-truth list-queries ("all midimappings for mixer") answer straight from the function
+    # index — no model, every item provably exists. Runs BEFORE the vault/LLM so it can't bullshit.
+    fq = F.function_query(question)
+    if fq is not None:
+        print(fq if discord else _render(fq))
+        return 0
+
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
 

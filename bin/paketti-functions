@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""paketti-functions — query the Paketti function index (the GROUND TRUTH).
+
+Reads paketti/docs/paketti-functions.json (regenerating it zero-token via .spine/functions.py if
+missing/stale). Every answer is a real registration that provably exists — no LLM, no bullshit.
+
+  paketti-functions --areas                     list areas + per-door counts (for disambiguation)
+  paketti-functions --counts                     grand totals
+  paketti-functions --door midi                  ALL midimappings (the full flood)
+  paketti-functions --door midi --area Mixer      midimappings whose function lives in the Mixer area
+  paketti-functions --door midi --topic mixer     midimappings matching 'mixer' anywhere (name/area)
+  paketti-functions --door keybinding|midi|menu   pick the door (aliases: kb, key, mapping, entry)
+  --json                                          machine-readable output
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PAKETTI = Path("/Users/esaruoho/work/paketti")
+INDEX = PAKETTI / "docs" / "paketti-functions.json"
+GEN = PAKETTI / ".spine" / "functions.py"
+
+DOOR = {"keybinding": "kb", "kb": "kb", "key": "kb", "keybindings": "kb",
+        "midi": "midi", "midimapping": "midi", "midimappings": "midi", "mapping": "midi",
+        "menu": "menu", "menuentry": "menu", "entry": "menu", "menus": "menu"}
+GLYPH = {"kb": "⌨", "midi": "🎛", "menu": "☰"}
+LABEL = {"kb": "keybindings", "midi": "midimappings", "menu": "menu entries"}
+
+
+def load():
+    if not INDEX.exists():
+        lj = shutil.which("luajit") or shutil.which("lua")
+        if lj and GEN.exists():
+            subprocess.run([sys.executable, str(GEN), str(PAKETTI)], check=False,
+                           stdout=subprocess.DEVNULL, timeout=320)
+    if not INDEX.exists():
+        sys.exit("paketti-functions: index not found and could not generate it "
+                 "(need luajit + paketti/.spine/functions.py). Run `paketti-kb` build first.")
+    return json.loads(INDEX.read_text(encoding="utf-8"))
+
+
+def all_funcs(idx):
+    return [(area, f) for area, fns in idx.items() for f in fns]
+
+
+def names_for(f, door):
+    return f.get(door, [])
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--door")
+    ap.add_argument("--area")
+    ap.add_argument("--topic")
+    ap.add_argument("--areas", action="store_true")
+    ap.add_argument("--counts", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    idx = load()
+
+    if a.counts:
+        tot = {"kb": 0, "midi": 0, "menu": 0}
+        for _, f in all_funcs(idx):
+            for d in tot:
+                tot[d] += len(f.get(d, []))
+        nf = len(all_funcs(idx))
+        if a.json:
+            print(json.dumps({"functions": nf, **{LABEL[d]: tot[d] for d in tot}}))
+        else:
+            print(f"{nf:,} functions · {tot['kb']:,} keybindings · {tot['midi']:,} midimappings · {tot['menu']:,} menu entries")
+        return 0
+
+    if a.areas:
+        rows = []
+        for area, fns in idx.items():
+            c = {d: sum(1 for f in fns if f.get(d)) for d in ("kb", "midi", "menu")}
+            rows.append((area, len(fns), c))
+        rows.sort(key=lambda r: -r[1])
+        if a.json:
+            print(json.dumps([{"area": r[0], "functions": r[1], **r[2]} for r in rows]))
+        else:
+            for area, n, c in rows:
+                print(f"  {area:<22} {n:>4} functions  ⌨ {c['kb']:>4} · 🎛 {c['midi']:>4} · ☰ {c['menu']:>4}")
+        return 0
+
+    door = DOOR.get((a.door or "").lower().replace(" ", ""))
+    if not door:
+        sys.exit("paketti-functions: pick --door keybinding|midi|menu (or --areas / --counts)")
+
+    funcs = all_funcs(idx)
+    if a.area:
+        ar = a.area.lower()
+        funcs = [(area, f) for area, f in funcs if ar in area.lower()]
+    if a.topic:
+        t = a.topic.lower()
+        funcs = [(area, f) for area, f in funcs
+                 if t in f["function"].lower() or t in area.lower()
+                 or any(t in n.lower() for n in f.get(door, []))]
+
+    # collect the actual registration names for this door
+    names = []
+    for area, f in funcs:
+        for n in f.get(door, []):
+            names.append(n)
+    names = sorted(set(names))
+
+    if a.json:
+        print(json.dumps(names))
+        return 0
+    scope = (f" · area '{a.area}'" if a.area else "") + (f" · topic '{a.topic}'" if a.topic else "")
+    print(f"{GLYPH[door]} {len(names)} {LABEL[door]}{scope}:")
+    for n in names:
+        print(f"  - {n}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

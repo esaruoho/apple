@@ -27,6 +27,7 @@ APPLE_EMBED = HERE / "apple-embed"
 PAKETTI = "/Users/esaruoho/work/paketti"
 FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
 PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/manual/license/where
+FUNCTIONS_INDEX = Path(PAKETTI) / "docs" / "paketti-functions.json"   # the ground-truth function index
 
 # Brain: fm-mlx (the Mini's Qwen3-4B-Instruct via mlx_lm.server, port 8080) by default —
 # better instruction-following + no aggressive guardrails than Apple FoundationModels.
@@ -216,6 +217,79 @@ def project_context(query: str) -> str:
         return ""
     return ("PAKETTI PROJECT INFO (use for support / donations / manual / install / where-to-get "
             "/ license / links):\n" + txt)
+
+
+_DOOR_PAT = {
+    "midi": re.compile(r"midi[\s-]?mapping|midimapping|\bmidi\b"),
+    "keybinding": re.compile(r"key[\s-]?bind|keybind|short ?cut|hot ?key"),
+    "menu": re.compile(r"menu[\s-]?entr|menu item|\bmenu\b"),
+}
+_DOOR_LABEL = {"midi": "midimappings", "keybinding": "keybindings", "menu": "menu entries"}
+_DOOR_GLYPH = {"midi": "🎛", "keybinding": "⌨", "menu": "☰"}
+_DOOR_KEY = {"midi": "midi", "keybinding": "kb", "menu": "menu"}   # json stores 'kb', not 'keybinding'
+_TOPIC_STOP = {"paketti", "renoise", "it", "them", "all", "everything", "the tool", ""}
+
+
+def function_query(question: str) -> "str | None":
+    """If the question is a 'list/show all <door> [for <area/topic>]' request, answer it straight
+    from the ground-truth function index — every item provably exists, no model, no bullshit.
+    Returns the answer text, or None if this isn't a list-query (fall through to the normal flow)."""
+    ql = question.lower()
+    if not re.search(r"\b(list|show|give|all|every|which|what)\b", ql):
+        return None
+    door = next((d for d, p in _DOOR_PAT.items() if p.search(ql)), None)
+    if not door:
+        return None
+    try:
+        idx = json.loads(FUNCTIONS_INDEX.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    label, glyph, dkey = _DOOR_LABEL[door], _DOOR_GLYPH[door], _DOOR_KEY[door]
+    allf = [(area, f) for area, fns in idx.items() for f in fns]
+
+    def names(topic):
+        out = set()
+        for area, f in allf:
+            if topic and not (topic in f["function"].lower() or topic in area.lower()
+                              or any(topic in n.lower() for n in f.get(dkey, []))):
+                continue
+            out.update(f.get(dkey, []))
+        return sorted(out)
+
+    # topic/area after for/in/about/on/of, else any known area name mentioned
+    topic = None
+    m = re.search(r"\b(?:for|in|about|on|of|with)\s+(?:the\s+)?([a-z][a-z0-9 ]{1,26}?)"
+                  r"(?:\s+in\s+paketti)?\s*\??$", ql)
+    if m:
+        topic = m.group(1).strip(" ?")
+    if topic in _TOPIC_STOP:               # "in paketti" / "all" aren't real topics → disambiguate
+        topic = None
+    if not topic:
+        for area in idx:
+            a = area.lower().split(" (")[0]
+            if a and a != "global" and a in ql:
+                topic = a
+                break
+
+    if topic:
+        ns = names(topic)
+        if ns:
+            shown = ns[:120]
+            head = (f"{glyph} **{len(ns)} {label}** matching “{topic}” "
+                    f"— from the live Paketti index, every one exists:\n\n")
+            body = "\n".join(f"- `{n}`" for n in shown)
+            more = f"\n\n…and **{len(ns) - 120}** more." if len(ns) > 120 else ""
+            return head + body + more
+
+    # broad / unmatched → disambiguate instead of flooding all 7,240
+    total = len(names(None))
+    rows = sorted(((area, sum(1 for f in fns if f.get(door))) for area, fns in idx.items()),
+                  key=lambda r: -r[1])
+    areas_line = " · ".join(f"**{a}** ({c})" for a, c in rows if c)
+    return (f"Paketti has **{total} {label}** in all — too many to dump at once. Which slice?\n\n"
+            f"**By area:** {areas_line}\n\n"
+            f"Reply (or `!ask`) with an **area** (e.g. *Mixer*), a **topic** keyword "
+            f"(e.g. *mixer*, *sample*, *phrase*, *slice*), or say **all** to flood the lot.")
 
 
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
