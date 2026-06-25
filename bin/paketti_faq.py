@@ -235,6 +235,11 @@ def function_query(question: str) -> "str | None":
     from the ground-truth function index — every item provably exists, no model, no bullshit.
     Returns the answer text, or None if this isn't a list-query (fall through to the normal flow)."""
     ql = question.lower()
+    # don't fire on a SYNTHESIZED revise/redraft prompt (it incidentally contains 'feature list',
+    # 'midimappings', etc.) — only on a genuine user list-query.
+    if ("the user's instruction" in ql or "here is the current answer" in ql
+            or "previous answer was rejected" in ql or len(question) > 240):
+        return None
     if not re.search(r"\b(list|show|give|all|every|which|what)\b", ql):
         return None
     door = next((d for d, p in _DOOR_PAT.items() if p.search(ql)), None)
