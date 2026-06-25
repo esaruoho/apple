@@ -28,6 +28,7 @@ PAKETTI = "/Users/esaruoho/work/paketti"
 FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
 PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/manual/license/where
 FUNCTIONS_INDEX = Path(PAKETTI) / "docs" / "paketti-functions.json"   # the ground-truth function index
+MANUAL_INDEX = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "manual-index.json"  # embedded manual sections
 
 # Brain: fm-mlx (the Mini's Qwen3-4B-Instruct via mlx_lm.server, port 8080) by default —
 # better instruction-following + no aggressive guardrails than Apple FoundationModels.
@@ -194,8 +195,9 @@ _LEAN_SYSTEM = (
     "(support/donations, the manual, Discord, license). Answer the question directly and "
     "helpfully: for support / donation / install / manual / where-to-get questions, answer from "
     "the project info (e.g. give the actual donation links); for workflow questions, name the "
-    "exact feature(s). Do NOT pedantically reply that something 'isn't a feature' — just answer "
-    "the question. Don't invent features that aren't listed. Keep it to 2-6 sentences.")
+    "exact feature(s). When a MANUAL section is provided, ground your answer in it (its modes, "
+    "controls, specifics) and cite the heading. Do NOT pedantically reply that something 'isn't a "
+    "feature' — just answer. Don't invent features or behaviour not in the info. 2-6 sentences.")
 
 _PROJECT_TRIGGERS = (
     "support", "donat", "patreon", "gumroad", "ko-fi", "kofi", "buy", "coffee", "sponsor",
@@ -327,13 +329,64 @@ def function_query(question: str) -> "str | None":
             f"(e.g. *mixer*, *sample*, *phrase*, *slice*), or say **all** to flood the lot.")
 
 
+_manual_cache = None
+
+
+_Q_BOILER = re.compile(
+    r"\b(what is|what are|what does|what'?s|how do i|how can i|how does|tell me about|explain|"
+    r"describe|in paketti|and what does it do|does it do|please|the|a|an|do|it|of|for)\b")
+
+
+def manual_context(question: str, k: int = 2) -> str:
+    """Retrieve the most relevant manual section(s) so the 'why' is grounded in the docs, not the
+    model's guess — and CITED by heading. HYBRID: match the subject against section HEADINGS first
+    (NLEmbedding is too weak for 'what is X' — it ranked the right section 124th), semantic fallback."""
+    global _manual_cache
+    if _manual_cache is None:
+        try:
+            _manual_cache = json.loads(MANUAL_INDEX.read_text(encoding="utf-8"))
+        except Exception:
+            _manual_cache = []
+    if not _manual_cache:
+        return ""
+
+    subj = _Q_BOILER.sub(" ", question.lower())
+    subj_words = set(re.findall(r"[a-z0-9]{3,}", subj))
+    top = []
+    if subj_words:
+        ranked = []
+        for c in _manual_cache:
+            hwords = set(re.findall(r"[a-z0-9]{3,}", c["heading"].lower()))
+            ov = len(subj_words & hwords)
+            if ov >= 2 or (ov >= 1 and ov == len(hwords)):
+                ranked.append((ov, ov / max(1, len(hwords)), c))
+        ranked.sort(key=lambda x: (-x[0], -x[1]))
+        top = [c for ov, _, c in ranked[:k] if ov >= 2]
+
+    if not top:                                   # semantic fallback
+        qv = embed([question])
+        qv = qv[0] if qv else None
+        if qv:
+            scored = sorted(((cosine(qv, c["vec"]), c) for c in _manual_cache if c.get("vec")),
+                            key=lambda x: -x[0])
+            top = [c for s, c in scored[:k] if s >= 0.42]
+    if not top:
+        return ""
+    out = ["PAKETTI MANUAL — the most relevant section(s). Ground your answer in these and CITE the "
+           "heading you used (e.g. “— from the manual: <heading>”):"]
+    for c in top:
+        out.append(f"\n### {c['heading']}\n{c['text']}")
+    return "\n".join(out)
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
     FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
     whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
-    grounding = "\n\n".join(c for c in (project_context(question), feature_context(question), spine_context(question)) if c)
+    grounding = "\n\n".join(c for c in (manual_context(question), project_context(question),
+                                        feature_context(question), spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():

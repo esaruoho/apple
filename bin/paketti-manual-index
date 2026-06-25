@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""paketti-manual-index — chunk manual/Experimental.md by heading and embed each section
+(on-device NLEmbedding via apple-embed, zero-cloud) into a cache the bot retrieves from for
+GROUNDED 'why' answers. Run whenever the manual changes.
+
+Writes ~/work/comms/queue/paketti-faq/manual-index.json (Syncthing-shared → the Mini gets it).
+"""
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paketti_faq as F  # noqa: E402
+
+MANUAL = Path("/Users/esaruoho/work/paketti/manual/Experimental.md")
+OUT = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "manual-index.json"
+
+
+def chunk():
+    """Split the manual into sections at ##/### headings; keep substantial ones."""
+    chunks, cur = [], None
+    for ln in MANUAL.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^(#{2,4})\s+(.*)", ln)
+        if m:
+            if cur:
+                chunks.append(cur)
+            cur = {"heading": m.group(2).strip(), "lines": [ln]}
+        elif cur:
+            cur["lines"].append(ln)
+    if cur:
+        chunks.append(cur)
+    out = []
+    for c in chunks:
+        text = "\n".join(c["lines"]).strip()
+        if len(text) >= 120 and "AUTO" not in c["heading"]:   # skip stubs + the generated section
+            out.append({"heading": c["heading"], "text": text})
+    return out
+
+
+def main():
+    if not MANUAL.exists():
+        sys.exit("paketti-manual-index: manual/Experimental.md not found")
+    chunks = chunk()
+    # the searchable key per section = its heading + a snippet
+    keys = [f"{c['heading']}. {re.sub(r'[#*`>-]', ' ', c['text'])[:300]}" for c in chunks]
+    vecs = F.embed(keys)
+    idx = [{"heading": c["heading"], "text": c["text"][:1400], "vec": v}
+           for c, v in zip(chunks, vecs) if v]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(idx), encoding="utf-8")
+    print(f"indexed {len(idx)} manual sections → {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
