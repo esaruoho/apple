@@ -29,6 +29,7 @@ FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always 
 PROJECT_DOC = Path(PAKETTI) / "README.md"                 # support/donations/manual/license/where
 FUNCTIONS_INDEX = Path(PAKETTI) / "docs" / "paketti-functions.json"   # the ground-truth function index
 MANUAL_INDEX = Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "manual-index.json"  # embedded manual sections
+CHANGELOG = Path(PAKETTI) / "manual" / "CHANGESLOG.md"   # dated '### YYYY-MM-DD - …' entries, newest first
 
 # Brain: fm-mlx (the Mini's Qwen3-4B-Instruct via mlx_lm.server, port 8080) by default —
 # better instruction-following + no aggressive guardrails than Apple FoundationModels.
@@ -379,14 +380,40 @@ def manual_context(question: str, k: int = 2) -> str:
     return "\n".join(out)
 
 
+_CL_RECENCY = ("new", "recent", "latest", "chang", "updat", "when", "added", "release",
+               "version", "history", "since", "lately", "this week", "today")
+
+
+def changelog_context(question: str, limit: int = 15) -> str:
+    """Ground 'when was X added / what's new' questions in the real CHANGESLOG.md dated entries."""
+    ql = question.lower()
+    recency = any(w in ql for w in _CL_RECENCY)
+    words = {w for w in re.findall(r"[a-z]{4,}", ql) if w not in _FEAT_STOP}
+    try:
+        entries = [l.strip() for l in CHANGELOG.read_text(encoding="utf-8").splitlines()
+                   if l.startswith("### ")]
+    except Exception:
+        return ""
+    if not entries:
+        return ""
+    hits = [e for e in entries if any(w in e.lower() for w in words)][:limit] if words else []
+    if not hits:
+        if not recency:
+            return ""
+        hits = entries[:limit]          # newest-first → the latest changes
+    return ("PAKETTI CHANGELOG — relevant dated entries (use for when-added / what's-new; cite the "
+            "date):\n" + "\n".join(f"- {e.lstrip('# ').strip()}" for e in hits))
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
     FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
     whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
-    grounding = "\n\n".join(c for c in (manual_context(question), project_context(question),
-                                        feature_context(question), spine_context(question)) if c)
+    grounding = "\n\n".join(c for c in (manual_context(question), changelog_context(question),
+                                        project_context(question), feature_context(question),
+                                        spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():
