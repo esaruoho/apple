@@ -271,6 +271,36 @@ def function_query(question: str) -> "str | None":
                 topic = a
                 break
 
+    # If the topic names a known AREA (Mixer, Sample Editor, …), match by the real Renoise SCOPE
+    # — NOT a substring — so "mixer" returns the Mixer-frame functions, not device names that merely
+    # contain "mixer" (e.g. "Hold Device 11 (Mixer EQ)").
+    area_keys = {a.lower(): a for a in idx if a.lower() not in ("global", "(menu/midi only)")}
+    matched_area = None
+    if topic:
+        for al, ak in area_keys.items():
+            if topic == al or (len(topic) > 3 and (topic in al or al in topic)):
+                matched_area = ak
+                break
+
+    def area_names(area):
+        out = set()
+        for a, f in allf:
+            if a == area:
+                out.update(f.get(dkey, []))
+        return sorted(out)
+
+    if matched_area:
+        ns = area_names(matched_area)
+        broad = names(topic)
+        shown = ns[:120]
+        head = (f"{glyph} **{len(ns)} {label}** in the **{matched_area}** area "
+                f"(the Renoise {matched_area} scope — accurate, no device-name coincidences):\n\n")
+        body = "\n".join(f"- `{n}`" for n in shown) if ns else "_(none registered in this scope)_"
+        extra = len(broad) - len(ns)
+        note = (f"\n\n_(+{extra} more merely mention “{topic}” elsewhere, incl. device names — "
+                f"`!ask all {label} named {topic}` to include those.)_") if extra > 0 else ""
+        return head + body + note
+
     if topic:
         ns = names(topic)
         if ns:
