@@ -405,15 +405,44 @@ def changelog_context(question: str, limit: int = 15) -> str:
             "date):\n" + "\n".join(f"- {e.lstrip('# ').strip()}" for e in hits))
 
 
+def topic_functions_context(question: str, max_funcs: int = 50) -> str:
+    """For a broad topic question ('tell me about PlayerPro workflows'), ground in the COMPLETE real
+    function list for that topic from the index — so nothing gets cropped. Fixes the OpenMPT gap: a
+    feature matching only one topic word ('PlayerPro OpenMPT Linear Keyboard Layer') was ranked out of
+    feature_context's keyword sample; here it surfaces because the whole topic set is included."""
+    try:
+        idx = json.loads(FUNCTIONS_INDEX.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    allf = [f for fns in idx.values() for f in fns]
+    words = {w for w in re.findall(r"[a-z]{4,}", question.lower()) if w not in _FEAT_STOP}
+    if not words:
+        return ""
+    picked = {}   # function name -> door glyphs
+    for w in words:
+        matches = [f for f in allf if w in f["function"].lower()]
+        if 1 <= len(matches) <= 80:        # distinctive topic word (skip generic 'sample'/'track')
+            for f in matches:
+                picked[f["function"]] = "".join(g for g, k in (("⌨", "kb"), ("🎛", "midi"), ("☰", "menu"))
+                                                 if f.get(k))
+    if not picked:
+        return ""
+    names = sorted(picked)[:max_funcs]
+    more = f"\n…(+{len(picked) - max_funcs} more)" if len(picked) > max_funcs else ""
+    return ("PAKETTI FEATURES for this topic — the COMPLETE real list from the function index. Name "
+            "ALL the relevant ones; do NOT omit any:\n"
+            + "\n".join(f"- {n} {picked[n]}" for n in names) + more)
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
     FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
     whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
-    grounding = "\n\n".join(c for c in (manual_context(question), changelog_context(question),
-                                        project_context(question), feature_context(question),
-                                        spine_context(question)) if c)
+    grounding = "\n\n".join(c for c in (manual_context(question), topic_functions_context(question),
+                                        changelog_context(question), project_context(question),
+                                        feature_context(question), spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():
