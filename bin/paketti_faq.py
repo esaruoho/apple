@@ -149,6 +149,10 @@ def spine_context(query: str) -> str:
 _FEAT_STOP = {"does", "have", "what", "with", "this", "that", "from", "your", "paketti",
               "renoise", "they", "them", "when", "where", "which", "would", "could", "into",
               "about", "there", "their", "make", "made", "system", "feature", "thing"}
+# generic feature-suffix words that must NOT drive a name match ("Slice Tools DIALOG" ≠ "Stem Slice
+# Randomizer DIALOG"): a match has to be on the distinctive name words, not these.
+_NAME_GENERIC = {"dialog", "dialogs", "tool", "tools", "mode", "modes", "paketti", "feature",
+                 "features", "window", "panel", "button", "buttons", "menu", "option", "options"}
 
 
 def feature_context(query: str, limit: int = 28) -> str:
@@ -191,14 +195,17 @@ def feature_context(query: str, limit: int = 28) -> str:
 
 
 _LEAN_SYSTEM = (
-    "You are a concise, helpful expert on Paketti, a Lua workflow tool for the Renoise tracker. "
-    "Use the Paketti information below — it includes registered FEATURES and PROJECT INFO "
-    "(support/donations, the manual, Discord, license). Answer the question directly and "
-    "helpfully: for support / donation / install / manual / where-to-get questions, answer from "
-    "the project info (e.g. give the actual donation links); for workflow questions, name the "
-    "exact feature(s). When a MANUAL section is provided, ground your answer in it (its modes, "
-    "controls, specifics) and cite the heading. Do NOT pedantically reply that something 'isn't a "
-    "feature' — just answer. Don't invent features or behaviour not in the info. 2-6 sentences.")
+    "You are a PRECISE expert on Paketti, a Lua workflow tool for the Renoise tracker. The feature "
+    "NAMES in the info below are VERIFIED — they exist. But the hard rule:\n"
+    "• ONLY state what a feature DOES if the provided CHANGELOG or MANUAL text explicitly describes "
+    "its behaviour. The CHANGELOG is authoritative — prefer it. If you only have a name (or just its "
+    "keybindings/midi mappings), NAME the feature and add “(behaviour not yet documented)” — NEVER "
+    "guess, infer, or invent what it does from its name. Inventing behaviour is a LIE and far worse "
+    "than admitting it's undocumented.\n"
+    "• When you describe behaviour, cite the source date/heading (“— changelog 2025-09-15” or "
+    "“— from the manual: X”).\n"
+    "• For support / donation / install questions, use the project info (give the real links).\n"
+    "Don't pedantically say something “isn't a feature”. Be concise.")
 
 _PROJECT_TRIGGERS = (
     "support", "donat", "patreon", "gumroad", "ko-fi", "kofi", "buy", "coffee", "sponsor",
@@ -338,6 +345,16 @@ _Q_BOILER = re.compile(
     r"describe|in paketti|and what does it do|does it do|please|the|a|an|do|it|of|for)\b")
 
 
+def _has_prose(text: str) -> bool:
+    """True if the section has explanatory sentences (not just keybinding/menu list lines) — a
+    list-only section has NO behaviour to ground in and makes the model invent it."""
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s and not re.match(r"^[-*|#>`\d.]", s) and len(s) > 45 and " " in s:
+            return True
+    return False
+
+
 def manual_context(question: str, k: int = 2) -> str:
     """Retrieve the most relevant manual section(s) so the 'why' is grounded in the docs, not the
     model's guess — and CITED by heading. HYBRID: match the subject against section HEADINGS first
@@ -352,25 +369,37 @@ def manual_context(question: str, k: int = 2) -> str:
         return ""
 
     subj = _Q_BOILER.sub(" ", question.lower())
-    subj_words = set(re.findall(r"[a-z0-9]{3,}", subj))
+    subj_words = {w for w in re.findall(r"[a-z0-9]{3,}", subj) if w not in _NAME_GENERIC}
     top = []
     if subj_words:
         ranked = []
         for c in _manual_cache:
-            hwords = set(re.findall(r"[a-z0-9]{3,}", c["heading"].lower()))
+            hwords = {w for w in re.findall(r"[a-z0-9]{3,}", c["heading"].lower()) if w not in _NAME_GENERIC}
             ov = len(subj_words & hwords)
-            if ov >= 2 or (ov >= 1 and ov == len(hwords)):
-                ranked.append((ov, ov / max(1, len(hwords)), c))
-        ranked.sort(key=lambda x: (-x[0], -x[1]))
-        top = [c for ov, _, c in ranked[:k] if ov >= 2]
+            if ov:
+                ranked.append((ov, c))
+        ranked.sort(key=lambda x: -x[0])
+        if ranked:
+            best_ov = ranked[0][0]
+            # the feature's OWN section is the strongest heading match. Require it to cover most of
+            # the subject (≥2 distinctive words, or all of a short subject). Only consider sections at
+            # that top strength — do NOT fall to weaker ones (a list-only own-section means undocumented,
+            # not "grab some other prose"). prose filter below then decides.
+            # require ALL distinctive subject words in the heading — a partial match like "Open
+            # Waveform Viewer" for "PlayerPro Waveform Viewer" is a DIFFERENT feature, not grounding.
+            if best_ov == len(subj_words):
+                top = [c for ov, c in ranked if ov == best_ov][:k]
 
-    if not top:                                   # semantic fallback
+    if not top:                                   # semantic fallback (tight — <0.6 is noise per skill)
         qv = embed([question])
         qv = qv[0] if qv else None
         if qv:
             scored = sorted(((cosine(qv, c["vec"]), c) for c in _manual_cache if c.get("vec")),
                             key=lambda x: -x[0])
-            top = [c for s, c in scored[:k] if s >= 0.42]
+            top = [c for s, c in scored[:k] if s >= 0.62]
+    # keep only sections with actual PROSE — a section that's just a keybinding list has NO
+    # behaviour to ground in, and handing it over makes the model invent the behaviour.
+    top = [c for c in top if _has_prose(c["text"])]
     if not top:
         return ""
     out = ["PAKETTI MANUAL — the most relevant section(s). Ground your answer in these and CITE the "
@@ -384,25 +413,135 @@ _CL_RECENCY = ("new", "recent", "latest", "chang", "updat", "when", "added", "re
                "version", "history", "since", "lately", "this week", "today")
 
 
-def changelog_context(question: str, limit: int = 15) -> str:
-    """Ground 'when was X added / what's new' questions in the real CHANGESLOG.md dated entries."""
+_cl_entries = None
+
+
+def _changelog_entries():
+    """Parse CHANGESLOG.md into {head, body, feat} entries, cached."""
+    global _cl_entries
+    if _cl_entries is None:
+        try:
+            raw = CHANGELOG.read_text(encoding="utf-8").splitlines()
+        except Exception:
+            _cl_entries = []
+            return _cl_entries
+        entries, cur = [], None
+        for ln in raw:
+            if ln.startswith("### "):
+                if cur:
+                    entries.append(cur)
+                cur = {"head": ln[4:].strip(), "body": [], "feat": "feature:" in ln.lower()}
+            elif cur and ln.strip():
+                cur["body"].append(ln.strip())
+        if cur:
+            entries.append(cur)
+        _cl_entries = entries
+    return _cl_entries
+
+
+def changelog_answer(question: str):
+    """For 'what is X / what does X do', return Esa's CHANGELOG 'Feature:' description VERBATIM — no
+    LLM, no invention (Qwen pads even a grounded prompt). Same deterministic-truth pattern as
+    function_query. Returns None when no Feature entry clearly matches, so the LLM path still runs."""
     ql = question.lower()
-    recency = any(w in ql for w in _CL_RECENCY)
-    words = {w for w in re.findall(r"[a-z]{4,}", ql) if w not in _FEAT_STOP}
+    if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about|how does)\b", ql):
+        return None
+    subj = _Q_BOILER.sub(" ", ql)
+    words = {w for w in re.findall(r"[a-z0-9]{3,}", subj) if w not in _FEAT_STOP and w not in _NAME_GENERIC}
+    if not words:
+        return None
+    best, best_ov = None, 0
+    for e in _changelog_entries():
+        if not e["feat"]:
+            continue
+        clean = re.split(r"feature:\s*", e["head"], flags=re.I)[-1].strip()
+        # the feature must be the SUBJECT (early in the heading), not a parenthetical mention like
+        # "4 more dialogs added … (…, PlayerPro Waveform Viewer)" — so match only the subject portion.
+        subject = clean[:55].lower()
+        hwords = set(re.findall(r"[a-z0-9]{3,}", subject))
+        ov = len(words & hwords)
+        if ov > best_ov and ov >= max(2, (len(words) + 1) // 2):
+            best_ov, best = ov, e
+    if not best:
+        return None
+    date = best["head"].split(" - ")[0].strip()
+    clean = re.split(r"feature:\s*", best["head"], flags=re.I)[-1].strip()
+    body = " ".join(l for l in best["body"]
+                    if not l.lstrip().startswith("![") and l.strip() not in ("--", "---"))[:700]
+    answer = clean + (("\n\n" + body) if body else "")
+    return f"{answer}\n\n*— straight from the Paketti changelog ({date}), Esa's own words.*"
+
+
+def feature_undocumented_answer(question: str):
+    """When a feature EXISTS (it's in the index) but has NO authoritative description — no changelog
+    'Feature:' entry and no prose manual section — say so honestly and invite the teach loop. NEVER
+    let the model invent behaviour from the name. This is the anti-bullshit guarantee."""
+    ql = question.lower()
+    if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about)\b", ql):
+        return None
+    if changelog_answer(question) is not None:     # we have Esa's real words
+        return None
+    if manual_context(question):                   # we have prose docs
+        return None
+    subj = _Q_BOILER.sub(" ", ql)
+    words = {w for w in re.findall(r"[a-z0-9]{3,}", subj) if w not in _FEAT_STOP and w not in _NAME_GENERIC}
+    if not words:
+        return None
     try:
-        entries = [l.strip() for l in CHANGELOG.read_text(encoding="utf-8").splitlines()
-                   if l.startswith("### ")]
+        idx = json.loads(FUNCTIONS_INDEX.read_text(encoding="utf-8"))
     except Exception:
-        return ""
+        return None
+    best, best_key, best_doors = None, (0, 0), ""
+    need = max(2, int(len(words) * 0.6 + 0.5))
+    for f in (f for fns in idx.values() for f in fns):
+        fwords = set(re.findall(r"[a-z0-9]{3,}", f["function"].lower()))
+        ov = len(words & fwords)
+        if ov < need:
+            continue
+        key = (ov, -len(f["function"]))      # max overlap, then the SHORTEST name = the base feature
+        if key > best_key:
+            best_key, best = key, f["function"]
+            best_doors = "".join(g for g, k in (("⌨", "kb"), ("🎛", "midi"), ("☰", "menu")) if f.get(k))
+    if not best:
+        return None
+    return (f"**{best}** {best_doors} — this exists in Paketti, but I don't have a verified "
+            f"description of what it does (it's not written up in the changelog, and the manual only "
+            f"lists its shortcuts). I won't guess. Tell me what it does and I'll learn it — or "
+            f"@esaruoho can confirm.")
+
+
+def changelog_context(question: str, limit: int = 5) -> str:
+    """The CHANGELOG is the AUTHORITATIVE description source — Esa writes what each feature DOES when
+    he ships it. Return full entries (heading + body), preferring 'Feature:' entries, for the queried
+    feature; or the latest entries for a 'what's new' question. This is what fixes the junk: the real
+    behaviour lives here, not the auto-generated manual."""
+    recency = any(w in question.lower() for w in _CL_RECENCY)
+    words = {w for w in re.findall(r"[a-z]{4,}", question.lower()) if w not in _FEAT_STOP}
+    entries = _changelog_entries()
     if not entries:
         return ""
-    hits = [e for e in entries if any(w in e.lower() for w in words)][:limit] if words else []
-    if not hits:
-        if not recency:
-            return ""
+
+    def blob(e):
+        return (e["head"] + " " + " ".join(e["body"])).lower()
+
+    if words:
+        need = max(1, len(words) // 3)
+        hits = [e for e in entries if sum(1 for w in words if w in blob(e)) >= need]
+        # prefer the original 'Feature:' description over Fix:/Improvement: entries, then by overlap
+        hits.sort(key=lambda e: (e["feat"], sum(1 for w in words if w in blob(e))), reverse=True)
+        hits = hits[:limit]
+    elif recency:
         hits = entries[:limit]          # newest-first → the latest changes
-    return ("PAKETTI CHANGELOG — relevant dated entries (use for when-added / what's-new; cite the "
-            "date):\n" + "\n".join(f"- {e.lstrip('# ').strip()}" for e in hits))
+    else:
+        return ""
+    if not hits:
+        return ""
+    out = ["PAKETTI CHANGELOG — the AUTHORITATIVE description of what these features DO (prefer this "
+           "over the manual; cite the date):"]
+    for e in hits:
+        body = " ".join(e["body"])[:600]
+        out.append(f"\n### {e['head']}\n{body}".rstrip())
+    return "\n".join(out)
 
 
 def topic_functions_context(question: str, max_funcs: int = 50) -> str:
@@ -429,8 +568,10 @@ def topic_functions_context(question: str, max_funcs: int = 50) -> str:
         return ""
     names = sorted(picked)[:max_funcs]
     more = f"\n…(+{len(picked) - max_funcs} more)" if len(picked) > max_funcs else ""
-    return ("PAKETTI FEATURES for this topic — the COMPLETE real list from the function index. Name "
-            "ALL the relevant ones; do NOT omit any:\n"
+    return ("PAKETTI FEATURES for this topic — the COMPLETE real list from the function index. These "
+            "are VERIFIED NAMES ONLY (no behaviour). Name ALL the relevant ones, but do NOT describe "
+            "what any of them does unless a MANUAL section above describes it — otherwise just list "
+            "the name:\n"
             + "\n".join(f"- {n} {picked[n]}" for n in names) + more)
 
 
@@ -440,8 +581,8 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     whichever brain: fm-mlx → the Mini's Qwen3-4B (default, capable, no guardrails), or
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
-    grounding = "\n\n".join(c for c in (manual_context(question), topic_functions_context(question),
-                                        changelog_context(question), project_context(question),
+    grounding = "\n\n".join(c for c in (changelog_context(question), manual_context(question),
+                                        topic_functions_context(question), project_context(question),
                                         feature_context(question), spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:

@@ -57,6 +57,16 @@ def main() -> int:
             cites = f"\n\n_cites: {', '.join(match['citations'])}_" if match.get("citations") else ""
             print(f"✅ **Vetted answer** _(certified)_\n\n{match['a']}{cites}")
             return 0
+        # Authoritative changelog description (verbatim, no LLM, no invention) before the model path.
+        ca = F.changelog_answer(question)
+        if ca is not None:
+            print(f"📖 **From the changelog** _(Esa's own words — authoritative)_\n\n{ca}")
+            return 0
+        # Real feature, but no authoritative description → say so honestly, never invent.
+        ud = F.feature_undocumented_answer(question)
+        if ud is not None:
+            print(f"🟡 **Not documented yet** _(I won't guess — reply to teach me)_\n\n{ud}")
+            return 0
         ans = F.generate_answer(question)
         if not ans:
             print("⚠️ I couldn't draft an answer right now (the on-device brain didn't respond).")
@@ -74,6 +84,18 @@ def main() -> int:
         print(_render(match["a"]))
         if match.get("citations"):
             print(f"\n{DIM}cites: {', '.join(match['citations'])}{RESET}")
+        return 0
+
+    ca = F.changelog_answer(question)
+    if ca is not None:
+        print(f"{GREEN}📖 from the changelog{RESET} {DIM}(Esa's own words — authoritative){RESET}\n")
+        print(_render(ca))
+        return 0
+
+    ud = F.feature_undocumented_answer(question)
+    if ud is not None:
+        print(f"{YELLOW}🟡 not documented yet{RESET} {DIM}(won't guess — teach me){RESET}\n")
+        print(_render(ud))
         return 0
 
     # Not sure → live draft, flagged + queued.
