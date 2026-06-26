@@ -65,7 +65,7 @@ def main() -> int:
         # Real feature, but no authoritative description → say so honestly, never invent.
         ud = F.feature_undocumented_answer(question)
         if ud is not None:
-            print(f"🟡 **Not documented yet** _(I won't guess — reply to teach me)_\n\n{ud}")
+            print(f"🟡 **Not documented yet** _(reply to teach me)_\n\n{ud}")
             return 0
         ans = F.generate_answer(question)
         if not ans:
@@ -94,7 +94,7 @@ def main() -> int:
 
     ud = F.feature_undocumented_answer(question)
     if ud is not None:
-        print(f"{YELLOW}🟡 not documented yet{RESET} {DIM}(won't guess — teach me){RESET}\n")
+        print(f"{YELLOW}🟡 not documented yet{RESET} {DIM}(reply to teach me){RESET}\n")
         print(_render(ud))
         return 0
 

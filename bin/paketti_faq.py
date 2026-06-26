@@ -201,8 +201,9 @@ def feature_context(query: str, limit: int = 28) -> str:
 _LEAN_SYSTEM = (
     "You are a PRECISE expert on Paketti, a Lua workflow tool for the Renoise tracker. The feature "
     "NAMES in the info below are VERIFIED — they exist. But the hard rule:\n"
-    "• ONLY state what a feature DOES if the provided CHANGELOG or MANUAL text explicitly describes "
-    "its behaviour. The CHANGELOG is authoritative — prefer it. If you only have a name (or just its "
+    "• ONLY state what a feature DOES if the provided CHANGELOG, MANUAL, or SOURCE CODE describes "
+    "its behaviour. The CHANGELOG is authoritative; the SOURCE CODE is ground truth — describe from "
+    "the code's actual logic and status messages. If you only have a name (or just its "
     "keybindings/midi mappings), NAME the feature and add “(behaviour not yet documented)” — NEVER "
     "guess, infer, or invent what it does from its name. Inventing behaviour is a LIE and far worse "
     "than admitting it's undocumented.\n"
@@ -504,25 +505,19 @@ def changelog_answer(question: str):
     return lead + "\n".join(lines) + tail
 
 
-def feature_undocumented_answer(question: str):
-    """When a feature EXISTS (it's in the index) but has NO authoritative description — no changelog
-    'Feature:' entry and no prose manual section — say so honestly and invite the teach loop. NEVER
-    let the model invent behaviour from the name. This is the anti-bullshit guarantee."""
-    ql = question.lower()
-    if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about)\b", ql):
-        return None
-    if changelog_answer(question) is not None:     # we have Esa's real words
-        return None
-    if manual_context(question):                   # we have prose docs
-        return None
-    subj = _Q_BOILER.sub(" ", ql)
+_QUESTION_RE = re.compile(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about|how does)\b")
+
+
+def _best_index_feature(question: str):
+    """The index function whose name best matches the question (canonical feature name + doors)."""
+    subj = _Q_BOILER.sub(" ", question.lower())
     words = {w for w in re.findall(r"[a-z0-9]{3,}", subj) if w not in _FEAT_STOP and w not in _NAME_GENERIC}
     if not words:
-        return None
+        return None, ""
     try:
         idx = json.loads(FUNCTIONS_INDEX.read_text(encoding="utf-8"))
     except Exception:
-        return None
+        return None, ""
     best, best_key, best_doors = None, (0, 0), ""
     need = max(2, int(len(words) * 0.6 + 0.5))
     for f in (f for fns in idx.values() for f in fns):
@@ -530,16 +525,101 @@ def feature_undocumented_answer(question: str):
         ov = len(words & fwords)
         if ov < need:
             continue
-        key = (ov, -len(f["function"]))      # max overlap, then the SHORTEST name = the base feature
+        key = (ov, -len(f["function"]))
         if key > best_key:
             best_key, best = key, f["function"]
             best_doors = "".join(g for g, k in (("⌨", "kb"), ("🎛", "midi"), ("☰", "menu")) if f.get(k))
+    return best, best_doors
+
+
+_lua_cache = None
+
+
+def _lua_files():
+    """All Paketti .lua source as (path, text), cached (BSD grep -r was unreliable on the repo)."""
+    global _lua_cache
+    if _lua_cache is None:
+        _lua_cache = []
+        try:
+            for p in sorted(Path(PAKETTI).rglob("*.lua")):
+                if "/.git/" in str(p):
+                    continue
+                try:
+                    _lua_cache.append((p, p.read_text(encoding="utf-8", errors="ignore")))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    return _lua_cache
+
+
+def code_context(question: str, max_lines: int = 70) -> str:
+    """Read the ACTUAL Lua implementation of a feature so its behaviour comes from the CODE, not a
+    guess: index name → registration (invoke=) → function body. The code is ground truth."""
+    if not _QUESTION_RE.search(question.lower()):
+        return ""
+    canon, _ = _best_index_feature(question)
+    if not canon:
+        return ""
+    phrase = re.sub(r"\s*[.…(].*$", "", canon).strip().lower()   # distinctive contiguous part
+    if len(phrase) < 4:
+        return ""
+    files = _lua_files()
+    func, reg_line = None, ""
+    for _, content in files:                       # find the registration that names this feature
+        low = content.lower()
+        i = low.find(phrase)
+        while i >= 0:
+            ls = content.rfind("\n", 0, i) + 1
+            window = content[ls:i + 400]
+            if "invoke" in window:
+                m = re.search(r"invoke\s*=\s*(?:function\s*\([^)]*\)\s*(?:return\s+)?)?"
+                              r"([A-Za-z_][A-Za-z0-9_]+)", window)
+                if m and m.group(1).lower() != "function":
+                    func = m.group(1)
+                    le = content.find("\n", i)
+                    reg_line = content[ls:le if le > 0 else i + 120].strip()[:200]
+                    break
+            i = low.find(phrase, i + 1)
+        if func:
+            break
+    if not func:
+        return ""
+    body = ""                                       # find that function's definition + body
+    defre = re.compile(r"(?:^|\n)\s*(?:local\s+)?function\s+%s\b|(?:^|\n)\s*%s\s*=\s*function"
+                       % (re.escape(func), re.escape(func)))
+    for _, content in files:
+        m = defre.search(content)
+        if m:
+            start = content.rfind("\n", 0, m.start() + 1) + 1
+            body = "\n".join(content[start:].splitlines()[:max_lines])
+            break
+    if not body:
+        return ""
+    return ("PAKETTI SOURCE CODE for this feature — describe what it DOES strictly from this Lua (its "
+            "status messages, conditions, logic). Do not invent beyond the code.\n\n"
+            f"Feature: {canon}  (registered: {reg_line})\n```lua\n{body[:2600]}\n```")
+
+
+def feature_undocumented_answer(question: str):
+    """When a feature EXISTS (it's in the index) but has NO authoritative description — no changelog
+    entry, no prose manual section, and no readable source — say so honestly and invite the teach
+    loop. NEVER let the model invent behaviour from the name. This is the anti-bullshit guarantee."""
+    ql = question.lower()
+    if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about)\b", ql):
+        return None
+    if changelog_answer(question) is not None:     # we have Esa's real words
+        return None
+    if manual_context(question):                   # we have prose docs
+        return None
+    if code_context(question):                     # we can read the source → describe from it
+        return None
+    best, best_doors = _best_index_feature(question)
     if not best:
         return None
-    return (f"**{best}** {best_doors} — this exists in Paketti, but I don't have a verified "
-            f"description of what it does (it's not written up in the changelog, and the manual only "
-            f"lists its shortcuts). I won't guess. Tell me what it does and I'll learn it — or "
-            f"@esaruoho can confirm.")
+    return (f"**{best}** {best_doors} — this exists in Paketti, but it isn't described in the "
+            f"changelog or manual yet (only its shortcuts are listed). Tell me what it does and I'll "
+            f"learn it — or @esaruoho can confirm.")
 
 
 def changelog_context(question: str, limit: int = 5) -> str:
@@ -614,8 +694,9 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     fm-submit → the Mini's FoundationModels. The full 12KB skill-arm overwhelms small
     on-device models, so grounding leads instead."""
     grounding = "\n\n".join(c for c in (changelog_context(question), manual_context(question),
-                                        topic_functions_context(question), project_context(question),
-                                        feature_context(question), spine_context(question)) if c)
+                                        code_context(question), topic_functions_context(question),
+                                        project_context(question), feature_context(question),
+                                        spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
     try:
         if BRAIN == "fm-submit" and FM_SUBMIT.exists():
