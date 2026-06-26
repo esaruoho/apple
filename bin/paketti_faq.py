@@ -152,7 +152,11 @@ _FEAT_STOP = {"does", "have", "what", "with", "this", "that", "from", "your", "p
 # generic feature-suffix words that must NOT drive a name match ("Slice Tools DIALOG" ≠ "Stem Slice
 # Randomizer DIALOG"): a match has to be on the distinctive name words, not these.
 _NAME_GENERIC = {"dialog", "dialogs", "tool", "tools", "mode", "modes", "paketti", "feature",
-                 "features", "window", "panel", "button", "buttons", "menu", "option", "options"}
+                 "features", "window", "panel", "button", "buttons", "menu", "option", "options",
+                 # generic action/UI words — they must NOT drive a match ("Player Pro SCANNER
+                 # (Start/Stop)" wrongly hit "Start/Stop Playback" on start+stop alone):
+                 "start", "stop", "open", "close", "toggle", "show", "hide", "play", "playback",
+                 "next", "previous", "selected", "selection"}
 
 
 def feature_context(query: str, limit: int = 28) -> str:
