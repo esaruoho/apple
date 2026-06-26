@@ -264,9 +264,10 @@ def function_query(question: str) -> "str | None":
 
     def names(topic):
         out = set()
+        nt = _normalize(topic) if topic else topic       # 'playerpro' must match 'Player Pro' (space)
         for area, f in allf:
-            if topic and not (topic in f["function"].lower() or topic in area.lower()
-                              or any(topic in n.lower() for n in f.get(dkey, []))):
+            if topic and not (nt in _normalize(f["function"]) or nt in _normalize(area)
+                              or any(nt in _normalize(n) for n in f.get(dkey, []))):
                 continue
             out.update(f.get(dkey, []))
         return sorted(out)
@@ -586,7 +587,7 @@ def topic_functions_context(question: str, max_funcs: int = 50) -> str:
         return ""
     picked = {}   # function name -> door glyphs
     for w in words:
-        matches = [f for f in allf if w in f["function"].lower()]
+        matches = [f for f in allf if w in _normalize(f["function"])]
         if 1 <= len(matches) <= 80:        # distinctive topic word (skip generic 'sample'/'track')
             for f in matches:
                 picked[f["function"]] = "".join(g for g, k in (("⌨", "kb"), ("🎛", "midi"), ("☰", "menu"))
