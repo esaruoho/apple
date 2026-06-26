@@ -416,8 +416,16 @@ _CL_RECENCY = ("new", "recent", "latest", "chang", "updat", "when", "added", "re
 _cl_entries = None
 
 
+def _normalize(s: str) -> str:
+    """Collapse the naming variants that broke matching: 'Player Pro' (space) ≡ 'PlayerPro',
+    'Cheat Sheet' ≡ 'CheatSheet'. Without this, {player, pro} never matched {playerpro}."""
+    s = s.lower()
+    s = s.replace("player pro", "playerpro").replace("cheat sheet", "cheatsheet")
+    return s
+
+
 def _changelog_entries():
-    """Parse CHANGESLOG.md into {head, body, feat} entries, cached."""
+    """Parse CHANGESLOG.md into {head, body, kind} entries, cached."""
     global _cl_entries
     if _cl_entries is None:
         try:
@@ -430,7 +438,12 @@ def _changelog_entries():
             if ln.startswith("### "):
                 if cur:
                     entries.append(cur)
-                cur = {"head": ln[4:].strip(), "body": [], "feat": "feature:" in ln.lower()}
+                m = re.match(r"###\s+(\d{4}-\d{2}-\d{2})\s*-\s*(Feature|Improvement|Fix|Change)?",
+                             ln, re.I)
+                kind = (m.group(2).title() if m and m.group(2) else "Note")
+                date = (m.group(1) if m else "")
+                cur = {"head": ln[4:].strip(), "body": [], "kind": kind, "date": date,
+                       "feat": kind == "Feature"}
             elif cur and ln.strip():
                 cur["body"].append(ln.strip())
         if cur:
@@ -440,36 +453,50 @@ def _changelog_entries():
 
 
 def changelog_answer(question: str):
-    """For 'what is X / what does X do', return Esa's CHANGELOG 'Feature:' description VERBATIM — no
-    LLM, no invention (Qwen pads even a grounded prompt). Same deterministic-truth pattern as
-    function_query. Returns None when no Feature entry clearly matches, so the LLM path still runs."""
+    """For 'what is X / what does X do', return Esa's CHANGELOG descriptions — verbatim, no LLM, no
+    invention. AGGREGATES every Feature/Improvement entry where the feature is the SUBJECT (the name
+    leads the heading), normalized so 'Player Pro'≡'PlayerPro'. Returns None if nothing clearly
+    matches (→ undocumented / LLM path)."""
     ql = question.lower()
     if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about|how does)\b", ql):
         return None
-    subj = _Q_BOILER.sub(" ", ql)
+    subj = _normalize(_Q_BOILER.sub(" ", ql))
     words = {w for w in re.findall(r"[a-z0-9]{3,}", subj) if w not in _FEAT_STOP and w not in _NAME_GENERIC}
     if not words:
         return None
-    best, best_ov = None, 0
+    need = max(2, (len(words) + 1) // 2)
+    hits = []
     for e in _changelog_entries():
-        if not e["feat"]:
+        if e["kind"] not in ("Feature", "Improvement"):
             continue
-        clean = re.split(r"feature:\s*", e["head"], flags=re.I)[-1].strip()
-        # the feature must be the SUBJECT (early in the heading), not a parenthetical mention like
-        # "4 more dialogs added … (…, PlayerPro Waveform Viewer)" — so match only the subject portion.
-        subject = clean[:55].lower()
+        clean = re.sub(r"^(feature|improvement):\s*", "", e["head"], flags=re.I)
+        subject = _normalize(clean[:60])                 # the feature must LEAD the heading
         hwords = set(re.findall(r"[a-z0-9]{3,}", subject))
         ov = len(words & hwords)
-        if ov > best_ov and ov >= max(2, (len(words) + 1) // 2):
-            best_ov, best = ov, e
-    if not best:
+        if ov >= need:
+            hits.append((-ov, 0 if e["kind"] == "Feature" else 1, e))     # best overlap FIRST
+    if not hits:
         return None
-    date = best["head"].split(" - ")[0].strip()
-    clean = re.split(r"feature:\s*", best["head"], flags=re.I)[-1].strip()
-    body = " ".join(l for l in best["body"]
-                    if not l.lstrip().startswith("![") and l.strip() not in ("--", "---"))[:700]
-    answer = clean + (("\n\n" + body) if body else "")
-    return f"{answer}\n\n*— straight from the Paketti changelog ({date}), Esa's own words.*"
+    hits.sort(key=lambda h: (h[0], h[1], h[2]["date"]))
+    seen, lines = set(), []
+    for _, _, e in hits:
+        date = e.get("date") or e["head"][:10]
+        txt = re.sub(r"^\d{4}-\d{2}-\d{2}\s*-\s*(feature|improvement|fix|change):\s*", "",
+                     e["head"], flags=re.I).strip()
+        body = " ".join(l for l in e["body"]
+                        if not l.lstrip().startswith("![") and l.strip() not in ("--", "---"))
+        full = (txt + ((" — " + body) if body else "")).strip()[:380]
+        key = full[:45].lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        lines.append(f"- **{date}:** {full}")
+        if len(lines) >= 5:
+            break
+    lead = ("Here's what the Paketti changelog records for this (Esa's own words — verbatim):\n\n"
+            if len(lines) > 1 else "")
+    tail = "\n\n*— from the Paketti changelog, Esa's own words.*"
+    return lead + "\n".join(lines) + tail
 
 
 def feature_undocumented_answer(question: str):
