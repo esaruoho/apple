@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# fm-free — ask the FreeLLMAPI aggregator (free-tier LLM providers) over Tailscale.
+#
+#   fm-free hello                          # prompt as args (speaks + shows richtext)
+#   fm-free "summarise this in 5 words"    # quote multi-word prompts
+#   echo "long prompt..." | fm-free        # or pipe it in
+#   fm-free --quiet "..."                  # don't speak, just show
+#   fm-free --voice Zoe "..."              # pick the spoken voice
+#   fm-free --raw --system "..." "..."     # reply text only (the brain interface)
+#   fm-free --model deepseek-v4-pro "..."  # pin a model (default: auto-route)
+#
+# Talks to a FreeLLMAPI server (Express, OpenAI-compatible /v1) — by default the
+# CloudcityMacMini instance on :3001 over Tailscale. FreeLLMAPI fans the request
+# out across ~20 free-tier providers (Groq/Cerebras/Nvidia/Poolside/…), auto-
+# routing + failing over, and returns which provider/model it actually used.
+# Override the endpoint with FM_FREE_HOST. The unified API key is read from
+# FM_FREE_KEY or ~/.fm-free.key (gitignored secret, never committed).
+#
+# This is the THIRD convey brain, beside fm-mlx (MLX/Qwen3-4B) and fm-submit
+# (FoundationModels). Same --raw --system contract, same one-shared-present path
+# (fm_render.py --present) — so convey's relay/roundtable/versus treat it as a
+# peer brain with zero special-casing.
+# FEATURE-CARD >> ~/work/convey/features/convey-freellm-brain.feature
+set -uo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+HOST="${FM_FREE_HOST:-http://cloudcitymacmini:3001}"
+
+# Unified API key: env wins, else the gitignored key file.
+KEY="${FM_FREE_KEY:-}"
+if [ -z "$KEY" ] && [ -f "$HOME/.fm-free.key" ]; then KEY="$(cat "$HOME/.fm-free.key")"; fi
+if [ -z "$KEY" ]; then
+  echo "fm-free: no API key — set FM_FREE_KEY or write ~/.fm-free.key (the FreeLLMAPI unified key)" >&2
+  exit 1
+fi
+
+say="auto"                      # auto = talk on an interactive terminal; --say forces, --quiet disables
+raw=0                           # --raw = reply text ONLY (the brain interface)
+voice="${FM_FREE_VOICE:-Zoe (Premium)}"
+system=""                       # --system: optional system instruction
+model="${FM_FREE_MODEL:-auto}"  # default auto-route; --model pins one
+rest=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s|--say)            say=1; shift ;;
+    -q|--quiet|--no-say) say=0; shift ;;
+    --raw)               raw=1; say=0; shift ;;
+    --voice)             voice="$2"; shift 2 ;;
+    --system)            system="$2"; shift 2 ;;
+    --model)             model="$2"; shift 2 ;;
+    -h|--help)           sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)                   rest+=("$1"); shift ;;
+  esac
+done
+
+prompt="${rest[*]:-}"
+if [ -z "$prompt" ] && [ ! -t 0 ]; then prompt="$(cat)"; fi
+if [ -z "$prompt" ]; then
+  echo "usage: fm-free [--quiet] [--model ID] [--voice NAME] \"your prompt\"   (or pipe text in)" >&2
+  exit 1
+fi
+
+body=$(python3 -c 'import json,sys,os
+model, sysmsg, user = sys.argv[1], sys.argv[2], sys.argv[3]
+msgs = ([{"role":"system","content":sysmsg}] if sysmsg else []) + [{"role":"user","content":user}]
+print(json.dumps({"model": model, "messages": msgs, "max_tokens": int(os.environ.get("FM_FREE_MAX_TOKENS","4096"))}))' "$model" "$system" "$prompt")
+
+t0=$(python3 -c 'import time; print(time.time())')
+# Capture reply AND the provider/model FreeLLMAPI actually picked (two lines: model, then reply).
+resp=$(curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "$body") || exit 1
+parsed=$(printf '%s' "$resp" | python3 -c '
+import sys, json
+raw = sys.stdin.read()
+if not raw.strip():
+    sys.exit("fm-free: no response — is the FreeLLMAPI server up? (cloudcitymacmini:3001)")
+try:
+    d = json.loads(raw)
+    if "error" in d:
+        sys.exit("fm-free: " + json.dumps(d["error"])[:300])
+    used = d.get("model") or "FreeLLMAPI/auto"
+    prov = d.get("provider")
+    label = f"{prov}/{used}" if prov else used
+    print(label)                                   # line 1: which model answered
+    print(d["choices"][0]["message"]["content"])   # line 2+: the reply
+except SystemExit: raise
+except Exception:
+    sys.exit("fm-free: unexpected response:\n" + raw[:500])
+') || exit 1
+used_model=$(printf '%s\n' "$parsed" | head -1)
+reply=$(printf '%s\n' "$parsed" | tail -n +2)
+rt=$(python3 -c "import time; print(f'{time.time()-$t0:.1f}')")
+
+# Output mode (same contract as fm-mlx):
+#   --raw OR stdout not a terminal → RAW reply text only (the brain interface).
+#   interactive terminal → present(): rich markdown + speak, in ONE call.
+if [ "$raw" -eq 1 ] || [ ! -t 1 ]; then
+  printf '%s\n' "$reply"
+else
+  nospeak="--no-speak"
+  case "$say" in
+    1) nospeak="" ;;
+    auto) [ -t 1 ] && nospeak="" ;;
+  esac
+  host="${HOST#*://}"; host="${host%%:*}"
+  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --present \
+    --host "$host" --model "$used_model" --rt "$rt" --voice "$voice" $nospeak
+fi
