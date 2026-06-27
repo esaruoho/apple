@@ -50,6 +50,8 @@ def main() -> int:
 
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
+    if match:
+        match["a"] = F._sanitize_links(match["a"])   # never serve a fabricated URL, even from the vault
 
     # ── Discord mode: just the answer + a one-line provenance tag (plain markdown) ──
     if discord:
