@@ -1,4 +1,4 @@
-# CLI Tools Index — 263 tools in bin/
+# CLI Tools Index — 264 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -85,6 +85,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `eppc-probe` — (no description) — `bin/eppc-probe`
 `esarmbp` — (no description) — `bin/esarmbp`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
+`fa-analyze` — (no description) — `bin/fa-analyze`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `filee` — launch Filee.app into a folder (the files-as-boxes viewer, convey ladder rung 1). — `bin/filee`
 `find-my` — open Find My on a given tab. That is the WHOLE job, and it is the whole job — `bin/find-my`
