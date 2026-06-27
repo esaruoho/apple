@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""fa-analyze — archive analysis through FreeLLMAPI, from a fixed viewpoint.
+
+Walk a folder of text files, send each (chunked) to the FreeLLMAPI gateway
+(default: the cloudcity Mini at :3001) under ONE viewpoint system prompt, and
+write per-file analysis cards + a synthesis. The LLM tokens are free (keyless
+providers), so the only real budget is provider rate-limits, not dollars.
+
+    fa-analyze <dir|glob> [options]
+
+      --viewpoint TEXT   the lens (default: "free energy is real")
+      --model ID         pin a model (default: auto-route); e.g. nemotron-3-super-120b
+      --limit N          analyse at most N files (default: 25)
+      --ext a,b          extensions to include (default: md,txt)
+      --chars N          max chars of each file sent (default: 7000)
+      --out DIR          output dir (default: ./fa-analysis)
+      --sleep S          seconds between calls — rate-limit politeness (default: 1.5)
+      --synthesize       after per-file passes, write a cross-file synthesis
+      --host URL         FreeLLMAPI base (default $FM_FREE_HOST or Mini :3001)
+
+Key from $FM_FREE_KEY or ~/.fm-free.key. Output: <out>/<file>.analysis.md each
+carrying provider/model/tokens provenance, + <out>/_SYNTHESIS.md if --synthesize.
+"""
+import argparse, glob, json, os, sys, time, urllib.request
+from pathlib import Path
+
+def load_key():
+    k = os.environ.get("FM_FREE_KEY", "")
+    if not k:
+        p = Path.home() / ".fm-free.key"
+        if p.exists(): k = p.read_text().strip()
+    if not k: sys.exit("fa-analyze: no key — set FM_FREE_KEY or ~/.fm-free.key")
+    return k
+
+def call(host, key, model, system, user, max_tokens=1500, timeout=180):
+    body = json.dumps({"model": model, "messages": [
+        {"role": "system", "content": system}, {"role": "user", "content": user}],
+        "max_tokens": max_tokens}).encode()
+    req = urllib.request.Request(host.rstrip("/") + "/chat/completions", data=body,
+        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.load(r)
+    if "error" in d: raise RuntimeError(json.dumps(d["error"])[:300])
+    u = d.get("usage", {})
+    return (d["choices"][0]["message"]["content"].strip(),
+            f"{d.get('provider','?')}/{d.get('model','?')}",
+            u.get("total_tokens", 0))
+
+def collect(target, exts, limit):
+    paths = []
+    if any(c in target for c in "*?["):
+        paths = [Path(p) for p in glob.glob(target, recursive=True)]
+    else:
+        t = Path(target)
+        if t.is_file(): paths = [t]
+        else:
+            for e in exts:
+                paths += list(t.rglob(f"*.{e}"))
+    paths = [p for p in sorted(set(paths)) if p.is_file()]
+    return paths[:limit]
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("target")
+    ap.add_argument("--viewpoint", default="free energy is real")
+    ap.add_argument("--model", default="auto")
+    ap.add_argument("--limit", type=int, default=25)
+    ap.add_argument("--ext", default="md,txt")
+    ap.add_argument("--chars", type=int, default=7000)
+    ap.add_argument("--out", default="./fa-analysis")
+    ap.add_argument("--sleep", type=float, default=1.5)
+    ap.add_argument("--synthesize", action="store_true")
+    ap.add_argument("--host", default=os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1"))
+    a = ap.parse_args()
+    host = a.host if a.host.rstrip("/").endswith("/v1") else a.host.rstrip("/") + "/v1"
+    key = load_key()
+    exts = [e.strip().lstrip(".") for e in a.ext.split(",")]
+    files = collect(a.target, exts, a.limit)
+    if not files: sys.exit(f"fa-analyze: no .{{{a.ext}}} files under {a.target}")
+    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
+
+    system = (f"You are an analyst working from a SPECIFIC, COMMITTED viewpoint: \"{a.viewpoint}\". "
+              "Read the source document and, from inside that viewpoint, extract: (1) the core technical "
+              "claim or device/mechanism; (2) the concrete evidence, measurements, or primary-source "
+              "anchors present; (3) how this advances the viewpoint (what it proves or contributes); "
+              "(4) the single strongest line worth quoting; (5) one open question or replication target. "
+              "Be concrete and cite figures/numbers from the text. ~180 words. Do not hedge into "
+              "false-balance disclaimers — analyse AS IF the viewpoint is the working frame.")
+
+    print(f"fa-analyze: {len(files)} file(s) · viewpoint=\"{a.viewpoint}\" · model={a.model} · host={host}")
+    tot_tok = 0; done = 0; index = []
+    for i, f in enumerate(files, 1):
+        try:
+            text = f.read_text(errors="ignore")[:a.chars]
+        except Exception as e:
+            print(f"[{i}/{len(files)}] {f.name}: READ ERROR {e}"); continue
+        user = f"SOURCE FILE: {f}\n\n{text}"
+        try:
+            t0 = time.time()
+            ans, used, tok = call(host, key, a.model, system, user)
+            dt = time.time() - t0; tot_tok += tok; done += 1
+            card = out / (f.stem + ".analysis.md")
+            card.write_text(f"# Analysis — {f.name}\n"
+                            f"_viewpoint: {a.viewpoint} · {used} · {tok} tok · {dt:.0f}s · $0_\n"
+                            f"_source: {f}_\n\n{ans}\n")
+            index.append((f, card, used, tok))
+            print(f"[{i}/{len(files)}] {f.name:48.48s} → {used.split('/')[0]:9.9s} {tok:>5} tok ({dt:.0f}s)")
+        except Exception as e:
+            print(f"[{i}/{len(files)}] {f.name}: ERROR {e}")
+        time.sleep(a.sleep)
+
+    print(f"\n{done}/{len(files)} analysed · {tot_tok} tokens · $0 · cards in {out}/")
+
+    if a.synthesize and index:
+        bundle = "\n\n".join(f"### {f.name}\n{c.read_text()}" for f, c, _, _ in index)[:24000]
+        ssys = (f"You are synthesising an archive review from the viewpoint \"{a.viewpoint}\". "
+                "Given these per-file analyses, produce: the 3-5 strongest cross-cutting findings, "
+                "the recurring mechanisms/themes, the best replication targets, and what the corpus "
+                "as a whole establishes for the viewpoint. ~300 words.")
+        try:
+            ans, used, tok = call(host, key, a.model, ssys,
+                                  "PER-FILE ANALYSES:\n\n" + bundle, max_tokens=1800)
+            (out / "_SYNTHESIS.md").write_text(f"# Synthesis — {a.viewpoint}\n_{used} · {tok} tok · $0_\n\n{ans}\n")
+            print(f"synthesis → {out}/_SYNTHESIS.md ({used.split('/')[0]}, {tok} tok)")
+        except Exception as e:
+            print(f"synthesis ERROR: {e}")
+
+if __name__ == "__main__":
+    main()
