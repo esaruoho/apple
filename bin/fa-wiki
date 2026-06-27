@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""fa-wiki — Karpathy LLM-WIKI ingest for the archive, powered by FreeLLMAPI.
+
+Karpathy's LLM-WIKI.md doctrine, made operational with free tokens:
+  I  sources immutable   → we READ raw/, never edit it
+  II separate layers     → raw archive | wiki-suggestions/ (model draft) | accepted → DreamGraph
+  III model owns wiki    → FreeLLMAPI does the bookkeeping (summarize, cross-ref, link, file)
+  IV compile not retrieve→ the accepted graph IS the compiled artifact (convey DreamGraph), not RAG
+  V  one source at a time→ `fa-wiki ingest <one-file>`
+  VI link everything     → related entities become typed edges in the graph
+  VIII lint              → each suggestion surfaces contradictions + a confidence score
+  IX start small         → ingest a handful, supervise, then scale
+The human owns judgment: ingest only STAGES a suggestion; `accept` commits it.
+
+  fa-wiki ingest <source-file> [--model ID] [--out DIR] [--host URL]
+      → writes <out>/<entity>.suggestion.md (read it, judge it) + .json sidecar
+
+  fa-wiki accept <suggestion.json> [--graph kb/graph/free-energy]
+      → feeds the accepted page into convey DreamGraph (entity + source-anchored
+        claims + typed wikilink edges). This is the compile-into-the-graph step.
+
+Key from $FM_FREE_KEY or ~/.fm-free.key. Host default = cloudcity Mini :3001.
+"""
+import argparse, json, os, re, sys, time, urllib.request
+from pathlib import Path
+
+REL_TYPES = ["references","influences","implements","depends_on","part_of",
+             "contradicts","associated_with","exemplified_by","produces","derived_from"]
+
+def key():
+    k = os.environ.get("FM_FREE_KEY","") or (Path.home()/".fm-free.key").read_text().strip() \
+        if (os.environ.get("FM_FREE_KEY") or (Path.home()/".fm-free.key").exists()) else ""
+    if not k: sys.exit("fa-wiki: no key (FM_FREE_KEY or ~/.fm-free.key)")
+    return k
+
+def call(host, k, model, system, user, max_tokens=1600):
+    body=json.dumps({"model":model,"messages":[{"role":"system","content":system},
+        {"role":"user","content":user}],"max_tokens":max_tokens}).encode()
+    req=urllib.request.Request(host.rstrip("/")+"/chat/completions",data=body,
+        headers={"Authorization":"Bearer "+k,"Content-Type":"application/json"})
+    for attempt in range(3):                      # free-tier 429: brief backoff, let the router re-pick
+        try:
+            with urllib.request.urlopen(req,timeout=180) as r: d=json.load(r)
+            break
+        except urllib.error.HTTPError as e:
+            if e.code==429 and attempt<2: time.sleep(4*(attempt+1)); continue
+            raise
+    if "error" in d: raise RuntimeError(json.dumps(d["error"])[:300])
+    u=d.get("usage",{})
+    return d["choices"][0]["message"]["content"].strip(), f"{d.get('provider','?')}/{d.get('model','?')}", u.get("total_tokens",0)
+
+def parse_json(text):
+    # Reasoning models leak chain-of-thought around the JSON. Scan for the FIRST
+    # brace and walk to its matching close (depth counting), then json.loads.
+    start=text.find("{")
+    while start!=-1:
+        depth=0
+        for i in range(start,len(text)):
+            if text[i]=="{": depth+=1
+            elif text[i]=="}":
+                depth-=1
+                if depth==0:
+                    try: return json.loads(text[start:i+1])
+                    except Exception: break
+        start=text.find("{", start+1)
+    raise ValueError("no parseable JSON object in model reply")
+
+INGEST_SYS = (
+  "You are the COMPILER in a Karpathy-style LLM-WIKI for a free-energy research archive, "
+  "working from the committed viewpoint that free energy is a real, engineerable phenomenon. "
+  "You do the bookkeeping a human avoids: read ONE raw source and compile it into a single "
+  "linked wiki page. Output STRICT JSON only, no prose, with keys:\n"
+  '{"entity": "canonical subject name (a person/device/concept this page is ABOUT)",\n'
+  ' "kind": "person|device|concept|experiment|claim",\n'
+  ' "summary": "2-3 sentence compiled summary",\n'
+  ' "claims": [{"claim":"one factual/technical claim","anchor":"shortest verbatim quote or figure from the text"}],\n'
+  ' "relations": [{"type":"one of '+ "|".join(REL_TYPES) +'","target":"another canonical entity"}],\n'
+  ' "contradictions": ["any internal tension or claim that conflicts with mainstream physics — state it, do not resolve"],\n'
+  ' "confidence": 0.0-1.0 (how well-anchored this page is in the source),\n'
+  ' "open_question": "the single best replication target or unknown"}\n'
+  "Use canonical names (e.g. 'Nikola Tesla', 'Viktor Schauberger', 'Tewari Reduced-Reaction Generator'). "
+  "Link to entities a reader would want as graph neighbours. Anchors must be real substrings of the source.")
+
+def cmd_ingest(a):
+    host=a.host if a.host.rstrip("/").endswith("/v1") else a.host.rstrip("/")+"/v1"
+    k=key(); src=Path(a.source)
+    if not src.is_file(): sys.exit(f"fa-wiki: not a file: {src}")
+    text=src.read_text(errors="ignore")[:a.chars]
+    out=Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    t0=time.time()
+    raw,used,tok=call(host,k,a.model,INGEST_SYS,f"RAW SOURCE: {src}\n\n{text}",max_tokens=3000)
+    try: obj=parse_json(raw)
+    except Exception:
+        # Free-tier reasoning models sometimes emit thinking instead of JSON.
+        # Retry once on a non-reasoning model with a stricter instruction.
+        raw,used,tok2=call(host,k,"auto",
+            INGEST_SYS+"\n\nOutput ONLY the JSON object. Start your reply with { and end with }. Do not think out loud.",
+            f"RAW SOURCE: {src}\n\n{text}",max_tokens=3000)
+        tok+=tok2
+        try: obj=parse_json(raw)
+        except Exception as e: sys.exit(f"fa-wiki: model did not return parseable JSON ({e})\n---\n{raw[:600]}")
+    dt=time.time()-t0
+    obj["_source"]=str(src); obj["_provenance"]={"model":used,"tokens":tok,"seconds":round(dt),"cost":0}
+    slug=re.sub(r"[^a-z0-9]+","-",obj.get("entity","untitled").lower()).strip("-")[:80]
+    (out/f"{slug}.json").write_text(json.dumps(obj,indent=2,ensure_ascii=False))
+    # render the human-judgable suggestion page
+    md=[f"# {obj.get('entity','?')}  ", f"_SUGGESTION — judge before accepting · {used} · {tok} tok · $0 · {dt:.0f}s_  ",
+        f"_kind: {obj.get('kind','?')} · confidence: {obj.get('confidence','?')} · source: {src}_\n",
+        "## Summary", obj.get("summary","").strip(), "\n## Claims (source-anchored)"]
+    for c in obj.get("claims",[]):
+        md.append(f"- {c.get('claim','').strip()}")
+        if c.get("anchor"): md.append(f"  > {c['anchor'].strip()}")
+    md.append("\n## Relationships (graph edges)")
+    for r in obj.get("relations",[]):
+        md.append(f"- {r.get('type','associated_with')} → [[{r.get('target','?')}]]")
+    if obj.get("contradictions"):
+        md.append("\n## Contradictions / lint"); md += [f"- {c}" for c in obj["contradictions"]]
+    if obj.get("open_question"): md += ["\n## Open question / replication target", obj["open_question"]]
+    (out/f"{slug}.suggestion.md").write_text("\n".join(md)+"\n")
+    print(f"ingested {src.name} → {out}/{slug}.suggestion.md  ({used.split('/')[0]}, {tok} tok, $0)")
+    print(f"  entity={obj.get('entity')} · {len(obj.get('claims',[]))} claims · {len(obj.get('relations',[]))} edges · conf={obj.get('confidence')}")
+    print(f"  READ it, then: fa-wiki accept {out}/{slug}.json --graph kb/graph/free-energy")
+
+def cmd_accept(a):
+    sys.path.insert(0, str(Path.home()/ "work"/"convey"))
+    from convey.graph import DreamGraph
+    obj=json.loads(Path(a.suggestion).read_text())
+    base=Path(a.graph)
+    if not base.is_absolute(): base=Path.home()/"work"/"convey"/a.graph
+    dg=DreamGraph(base=base)
+    rels=[(r.get("type","associated_with"), r.get("target","")) for r in obj.get("relations",[]) if r.get("target")]
+    ent=obj["entity"]; src=obj.get("_source","")
+    res=dg.add_memory(ent, summary=obj.get("summary",""), source=src,
+                      kind=obj.get("kind","entity"), confidence=float(obj.get("confidence",0.5) or 0.5),
+                      relations=rels)
+    for c in obj.get("claims",[]):
+        dg.add_memory(ent, claim=c.get("claim",""), source=src, confidence=float(obj.get("confidence",0.5) or 0.5))
+    dg.build()
+    print(f"accepted '{ent}' → DreamGraph at {base}")
+    print(f"  +{len(obj.get('claims',[]))} claims, +{len(rels)} edges. Query: convey graph neighbors '{ent}' --graph {a.graph}")
+
+def main():
+    ap=argparse.ArgumentParser(); sub=ap.add_subparsers(dest="cmd", required=True)
+    pi=sub.add_parser("ingest"); pi.add_argument("source")
+    pi.add_argument("--model",default="qwen3-coder-480b"); pi.add_argument("--out",default="./wiki-suggestions")
+    pi.add_argument("--chars",type=int,default=8000)
+    pi.add_argument("--host",default=os.environ.get("FM_FREE_HOST","http://cloudcitymacmini:3001/v1"))
+    pi.set_defaults(fn=cmd_ingest)
+    pa=sub.add_parser("accept"); pa.add_argument("suggestion"); pa.add_argument("--graph",default="kb/graph/free-energy")
+    pa.set_defaults(fn=cmd_accept)
+    a=ap.parse_args(); a.fn(a)
+
+if __name__=="__main__": main()
