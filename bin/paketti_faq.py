@@ -499,8 +499,8 @@ def urls_answer(question: str):
     DETERMINISTICALLY from the README, correctly FRAMED. Paketti lives on GitHub; support links are
     support, not 'where Paketti is'; and there is no paketti.com. No LLM = nothing fabricated."""
     ql = question.lower()
-    is_web = re.search(r"\b(url|link|links|website|web ?site|homepage|home ?page|official|hosted|"
-                       r"host|repo|repository|github|download|online|where)\b", ql)
+    is_web = re.search(r"\b(urls?|links?|websites?|web ?sites?|homepages?|home ?pages?|official|"
+                       r"hosted|host|repo|repository|github|download|online|where)\b", ql)
     is_support = re.search(r"\b(support|donate|donation|fund|contribute|sponsor|patreon|ko-?fi|"
                            r"gumroad|tip|buy ?me)\b", ql)
     if not (is_web or is_support):
