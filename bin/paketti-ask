@@ -56,8 +56,8 @@ def main() -> int:
 
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
-    if match:
-        match["a"] = F._strip_ai_boilerplate(F._sanitize_links(match["a"]))   # never serve junk from the vault
+    if match:   # never serve junk from the vault (fabricated URLs/domains/AI boilerplate)
+        match["a"] = F._strip_fake_domains(F._strip_ai_boilerplate(F._sanitize_links(match["a"])))
 
     # ── Discord mode: just the answer + a one-line provenance tag (plain markdown) ──
     if discord:

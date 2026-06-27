@@ -212,6 +212,8 @@ _LEAN_SYSTEM = (
     "• For support / donation / install questions, use the project info (give the real links).\n"
     "• NEVER output a URL you aren't certain of — do NOT link to GitHub repos, wikis, or pages. The "
     "ONLY links you may give are ones present verbatim in the project info above.\n"
+    "• Paketti lives on GitHub at github.com/esaruoho/paketti, by @esaruoho. There is NO paketti.com "
+    "and no other 'official site'. NEVER invent a website or domain; if unsure, say it's on GitHub.\n"
     "• You are a Paketti FAQ assistant in Discord. NEVER add AI-assistant disclaimers ('as an AI…', "
     "'I can't display images', 'in this chat interface') and never output screenshot/image markdown — "
     "just answer the question.\n"
@@ -477,30 +479,61 @@ _URL_LABELS = [
 ]
 
 
-def urls_answer(question: str):
-    """'list the Paketti URLs/links' → the REAL links straight from the README (deterministic, no LLM
-    so nothing is fabricated). Returns None if it's not a links question."""
-    ql = question.lower()
-    if not (("url" in ql or "link" in ql or "website" in ql) and
-            re.search(r"\b(list|show|give|all|what|which|know|where)\b", ql)):
-        return None
+def _readme_urls():
+    """The real Paketti URLs from the README (allowlisted), in encounter order."""
     try:
         txt = Path(PROJECT_DOC).read_text(encoding="utf-8")
     except Exception:
-        return None
+        return []
     seen, urls = set(), []
     for m in re.finditer(r"https?://[^\s)\]>\"']+", txt):
         u = m.group(0).rstrip(".,);:")
         if u not in seen and _link_ok(u):
             seen.add(u)
             urls.append(u)
+    return urls
+
+
+def urls_answer(question: str):
+    """Web-presence questions — where Paketti is, its links, where to support — answered
+    DETERMINISTICALLY from the README, correctly FRAMED. Paketti lives on GitHub; support links are
+    support, not 'where Paketti is'; and there is no paketti.com. No LLM = nothing fabricated."""
+    ql = question.lower()
+    is_web = re.search(r"\b(url|link|links|website|web ?site|homepage|home ?page|official|hosted|"
+                       r"host|repo|repository|github|download|online|where)\b", ql)
+    is_support = re.search(r"\b(support|donate|donation|fund|contribute|sponsor|patreon|ko-?fi|"
+                           r"gumroad|tip|buy ?me)\b", ql)
+    if not (is_web or is_support):
+        return None
+    urls = _readme_urls()
     if not urls:
         return None
-    lines = []
-    for u in urls:
-        lab = next((l for tok, l in _URL_LABELS if tok in u.lower()), "")
-        lines.append(f"- {u}" + (f" — {lab}" if lab else ""))
-    return "The Paketti links (straight from the README — these are the real ones):\n\n" + "\n".join(lines)
+    home = [u for u in urls if "github.com/esaruoho/paketti" in u or "esaruoho.github.io" in u
+            or "forum.renoise.com" in u]
+    support = [u for u in urls if any(t in u.lower() for t in
+               ("patreon", "ko-fi", "buymeacoffee", "sponsors/esaruoho", "gumroad", "lackluster.org"))]
+    community = [u for u in urls if "discord.gg" in u]
+
+    def block(title, items):
+        if not items:
+            return ""
+        out = [f"**{title}**"]
+        for u in items:
+            lab = next((l for tok, l in _URL_LABELS if tok in u.lower()), "")
+            out.append(f"- {u}" + (f" — {lab}" if lab else ""))
+        return "\n".join(out)
+
+    parts = ["**Paketti lives on GitHub** — it's an open-source Renoise tool by **@esaruoho** "
+             "(Esa Ruoho). There is no paketti.com.", ""]
+    parts.append(block("Where it lives", home))
+    if is_support or not is_web:
+        s = block("Support the development", support)
+        if s:
+            parts += ["", s]
+    c = block("Community", community)
+    if c:
+        parts += ["", c]
+    return "\n".join(p for p in parts if p is not None).strip()
 
 
 def changelog_answer(question: str):
@@ -769,6 +802,28 @@ def _strip_ai_boilerplate(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", res).strip() or text
 
 
+_REAL_HOSTS = ("github.com", "esaruoho.github.io", "patreon.com", "ko-fi.com", "buymeacoffee.com",
+               "lackluster.org", "gumroad.com", "discord.gg", "renoise.com", "gnu.org")
+_DOMAIN_RE = re.compile(r"\b[a-z0-9][a-z0-9-]*\.(?:com|org|net|io|app|dev|co)\b", re.I)
+
+
+def _strip_fake_domains(text: str) -> str:
+    """Drop any sentence that asserts a FABRICATED domain — the model loves to claim 'paketti.com has
+    a page'. A sentence is removed only if it names a domain that isn't a real Paketti/Renoise host."""
+    if not text or "." not in text:
+        return text
+    out = []
+    for ln in text.split("\n"):
+        kept = []
+        for s in re.split(r"(?<=[.!?])\s+", ln):
+            doms = _DOMAIN_RE.findall(s)
+            if any(not any(h in d.lower() for h in _REAL_HOSTS) for d in doms):
+                continue           # names a fabricated domain → drop the whole sentence
+            kept.append(s)
+        out.append(" ".join(kept))
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() or text
+
+
 def _sanitize_links(text: str) -> str:
     """Remove any URL the model invented (keep allowlisted real Paketti links) and any leaked
     markdown image (changelog `![](Screenshots/…)` refs that Discord renders as broken images)."""
@@ -814,7 +869,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     a = (p.stdout or "").strip()
     if a.lower().startswith("assistant:"):
         a = a.split(":", 1)[1].strip()
-    a = _strip_ai_boilerplate(_sanitize_links(a))   # strip fabricated URLs/images + AI disclaimers
+    a = _strip_fake_domains(_strip_ai_boilerplate(_sanitize_links(a)))   # kill fabricated URLs/domains/AI junk
     return a or None
 
 
