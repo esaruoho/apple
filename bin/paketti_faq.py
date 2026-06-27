@@ -212,6 +212,9 @@ _LEAN_SYSTEM = (
     "• For support / donation / install questions, use the project info (give the real links).\n"
     "• NEVER output a URL you aren't certain of — do NOT link to GitHub repos, wikis, or pages. The "
     "ONLY links you may give are ones present verbatim in the project info above.\n"
+    "• You are a Paketti FAQ assistant in Discord. NEVER add AI-assistant disclaimers ('as an AI…', "
+    "'I can't display images', 'in this chat interface') and never output screenshot/image markdown — "
+    "just answer the question.\n"
     "Don't pedantically say something “isn't a feature”. Be concise.")
 
 _PROJECT_TRIGGERS = (
@@ -701,9 +704,38 @@ def _link_ok(url: str) -> bool:
     return any(tok in u for tok in _URL_OK)
 
 
+_AI_JUNK = re.compile(
+    r"(as an ai\b|a language model|this chat interface|i (can'?t|cannot|am unable to|am not able to|"
+    r"don'?t have the ability to)\s+(directly\s+)?(show|display|attach|render|embed|provide|view|see)"
+    r"\s+(you\s+)?(images?|screenshots?|pictures?|photos?|the image)|i'?m (just\s+)?an ai)",
+    re.I)
+
+
+def _strip_ai_boilerplate(text: str) -> str:
+    """Kill generic AI-assistant disclaimers ('as an AI I can't display images in this chat
+    interface'). It's a Paketti FAQ bot in Discord — it never apologises for being an AI."""
+    if not text:
+        return text
+    out = []
+    for ln in text.split("\n"):
+        if _AI_JUNK.search(ln):
+            sents = re.split(r"(?<=[.!?])\s+", ln)
+            ln = " ".join(s for s in sents if not _AI_JUNK.search(s)).strip()
+        out.append(ln)
+    res = "\n".join(out)
+    # drop a leftover "However, I can describe … :" lead-in if it now starts the answer
+    res = re.sub(r"^\s*however,?\s+i can (describe|tell|explain|help|guide)[^:.\n]*[:.]\s*", "",
+                 res, flags=re.I).strip()
+    return re.sub(r"\n{3,}", "\n\n", res).strip() or text
+
+
 def _sanitize_links(text: str) -> str:
-    """Remove any URL the model invented; keep only allowlisted real Paketti links."""
-    if not text or "http" not in text:
+    """Remove any URL the model invented (keep allowlisted real Paketti links) and any leaked
+    markdown image (changelog `![](Screenshots/…)` refs that Discord renders as broken images)."""
+    if not text:
+        return text
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)        # drop markdown images entirely
+    if "http" not in text:
         return text
     # markdown [label](url) → drop the link (keep label) when the URL isn't allowlisted
     text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
@@ -742,7 +774,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     a = (p.stdout or "").strip()
     if a.lower().startswith("assistant:"):
         a = a.split(":", 1)[1].strip()
-    a = _sanitize_links(a)               # strip any URL the model invented (e.g. github.com/renoise/paketti)
+    a = _strip_ai_boilerplate(_sanitize_links(a))   # strip fabricated URLs/images + AI disclaimers
     return a or None
 
 
