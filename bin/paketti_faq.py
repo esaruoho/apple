@@ -469,6 +469,7 @@ _URL_LABELS = [
     ("github.com/esaruoho/paketti", "GitHub (source + releases)"),
     ("github.com/sponsors/esaruoho", "GitHub Sponsors"),
     ("esaruoho.github.io/paketti-manual", "Manual"),
+    ("esaruoho.github.io/paketti", "GitHub Pages"),
     ("patreon.com/esaruoho", "Patreon"),
     ("discord.gg", "Discord"),
     ("gumroad", "Gumroad"),
@@ -525,15 +526,14 @@ def urls_answer(question: str):
 
     parts = ["**Paketti lives on GitHub** — it's an open-source Renoise tool by **@esaruoho** "
              "(Esa Ruoho). There is no paketti.com.", ""]
-    parts.append(block("Where it lives", home))
-    if is_support or not is_web:
-        s = block("Support the development", support)
-        if s:
-            parts += ["", s]
-    c = block("Community", community)
-    if c:
-        parts += ["", c]
-    return "\n".join(p for p in parts if p is not None).strip()
+    # show ALL sections, clearly labelled — so support links are *labelled* support, never omitted
+    # and never mistaken for "where Paketti is".
+    for title, items in (("Where it lives", home), ("Support the development", support),
+                         ("Community", community)):
+        b = block(title, items)
+        if b:
+            parts += [b, ""]
+    return "\n".join(parts).strip()
 
 
 def changelog_answer(question: str):
