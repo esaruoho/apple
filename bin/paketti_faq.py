@@ -210,6 +210,8 @@ _LEAN_SYSTEM = (
     "• When you describe behaviour, cite the source date/heading (“— changelog 2025-09-15” or "
     "“— from the manual: X”).\n"
     "• For support / donation / install questions, use the project info (give the real links).\n"
+    "• NEVER output a URL you aren't certain of — do NOT link to GitHub repos, wikis, or pages. The "
+    "ONLY links you may give are ones present verbatim in the project info above.\n"
     "Don't pedantically say something “isn't a feature”. Be concise.")
 
 _PROJECT_TRIGGERS = (
@@ -687,6 +689,35 @@ def topic_functions_context(question: str, max_funcs: int = 50) -> str:
             + "\n".join(f"- {n} {picked[n]}" for n in names) + more)
 
 
+# A URL is only kept if it points at a REAL Paketti resource — every genuine one contains the owner
+# handle or a known support host. The model loves to fabricate links (github.com/renoise/paketti);
+# anything not on this list is stripped, visible text preserved.
+_URL_OK = ("esaruoho", "discord.gg/qex7k5j4wg", "lackluster", "gumroad.com/l/paketti",
+           "forum.renoise.com", "gnu.org/licenses", "ko-fi.com/esaruoho", "buymeacoffee.com/esaruoho")
+
+
+def _link_ok(url: str) -> bool:
+    u = url.lower()
+    return any(tok in u for tok in _URL_OK)
+
+
+def _sanitize_links(text: str) -> str:
+    """Remove any URL the model invented; keep only allowlisted real Paketti links."""
+    if not text or "http" not in text:
+        return text
+    # markdown [label](url) → drop the link (keep label) when the URL isn't allowlisted
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
+                  lambda m: m.group(0) if _link_ok(m.group(2)) else m.group(1), text)
+    # bare URLs → remove when not allowlisted
+    text = re.sub(r"https?://[^\s)>\]]+",
+                  lambda m: m.group(0) if _link_ok(m.group(0)) else "", text)
+    # tidy dangling "For more details, visit:" / link-bullet leftovers + collapse blank lines
+    text = re.sub(r"(?im)^[ \t]*(?:🔗|🌐|-|\*|•)?[ \t]*(for more details[^\n]*|visit:?)?[ \t]*$\n?",
+                  lambda m: "" if m.group(0).strip().lower().rstrip(":") in
+                  ("", "🔗", "🌐", "-", "*", "•", "for more details, visit", "visit") else m.group(0), text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
     FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
@@ -711,6 +742,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     a = (p.stdout or "").strip()
     if a.lower().startswith("assistant:"):
         a = a.split(":", 1)[1].strip()
+    a = _sanitize_links(a)               # strip any URL the model invented (e.g. github.com/renoise/paketti)
     return a or None
 
 
