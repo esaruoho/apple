@@ -463,6 +463,46 @@ def _changelog_entries():
     return _cl_entries
 
 
+_URL_LABELS = [
+    ("github.com/esaruoho/paketti", "GitHub (source + releases)"),
+    ("github.com/sponsors/esaruoho", "GitHub Sponsors"),
+    ("esaruoho.github.io/paketti-manual", "Manual"),
+    ("patreon.com/esaruoho", "Patreon"),
+    ("discord.gg", "Discord"),
+    ("gumroad", "Gumroad"),
+    ("ko-fi", "Ko-fi"),
+    ("buymeacoffee", "Buy Me a Coffee"),
+    ("lackluster.org", "Lackluster (support)"),
+    ("forum.renoise.com", "Renoise forum thread"),
+]
+
+
+def urls_answer(question: str):
+    """'list the Paketti URLs/links' → the REAL links straight from the README (deterministic, no LLM
+    so nothing is fabricated). Returns None if it's not a links question."""
+    ql = question.lower()
+    if not (("url" in ql or "link" in ql or "website" in ql) and
+            re.search(r"\b(list|show|give|all|what|which|know|where)\b", ql)):
+        return None
+    try:
+        txt = Path(PROJECT_DOC).read_text(encoding="utf-8")
+    except Exception:
+        return None
+    seen, urls = set(), []
+    for m in re.finditer(r"https?://[^\s)\]>\"']+", txt):
+        u = m.group(0).rstrip(".,);:")
+        if u not in seen and _link_ok(u):
+            seen.add(u)
+            urls.append(u)
+    if not urls:
+        return None
+    lines = []
+    for u in urls:
+        lab = next((l for tok, l in _URL_LABELS if tok in u.lower()), "")
+        lines.append(f"- {u}" + (f" — {lab}" if lab else ""))
+    return "The Paketti links (straight from the README — these are the real ones):\n\n" + "\n".join(lines)
+
+
 def changelog_answer(question: str):
     """For 'what is X / what does X do', return Esa's CHANGELOG descriptions — verbatim, no LLM, no
     invention. AGGREGATES every Feature/Improvement entry where the feature is the SUBJECT (the name

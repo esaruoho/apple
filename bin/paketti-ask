@@ -48,6 +48,12 @@ def main() -> int:
         print(fq if discord else _render(fq))
         return 0
 
+    # "list the Paketti URLs/links" → the real links from the README, deterministically (no LLM).
+    ua = F.urls_answer(question)
+    if ua is not None:
+        print(ua if discord else _render(ua))
+        return 0
+
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
     if match:
