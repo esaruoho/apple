@@ -54,6 +54,19 @@ def main() -> int:
         print(ua if discord else _render(ua))
         return 0
 
+    # screenshot / dialog-image requests → ATTACH the real PNGs (the images EXIST; never say "run a
+    # script"). The bot parses @@ATTACH@@<path> lines and uploads the files to the thread.
+    sa = F.screenshots_answer(question)
+    if sa is not None:
+        print(sa["text"])
+        if discord:
+            for f in sa["files"]:
+                print(f"@@ATTACH@@{f}")
+        else:
+            for f in sa["files"]:
+                print(f"  {f}")
+        return 0
+
     entries = F.load()
     match, score = F.best_match(question, entries, vetted_only=True)
     if match:   # never serve junk from the vault (fabricated URLs/domains/AI boilerplate)

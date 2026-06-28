@@ -536,6 +536,65 @@ def urls_answer(question: str):
     return "\n".join(parts).strip()
 
 
+DIALOG_SHOTS = Path(PAKETTI) / "manual" / "dialog-screenshots"     # the curated per-dialog set (157)
+SHOT_DIRS = [DIALOG_SHOTS, Path(PAKETTI) / "manual" / "Screenshots"]
+
+
+def _dialog_shots():
+    try:
+        return sorted(DIALOG_SHOTS.glob("*.png")) if DIALOG_SHOTS.exists() else []
+    except Exception:
+        return []
+
+
+def _all_shots():
+    shots = []
+    for d in SHOT_DIRS:
+        try:
+            if d.exists():
+                shots += sorted(d.glob("*.png"))
+        except Exception:
+            pass
+    return shots
+
+
+def screenshots_answer(question: str):
+    """Screenshot / dialog-image requests → the REAL PNGs from manual/dialog-screenshots/. Returns a
+    dict {text, files:[abs paths]} for the bot to ATTACH (Discord upload), or None. The images EXIST —
+    never tell the user to run a script to make them."""
+    ql = question.lower()
+    is_shot = (re.search(r"\b(screenshots?|screen ?shots?|dialog ?shots?)\b", ql)
+               or (re.search(r"\b(images?|pictures?|photos?|png)\b", ql) and "dialog" in ql)
+               or (re.search(r"\b(show me|see|look)\b", ql) and re.search(r"\b(dialog|screen)", ql)))
+    if not is_shot:
+        return None
+    shots = _all_shots()
+    if not shots:
+        return None
+    if re.search(r"\b(all|every|each|list|the lot|complete)\b", ql):
+        # a "dialog" request → the curated 157-dialog set, not the whole general Screenshots folder
+        sel = _dialog_shots() if "dialog" in ql else shots
+        text = (f"📸 **All {len(sel)} Paketti dialog screenshots** — attaching them below "
+                f"(batched; Discord caps ~10 per message).")
+    else:
+        stop = {"screenshot", "screenshots", "screen", "shot", "shots", "image", "images", "picture",
+                "pictures", "photo", "photos", "png", "show", "see", "look", "dialog", "dialogs",
+                "the", "what", "does", "like", "paketti", "for", "give", "all", "your", "you", "know"}
+        words = [w for w in re.findall(r"[a-z0-9]{3,}", ql) if w not in stop]
+        if not words:
+            sel = shots
+            text = f"📸 **All {len(sel)} Paketti dialog screenshots** — attaching them below."
+        else:
+            scored = [(sum(1 for w in words if w in p.stem.lower()), p) for p in shots]
+            best = max((s for s, _ in scored), default=0)
+            if best == 0:
+                return None
+            sel = [p for s, p in scored if s == best][:10]
+            names = ", ".join(p.stem.split("_", 1)[-1].replace("_", " ") for p in sel)
+            text = f"📸 **{len(sel)} dialog screenshot(s)** matching “{' '.join(words)}” — {names}:"
+    return {"text": text, "files": [str(p) for p in sel]}
+
+
 def changelog_answer(question: str):
     """For 'what is X / what does X do', return Esa's CHANGELOG descriptions — verbatim, no LLM, no
     invention. AGGREGATES every Feature/Improvement entry where the feature is the SUBJECT (the name
