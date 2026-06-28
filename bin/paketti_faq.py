@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 FM_MLX = HERE / "fm-mlx"
 FM_SUBMIT = HERE / "fm-submit"          # the fleet brain: queues to the Mini's fm-service
+FM_FREE = HERE / "fm-free"              # the FreeLLMAPI aggregator brain (bigger free-tier models)
 APPLE_EMBED = HERE / "apple-embed"
 PAKETTI = "/Users/esaruoho/work/paketti"
 FEATURE_MAP = Path(PAKETTI) / "docs" / "FEATURE-MAP.md"   # auto-pulled, always fresh on the Mini
@@ -943,19 +944,35 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
                                         project_context(question), feature_context(question),
                                         spine_context(question)) if c)
     system = _LEAN_SYSTEM + (("\n\n" + grounding) if grounding else "")
-    try:
-        if BRAIN == "fm-submit" and FM_SUBMIT.exists():
-            cmd = [str(FM_SUBMIT), "--system", system,
-                   "--timeout", str(max(60, timeout - 20)), question]
-        else:  # fm-mlx → the Mini's Qwen3-4B MLX server (--raw = text only, no speech)
-            cmd = [str(FM_MLX), "--raw", "--system", system, question]
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
-                           stdin=subprocess.DEVNULL)
-    except Exception:
-        return None
-    a = (p.stdout or "").strip()
-    if a.lower().startswith("assistant:"):
-        a = a.split(":", 1)[1].strip()
+
+    def _cmd_for(brain):
+        if brain == "fm-submit" and FM_SUBMIT.exists():
+            return [str(FM_SUBMIT), "--system", system, "--timeout", str(max(60, timeout - 20)), question]
+        if brain.startswith("fm-free"):
+            # fm-free = the FreeLLMAPI aggregator (Groq/Cerebras/Nvidia/… free tier) — bigger + faster
+            # than Qwen3-4B. Optional pinned model: PAKETTI_FAQ_BRAIN="fm-free:deepseek-v4-pro".
+            c = [str(FM_FREE), "--raw", "--quiet", "--system", system]
+            if ":" in brain:
+                c += ["--model", brain.split(":", 1)[1]]
+            return c + [question]
+        return [str(FM_MLX), "--raw", "--system", system, question]   # the Mini's Qwen3-4B
+
+    # Try the configured brain; if it returns nothing (fm-free rate-limited / provider error), fall
+    # back to the always-available local Qwen so an answer still ships.
+    order = [BRAIN] + (["fm-mlx"] if not BRAIN.startswith("fm-mlx") else [])
+    a = ""
+    for brain in order:
+        try:
+            p = subprocess.run(_cmd_for(brain), capture_output=True, text=True, timeout=timeout,
+                               stdin=subprocess.DEVNULL)
+        except Exception:
+            continue
+        a = (p.stdout or "").strip()
+        if a.lower().startswith("assistant:"):
+            a = a.split(":", 1)[1].strip()
+        if a and "models exhausted" not in a.lower() and "routing_error" not in a.lower():
+            break
+        a = ""        # this brain failed/exhausted → try the next
     a = _strip_fabrication(_strip_fake_domains(_strip_ai_boilerplate(_sanitize_links(a))))   # kill fabricated URLs/domains/AI junk
     return a or None
 
