@@ -17,11 +17,14 @@ Secrets / config (never in git):
   FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
-import json, os, re, sys, time, urllib.request, urllib.error
+import json, os, re, sys, time, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
 
+def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
+    return urllib.parse.quote(s, safe="")
+
 AM_BASE   = "https://api.agentmail.to/v0"
-INBOX     = os.environ.get("AGENTMAIL_INBOX", "am_us_inbox_efa5c1681112210f698b91a5299702da4531ab8da73f6656ab4906043adf3cd3")
+INBOX     = os.environ.get("AGENTMAIL_INBOX", "cloudcity-llm@agentmail.to")
 STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-state.json"))
 POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
@@ -129,7 +132,7 @@ def poll_once(verbose=True):
         # only answer RECEIVED inbound mail — never our own sent replies (avoid loops)
         if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
             seen.add(mid); continue
-        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{mid}", k)
+        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         question=(full.get("extracted_text") or full.get("text") or full.get("preview") or "").strip()
         if not question: seen.add(mid); continue
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
@@ -138,7 +141,7 @@ def poll_once(verbose=True):
             answer, used = fm_research(question, ctx)
         except Exception as e:
             print(f"  research failed for {mid}: {e}"); continue
-        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{mid}/reply", k, "POST",
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST",
              {"text": answer, "html": md_to_html(answer)})
         seen.add(mid); new+=1
         if verbose: print(f"  ✓ replied (model {used}, $0)")
