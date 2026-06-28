@@ -214,6 +214,10 @@ _LEAN_SYSTEM = (
     "ONLY links you may give are ones present verbatim in the project info above.\n"
     "• Paketti lives on GitHub at github.com/esaruoho/paketti, by @esaruoho. There is NO paketti.com "
     "and no other 'official site'. NEVER invent a website or domain; if unsure, say it's on GitHub.\n"
+    "• NEVER claim a feature 'emulates', 'is based on', or 'is inspired by' any external product, "
+    "hardware, or software unless the info explicitly says so. A controller named in the info (AKAI "
+    "MidiMix, APC Key 25, LPD8, etc.) is hardware you CONTROL the feature WITH — not something it "
+    "copies. Numbers in a name (e.g. '8120') are not model numbers of real devices; don't invent one.\n"
     "• You are a Paketti FAQ assistant in Discord. NEVER add AI-assistant disclaimers ('as an AI…', "
     "'I can't display images', 'in this chat interface') and never output screenshot/image markdown — "
     "just answer the question.\n"
@@ -620,6 +624,11 @@ def changelog_answer(question: str):
             hits.append((-ov, 0 if e["kind"] == "Feature" else 1, e))     # best overlap FIRST
     if not hits:
         return None
+    # A heavily-developed feature (Groovebox 8120 has 20+ entries) reads as a changelog DUMP if we
+    # list them verbatim. Defer to generate_answer, which SYNTHESISES a real description grounded in
+    # the same entries (changelog_context) + the source code (code_context). Few entries → dump (clean).
+    if len(hits) > 4:
+        return None
     hits.sort(key=lambda h: (h[0], h[1], h[2]["date"]))
     seen, lines = set(), []
     for _, _, e in hits:
@@ -745,8 +754,8 @@ def feature_undocumented_answer(question: str):
     ql = question.lower()
     if not re.search(r"\b(what is|what'?s|what does|what do|explain|describe|tell me about)\b", ql):
         return None
-    if changelog_answer(question) is not None:     # we have Esa's real words
-        return None
+    if changelog_answer(question) is not None or changelog_context(question):  # changelog has it
+        return None                                # (changelog_answer may DEFER many-entry features)
     if manual_context(question):                   # we have prose docs
         return None
     if code_context(question):                     # we can read the source → describe from it
@@ -883,6 +892,25 @@ def _strip_fake_domains(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() or text
 
 
+_FAB_RE = re.compile(
+    r"(emulat\w+|based on|inspired by|recreat\w+|\bclone of\b|a (software|virtual) version of|"
+    r"port of)\b.{0,70}?(real[- ]?world|hardware|physical (device|unit|product)|"
+    r"akai groovebox|grooveb?ox 8120)", re.I)
+
+
+def _strip_fabrication(text: str) -> str:
+    """Strip sentences that claim a Paketti feature emulates/clones REAL-WORLD HARDWARE — a recurring
+    Qwen fabrication (e.g. 'Groovebox 8120 emulates the AKAI Groovebox 8120 hardware', which doesn't
+    exist). Paketti features are Renoise Lua tools; they don't emulate physical devices."""
+    if not text or not _FAB_RE.search(text):
+        return text
+    out = []
+    for ln in text.split("\n"):
+        kept = [s for s in re.split(r"(?<=[.!?])\s+", ln) if not _FAB_RE.search(s)]
+        out.append(" ".join(kept))
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() or text
+
+
 def _sanitize_links(text: str) -> str:
     """Remove any URL the model invented (keep allowlisted real Paketti links) and any leaked
     markdown image (changelog `![](Screenshots/…)` refs that Discord renders as broken images)."""
@@ -928,7 +956,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     a = (p.stdout or "").strip()
     if a.lower().startswith("assistant:"):
         a = a.split(":", 1)[1].strip()
-    a = _strip_fake_domains(_strip_ai_boilerplate(_sanitize_links(a)))   # kill fabricated URLs/domains/AI junk
+    a = _strip_fabrication(_strip_fake_domains(_strip_ai_boilerplate(_sanitize_links(a))))   # kill fabricated URLs/domains/AI junk
     return a or None
 
 
