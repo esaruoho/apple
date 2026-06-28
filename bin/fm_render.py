@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_VOICE = os.environ.get("FM_MLX_VOICE", "Zoe (Premium)")
 # "say" = say-karaoke (per-word karaoke engine, AVSpeechSynthesizer, Zoe);
 # "voicebox" = bin/voicebox-say (local Voicebox Kokoro/Heart). Override per-call or via env.
-DEFAULT_BACKEND = os.environ.get("FM_SPEAK_BACKEND", "say")
+DEFAULT_BACKEND = os.environ.get("FM_SPEAK_BACKEND", "voicebox")  # the Voicebox (Kokoro/Heart), not macOS say
 
 # ── Markdown → ANSI (terminal) ───────────────────────────────────────────────
 _B, _I, _U, _DIM, _CODE, _R = "\033[1m", "\033[3m", "\033[4m", "\033[2m", "\033[96m", "\033[0m"
@@ -45,14 +45,21 @@ def md_to_ansi(text: str) -> str:
             continue                                   # drop fence markers
         if in_fence:
             out.append(_DIM + line + _R); continue
+        # Emphasis carries COLOR, not just the bold/italic attribute — many terminals
+        # (e.g. iTerm without a bold font face) render color but not bold *weight*, so
+        # pure \033[1m looks like normal text. Color guarantees the emphasis is visible.
+        _MDH = "\033[1m\033[4m\033[96m"   # heading: bold + underline + bright cyan
+        _MDB = "\033[1m\033[93m"          # bold:    bold + bright yellow
+        _MDI = "\033[3m\033[95m"          # italic:  italic + bright magenta
         h = re.match(r'^(#{1,6})\s+(.*)$', line)
         if h:
-            out.append(_B + _U + h.group(2).strip() + _R); continue
+            out.append(_MDH + h.group(2).strip() + _R); continue
+        line = re.sub(r'^(\s*)(\d+)\.\s+', r'\1' + _MDB + r'\2.' + _R + ' ', line)  # 1. numbered lists
         line = re.sub(r'^(\s*)[-*+]\s+', r'\1• ', line)            # bullets
         line = re.sub(r'`([^`]+)`', _CODE + r'\1' + _R, line)      # inline code
-        line = re.sub(r'\*\*([^*]+)\*\*', _B + r'\1' + _R, line)   # **bold**
-        line = re.sub(r'__([^_]+)__', _B + r'\1' + _R, line)       # __bold__
-        line = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', _I + r'\1' + _R, line)  # *italic*
+        line = re.sub(r'\*\*([^*]+)\*\*', _MDB + r'\1' + _R, line) # **bold** → bold yellow
+        line = re.sub(r'__([^_]+)__', _MDB + r'\1' + _R, line)     # __bold__
+        line = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', _MDI + r'\1' + _R, line)  # *italic* → italic magenta
         line = re.sub(r'\[([^\]]+)\]\(([^)]+)\)',                  # [text](url)
                       _U + r'\1' + _R + _DIM + r' (\2)' + _R, line)
         out.append(line)
