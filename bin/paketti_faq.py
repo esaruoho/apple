@@ -1048,4 +1048,14 @@ def best_match(question: str, entries: list, vetted_only: bool = True):
         s = cosine(qv, v)
         if s > score:
             best, score = e, s
+    # Guard: NLEmbedding rates short feature names spuriously high ("stacker"≈"hyperedit" > 0.80),
+    # so a structural match isn't enough — the matched answer must share a DISTINCTIVE word with the
+    # question. If their content words are disjoint (different features), it's not a real match.
+    if best:
+        def _cw(s):
+            t = _normalize(_strip_template(s))
+            return {w for w in re.findall(r"[a-z0-9]{3,}", t) if w not in _NAME_GENERIC}
+        qw, ew = _cw(question), _cw(best["q"])
+        if qw and ew and not (qw & ew):
+            return best, min(score, 0.5)      # disjoint feature → below threshold, draft fresh
     return best, score
