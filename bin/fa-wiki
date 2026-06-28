@@ -27,7 +27,7 @@ _FM_RENDER = Path.home()/"work"/"apple"/"bin"/"fm_render.py"
 def show_md(text):
     """Rich-render markdown to the terminal (ANSI on a TTY, plain when piped)."""
     if _FM_RENDER.exists():
-        try: subprocess.run([sys.executable,str(_FM_RENDER),"--chat"],input=text,text=True); return
+        try: subprocess.run([sys.executable,str(_FM_RENDER),"--chat","--force-color"],input=text,text=True); return
         except Exception: pass
     print(text)
 

@@ -30,7 +30,7 @@ def show_md(text):
     The one place answers get shown — no more raw `**` / `#` dumped to the screen."""
     if _FM_RENDER.exists():
         try:
-            subprocess.run([sys.executable, str(_FM_RENDER), "--chat"], input=text, text=True); return
+            subprocess.run([sys.executable, str(_FM_RENDER), "--chat", "--force-color"], input=text, text=True); return
         except Exception:
             pass
     print(text)

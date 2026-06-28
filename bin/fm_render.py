@@ -169,21 +169,25 @@ def main() -> int:
     if "--plain" in argv:
         sys.stdout.write(md_to_plain(text) + "\n")
         return 0
+    # --force-color (or FORCE_COLOR=1) forces ANSI even when stdout isn't detected
+    # as a TTY — the robust path for callers that know they're talking to a terminal
+    # but whose tty detection is unreliable (some iTerm/tmux/wrapper setups).
+    force_tty = True if ("--force-color" in argv or os.environ.get("FORCE_COLOR")) else None
     if "--present" in argv:
         rt = opt("--rt")
-        # Speak unless told not to; render rich on a TTY, plain when piped (format_reply handles it).
+        # Speak unless told not to; render rich on a TTY (or when forced), plain when piped.
         present(text.rstrip("\n"),
                 host=opt("--host"), model=opt("--model"),
                 round_trip=float(rt) if rt else None,
                 speak_aloud=("--no-speak" not in argv),
-                voice=opt("--voice"), backend=opt("--backend"))
+                voice=opt("--voice"), backend=opt("--backend"), tty=force_tty)
         return 0
     if "--chat" in argv:
         rt = opt("--rt")
         sys.stdout.write(format_reply(
             text.rstrip("\n"),
             host=opt("--host"), model=opt("--model"),
-            round_trip=float(rt) if rt else None) + "\n")
+            round_trip=float(rt) if rt else None, tty=force_tty) + "\n")
         return 0
     emit_reply(text)
     return 0

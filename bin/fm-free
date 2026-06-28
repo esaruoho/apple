@@ -91,18 +91,20 @@ used_model=$(printf '%s\n' "$parsed" | head -1)
 reply=$(printf '%s\n' "$parsed" | tail -n +2)
 rt=$(python3 -c "import time; print(f'{time.time()-$t0:.1f}')")
 
-# Output mode (same contract as fm-mlx):
-#   --raw OR stdout not a terminal → RAW reply text only (the brain interface).
-#   interactive terminal → present(): rich markdown + speak, in ONE call.
-if [ "$raw" -eq 1 ] || [ ! -t 1 ]; then
+# Output mode:
+#   --raw → RAW reply text only (the brain interface; use this for pipes/capture).
+#   otherwise → ALWAYS render RICH markdown (--force-color), even if the tty check is
+#   unreliable (some iTerm/tmux/wrapper setups report stdout as non-tty and used to
+#   silently fall back to raw — that was the "fm-free does not richtext" bug).
+if [ "$raw" -eq 1 ]; then
   printf '%s\n' "$reply"
 else
   nospeak="--no-speak"
   case "$say" in
     1) nospeak="" ;;
-    auto) [ -t 1 ] && nospeak="" ;;
+    auto) [ -t 1 ] && nospeak="" ;;   # only speak aloud on a real interactive tty
   esac
   host="${HOST#*://}"; host="${host%%:*}"
-  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --present \
+  printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --present --force-color \
     --host "$host" --model "$used_model" --rt "$rt" --voice "$voice" $nospeak
 fi
