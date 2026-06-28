@@ -894,8 +894,8 @@ def _strip_fake_domains(text: str) -> str:
 
 _FAB_RE = re.compile(
     r"(emulat\w+|based on|inspired by|recreat\w+|\bclone of\b|a (software|virtual) version of|"
-    r"port of)\b.{0,70}?(real[- ]?world|hardware|physical (device|unit|product)|"
-    r"akai groovebox|grooveb?ox 8120)", re.I)
+    r"port of|mirror\w+|resembl\w+|model(l?ed)? (on|after)|equivalent of)\b.{0,80}?(real[- ]?world|"
+    r"hardware|physical (device|unit|product)|the real|akai groovebox|grooveb?ox 8120)", re.I)
 
 
 def _strip_fabrication(text: str) -> str:
