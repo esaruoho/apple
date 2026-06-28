@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""freellmask-mail — an email research agent on AgentMail, answered by FreeLLMAPI.
+
+Polls an AgentMail inbox; for each NEW inbound email it runs research through the
+FreeLLMAPI gateway (free-tier models, $0) and sends a THREADED reply as HTML, so
+the answer renders with real bold/headings/lists in any mail client. Replying to
+that email continues the conversation (the bot pulls prior thread messages as
+context). No public URL needed — pure polling. Runs as a Cloudcity-Boot pane.
+
+  freellmask-mail poll          # one cycle (for cron/testing)
+  freellmask-mail loop          # continuous (the pane runs this)
+  freellmask-mail status        # config + seen count + last poll
+
+Secrets / config (never in git):
+  AGENTMAIL_API_KEY  or  ~/.agentmail.key      (the am_... key from console.agentmail.to)
+  AGENTMAIL_INBOX    (default below)           (the am_us_inbox_... id)
+  FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
+  FM_FREE_HOST       (default cloudcity Mini :3001)
+"""
+import json, os, re, sys, time, urllib.request, urllib.error
+from pathlib import Path
+
+AM_BASE   = "https://api.agentmail.to/v0"
+INBOX     = os.environ.get("AGENTMAIL_INBOX", "am_us_inbox_efa5c1681112210f698b91a5299702da4531ab8da73f6656ab4906043adf3cd3")
+STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-state.json"))
+POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
+FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
+FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
+
+def _read_key(env, path):
+    k = os.environ.get(env, "")
+    if not k and Path(path).expanduser().exists(): k = Path(path).expanduser().read_text().strip()
+    return k
+def am_key():
+    k=_read_key("AGENTMAIL_API_KEY","~/.agentmail.key")
+    if not k: sys.exit("freellmask-mail: no AgentMail key (AGENTMAIL_API_KEY or ~/.agentmail.key)")
+    return k
+def fm_key():
+    k=_read_key("FM_FREE_KEY","~/.fm-free.key")
+    if not k: sys.exit("freellmask-mail: no FreeLLMAPI key (~/.fm-free.key)")
+    return k
+
+def http(url, key, method="GET", body=None):
+    data=json.dumps(body).encode() if body is not None else None
+    req=urllib.request.Request(url, data=data, method=method,
+        headers={"Authorization":f"Bearer {key}","Content-Type":"application/json"})
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r: return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code==429 and attempt<2: time.sleep(5*(attempt+1)); continue
+            raise
+        except urllib.error.URLError:
+            if attempt<2: time.sleep(3); continue
+            raise
+
+def fm_research(question, thread_context):
+    sysm=("You are a research assistant answering an email. Do real research from your knowledge: "
+          "give a structured, substantive answer using markdown (## headings, **bold**, bullets). "
+          "Be concrete and useful. If the email is a follow-up, use the prior conversation for context.")
+    user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
+         f"LATEST EMAIL TO ANSWER:\n{question}"
+    body={"model":FM_MODEL,"messages":[{"role":"system","content":sysm},{"role":"user","content":user}],
+          "max_tokens":3000}
+    req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
+        headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r); break
+        except urllib.error.HTTPError as e:
+            if e.code==429 and attempt<3: time.sleep(5*(attempt+1)); continue
+            raise
+    return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
+
+def md_to_html(md):
+    """Minimal markdown→HTML so the reply renders rich (real bold) in any mail client."""
+    html=[]; in_ul=in_ol=False
+    def close():
+        nonlocal in_ul,in_ol
+        if in_ul: html.append("</ul>"); in_ul=False
+        if in_ol: html.append("</ol>"); in_ol=False
+    def inline(t):
+        t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
+        t=re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+        t=re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
+        t=re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+        t=re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
+        return t
+    for line in md.split("\n"):
+        h=re.match(r"^(#{1,6})\s+(.*)$", line)
+        ol=re.match(r"^\s*\d+\.\s+(.*)$", line); ul=re.match(r"^\s*[-*+]\s+(.*)$", line)
+        if h: close(); html.append(f"<h{len(h.group(1))}>{inline(h.group(2))}</h{len(h.group(1))}>")
+        elif ol:
+            if not in_ol: close(); html.append("<ol>"); in_ol=True
+            html.append(f"<li>{inline(ol.group(1))}</li>")
+        elif ul:
+            if not in_ul: close(); html.append("<ul>"); in_ul=True
+            html.append(f"<li>{inline(ul.group(1))}</li>")
+        elif line.strip()=="": close(); html.append("<br>")
+        else: close(); html.append(f"<p>{inline(line)}</p>")
+    close()
+    return ('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5">'
+            + "\n".join(html) + '<hr><p style="color:#888;font-size:12px">— freellmask · '
+            'answered by FreeLLMAPI on cloudcity ($0). Reply to continue.</p></div>')
+
+def load_state():
+    try: return json.loads(STATE.read_text())
+    except Exception: return {"seen":[], "last_poll":None}
+def save_state(s): STATE.parent.mkdir(parents=True, exist_ok=True); STATE.write_text(json.dumps(s,indent=2))
+
+def thread_context(key, msgs, thread_id, exclude_id):
+    """Build an oldest-first transcript of the thread for follow-up context."""
+    same=[m for m in msgs if m.get("thread_id")==thread_id and m.get("message_id")!=exclude_id]
+    same.sort(key=lambda m: m.get("timestamp") or "")
+    out=[]
+    for m in same[-6:]:
+        who=m.get("from","?"); pv=(m.get("preview") or "").strip()
+        out.append(f"[{who}] {pv}")
+    return "\n".join(out)
+
+def poll_once(verbose=True):
+    k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
+    listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
+    msgs=listing.get("messages", listing if isinstance(listing,list) else [])
+    new=0
+    for m in msgs:
+        mid=m.get("message_id"); labels=m.get("labels",[]) or []
+        if not mid or mid in seen: continue
+        # only answer RECEIVED inbound mail — never our own sent replies (avoid loops)
+        if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
+            seen.add(mid); continue
+        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{mid}", k)
+        question=(full.get("extracted_text") or full.get("text") or full.get("preview") or "").strip()
+        if not question: seen.add(mid); continue
+        ctx=thread_context(k, msgs, m.get("thread_id"), mid)
+        if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}")
+        try:
+            answer, used = fm_research(question, ctx)
+        except Exception as e:
+            print(f"  research failed for {mid}: {e}"); continue
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{mid}/reply", k, "POST",
+             {"text": answer, "html": md_to_html(answer)})
+        seen.add(mid); new+=1
+        if verbose: print(f"  ✓ replied (model {used}, $0)")
+    st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+    return new
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv)>1 else "poll"
+    if cmd=="status":
+        st=load_state(); print(f"inbox={INBOX}\nmodel={FM_MODEL} host={FM_HOST}\nseen={len(st.get('seen',[]))} last_poll={st.get('last_poll')}")
+        print(f"AgentMail key: {'set' if _read_key('AGENTMAIL_API_KEY','~/.agentmail.key') else 'MISSING'}")
+        print(f"FreeLLMAPI key: {'set' if _read_key('FM_FREE_KEY','~/.fm-free.key') else 'MISSING'}")
+    elif cmd=="loop":
+        print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
+        while True:
+            try:
+                n=poll_once(verbose=True)
+                if n: print(f"[{time.strftime('%H:%M:%S')}] answered {n} email(s)")
+            except Exception as e:
+                print(f"[{time.strftime('%H:%M:%S')}] poll error: {e}")
+            time.sleep(POLL_SEC)
+    else:
+        n=poll_once(); print(f"polled: answered {n} new email(s)")
+
+if __name__=="__main__": main()
