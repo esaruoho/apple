@@ -21,8 +21,19 @@ providers), so the only real budget is provider rate-limits, not dollars.
 Key from $FM_FREE_KEY or ~/.fm-free.key. Output: <out>/<file>.analysis.md each
 carrying provider/model/tokens provenance, + <out>/_SYNTHESIS.md if --synthesize.
 """
-import argparse, glob, json, os, sys, time, urllib.request
+import argparse, glob, json, os, subprocess, sys, time, urllib.request
 from pathlib import Path
+
+_FM_RENDER = Path.home() / "work" / "apple" / "bin" / "fm_render.py"
+def show_md(text):
+    """Render markdown as RICH text to the terminal (ANSI on a TTY, plain when piped).
+    The one place answers get shown — no more raw `**` / `#` dumped to the screen."""
+    if _FM_RENDER.exists():
+        try:
+            subprocess.run([sys.executable, str(_FM_RENDER), "--chat"], input=text, text=True); return
+        except Exception:
+            pass
+    print(text)
 
 def load_key():
     k = os.environ.get("FM_FREE_KEY", "")
@@ -70,8 +81,11 @@ def main():
     ap.add_argument("--out", default="./fa-analysis")
     ap.add_argument("--sleep", type=float, default=1.5)
     ap.add_argument("--synthesize", action="store_true")
+    ap.add_argument("--show", dest="show", action="store_true", default=None, help="rich-render every per-file analysis (default: on when <=8 files)")
+    ap.add_argument("--no-show", dest="show", action="store_false")
     ap.add_argument("--host", default=os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1"))
     a = ap.parse_args()
+    if a.show is None: a.show = a.limit <= 8   # small runs: show rich per-file; big runs: just progress + synthesis
     host = a.host if a.host.rstrip("/").endswith("/v1") else a.host.rstrip("/") + "/v1"
     key = load_key()
     exts = [e.strip().lstrip(".") for e in a.ext.split(",")]
@@ -104,7 +118,8 @@ def main():
                             f"_viewpoint: {a.viewpoint} · {used} · {tok} tok · {dt:.0f}s · $0_\n"
                             f"_source: {f}_\n\n{ans}\n")
             index.append((f, card, used, tok))
-            print(f"[{i}/{len(files)}] {f.name:48.48s} → {used.split('/')[0]:9.9s} {tok:>5} tok ({dt:.0f}s)")
+            print(f"\n\033[1m[{i}/{len(files)}] {f.name}\033[0m  ({used.split('/')[0]}, {tok} tok, {dt:.0f}s, $0)")
+            if a.show: show_md(ans)   # RICH render the analysis (default on for small runs)
         except Exception as e:
             print(f"[{i}/{len(files)}] {f.name}: ERROR {e}")
         time.sleep(a.sleep)
@@ -121,7 +136,9 @@ def main():
             ans, used, tok = call(host, key, a.model, ssys,
                                   "PER-FILE ANALYSES:\n\n" + bundle, max_tokens=1800)
             (out / "_SYNTHESIS.md").write_text(f"# Synthesis — {a.viewpoint}\n_{used} · {tok} tok · $0_\n\n{ans}\n")
-            print(f"synthesis → {out}/_SYNTHESIS.md ({used.split('/')[0]}, {tok} tok)")
+            print(f"\n\033[1m═══ SYNTHESIS — {a.viewpoint} ═══\033[0m  ({used.split('/')[0]}, {tok} tok, $0)")
+            show_md(ans)   # the main answer ALWAYS renders rich
+            print(f"\n(saved {out}/_SYNTHESIS.md)")
         except Exception as e:
             print(f"synthesis ERROR: {e}")
 
