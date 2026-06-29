@@ -128,35 +128,55 @@ def fm_research(question, thread_context, attachments=""):
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
-def md_to_html(md):
-    """Minimal markdown→HTML so the reply renders rich (real bold) in any mail client."""
-    html=[]; in_ul=in_ol=False
+def _md_inline(t):
+    t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
+    t=re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+    t=re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
+    t=re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    t=re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
+    return t
+
+_TH='style="border:1px solid #999;padding:4px 8px;background:#eef;text-align:left"'
+_TD='style="border:1px solid #999;padding:4px 8px;text-align:left;vertical-align:top"'
+def md_to_inner_html(md):
+    """Markdown→HTML body: headings, bold/italic/code/links, lists, and real TABLES."""
+    out=[]; i=0; lines=(md or "").split("\n"); in_ul=in_ol=False
     def close():
         nonlocal in_ul,in_ol
-        if in_ul: html.append("</ul>"); in_ul=False
-        if in_ol: html.append("</ol>"); in_ol=False
-    def inline(t):
-        t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
-        t=re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
-        t=re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
-        t=re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
-        t=re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
-        return t
-    for line in md.split("\n"):
+        if in_ul: out.append("</ul>"); in_ul=False
+        if in_ol: out.append("</ol>"); in_ol=False
+    def cells(row): return [c.strip() for c in row.strip().strip("|").split("|")]
+    n=len(lines)
+    while i<n:
+        line=lines[i]; s=line.strip()
+        # pipe table: a |row| followed by a |---|---| separator
+        if s.startswith("|") and i+1<n and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i+1]) and "-" in lines[i+1]:
+            close()
+            out.append('<table style="border-collapse:collapse;width:100%;margin:6px 0;font-size:10px"><thead><tr>'
+                       + "".join(f"<th {_TH}>{_md_inline(c)}</th>" for c in cells(line)) + "</tr></thead><tbody>")
+            i+=2
+            while i<n and lines[i].strip().startswith("|"):
+                out.append("<tr>"+"".join(f"<td {_TD}>{_md_inline(c)}</td>" for c in cells(lines[i]))+"</tr>"); i+=1
+            out.append("</tbody></table>"); continue
         h=re.match(r"^(#{1,6})\s+(.*)$", line)
         ol=re.match(r"^\s*\d+\.\s+(.*)$", line); ul=re.match(r"^\s*[-*+]\s+(.*)$", line)
-        if h: close(); html.append(f"<h{len(h.group(1))}>{inline(h.group(2))}</h{len(h.group(1))}>")
+        if h: close(); out.append(f"<h{len(h.group(1))}>{_md_inline(h.group(2))}</h{len(h.group(1))}>")
         elif ol:
-            if not in_ol: close(); html.append("<ol>"); in_ol=True
-            html.append(f"<li>{inline(ol.group(1))}</li>")
+            if not in_ol: close(); out.append("<ol>"); in_ol=True
+            out.append(f"<li>{_md_inline(ol.group(1))}</li>")
         elif ul:
-            if not in_ul: close(); html.append("<ul>"); in_ul=True
-            html.append(f"<li>{inline(ul.group(1))}</li>")
-        elif line.strip()=="": close(); html.append("<br>")
-        else: close(); html.append(f"<p>{inline(line)}</p>")
+            if not in_ul: close(); out.append("<ul>"); in_ul=True
+            out.append(f"<li>{_md_inline(ul.group(1))}</li>")
+        elif s=="": close()
+        else: close(); out.append(f"<p>{_md_inline(line)}</p>")
+        i+=1
     close()
-    return ('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5">'
-            + "\n".join(html) + '<hr><p style="color:#888;font-size:12px">— freellmask · '
+    return "\n".join(out)
+
+def md_to_html(md):
+    """Email-body HTML (rich, renders in any mail client)."""
+    return ('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5;font-size:14px">'
+            + md_to_inner_html(md) + '<hr><p style="color:#888;font-size:12px">— freellmask · '
             'answered by FreeLLMAPI on cloudcity ($0). Reply to continue.</p></div>')
 
 def load_state():
@@ -195,75 +215,107 @@ def strip_signature(text):
     lines=lines[:cut]
     while lines:                                   # trim trailing contact-only lines
         s=lines[-1].strip()
+        # NOTE: do NOT strip generic content URLs (e.g. an x.com link IS the request).
+        # Only obvious signature lines: empty, phone, Patreon, the name.
         if (s=="" or re.match(r'^\+?[\d][\d ()\-]{6,}$', s)
-            or (re.match(r'(?i)^https?://\S+$', s) and not s.lower().endswith(".pdf"))
-            or re.match(r'(?i)^patreon\.com/\S+$', s)
+            or re.match(r'(?i)^https?://(www\.)?patreon\.com/\S+$', s)
             or (re.match(r'(?i)^esa\b.*ruoho', s) and len(s)<40)):
             lines.pop(); continue
         break
     return "\n".join(lines).strip()
 
 _URL_RE=re.compile(r'https?://[^\s<>"\')\]]+', re.I)
-def fetch_url_pdfs(body, verbose=False):
-    """Download any PDF LINKED BY URL in the body and OCR it (Apple Vision on the Mini).
-    Non-PDF URLs (e.g. a Patreon profile in a signature) are skipped by content-type."""
+def _fetch_tweet(u):
+    """X/Twitter blocks scraping — use the public fxtwitter API to get the tweet text."""
+    m=re.search(r'(?:x|twitter)\.com/([^/]+)/status/(\d+)', u, re.I)
+    if not m: return None
+    api=f"https://api.fxtwitter.com/{m.group(1)}/status/{m.group(2)}"
+    try:
+        req=urllib.request.Request(api, headers={"User-Agent":"freellmask/1.0"})
+        with urllib.request.urlopen(req, timeout=25) as r: d=json.load(r)
+        t=d.get("tweet") or {}
+        au=(t.get("author") or {}).get("name") or (t.get("author") or {}).get("screen_name") or ""
+        txt=t.get("text") or ""
+        return f"Tweet by {au}: {txt}".strip()
+    except Exception:
+        return None
+
+def fetch_url_content(body, verbose=False):
+    """Fetch and read content LINKED BY URL in the body: tweets (via fxtwitter), PDFs
+    (download + on-Mini OCR), and general web pages (HTML→text). Feeds it to research."""
     blocks=[]; done=set()
     for u in _URL_RE.findall(body or ""):
         u=u.rstrip('.,);')
         if u in done: continue
         done.add(u)
-        is_pdf = u.lower().split("?")[0].endswith(".pdf")
+        low=u.lower()
+        if "patreon.com/" in low: continue          # signature link, not content
         try:
-            req=urllib.request.Request(u, headers={"User-Agent":"freellmask/1.0 (+cloudcity)"})
+            if re.search(r'(?:x|twitter)\.com/[^/]+/status/\d+', low):
+                tw=_fetch_tweet(u)
+                if tw: blocks.append(f"--- X/Tweet: {u} ---\n{tw[:MAX_CHARS]}")
+                elif verbose: print(f"    · tweet {u}: could not fetch")
+                continue
+            req=urllib.request.Request(u, headers={"User-Agent":"Mozilla/5.0 freellmask/1.0"})
             with urllib.request.urlopen(req, timeout=45) as r:
                 ct=(r.headers.get("Content-Type") or "").lower()
-                if not is_pdf and "application/pdf" not in ct: continue   # not a PDF — skip (don't read body)
+                is_pdf = low.split("?")[0].endswith(".pdf") or "application/pdf" in ct
                 data=r.read(MAX_ATT+1)
             if len(data)>MAX_ATT:
-                blocks.append(f"--- PDF from URL {u} ---\n[skipped: exceeds size limit]"); continue
-            tmp=None
-            try:
-                with tempfile.NamedTemporaryFile(suffix=".pdf",delete=False) as tf: tf.write(data); tmp=tf.name
-                out=subprocess.run([str(VISION_OCR),tmp,"--pages","20"],capture_output=True,text=True,timeout=240)
-                txt=(out.stdout or "").strip()
-            finally:
-                if tmp:
-                    try: os.unlink(tmp)
-                    except Exception: pass
-            blocks.append(f"--- PDF from URL: {u} ---\n{txt[:MAX_CHARS] if txt else '[no text found]'}")
-            if verbose: print(f"    · url-pdf {u}: {len(txt)} chars")
+                blocks.append(f"--- {u} ---\n[skipped: exceeds size limit]"); continue
+            if is_pdf:
+                tmp=None
+                try:
+                    with tempfile.NamedTemporaryFile(suffix=".pdf",delete=False) as tf: tf.write(data); tmp=tf.name
+                    out=subprocess.run([str(VISION_OCR),tmp,"--pages","20"],capture_output=True,text=True,timeout=240)
+                    txt=(out.stdout or "").strip()
+                finally:
+                    if tmp:
+                        try: os.unlink(tmp)
+                        except Exception: pass
+                blocks.append(f"--- PDF from URL: {u} ---\n{txt[:MAX_CHARS] if txt else '[no text found]'}")
+                if verbose: print(f"    · url-pdf {u}: {len(txt)} chars")
+            elif "text/html" in ct or "text/plain" in ct or not ct:
+                txt=html_to_text(data.decode("utf-8","ignore"))
+                if txt: blocks.append(f"--- Page: {u} ---\n{txt[:MAX_CHARS]}")
+                if verbose: print(f"    · url-page {u}: {len(txt)} chars")
         except Exception as e:
             if verbose: print(f"    · url {u}: {e}")
         if len(blocks)>=5: break
     return "\n\n".join(blocks)
+fetch_url_pdfs = fetch_url_content   # back-compat alias
 
 TEXT_TO_PDF = Path.home()/"work"/"apple"/"bin"/"text-to-pdf"
 WANT_PDF = re.compile(r'\b(printable|pdf|one[\s-]?pager|as a (document|file|pdf)|attach (it|a|the))\b', re.I)
-def md_to_readable(md):
-    """Flatten markdown to clean monospace-friendly text for the PDF (strip emphasis
-    markers that would show literally; headings underlined; bullets as •)."""
-    out=[]
-    for line in (md or "").split("\n"):
-        h=re.match(r'^(#{1,6})\s+(.*)$', line)
-        if h:
-            t=re.sub(r'\*\*?([^*]+)\*\*?', r'\1', h.group(2)).strip()
-            out += ["", t, "-"*min(len(t),60)]; continue
-        line=re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
-        line=re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'\1', line)
-        line=re.sub(r'`([^`]+)`', r'\1', line)
-        line=re.sub(r'^(\s*)[-*+]\s+', r'\1• ', line)
-        out.append(line)
-    return "\n".join(out)
-
+HTML_TO_PDF = Path.home()/"work"/"apple"/"bin"/"html-to-pdf"
+_PDF_CSS = """
+*{box-sizing:border-box} body{font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
+font-size:11px;line-height:1.45;color:#111;margin:40px}
+h1{font-size:20px;margin:0 0 10px} h2{font-size:14px;border-bottom:1px solid #ccc;padding-bottom:3px;margin:14px 0 6px}
+h3{font-size:12px;margin:10px 0 4px}
+table{border-collapse:collapse;width:100%;font-size:10px;margin:8px 0}
+th,td{border:1px solid #888;padding:4px 8px;text-align:left;vertical-align:top} th{background:#eef}
+ul,ol{margin:5px 0 5px 22px} li{margin:3px 0}
+code{font-family:Menlo,monospace;background:#f4f4f4;padding:1px 4px;border-radius:3px;font-size:10px}
+hr{border:none;border-top:1px solid #ddd;margin:12px 0} a{color:#1a5fb4}
+"""
 def make_pdf_b64(markdown, title="freellmask"):
-    """Render the answer to a PDF via the on-Mini text-to-pdf tool; return base64 or None."""
+    """Render the answer to a PROPERLY-FORMATTED PDF (real headings/tables/fonts) via the
+    on-Mini html-to-pdf (WKWebView). Returns base64 or None."""
+    safe_title=(title or "freellmask").replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+    doc=(f"<!doctype html><html><head><meta charset='utf-8'><style>{_PDF_CSS}</style></head><body>"
+         f"<h1>{safe_title}</h1>{md_to_inner_html(markdown)}"
+         f"<hr><p style='color:#888;font-size:9px'>Generated by freellmask · FreeLLMAPI on cloudcity ($0)</p>"
+         f"</body></html>")
     td=tempfile.mkdtemp()
     try:
-        src=os.path.join(td,"a.md"); pdf=os.path.join(td,"a.pdf")
-        open(src,"w").write(md_to_readable(markdown))
-        subprocess.run([str(TEXT_TO_PDF), src, pdf, "--title", title[:80]],
-                       capture_output=True, timeout=90, check=True)
-        with open(pdf,"rb") as f: return base64.b64encode(f.read()).decode()
+        src=os.path.join(td,"a.html"); pdf=os.path.join(td,"a.pdf")
+        open(src,"w").write(doc)
+        subprocess.run([str(HTML_TO_PDF), src, pdf], capture_output=True, timeout=60, check=True)
+        with open(pdf,"rb") as f: data=f.read()
+        if len(data)<800 or len(data)>8_000_000:   # sanity: not empty, not the 520MB blowup
+            print(f"  pdf size out of range: {len(data)}"); return None
+        return base64.b64encode(data).decode()
     except Exception as e:
         print(f"  pdf generation failed: {e}"); return None
     finally:

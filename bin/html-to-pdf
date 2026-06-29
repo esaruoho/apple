@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# html-to-pdf — render HTML to a properly-formatted paginated PDF via WKWebView.
+# Self-building (compiles html-to-pdf.swift to a cached binary), like vision-ocr.
+#   html-to-pdf <input.html> <output.pdf>
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/html-to-pdf.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/html-to-pdf"
+mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" -framework WebKit -framework AppKit -framework Foundation
+fi
+exec "$BIN" "$@"
