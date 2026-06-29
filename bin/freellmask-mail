@@ -174,6 +174,69 @@ def thread_context(key, msgs, thread_id, exclude_id):
         out.append(f"[{who}] {pv}")
     return "\n".join(out)
 
+import html as _htmlmod
+def html_to_text(h):
+    """Recover body text from an HTML-only email (forwards from Gmail are often HTML-only)."""
+    if not h: return ""
+    h=re.sub(r'(?is)<(script|style|head).*?</\1>',' ',h)
+    h=re.sub(r'(?i)<br\s*/?>','\n',h); h=re.sub(r'(?i)</(p|div|tr|li|h[1-6])>','\n',h)
+    h=re.sub(r'<[^>]+>',' ',h)
+    return re.sub(r'\n{3,}','\n\n', _htmlmod.unescape(h)).strip()
+
+def strip_signature(text):
+    """Drop the email signature so the model doesn't 'research' a name/phone/Patreon URL.
+    Cuts at a sig delimiter (--, — , __, 'Sent via/from'), then trims trailing contact lines."""
+    if not text: return ""
+    lines=text.replace("\r","").split("\n"); cut=len(lines)
+    for i,l in enumerate(lines):
+        s=l.strip()
+        if s in ("--","-- ","—","–","__") or re.match(r'(?i)^(sent (via|from) |get outlook)', s):
+            cut=i; break
+    lines=lines[:cut]
+    while lines:                                   # trim trailing contact-only lines
+        s=lines[-1].strip()
+        if (s=="" or re.match(r'^\+?[\d][\d ()\-]{6,}$', s)
+            or (re.match(r'(?i)^https?://\S+$', s) and not s.lower().endswith(".pdf"))
+            or re.match(r'(?i)^patreon\.com/\S+$', s)
+            or (re.match(r'(?i)^esa\b.*ruoho', s) and len(s)<40)):
+            lines.pop(); continue
+        break
+    return "\n".join(lines).strip()
+
+_URL_RE=re.compile(r'https?://[^\s<>"\')\]]+', re.I)
+def fetch_url_pdfs(body, verbose=False):
+    """Download any PDF LINKED BY URL in the body and OCR it (Apple Vision on the Mini).
+    Non-PDF URLs (e.g. a Patreon profile in a signature) are skipped by content-type."""
+    blocks=[]; done=set()
+    for u in _URL_RE.findall(body or ""):
+        u=u.rstrip('.,);')
+        if u in done: continue
+        done.add(u)
+        is_pdf = u.lower().split("?")[0].endswith(".pdf")
+        try:
+            req=urllib.request.Request(u, headers={"User-Agent":"freellmask/1.0 (+cloudcity)"})
+            with urllib.request.urlopen(req, timeout=45) as r:
+                ct=(r.headers.get("Content-Type") or "").lower()
+                if not is_pdf and "application/pdf" not in ct: continue   # not a PDF — skip (don't read body)
+                data=r.read(MAX_ATT+1)
+            if len(data)>MAX_ATT:
+                blocks.append(f"--- PDF from URL {u} ---\n[skipped: exceeds size limit]"); continue
+            tmp=None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".pdf",delete=False) as tf: tf.write(data); tmp=tf.name
+                out=subprocess.run([str(VISION_OCR),tmp,"--pages","20"],capture_output=True,text=True,timeout=240)
+                txt=(out.stdout or "").strip()
+            finally:
+                if tmp:
+                    try: os.unlink(tmp)
+                    except Exception: pass
+            blocks.append(f"--- PDF from URL: {u} ---\n{txt[:MAX_CHARS] if txt else '[no text found]'}")
+            if verbose: print(f"    · url-pdf {u}: {len(txt)} chars")
+        except Exception as e:
+            if verbose: print(f"    · url {u}: {e}")
+        if len(blocks)>=5: break
+    return "\n\n".join(blocks)
+
 def poll_once(verbose=True):
     k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
@@ -186,15 +249,20 @@ def poll_once(verbose=True):
         if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
             seen.add(mid); continue
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
-        question=(full.get("extracted_text") or full.get("text") or full.get("preview") or "").strip()
+        # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
+        raw_body=(full.get("extracted_text") or full.get("text") or html_to_text(full.get("html")) or full.get("preview") or "")
+        question=strip_signature(raw_body)                      # drop name/phone/Patreon-URL signature
         atts=full.get("attachments") or []
         att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
-        if not question and not att_text: seen.add(mid); continue   # nothing to answer
+        try: url_text=fetch_url_pdfs(raw_body, verbose)          # download + OCR any PDF linked by URL
+        except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
+        extra="\n\n".join(x for x in (att_text, url_text) if x)
+        if not question and not extra: seen.add(mid); continue   # genuinely nothing to answer
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
         if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
-                          + (f" [+{len(atts)} attachment(s)]" if atts else ""))
+                          + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else ""))
         try:
-            answer, used = fm_research(question, ctx, att_text)
+            answer, used = fm_research(question, ctx, extra)
         except Exception as e:
             print(f"  research failed for {mid}: {e}"); continue
         reply={"text": answer, "html": md_to_html(answer)}
