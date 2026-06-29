@@ -576,6 +576,17 @@ func mailFlagStatusRead() -> String {
     return parts.joined(separator: " · ")
 }
 
+func toAnalyzeRead() -> String {
+    // Convey's to-be-analyzed backlog: count `needs-analysis` rows in the Syncthing-shared
+    // TRANSCRIPT-LEDGER.md (one row per transcript the Mini's convey-video-worker has conveyed
+    // and that still awaits human analysis). Click the row → open the ledger. "—" hides the row.
+    let path = "\(HOME)/work/convey-packs/TRANSCRIPT-LEDGER.md"
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return "—" }
+    var n = 0
+    for line in text.split(separator: "\n") where line.contains("| needs-analysis |") { n += 1 }
+    return n > 0 ? "\(n) awaiting" : "—"
+}
+
 func whispQueueRead() -> String {
     // Read live heartbeat written by the Mini's whisp-worker via Syncthing.
     // Shape mirrors ocr-heartbeat.json — status + queue counts + current job.
@@ -4109,6 +4120,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               open: "/usr/bin/open", args: ["-a", "Music"])
         addIf("🎙 Whisp",   whispQueueRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/comms/queue/whisp-results"])
+        addIf("📝 To analyze", toAnalyzeRead(),
+              open: "/usr/bin/open", args: ["\(HOME)/work/convey-packs/TRANSCRIPT-LEDGER.md"])
         addIf("🧬 Spine",   spineStatusRead(),
               open: "/usr/bin/open", args: ["\(HOME)/work/mediabank/projections/RECONCILE-SUMMARY.md"])
         addIf("📧 Mail flags", mailFlagStatusRead(),
@@ -6143,6 +6156,8 @@ class LiveViewportDelegate: NSObject, NSApplicationDelegate, NSTextViewDelegate,
             "/usr/bin/open", ["-a", "Music"], symbol: "music.note")
         add("Whisp",   whispQueueRead(),
             "/usr/bin/open", ["\(HOME)/work/comms/queue/whisp-results"], symbol: "mic.fill")
+        add("To analyze", toAnalyzeRead(),
+            "/usr/bin/open", ["\(HOME)/work/convey-packs/TRANSCRIPT-LEDGER.md"], symbol: "doc.text.magnifyingglass")
         if let s = spineStatusRead() {
             add("Spine", s,
                 "/usr/bin/open", ["\(HOME)/work/mediabank/projections/RECONCILE-SUMMARY.md"], symbol: "dna")
