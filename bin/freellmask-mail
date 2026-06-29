@@ -299,6 +299,14 @@ ul,ol{margin:5px 0 5px 22px} li{margin:3px 0}
 code{font-family:Menlo,monospace;background:#f4f4f4;padding:1px 4px;border-radius:3px;font-size:10px}
 hr{border:none;border-top:1px solid #ddd;margin:12px 0} a{color:#1a5fb4}
 """
+def pdf_filename(answer, subject=None):
+    """A findable filename from the answer's first heading (or the subject)."""
+    m=re.search(r'^#{1,6}\s*(.+)$', answer or "", re.M)
+    base=(m.group(1) if m else (subject or "")).strip()
+    base=re.sub(r'[*_`#]', '', base)
+    base=re.sub(r'[^A-Za-z0-9]+','-', base).strip('-')[:60]
+    return (base or "freellmask-answer")+".pdf"
+
 def make_pdf_b64(markdown, title="freellmask"):
     """Render the answer to a PROPERLY-FORMATTED PDF (real headings/tables/fonts) via the
     on-Mini html-to-pdf (WKWebView). Returns base64 or None."""
@@ -352,9 +360,10 @@ def poll_once(verbose=True):
         reply={"text": answer, "html": md_to_html(answer)}
         # Printable PDF: if the email asks for one, render the answer and attach it.
         if WANT_PDF.search(question or ""):
-            b64=make_pdf_b64(answer, title=(full.get("subject") or "freellmask").replace("Re: ",""))
+            b64=make_pdf_b64(answer)
             if b64:
-                reply["attachments"]=[{"filename":"freellmask-onepager.pdf","content_type":"application/pdf","content":b64}]
+                reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
+                                       "content_type":"application/pdf","content":b64}]
         # BCC Esa on every outbound — so he sees replies sent to OTHER senders too.
         # Skip when Esa is already the recipient (he's the sender) to avoid a duplicate.
         if BCC and BCC.lower() not in (full.get("from") or "").lower():
