@@ -247,6 +247,92 @@ def cmd_lint(a):
     else:
         print("  (no claims yet)")
 
+# ── the LLM-wiki engine: lens, index/log, query-reads-wiki-first, DOI frontier ──
+DOI_RE=re.compile(r'10\.\d{4,9}/[-._;()/:A-Za-z0-9]+')
+
+def read_lens(base):
+    p=base/"lens.md"
+    return p.read_text().strip() if p.exists() else \
+        "You are a faithful research-wiki synthesist. Cite [[pages]] you use; if the wiki doesn't cover it, say so."
+
+def log_append(base, line):
+    lp=base/"log.md"
+    if not lp.exists(): lp.write_text("# Log\n\n")
+    with lp.open("a") as f: f.write(line.rstrip()+"\n")
+
+def entity_pages(base):
+    d=base/"entities"
+    return sorted(d.glob("*.md")) if d.exists() else []
+
+def page_meta(p):
+    t=p.read_text(errors="ignore")
+    name=re.search(r'^name:\s*(.+)$', t, re.M); kind=re.search(r'^kind:\s*(.+)$', t, re.M)
+    summ=re.search(r'## Summary\s*\n(.+?)(?=\n##|\Z)', t, re.S)
+    claims=len(re.findall(r'^- .+\[source:', t, re.M))
+    return {"slug":p.stem, "name":(name.group(1).strip() if name else p.stem),
+            "kind":(kind.group(1).strip() if kind else "entity"),
+            "summary":(summ.group(1).strip().split("\n")[0] if summ else ""), "claims":claims}
+
+def cmd_index(a):
+    base=graph_base(a.graph); pages=[page_meta(p) for p in entity_pages(base)]
+    by_kind={}
+    for m in pages: by_kind.setdefault(m["kind"],[]).append(m)
+    lines=[f"# Index — {base.name}", f"_{len(pages)} pages · regenerated {time.strftime('%Y-%m-%d')}_\n"]
+    for kind in sorted(by_kind):
+        lines.append(f"## {kind}")
+        for m in sorted(by_kind[kind], key=lambda x:x["name"]):
+            lines.append(f"- [[{m['slug']}]] — {m['summary'][:120]} ({m['claims']} claims)")
+        lines.append("")
+    (base/"index.md").write_text("\n".join(lines)+"\n")
+    log_append(base, f"## [{time.strftime('%Y-%m-%d %H:%M')}] index | {len(pages)} pages")
+    print(f"index → {base}/index.md ({len(pages)} pages, {len(by_kind)} kinds)")
+
+def select_pages(base, question, k=8):
+    """Index-first retrieval: score entity pages by keyword overlap (Karpathy: read the index, drill in)."""
+    qw=set(re.findall(r'[a-z]{4,}', question.lower())); scored=[]
+    for p in entity_pages(base):
+        t=p.read_text(errors="ignore").lower()
+        score=sum(t.count(w) for w in qw)
+        if any(w in p.stem for w in qw): score+=20
+        if score: scored.append((score,p))
+    scored.sort(key=lambda x:x[0], reverse=True)
+    return [p for _,p in scored[:k]]
+
+def cmd_query(a):
+    base=graph_base(a.graph); host=norm_host(a.host); k=key(); lens=read_lens(base)
+    pages=select_pages(base, a.question, a.k)
+    if not pages: print("no relevant wiki pages — ingest sources first, or rephrase."); return
+    corpus="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:3000]}" for p in pages)
+    sysm=(lens+"\n\nAnswer the QUESTION using ONLY the WIKI PAGES provided. Cite each claim with the "
+          "[[page-slug]] it came from. If the pages don't cover something, say so — do not invent. Markdown.")
+    user=f"QUESTION: {a.question}\n\nWIKI PAGES (the compiled knowledge — answer from THESE):\n{corpus}"
+    ans,used,tok=call(host,k,a.model,sysm,user,max_tokens=2000)
+    print(f"\n{ans}\n")
+    print(f"_[from {len(pages)} wiki pages · {used.split('/')[0]} · {tok} tok · $0 · "
+          + ", ".join(f'[[{p.stem}]]' for p in pages)+"]_")
+    qdir=base/"queries"; qdir.mkdir(exist_ok=True); slug=slugify(a.question)[:60]
+    (qdir/f"{slug}.md").write_text(
+        f"# Q: {a.question}\n_filed {time.strftime('%Y-%m-%d %H:%M')} · {used} · {tok} tok · $0_\n"
+        f"_sources: {', '.join('[[%s]]'%p.stem for p in pages)}_\n\n{ans}\n")
+    log_append(base, f"## [{time.strftime('%Y-%m-%d %H:%M')}] query | {a.question[:70]} -> queries/{slug}.md")
+    print(f"filed back → {base.name}/queries/{slug}.md")
+
+def cmd_dois(a):
+    """DOI branch frontier: DOIs in the corpus' raw sources → convey's DOI->DOI->DOI chasing."""
+    base=graph_base(a.graph); found={}
+    for p in entity_pages(base):
+        for doi in DOI_RE.findall(p.read_text(errors="ignore")): found.setdefault(doi.rstrip('.'), p.stem)
+        srcm=re.search(r'source:\s*(\S+)', p.read_text(errors="ignore"))
+        if srcm:
+            sp=Path(srcm.group(1));
+            if not sp.is_absolute(): sp=Path.home()/"work"/"merlib-dump"/srcm.group(1)
+            if sp.exists():
+                for doi in DOI_RE.findall(sp.read_text(errors='ignore')[:20000]): found.setdefault(doi.rstrip('.'), p.stem)
+    print(f"# DOI branch frontier — {len(found)} DOI(s) referenced in {base.name}")
+    for doi,ent in sorted(found.items()):
+        print(f"  {doi}  (from [[{ent}]])  → convey scihub {doi}")
+    if not found: print("  (no DOIs in the corpus sources yet — ingest papers with reference lists to branch)")
+
 def main():
     ap=argparse.ArgumentParser(); sub=ap.add_subparsers(dest="cmd",required=True)
     HOST=os.environ.get("FM_FREE_HOST","http://cloudcitymacmini:3001/v1")
@@ -261,6 +347,11 @@ def main():
     pa=sub.add_parser("accept"); pa.add_argument("suggestion"); pa.add_argument("--graph",default="kb/graph/free-energy"); pa.set_defaults(fn=cmd_accept)
     pl=sub.add_parser("lint"); pl.add_argument("--graph",default="kb/graph/free-energy")
     pl.add_argument("--model",default="nemotron-3-super-120b"); pl.add_argument("--host",default=HOST); pl.set_defaults(fn=cmd_lint)
+    px=sub.add_parser("index"); px.add_argument("--graph",default="kb/graph/free-energy"); px.set_defaults(fn=cmd_index)
+    pq=sub.add_parser("query"); pq.add_argument("question")
+    pq.add_argument("--graph",default="kb/graph/free-energy"); pq.add_argument("--k",type=int,default=8)
+    pq.add_argument("--model",default="nemotron-3-super-120b"); pq.add_argument("--host",default=HOST); pq.set_defaults(fn=cmd_query)
+    pd=sub.add_parser("dois"); pd.add_argument("--graph",default="kb/graph/free-energy"); pd.set_defaults(fn=cmd_dois)
     a=ap.parse_args(); a.fn(a)
 
 if __name__=="__main__": main()
