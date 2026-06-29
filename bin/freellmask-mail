@@ -108,18 +108,36 @@ def extract_attachments(k, mid, attachments, verbose=False):
         blocks.append(f"--- ATTACHMENT: {nm} ---\n{txt}")
     return "\n\n".join(blocks)
 
-def fm_research(question, thread_context, attachments=""):
-    sysm=("You are a research assistant answering an email. Do real research from your knowledge: "
-          "give a structured, substantive answer using markdown (## headings, **bold**, bullets). "
-          "Be concrete and useful. If the email is a follow-up, use the prior conversation for context. "
-          "If ATTACHMENTS are present, read them and base your answer on their content.")
-    user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
-         f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
-         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
-    body={"model":FM_MODEL,"messages":[{"role":"system","content":sysm},{"role":"user","content":user}],
-          "max_tokens":3000}
+def _looks_garbage(text):
+    """True if an LLM reply is UNUSABLE: empty, `<unk>`/replacement-char salad, glued token-salad,
+    too few Latin letters (the multilingual gibberish Olga got 2026-06-30), or one token repeated to
+    death. The anti-junk gate: never EMAIL anything this flags — regenerate instead."""
+    t=(text or "").strip()
+    if len(t)<40: return True
+    if "<unk>" in t or "�" in t: return True
+    letters=sum(1 for c in t if c.isascii() and c.isalpha())
+    if letters/len(t) < 0.55: return True              # English/Finnish are mostly Latin; salad isn't
+    words=t.split()
+    if words:
+        if sum(1 for w in words if len(w)>28)/len(words) > 0.05: return True   # glued token salad
+        from collections import Counter
+        if len(words)>25 and Counter(words).most_common(1)[0][1]/len(words) > 0.12: return True
+    return False
+
+def _has_leak(text):
+    """nemotron (a reasoning model) leaks its chain-of-thought as a preamble ~2/3 of the time
+    ('The user asks:', 'Okay, the user is…'). Not a final answer — regenerate."""
+    head=(text or "").strip().lower()
+    return head.startswith(("the user asks","we need to","okay, the user","the user is asking",
+        "the user wants","let me answer","i need to answer","let's answer","the question is",
+        "okay, so","alright, the user","so the user"))
+
+def _fm_call(messages, max_tokens=3000, temperature=0.3):
+    """One FreeLLMAPI /chat/completions call, with 429 backoff. Returns (text, model_used)."""
+    body={"model":FM_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
     req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
         headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
+    d=None
     for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r); break
@@ -127,6 +145,30 @@ def fm_research(question, thread_context, attachments=""):
             if e.code==429 and attempt<3: time.sleep(5*(attempt+1)); continue
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
+
+def fm_research(question, thread_context, attachments="", tries=6):
+    """Answer an email via FreeLLMAPI, GATED: regenerate on `<unk>`/token-salad or a leaked reasoning
+    preamble (nemotron does both intermittently) and only return a CLEAN answer. If every attempt is
+    unusable, return a polite 'couldn't generate, please retry' — NEVER token salad to the sender."""
+    sysm=("You are a research assistant answering an email. Output ONLY the final answer in markdown "
+          "(## headings, **bold**, bullets) — NO reasoning, NO preamble (never start with 'The user', "
+          "'Okay', or 'We need to'); begin directly with the answer. Be concrete and useful, and ground "
+          "claims in fact (don't invent). If the email is a follow-up, use the prior conversation. "
+          "If ATTACHMENTS are present, read them and base your answer on their content.")
+    user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
+         f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
+         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
+    msgs=[{"role":"system","content":sysm},{"role":"user","content":user}]
+    used=FM_MODEL
+    for _ in range(max(1,tries)):
+        try:
+            ans, used = _fm_call(msgs)
+        except Exception:
+            continue
+        if ans and not _looks_garbage(ans) and not _has_leak(ans):
+            return ans, used
+    return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
+            "response on every attempt. Please reply to this email to try again.", used)
 
 def _md_inline(t):
     t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
