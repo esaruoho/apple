@@ -65,7 +65,32 @@ def main() -> int:
         e["citations"] = F._citations(ans)
         F.add(e)
         print(f"vetted-new {e['id']}")
+
+    _sync_manual()       # certifying makes it real documentation (vault → Experimental.md → git)
     return 0
+
+
+def _sync_manual():
+    """After a 👍, feed the certified vault into the manual and commit it — so certifying an answer
+    updates the actual docs, not just the bot's serving store. Best-effort: never break vetting."""
+    import subprocess
+    paketti = "/Users/esaruoho/work/paketti"
+    gen = f"{paketti}/.spine/vault-to-manual.py"
+    try:
+        subprocess.run([sys.executable, gen, paketti], timeout=60, capture_output=True)
+        # commit + push only if the certified section actually changed
+        diff = subprocess.run(["git", "-C", paketti, "diff", "--quiet", "manual/Experimental.md"])
+        if diff.returncode != 0:
+            subprocess.run(["git", "-C", paketti, "add", "manual/Experimental.md"], timeout=20)
+            subprocess.run(["git", "-C", paketti, "-c", "user.name=esaruoho",
+                            "-c", "user.email=esaruoho@gmail.com", "commit", "-q", "-m",
+                            "docs: sync certified pakettiaskbot answer into the manual [skip ci]"], timeout=20)
+            subprocess.run(["git", "-C", paketti, "pull", "--rebase", "--autostash", "origin", "master"],
+                           timeout=60, capture_output=True)
+            subprocess.run(["git", "-C", paketti, "push", "origin", "master"], timeout=60, capture_output=True)
+            print("→ synced certified answer into manual/Experimental.md + pushed")
+    except Exception as e:
+        print(f"(manual sync skipped: {e})", file=sys.stderr)
 
 
 if __name__ == "__main__":
