@@ -17,7 +17,7 @@ Secrets / config (never in git):
   FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
-import json, os, re, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error
+import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
@@ -237,6 +237,38 @@ def fetch_url_pdfs(body, verbose=False):
         if len(blocks)>=5: break
     return "\n\n".join(blocks)
 
+TEXT_TO_PDF = Path.home()/"work"/"apple"/"bin"/"text-to-pdf"
+WANT_PDF = re.compile(r'\b(printable|pdf|one[\s-]?pager|as a (document|file|pdf)|attach (it|a|the))\b', re.I)
+def md_to_readable(md):
+    """Flatten markdown to clean monospace-friendly text for the PDF (strip emphasis
+    markers that would show literally; headings underlined; bullets as •)."""
+    out=[]
+    for line in (md or "").split("\n"):
+        h=re.match(r'^(#{1,6})\s+(.*)$', line)
+        if h:
+            t=re.sub(r'\*\*?([^*]+)\*\*?', r'\1', h.group(2)).strip()
+            out += ["", t, "-"*min(len(t),60)]; continue
+        line=re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
+        line=re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'\1', line)
+        line=re.sub(r'`([^`]+)`', r'\1', line)
+        line=re.sub(r'^(\s*)[-*+]\s+', r'\1• ', line)
+        out.append(line)
+    return "\n".join(out)
+
+def make_pdf_b64(markdown, title="freellmask"):
+    """Render the answer to a PDF via the on-Mini text-to-pdf tool; return base64 or None."""
+    td=tempfile.mkdtemp()
+    try:
+        src=os.path.join(td,"a.md"); pdf=os.path.join(td,"a.pdf")
+        open(src,"w").write(md_to_readable(markdown))
+        subprocess.run([str(TEXT_TO_PDF), src, pdf, "--title", title[:80]],
+                       capture_output=True, timeout=90, check=True)
+        with open(pdf,"rb") as f: return base64.b64encode(f.read()).decode()
+    except Exception as e:
+        print(f"  pdf generation failed: {e}"); return None
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
 def poll_once(verbose=True):
     k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
@@ -266,13 +298,18 @@ def poll_once(verbose=True):
         except Exception as e:
             print(f"  research failed for {mid}: {e}"); continue
         reply={"text": answer, "html": md_to_html(answer)}
+        # Printable PDF: if the email asks for one, render the answer and attach it.
+        if WANT_PDF.search(question or ""):
+            b64=make_pdf_b64(answer, title=(full.get("subject") or "freellmask").replace("Re: ",""))
+            if b64:
+                reply["attachments"]=[{"filename":"freellmask-onepager.pdf","content_type":"application/pdf","content":b64}]
         # BCC Esa on every outbound — so he sees replies sent to OTHER senders too.
         # Skip when Esa is already the recipient (he's the sender) to avoid a duplicate.
         if BCC and BCC.lower() not in (full.get("from") or "").lower():
             reply["bcc"]=[BCC]
         http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
         seen.add(mid); new+=1
-        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [bcc esa]" if "bcc" in reply else ""))
+        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "") + (" [bcc]" if "bcc" in reply else ""))
     st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 

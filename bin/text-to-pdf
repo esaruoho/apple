@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# text-to-pdf — render text/markdown to a paginated US-Letter PDF (pure Core Text,
+# headless-safe). Self-building: compiles text-to-pdf.swift to a cached binary on
+# first use (or when the source changes), like vision-ocr. Apple-native, no deps.
+#   text-to-pdf <input.txt> <output.pdf> [--title "Title"]
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/text-to-pdf.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/text-to-pdf"
+mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" -framework CoreGraphics -framework CoreText -framework Foundation
+fi
+exec "$BIN" "$@"
