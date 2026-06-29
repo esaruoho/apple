@@ -500,11 +500,22 @@ def _readme_urls():
     return urls
 
 
+def _is_synthesized(ql: str) -> bool:
+    """A revise/redraft prompt (built by the bot) or any over-long input — the deterministic
+    keyword handlers must NOT fire on these (a follow-up saying 'firmware DOWNLOAD' wrongly tripped
+    the URL handler). Real user questions are short and lack these markers."""
+    return ("the user's instruction" in ql or "here is the current answer" in ql
+            or "previous answer was rejected" in ql or "apply their instruction" in ql
+            or "output the full updated answer" in ql or len(ql) > 240)
+
+
 def urls_answer(question: str):
     """Web-presence questions — where Paketti is, its links, where to support — answered
     DETERMINISTICALLY from the README, correctly FRAMED. Paketti lives on GitHub; support links are
     support, not 'where Paketti is'; and there is no paketti.com. No LLM = nothing fabricated."""
     ql = question.lower()
+    if _is_synthesized(ql):
+        return None
     is_web = re.search(r"\b(urls?|links?|websites?|web ?sites?|homepages?|home ?pages?|official|"
                        r"hosted|host|repo|repository|github|download|online|where)\b", ql)
     is_support = re.search(r"\b(support|donate|donation|fund|contribute|sponsor|patreon|ko-?fi|"
@@ -568,6 +579,8 @@ def screenshots_answer(question: str):
     dict {text, files:[abs paths]} for the bot to ATTACH (Discord upload), or None. The images EXIST —
     never tell the user to run a script to make them."""
     ql = question.lower()
+    if _is_synthesized(ql):
+        return None
     is_shot = (re.search(r"\b(screenshots?|screen ?shots?|dialog ?shots?)\b", ql)
                or (re.search(r"\b(images?|pictures?|photos?|png)\b", ql) and "dialog" in ql)
                or (re.search(r"\b(show me|see|look)\b", ql) and re.search(r"\b(dialog|screen)", ql)))
