@@ -287,6 +287,13 @@ fetch_url_pdfs = fetch_url_content   # back-compat alias
 
 TEXT_TO_PDF = Path.home()/"work"/"apple"/"bin"/"text-to-pdf"
 WANT_PDF = re.compile(r'\b(printable|pdf|one[\s-]?pager|as a (document|file|pdf)|attach (it|a|the))\b', re.I)
+_REFORMAT_FILLER = re.compile(r'(?i)\b(printable|pdf|one|pager|onepager|document|file|attach|it|a|an|the|of|this|that|these|please|gimme|give|me|us|can|could|you|i|want|need|version|formatted?|as|to|make|create|generate|send|now|just|and|then|in|on|with|for|your|my|here|s|copy)\b')
+def is_pure_reformat(q):
+    """True only if the email is JUST 'make a printable PDF' (boilerplate), with no new
+    question. Then we render the existing thread answer instead of generating new content."""
+    if not q or not WANT_PDF.search(q): return False
+    leftover=re.sub(r'[^a-z]','', _REFORMAT_FILLER.sub(' ', q).lower())
+    return len(leftover) < 6
 HTML_TO_PDF = Path.home()/"work"/"apple"/"bin"/"html-to-pdf"
 _PDF_CSS = """
 *{box-sizing:border-box} body{font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
@@ -367,7 +374,7 @@ def poll_once(verbose=True):
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
-        reformat = bool(WANT_PDF.search(question or "")) and len((question or "").strip())<140 and not extra
+        reformat = is_pure_reformat(question) and not extra
         prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
         if prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
