@@ -17,7 +17,7 @@ Secrets / config (never in git):
   FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
-import json, os, re, sys, time, urllib.parse, urllib.request, urllib.error
+import json, os, re, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
@@ -29,6 +29,10 @@ STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"com
 POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
 FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
+BCC       = os.environ.get("FREELLMASK_MAIL_BCC", "esaruoho@gmail.com")   # blind-copy every outbound reply
+VISION_OCR= Path.home()/"work"/"apple"/"bin"/"vision-ocr"                  # Apple Vision OCR (PDFs + images, on the Mini)
+MAX_ATT   = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_MB","25"))*1024*1024
+MAX_CHARS = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_CHARS","12000"))   # per-attachment text cap (free-tier context)
 
 def _read_key(env, path):
     k = os.environ.get(env, "")
@@ -57,12 +61,61 @@ def http(url, key, method="GET", body=None):
             if attempt<2: time.sleep(3); continue
             raise
 
-def fm_research(question, thread_context):
+# ── attachments: text/markdown read directly; PDF + images via on-Mini Apple Vision OCR ──
+def _att_bytes(k, mid, att_id):
+    meta=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/attachments/{enc(att_id)}", k)
+    url=meta.get("download_url")
+    if not url: return None
+    with urllib.request.urlopen(url, timeout=90) as r: return r.read()   # signed URL — no auth header
+
+def _extract_one(k, mid, att):
+    name=att.get("filename","attachment"); ct=(att.get("content_type") or "").lower()
+    size=att.get("size") or 0; low=name.lower()
+    if size>MAX_ATT: return name, f"[skipped: {size//1024//1024}MB exceeds {MAX_ATT//1024//1024}MB limit]"
+    aid=att.get("attachment_id")
+    if not aid: return name, "[no attachment_id]"
+    try: raw=_att_bytes(k, mid, aid)
+    except Exception as e: return name, f"[download failed: {e}]"
+    if raw is None: return name, "[no download url]"
+    # text / markdown / json / xml → decode directly (no OCR)
+    if ct.startswith("text/") or low.endswith((".md",".txt",".markdown",".csv")) or ct in ("application/json","application/xml"):
+        return name, raw.decode("utf-8","ignore")[:MAX_CHARS]
+    # pdf / image → Apple Vision OCR on the Mini (synchronous; handles text PDFs AND scans/images)
+    if ct=="application/pdf" or ct.startswith("image/") or low.endswith((".pdf",".png",".jpg",".jpeg",".heic",".tiff",".tif",".gif",".bmp",".webp")):
+        suffix=os.path.splitext(name)[1] or (".pdf" if "pdf" in ct else ".png")
+        tmp=None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf: tf.write(raw); tmp=tf.name
+            cmd=[str(VISION_OCR), tmp] + (["--pages","20"] if suffix.lower()==".pdf" else [])
+            out=subprocess.run(cmd, capture_output=True, text=True, timeout=240)
+            txt=(out.stdout or "").strip()
+            return name, (txt[:MAX_CHARS] if txt else "[no text found by OCR]")
+        except FileNotFoundError:
+            return name, "[vision-ocr not available on this host]"
+        except Exception as e:
+            return name, f"[OCR error: {e}]"
+        finally:
+            if tmp:
+                try: os.unlink(tmp)
+                except Exception: pass
+    return name, f"[unsupported attachment type: {ct or low}]"
+
+def extract_attachments(k, mid, attachments, verbose=False):
+    blocks=[]
+    for att in (attachments or []):
+        nm,txt=_extract_one(k, mid, att)
+        if verbose: print(f"    · attachment {nm}: {len(txt)} chars")
+        blocks.append(f"--- ATTACHMENT: {nm} ---\n{txt}")
+    return "\n\n".join(blocks)
+
+def fm_research(question, thread_context, attachments=""):
     sysm=("You are a research assistant answering an email. Do real research from your knowledge: "
           "give a structured, substantive answer using markdown (## headings, **bold**, bullets). "
-          "Be concrete and useful. If the email is a follow-up, use the prior conversation for context.")
+          "Be concrete and useful. If the email is a follow-up, use the prior conversation for context. "
+          "If ATTACHMENTS are present, read them and base your answer on their content.")
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
-         f"LATEST EMAIL TO ANSWER:\n{question}"
+         f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
+         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
     body={"model":FM_MODEL,"messages":[{"role":"system","content":sysm},{"role":"user","content":user}],
           "max_tokens":3000}
     req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
@@ -134,17 +187,24 @@ def poll_once(verbose=True):
             seen.add(mid); continue
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         question=(full.get("extracted_text") or full.get("text") or full.get("preview") or "").strip()
-        if not question: seen.add(mid); continue
+        atts=full.get("attachments") or []
+        att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
+        if not question and not att_text: seen.add(mid); continue   # nothing to answer
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
-        if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}")
+        if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
+                          + (f" [+{len(atts)} attachment(s)]" if atts else ""))
         try:
-            answer, used = fm_research(question, ctx)
+            answer, used = fm_research(question, ctx, att_text)
         except Exception as e:
             print(f"  research failed for {mid}: {e}"); continue
-        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST",
-             {"text": answer, "html": md_to_html(answer)})
+        reply={"text": answer, "html": md_to_html(answer)}
+        # BCC Esa on every outbound — so he sees replies sent to OTHER senders too.
+        # Skip when Esa is already the recipient (he's the sender) to avoid a duplicate.
+        if BCC and BCC.lower() not in (full.get("from") or "").lower():
+            reply["bcc"]=[BCC]
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
         seen.add(mid); new+=1
-        if verbose: print(f"  ✓ replied (model {used}, $0)")
+        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [bcc esa]" if "bcc" in reply else ""))
     st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
