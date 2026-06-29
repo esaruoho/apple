@@ -30,6 +30,7 @@ POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
 FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
 BCC       = os.environ.get("FREELLMASK_MAIL_BCC", "esaruoho@gmail.com")   # blind-copy every outbound reply
+FORWARD_TO= os.environ.get("FREELLMASK_MAIL_FORWARD", "esaruoho@gmail.com")  # forward inbound + answer + attachments here
 VISION_OCR= Path.home()/"work"/"apple"/"bin"/"vision-ocr"                  # Apple Vision OCR (PDFs + images, on the Mini)
 MAX_ATT   = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_MB","25"))*1024*1024
 MAX_CHARS = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_CHARS","12000"))   # per-attachment text cap (free-tier context)
@@ -392,6 +393,45 @@ def make_pdf_b64(markdown, title="freellmask"):
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
+def forward_to_esa(k, full, mid, question, answer, atts):
+    """Forward the FULL exchange to Esa WITH the sender's inbound attachments re-attached — so when a
+    friend (e.g. Zachary) emails cloudcity-llm@ some 'hot stuff', the ATTACHMENTS reach esaruoho@,
+    not just the answer (which BCC already carries). Re-downloads each inbound attachment's bytes via
+    the AgentMail signed URL, base64s them, and SENDS a new 'Fwd:' email. Best-effort; never blocks
+    the reply. Returns True if forwarded."""
+    if not FORWARD_TO:
+        return False
+    sender=(full.get("from") or "").strip()
+    subj=full.get("subject") or "(no subject)"
+    out_atts=[]
+    for att in (atts or []):
+        aid=att.get("attachment_id"); name=att.get("filename","attachment"); sz=att.get("size") or 0
+        if not aid or sz>MAX_ATT:
+            continue
+        try: raw=_att_bytes(k, mid, aid)
+        except Exception: raw=None
+        if not raw:
+            continue
+        out_atts.append({"filename":name,
+                         "content_type":att.get("content_type") or "application/octet-stream",
+                         "content":base64.b64encode(raw).decode()})
+    text=(f"Forwarded from {sender}\nSubject: {subj}\n\n"
+          f"--- Their message ---\n{question or '(no body)'}\n\n"
+          f"--- FreeLLMAPI answer ---\n{answer}\n"
+          + (f"\n({len(out_atts)} attachment(s) re-attached.)\n" if out_atts else ""))
+    html=(f"<p><b>Forwarded from {sender}</b><br>Subject: {subj}</p>"
+          f"<h3>Their message</h3><pre style='white-space:pre-wrap'>{(question or '(no body)')}</pre>"
+          f"<h3>FreeLLMAPI answer</h3>{md_to_inner_html(answer)}"
+          + (f"<p style='color:#888'>{len(out_atts)} attachment(s) re-attached.</p>" if out_atts else ""))
+    body={"to":[FORWARD_TO],"subject":f"Fwd: {subj}","text":text,"html":html}
+    if out_atts:
+        body["attachments"]=out_atts
+    try:
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST", body)
+        return True
+    except Exception:
+        return False
+
 def poll_once(verbose=True):
     k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
@@ -407,6 +447,7 @@ def poll_once(verbose=True):
         # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
         raw_body=(full.get("extracted_text") or full.get("text") or html_to_text(full.get("html")) or full.get("preview") or "")
         question=strip_signature(raw_body)                      # drop name/phone/Patreon-URL signature
+        answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
         atts=full.get("attachments") or []
         att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
         try: url_text=fetch_url_pdfs(raw_body, verbose)          # download + OCR any PDF linked by URL
@@ -440,13 +481,20 @@ def poll_once(verbose=True):
                 if b64:
                     reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
-        # BCC Esa on every outbound — so he sees replies sent to OTHER senders too.
-        # Skip when Esa is already the recipient (he's the sender) to avoid a duplicate.
-        if BCC and BCC.lower() not in (full.get("from") or "").lower():
+        # Esa visibility. Two paths:
+        #  • inbound attachments from a non-Esa sender → FORWARD the exchange + the attached files to
+        #    Esa (the BCC alone wouldn't carry the inbound 'hot stuff'); skip the BCC to avoid a dup.
+        #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
+        from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
+        forwarded=False
+        if atts and not from_esa:
+            forwarded=forward_to_esa(k, full, mid, question, answer, atts)
+        if BCC and not from_esa and not forwarded:
             reply["bcc"]=[BCC]
         http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
         seen.add(mid); new+=1
-        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "") + (" [bcc]" if "bcc" in reply else ""))
+        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "")
+                          + (" [fwd+att→esa]" if forwarded else (" [bcc]" if "bcc" in reply else "")))
     st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
