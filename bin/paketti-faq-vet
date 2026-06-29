@@ -76,19 +76,20 @@ def _sync_manual():
     import subprocess
     paketti = "/Users/esaruoho/work/paketti"
     gen = f"{paketti}/.spine/vault-to-manual.py"
+    docs = ["manual/Experimental.md", "README.md"]
     try:
         subprocess.run([sys.executable, gen, paketti], timeout=60, capture_output=True)
-        # commit + push only if the certified section actually changed
-        diff = subprocess.run(["git", "-C", paketti, "diff", "--quiet", "manual/Experimental.md"])
+        # commit + push only if a certified section actually changed
+        diff = subprocess.run(["git", "-C", paketti, "diff", "--quiet", "--"] + docs)
         if diff.returncode != 0:
-            subprocess.run(["git", "-C", paketti, "add", "manual/Experimental.md"], timeout=20)
+            subprocess.run(["git", "-C", paketti, "add"] + docs, timeout=20)
             subprocess.run(["git", "-C", paketti, "-c", "user.name=esaruoho",
                             "-c", "user.email=esaruoho@gmail.com", "commit", "-q", "-m",
-                            "docs: sync certified pakettiaskbot answer into the manual [skip ci]"], timeout=20)
+                            "docs: sync certified pakettiaskbot answer into README + manual [skip ci]"], timeout=20)
             subprocess.run(["git", "-C", paketti, "pull", "--rebase", "--autostash", "origin", "master"],
                            timeout=60, capture_output=True)
             subprocess.run(["git", "-C", paketti, "push", "origin", "master"], timeout=60, capture_output=True)
-            print("→ synced certified answer into manual/Experimental.md + pushed")
+            print("→ synced certified answer into README + manual/Experimental.md + pushed")
     except Exception as e:
         print(f"(manual sync skipped: {e})", file=sys.stderr)
 
