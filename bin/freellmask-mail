@@ -393,17 +393,11 @@ def make_pdf_b64(markdown, title="freellmask"):
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
-def forward_to_esa(k, full, mid, question, answer, atts):
-    """Forward the FULL exchange to Esa WITH the sender's inbound attachments re-attached — so when a
-    friend (e.g. Zachary) emails cloudcity-llm@ some 'hot stuff', the ATTACHMENTS reach esaruoho@,
-    not just the answer (which BCC already carries). Re-downloads each inbound attachment's bytes via
-    the AgentMail signed URL, base64s them, and SENDS a new 'Fwd:' email. Best-effort; never blocks
-    the reply. Returns True if forwarded."""
-    if not FORWARD_TO:
-        return False
-    sender=(full.get("from") or "").strip()
-    subj=full.get("subject") or "(no subject)"
-    out_atts=[]
+def inbound_atts_b64(k, mid, atts):
+    """Re-download each inbound attachment via its AgentMail signed URL and return them as
+    AgentMail send-attachments [{filename, content_type, content(base64)}] — so the original files
+    can ride along on a reply or a forward. Skips files over MAX_ATT. Best-effort per file."""
+    out=[]
     for att in (atts or []):
         aid=att.get("attachment_id"); name=att.get("filename","attachment"); sz=att.get("size") or 0
         if not aid or sz>MAX_ATT:
@@ -412,9 +406,21 @@ def forward_to_esa(k, full, mid, question, answer, atts):
         except Exception: raw=None
         if not raw:
             continue
-        out_atts.append({"filename":name,
-                         "content_type":att.get("content_type") or "application/octet-stream",
-                         "content":base64.b64encode(raw).decode()})
+        out.append({"filename":name,
+                    "content_type":att.get("content_type") or "application/octet-stream",
+                    "content":base64.b64encode(raw).decode()})
+    return out
+
+def forward_to_esa(k, full, mid, question, answer, atts):
+    """Forward the FULL exchange to Esa WITH the sender's inbound attachments re-attached — so when a
+    friend (e.g. Zachary) emails cloudcity-llm@ some 'hot stuff', the ATTACHMENTS reach esaruoho@,
+    not just the answer (which BCC already carries). Best-effort; never blocks the reply. Returns
+    True if forwarded."""
+    if not FORWARD_TO:
+        return False
+    sender=(full.get("from") or "").strip()
+    subj=full.get("subject") or "(no subject)"
+    out_atts=inbound_atts_b64(k, mid, atts)
     text=(f"Forwarded from {sender}\nSubject: {subj}\n\n"
           f"--- Their message ---\n{question or '(no body)'}\n\n"
           f"--- FreeLLMAPI answer ---\n{answer}\n"
@@ -481,9 +487,16 @@ def poll_once(verbose=True):
                 if b64:
                     reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
+        # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
+        # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
+        # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
+        if atts and not reformat:
+            reattach=inbound_atts_b64(k, mid, atts)
+            if reattach:
+                reply.setdefault("attachments", []).extend(reattach)
         # Esa visibility. Two paths:
-        #  • inbound attachments from a non-Esa sender → FORWARD the exchange + the attached files to
-        #    Esa (the BCC alone wouldn't carry the inbound 'hot stuff'); skip the BCC to avoid a dup.
+        #  • inbound attachments from a non-Esa sender → also FORWARD the exchange + files to Esa, so
+        #    he gets a copy of a friend's 'hot stuff' (the BCC alone wouldn't carry it); skip the BCC.
         #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
         from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
         forwarded=False
