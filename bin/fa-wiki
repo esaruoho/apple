@@ -298,24 +298,147 @@ def select_pages(base, question, k=8):
     scored.sort(key=lambda x:x[0], reverse=True)
     return [p for _,p in scored[:k]]
 
-def cmd_query(a):
-    base=graph_base(a.graph); host=norm_host(a.host); k=key(); lens=read_lens(base)
-    pages=select_pages(base, a.question, a.k)
-    if not pages: print("no relevant wiki pages — ingest sources first, or rephrase."); return
+def _wiki_junk(text):
+    """The anti-junk gate (same doctrine as freellmask-mail): never FILE a `<unk>` / token-salad /
+    script-spam string into the wiki — a self-growing loop that compounds garbage poisons itself.
+    True = unusable."""
+    t=(text or "").strip()
+    if len(t)<15: return True
+    if "<unk>" in t or "�" in t: return True
+    letters=sum(1 for c in t if c.isascii() and c.isalpha())
+    if letters/len(t)<0.5: return True
+    words=t.split()
+    if words and sum(1 for w in words if len(w)>30)/len(words)>0.1: return True
+    return False
+
+def _answer_and_file(base, host, k, model, lens, question, kpages=8, quiet=False):
+    """The query CORE (reused by `query` and the `grow` loop): index-first retrieval → answer THROUGH
+    THE LENS from the wiki pages → GATE the answer (regenerate on junk) → file back to queries/ + log.
+    Returns the slug, or None if no pages matched / every attempt was junk (the loop never files garbage)."""
+    pages=select_pages(base, question, kpages)
+    if not pages:
+        if not quiet: print("no relevant wiki pages — ingest sources first, or rephrase.")
+        return None
     corpus="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:3000]}" for p in pages)
     sysm=(lens+"\n\nAnswer the QUESTION using ONLY the WIKI PAGES provided. Cite each claim with the "
-          "[[page-slug]] it came from. If the pages don't cover something, say so — do not invent. Markdown.")
-    user=f"QUESTION: {a.question}\n\nWIKI PAGES (the compiled knowledge — answer from THESE):\n{corpus}"
-    ans,used,tok=call(host,k,a.model,sysm,user,max_tokens=2000)
-    print(f"\n{ans}\n")
-    print(f"_[from {len(pages)} wiki pages · {used.split('/')[0]} · {tok} tok · $0 · "
-          + ", ".join(f'[[{p.stem}]]' for p in pages)+"]_")
-    qdir=base/"queries"; qdir.mkdir(exist_ok=True); slug=slugify(a.question)[:60]
+          "[[page-slug]] it came from. If the pages don't cover something, say so — do not invent. "
+          "Output ONLY the answer in markdown — no reasoning, no preamble (never start with 'The user' "
+          "or 'Okay').")
+    user=f"QUESTION: {question}\n\nWIKI PAGES (the compiled knowledge — answer from THESE):\n{corpus}"
+    ans=used=""; tok=0
+    for _ in range(4):                                  # regenerate on junk (nemotron melts sometimes)
+        ans,used,tok=call(host,k,model,sysm,user,max_tokens=2000)
+        if not _wiki_junk(ans): break
+    if _wiki_junk(ans):
+        if not quiet: print("(answer was unusable on every attempt — not filed)")
+        return None
+    if not quiet:
+        print(f"\n{ans}\n")
+        print(f"_[from {len(pages)} wiki pages · {used.split('/')[0]} · {tok} tok · $0 · "
+              + ", ".join(f'[[{p.stem}]]' for p in pages)+"]_")
+    qdir=base/"queries"; qdir.mkdir(exist_ok=True); slug=slugify(question)[:60]
     (qdir/f"{slug}.md").write_text(
-        f"# Q: {a.question}\n_filed {time.strftime('%Y-%m-%d %H:%M')} · {used} · {tok} tok · $0_\n"
+        f"# Q: {question}\n_filed {time.strftime('%Y-%m-%d %H:%M')} · {used} · {tok} tok · $0_\n"
         f"_sources: {', '.join('[[%s]]'%p.stem for p in pages)}_\n\n{ans}\n")
-    log_append(base, f"## [{time.strftime('%Y-%m-%d %H:%M')}] query | {a.question[:70]} -> queries/{slug}.md")
-    print(f"filed back → {base.name}/queries/{slug}.md")
+    log_append(base, f"## [{time.strftime('%Y-%m-%d %H:%M')}] query | {question[:70]} -> queries/{slug}.md")
+    return slug
+
+def cmd_query(a):
+    base=graph_base(a.graph); host=norm_host(a.host); k=key()
+    slug=_answer_and_file(base, host, k, a.model, read_lens(base), a.question, a.k)
+    if slug: print(f"filed back → {base.name}/queries/{slug}.md")
+
+_Q_LEAK=("we need","we can ask","could ask","not sure","for example","similarly","maybe","unclear",
+         "i think","okay","let me","the user","provide ","etc.","that is answerable","likely","probably",
+         "perhaps","we should","first,","so the","let's")
+# META questions interrogate the wiki's bookkeeping, not its subject — useless to file. Reject them.
+_Q_META=("how many claims","according to the index","page according to","number of claims",
+         "listed in the index","in the index?","entity page")
+def _clean_question(ln):
+    """Pull ONE clean question from a model line, rejecting nemotron's reasoning leaks. A valid question
+    ends in '?', is 15-180 chars, and carries none of the chain-of-thought tells ('We need to', 'For
+    example', 'maybe', …). If a line buries a real question inside reasoning, extract the LAST '?'-ended
+    sentence and re-check it. Returns the question or None."""
+    q=re.sub(r'^\s*(?:[-*•]|\d+[.)])\s*', '', ln).strip().strip('"').strip()
+    low=q.lower()
+    if any(m in low for m in _Q_LEAK):
+        sents=re.findall(r'[A-Z][^?]{12,180}\?', q)       # salvage a buried, clean question
+        cand=next((s.strip() for s in reversed(sents)
+                   if not any(m in s.lower() for m in _Q_LEAK)), None)
+        if not cand: return None
+        q=cand; low=q.lower()
+    if not q.endswith("?") or not (15<=len(q)<=180): return None
+    if any(m in q.lower() for m in _Q_META): return None      # drop wiki-bookkeeping meta-questions
+    return q
+
+def _lint_findings(base):
+    """The lint signals the grow-loop turns into questions: orphan entities (no edges) and
+    duplicate-spelling candidates. Reuses cmd_lint's graph logic, minus the slow contradiction scan."""
+    jf=base/"dream_graph.json"
+    if not jf.exists(): return {"orphans":[], "dupes":[], "entities":[]}
+    G=json.loads(jf.read_text()); nodes=[n["id"] for n in G.get("nodes",[])]
+    ent=[n for n in nodes if not n.startswith("src:")]; deg={}
+    for e in G.get("edges",[]): deg[e["from"]]=deg.get(e["from"],0)+1; deg[e["to"]]=deg.get(e["to"],0)+1
+    orphans=[n for n in ent if deg.get(n,0)==0]
+    def toks(s): return set(re.sub(r"s\b","",s.lower()).replace("-"," ").split())
+    dupes=[]
+    for i in range(len(ent)):
+        for j in range(i+1,len(ent)):
+            ta,tb=toks(ent[i]),toks(ent[j])
+            if ta and tb and ent[i]!=ent[j] and len(ta&tb)/max(len(ta),len(tb))>=0.6:
+                dupes.append((ent[i],ent[j]))
+    return {"orphans":orphans, "dupes":dupes, "entities":ent}
+
+def cmd_grow(a):
+    """THE SELF-GROWING LOOP (Karpathy 'lint → ask → file back'), one cycle, ZERO human typing:
+    lint the graph → propose N answerable questions THROUGH THE LENS (link orphans, deepen thin
+    pages, surface missing connections, resolve contradictions) → answer each FROM the wiki (files
+    back to queries/, gated against junk, deduped against already-asked) → re-index → log. Run on a
+    cadence (a Cloudcity-Boot pane) and the wiki compounds itself between sessions, at $0, in one voice."""
+    base=graph_base(a.graph); host=norm_host(a.host); k=key(); lens=read_lens(base)
+    find=_lint_findings(base)
+    index_md=(base/"index.md").read_text() if (base/"index.md").exists() else ""
+    existing={p.stem for p in (base/"queries").glob("*.md")} if (base/"queries").exists() else set()
+    lint_summary=(f"Orphans (entities with NO links — connect them): {', '.join(find['orphans']) or 'none'}\n"
+                  f"Possible duplicate entities (reconcile): "
+                  f"{', '.join('%s~%s'%(x,y) for x,y in find['dupes']) or 'none'}")
+    sysm=(lens+"\n\nPropose the NEXT questions to GROW this wiki. STRICT FORMAT: output EXACTLY one "
+          "question per line; each line is a SINGLE specific question that ENDS WITH '?'; output NOTHING "
+          "else — no numbering, no reasoning, no 'We need to', no 'For example', no 'Similarly', no "
+          "commentary, no blank analysis. Example of a GOOD line: 'What primary-source measurement "
+          "supports the Repulsine's claimed lift?'. Each question must be answerable FROM the existing "
+          "corpus: link an orphan, deepen a thin page, connect two existing entities, or resolve a "
+          "contradiction. Begin directly with the first question.")
+    user=f"INDEX:\n{index_md[:4000]}\n\nLINT:\n{lint_summary}\n\nGive {a.n+5} questions, one per line."
+    qs=[]; seen_q=set()
+    for _ in range(5):                                    # nemotron leaks reasoning — retry for clean lines
+        raw,_used,_tok=call(host,k,a.model,sysm,user,max_tokens=700)
+        for ln in raw.splitlines():
+            q=_clean_question(ln)
+            if not q or _wiki_junk(q):
+                continue
+            sl=slugify(q)[:60]
+            if sl in existing or sl in seen_q:            # already answered / already proposed this cycle
+                continue
+            seen_q.add(sl); qs.append(q)
+            if len(qs)>=a.n: break
+        if len(qs)>=a.n: break
+    print(f"# fa-wiki grow — {base.name}  ·  {len(qs)} new question(s) "
+          f"(lint: {len(find['orphans'])} orphans, {len(find['dupes'])} dup-candidates)\n")
+    for q in qs: print(f"  ? {q}")
+    if not qs:
+        print("  (nothing new to ask — the loop is caught up; ingest more sources to open new questions)")
+        return
+    if getattr(a, "dry", False):
+        print("\n(--dry — proposed only, nothing filed)"); return
+    filed=[]
+    for q in qs:
+        slug=_answer_and_file(base, host, k, a.model, lens, q, a.k, quiet=True)
+        if slug: filed.append(slug); print(f"  ✓ filed → queries/{slug}.md")
+        else: print(f"  ✗ skipped (no pages / junk): {q[:60]}")
+    cmd_index(a)                                          # regenerate index (a has .graph)
+    log_append(base, f"## [{time.strftime('%Y-%m-%d %H:%M')}] grow | proposed {len(qs)}, filed {len(filed)}")
+    print(f"\n✅ grow cycle: {len(filed)} new answer(s) filed back — the wiki compounded itself.")
 
 def cmd_dois(a):
     """DOI branch frontier: DOIs in the corpus' raw sources → convey's DOI->DOI->DOI chasing."""
@@ -352,6 +475,10 @@ def main():
     pq.add_argument("--graph",default="kb/graph/free-energy"); pq.add_argument("--k",type=int,default=8)
     pq.add_argument("--model",default="nemotron-3-super-120b"); pq.add_argument("--host",default=HOST); pq.set_defaults(fn=cmd_query)
     pd=sub.add_parser("dois"); pd.add_argument("--graph",default="kb/graph/free-energy"); pd.set_defaults(fn=cmd_dois)
+    pg=sub.add_parser("grow")          # the self-growing loop: lint → ask → answer-from-wiki → file back
+    pg.add_argument("--graph",default="kb/graph/free-energy"); pg.add_argument("--n",type=int,default=3)
+    pg.add_argument("--k",type=int,default=8); pg.add_argument("--dry",action="store_true")
+    pg.add_argument("--model",default="nemotron-3-super-120b"); pg.add_argument("--host",default=HOST); pg.set_defaults(fn=cmd_grow)
     a=ap.parse_args(); a.fn(a)
 
 if __name__=="__main__": main()
