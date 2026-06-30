@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# apple-energy — read macOS energy/power data from the command line.
+#
+# The Activity Monitor "Energy" tab is just a front-end over Apple-shipped CLIs
+# (powermetrics, top, system_profiler, pmset). This wraps them into one tool.
+# No Homebrew, no deps — powermetrics + top + system_profiler + python3 stdlib.
+#
+# macOS keeps NO queryable historical per-app energy store (Activity Monitor's
+# "Avg Energy Impact" is a rolling in-memory window that isn't exposed). So
+# "top apps over time" must be RECORDED by sampling powermetrics + aggregated —
+# which is exactly what `watch` does.
+#
+# Usage:
+#   apple-energy now [N]                  no-sudo snapshot: top N apps by energy impact
+#   apple-energy watch [mins] [secs]      sample powermetrics over <mins>, rank apps (sudo)
+#   apple-energy power [N]                system CPU/GPU/package watts (sudo)
+#   apple-energy adapter                  power adapter wattage + battery state (no sudo)
+#   apple-energy help                     this help
+#
+# Energy Impact is a relative unit — the SAME metric Activity Monitor shows,
+# not watts. `power` reports actual watts (mW) for the whole package.
+#
+# FEATURE-CARD >> features/apple-energy.feature
+
+set -euo pipefail
+
+PROG=$(basename "$0")
+
+die() { echo "$PROG: $*" >&2; exit 1; }
+
+usage() {
+  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+# ---- sudo helper ---------------------------------------------------------
+# powermetrics requires root. Re-run under sudo if we aren't already.
+need_sudo() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "→ powermetrics needs root; you'll be prompted for sudo." >&2
+    SUDO=(sudo)
+  else
+    SUDO=()
+  fi
+}
+
+# ---- now: no-sudo snapshot via top's power column ------------------------
+# top's POWER column == per-process energy impact. First listing reads 0.0
+# (needs a delta), so take TWO listings and print only the second.
+cmd_now() {
+  local n="${1:-15}"
+  echo "Top $n processes by energy impact (snapshot, no sudo)"
+  echo "Energy Impact = relative units, same metric as Activity Monitor."
+  echo
+  top -l 2 -s 1 -n "$n" -o power -stats pid,command,power 2>/dev/null \
+    | awk '
+        /^PID[[:space:]]+COMMAND/ { hdr++; if (hdr==2) { capture=1; print } next }
+        capture && NF>=3 { print }
+      '
+}
+
+# ---- watch: sample powermetrics over a window, aggregate per process -----
+cmd_watch() {
+  local mins="${1:-2}" secs="${2:-5}"
+  [[ "$mins" =~ ^[0-9]+$ && "$secs" =~ ^[0-9]+$ ]] || die "mins/secs must be integers"
+  (( mins > 0 && secs > 0 )) || die "mins/secs must be > 0"
+
+  local interval_ms=$(( secs * 1000 ))
+  local count=$(( mins * 60 / secs ))
+  (( count > 0 )) || count=1
+
+  need_sudo
+  echo "Sampling energy impact every ${secs}s for ${mins}min ($count samples)…" >&2
+  echo "Ranked top consumers print when the window completes. Ctrl-C to stop early." >&2
+  echo >&2
+
+  local raw
+  raw=$(mktemp -t apple-energy) || die "mktemp failed"
+  trap 'rm -f "$raw"' RETURN
+
+  "${SUDO[@]}" powermetrics --samplers tasks --show-process-energy \
+      -f plist -i "$interval_ms" -n "$count" 2>/dev/null > "$raw"
+
+  APPLE_ENERGY_RAW="$raw" python3 <<'PY'
+import os, plistlib
+raw = open(os.environ["APPLE_ENERGY_RAW"], "rb").read()
+docs = [d for d in raw.split(b"\x00") if d.strip()]
+agg, last_pid, samples = {}, {}, 0
+for d in docs:
+    try:
+        pl = plistlib.loads(d)
+    except Exception:
+        continue
+    tasks = pl.get("tasks") or []
+    if not tasks:
+        continue
+    samples += 1
+    for t in tasks:
+        name = t.get("name", "?")
+        ei = t.get("energy_impact")
+        if ei is None:
+            ei = t.get("energy_impact_per_s", 0.0)
+        agg[name] = agg.get(name, 0.0) + float(ei or 0.0)
+        last_pid[name] = t.get("pid", "")
+if samples == 0:
+    print("No energy data captured (no samples parsed).")
+    raise SystemExit(0)
+rows = sorted(agg.items(), key=lambda kv: kv[1], reverse=True)[:20]
+total = sum(agg.values()) or 1.0
+print("Energy impact over %d sample(s) — ranked (relative units, = Activity Monitor metric)\n" % samples)
+print("%-28s%8s%12s%11s%7s" % ("PROCESS", "PID", "TOTAL", "AVG/smp", "%"))
+print("-" * 66)
+for name, tot in rows:
+    print("%-28s%8s%12.1f%11.2f%6.1f%%" % (name[:27], str(last_pid.get(name, "")), tot, tot/samples, 100*tot/total))
+PY
+}
+
+# ---- power: system watts (CPU/GPU/package) -------------------------------
+cmd_power() {
+  local n="${1:-5}"
+  need_sudo
+  echo "System power draw, ${n} samples @1s (CPU / GPU / package, in mW)" >&2
+  echo >&2
+  "${SUDO[@]}" powermetrics --samplers cpu_power,gpu_power -i 1000 -n "$n" 2>/dev/null \
+    | grep -Ei 'power|frequency' | grep -Ei 'mW|MHz|Watts' || true
+}
+
+# ---- adapter: power source / adapter / battery (no sudo) -----------------
+cmd_adapter() {
+  echo "Power adapter + battery:"
+  system_profiler SPPowerDataType 2>/dev/null \
+    | grep -Ei 'AC Charger|Connected:|Wattage|Charging:|State of Charge|Cycle Count|Condition|Fully Charged|Charge Remaining|Full Charge Capacity' \
+    | sed 's/^[[:space:]]*/  /'
+  echo
+  echo "Current source (pmset):"
+  pmset -g batt | sed 's/^/  /'
+}
+
+# ---- dispatch ------------------------------------------------------------
+case "${1:-help}" in
+  now)      shift; cmd_now "$@" ;;
+  watch)    shift; cmd_watch "$@" ;;
+  power)    shift; cmd_power "$@" ;;
+  adapter)  shift; cmd_adapter "$@" ;;
+  help|-h|--help) usage ;;
+  *) die "unknown command '${1}'. Try '$PROG help'." ;;
+esac
