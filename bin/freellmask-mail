@@ -393,6 +393,45 @@ def make_pdf_b64(markdown, title="freellmask"):
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
+# ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
+WIKI_BASE = Path.home()/"work"/"convey"/"kb"/"graph"/os.environ.get("FREELLMASK_WIKI","free-energy")
+def wiki_answer(question):
+    """If the question is ABOUT the wiki's corpus, answer from the COMPILED, cited pages
+    (through the corpus Lens) instead of cold research. Returns (answer, model) or None
+    so the caller falls back to general research for off-corpus questions."""
+    ents=WIKI_BASE/"entities"
+    if not question or not ents.exists(): return None
+    qw=set(re.findall(r'[a-z]{4,}', question.lower()))
+    if not qw: return None
+    scored=[]
+    for p in ents.glob("*.md"):
+        t=p.read_text(errors="ignore").lower()
+        s=sum(t.count(w) for w in qw) + (20 if any(w in p.stem for w in qw) else 0)
+        if s: scored.append((s,p))
+    scored.sort(key=lambda x:x[0], reverse=True)
+    if not scored or scored[0][0] < 6: return None        # relevance gate: not a wiki topic
+    pages=[p for _,p in scored[:8]]
+    lf=WIKI_BASE/"lens.md"
+    lens=lf.read_text().strip() if lf.exists() else "Answer from the wiki pages; cite [[pages]]; if not covered, say so."
+    corpus="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:3000]}" for p in pages)
+    sysm=(lens+"\n\nAnswer the QUESTION using ONLY the WIKI PAGES below. Cite each claim with its "
+          "[[page-slug]]. If the pages don't cover something, say so — do not invent. Markdown.")
+    body={"model":FM_MODEL,"messages":[{"role":"system","content":sysm},
+          {"role":"user","content":f"QUESTION: {question}\n\nWIKI PAGES:\n{corpus}"}],"max_tokens":2500}
+    req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
+        headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r); break
+        except urllib.error.HTTPError as e:
+            if e.code==429 and attempt<3: time.sleep(5*(attempt+1)); continue
+            return None
+        except Exception: return None
+    ans=d["choices"][0]["message"]["content"].strip()
+    slugs=", ".join(f"[[{p.stem}]]" for p in pages)
+    return (ans+f"\n\n_— from the {WIKI_BASE.name} wiki ({len(pages)} compiled pages: {slugs}) · {d.get('model','?')} · $0_",
+            "wiki/"+str(d.get("model","?")))
+
 def inbound_atts_b64(k, mid, atts):
     """Re-download each inbound attachment via its AgentMail signed URL and return them as
     AgentMail send-attachments [{filename, content_type, content(base64)}] — so the original files
@@ -475,12 +514,22 @@ def poll_once(verbose=True):
             else:
                 reply["text"]="Sorry — couldn't render the PDF this time. Please retry."
         else:
-            if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
-                              + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else ""))
-            try:
-                answer, used = fm_research(question, ctx, extra)
-            except Exception as e:
-                print(f"  research failed for {mid}: {e}"); continue
+            # WIKI FIRST: if this is an in-corpus question (and no attachments to fold in),
+            # answer from the compiled, cited wiki pages — not cold research.
+            wa=None
+            if question and not extra:
+                try: wa=wiki_answer(question)
+                except Exception as e: print(f"  wiki lookup error: {e}")
+            if wa:
+                answer, used = wa
+                if verbose: print(f"  → answered from the WIKI (compiled knowledge)")
+            else:
+                if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
+                                  + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else ""))
+                try:
+                    answer, used = fm_research(question, ctx, extra)
+                except Exception as e:
+                    print(f"  research failed for {mid}: {e}"); continue
             reply={"text": answer, "html": md_to_html(answer)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
                 b64=make_pdf_b64(answer)
