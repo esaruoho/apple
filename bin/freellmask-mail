@@ -89,8 +89,13 @@ def _extract_one(k, mid, att):
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf: tf.write(raw); tmp=tf.name
             cmd=[str(VISION_OCR), tmp] + (["--pages","20"] if suffix.lower()==".pdf" else [])
             out=subprocess.run(cmd, capture_output=True, text=True, timeout=240)
-            txt=(out.stdout or "").strip()
-            return name, (txt[:MAX_CHARS] if txt else "[no text found by OCR]")
+            txt=(out.stdout or "")
+            # Drop Vision/TextRecognition framework log noise that can leak into stdout — it must
+            # never reach the LLM as if it were document content (the E5-model error bug).
+            txt="\n".join(l for l in txt.splitlines()
+                          if not re.search(r'(?i)\.mlmodelc|\.bundle|TextRecognition|could not (locate|find)'
+                                           r'|MLModel|E5 model|jit\.bundle|universal\.bundle|VK[A-Z]|CRImage', l)).strip()
+            return name, (txt[:MAX_CHARS] if txt else "[no readable text found in the image/PDF]")
         except FileNotFoundError:
             return name, "[vision-ocr not available on this host]"
         except Exception as e:
@@ -147,17 +152,22 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3):
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
-def fm_research(question, thread_context, attachments="", tries=6):
-    """Answer an email via FreeLLMAPI, GATED: regenerate on `<unk>`/token-salad or a leaked reasoning
-    preamble (nemotron does both intermittently) and only return a CLEAN answer. If every attempt is
-    unusable, return a polite 'couldn't generate, please retry' — NEVER token salad to the sender."""
-    sysm=("You are a research assistant answering an email. Output ONLY the final answer in markdown "
+def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint=""):
+    """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
+    VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
+    OWN knowledge and ALWAYS gives a full answer; it must not refuse for lack of wiki coverage."""
+    sysm=((viewpoint+"\n\n" if viewpoint else "") +
+          "You are a research assistant answering an email. Output ONLY the final answer in markdown "
           "(## headings, **bold**, bullets) — NO reasoning, NO preamble (never start with 'The user', "
           "'Okay', or 'We need to'); begin directly with the answer. Be concrete and useful, and ground "
-          "claims in fact (don't invent). If the email is a follow-up, use the prior conversation. "
-          "If ATTACHMENTS are present, read them and base your answer on their content.")
+          "claims in fact (don't invent). Use the WIKI CONTEXT and ATTACHMENTS if provided AND your OWN "
+          "knowledge to give a FULL answer. NEVER refuse or say 'the wiki/pages do not cover this' — if "
+          "the wiki is incomplete, answer from your own knowledge anyway and (optionally) note it's a gap "
+          "worth adding. If the email is a follow-up, use the prior conversation.")
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
+         (f"\n\nRELEVANT WIKI CONTEXT (your accumulated free-energy synthesis — build on it, but also use "
+          f"your own knowledge; it may be incomplete):\n{wiki_ctx[:16000]}" if wiki_ctx else "") + \
          (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
     msgs=[{"role":"system","content":sysm},{"role":"user","content":user}]
     used=FM_MODEL
@@ -395,42 +405,29 @@ def make_pdf_b64(markdown, title="freellmask"):
 
 # ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
 WIKI_BASE = Path.home()/"work"/"convey"/"kb"/"graph"/os.environ.get("FREELLMASK_WIKI","free-energy")
-def wiki_answer(question):
-    """If the question is ABOUT the wiki's corpus, answer from the COMPILED, cited pages
-    (through the corpus Lens) instead of cold research. Returns (answer, model) or None
-    so the caller falls back to general research for off-corpus questions."""
+VIEWPOINT = ("COMMITTED VIEWPOINT: treat free energy / over-unity as a real, engineerable phenomenon. "
+             "Analyse AS IF that frame is true — extract the engineering, mechanisms, measurements and "
+             "connections. Do NOT debunk or hedge into mainstream-physics disclaimers; a conflict with "
+             "mainstream physics is DATA to note, never grounds to dismiss a source or refuse to answer.")
+
+def wiki_context(question, k_pages=6):
+    """RETRIEVAL ONLY — no LLM call, no refusal. Returns (context_text, [slugs]) of wiki pages
+    relevant to the question (or '', []). Used to AUGMENT research with the accumulated free-energy
+    synthesis — NEVER to gate it. The model still answers fully from its own knowledge too."""
     ents=WIKI_BASE/"entities"
-    if not question or not ents.exists(): return None
+    if not question or not ents.exists(): return "", []
     qw=set(re.findall(r'[a-z]{4,}', question.lower()))
-    if not qw: return None
+    if not qw: return "", []
     scored=[]
     for p in ents.glob("*.md"):
         t=p.read_text(errors="ignore").lower()
         s=sum(t.count(w) for w in qw) + (20 if any(w in p.stem for w in qw) else 0)
         if s: scored.append((s,p))
     scored.sort(key=lambda x:x[0], reverse=True)
-    if not scored or scored[0][0] < 6: return None        # relevance gate: not a wiki topic
-    pages=[p for _,p in scored[:8]]
-    lf=WIKI_BASE/"lens.md"
-    lens=lf.read_text().strip() if lf.exists() else "Answer from the wiki pages; cite [[pages]]; if not covered, say so."
-    corpus="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:3000]}" for p in pages)
-    sysm=(lens+"\n\nAnswer the QUESTION using ONLY the WIKI PAGES below. Cite each claim with its "
-          "[[page-slug]]. If the pages don't cover something, say so — do not invent. Markdown.")
-    body={"model":FM_MODEL,"messages":[{"role":"system","content":sysm},
-          {"role":"user","content":f"QUESTION: {question}\n\nWIKI PAGES:\n{corpus}"}],"max_tokens":2500}
-    req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
-        headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
-    for attempt in range(4):
-        try:
-            with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r); break
-        except urllib.error.HTTPError as e:
-            if e.code==429 and attempt<3: time.sleep(5*(attempt+1)); continue
-            return None
-        except Exception: return None
-    ans=d["choices"][0]["message"]["content"].strip()
-    slugs=", ".join(f"[[{p.stem}]]" for p in pages)
-    return (ans+f"\n\n_— from the {WIKI_BASE.name} wiki ({len(pages)} compiled pages: {slugs}) · {d.get('model','?')} · $0_",
-            "wiki/"+str(d.get("model","?")))
+    if not scored or scored[0][0] < 6: return "", []      # off-corpus → no augmentation (still researched)
+    pages=[p for _,p in scored[:k_pages]]
+    ctx="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:2500]}" for p in pages)
+    return ctx, [p.stem for p in pages]
 
 def inbound_atts_b64(k, mid, atts):
     """Re-download each inbound attachment via its AgentMail signed URL and return them as
@@ -514,22 +511,20 @@ def poll_once(verbose=True):
             else:
                 reply["text"]="Sorry — couldn't render the PDF this time. Please retry."
         else:
-            # WIKI FIRST: if this is an in-corpus question (and no attachments to fold in),
-            # answer from the compiled, cited wiki pages — not cold research.
-            wa=None
-            if question and not extra:
-                try: wa=wiki_answer(question)
-                except Exception as e: print(f"  wiki lookup error: {e}")
-            if wa:
-                answer, used = wa
-                if verbose: print(f"  → answered from the WIKI (compiled knowledge)")
-            else:
-                if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
-                                  + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else ""))
-                try:
-                    answer, used = fm_research(question, ctx, extra)
-                except Exception as e:
-                    print(f"  research failed for {mid}: {e}"); continue
+            # WIKI AUGMENTS, never gates: pull relevant wiki pages as CONTEXT (no LLM, no refusal),
+            # apply the free-energy VIEWPOINT only for in-corpus topics, then ALWAYS research fully.
+            wctx, wslugs = ("", [])
+            if question:
+                try: wctx, wslugs = wiki_context(question)
+                except Exception as e: print(f"  wiki context error: {e}")
+            vp = VIEWPOINT if wslugs else ""
+            if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
+                              + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else "")
+                              + (f" [+wiki:{len(wslugs)}]" if wslugs else ""))
+            try:
+                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp)
+            except Exception as e:
+                print(f"  research failed for {mid}: {e}"); continue
             reply={"text": answer, "html": md_to_html(answer)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
                 b64=make_pdf_b64(answer)
