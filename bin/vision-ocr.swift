@@ -60,13 +60,29 @@ func cgImages(fromPDF url: URL, minScale: CGFloat, maxPages: Int) -> [CGImage] {
     return out
 }
 
+// Some macOS builds (e.g. 27 beta with un-activated E5 model assets) print Vision
+// model-loading errors to STDOUT ("Unable to find a valid E5 in provided path …"),
+// which would corrupt our text output. Run the request with fd 1 redirected to
+// /dev/null, then restore it — so only OUR print of the recognized text reaches stdout.
+func suppressingStdout<T>(_ body: () -> T) -> T {
+    fflush(stdout)
+    let saved = dup(1)
+    let devnull = open("/dev/null", O_WRONLY)
+    if devnull >= 0 { dup2(devnull, 1); close(devnull) }
+    let r = body()
+    fflush(stdout)
+    if saved >= 0 { dup2(saved, 1); close(saved) }
+    return r
+}
+
 func recognize(_ image: CGImage, languages: [String], fast: Bool) -> String {
     let req = VNRecognizeTextRequest()
     req.recognitionLevel = fast ? .fast : .accurate
     req.usesLanguageCorrection = !fast
     if !languages.isEmpty { req.recognitionLanguages = languages }
     let handler = VNImageRequestHandler(cgImage: image, options: [:])
-    do { try handler.perform([req]) } catch { return "" }
+    let ok = suppressingStdout { (try? handler.perform([req])) != nil }
+    if !ok { return "" }
     let obs = req.results ?? []
     return obs.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
 }
