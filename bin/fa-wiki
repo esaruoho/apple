@@ -298,17 +298,25 @@ def select_pages(base, question, k=8):
     scored.sort(key=lambda x:x[0], reverse=True)
     return [p for _,p in scored[:k]]
 
+_EXOTIC=[(0x0400,0x04FF),(0x0600,0x06FF),(0x4E00,0x9FFF),(0xAC00,0xD7AF),(0x0E00,0x0E7F),(0x3040,0x30FF)]
 def _wiki_junk(text):
     """The anti-junk gate (same doctrine as freellmask-mail): never FILE a `<unk>` / token-salad /
     script-spam string into the wiki — a self-growing loop that compounds garbage poisons itself.
-    True = unusable."""
+    Catches even LATIN-HEAVY salad (glued fake words + a sprinkle of cyrillic/arabic/CJK), which a
+    naive latin-ratio check misses. True = unusable."""
     t=(text or "").strip()
     if len(t)<15: return True
-    if "<unk>" in t or "�" in t: return True
+    if "<unk>" in t or "�" in t or "(blank)" in t.lower(): return True
+    # ≥2 exotic scripts (cyrillic + arabic + CJK + hangul + thai + kana) in one short string = salad
+    if sum(1 for lo,hi in _EXOTIC if any(lo<=ord(c)<=hi for c in t)) >= 2: return True
     letters=sum(1 for c in t if c.isascii() and c.isalpha())
-    if letters/len(t)<0.5: return True
-    words=t.split()
-    if words and sum(1 for w in words if len(w)>30)/len(words)>0.1: return True
+    if letters/len(t)<0.55: return True
+    words=re.findall(r"[A-Za-z]+", t)
+    if words:
+        if sum(1 for w in words if len(w)>30)/len(words)>0.08: return True
+        # nonsense words: a CamelCase seam mid-word ('IllustrPoint') or a 5+ letter word with no vowel
+        weird=sum(1 for w in words if len(w)>=5 and (re.search(r'[a-z][A-Z]',w) or not re.search(r'[aeiouyAEIOUY]',w)))
+        if weird/len(words)>0.15: return True
     return False
 
 def _answer_and_file(base, host, k, model, lens, question, kpages=8, quiet=False):
@@ -348,9 +356,10 @@ def cmd_query(a):
     slug=_answer_and_file(base, host, k, a.model, read_lens(base), a.question, a.k)
     if slug: print(f"filed back → {base.name}/queries/{slug}.md")
 
-_Q_LEAK=("we need","we can ask","could ask","not sure","for example","similarly","maybe","unclear",
-         "i think","okay","let me","the user","provide ","etc.","that is answerable","likely","probably",
-         "perhaps","we should","first,","so the","let's")
+_Q_LEAK=("we need","we can ask","we can propose","could ask","not sure","for example","e.g.",
+         "similarly","maybe","unclear","i think","okay","let me","the user","provide ","etc.",
+         "that is answerable","that's answerable","likely","probably","perhaps","we should","first,",
+         "so the","let's","we could")
 # META questions interrogate the wiki's bookkeeping, not its subject — useless to file. Reject them.
 _Q_META=("how many claims","according to the index","page according to","number of claims",
          "listed in the index","in the index?","entity page")
