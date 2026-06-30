@@ -152,6 +152,15 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3):
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
+def _is_wiki_refusal(t):
+    """Detect the failure where the model refuses because the WIKI pages don't cover the topic —
+    which must NEVER happen (the wiki augments; the model should answer from its own knowledge)."""
+    tl=(t or "").lower()
+    return any(p in tl for p in (
+        "do not contain any information","does not contain any information","no source material",
+        "the supplied wiki","the provided wiki","wiki pages do not","pages do not contain",
+        "pages do not cover","not covered in the supplied","no information about"))
+
 def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint=""):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
@@ -170,14 +179,23 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           f"your own knowledge; it may be incomplete):\n{wiki_ctx[:16000]}" if wiki_ctx else "") + \
          (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
     msgs=[{"role":"system","content":sysm},{"role":"user","content":user}]
-    used=FM_MODEL
+    # Fallback message set with NO wiki context — used if the model gets biased into refusing
+    # ("the wiki pages do not contain…"). Stripping the wiki lets it answer from its own knowledge.
+    user_nowiki=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
+         f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
+         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
+    msgs_nowiki=[{"role":"system","content":sysm},{"role":"user","content":user_nowiki}]
+    used=FM_MODEL; cur=msgs
     for _ in range(max(1,tries)):
         try:
-            ans, used = _fm_call(msgs)
+            ans, used = _fm_call(cur)
         except Exception:
             continue
-        if ans and not _looks_garbage(ans) and not _has_leak(ans):
-            return ans, used
+        if not ans or _looks_garbage(ans) or _has_leak(ans):
+            continue
+        if _is_wiki_refusal(ans):          # the wiki context biased it into refusing → drop it, retry
+            cur=msgs_nowiki; continue
+        return ans, used
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
 
