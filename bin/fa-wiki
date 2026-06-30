@@ -465,6 +465,47 @@ def cmd_dois(a):
         print(f"  {doi}  (from [[{ent}]])  → convey scihub {doi}")
     if not found: print("  (no DOIs in the corpus sources yet — ingest papers with reference lists to branch)")
 
+def cmd_yaml(a):
+    """Ingest a STRUCTURED ontology YAML (people.yaml etc.) straight into the graph — no LLM,
+    no rate limits, instant. Overlapping entities MERGE with existing compiled pages (enriching
+    them). Each mapping key → an entity page; related_people/domain → typed edges."""
+    import yaml as _yaml
+    base=graph_base(a.graph)
+    sys.path.insert(0, str(CONVEY)); from convey.graph import DreamGraph
+    dg=DreamGraph(base=base)
+    data=_yaml.safe_load(Path(a.file).read_text(errors="ignore"))
+    if not isinstance(data, dict): sys.exit("fa-wiki yaml: expected a mapping of entities at the top level")
+    items=[(k,v) for k,v in data.items() if isinstance(v, dict)]
+    if a.limit: items=items[:a.limit]
+    n=0; src_default=str(Path(a.file).relative_to(Path.home()) if str(a.file).startswith(str(Path.home())) else a.file)
+    def L(v): return v if isinstance(v,list) else ([] if v in (None,"") else [v])   # coerce to list
+    def S(v): return ", ".join(map(str,v)) if isinstance(v,list) else str(v)
+    for key, p in items:
+        _nm=p.get("full_name") or p.get("name") or key
+        subj=(str(_nm[0]) if isinstance(_nm,list) and _nm else str(_nm)).strip() or str(key)
+        src=(L(p.get("key_sources") or p.get("sources")) or [src_default])[0] or src_default
+        rels=[]
+        for r in L(p.get("related_people")): rels.append(("associated_with", str(r)))
+        for d in L(p.get("domain") or p.get("domains")): rels.append(("part_of", str(d)))
+        for inf in L(p.get("influenced_by")): rels.append(("influences", str(inf)))
+        _desc=p.get("description") or ""
+        summ=(" ".join(map(str,_desc)) if isinstance(_desc,list) else str(_desc)).strip()
+        dg.add_memory(subj, summary=summ[:700], source=str(src), kind=a.kind, confidence=0.8, relations=rels)
+        claims=[]
+        for f in ("role","nationality","active_period","also_known_as"):
+            if p.get(f): claims.append(f"{f.replace('_',' ').title()}: {S(p[f])}")
+        for c in L(p.get("key_concepts")): claims.append(f"Key concept: {S(c) if isinstance(c,(list,dict)) else c}")
+        for pub in L(p.get("publications")):
+            if isinstance(pub, dict): claims.append(f"Publication: {pub.get('title','?')} ({pub.get('year','?')}, {pub.get('type','')})")
+            elif pub: claims.append(f"Publication: {pub}")
+        for c in claims: dg.add_memory(subj, claim=str(c), source=str(src), confidence=0.8)
+        n+=1
+        if a.verbose and n%250==0: print(f"  {n}/{len(items)} ...")
+    res=dg.build()
+    nn=len(res.get('nodes',[])) if isinstance(res.get('nodes'),list) else res.get('nodes',0)
+    ne=len(res.get('edges',[])) if isinstance(res.get('edges'),list) else res.get('edges',0)
+    print(f"ingested {n} entities from {Path(a.file).name} → {base.name} ({nn} nodes, {ne} edges, $0, no LLM)")
+
 def main():
     ap=argparse.ArgumentParser(); sub=ap.add_subparsers(dest="cmd",required=True)
     HOST=os.environ.get("FM_FREE_HOST","http://cloudcitymacmini:3001/v1")
@@ -484,6 +525,9 @@ def main():
     pq.add_argument("--graph",default="kb/graph/free-energy"); pq.add_argument("--k",type=int,default=8)
     pq.add_argument("--model",default="nemotron-3-super-120b"); pq.add_argument("--host",default=HOST); pq.set_defaults(fn=cmd_query)
     pd=sub.add_parser("dois"); pd.add_argument("--graph",default="kb/graph/free-energy"); pd.set_defaults(fn=cmd_dois)
+    py=sub.add_parser("yaml"); py.add_argument("file"); py.add_argument("--graph",default="kb/graph/free-energy")
+    py.add_argument("--kind",default="person"); py.add_argument("--limit",type=int,default=0)
+    py.add_argument("--verbose",action="store_true"); py.set_defaults(fn=cmd_yaml)
     pg=sub.add_parser("grow")          # the self-growing loop: lint → ask → answer-from-wiki → file back
     pg.add_argument("--graph",default="kb/graph/free-energy"); pg.add_argument("--n",type=int,default=3)
     pg.add_argument("--k",type=int,default=8); pg.add_argument("--dry",action="store_true")
