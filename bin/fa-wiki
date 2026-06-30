@@ -485,14 +485,17 @@ def cmd_yaml(a):
         subj=(str(_nm[0]) if isinstance(_nm,list) and _nm else str(_nm)).strip() or str(key)
         src=(L(p.get("key_sources") or p.get("sources")) or [src_default])[0] or src_default
         rels=[]
-        for r in L(p.get("related_people")): rels.append(("associated_with", str(r)))
+        # any related_* field → associated_with edges (related_people/concepts/devices/patents…)
+        for fld,val in p.items():
+            if str(fld).startswith("related_"):
+                for r in L(val): rels.append(("associated_with", str(r)))
         for d in L(p.get("domain") or p.get("domains")): rels.append(("part_of", str(d)))
         for inf in L(p.get("influenced_by")): rels.append(("influences", str(inf)))
         _desc=p.get("description") or ""
         summ=(" ".join(map(str,_desc)) if isinstance(_desc,list) else str(_desc)).strip()
         dg.add_memory(subj, summary=summ[:700], source=str(src), kind=a.kind, confidence=0.8, relations=rels)
         claims=[]
-        for f in ("role","nationality","active_period","also_known_as"):
+        for f in ("role","nationality","active_period","also_known_as","formula","year","type","status","patent_number"):
             if p.get(f): claims.append(f"{f.replace('_',' ').title()}: {S(p[f])}")
         for c in L(p.get("key_concepts")): claims.append(f"Key concept: {S(c) if isinstance(c,(list,dict)) else c}")
         for pub in L(p.get("publications")):

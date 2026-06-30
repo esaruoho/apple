@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# fa-paper — (re)ingest a LIVING paper into its own wiki corpus, replacing the prior version.
+# Run it whenever you roll a new draft; the email bot's multi-corpus wiki context (and
+# `fa-wiki query --graph kb/graph/<corpus>`) immediately reflect the new paper.
+#
+#   fa-paper <paper.md> [corpus]        (corpus default: fluid-dynamics)
+#   fa-paper --watch <paper.md> [corpus]   re-ingest automatically on every file change
+#
+# Idempotent: the corpus is a single living paper — re-running replaces it cleanly
+# (no stale claims accumulate). Commit kb/graph/<corpus> afterwards to version it.
+set -euo pipefail
+CONVEY=/Users/esaruoho/work/convey
+FA=/Users/esaruoho/work/apple/bin/fa-wiki
+MODEL="${FA_PAPER_MODEL:-nemotron-3-super-120b}"
+
+reingest() {
+  local paper="$1" corpus="$2"
+  local graph="kb/graph/$corpus"
+  cd "$CONVEY"
+  rm -rf "$graph/entities" "$graph/dream_graph.json"            # drop the old compiled version
+  "$FA" batch "$paper" --accept --graph "$graph" --limit 1 --chars 16000 --model "$MODEL" --out /tmp/fa-paper-sug 2>&1 | tail -2
+  "$FA" index --graph "$graph" 2>&1 | tail -1
+  echo "[fa-paper] re-ingested $(basename "$paper") → $corpus   ($(date '+%H:%M:%S'))"
+}
+
+if [ "${1:-}" = "--watch" ]; then
+  paper="${2:?usage: fa-paper --watch <paper.md> [corpus]}"; corpus="${3:-fluid-dynamics}"
+  echo "[fa-paper] watching $paper → $corpus (re-ingest on change; Ctrl-C to stop)"
+  last=""
+  while true; do
+    cur=$(stat -f %m "$paper" 2>/dev/null || echo 0)
+    if [ "$cur" != "$last" ]; then reingest "$paper" "$corpus" || echo "[fa-paper] ingest failed (will retry on next change)"; last="$cur"; fi
+    sleep 10
+  done
+else
+  paper="${1:?usage: fa-paper <paper.md> [corpus]   (or --watch)}"; corpus="${2:-fluid-dynamics}"
+  reingest "$paper" "$corpus"
+fi

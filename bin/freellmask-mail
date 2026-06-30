@@ -422,30 +422,33 @@ def make_pdf_b64(markdown, title="freellmask"):
         shutil.rmtree(td, ignore_errors=True)
 
 # ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
-WIKI_BASE = Path.home()/"work"/"convey"/"kb"/"graph"/os.environ.get("FREELLMASK_WIKI","free-energy")
+WIKI_GRAPHS = Path.home()/"work"/"convey"/"kb"/"graph"
+WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,fluid-dynamics").split(",")]
 VIEWPOINT = ("COMMITTED VIEWPOINT: treat free energy / over-unity as a real, engineerable phenomenon. "
              "Analyse AS IF that frame is true — extract the engineering, mechanisms, measurements and "
              "connections. Do NOT debunk or hedge into mainstream-physics disclaimers; a conflict with "
              "mainstream physics is DATA to note, never grounds to dismiss a source or refuse to answer.")
 
-def wiki_context(question, k_pages=6):
-    """RETRIEVAL ONLY — no LLM call, no refusal. Returns (context_text, [slugs]) of wiki pages
-    relevant to the question (or '', []). Used to AUGMENT research with the accumulated free-energy
-    synthesis — NEVER to gate it. The model still answers fully from its own knowledge too."""
-    ents=WIKI_BASE/"entities"
-    if not question or not ents.exists(): return "", []
+def wiki_context(question, k_pages=8):
+    """RETRIEVAL ONLY — no LLM call, no refusal. Searches ALL corpora (free-energy + the people/
+    concept/device ontology + your live fluid-dynamics paper) and returns (context_text, [slugs])
+    of the most relevant pages, or ('', []). AUGMENTS research; never gates it."""
+    if not question: return "", []
     qw=set(re.findall(r'[a-z]{4,}', question.lower()))
     if not qw: return "", []
     scored=[]
-    for p in ents.glob("*.md"):
-        t=p.read_text(errors="ignore").lower()
-        s=sum(t.count(w) for w in qw) + (20 if any(w in p.stem for w in qw) else 0)
-        if s: scored.append((s,p))
+    for corpus in WIKI_CORPORA:
+        ents=WIKI_GRAPHS/corpus/"entities"
+        if not ents.exists(): continue
+        for p in ents.glob("*.md"):
+            t=p.read_text(errors="ignore").lower()
+            s=sum(t.count(w) for w in qw) + (25 if any(w in p.stem for w in qw) else 0)
+            if s: scored.append((s,p,corpus))
     scored.sort(key=lambda x:x[0], reverse=True)
     if not scored or scored[0][0] < 6: return "", []      # off-corpus → no augmentation (still researched)
-    pages=[p for _,p in scored[:k_pages]]
-    ctx="\n\n".join(f"=== [[{p.stem}]] ===\n{p.read_text(errors='ignore')[:2500]}" for p in pages)
-    return ctx, [p.stem for p in pages]
+    top=scored[:k_pages]
+    ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{p.read_text(errors='ignore')[:2200]}" for s,p,c in top)
+    return ctx, [p.stem for s,p,c in top]
 
 def inbound_atts_b64(k, mid, atts):
     """Re-download each inbound attachment via its AgentMail signed URL and return them as
