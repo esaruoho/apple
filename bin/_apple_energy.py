@@ -105,6 +105,21 @@ def render_table(headers, rows, aligns=None):
     return "\n".join(out)
 
 
+def action_footer(links=False, iterm=False, handler=False):
+    """Shared jump/kill/off guidance printed under both `now` and `claude`."""
+    lines = []
+    if links and iterm and handler:
+        lines.append("Cmd-click a TTY to jump to that session (allow the 1-time prompt on first click).")
+    elif links and iterm and not handler:
+        lines.append("Tip: run `apple-energy install-jump` once to make the TTYs Cmd-clickable.")
+    elif links and not iterm:
+        lines.append("(Cmd-click TTYs needs iTerm2 — Terminal.app can't; use `jump` below.)")
+    lines.append("Jump:          apple-energy jump <pid|tty|version|project|name>")
+    lines.append("Kill now:      apple-energy kill <pid>            (SIGTERM; a launchd-kept proc respawns)")
+    lines.append("Kill properly: apple-energy off  <name> [--yes]  (stop + launchctl disable so it stays dead)")
+    return "\n".join(lines)
+
+
 def _run(cmd):
     try:
         return subprocess.run(cmd, capture_output=True, text=True).stdout

@@ -100,10 +100,10 @@ for pid, topcmd, power in rows[:n]:
     table_rows.append([pid, proc, detail, power])
 print(ae.render_table(["PID", "Process", "What it is", "Power"], table_rows,
                       ["l", "l", "l", "r"]))
-if links and os.environ.get("TERM_PROGRAM") == "iTerm.app":
-    print("Cmd-click a claude TTY to jump to it · full session list: apple-energy claude")
-elif links:
-    print("Jump to a claude session: apple-energy jump <name|pid>  ·  full list: apple-energy claude")
+iterm = os.environ.get("TERM_PROGRAM") == "iTerm.app"
+handler = os.path.exists(os.path.expanduser("~/Applications/AppleEnergyJump.app"))
+print(ae.action_footer(links, iterm, handler))
+print("Full Claude session list: apple-energy claude")
 PY
 }
 
@@ -224,15 +224,7 @@ aligns = ["l", "l", "l", "l", "r", "l", "l", "l", "l"]
 print(ae.render_table(headers, table_rows, aligns))
 print()
 print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
-if links and iterm and handler:
-    print("Cmd-click a TTY to jump to that session (allow the 1-time prompt on first click).")
-elif links and iterm and not handler:
-    print("Tip: run `apple-energy install-jump` once to make the TTYs Cmd-clickable.")
-elif links and not iterm:
-    print("(Cmd-click TTYs needs iTerm2 — Terminal.app can't; here use `jump` below.)")
-print("Jump:          apple-energy jump <pid|tty|version|project|name>")
-print("Kill now:      apple-energy kill <pid>            (SIGTERM; a launchd-kept proc respawns)")
-print("Kill properly: apple-energy off  <name> [--yes]  (stop + launchctl disable so it stays dead)")
+print(ae.action_footer(links, iterm, handler))
 PY
 }
 

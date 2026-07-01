@@ -1,4 +1,4 @@
-# CLI Tools Index — 278 tools in bin/
+# CLI Tools Index — 279 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -83,6 +83,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `dock-autohide` — hide the Dock (auto-hide) or keep it always shown. — `bin/dock-autohide`
 `dock-snap-bump` — (no description) — `bin/dock-snap-bump`
 `doi-harvest` — (no description) — `bin/doi-harvest`
+`doi2scihub` — map DOI(s) to https://sci-hub.ru/<DOI> and open in the default browser. — `bin/doi2scihub`
 `embed` — (no description) — `bin/embed`
 `eml-to-views` — (no description) — `bin/eml-to-views`
 `eppc-auth` — (no description) — `bin/eppc-auth`
