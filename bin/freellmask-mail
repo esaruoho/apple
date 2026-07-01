@@ -156,6 +156,9 @@ def _is_wiki_refusal(t):
     """Detect the failure where the model refuses because the WIKI pages don't cover the topic —
     which must NEVER happen (the wiki augments; the model should answer from its own knowledge)."""
     tl=(t or "").lower()
+    # A real refusal is SHORT and dominated by the refusal; a full answer that merely mentions a
+    # gap in passing (now common with the '## Thought about it' section) must NOT be flagged.
+    if len(tl) > 700: return False
     return any(p in tl for p in (
         "do not contain any information","does not contain any information","no source material",
         "the supplied wiki","the provided wiki","wiki pages do not","pages do not contain",
@@ -165,14 +168,24 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
     OWN knowledge and ALWAYS gives a full answer; it must not refuse for lack of wiki coverage."""
-    sysm=((viewpoint+"\n\n" if viewpoint else "") +
-          "You are a research assistant answering an email. Output ONLY the final answer in markdown "
-          "(## headings, **bold**, bullets) — NO reasoning, NO preamble (never start with 'The user', "
-          "'Okay', or 'We need to'); begin directly with the answer. Be concrete and useful, and ground "
-          "claims in fact (don't invent). Use the WIKI CONTEXT and ATTACHMENTS if provided AND your OWN "
-          "knowledge to give a FULL answer. NEVER refuse or say 'the wiki/pages do not cover this' — if "
-          "the wiki is incomplete, answer from your own knowledge anyway and (optionally) note it's a gap "
-          "worth adding. If the email is a follow-up, use the prior conversation.")
+    base=("You are a research assistant answering an email. Markdown (## headings, **bold**, bullets). "
+          "Ground claims in fact (don't invent). Use the WIKI CONTEXT and ATTACHMENTS if provided AND your "
+          "OWN knowledge to give a FULL answer. NEVER refuse or say 'the wiki/pages do not cover this' — "
+          "if the wiki is incomplete, answer from your own knowledge anyway. If a follow-up, use the prior conversation.")
+    if viewpoint:   # in-corpus (free-energy) → think out loud + speak in three voices, ONE call, no extra roundtrip
+        struct=("\n\nStructure the reply with these EXACT markdown headings, in this order:\n"
+          "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
+          "across the sources, where the tension is. Think out loud, here only.)\n"
+          "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
+          "## In Walter Russell's tone\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
+          "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
+          "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
+          "energy from the active vacuum, asymmetric regauging, the dipole's broken symmetry as a negentropy source)\n"
+          "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
+          "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)")
+        sysm=viewpoint+"\n\n"+base+struct
+    else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
+        sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
          (f"\n\nRELEVANT WIKI CONTEXT (your accumulated free-energy synthesis — build on it, but also use "
@@ -423,7 +436,19 @@ def make_pdf_b64(markdown, title="freellmask"):
 
 # ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
 WIKI_GRAPHS = Path.home()/"work"/"convey"/"kb"/"graph"
-WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,fluid-dynamics").split(",")]
+WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,papers").split(",")]
+def _best_window(text, qw, size=2600):
+    """Return the ~size-char window of `text` densest in the query words — so a long paper
+    surfaces its RELEVANT section, not just its intro."""
+    import bisect
+    tl=text.lower()
+    hits=sorted(m.start() for w in qw for m in re.finditer(re.escape(w), tl))
+    if not hits: return text[:size]
+    best_s, best_c = hits[0], 0
+    for h in hits:
+        c=bisect.bisect_right(hits, h+size)-bisect.bisect_left(hits, h)
+        if c>best_c: best_c, best_s = c, h
+    s=max(0, best_s-200); return text[s:s+size]
 VIEWPOINT = ("COMMITTED VIEWPOINT: treat free energy / over-unity as a real, engineerable phenomenon. "
              "Analyse AS IF that frame is true — extract the engineering, mechanisms, measurements and "
              "connections. Do NOT debunk or hedge into mainstream-physics disclaimers; a conflict with "
@@ -447,7 +472,7 @@ def wiki_context(question, k_pages=8):
     scored.sort(key=lambda x:x[0], reverse=True)
     if not scored or scored[0][0] < 6: return "", []      # off-corpus → no augmentation (still researched)
     top=scored[:k_pages]
-    ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{p.read_text(errors='ignore')[:2200]}" for s,p,c in top)
+    ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{_best_window(p.read_text(errors='ignore'), qw)}" for s,p,c in top)
     return ctx, [p.stem for s,p,c in top]
 
 def inbound_atts_b64(k, mid, atts):

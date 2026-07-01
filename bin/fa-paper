@@ -1,38 +1,112 @@
-#!/usr/bin/env bash
-# fa-paper — (re)ingest a LIVING paper into its own wiki corpus, replacing the prior version.
-# Run it whenever you roll a new draft; the email bot's multi-corpus wiki context (and
-# `fa-wiki query --graph kb/graph/<corpus>`) immediately reflect the new paper.
-#
-#   fa-paper <paper.md> [corpus]        (corpus default: fluid-dynamics)
-#   fa-paper --watch <paper.md> [corpus]   re-ingest automatically on every file change
-#
-# Idempotent: the corpus is a single living paper — re-running replaces it cleanly
-# (no stale claims accumulate). Commit kb/graph/<corpus> afterwards to version it.
-set -euo pipefail
-CONVEY=/Users/esaruoho/work/convey
-FA=/Users/esaruoho/work/apple/bin/fa-wiki
-MODEL="${FA_PAPER_MODEL:-nemotron-3-super-120b}"
+#!/usr/bin/env python3
+"""fa-paper — incorporate a LIVING paper into the wiki, ZERO-TOKEN, ZERO-ROUNDTRIP.
 
-reingest() {
-  local paper="$1" corpus="$2"
-  local graph="kb/graph/$corpus"
-  cd "$CONVEY"
-  rm -rf "$graph/entities" "$graph/dream_graph.json"            # drop the old compiled version
-  "$FA" batch "$paper" --accept --graph "$graph" --limit 1 --chars 16000 --model "$MODEL" --out /tmp/fa-paper-sug 2>&1 | tail -2
-  "$FA" index --graph "$graph" 2>&1 | tail -1
-  echo "[fa-paper] re-ingested $(basename "$paper") → $corpus   ($(date '+%H:%M:%S'))"
-}
+No LLM, no network, no rate limits: the paper is copied into the wiki as a searchable
+page (frontmatter + full text) and folded into the DreamGraph deterministically.
+Deterministic entity linking: any existing wiki entity whose name appears in the paper
+becomes a [[reference]] edge. Re-running REPLACES the paper's page cleanly, so updates
+are instant and free. Overlapping entities merge.
 
-if [ "${1:-}" = "--watch" ]; then
-  paper="${2:?usage: fa-paper --watch <paper.md> [corpus]}"; corpus="${3:-fluid-dynamics}"
-  echo "[fa-paper] watching $paper → $corpus (re-ingest on change; Ctrl-C to stop)"
-  last=""
-  while true; do
-    cur=$(stat -f %m "$paper" 2>/dev/null || echo 0)
-    if [ "$cur" != "$last" ]; then reingest "$paper" "$corpus" || echo "[fa-paper] ingest failed (will retry on next change)"; last="$cur"; fi
-    sleep 10
-  done
-else
-  paper="${1:?usage: fa-paper <paper.md> [corpus]   (or --watch)}"; corpus="${2:-fluid-dynamics}"
-  reingest "$paper" "$corpus"
-fi
+  fa-paper <paper.md> [--corpus papers] [--name "Nice Title"]
+  fa-paper --watch <paper.md> [--corpus papers]     re-copy on every file change (poll)
+  fa-paper --batch <corpus> <file1> <file2> ...      ingest many at once
+
+The email bot's multi-corpus wiki_context and `fa-wiki query --graph kb/graph/<corpus>`
+pick up the paper immediately. Commit kb/graph/<corpus> to version it.
+"""
+import sys, re, os, time, json
+from pathlib import Path
+CONVEY = Path.home()/"work"/"convey"
+
+def slugify(s): return re.sub(r"[^a-z0-9]+","-",(s or "paper").lower()).strip("-")[:80]
+
+def paper_title(text, path):
+    m=re.search(r'^#\s+(.+)$', text, re.M)
+    if m: return re.sub(r'\s+',' ', m.group(1)).strip()[:120]
+    m=re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', text, re.M)
+    if m: return m.group(1).strip()[:120]
+    return path.stem.replace('-',' ')
+
+def abstract(text):
+    # first substantive paragraph after any frontmatter/heading
+    body=re.sub(r'^---.*?---', '', text, count=1, flags=re.S)
+    for para in re.split(r'\n\s*\n', body):
+        p=re.sub(r'^[#>*\-\s]+','',para).strip()
+        if len(p) > 80 and not p.startswith(('|','```')): return re.sub(r'\s+',' ',p)[:600]
+    return ""
+
+def known_entities(corpus):
+    """entity slugs already in ANY graph — for deterministic [[linking]] from the paper text."""
+    names={}
+    for g in (CONVEY/"kb"/"graph").glob("*/entities"):
+        for p in g.glob("*.md"):
+            t=p.read_text(errors="ignore")
+            m=re.search(r'^name:\s*(.+)$', t, re.M)
+            nm=(m.group(1).strip() if m else p.stem.replace('-',' '))
+            if len(nm) >= 5: names[nm.lower()]=p.stem
+    return names
+
+def ingest(paper, corpus, nicename=None):
+    paper=Path(paper)
+    text=paper.read_text(errors="ignore")
+    title=nicename or paper_title(text, paper)
+    slug=slugify(title)
+    base=CONVEY/"kb"/"graph"/corpus; ents=base/"entities"; ents.mkdir(parents=True, exist_ok=True)
+    # deterministic entity links: which known entities are named in the paper?
+    names=known_entities(corpus); low=text.lower(); rels=[]
+    for nm,es in names.items():
+        if es==slug: continue
+        if nm in low: rels.append(es)
+    rels=sorted(set(rels))[:40]
+    src=str(paper.relative_to(Path.home())) if str(paper).startswith(str(Path.home())) else str(paper)
+    # sections (## headings) as claims for the graph
+    secs=re.findall(r'^#{2,3}\s+(.+)$', text, re.M)[:30]
+    page=[f"---\nname: {title}\nslug: {slug}\nkind: paper\nconfidence: 1.0\nupdated: {time.strftime('%Y-%m-%d')}\nsource: {src}\n---\n",
+          "## Summary", abstract(text) or f"Paper: {title}.", ""]
+    if secs:
+        page += ["## Sections"] + [f"- {s.strip()}" for s in secs] + [""]
+    if rels:
+        page += ["## Relationships"] + [f"- references [[{r}]]" for r in rels] + [""]
+    page += ["## Full Text", text.strip(), ""]
+    (ents/f"{slug}.md").write_text("\n".join(page))
+    return slug, len(rels), len(secs), len(text)
+
+def rebuild(corpus):
+    sys.path.insert(0, str(CONVEY)); from convey.graph import DreamGraph
+    dg=DreamGraph(base=CONVEY/"kb"/"graph"/corpus)
+    res=dg.build()
+    nn=len(res.get('nodes',[])) if isinstance(res.get('nodes'),list) else res.get('nodes',0)
+    ne=len(res.get('edges',[])) if isinstance(res.get('edges'),list) else res.get('edges',0)
+    return nn, ne
+
+def one(paper, corpus, nicename=None):
+    slug,nr,ns,nc=ingest(paper, corpus, nicename)
+    print(f"  [{corpus}] {Path(paper).name} → [[{slug}]]  ({nc//1000}k chars, {ns} sections, {nr} entity links)")
+    return slug
+
+def main():
+    a=sys.argv[1:]
+    if not a: sys.exit(__doc__)
+    if a[0]=="--watch":
+        paper=a[1]; corpus=a[3] if len(a)>3 and a[2]=="--corpus" else "papers"
+        print(f"[fa-paper] watching {paper} → {corpus} (zero-token re-copy on change; Ctrl-C to stop)")
+        last=None
+        while True:
+            try:
+                cur=os.stat(paper).st_mtime
+                if cur!=last:
+                    one(paper, corpus); rebuild(corpus); print(f"[fa-paper] refreshed ({time.strftime('%H:%M:%S')})"); last=cur
+            except FileNotFoundError: pass
+            time.sleep(8)
+    elif a[0]=="--batch":
+        corpus=a[1]
+        for f in a[2:]: one(f, corpus)
+        nn,ne=rebuild(corpus); print(f"batch → {corpus}: {nn} nodes, {ne} edges (zero-token, $0)")
+    else:
+        paper=a[0]; corpus="papers"; nicename=None
+        if "--corpus" in a: corpus=a[a.index("--corpus")+1]
+        if "--name" in a: nicename=a[a.index("--name")+1]
+        one(paper, corpus, nicename); nn,ne=rebuild(corpus)
+        print(f"→ {corpus}: {nn} nodes, {ne} edges (zero-token, $0). Commit kb/graph/{corpus} to version it.")
+
+if __name__=="__main__": main()
