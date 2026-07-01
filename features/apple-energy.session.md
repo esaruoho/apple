@@ -76,3 +76,22 @@ LaunchDaemon, so `--yes` will use sudo). The sudo `heat`/`power`/`watch` capture
 Design call worth keeping: `off` is **dry-run by default**. `off lghub` matches BOTH the
 G HUB tray agent and the updater daemon; showing both before acting stops Esa from nuking
 his whole Logitech setup when he only wants the useless updater gone.
+
+## Follow-up 2 (2026-07-01): `now` truncation → `claude` session identifier
+
+Esa saw `2.1.193` / `2.1.195` / `2.1.186` as process names and found them stressful. Two
+things came out of it:
+
+1. `now` was showing top's ~16-char-truncated COMMAND (`Ray Helper (Rend`). Fixed by
+   pulling PID+power from top and resolving full names via `ps -ww -o comm=`.
+2. The `2.1.xxx` names turned out to be **Claude Code itself** — it installs each version
+   as a binary literally named after its version (`~/.local/share/claude/versions/2.1.197`),
+   and Esa had 8 sessions running across projects, several on old versions, up to 7d 21h old.
+   → new **`claude`** verb: version + OLD flag + age + %CPU + TTY + project per session, so
+   Esa can spot outdated sessions and find their terminal tab. Ran live: 8 sessions, all
+   OLD vs current 2.1.197, TTYs ttys002-009, projects merlib-dump/convey/freellmapi/arduino.
+
+Also surfaced the concurrent-agent git doctrine: those sibling sessions were live-editing
+fa-paper/freellmask-mail/atlas, and my push-race rebases had been STASHING them — dangerous
+in a multi-agent repo. New rule: never stash, commit any WIP encountered directly. Recorded
+in memory `feedback-never-git-add-all-in-apple-repo` (now the never-stash doctrine).

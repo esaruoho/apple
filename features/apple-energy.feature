@@ -83,6 +83,19 @@ Feature: Read macOS energy & power telemetry from the command line
     # cite: bin/apple-energy cmd_adapter(); ran live this session
 
   @built
+  Scenario: claude enumerates running Claude Code sessions by version  (ran live)
+    Given Claude Code installs each version as a binary named after its version
+      (~/.local/share/claude/versions/2.1.197), so top shows "2.1.193" as a process name
+    When `apple-energy claude` runs
+    Then it reads the current version from the ~/.local/bin/claude symlink target, finds
+      every running instance (pgrep -x claude + pgrep -f /versions/2.), and for each prints
+      PID, real version (lsof txt basename), OLD/ok flag, age, %CPU, TTY, and project (cwd)
+    And it summarises how many are on an OLD version so stale sessions can be restarted
+    And the loop is errexit-safe: a PID that exits mid-scan is skipped, not fatal
+    # cite: bin/apple-energy cmd_claude(); ran live — 8 sessions, all OLD vs 2.1.197,
+    #       TTY column (ttys002-009) locates each session's terminal tab
+
+  @built
   Scenario: heat frames watts AS heat and shows the thermal drivers  (ran live, no-sudo part)
     Given Apple Silicon (M3 Pro) exposes no clean CPU die temp, but a chip dissipates
       ~100%% of its drawn power as heat, so package watts ARE the heat-generation rate

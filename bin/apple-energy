@@ -17,6 +17,8 @@
 #   apple-energy heat [N]                 heat = watts: package power + thermal pressure
 #                                         + throttle + fans (sudo where available)
 #   apple-energy adapter                  power adapter wattage + battery state (no sudo)
+#   apple-energy claude                   list running Claude Code sessions: version,
+#                                         outdated?, project, age, CPU, TTY (no sudo)
 # ACT verbs (mutating — you asked for these):
 #   apple-energy kill <name|pid>          SIGTERM a hog now (may respawn if launchd-kept)
 #   apple-energy off <name> [--yes]       stop + DISABLE a launchd job so it stays dead
@@ -167,6 +169,36 @@ cmd_adapter() {
   pmset -g batt | sed 's/^/  /'
 }
 
+# ---- claude: enumerate running Claude Code sessions ----------------------
+# Claude Code installs each version as a binary NAMED after its version
+# (~/.local/share/claude/versions/2.1.197), so `top` shows "2.1.193" etc. This
+# resolves every running instance's real version (via lsof txt), its project
+# (cwd), age, CPU, and TTY, and flags any not on the current symlinked version.
+cmd_claude() {
+  local cur; cur=$(basename "$(readlink "$HOME/.local/bin/claude" 2>/dev/null)" 2>/dev/null)
+  [[ -z "$cur" || "$cur" == "." ]] && cur="?"
+  echo "Running Claude Code sessions (current installed version: $cur)"
+  echo
+  printf "%-7s %-9s %-4s %-11s %-5s %-7s %s\n" "PID" "VERSION" "" "AGE" "%CPU" "TTY" "PROJECT (cwd)"
+  printf -- "-------------------------------------------------------------------------------------\n"
+  local pids p cpu etime tty ver cwd flag ps_line old=0 total=0
+  pids=$( { pgrep -x claude || true; pgrep -f '/versions/2\.' || true; } 2>/dev/null | sort -un )
+  for p in $pids; do
+    ps_line=$(ps -p "$p" -o %cpu=,etime=,tty= 2>/dev/null || true)
+    [[ -z "$ps_line" ]] && continue
+    cpu=$(awk '{print $1}' <<<"$ps_line"); etime=$(awk '{print $2}' <<<"$ps_line"); tty=$(awk '{print $3}' <<<"$ps_line")
+    ver=$(lsof -p "$p" 2>/dev/null | awk '$4=="txt" && /\/versions\// {n=split($NF,a,"/"); print a[n]; exit}' || true)
+    [[ -z "$ver" ]] && ver="?"
+    cwd=$(lsof -a -p "$p" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1 || true)
+    if [[ "$ver" != "$cur" && "$ver" != "?" && "$cur" != "?" ]]; then flag="OLD"; old=$((old+1)); else flag="ok"; fi
+    total=$((total+1))
+    printf "%-7s %-9s %-4s %-11s %-5s %-7s %s\n" "$p" "$ver" "$flag" "${etime:-?}" "$cpu" "${tty:-?}" "${cwd/#$HOME/~}"
+  done
+  echo
+  echo "$total session(s), $old on an OLD version. Restart an OLD one to pick up $cur"
+  echo "(quit it in its own tab, or 'apple-energy kill <pid>')."
+}
+
 # ---- heat: watts ARE heat + thermal pressure + throttle + fans -----------
 # On a chip essentially 100% of electrical power is dissipated as heat, so the
 # package power in watts IS the heat-generation rate. Temperature is what results
@@ -304,6 +336,7 @@ case "${1:-help}" in
   power)    shift; cmd_power "$@" ;;
   heat)     shift; cmd_heat "$@" ;;
   adapter)  shift; cmd_adapter "$@" ;;
+  claude)   shift; cmd_claude "$@" ;;
   kill)     shift; cmd_kill "$@" ;;
   off)      shift; cmd_off "$@" ;;
   help|-h|--help) usage ;;
