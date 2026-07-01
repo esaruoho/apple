@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""fa-transcript-feed — AUTO-FEED completed whisp transcripts into the graph, ZERO-TOKEN.
+
+This closes the gap where the whisp pipeline stopped at the transcript: nothing fed the graph
+(whisp-worker only writes catalog.yaml; `convey ingest` even SKIPS .transcript.md). This watcher
+makes "treatment auto-feeds the graph" (convey principle 0050) TRUE for transcripts.
+
+For each transcript it writes ONE compact, indexed page (frontmatter title + metadata + a capped
+excerpt) into kb/graph/transcripts — small enough that the email bot's page-scan retrieval stays
+fast, with the full transcript left on disk (linked by source url). Deduped by slug (never re-feeds).
+
+  fa-transcript-feed              one pass over new transcripts, then exit
+  fa-transcript-feed --watch      keep feeding new transcripts as they land (poll)
+"""
+import sys, re, os, time
+from pathlib import Path
+HOME=Path.home()
+CONVEY=HOME/"work"/"convey"
+TDIR=HOME/"work"/"whisp-transcripts"/"transcripts"
+CORPUS="transcripts"
+BASE=CONVEY/"kb"/"graph"/CORPUS
+ENTS=BASE/"entities"
+EXCERPT_CHARS=2600     # keep pages small so bot retrieval stays fast; full text stays on disk
+
+def fm_get(text, key):
+    m=re.search(rf'^{key}:\s*["\']?(.+?)["\']?\s*$', text, re.M)
+    return m.group(1).strip() if m else ""
+
+def body_after_frontmatter(text):
+    return re.sub(r'^---.*?---\s*', '', text, count=1, flags=re.S)
+
+def slugify(s): return re.sub(r"[^a-z0-9]+","-",(s or "transcript").lower()).strip("-")[:90]
+
+def feed_one(tpath):
+    text=tpath.read_text(errors="ignore")
+    slug=fm_get(text,"slug") or slugify(tpath.parent.name)
+    page=ENTS/f"{slug}.md"
+    if page.exists(): return None   # dedup: already fed, never re-feed
+    title=fm_get(text,"title") or tpath.parent.name.replace("-"," ")
+    url=fm_get(text,"url") or fm_get(text,"sourceUrl")
+    channel=fm_get(text,"channel") or fm_get(text,"uploader")
+    date=fm_get(text,"uploadDate") or fm_get(text,"transcribedDate")
+    dur=fm_get(text,"durationSeconds")
+    body=body_after_frontmatter(text).strip()
+    excerpt=re.sub(r'\s+',' ',body)[:EXCERPT_CHARS]
+    src=str(tpath.relative_to(HOME)) if str(tpath).startswith(str(HOME)) else str(tpath)
+    ENTS.mkdir(parents=True, exist_ok=True)
+    out=[f"---\nname: {title}\nslug: {slug}\nkind: transcript\nconfidence: 0.7",
+         f"channel: {channel}" if channel else "",
+         f"url: {url}" if url else "",
+         f"date: {date}" if date else "",
+         f"duration_s: {dur}" if dur else "",
+         f"source: {src}\nfull_transcript: {src}\n---\n",
+         f"## Summary", f"Transcript of \"{title}\"" + (f" ({channel})" if channel else "") + ". Spoken-word source; full text on disk at "+src+".", "",
+         "## Excerpt", excerpt, "",
+         "## Full transcript", f"(full text at {src} — this page is the indexed stub)"]
+    page.write_text("\n".join(x for x in out if x is not None))
+    return slug
+
+def rebuild():
+    sys.path.insert(0, str(CONVEY)); from convey.graph import DreamGraph
+    dg=DreamGraph(base=BASE); res=dg.build()
+    nn=len(res.get('nodes',[])) if isinstance(res.get('nodes'),list) else res.get('nodes',0)
+    return nn
+
+def one_pass():
+    if not TDIR.exists(): print(f"[fa-transcript-feed] no transcripts dir: {TDIR}"); return 0
+    fed=0
+    for tpath in sorted(TDIR.glob("*/transcript.md")):
+        try:
+            s=feed_one(tpath)
+            if s: fed+=1; print(f"  + [[{s}]]", flush=True)
+        except Exception as e:
+            print(f"  ! {tpath.parent.name}: {e}", flush=True)
+    if fed:
+        n=rebuild(); print(f"[fa-transcript-feed] fed {fed} new transcript(s) → {CORPUS} ({n} nodes, $0)", flush=True)
+    return fed
+
+def main():
+    args=[a for a in sys.argv[1:] if a!="--watch"]
+    watch="--watch" in sys.argv[1:]
+    # Single-file mode: `fa-transcript-feed <path/to/transcript.md>` feeds JUST that transcript
+    # and does NOT rebuild — cheap enough to call from whisp-worker after every transcript, so
+    # "treatment auto-feeds the graph" happens at the source. The bot reads pages directly, so no
+    # rebuild is needed for retrieval; rebuild lazily via a full pass when you want graph queries.
+    if args and args[0].endswith(".md") and Path(args[0]).is_file():
+        s=feed_one(Path(args[0]).resolve())
+        print(f"[fa-transcript-feed] {'fed [['+s+']]' if s else 'already fed'} (no rebuild)")
+        return
+    total=one_pass()
+    if not watch:
+        print(f"[fa-transcript-feed] done ({total} fed this pass)"); return
+    print("[fa-transcript-feed] watching for new transcripts every 30s (Ctrl-C to stop)", flush=True)
+    while True:
+        time.sleep(30)
+        try: one_pass()
+        except Exception as e: print(f"[fa-transcript-feed] pass error: {e}", flush=True)
+
+if __name__=="__main__": main()

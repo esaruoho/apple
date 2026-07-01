@@ -497,7 +497,7 @@ def make_pdf_b64(markdown, title="freellmask"):
 
 # ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
 WIKI_GRAPHS = Path.home()/"work"/"convey"/"kb"/"graph"
-WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,papers").split(",")]
+WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,papers,transcripts").split(",")]
 def _best_window(text, qw, size=2600):
     """Return the ~size-char window of `text` densest in the query words — so a long paper
     surfaces its RELEVANT section, not just its intro."""
