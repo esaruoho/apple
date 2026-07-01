@@ -681,6 +681,22 @@ def youtube_urls(text):
         if u not in seen: seen.add(u); out.append(u)
     return out
 
+_GD_RE = re.compile(r'https?://(?:drive|docs)\.google\.com/[^\s<>"\')\]]+', re.I)
+def gdrive_urls(text):
+    """Google Drive / Docs links in an email body (folders, files, open?id=)."""
+    if not text: return []
+    seen=set(); out=[]
+    for u in _GD_RE.findall(text):
+        u=u.rstrip('.,);]>\'"')
+        if u not in seen: seen.add(u); out.append(u)
+    return out
+def gdrive_id(u):
+    """Pull the Drive id from a folder / file / open?id= URL (mirrors ~/work/apple/bin/gdrive)."""
+    m=(re.search(r'/folders/([\w-]+)', u) or re.search(r'/file/d/([\w-]+)', u)
+       or re.search(r'/document/d/([\w-]+)', u) or re.search(r'[?&]id=([\w-]+)', u)
+       or re.search(r'/d/([\w-]+)', u))
+    return m.group(1) if m else ""
+
 def expand_playlists(urls, cap=None):
     """A playlist/channel URL → ALL its individual video URLs (yt-dlp --flat-playlist). A 5000-video
     channel yields 5000 videos: each transcribed, analysed, emailed. Bare video URLs pass through. NO
@@ -760,6 +776,28 @@ def poll_once(verbose=True):
                          f"Transcripts land in the archive as they finish.")
             elif verbose:
                 print(f"  📼 {seen_n} youtube url(s) already transcribed — nothing new to queue")
+        # AUTO-TRIGGER: a Google Drive link → fetch it (gdrive via the pakettibot bridge; files land in
+        # gdrive-results/<label>/), recorded PENDING. When the fetch lands, fa-gdrive-analysis-mailer OCRs
+        # + analyses the files and emails the requester — grounded in the REAL content, no guessing.
+        gd_urls=gdrive_urls(raw_body); gd_note=""
+        if gd_urls:
+            _who=full.get("from") or ""; _mm=re.search(r"<([^>]+)>", _who)
+            _to=(_mm.group(1) if _mm else _who).strip() or BCC
+            try:
+                _inbox=Path.home()/"work"/"comms"/"queue"/"pakettibot-inbox"
+                _gp=Path.home()/"work"/"comms"/"queue"/"fa-gdrive-pending.jsonl"; _n=0
+                with _gp.open("a") as _pf:
+                    for _u in gd_urls:
+                        _gid=gdrive_id(_u)
+                        (_inbox/f"gdrive-{_gid or _n}-{int(time.time())}.txt").write_text(f"gdrive {_u}\n")
+                        _pf.write(json.dumps({"url":_u,"id":_gid,"to":_to,"subj":full.get("subject",""),
+                                              "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+                        _n+=1
+                gd_note=(f"\n\n---\n📁 **Fetching {_n} Google Drive item(s)** — the Mini is downloading "
+                         f"now. I'll OCR + analyse the files and email you when they land.")
+                if verbose: print(f"  📁 gdrive: triggered {_n} fetch(es), pending analysis-email → {_to}")
+            except Exception as _e:
+                if verbose: print(f"  gdrive trigger error: {_e}")
         # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
         # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
         # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
@@ -788,6 +826,12 @@ def poll_once(verbose=True):
                            r'check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',residue)
             residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
             if len(residue)<12: video_only=True
+        gdrive_only=False
+        if gd_urls and not extra and not yt_urls:
+            gres=re.sub(r'https?://\S+',' ', question or '')
+            gres=re.sub(r'(?i)\b(fwd|fw|re|see|this|that|these|those|folder|file|files|drive|gdrive|google|docs?|link|url|please|pls|download|fetch|convey|ocr|analyse|analyze|thoughts?|check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',gres)
+            gres=re.sub(r'[^A-Za-z0-9]+',' ',gres).strip()
+            if len(gres)<12: gdrive_only=True
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
         reformat = is_pure_reformat(question) and not extra
@@ -817,6 +861,13 @@ def poll_once(verbose=True):
                 if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s)")
             except Exception as _e:
                 if verbose: print(f"  pending-write error: {_e}")
+        elif gdrive_only:
+            note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
+                  f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
+                  f"and analyse them and email you the writeup.")
+            reply={"text":note,"html":md_to_inner_html(note)}
+            used="gdrive (fetching — analysis from the real files)"
+            gd_note=""
         elif prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
             note="Here's the printable one-pager of the previous answer — attached. Same content, just formatted."
@@ -855,10 +906,11 @@ def poll_once(verbose=True):
                 if b64:
                     reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
-        # Append the transcription-belt note to whichever reply path built the message.
-        if yt_note:
-            reply["text"]=reply.get("text","")+yt_note
-            reply["html"]=reply.get("html","")+"<hr>"+md_to_inner_html(yt_note)
+        # Append the transcription-belt + gdrive-fetch notes to whichever reply path built the message.
+        for _n in (yt_note, gd_note):
+            if _n:
+                reply["text"]=reply.get("text","")+_n
+                reply["html"]=reply.get("html","")+"<hr>"+md_to_inner_html(_n)
         # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
         # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
         # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)

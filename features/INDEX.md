@@ -323,7 +323,7 @@ Record screen + system audio to one .mov with no loopback driver  —  9 scenari
   - [@hw-verified] --list enumerates displays and audible apps  (ran live)
   - [@built] whole-display capture with all system audio
   - [@built] optional microphone as a second audio track
-  - [@hw-verified] --out omitted defaults to ~/Videos/<timestamp>.mov  (ran live)
+  - [@hw-verified] --out omitted writes into the CURRENT folder  (ran live)
   - [@hw-verified] rec is the one-word terminal launcher  (ran live)
   - [@built] AppleToolbox 🧰 ▸ Record Screen & Audio is a start/stop toggle
   - [(no grade)] Sequoia re-prompts screen-recording permission

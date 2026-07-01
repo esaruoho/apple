@@ -35,8 +35,12 @@
 #   Two direct-pushes to main, no PR.
 #   Ship 1 (commit 412fccd): bin/screen-audio-record.swift + binary,
 #     commands/screen-audio-record.md, features/screen-audio-record.feature + .session.md.
-#   Ship 2 (this commit): default ~/Videos/<timestamp>.mov naming when --out omitted,
-#     bin/rec launcher, commands/rec.md, AppleToolbox "Record Screen & Audio" toggle.
+#   Ship 2 (commit eeb9b9e): --out-optional default, bin/rec launcher, commands/rec.md,
+#     AppleToolbox "Record Screen & Audio" toggle.
+#   Ship 3 (this commit): default now the CURRENT folder (cwd), not ~/Videos; `rec`
+#     mirrored to standalone PUBLIC repo esaruoho/apple-rec (~/work/apple-rec) —
+#     self-bootstrapping rec + build.sh + README + MIT LICENSE. Standalone canonical
+#     on divergence (same rule as apple-energy / sessions).
 #   Live build machine: macOS 15.6.1 (24G90), display 1512x982 @2x.
 # ============================================================================
 
@@ -89,14 +93,17 @@ Feature: Record screen + system audio to one .mov with no loopback driver
     # cite: setupWriter(mic:) + stream() .microphone case — @built: not exercised live
 
   @hw-verified
-  Scenario: --out omitted defaults to ~/Videos/<timestamp>.mov  (ran live)
+  Scenario: --out omitted writes into the CURRENT folder  (ran live)
     Given no --out is passed
     When recording starts
-    Then Recorder.defaultOutPath() creates ~/Videos (if missing) and names the file
-      yyyy-MM-dd-HH-mm-ss.mov
-    And a live `rec` run wrote ~/Videos/2026-07-02-01-07-46.mov — probe confirmed
-      3.10s, video avc1 3024x1964, audio 'aac '
+    Then Recorder.defaultOutPath() = FileManager.currentDirectoryPath + "/" +
+      yyyy-MM-dd-HH-mm-ss.mov — the file lands in whatever folder you ran the command from,
+      NOT a hardcoded ~/Videos
+    And a live `rec` run from a scratch dir wrote <that-dir>/2026-07-02-01-24-38.mov —
+      probe confirmed 2.99s, video avc1 3024x1964, audio 'aac ', and no orphan process left
     # cite: Recorder.defaultOutPath() + start()
+    # NOTE: the AppleToolbox toggle passes an EXPLICIT --out ~/Videos/<ts>.mov because a
+    # menu-bar app has no meaningful cwd (it is "/"); only the CLI default follows cwd.
 
   @hw-verified
   Scenario: rec is the one-word terminal launcher  (ran live)

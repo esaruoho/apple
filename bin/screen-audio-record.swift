@@ -62,7 +62,7 @@ func printUsage() {
       --display <n>          display index from --list (default 0 = main)
       --also-mic             add your microphone as a second audio track
       --fps <n>              frame rate (default 60)
-      --out, -o <path>       output .mov (default: ~/Videos/yyyy-MM-dd-HH-mm-ss.mov)
+      --out, -o <path>       output .mov (default: ./yyyy-MM-dd-HH-mm-ss.mov in the current folder)
 
     Press Ctrl-C to stop and finalize the file.
     """)
@@ -78,10 +78,10 @@ func err(_ s: String) -> Never {
 final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var opts: Options
 
-    /// Default output: ~/Videos/yyyy-MM-dd-HH-mm-ss.mov (dir created if missing).
+    /// Default output: <current working directory>/yyyy-MM-dd-HH-mm-ss.mov —
+    /// the file lands in whatever folder you ran the command from.
     static func defaultOutPath() -> String {
-        let dir = (NSHomeDirectory() as NSString).appendingPathComponent("Videos")
-        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let dir = FileManager.default.currentDirectoryPath
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
         return (dir as NSString).appendingPathComponent(f.string(from: Date()) + ".mov")

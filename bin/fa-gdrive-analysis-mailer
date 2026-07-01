@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""fa-gdrive-analysis-mailer — the gdrive twin of fa-video-analysis-mailer.
+
+When someone emails a Google Drive link to cloudcity-llm@, freellmask-mail triggers the fetch
+(`gdrive <url>` via the pakettibot bridge → files land in ~/work/comms/queue/gdrive-results/<label>/)
+and records it PENDING. THIS script closes the loop: once the fetch has landed and gone quiet, it
+OCRs / reads every fetched file (Apple Vision for PDF/image, decode for text), concatenates the text,
+and emails the requester an analysis built from the REAL content — via `convey email-transcript
+--analyze` (same brain as the video path). No guessing: the analysis is grounded in what was fetched.
+
+Reads:  ~/work/comms/queue/fa-gdrive-pending.jsonl  ({url,id,to,subj,ts} per line, appended by freellmask)
+Fetch:  ~/work/comms/queue/gdrive-results/<folder containing id>/
+OCR:    ~/work/apple/bin/vision-ocr <file>   (pdf/image → text, on the Mini)
+Emits:  convey email-transcript <_extracted.txt> --analyze --to <requester> --source <url>
+Rewrites the pending file without the ones it mailed. Idempotent; best-effort. Run on a cadence.
+
+  fa-gdrive-analysis-mailer            # one pass
+  fa-gdrive-analysis-mailer --verbose
+"""
+import json, os, re, subprocess, sys, time
+from pathlib import Path
+
+HOME    = Path.home()
+PEND    = HOME/"work"/"comms"/"queue"/"fa-gdrive-pending.jsonl"
+RESULTS = HOME/"work"/"comms"/"queue"/"gdrive-results"
+VISION  = HOME/"work"/"apple"/"bin"/"vision-ocr"
+CONVEY  = HOME/"work"/"apple"/"bin"/"convey"
+VERBOSE = "--verbose" in sys.argv or "-v" in sys.argv
+STABLE_SECS = int(os.environ.get("FA_GDRIVE_STABLE_SECS", "90"))   # folder must be quiet this long = done
+MAX_CHARS   = int(os.environ.get("FA_GDRIVE_MAX_CHARS", "180000"))  # cap the concatenated text
+OCR_EXT   = {".pdf", ".png", ".jpg", ".jpeg", ".heic", ".tiff", ".tif", ".gif", ".bmp", ".webp"}
+TEXT_EXT  = {".txt", ".md", ".markdown", ".csv", ".json", ".xml", ".rtf", ".html", ".htm"}
+
+
+def find_folder(gid):
+    """The gdrive-results/ subfolder whose name carries this Drive id (labeled gdrive-<id> or custom)."""
+    if not RESULTS.is_dir() or not gid:
+        return None
+    for d in RESULTS.iterdir():
+        if d.is_dir() and gid in d.name:
+            return d
+    return None
+
+
+def is_ready(folder):
+    """Landed + gone quiet: has files, and nothing modified in the last STABLE_SECS (download done)."""
+    files = [p for p in folder.rglob("*") if p.is_file() and not p.name.startswith(".")]
+    if not files:
+        return False, []
+    newest = max(p.stat().st_mtime for p in files)
+    if (time.time() - newest) < STABLE_SECS:
+        return False, files                      # still downloading — wait
+    return True, files
+
+
+def extract_text(files):
+    """OCR pdf/images (Apple Vision), decode text files. Returns concatenated text (capped)."""
+    parts, total = [], 0
+    for p in sorted(files):
+        if total >= MAX_CHARS:
+            break
+        ext = p.suffix.lower()
+        txt = ""
+        if ext in TEXT_EXT:
+            try:
+                txt = p.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                txt = ""
+        elif ext in OCR_EXT and VISION.exists():
+            try:
+                r = subprocess.run([str(VISION), str(p)] + (["--pages", "40"] if ext == ".pdf" else []),
+                                   capture_output=True, text=True, timeout=600)
+                txt = "\n".join(l for l in (r.stdout or "").splitlines()
+                                if not re.search(r'(?i)\.mlmodelc|TextRecognition|MLModel|VK[A-Z]|CRImage', l))
+            except Exception:
+                txt = ""
+        if txt.strip():
+            parts.append(f"--- FILE: {p.name} ---\n{txt.strip()}")
+            total += len(txt)
+    return ("\n\n".join(parts))[:MAX_CHARS]
+
+
+def main():
+    if not PEND.exists():
+        return
+    try:
+        lines = [l for l in PEND.read_text(encoding="utf-8", errors="ignore").splitlines() if l.strip()]
+    except Exception:
+        return
+    if not lines:
+        return
+    keep, mailed = [], 0
+    for l in lines:
+        try:
+            rec = json.loads(l)
+        except Exception:
+            continue
+        gid = rec.get("id") or ""
+        folder = find_folder(gid)
+        if not folder:
+            keep.append(l); continue                 # not fetched yet
+        ready, files = is_ready(folder)
+        if not ready:
+            keep.append(l); continue                 # still downloading / not landed
+        text = extract_text(files)
+        if not text.strip():
+            keep.append(l)                            # nothing readable yet (OCR pending?) — retry
+            if VERBOSE: print(f"  ⏳ {folder.name}: no readable text yet, keeping pending")
+            continue
+        # write the concatenated content and reuse convey email-transcript (analyze + email)
+        outf = folder/"_extracted.txt"
+        try:
+            outf.write_text(text, encoding="utf-8")
+        except Exception:
+            outf = Path("/tmp")/f"gdrive-{gid}.txt"; outf.write_text(text, encoding="utf-8")
+        to = rec.get("to") or os.environ.get("CONVEY_DIGEST_EMAIL", "esaruoho@gmail.com")
+        cmd = [str(CONVEY), "email-transcript", str(outf), "--analyze", "--to", to,
+               "--source", rec.get("url", ""), "--title", f"Google Drive: {folder.name} ({len(files)} files)"]
+        try:
+            r = subprocess.run(cmd, timeout=420, capture_output=True, text=True)
+            if r.returncode == 0:
+                mailed += 1
+                if VERBOSE: print(f"  📩 emailed gdrive analysis of {folder.name} ({len(files)} files) → {to}")
+            else:
+                keep.append(l)
+                if VERBOSE: print(f"  ✗ email failed for {folder.name}: {(r.stderr or r.stdout)[:120]}")
+        except Exception as e:
+            keep.append(l)
+            if VERBOSE: print(f"  ✗ email error for {folder.name}: {e}")
+    try:
+        PEND.write_text(("\n".join(keep) + "\n") if keep else "", encoding="utf-8")
+    except Exception:
+        pass
+    if VERBOSE:
+        print(f"fa-gdrive-analysis-mailer: mailed {mailed}, {len(keep)} still pending")
+
+
+if __name__ == "__main__":
+    main()
