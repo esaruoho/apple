@@ -20,20 +20,39 @@ TERMS = {
 # generic interpreters whose bare name is useless — annotate with script/parent
 _RUNTIME_PREFIXES = ("python", "node", "ruby", "perl", "bash", "zsh",
                      "deno", "bun", "java", "php", "osascript")
-# well-known system processes → one-line "what it is" (so "WindowServer" isn't a mystery)
+# well-known system processes → one-line "what it is" (so daemons aren't a mystery)
 KNOWN = {
     "WindowServer": "macOS display compositor (system, can't quit)",
     "kernel_task": "macOS kernel",
+    "launchd": "service launcher (PID 1)",
+    # Spotlight
     "mds": "Spotlight indexing", "mds_stores": "Spotlight index store",
     "mdworker": "Spotlight worker", "mdworker_shared": "Spotlight worker",
-    "mediaanalysisd": "Photos media analysis (faces/scenes)",
-    "photoanalysisd": "Photos analysis",
-    "coreaudiod": "Core Audio server",
-    "syncthing": "Syncthing file sync",
-    "bluetoothd": "Bluetooth daemon", "hidd": "input devices",
-    "cloudd": "iCloud sync", "bird": "iCloud Documents sync",
-    "backupd": "Time Machine backup", "powerd": "power management",
+    "mdsync": "Spotlight index sync", "mdbulkimport": "Spotlight bulk import",
     "spotlightknowledged": "Spotlight knowledge",
+    "corespotlightd": "CoreSpotlight indexing",
+    # Photos / media
+    "mediaanalysisd": "Photos media analysis (faces/scenes)",
+    "photoanalysisd": "Photos analysis", "photolibraryd": "Photos library",
+    "AMPLibraryAgent": "Music/TV library", "ampdevicesagent": "Apple device sync",
+    # iCloud / files / sync
+    "cloudd": "iCloud sync", "bird": "iCloud Documents sync",
+    "fileproviderd": "File Provider (iCloud/3rd-party file sync)",
+    "filecoordinationd": "file coordination (doc access)",
+    "nsurlsessiond": "background network transfers", "apsd": "Apple Push (APNs)",
+    "syncthing": "Syncthing file sync",
+    # system services often high in energy
+    "coreduetd": "CoreDuet — activity prediction",
+    "coreaudiod": "Core Audio server",
+    "bluetoothd": "Bluetooth daemon", "hidd": "input devices",
+    "backupd": "Time Machine backup", "backupd-helper": "Time Machine helper",
+    "powerd": "power management", "trustd": "certificate trust evaluation",
+    "spindump": "system diagnostics sampler", "sysdiagnose": "system diagnostics",
+    "distnoted": "distributed notifications", "cfprefsd": "preferences service",
+    "notifyd": "notifications", "securityd": "security/keychain",
+    "sharingd": "AirDrop/Handoff/sharing", "rapportd": "Continuity/AirDrop",
+    "controlcenter": "Control Center", "ReportCrash": "crash reporting",
+    "revisiond": "document versions (autosave)", "tccd": "privacy/permissions (TCC)",
 }
 
 
@@ -326,26 +345,28 @@ def session_map(info):
     return out
 
 
-def annotate(pid, info, args, topcmd="", cur="", sessmap=None, links=False):
-    """Human-readable 'what is this process' for the `now` table."""
+def describe(pid, info, args, sessmap=None, links=False, topcmd=""):
+    """Return (process, detail) for the `now` table's Process + 'What it is' columns.
+    claude → detail carries version/OLD, session name, age, project, term+clickable tty."""
     d = info.get(pid)
     if not d:
         # process exited during top's sample window — top still knows its (truncated) name
-        return ((topcmd or "?") + " · ended").strip()
+        return ((topcmd or "?"), "ended")
     comm = d["comm"]
     name, low = base(comm), base(comm).lower()
     if low == "claude" or "/versions/2." in comm:
         r = claude_row(pid, info)
         flag = "OLD" if r["old"] else "ok"
-        nm = ""
+        sname = ""
         if sessmap and pid in sessmap and sessmap[pid][0]:
-            sname, conf = sessmap[pid]
-            nm = " «%s»" % ((sname if conf else "~" + sname)[:34])
+            s, conf = sessmap[pid]
+            sname = "«%s» · " % ((s if conf else "~" + s)[:30])
         tty = hyperlink("aejump://%s" % pid, r["tty"]) if links else r["tty"]
-        return "claude %s %s%s · %s · %s · %s %s" % (
-            r["ver"], flag, nm, r["age"], r["cwd"], r["term"], tty)
+        detail = "%s %s · %s%s · %s · %s %s" % (
+            r["ver"], flag, sname, r["age"], r["cwd"], r["term"], tty)
+        return ("claude", detail)
     if name in KNOWN:
-        return "%s — %s" % (name, KNOWN[name])
+        return (name, KNOWN[name])
     if is_runtime(low):
         toks = args.get(pid, "").split()
         script = ""
@@ -356,10 +377,8 @@ def annotate(pid, info, args, topcmd="", cur="", sessmap=None, links=False):
             break
         par = info.get(d["ppid"])
         tail = terminal_of(pid, info) or (base(par["comm"]) if par else "")
-        lbl = name
-        if script:
-            lbl += " — " + script
+        detail = script
         if tail:
-            lbl += " (← " + tail + ")"
-        return lbl
-    return name
+            detail += (" " if detail else "") + "(← " + tail + ")"
+        return (name, detail)
+    return (name, "")

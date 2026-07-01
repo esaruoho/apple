@@ -49,16 +49,16 @@ Feature: Read macOS energy & power telemetry from the command line
     And the first listing is discarded because top reports 0.0 until it has a delta
     And it resolves each PID's FULL name via `ps -ww -o comm=` instead of top's
       ~16-char-truncated COMMAND column, so "Ray Helper (Rend" → "Ray Helper (Renderer)"
-    And it ANNOTATES each process with what it actually is (shared `_apple_energy.annotate`):
-      claude → "claude <ver> OLD|ok · <age> · <project> · <term> <tty>" (everything needed
-      to identify + jump to it, inline), a known system daemon → "<name> — <what it is>"
-      (so WindowServer reads "macOS display compositor (system, can't quit)"), a runtime
-      → "<name> — <script> (← <parent>)", everything else → the plain name
+    And it renders a proper 4-column box table (PID · Process · What it is · Power) — NOT a
+      freeform blob — via shared `_apple_energy.describe()` which splits each process into
+      (process-name, detail): claude → "<ver> OLD|ok · «session» · <age> · <project> · <term>
+      <tty>", a known daemon → its KNOWN description (fileproviderd/mdsync/trustd/WindowServer…
+      all explained), a runtime → "<script> (← <parent>)", an app → blank (self-explanatory)
     And a PID that exits during top's sample window shows top's own name + " · ended"
       (e.g. "top · ended") instead of a bare "?" — top's -stats includes command as fallback
     And no sudo is required
-    # cite: bin/apple-energy cmd_now() + bin/_apple_energy.py annotate()/KNOWN; ran live —
-    #       "claude 2.1.186 OLD · 7d 23h · ~/work/merlib-dump · iTerm2 ttys004"
+    # cite: bin/apple-energy cmd_now() + bin/_apple_energy.py describe()/KNOWN; ran live —
+    #       columnar table, claude row "2.1.197 ok · «~gravity-paper» · 1m · ~/work/... ttys005"
 
   @built @parser-verified
   Scenario: watch samples powermetrics over a window and ranks per-process energy
@@ -105,7 +105,8 @@ Feature: Read macOS energy & power telemetry from the command line
 
   @built
   Scenario: claude TTYs are Cmd-clickable to jump to the session  (registration ran live)
-    Given iTerm2/Terminal follow OSC 8 hyperlinks on Cmd-click
+    Given iTerm2 follows OSC 8 hyperlinks on Cmd-click, but Terminal.app does NOT support
+      OSC 8 — so clickable TTYs are an iTerm2-only feature; footers say so per TERM_PROGRAM
     When `apple-energy install-jump` runs once
     Then it builds ~/Applications/AppleEnergyJump.app (an AppleScript `on open location`
       handler that runs `apple-energy jump <pid>`), adds CFBundleURLTypes for the aejump:
@@ -131,6 +132,17 @@ Feature: Read macOS energy & power telemetry from the command line
     And it logs each invocation to ~/.local/state/apple-energy/jump.log for debuggability
     # cite: cmd_install_jump() applet + cmd_resolve(); diagnosed via jump.log showing -1743,
     #       fixed to direct-tell — remaining step is the user's one-time Allow click
+
+  @built
+  Scenario: now is a proper 4-column table, not a freeform blob  (ran live)
+    Given Esa found the single "what it is" column inconsistent/uninformative (mostly blank)
+    When `apple-energy now` prints
+    Then it renders PID · Process · What it is · Power as a box table via `describe(pid,…)`
+      which returns (process_name, detail): a KNOWN daemon → its one-line purpose (the KNOWN
+      map was expanded to cover fileproviderd/mdsync/trustd/coreduetd/… so few rows are blank),
+      claude → "ver OLD|ok · «session» · age · project · term tty(clickable)", a runtime →
+      "script (← parent)", a vanished pid → top's name + "ended"
+    # cite: bin/_apple_energy.py describe()/KNOWN; bin/apple-energy cmd_now(); ran live
 
   @built
   Scenario: claude and now render as Unicode box-drawing tables  (ran live)

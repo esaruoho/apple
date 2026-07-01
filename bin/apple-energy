@@ -92,15 +92,18 @@ if hdrs:
         if len(parts) >= 3 and parts[0].isdigit():
             rows.append((parts[0], " ".join(parts[1:-1]), parts[-1]))  # pid, topcmd, power
 info, args = ae.proc_maps()
-cur = ae.current_version()
 sm = ae.session_map(info)   # pid -> (session name, confident) for claude rows
 links = sys.stdout.isatty()
-table_rows = [[pid, ae.annotate(pid, info, args, topcmd, cur, sm, links), power]
-              for pid, topcmd, power in rows[:n]]
-print(ae.render_table(["PID", "Command / what it is", "Power"], table_rows,
-                      ["l", "l", "r"]))
-if links:
+table_rows = []
+for pid, topcmd, power in rows[:n]:
+    proc, detail = ae.describe(pid, info, args, sm, links, topcmd)
+    table_rows.append([pid, proc, detail, power])
+print(ae.render_table(["PID", "Process", "What it is", "Power"], table_rows,
+                      ["l", "l", "l", "r"]))
+if links and os.environ.get("TERM_PROGRAM") == "iTerm.app":
     print("Cmd-click a claude TTY to jump to it · full session list: apple-energy claude")
+elif links:
+    print("Jump to a claude session: apple-energy jump <name|pid>  ·  full list: apple-energy claude")
 PY
 }
 
@@ -195,6 +198,7 @@ cur = ae.current_version()
 info, _ = ae.proc_maps()
 sm = ae.session_map(info)
 links = sys.stdout.isatty()      # only emit clickable TTYs to a real terminal
+iterm = os.environ.get("TERM_PROGRAM") == "iTerm.app"   # OSC 8 clicks: iTerm2 only
 handler = os.path.exists(os.path.expanduser("~/Applications/AppleEnergyJump.app"))
 print("Running Claude Code sessions (current installed version: %s)\n" % cur)
 headers = ["PID", "Version", "", "Age", "%CPU", "Term", "TTY", "Project", "Session name"]
@@ -220,10 +224,12 @@ aligns = ["l", "l", "l", "l", "r", "l", "l", "l", "l"]
 print(ae.render_table(headers, table_rows, aligns))
 print()
 print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
-if links and handler:
-    print("Cmd-click a TTY to jump to that session's tab (iTerm2/Terminal).")
-elif links and not handler:
+if links and iterm and handler:
+    print("Cmd-click a TTY to jump to that session (allow the 1-time prompt on first click).")
+elif links and iterm and not handler:
     print("Tip: run `apple-energy install-jump` once to make the TTYs Cmd-clickable.")
+elif links and not iterm:
+    print("(Cmd-click TTYs needs iTerm2 — Terminal.app can't; here use `jump` below.)")
 print("Jump:          apple-energy jump <pid|tty|version|project|name>")
 print("Kill now:      apple-energy kill <pid>            (SIGTERM; a launchd-kept proc respawns)")
 print("Kill properly: apple-energy off  <name> [--yes]  (stop + launchctl disable so it stays dead)")
@@ -258,11 +264,22 @@ cmd_install_jump() {
   local bin="$APPLE_ENERGY_BIN/apple-energy"
   local tmp; tmp="$(mktemp -t aejump)".applescript
   cat > "$tmp" <<'APPLESCRIPT'
+on logline(msg)
+	do shell script "mkdir -p $HOME/.local/state/apple-energy; echo " & quoted form of ((do shell script "date '+%H:%M:%S'") & " " & msg) & " >> $HOME/.local/state/apple-energy/jump.log"
+end logline
+
 on open location this_URL
+	logline("FIRED " & this_URL)
 	set AppleScript's text item delimiters to "//"
 	set _pid to last text item of this_URL
+	set AppleScript's text item delimiters to ""
+	try
+		set _res to (do shell script "__BIN__ _resolve " & quoted form of _pid)
+	on error
+		logline("resolve-failed (pid gone?) " & _pid)
+		return
+	end try
 	set AppleScript's text item delimiters to tab
-	set _res to (do shell script "__BIN__ _resolve " & quoted form of _pid)
 	set _term to text item 1 of _res
 	set _tty to text item 2 of _res
 	set AppleScript's text item delimiters to ""
@@ -318,7 +335,7 @@ APPLESCRIPT
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string aejump" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string Focuses the terminal tab of a Claude session." "$plist" 2>/dev/null || true
-  /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$plist" 2>/dev/null || true
+  # NOT LSUIElement: a foreground app makes the one-time Automation prompt frontmost/unmissable.
   codesign --force --deep -s - "$app" 2>/dev/null || true   # ad-hoc: stable TCC identity
   tccutil reset AppleEvents "$bundleid" 2>/dev/null || true # clear any stale deny → fresh prompt
   local LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
