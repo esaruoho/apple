@@ -1,4 +1,4 @@
-# CLI Tools Index — 281 tools in bin/
+# CLI Tools Index — 282 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -221,6 +221,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
+`screen-audio-record` — (no description) — `bin/screen-audio-record`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
 `sdef-extract.py` — (no description) — `bin/sdef-extract.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
