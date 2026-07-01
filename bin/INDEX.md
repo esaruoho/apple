@@ -87,7 +87,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `esarmbp` — (no description) — `bin/esarmbp`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `fa-analyze` — (no description) — `bin/fa-analyze`
-`fa-paper` — (re)ingest a LIVING paper into its own wiki corpus, replacing the prior version. — `bin/fa-paper`
+`fa-paper` — (no description) — `bin/fa-paper`
 `fa-wiki` — (no description) — `bin/fa-wiki`
 `file-to-text` — file-to-text <path> — extract plain text from a file so a text-only LLM can — `bin/file-to-text`
 `filee` — launch Filee.app into a folder (the files-as-boxes viewer, convey ladder rung 1). — `bin/filee`
