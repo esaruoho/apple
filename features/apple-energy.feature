@@ -50,12 +50,15 @@ Feature: Read macOS energy & power telemetry from the command line
     And it resolves each PID's FULL name via `ps -ww -o comm=` instead of top's
       ~16-char-truncated COMMAND column, so "Ray Helper (Rend" → "Ray Helper (Renderer)"
     And it ANNOTATES each process with what it actually is (shared `_apple_energy.annotate`):
-      claude → "claude <version> in <project> (<terminal>)", a runtime like python/node →
-      "<name> — <script> (← <parent-or-terminal>)", everything else → the plain name
-    And a PID that exits between the top sample and the ps lookup shows "?" (honest)
+      claude → "claude <ver> OLD|ok · <age> · <project> · <term> <tty>" (everything needed
+      to identify + jump to it, inline), a known system daemon → "<name> — <what it is>"
+      (so WindowServer reads "macOS display compositor (system, can't quit)"), a runtime
+      → "<name> — <script> (← <parent>)", everything else → the plain name
+    And a PID that exits during top's sample window shows top's own name + " · ended"
+      (e.g. "top · ended") instead of a bare "?" — top's -stats includes command as fallback
     And no sudo is required
-    # cite: bin/apple-energy cmd_now() + bin/_apple_energy.py annotate(); ran live —
-    #       "claude 2.1.186 in ~/work/merlib-dump (iTerm2)" etc.
+    # cite: bin/apple-energy cmd_now() + bin/_apple_energy.py annotate()/KNOWN; ran live —
+    #       "claude 2.1.186 OLD · 7d 23h · ~/work/merlib-dump · iTerm2 ttys004"
 
   @built @parser-verified
   Scenario: watch samples powermetrics over a window and ranks per-process energy
@@ -92,13 +95,26 @@ Feature: Read macOS energy & power telemetry from the command line
     When `apple-energy claude` runs
     Then it reads the current version from the ~/.local/bin/claude symlink target, finds
       every running instance (pgrep -x claude + pgrep -f /versions/2.), and for each prints
-      PID, real version (lsof txt basename), OLD/ok flag, age, %CPU, TTY, TERM (which
-      terminal emulator — iTerm2 vs Terminal, via a ppid-chain walk), and project (cwd)
-    And it summarises how many are on an OLD version so stale sessions can be restarted
-    And the introspection (proc_maps/terminal_of/version_of/cwd_of/claude_pids) lives in
-      the shared bin/_apple_energy.py so `now` and `claude` don't duplicate it (DRY)
+      PID, real version (lsof txt basename), OLD/ok flag, READABLE age (7d 23h / 1h 35m via
+      human_age, not raw 07-22:58:40), %CPU, TERM (iTerm2 vs Terminal, ppid-chain walk),
+      TTY, and project (cwd) — matching the compact table Esa liked, plus jump/kill hints
+    And the introspection (proc_maps/terminal_of/version_of/cwd_of/claude_row/human_age)
+      lives in the shared bin/_apple_energy.py so now/claude/jump don't duplicate it (DRY)
     # cite: bin/apple-energy cmd_claude() + bin/_apple_energy.py; ran live — 8 sessions,
-    #       TERM resolved iTerm2 for most, Terminal for the freellmapi 2.1.193 session
+    #       readable ages, TERM iTerm2/Terminal, ttys002-009
+
+  @built
+  Scenario: jump focuses a claude session's terminal window/tab  (resolution + tty-read ran live)
+    Given each session has a tty (ttysNNN) and a terminal (iTerm2/Terminal)
+    When `apple-energy jump <pid|tty|version|project-substring>` runs
+    Then it resolves the target against every claude session; a unique match is focused via
+      the terminal's OWN AppleScript verbs (iTerm2 select session/tab/window + activate;
+      Terminal set selected + set frontmost) — NOT System Events keystrokes, so it's window
+      management, not a UI hijack (and Esa explicitly asked for the focus change)
+    And an ambiguous target (e.g. a version shared by 5 sessions) lists the matches and asks
+      for a unique PID/tty instead of guessing; a no-match prints a pointer to `claude`
+    # cite: bin/apple-energy cmd_jump(); ran live — ambiguous/no-match paths + a read-only
+    #       osascript probe confirmed iTerm2/Terminal expose `tty of session` as /dev/ttysNNN
 
   @built
   Scenario: heat frames watts AS heat and shows the thermal drivers  (ran live, no-sudo part)

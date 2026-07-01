@@ -18,8 +18,9 @@
 #                                         + throttle + fans (sudo where available)
 #   apple-energy adapter                  power adapter wattage + battery state (no sudo)
 #   apple-energy claude                   list running Claude Code sessions: version,
-#                                         outdated?, project, age, CPU, TTY (no sudo)
+#                                         outdated?, readable age, CPU, TERM, TTY, project
 # ACT verbs (mutating — you asked for these):
+#   apple-energy jump <pid|tty|ver|proj>  focus that Claude session's terminal window/tab
 #   apple-energy kill <name|pid>          SIGTERM a hog now (may respawn if launchd-kept)
 #   apple-energy off <name> [--yes]       stop + DISABLE a launchd job so it stays dead
 #   apple-energy help                     this help
@@ -77,20 +78,23 @@ import os, sys, subprocess
 sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
 import _apple_energy as ae
 n = int(os.environ.get("APPLE_ENERGY_N", "15"))
+# keep top's (truncated) command so a process that exits before the ps snapshot
+# still shows a name ("… · ended") instead of a bare "?".
 top = subprocess.run(
-    ["top", "-l", "2", "-s", "1", "-n", str(n), "-o", "power", "-stats", "pid,power"],
+    ["top", "-l", "2", "-s", "1", "-n", str(n), "-o", "power", "-stats", "pid,command,power"],
     capture_output=True, text=True).stdout.splitlines()
 hdrs = [i for i, l in enumerate(top) if l.strip().startswith("PID")]
 rows = []
 if hdrs:
     for l in top[hdrs[-1] + 1:]:
         parts = l.split()
-        if len(parts) >= 2 and parts[0].isdigit():
-            rows.append((parts[0], parts[1]))
+        if len(parts) >= 3 and parts[0].isdigit():
+            rows.append((parts[0], " ".join(parts[1:-1]), parts[-1]))  # pid, topcmd, power
 info, args = ae.proc_maps()
-print("%-8s %-56s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
-for pid, power in rows[:n]:
-    print("%-8s %-56s %8s" % (pid, ae.annotate(pid, info, args)[:56], power))
+cur = ae.current_version()
+print("%-8s %-72s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
+for pid, topcmd, power in rows[:n]:
+    print("%-8s %-72s %8s" % (pid, ae.annotate(pid, info, args, topcmd, cur)[:72], power))
 PY
 }
 
@@ -181,36 +185,108 @@ cmd_claude() {
 import os, sys, subprocess
 sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
 import _apple_energy as ae
-cur = os.path.basename(os.path.realpath(os.path.expanduser("~/.local/bin/claude")))
-if not cur or cur == ".":
-    cur = "?"
+cur = ae.current_version()
 info, _ = ae.proc_maps()
 print("Running Claude Code sessions (current installed version: %s)\n" % cur)
-print("%-7s %-9s %-4s %-11s %-5s %-8s %-8s %s"
-      % ("PID", "VERSION", "", "AGE", "%CPU", "TTY", "TERM", "PROJECT (cwd)"))
-print("-" * 94)
+print("%-7s %-9s %-4s %-8s %-6s %-8s %-8s %s"
+      % ("PID", "VERSION", "", "AGE", "%CPU", "TERM", "TTY", "PROJECT (cwd)"))
+print("-" * 92)
 total = old = 0
 for p in ae.claude_pids():
-    line = subprocess.run(["ps", "-p", p, "-o", "%cpu=,etime=,tty="],
-                          capture_output=True, text=True).stdout.strip()
-    if not line:
+    cpu = subprocess.run(["ps", "-p", p, "-o", "%cpu="],
+                         capture_output=True, text=True).stdout.strip()
+    if not cpu or p not in info:
         continue
-    f = line.split()
-    cpu, etime = f[0], f[1]
-    tty = f[2] if len(f) > 2 else "?"
-    ver = ae.version_of(p) or "?"
-    term = ae.terminal_of(p, info) or "?"
-    cwd = ae.tilde(ae.cwd_of(p))
-    isold = ver != cur and ver != "?" and cur != "?"
-    flag = "OLD" if isold else "ok"
+    r = ae.claude_row(p, info)
+    flag = "OLD" if r["old"] else "ok"
     total += 1
-    old += 1 if isold else 0
-    print("%-7s %-9s %-4s %-11s %-5s %-8s %-8s %s"
-          % (p, ver, flag, etime, cpu, tty, term, cwd))
+    old += 1 if r["old"] else 0
+    print("%-7s %-9s %-4s %-8s %-6s %-8s %-8s %s"
+          % (p, r["ver"], flag, r["age"], cpu, r["term"], r["tty"], r["cwd"]))
 print()
-print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s"
-      % (total, old, cur))
-print("(quit it in its own tab, or 'apple-energy kill <pid>').")
+print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
+print("Jump to a session's terminal tab:  apple-energy jump <pid|tty|version|project>")
+print("Kill it now:                       apple-energy kill <pid>")
+PY
+}
+
+# ---- jump: bring a claude session's terminal window/tab to the front --------
+# Uses the terminal app's OWN AppleScript verbs (select tab / activate) — NOT
+# System Events keystrokes — so it's proper window management, not a UI hijack.
+# You asked for it: it deliberately focuses the target window.
+cmd_jump() {
+  [[ $# -ge 1 ]] || die "usage: apple-energy jump <pid|tty|version|project-substring>"
+  APPLE_ENERGY_TARGET="$*" python3 <<'PY'
+import os, sys, subprocess
+sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
+import _apple_energy as ae
+target = os.environ["APPLE_ENERGY_TARGET"].strip().lower()
+info, _ = ae.proc_maps()
+matches = []
+for p in ae.claude_pids():
+    if p not in info:
+        continue
+    r = ae.claude_row(p, info)
+    tty = r["tty"].lower()
+    hay = " ".join([p, r["ver"], r["cwd"], tty, r["term"]]).lower()
+    if target == p or target == tty or ("ttys" + target) == tty or target in hay:
+        matches.append(r)
+if not matches:
+    print("No claude session matches '%s'. Try `apple-energy claude` to see them." % target)
+    sys.exit(1)
+if len(matches) > 1:
+    print("Ambiguous — '%s' matches %d sessions:" % (target, len(matches)))
+    for r in matches:
+        print("  pid %s  %s  %s  %s %s  %s" % (r["pid"], r["ver"], r["age"], r["term"], r["tty"], r["cwd"]))
+    print("Re-run with a unique PID or tty.")
+    sys.exit(1)
+r = matches[0]
+tty = r["tty"]
+dev = tty if tty.startswith("/dev/") else "/dev/" + tty
+app = r["term"]
+if app == "iTerm2":
+    scpt = '''
+tell application "iTerm2"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is "%s" then
+          select s
+          select t
+          select w
+          activate
+          return "ok"
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell
+return "notfound"''' % dev
+elif app == "Terminal":
+    scpt = '''
+tell application "Terminal"
+  repeat with w in windows
+    repeat with t in tabs of w
+      if tty of t is "%s" then
+        set selected of t to true
+        set frontmost of w to true
+        activate
+        return "ok"
+      end if
+    end repeat
+  end repeat
+end tell
+return "notfound"''' % dev
+else:
+    print("Session pid %s is on '%s' (%s) — jump only scripts iTerm2/Terminal." % (r["pid"], app, tty))
+    sys.exit(1)
+out = subprocess.run(["osascript", "-e", scpt], capture_output=True, text=True)
+res = (out.stdout or "").strip()
+if res == "ok":
+    print("→ jumped to %s: claude %s in %s (%s %s)" % (app, r["ver"], r["cwd"], app, tty))
+else:
+    print("Could not focus %s %s (%s). stderr: %s" % (app, tty, res, out.stderr.strip()))
+    sys.exit(1)
 PY
 }
 
@@ -352,6 +428,7 @@ case "${1:-help}" in
   heat)     shift; cmd_heat "$@" ;;
   adapter)  shift; cmd_adapter "$@" ;;
   claude)   shift; cmd_claude "$@" ;;
+  jump)     shift; cmd_jump "$@" ;;
   kill)     shift; cmd_kill "$@" ;;
   off)      shift; cmd_off "$@" ;;
   help|-h|--help) usage ;;
