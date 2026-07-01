@@ -173,7 +173,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "OWN knowledge to give a FULL answer. NEVER refuse or say 'the wiki/pages do not cover this' — "
           "if the wiki is incomplete, answer from your own knowledge anyway. If a follow-up, use the prior conversation.")
     if viewpoint:   # in-corpus (free-energy) → think out loud + speak in three voices, ONE call, no extra roundtrip
-        struct=("\n\nStructure the reply with these EXACT markdown headings, in this order:\n"
+        struct=("\n\nYour reply MUST contain ALL FIVE of the following markdown headings, in this EXACT order and "
+          "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
+          "answer, never omit the thinking section, never rename it. A reply missing any of these five headings is "
+          "rejected and regenerated.\n"
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
           "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
@@ -198,7 +201,15 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
          (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
     msgs_nowiki=[{"role":"system","content":sysm},{"role":"user","content":user_nowiki}]
-    used=FM_MODEL; cur=msgs
+    # When the viewpoint is active the reply must carry the 'Thought about it' thinking heading.
+    # nemotron drops it ~1/3 of the time; if so we regenerate (never fabricate the reasoning).
+    def _missing_thinking(t):
+        if not viewpoint: return False
+        return re.search(r'(?im)^\s*#{1,3}\s*thought about it\b', t) is None
+    NUDGE=("\n\nREMINDER: your previous reply omitted the required '## Thought about it' section. Begin THIS reply "
+           "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
+           "'## Answer' and the three tone sections. Do not skip it.")
+    used=FM_MODEL; cur=msgs; last_clean=None; think_tries=0
     for _ in range(max(1,tries)):
         try:
             ans, used = _fm_call(cur)
@@ -208,7 +219,14 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             continue
         if _is_wiki_refusal(ans):          # the wiki context biased it into refusing → drop it, retry
             cur=msgs_nowiki; continue
+        if _missing_thinking(ans):         # clean+on-topic but no thinking heading → keep as fallback, regenerate
+            last_clean=(ans, used); think_tries+=1
+            if think_tries<=2:             # bounded: at most 2 corrective regenerations, then accept fallback
+                cur=[{"role":"system","content":sysm+NUDGE},{"role":"user","content":cur[1]["content"]}]
+                continue
+            return last_clean
         return ans, used
+    if last_clean: return last_clean       # never throw away a good answer just for a missing heading
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
 

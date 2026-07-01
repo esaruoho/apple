@@ -10,6 +10,8 @@ are instant and free. Overlapping entities merge.
   fa-paper <paper.md> [--corpus papers] [--name "Nice Title"]
   fa-paper --watch <paper.md> [--corpus papers]     re-copy on every file change (poll)
   fa-paper --batch <corpus> <file1> <file2> ...      ingest many at once
+  fa-paper --manifest <file.tsv>                     watch MANY papers from a TSV manifest
+                                                     (corpus <TAB> abs-path <TAB> nice name)
 
 The email bot's multi-corpus wiki_context and `fa-wiki query --graph kb/graph/<corpus>`
 pick up the paper immediately. Commit kb/graph/<corpus> to version it.
@@ -97,6 +99,37 @@ def main():
                 if cur!=last:
                     one(paper, corpus); rebuild(corpus); print(f"[fa-paper] refreshed ({time.strftime('%H:%M:%S')})"); last=cur
             except FileNotFoundError: pass
+            time.sleep(8)
+    elif a[0]=="--manifest":
+        mf=Path(a[1])
+        if not mf.exists(): sys.exit(f"fa-paper --manifest: no such file {mf}")
+        def load_manifest():
+            rows=[]
+            for ln in mf.read_text(errors="ignore").splitlines():
+                ln=ln.rstrip("\n")
+                if not ln.strip() or ln.lstrip().startswith("#"): continue
+                parts=ln.split("\t")
+                if len(parts)<2: continue
+                corpus=parts[0].strip(); path=parts[1].strip(); name=(parts[2].strip() if len(parts)>2 else None)
+                rows.append((corpus, path, name or None))
+            return rows
+        rows=load_manifest()
+        print(f"[fa-paper] manifest watch: {len(rows)} papers from {mf.name} (zero-token; Ctrl-C to stop)")
+        mtimes={}; first=True
+        while True:
+            rows=load_manifest()            # re-read manifest each cycle so adds/removes take effect live
+            changed=set()
+            for corpus, path, name in rows:
+                try: cur=os.stat(path).st_mtime
+                except FileNotFoundError:
+                    if first: print(f"  [missing] {path}")
+                    continue
+                key=(corpus, path)
+                if mtimes.get(key)!=cur:
+                    one(path, corpus, name); mtimes[key]=cur; changed.add(corpus)
+            for corpus in sorted(changed):
+                nn,ne=rebuild(corpus); print(f"[fa-paper] {corpus}: {nn} nodes, {ne} edges  ({time.strftime('%H:%M:%S')})")
+            if first: print(f"[fa-paper] initial ingest complete; watching for edits every 8s"); first=False
             time.sleep(8)
     elif a[0]=="--batch":
         corpus=a[1]
