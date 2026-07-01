@@ -681,41 +681,40 @@ def youtube_urls(text):
         if u not in seen: seen.add(u); out.append(u)
     return out
 
-def expand_playlists(urls, cap=100):
-    """A playlist/channel URL → its individual video URLs (yt-dlp --flat-playlist), so a 30-video
-    playlist behaves like 30 videos: each transcribed, each analysed, each emailed. Bare video URLs
-    pass through unchanged. Capped so one giant playlist/channel can't flood the belt."""
+def expand_playlists(urls, cap=None):
+    """A playlist/channel URL → ALL its individual video URLs (yt-dlp --flat-playlist). A 5000-video
+    channel yields 5000 videos: each transcribed, analysed, emailed. Bare video URLs pass through. NO
+    cap by default — a channel/playlist means the WHOLE thing (cap kept only as an optional override)."""
     out=[]; seen=set()
     for u in urls or []:
-        if len(out)>=cap: break
         if re.search(r'(?:[?&]list=|/playlist\?|/channel/|/@|/c/|/user/)', u):
             try:
                 r=subprocess.run(["yt-dlp","--flat-playlist","--print","url",u],
-                                 capture_output=True, text=True, timeout=180)
+                                 capture_output=True, text=True, timeout=1200)
                 vids=[v.strip() for v in (r.stdout or "").splitlines() if v.strip()]
             except Exception:
-                vids=[u]   # expansion failed → keep original (whisp-submit can still try --playlist)
+                vids=[u]   # enumeration failed → keep original (whisp-submit can still try --playlist)
             for v in (vids or [u]):
-                if len(out)>=cap: break
                 if v not in seen: seen.add(v); out.append(v)
         elif u not in seen:
             seen.add(u); out.append(u)
-    return out
+    return out[:cap] if cap else out
 
 def whisp_autosubmit(urls, verbose=False):
     """Drop YouTube URLs onto the whisp transcript belt. whisp-submit does its own dedup
     (catalog.yaml + queue), so the Lao-Russell-already-done case is handled there. Returns
     (queued_count, seen_count). Best-effort — never raises into the poll loop."""
     if not urls or not os.path.exists(WHISP_SUBMIT): return 0, 0
-    try:
-        r=subprocess.run([WHISP_SUBMIT, *urls], capture_output=True, text=True, timeout=240)
-        out=(r.stdout or "")+"\n"+(r.stderr or "")
-        queued=len(re.findall(r'(?im)^\s*Queued \(', out))
-        if verbose: print(f"  📼 whisp: queued {queued}/{len(urls)} youtube url(s) (dedup handled by whisp-submit)")
-        return queued, len(urls)
-    except Exception as e:
-        if verbose: print(f"  whisp-submit error: {e}")
-        return 0, len(urls)
+    queued=0
+    for i in range(0, len(urls), 300):                       # batch — thousands of URLs (a whole
+        batch=urls[i:i+300]                                  # channel) must not blow argv or one timeout
+        try:
+            r=subprocess.run([WHISP_SUBMIT, *batch], capture_output=True, text=True, timeout=900)
+            queued+=len(re.findall(r"(?im)^\s*Queued \(", (r.stdout or "")+"\n"+(r.stderr or "")))
+        except Exception as e:
+            if verbose: print(f"  whisp-submit batch error: {e}")
+    if verbose: print(f"  📼 whisp: queued {queued}/{len(urls)} url(s) in {(len(urls)+299)//300} batch(es)")
+    return queued, len(urls)
 
 def poll_once(verbose=True):
     transcript_sweep(verbose)   # periodically feed new transcripts into the graph (non-blocking)
