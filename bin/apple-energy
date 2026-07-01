@@ -33,6 +33,16 @@ set -euo pipefail
 
 PROG=$(basename "$0")
 
+# Resolve our own dir (through symlinks) so the python heredocs can import the
+# shared helper `_apple_energy.py` that lives beside this script.
+_SRC="${BASH_SOURCE[0]:-$0}"
+while [ -h "$_SRC" ]; do
+  _D="$(cd -P "$(dirname "$_SRC")" && pwd)"
+  _SRC="$(readlink "$_SRC")"
+  [[ "$_SRC" != /* ]] && _SRC="$_D/$_SRC"
+done
+export APPLE_ENERGY_BIN="$(cd -P "$(dirname "$_SRC")" && pwd)"
+
 die() { echo "$PROG: $*" >&2; exit 1; }
 
 usage() {
@@ -58,11 +68,14 @@ cmd_now() {
   echo "Top $n processes by energy impact (snapshot, no sudo)"
   echo "Energy Impact = relative units, same metric as Activity Monitor."
   echo
-  # top truncates its COMMAND column to ~16 chars. Pull PID+power from top's
-  # SECOND listing (first reads 0.0 — no delta), then resolve the full,
-  # untruncated name via `ps -ww` so "Ray Helper (Rend" → "Ray Helper (Renderer)".
+  # top truncates its COMMAND column to ~16 chars and a bare name ("Python",
+  # "claude") says nothing. Pull PID+power from top's SECOND listing (first
+  # reads 0.0 — no delta), then annotate each: claude → version+project+terminal,
+  # python/node → its script + parent, everything else → full untruncated name.
   APPLE_ENERGY_N="$n" python3 <<'PY'
-import os, subprocess
+import os, sys, subprocess
+sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
+import _apple_energy as ae
 n = int(os.environ.get("APPLE_ENERGY_N", "15"))
 top = subprocess.run(
     ["top", "-l", "2", "-s", "1", "-n", str(n), "-o", "power", "-stats", "pid,power"],
@@ -74,21 +87,10 @@ if hdrs:
         parts = l.split()
         if len(parts) >= 2 and parts[0].isdigit():
             rows.append((parts[0], parts[1]))
-# full, untruncated executable path per pid
-psmap = {}
-for l in subprocess.run(["ps", "-ww", "-eo", "pid=,comm="],
-                        capture_output=True, text=True).stdout.splitlines():
-    l = l.strip()
-    if not l:
-        continue
-    pid, _, comm = l.partition(" ")
-    psmap[pid.strip()] = comm.strip()
-def name(pid):
-    c = psmap.get(pid, "?")
-    return os.path.basename(c) if "/" in c else c
-print("%-8s %-40s %8s" % ("PID", "COMMAND", "POWER"))
+info, args = ae.proc_maps()
+print("%-8s %-56s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
 for pid, power in rows[:n]:
-    print("%-8s %-40s %8s" % (pid, name(pid)[:40], power))
+    print("%-8s %-56s %8s" % (pid, ae.annotate(pid, info, args)[:56], power))
 PY
 }
 
@@ -175,28 +177,41 @@ cmd_adapter() {
 # resolves every running instance's real version (via lsof txt), its project
 # (cwd), age, CPU, and TTY, and flags any not on the current symlinked version.
 cmd_claude() {
-  local cur; cur=$(basename "$(readlink "$HOME/.local/bin/claude" 2>/dev/null)" 2>/dev/null)
-  [[ -z "$cur" || "$cur" == "." ]] && cur="?"
-  echo "Running Claude Code sessions (current installed version: $cur)"
-  echo
-  printf "%-7s %-9s %-4s %-11s %-5s %-7s %s\n" "PID" "VERSION" "" "AGE" "%CPU" "TTY" "PROJECT (cwd)"
-  printf -- "-------------------------------------------------------------------------------------\n"
-  local pids p cpu etime tty ver cwd flag ps_line old=0 total=0
-  pids=$( { pgrep -x claude || true; pgrep -f '/versions/2\.' || true; } 2>/dev/null | sort -un )
-  for p in $pids; do
-    ps_line=$(ps -p "$p" -o %cpu=,etime=,tty= 2>/dev/null || true)
-    [[ -z "$ps_line" ]] && continue
-    cpu=$(awk '{print $1}' <<<"$ps_line"); etime=$(awk '{print $2}' <<<"$ps_line"); tty=$(awk '{print $3}' <<<"$ps_line")
-    ver=$(lsof -p "$p" 2>/dev/null | awk '$4=="txt" && /\/versions\// {n=split($NF,a,"/"); print a[n]; exit}' || true)
-    [[ -z "$ver" ]] && ver="?"
-    cwd=$(lsof -a -p "$p" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1 || true)
-    if [[ "$ver" != "$cur" && "$ver" != "?" && "$cur" != "?" ]]; then flag="OLD"; old=$((old+1)); else flag="ok"; fi
-    total=$((total+1))
-    printf "%-7s %-9s %-4s %-11s %-5s %-7s %s\n" "$p" "$ver" "$flag" "${etime:-?}" "$cpu" "${tty:-?}" "${cwd/#$HOME/~}"
-  done
-  echo
-  echo "$total session(s), $old on an OLD version. Restart an OLD one to pick up $cur"
-  echo "(quit it in its own tab, or 'apple-energy kill <pid>')."
+  python3 <<'PY'
+import os, sys, subprocess
+sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
+import _apple_energy as ae
+cur = os.path.basename(os.path.realpath(os.path.expanduser("~/.local/bin/claude")))
+if not cur or cur == ".":
+    cur = "?"
+info, _ = ae.proc_maps()
+print("Running Claude Code sessions (current installed version: %s)\n" % cur)
+print("%-7s %-9s %-4s %-11s %-5s %-8s %-8s %s"
+      % ("PID", "VERSION", "", "AGE", "%CPU", "TTY", "TERM", "PROJECT (cwd)"))
+print("-" * 94)
+total = old = 0
+for p in ae.claude_pids():
+    line = subprocess.run(["ps", "-p", p, "-o", "%cpu=,etime=,tty="],
+                          capture_output=True, text=True).stdout.strip()
+    if not line:
+        continue
+    f = line.split()
+    cpu, etime = f[0], f[1]
+    tty = f[2] if len(f) > 2 else "?"
+    ver = ae.version_of(p) or "?"
+    term = ae.terminal_of(p, info) or "?"
+    cwd = ae.tilde(ae.cwd_of(p))
+    isold = ver != cur and ver != "?" and cur != "?"
+    flag = "OLD" if isold else "ok"
+    total += 1
+    old += 1 if isold else 0
+    print("%-7s %-9s %-4s %-11s %-5s %-8s %-8s %s"
+          % (p, ver, flag, etime, cpu, tty, term, cwd))
+print()
+print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s"
+      % (total, old, cur))
+print("(quit it in its own tab, or 'apple-energy kill <pid>').")
+PY
 }
 
 # ---- heat: watts ARE heat + thermal pressure + throttle + fans -----------

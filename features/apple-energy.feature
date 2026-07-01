@@ -49,10 +49,13 @@ Feature: Read macOS energy & power telemetry from the command line
     And the first listing is discarded because top reports 0.0 until it has a delta
     And it resolves each PID's FULL name via `ps -ww -o comm=` instead of top's
       ~16-char-truncated COMMAND column, so "Ray Helper (Rend" → "Ray Helper (Renderer)"
-      and a version-truncated slice like "2.1.193" resolves to its real name ("claude")
+    And it ANNOTATES each process with what it actually is (shared `_apple_energy.annotate`):
+      claude → "claude <version> in <project> (<terminal>)", a runtime like python/node →
+      "<name> — <script> (← <parent-or-terminal>)", everything else → the plain name
     And a PID that exits between the top sample and the ps lookup shows "?" (honest)
     And no sudo is required
-    # cite: bin/apple-energy cmd_now(); python joins top pid+power to a ps -ww name map
+    # cite: bin/apple-energy cmd_now() + bin/_apple_energy.py annotate(); ran live —
+    #       "claude 2.1.186 in ~/work/merlib-dump (iTerm2)" etc.
 
   @built @parser-verified
   Scenario: watch samples powermetrics over a window and ranks per-process energy
@@ -89,11 +92,13 @@ Feature: Read macOS energy & power telemetry from the command line
     When `apple-energy claude` runs
     Then it reads the current version from the ~/.local/bin/claude symlink target, finds
       every running instance (pgrep -x claude + pgrep -f /versions/2.), and for each prints
-      PID, real version (lsof txt basename), OLD/ok flag, age, %CPU, TTY, and project (cwd)
+      PID, real version (lsof txt basename), OLD/ok flag, age, %CPU, TTY, TERM (which
+      terminal emulator — iTerm2 vs Terminal, via a ppid-chain walk), and project (cwd)
     And it summarises how many are on an OLD version so stale sessions can be restarted
-    And the loop is errexit-safe: a PID that exits mid-scan is skipped, not fatal
-    # cite: bin/apple-energy cmd_claude(); ran live — 8 sessions, all OLD vs 2.1.197,
-    #       TTY column (ttys002-009) locates each session's terminal tab
+    And the introspection (proc_maps/terminal_of/version_of/cwd_of/claude_pids) lives in
+      the shared bin/_apple_energy.py so `now` and `claude` don't duplicate it (DRY)
+    # cite: bin/apple-energy cmd_claude() + bin/_apple_energy.py; ran live — 8 sessions,
+    #       TERM resolved iTerm2 for most, Terminal for the freellmapi 2.1.193 session
 
   @built
   Scenario: heat frames watts AS heat and shows the thermal drivers  (ran live, no-sudo part)
