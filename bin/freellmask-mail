@@ -185,6 +185,24 @@ def _is_wiki_refusal(t):
 # the required '## Thought about it' heading within this pass. The poll loop treats it as "not
 # sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
+# Returned when the model BAILED ('please provide the content') despite content being available — the
+# poll loop re-queues (does not send the bail) and debug-logs it for inspection.
+REQUEUE_FAILED = "\x00REQUEUE-FAILED\x00"
+_FAILURE_RE=re.compile(r'(?i)('
+    r'unable to (formulate|provide|generate|craft|give) (a |an )?(response|reply|answer)'
+    r'|please provide (the |me )?(the )?(email|content|text|details|message|body)'
+    r'|without (the )?(actual )?(content|text|body|details) of (the|your|this|the latest)'
+    r'|(could|can) you (please )?provide (the )?(email|content|text|details|message)'
+    r'|i (need|require|would need) (the )?(actual )?(content|text|body|details|more (info|information|context))'
+    r'|no (email )?(content|body|text) (was )?(provided|available|found|included)'
+    r'|there (is|was) no (content|text|body|email|message))')
+def _is_failure_answer(t):
+    """The model bailed instead of answering (usually 'please provide the content') — short + bail-shaped.
+    A long substantive answer that merely mentions missing detail is NOT flagged."""
+    tl=(t or "").strip()
+    if not tl: return True
+    if len(tl)>900: return False
+    return bool(_FAILURE_RE.search(tl))
 
 def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint=""):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
@@ -242,7 +260,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
            "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
            "'## Answer' and the three tone sections. Do not skip it.")
     eff_tries = max(tries, 12) if viewpoint else max(1, tries)   # give the thinking heading room to land
-    used=chosen_model; cur=msgs
+    has_content = bool((question or "").strip()) or bool((attachments or "").strip())
+    used=chosen_model; cur=msgs; saw_failure=False
     for _ in range(eff_tries):
         try:
             ans, used = _fm_call(cur, model=chosen_model)
@@ -252,10 +271,14 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             continue
         if _is_wiki_refusal(ans):          # the wiki context biased it into refusing → drop it, retry
             cur=msgs_nowiki; continue
+        if has_content and _is_failure_answer(ans):   # model BAILED though content exists → retry, never send the bail
+            saw_failure=True; cur=msgs_nowiki; continue
         if _missing_thinking(ans):         # clean but no thinking heading → REGENERATE, never accept, never fake
             cur=[{"role":"system","content":sysm+NUDGE},{"role":"user","content":cur[1]["content"]}]
             continue
         return ans, used                   # has the thinking heading (or off-corpus) → sendable
+    if saw_failure:                        # kept bailing despite content → re-queue + debug-log, don't send
+        return (REQUEUE_FAILED, used)
     if viewpoint:                          # exhausted this pass without the heading → not sendable; re-queue
         return (REQUEUE_NO_THINKING, used)
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
@@ -317,6 +340,21 @@ def load_state():
     except Exception: return {"seen":[], "last_poll":None}
 def save_state(s): STATE.parent.mkdir(parents=True, exist_ok=True); STATE.write_text(json.dumps(s,indent=2))
 
+DEBUG_LOG=Path(os.environ.get("FREELLMASK_MAIL_DEBUG", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-debug.log"))
+def debug_log(kind, mid, subject="", question="", answer="", note=""):
+    """Flagged, saved record of every degraded / re-queued / failed answer, so failures are VISIBLE and
+    inspectable (Syncthing-synced) instead of being silently sent. Appended, never raises."""
+    try:
+        DEBUG_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with DEBUG_LOG.open("a") as f:
+            f.write(f"\n===== [{time.strftime('%Y-%m-%dT%H:%M:%S')}] FLAG:{kind} =====\n")
+            f.write(f"mid: {mid}\nsubject: {subject}\n")
+            if note: f.write(f"note: {note}\n")
+            if question: f.write(f"--- question ({len(question)} chars) ---\n{question[:1500]}\n")
+            if answer: f.write(f"--- answer ---\n{answer[:1500]}\n")
+        print(f"  🚩 debug-logged [{kind}] {mid}")
+    except Exception: pass
+
 def thread_context(key, msgs, thread_id, exclude_id):
     """Build an oldest-first transcript of the thread for follow-up context."""
     same=[m for m in msgs if m.get("thread_id")==thread_id and m.get("message_id")!=exclude_id]
@@ -368,6 +406,27 @@ def strip_signature(text):
             lines.pop(); continue
         break
     return "\n".join(lines).strip()
+
+_TRACKING_URL=re.compile(r'https?://\S{110,}')          # giant redirect/tracking URLs (substack etc.)
+_BOILERPLATE=re.compile(r'(?im)^\s*(forwarded this email\?|subscribe here|unsubscribe|view (this|it|in) '
+    r'(email |post )?(in (your )?browser)?|you.?re receiving this|manage your subscription|'
+    r'begin forwarded message:|-{2,}\s*forwarded message|from:\s|subject:\s|date:\s|to:\s|reply-to:\s|cc:\s|'
+    r'©\s*\d{4}|sent from my )', re.I)
+def clean_forwarded_body(t):
+    """After strip_signature: de-quote a forwarded message and strip newsletter/tracking noise so the
+    ACTUAL prose survives. Forwarded Substack/newsletter mail buries the article under '>' quote markers
+    + giant tracking URLs; without this the model sees only noise and bails ('please provide the content').
+    Conservative: if de-noising would nuke almost everything, keep the original."""
+    if not t: return t
+    out=[]
+    for ln in t.split("\n"):
+        s=re.sub(r'^\s*>+\s?','',ln)                    # de-quote forwarded lines
+        s=re.sub(r'\s*<https?://\S{70,}>','',s)         # drop long <url> anchors
+        s=_TRACKING_URL.sub('',s).rstrip()              # drop giant tracking URLs
+        if _BOILERPLATE.match(s): continue              # drop forwarded headers / newsletter chrome
+        out.append(s)
+    cleaned=re.sub(r'\n{3,}','\n\n',"\n".join(out)).strip()
+    return cleaned if len(cleaned)>=40 else t.strip()
 
 _URL_RE=re.compile(r'https?://[^\s<>"\')\]]+', re.I)
 def _fetch_tweet(u):
@@ -511,9 +570,18 @@ def _best_window(text, qw, size=2600):
         if c>best_c: best_c, best_s = c, h
     s=max(0, best_s-200); return text[s:s+size]
 VIEWPOINT = ("COMMITTED VIEWPOINT: treat free energy / over-unity as a real, engineerable phenomenon. "
-             "Analyse AS IF that frame is true — extract the engineering, mechanisms, measurements and "
-             "connections. Do NOT debunk or hedge into mainstream-physics disclaimers; a conflict with "
-             "mainstream physics is DATA to note, never grounds to dismiss a source or refuse to answer.")
+             "Analyse AS IF that frame is true — extract the engineering, mechanisms and connections. "
+             "Do NOT debunk or hedge into mainstream-physics disclaimers; a conflict with mainstream "
+             "physics is DATA to note, never grounds to dismiss a source or refuse to answer.\n"
+             "FIDELITY — this OVERRIDES the frame: the viewpoint licenses INTERPRETATION, never INVENTION. "
+             "Do NOT fabricate specifics — named demonstrations, devices, experiments, measured numbers, "
+             "wattages, dates or places — and NEVER attribute a specific demo, device, or result to a named "
+             "person (Dollard, Lindemann, Bedini, Tesla, …) unless that exact attribution is present in the "
+             "provided email/source/wiki. If the source does not say person X did Y, do NOT say they did — "
+             "no 'Eric Dollard's Tesla-pump', no invented field-test numbers. Keep FRAMEWORK reasoning "
+             "(hedged as your hypothesis/interpretation) strictly separate from CLAIMS OF FACT (grounded in "
+             "the source, the wiki, or well-established record). When you are inferring within the frame "
+             "rather than reporting something the source states, say so in plain words.")
 
 def wiki_context(question, k_pages=8):
     """RETRIEVAL ONLY — no LLM call, no refusal. Searches ALL corpora (free-energy + the people/
@@ -652,7 +720,7 @@ def poll_once(verbose=True):
         if not raw_body.strip() and full.get("html"):          # html_to_text choked on odd HTML → crude strip
             raw_body=re.sub(r'\s+',' ', _htmlmod.unescape(
                 re.sub(r'(?is)<(script|style|head).*?</\1>|<[^>]+>',' ', full.get("html")))).strip()
-        question=strip_signature(raw_body)                      # drop name/phone/Patreon-URL signature
+        question=clean_forwarded_body(strip_signature(raw_body))  # drop sig + de-quote/de-noise forwards
         answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
         atts=full.get("attachments") or []
         att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
@@ -687,11 +755,36 @@ def poll_once(verbose=True):
             print(f"  ⊘ SKIP — genuinely empty (no body/subject/attachments): mid={mid} subj={(full.get('subject') or '')!r}")
             seen.add(mid); continue
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
+        # BARE VIDEO: an email that is essentially just a YouTube link is a "convey this video"
+        # request, NOT a question. The model CANNOT watch the video — answering it hallucinates the
+        # content from wiki context (the 2026-07-01 BrunoVK/Don-Smith/eclipse confabulation). So:
+        # convey it (queued above), reply with a CONFIRMATION only, and let the analysis follow LATER
+        # from the REAL transcript once it lands. No guessing at what a video says before transcription.
+        video_only=False
+        if yt_urls and not extra:
+            residue=re.sub(r'https?://\S+',' ', question or '')
+            residue=re.sub(r'(?i)\b(fwd|fw|re|watch|see|this|that|these|those|video|vid|clip|youtube|yt|'
+                           r'link|url|please|pls|convey|transcribe|transcript|analyse|analyze|thoughts?|'
+                           r'check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',residue)
+            residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
+            if len(residue)<12: video_only=True
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
         reformat = is_pure_reformat(question) and not extra
         prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
-        if prior:
+        if video_only:
+            n=len(yt_urls)
+            if yt_note:
+                note=(f"📼 On it — **conveying {n} video{'s' if n>1 else ''}**: queued for transcription "
+                      f"on the convey→whisp belt. I won't guess at what it says. Once the transcript lands "
+                      f"I'll send you the analysis built from what is ACTUALLY in the video.")
+            else:
+                note=("📼 That video is already transcribed in the archive — nothing to re-convey. "
+                      "Reply \"analyze it\" and I'll write it up from the existing transcript.")
+            reply={"text":note, "html":md_to_inner_html(note)}
+            used="convey (video queued — no hallucinated answer)"
+            yt_note=""
+        elif prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
             note="Here's the printable one-pager of the previous answer — attached. Same content, just formatted."
             reply={"text": note, "html": f"<p>{note}</p>"}; used="reused prior answer"
@@ -715,10 +808,13 @@ def poll_once(verbose=True):
                 answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp)
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
-            if answer is REQUEUE_NO_THINKING:
-                # viewpoint answer never gained the '## Thought about it' heading this pass → do NOT
-                # send and do NOT mark seen; leave it in the inbox so the next poll retries it fresh.
-                print(f"  ↻ re-queued {mid}: no 'Thought about it' heading yet — will retry next poll")
+            if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
+                # Not sendable this pass → do NOT send, do NOT mark seen (next poll retries fresh), and
+                # DEBUG-LOG it (flagged + saved) so the failure is visible, never silently emitted.
+                kind = "no-thinking-heading" if answer is REQUEUE_NO_THINKING else "model-bailed"
+                subj = full.get("subject","(no subject)")
+                print(f"  ↻ re-queued {mid} [{kind}] — will retry next poll")
+                debug_log(kind, mid, subj, question=question, note="re-queued (not sent); will retry next poll")
                 continue
             reply={"text": answer, "html": md_to_html(answer)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
