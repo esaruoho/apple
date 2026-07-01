@@ -569,6 +569,39 @@ def forward_to_esa(k, full, mid, question, answer, atts):
     except Exception:
         return False
 
+# ── Auto-trigger the transcript belt: any YouTube URL in an inbound email is dropped onto
+# the convey→whisp pipeline (whisp-submit), which dedups against catalog.yaml + the queue so
+# already-transcribed videos are never re-whispered. This is what SHOULD have happened when an
+# email mentioned USP/Russell videos instead of just summarising the page. Best-effort, never blocks.
+WHISP_SUBMIT = os.path.expanduser("~/work/whisp-transcripts/whisp-submit")
+_YT_RE = re.compile(
+    r'https?://(?:www\.)?(?:youtube\.com/(?:watch\?[^\s<>"\')\]]*\bv=[\w-]{11}|shorts/[\w-]{11}|'
+    r'playlist\?[^\s<>"\')\]]*\blist=[\w-]+|@[\w.-]+|channel/[\w-]+|c/[\w.-]+|user/[\w.-]+)|youtu\.be/[\w-]{11})'
+    r'[\w\-?=&/@.%]*', re.I)
+
+def youtube_urls(text):
+    if not text: return []
+    seen=set(); out=[]
+    for u in _YT_RE.findall(text):
+        u=u.rstrip('.,);]>\'"')
+        if u not in seen: seen.add(u); out.append(u)
+    return out
+
+def whisp_autosubmit(urls, verbose=False):
+    """Drop YouTube URLs onto the whisp transcript belt. whisp-submit does its own dedup
+    (catalog.yaml + queue), so the Lao-Russell-already-done case is handled there. Returns
+    (queued_count, seen_count). Best-effort — never raises into the poll loop."""
+    if not urls or not os.path.exists(WHISP_SUBMIT): return 0, 0
+    try:
+        r=subprocess.run([WHISP_SUBMIT, *urls], capture_output=True, text=True, timeout=240)
+        out=(r.stdout or "")+"\n"+(r.stderr or "")
+        queued=len(re.findall(r'(?im)^\s*Queued \(', out))
+        if verbose: print(f"  📼 whisp: queued {queued}/{len(urls)} youtube url(s) (dedup handled by whisp-submit)")
+        return queued, len(urls)
+    except Exception as e:
+        if verbose: print(f"  whisp-submit error: {e}")
+        return 0, len(urls)
+
 def poll_once(verbose=True):
     k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
@@ -590,7 +623,20 @@ def poll_once(verbose=True):
         try: url_text=fetch_url_pdfs(raw_body, verbose)          # download + OCR any PDF linked by URL
         except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
         extra="\n\n".join(x for x in (att_text, url_text) if x)
-        if not question and not extra: seen.add(mid); continue   # genuinely nothing to answer
+        # AUTO-TRIGGER: any YouTube URL in the email → drop it on the convey→whisp transcript belt
+        # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
+        # USP/Russell videos should schedule their transcription, not just get summarised.
+        yt_note=""
+        yt_urls=youtube_urls(raw_body)
+        if yt_urls:
+            q_n,seen_n=whisp_autosubmit(yt_urls, verbose)
+            if q_n:
+                yt_note=(f"\n\n---\n📼 **Auto-queued {q_n} of {seen_n} video(s) for transcription** onto the "
+                         f"convey→whisp belt (already-transcribed ones skipped, no re-whispering). "
+                         f"Transcripts land in the archive as they finish.")
+            elif verbose:
+                print(f"  📼 {seen_n} youtube url(s) already transcribed — nothing new to queue")
+        if not question and not extra and not yt_urls: seen.add(mid); continue   # genuinely nothing to do
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
@@ -631,6 +677,10 @@ def poll_once(verbose=True):
                 if b64:
                     reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
+        # Append the transcription-belt note to whichever reply path built the message.
+        if yt_note:
+            reply["text"]=reply.get("text","")+yt_note
+            reply["html"]=reply.get("html","")+"<hr>"+md_to_inner_html(yt_note)
         # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
         # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
         # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
