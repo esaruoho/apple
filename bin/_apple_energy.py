@@ -37,23 +37,38 @@ KNOWN = {
 }
 
 
+# strip OSC 8 hyperlinks + SGR colour codes so column widths use VISIBLE length
+_ESC_RE = re.compile(r"\x1b\]8;;.*?(?:\x1b\\|\x07)|\x1b\[[0-9;]*m")
+
+
+def _vislen(s):
+    return len(_ESC_RE.sub("", str(s)))
+
+
+def hyperlink(url, text):
+    """OSC 8 terminal hyperlink — Cmd-click in iTerm2/Terminal follows the URL."""
+    return "\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\" % (url, text)
+
+
 def render_table(headers, rows, aligns=None):
-    """Unicode box-drawing table. aligns: list of 'l'|'r' per column (data cells);
-    headers are centered. Returns the full multi-line string."""
+    """Unicode box-drawing table, hyperlink/colour-aware (pads by visible width).
+    aligns: list of 'l'|'r' per data column; headers are centered."""
     cols = len(headers)
-    widths = [len(str(h)) for h in headers]
+    widths = [_vislen(h) for h in headers]
     for r in rows:
         for i in range(cols):
-            widths[i] = max(widths[i], len(str(r[i])))
+            widths[i] = max(widths[i], _vislen(r[i]))
     aligns = (aligns or ["l"] * cols)
 
     def pad(s, w, a):
         s = str(s)
+        extra = max(0, w - _vislen(s))
         if a == "c":
-            extra = w - len(s)
             left = extra // 2
             return " " * left + s + " " * (extra - left)
-        return s.rjust(w) if a == "r" else s.ljust(w)
+        if a == "r":
+            return " " * extra + s
+        return s + " " * extra
 
     def border(left, mid, right):
         return left + mid.join("─" * (w + 2) for w in widths) + right

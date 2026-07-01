@@ -104,6 +104,21 @@ Feature: Read macOS energy & power telemetry from the command line
     #       readable ages, TERM iTerm2/Terminal, ttys002-009
 
   @built
+  Scenario: claude TTYs are Cmd-clickable to jump to the session  (registration ran live)
+    Given iTerm2/Terminal follow OSC 8 hyperlinks on Cmd-click
+    When `apple-energy install-jump` runs once
+    Then it builds ~/Applications/AppleEnergyJump.app (an AppleScript `on open location`
+      handler that runs `apple-energy jump <pid>`), adds CFBundleURLTypes for the aejump:
+      scheme to its Info.plist, and registers it via Launch Services (lsregister -f)
+    And `apple-energy claude` (to a real TTY) wraps each session's TTY cell in an OSC 8
+      hyperlink to aejump://<pid>, so Cmd-click focuses that session's terminal tab
+    And render_table stays aligned because it measures VISIBLE width (_vislen strips the
+      OSC 8 + SGR escapes) — verified: every boxed line is the same visible width
+    And piped/non-tty output emits plain TTYs (no escapes)
+    # cite: cmd_install_jump() + cmd_claude() links branch + _apple_energy.hyperlink/_vislen;
+    #       ran live — scheme claimed (lsregister dump), open aejump://<bogus> launched the handler
+
+  @built
   Scenario: claude and now render as Unicode box-drawing tables  (ran live)
     Given Esa wanted the boxed table style (┌─┬─┐ │ ├─┼─┤ └─┴─┘), not ASCII "----" rules
     When claude or now prints

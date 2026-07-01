@@ -21,6 +21,7 @@
 #                                         outdated?, readable age, CPU, TERM, TTY, project
 # ACT verbs (mutating — you asked for these):
 #   apple-energy jump <pid|tty|ver|proj>  focus that Claude session's terminal window/tab
+#   apple-energy install-jump             register aejump:// so `claude` TTYs are Cmd-clickable
 #   apple-energy kill <name|pid>          SIGTERM a hog now (may respawn if launchd-kept)
 #   apple-energy off <name> [--yes]       stop + DISABLE a launchd job so it stays dead
 #   apple-energy help                     this help
@@ -190,6 +191,8 @@ import _apple_energy as ae
 cur = ae.current_version()
 info, _ = ae.proc_maps()
 sm = ae.session_map(info)
+links = sys.stdout.isatty()      # only emit clickable TTYs to a real terminal
+handler = os.path.exists(os.path.expanduser("~/Applications/AppleEnergyJump.app"))
 print("Running Claude Code sessions (current installed version: %s)\n" % cur)
 headers = ["PID", "Version", "", "Age", "%CPU", "Term", "TTY", "Project", "Session name"]
 table_rows = []
@@ -207,15 +210,51 @@ for p in ae.claude_pids():
     total += 1
     old += 1 if r["old"] else 0
     proj = os.path.basename(r["cwd"].rstrip("/")) or r["cwd"]
+    tty = ae.hyperlink("aejump://%s" % p, r["tty"]) if links else r["tty"]
     table_rows.append([p, r["ver"], flag, r["age"], cpu + "%",
-                       r["term"], r["tty"], proj[:22], (name or "?")[:44]])
+                       r["term"], tty, proj[:22], (name or "?")[:44]])
 aligns = ["l", "l", "l", "l", "r", "l", "l", "l", "l"]
 print(ae.render_table(headers, table_rows, aligns))
 print()
 print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
-print("Jump to a session's tab:  apple-energy jump <pid|tty|version|project|name>")
-print("Kill it now:              apple-energy kill <pid>")
+if links and handler:
+    print("Cmd-click a TTY to jump to that session's tab (iTerm2/Terminal).")
+elif links and not handler:
+    print("Tip: run `apple-energy install-jump` once to make the TTYs Cmd-clickable.")
+print("Or:  apple-energy jump <pid|tty|version|project|name>   ·   kill: apple-energy kill <pid>")
 PY
+}
+
+# ---- install-jump: register the aejump:// URL scheme so TTYs are Cmd-clickable ----
+# Builds a tiny AppleScript handler app whose `on open location` runs
+# `apple-energy jump <pid>`, then registers the aejump: scheme via Launch Services.
+cmd_install_jump() {
+  local app="$HOME/Applications/AppleEnergyJump.app"
+  local bin="$APPLE_ENERGY_BIN/apple-energy"
+  local tmp; tmp="$(mktemp -t aejump)".applescript
+  cat > "$tmp" <<APPLESCRIPT
+on open location this_URL
+	set AppleScript's text item delimiters to "//"
+	set _pid to last text item of this_URL
+	set AppleScript's text item delimiters to ""
+	do shell script "$bin jump " & quoted form of _pid & " >/dev/null 2>&1"
+end open location
+APPLESCRIPT
+  mkdir -p "$HOME/Applications"
+  rm -rf "$app"
+  osacompile -o "$app" "$tmp" || die "osacompile failed"
+  rm -f "$tmp"
+  local plist="$app/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.esaruoho.apple-energy.jump" "$plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string aejump" "$plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$plist" 2>/dev/null || true
+  local LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+  [[ -x "$LSR" ]] && "$LSR" -f "$app" 2>/dev/null || true
+  echo "✓ Installed $app and registered the aejump: URL scheme."
+  echo "  Now run 'apple-energy claude' and Cmd-click a TTY to jump to that session."
+  echo "  (First click may prompt once to allow controlling iTerm2/Terminal.)"
 }
 
 # ---- jump: bring a claude session's terminal window/tab to the front --------
@@ -439,7 +478,8 @@ case "${1:-help}" in
   heat)     shift; cmd_heat "$@" ;;
   adapter)  shift; cmd_adapter "$@" ;;
   claude)   shift; cmd_claude "$@" ;;
-  jump)     shift; cmd_jump "$@" ;;
+  jump)         shift; cmd_jump "$@" ;;
+  install-jump) shift; cmd_install_jump "$@" ;;
   kill)     shift; cmd_kill "$@" ;;
   off)      shift; cmd_off "$@" ;;
   help|-h|--help) usage ;;
