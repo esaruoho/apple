@@ -586,6 +586,20 @@ def forward_to_esa(k, full, mid, question, answer, atts):
 # already-transcribed videos are never re-whispered. This is what SHOULD have happened when an
 # email mentioned USP/Russell videos instead of just summarising the page. Best-effort, never blocks.
 WHISP_SUBMIT = os.path.expanduser("~/work/whisp-transcripts/whisp-submit")
+# Transcript graph sweeper: belt-and-suspenders alongside whisp-worker's per-job auto-feed.
+# Periodically feeds any NEW transcripts into kb/graph/transcripts (pages only, no rebuild — the
+# bot reads pages directly). Catches in-flight batches without touching/restarting the worker.
+TFEED = os.path.expanduser("~/work/apple/bin/fa-transcript-feed")
+TFEED_EVERY = int(os.environ.get("FREELLMASK_TFEED_EVERY","900"))   # seconds between sweeps
+_last_tfeed=[0.0]
+def transcript_sweep(verbose=False):
+    now=time.time()
+    if now-_last_tfeed[0] < TFEED_EVERY or not os.path.exists(TFEED): return
+    _last_tfeed[0]=now
+    try:
+        subprocess.Popen(["python3", TFEED, "--no-rebuild"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if verbose: print("  🧹 transcript sweep launched (feeds new transcripts into the graph)")
+    except Exception: pass
 _YT_RE = re.compile(
     r'https?://(?:www\.)?(?:youtube\.com/(?:watch\?[^\s<>"\')\]]*\bv=[\w-]{11}|shorts/[\w-]{11}|'
     r'playlist\?[^\s<>"\')\]]*\blist=[\w-]+|@[\w.-]+|channel/[\w-]+|c/[\w.-]+|user/[\w.-]+)|youtu\.be/[\w-]{11})'
@@ -615,6 +629,7 @@ def whisp_autosubmit(urls, verbose=False):
         return 0, len(urls)
 
 def poll_once(verbose=True):
+    transcript_sweep(verbose)   # periodically feed new transcripts into the graph (non-blocking)
     k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
     msgs=listing.get("messages", listing if isinstance(listing,list) else [])

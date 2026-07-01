@@ -63,7 +63,7 @@ def rebuild():
     nn=len(res.get('nodes',[])) if isinstance(res.get('nodes'),list) else res.get('nodes',0)
     return nn
 
-def one_pass():
+def one_pass(no_rebuild=False):
     if not TDIR.exists(): print(f"[fa-transcript-feed] no transcripts dir: {TDIR}"); return 0
     fed=0
     for tpath in sorted(TDIR.glob("*/transcript.md")):
@@ -72,8 +72,13 @@ def one_pass():
             if s: fed+=1; print(f"  + [[{s}]]", flush=True)
         except Exception as e:
             print(f"  ! {tpath.parent.name}: {e}", flush=True)
-    if fed:
+    # The bot reads entity PAGES directly, so new pages are retrievable WITHOUT a rebuild.
+    # --no-rebuild lets the sweeper stay cheap (page writes only); dream_graph.json (for graph
+    # queries) is refreshed by a plain full pass when wanted.
+    if fed and not no_rebuild:
         n=rebuild(); print(f"[fa-transcript-feed] fed {fed} new transcript(s) → {CORPUS} ({n} nodes, $0)", flush=True)
+    elif fed:
+        print(f"[fa-transcript-feed] fed {fed} new transcript(s) → {CORPUS} (pages only, no rebuild, $0)", flush=True)
     return fed
 
 def main():
@@ -87,7 +92,8 @@ def main():
         s=feed_one(Path(args[0]).resolve())
         print(f"[fa-transcript-feed] {'fed [['+s+']]' if s else 'already fed'} (no rebuild)")
         return
-    total=one_pass()
+    no_rebuild="--no-rebuild" in sys.argv[1:]
+    total=one_pass(no_rebuild=no_rebuild)
     if not watch:
         print(f"[fa-transcript-feed] done ({total} fed this pass)"); return
     print("[fa-transcript-feed] watching for new transcripts every 30s (Ctrl-C to stop)", flush=True)
