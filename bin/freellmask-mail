@@ -153,11 +153,19 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
     req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
         headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
     d=None
-    for attempt in range(4):
+    RL_WAIT=int(os.environ.get("FREELLMASK_MAIL_RL_WAIT","40"))  # seconds to wait out a rate-limit window
+    for attempt in range(6):
         try:
-            with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r); break
+            with urllib.request.urlopen(req, timeout=240) as r: d=json.load(r); break
         except urllib.error.HTTPError as e:
-            if e.code==429 and attempt<3: time.sleep(5*(attempt+1)); continue
+            # 429 = free-tier per-minute cap (Gemini) or provider throttle. DON'T fail — WAIT for the
+            # window to clear (≈40s, or the server's Retry-After if longer), then retry. This is the
+            # "delayed" automatic pacing: the call is deferred, never pushed past the free tier.
+            if e.code==429 and attempt<5:
+                ra=e.headers.get("Retry-After") if e.headers else None
+                try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
+                except (ValueError, TypeError): wait=RL_WAIT
+                time.sleep(wait); continue
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
