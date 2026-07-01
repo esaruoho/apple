@@ -338,13 +338,25 @@ def html_to_text(h):
 
 def strip_signature(text):
     """Drop the email signature so the model doesn't 'research' a name/phone/Patreon URL.
-    Cuts at a sig delimiter (--, — , __, 'Sent via/from'), then trims trailing contact lines."""
+    Cuts at a TRAILING sig delimiter (--, — , __, 'Sent via/from'), then trims trailing contact lines.
+
+    2026-07-01 bug: a FORWARDED email (Apple Mail/Gmail) puts the forwarder's OWN signature at the TOP,
+    before 'Begin forwarded message:'. Cutting at that leading '—' discarded the ENTIRE forwarded body,
+    so the mail looked empty and was silently skipped (the Jeane Manning newsletter). Fix: (1) if there
+    is a forward marker, start from it (drop the leading forwarder sig); (2) only accept a delimiter as
+    a signature cut when its TAIL is short (<=10 non-empty lines) — a '—' with the whole body after it
+    is not a signature."""
     if not text: return ""
-    lines=text.replace("\r","").split("\n"); cut=len(lines)
+    t=text.replace("\r","")
+    fm=re.search(r'(?im)^\s*(begin forwarded message:|-{2,}\s*forwarded message)', t)
+    if fm: t=t[fm.start():]                          # forwarded content — not the forwarder's leading sig
+    lines=t.split("\n"); cut=len(lines)
     for i,l in enumerate(lines):
         s=l.strip()
         if s in ("--","-- ","—","–","__") or re.match(r'(?i)^(sent (via|from) |get outlook)', s):
-            cut=i; break
+            tail=[x for x in lines[i+1:] if x.strip()]
+            if i>0 and len(tail)<=10:                # a real trailing sig (short tail), not mid-body
+                cut=i; break
     lines=lines[:cut]
     while lines:                                   # trim trailing contact-only lines
         s=lines[-1].strip()
