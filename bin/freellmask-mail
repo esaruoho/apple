@@ -681,6 +681,27 @@ def youtube_urls(text):
         if u not in seen: seen.add(u); out.append(u)
     return out
 
+def expand_playlists(urls, cap=100):
+    """A playlist/channel URL → its individual video URLs (yt-dlp --flat-playlist), so a 30-video
+    playlist behaves like 30 videos: each transcribed, each analysed, each emailed. Bare video URLs
+    pass through unchanged. Capped so one giant playlist/channel can't flood the belt."""
+    out=[]; seen=set()
+    for u in urls or []:
+        if len(out)>=cap: break
+        if re.search(r'(?:[?&]list=|/playlist\?|/channel/|/@|/c/|/user/)', u):
+            try:
+                r=subprocess.run(["yt-dlp","--flat-playlist","--print","url",u],
+                                 capture_output=True, text=True, timeout=180)
+                vids=[v.strip() for v in (r.stdout or "").splitlines() if v.strip()]
+            except Exception:
+                vids=[u]   # expansion failed → keep original (whisp-submit can still try --playlist)
+            for v in (vids or [u]):
+                if len(out)>=cap: break
+                if v not in seen: seen.add(v); out.append(v)
+        elif u not in seen:
+            seen.add(u); out.append(u)
+    return out
+
 def whisp_autosubmit(urls, verbose=False):
     """Drop YouTube URLs onto the whisp transcript belt. whisp-submit does its own dedup
     (catalog.yaml + queue), so the Lao-Russell-already-done case is handled there. Returns
@@ -731,7 +752,7 @@ def poll_once(verbose=True):
         # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
         # USP/Russell videos should schedule their transcription, not just get summarised.
         yt_note=""
-        yt_urls=youtube_urls(raw_body)
+        yt_urls=expand_playlists(youtube_urls(raw_body))   # a playlist/channel → its individual videos
         if yt_urls:
             q_n,seen_n=whisp_autosubmit(yt_urls, verbose)
             if q_n:
